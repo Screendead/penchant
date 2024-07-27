@@ -42,6 +42,7 @@ class _RegisterState extends State<Register> {
                 controller: emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  hintText: 'john.doe@example.com',
                   prefixIcon: const Icon(Icons.email),
                   suffixIcon: emailIsValid == null
                       ? null
