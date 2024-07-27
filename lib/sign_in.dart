@@ -16,9 +16,10 @@ class _SignInState extends State<SignIn> {
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
   bool? emailIsValid;
+  bool hasPassword = false;
   String? error;
 
-  bool get isValid => emailIsValid ?? false;
+  bool get isValid => (emailIsValid ?? false) && hasPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -35,20 +36,10 @@ class _SignInState extends State<SignIn> {
             children: [
               TextFormField(
                 controller: emailController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email),
-                  suffixIcon: emailIsValid == null
-                      ? null
-                      : Tooltip(
-                          message: emailIsValid!
-                              ? 'Email is valid'
-                              : 'Please enter a valid email address',
-                          child: Icon(
-                            emailIsValid! ? Icons.check_circle : Icons.cancel,
-                            color: emailIsValid! ? Colors.green : Colors.red,
-                          ),
-                        ),
+                  hintText: 'john.doe@example.com',
+                  prefixIcon: Icon(Icons.email),
                 ),
                 onChanged: (String value) {
                   if (value == '') {
@@ -79,6 +70,11 @@ class _SignInState extends State<SignIn> {
                   labelText: 'Password',
                   prefixIcon: Icon(Icons.lock),
                 ),
+                onChanged: (String value) {
+                  setState(() {
+                    hasPassword = value.isNotEmpty;
+                  });
+                },
               ),
               const SizedBox(height: 16),
               ElevatedButton(
