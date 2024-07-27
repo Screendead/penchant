@@ -1,7 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:tracker/total_units_sheet.dart';
-import 'package:tracker/vices_list.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -43,16 +41,7 @@ class _HomepageState extends State<Homepage> {
           ],
         ),
       ),
-      body: const Column(
-        children: [
-          Flexible(
-            child: VicesList(),
-          ),
-          Flexible(
-            child: TotalUnitsSheet(),
-          ),
-        ],
-      ),
+      body: const Placeholder(),
     );
   }
 }
