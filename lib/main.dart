@@ -21,6 +21,9 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    const homepageWidget = Homepage();
+    const authenticateWidget = Authenticate();
+
     return GestureDetector(
       onTap: FocusManager.instance.primaryFocus?.unfocus,
       child: MaterialApp(
@@ -57,10 +60,10 @@ class MyApp extends StatelessWidget {
             }
 
             if (snapshot.hasData) {
-              return const Homepage();
+              return homepageWidget;
             }
 
-            return const Authenticate();
+            return authenticateWidget;
           },
         ),
       ),

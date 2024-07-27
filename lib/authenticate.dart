@@ -11,7 +11,7 @@ class Authenticate extends StatefulWidget {
 
 class _AuthenticateState extends State<Authenticate> {
   final List<Widget> options = const <Widget>[SignIn(), Register()];
-  int selectedIndex = 1;
+  int selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
