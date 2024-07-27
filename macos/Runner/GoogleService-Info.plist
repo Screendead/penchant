@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBpaWDbKfdikRFrvhJpnZPpR6104OpS2gw</string>
+	<key>GCM_SENDER_ID</key>
+	<string>573818595550</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.screendead.tracker.tracker.RunnerTests</string>
+	<key>PROJECT_ID</key>
+	<string>screendead-vice-tracker</string>
+	<key>STORAGE_BUCKET</key>
+	<string>screendead-vice-tracker.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:573818595550:ios:c170a56c255f4b002cba4f</string>
+</dict>
+</plist>
