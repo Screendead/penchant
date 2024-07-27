@@ -13,7 +13,7 @@ class _HomepageState extends State<Homepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vice Tracker'),
+        title: const Text('Recent Usage'),
       ),
       drawer: Drawer(
         child: ListView(
@@ -34,9 +34,7 @@ class _HomepageState extends State<Homepage> {
             ),
             ListTile(
               title: const Text('Sign Out'),
-              onTap: () {
-                FirebaseAuth.instance.signOut();
-              },
+              onTap: FirebaseAuth.instance.signOut,
             ),
           ],
         ),
