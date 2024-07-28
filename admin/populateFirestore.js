@@ -49,7 +49,8 @@ async function populateVices() {
                 await viceActivitiesRef.add({
                     timestamp: Timestamp.fromDate(new Date(date.getTime() + Math.random() * 86400000)), // Random time within the day
                     viceID: vice.id,
-                    quantity: quantity
+                    quantity: quantity,
+                    ownerID: ownerID,
                 });
             }
         }
