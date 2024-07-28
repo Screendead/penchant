@@ -15,6 +15,7 @@ class _SignInState extends State<SignIn> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
+  bool passwordIsObscured = true;
   bool? emailIsValid;
   bool hasPassword = false;
   String? error;
@@ -65,10 +66,22 @@ class _SignInState extends State<SignIn> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: passwordIsObscured,
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      passwordIsObscured
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        passwordIsObscured = !passwordIsObscured;
+                      });
+                    },
+                  ),
                 ),
                 onChanged: (String value) {
                   setState(() {
