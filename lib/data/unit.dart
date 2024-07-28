@@ -1,0 +1,26 @@
+enum Unit {
+  item('items'),
+  puff('puffs'),
+  drink('drinks'),
+  minute('minutes'),
+  hour('hours');
+
+  final String plural;
+
+  const Unit(this.plural);
+
+  String get singular => name;
+
+  String label(int count) => '$count ${count == 1 ? singular : plural}';
+
+  @override
+  String toString() {
+    return super.toString().split('.').last;
+  }
+
+  static Unit fromString(String unit) {
+    return Unit.values.firstWhere(
+      (e) => e.toString().split('.').last == unit,
+    );
+  }
+}

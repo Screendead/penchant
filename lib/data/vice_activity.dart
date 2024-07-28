@@ -12,14 +12,14 @@ class ViceActivity {
   final int quantity;
 
   factory ViceActivity.fromJson(Map<String, dynamic> json) => ViceActivity(
-        timestamp: json["timestamp"] as Timestamp,
-        viceID: json["viceID"] as String,
-        quantity: json["quantity"] as int,
+        timestamp: json['timestamp'] as Timestamp,
+        viceID: json['viceID'] as String,
+        quantity: json['quantity'] as int,
       );
 
   Map<String, dynamic> toJson() => {
-        "timestamp": timestamp,
-        "viceID": viceID,
-        "quantity": quantity,
+        'timestamp': timestamp,
+        'viceID': viceID,
+        'quantity': quantity,
       };
 }
