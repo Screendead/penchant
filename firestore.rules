@@ -3,7 +3,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
-      allow read, write: if false;
+      match /vices/{vice} {
+        allow read, write: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
+      }
+
+      match /activities/{activity} {
+        allow read, write: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
+      }
     }
   }
 }
