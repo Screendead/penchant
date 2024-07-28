@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:tracker/vice_chart.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -13,7 +14,7 @@ class _HomepageState extends State<Homepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recent Usage'),
+        title: const Text('Last 30 Days'),
       ),
       drawer: Drawer(
         child: ListView(
@@ -39,7 +40,7 @@ class _HomepageState extends State<Homepage> {
           ],
         ),
       ),
-      body: const Placeholder(),
+      body: const ViceChart(),
     );
   }
 }
