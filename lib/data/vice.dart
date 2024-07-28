@@ -3,19 +3,25 @@ import 'package:tracker/data/unit.dart';
 
 class Vice {
   Vice({
+    required this.id,
     required this.name,
     required this.unit,
     required this.ownerID,
     required this.createdAt,
   });
 
+  final String id;
   final String name;
   final Unit unit;
   final String ownerID;
   final Timestamp createdAt;
 
-  factory Vice.fromJson(Map<String, dynamic> json) {
+  factory Vice.fromJson({
+    required String id,
+    required Map<String, dynamic> json,
+  }) {
     return Vice(
+      id: id,
       name: json['name'] as String,
       unit: Unit.fromString(json['unit'] as String),
       ownerID: json['ownerID'] as String,
