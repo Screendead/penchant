@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:tracker/vice_chart.dart';
+import 'package:tracker/widgets/record_new_activity_button.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -10,11 +12,29 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  int selectedDataSetIndex = -1;
+  final DateTime now = DateTime.now();
+  late final DateTime today;
+  late DateTime selectedDate;
+
+  int get daysAgo => today.difference(selectedDate).inDays;
+
+  @override
+  void initState() {
+    super.initState();
+
+    today = DateTime(now.year, now.month, now.day);
+    selectedDate = today;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Last 30 Days'),
+        title: const Text('Vice Tracker'),
+        actions: const <Widget>[
+          RecordNewActivityButton(),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -35,12 +55,102 @@ class _HomepageState extends State<Homepage> {
             ),
             ListTile(
               title: const Text('Sign Out'),
+              leading: const Icon(Icons.logout),
               onTap: FirebaseAuth.instance.signOut,
             ),
           ],
         ),
       ),
-      body: const ViceChart(),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                const Icon(
+                  Icons.calendar_month,
+                  color: Colors.white,
+                ),
+                Text(
+                  daysAgo == 0
+                      ? 'Today'
+                      : daysAgo == 1
+                          ? 'Yesterday'
+                          : '$daysAgo days ago',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                const CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 3,
+                ),
+                DropdownButton<DateTime>(
+                  value: selectedDate,
+                  onChanged: (DateTime? newValue) {
+                    setState(() {
+                      selectedDate = newValue!;
+                    });
+                  },
+                  items: List.generate(30, (index) {
+                    final date = today.subtract(Duration(days: index));
+                    return DropdownMenuItem(
+                      value: date,
+                      child:
+                          Text(DateFormat("EEEE, MMMM d, yyyy").format(date)),
+                    );
+                  }),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: daysAgo >= 29
+                      ? null
+                      : () {
+                          setState(() {
+                            selectedDate =
+                                selectedDate.subtract(const Duration(days: 1));
+                          });
+                        },
+                ),
+                TextButton.icon(
+                  onPressed: daysAgo == 0
+                      ? null
+                      : () {
+                          setState(() {
+                            selectedDate = today;
+                          });
+                        },
+                  icon: const Icon(Icons.today),
+                  label: const Text('Jump to Today'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  onPressed: daysAgo <= 0
+                      ? null
+                      : () {
+                          setState(() {
+                            selectedDate =
+                                selectedDate.add(const Duration(days: 1));
+                          });
+                        },
+                ),
+              ],
+            ),
+            Expanded(
+              child: ViceChart(
+                date: selectedDate,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
