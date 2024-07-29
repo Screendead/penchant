@@ -29,6 +29,14 @@ class Vice {
     );
   }
 
+  static List<Vice> fromQuerySnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return snapshot.docs.map((doc) {
+      return Vice.fromJson(id: doc.id, json: doc.data());
+    }).toList();
+  }
+
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'name': name,
