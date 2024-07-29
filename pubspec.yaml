@@ -65,8 +65,8 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/icon.webp"
-    background_color: "#181112"
-    theme_color: "#E91E63"
+    background_color: "#FF181112"
+    theme_color: "#FFE91E63"
   macos:
     generate: true
     image_path: "assets/icon.webp"
