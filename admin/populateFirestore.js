@@ -47,10 +47,10 @@ async function populateVices() {
             for (let i = 0; i < activitiesCount; i++) {
                 const quantity = Math.floor(Math.random() * 5) + 1; // Random quantity between 1 and 5
                 await viceActivitiesRef.add({
-                    timestamp: Timestamp.fromDate(new Date(date.getTime() + Math.random() * 86400000)), // Random time within the day
                     viceID: vice.id,
                     quantity: quantity,
                     ownerID: ownerID,
+                    createdAt: Timestamp.fromDate(new Date(date.getTime() + Math.random() * 86400000)), // Random time within the day
                 });
             }
         }
