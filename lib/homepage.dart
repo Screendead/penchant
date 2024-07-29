@@ -29,6 +29,8 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vice Tracker'),
@@ -39,15 +41,15 @@ class _HomepageState extends State<Homepage> {
       drawer: Drawer(
         child: ListView(
           children: [
-            const DrawerHeader(
+            DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.pink,
+                color: theme.colorScheme.primary,
               ),
               child: Center(
                 child: Text(
                   'Vice Tracker',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                     fontSize: 24,
                   ),
                 ),
@@ -144,9 +146,7 @@ class _HomepageState extends State<Homepage> {
               ],
             ),
             Expanded(
-              child: ViceChart(
-                date: selectedDate,
-              ),
+              child: ViceChart(date: selectedDate),
             ),
           ],
         ),

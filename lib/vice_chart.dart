@@ -24,147 +24,153 @@ class ViceChart extends ConsumerWidget {
       return const CircularProgressIndicator();
     }
 
-    return StreamBuilder<Map<String, List<ViceActivity>>>(
-      stream: FirebaseFirestore.instance
-          .collection('activities')
-          .where(
-            'viceID',
-            whereIn: vices.map((vice) => vice.id),
-          )
-          .where(
-            'ownerID',
-            isEqualTo: FirebaseAuth.instance.currentUser!.uid,
-          )
-          .orderBy(
-            'createdAt',
-            descending: true,
-          )
-          .snapshots()
-          .map(
-            (snapshot) => snapshot.docs.fold<Map<String, List<ViceActivity>>>(
-              <String, List<ViceActivity>>{},
-              (map, doc) {
-                final ViceActivity activity = ViceActivity.fromJson(
-                  id: doc.id,
-                  json: doc.data(),
-                );
-
-                if (map.containsKey(activity.viceID)) {
-                  map[activity.viceID]!.add(activity);
-                } else {
-                  map[activity.viceID] = <ViceActivity>[activity];
-                }
-
-                return map;
-              },
-            ),
-          ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<Map<String, List<ViceActivity>>> snapshot,
-      ) {
-        if (snapshot.hasError) {
-          return InfoBox(
-            message: 'Error loading activities:\n${snapshot.error.toString()}',
-            color: Colors.red,
-          );
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-
-        if (!snapshot.hasData) {
-          return const InfoBox(
-            message: 'No vice activities found.',
-            color: Colors.blue,
-          );
-        }
-
-        final Map<String, List<ViceActivity>> viceActivities = snapshot.data!;
-        final Map<String, int> dailyData = {};
-        final int maxQuantity = viceActivities.values
-            .expand((activities) => activities)
-            .map((activity) => activity.quantity)
-            .fold(0, (a, b) => a > b ? a : b);
-
-        for (var vice in vices) {
-          dailyData[vice.name] = 0;
-        }
-
-        viceActivities.forEach((viceID, activities) {
-          for (var activity in activities) {
-            if (isSameDay(activity.createdAt.toDate(), date)) {
-              final vice = vices.firstWhere((v) => v.id == viceID);
-              dailyData[vice.name] =
-                  (dailyData[vice.name] ?? 0) + activity.quantity;
-            }
-          }
-        });
-
-        final dataEntries = dailyData.entries
-            .map(
-              (e) => RadarEntry(
-                value: e.value.toDouble(),
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: StreamBuilder<Map<String, List<ViceActivity>>>(
+        stream: FirebaseFirestore.instance
+            .collection('activities')
+            .where(
+              'viceID',
+              whereIn: vices.map((vice) => vice.id),
             )
-            .toList();
+            .where(
+              'ownerID',
+              isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+            )
+            .orderBy(
+              'createdAt',
+              descending: true,
+            )
+            .snapshots()
+            .map(
+              (snapshot) => snapshot.docs.fold<Map<String, List<ViceActivity>>>(
+                <String, List<ViceActivity>>{},
+                (map, doc) {
+                  final ViceActivity activity = ViceActivity.fromJson(
+                    id: doc.id,
+                    json: doc.data(),
+                  );
 
-        return RadarChart(
-          RadarChartData(
-            dataSets: [
-              RadarDataSet(
-                fillColor: Colors.orange.withOpacity(0.2),
-                borderColor: Colors.orange,
-                entryRadius: 6,
-                dataEntries: dataEntries,
-                borderWidth: 2,
+                  if (map.containsKey(activity.viceID)) {
+                    map[activity.viceID]!.add(activity);
+                  } else {
+                    map[activity.viceID] = <ViceActivity>[activity];
+                  }
+
+                  return map;
+                },
               ),
-            ],
-            radarBackgroundColor: Colors.transparent,
-            borderData: FlBorderData(
-              show: false,
             ),
-            radarBorderData: const BorderSide(
-              color: Colors.transparent,
-            ),
-            radarShape: RadarShape.polygon,
-            titlePositionPercentageOffset: 0.2,
-            titleTextStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
-            getTitle: (index, angle) {
-              final Vice vice = vices.firstWhere(
-                (v) => v.name == dailyData.keys.elementAt(index),
-              );
-              final int quantity = dailyData.values.elementAt(index);
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<Map<String, List<ViceActivity>>> snapshot,
+        ) {
+          if (snapshot.hasError) {
+            return InfoBox(
+              message:
+                  'Error loading activities:\n${snapshot.error.toString()}',
+              color: Colors.red,
+            );
+          }
 
-              return RadarChartTitle(
-                text: '${vice.name} (${vice.unit.label(quantity)})',
-                angle: angle,
-              );
-            },
-            tickCount: maxQuantity,
-            ticksTextStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return const InfoBox(
+              message: 'No vice activities found.',
+              color: Colors.blue,
+            );
+          }
+
+          final Map<String, List<ViceActivity>> viceActivities = snapshot.data!;
+          final Map<String, int> dailyData = {};
+          final int maxQuantity = viceActivities.values
+              .expand((activities) => activities)
+              .map((activity) => activity.quantity)
+              .fold(0, (a, b) => a > b ? a : b);
+
+          for (var vice in vices) {
+            dailyData[vice.name] = 0;
+          }
+
+          viceActivities.forEach((viceID, activities) {
+            for (var activity in activities) {
+              if (isSameDay(activity.createdAt.toDate(), date)) {
+                final vice = vices.firstWhere((v) => v.id == viceID);
+                dailyData[vice.name] =
+                    (dailyData[vice.name] ?? 0) + activity.quantity;
+              }
+            }
+          });
+
+          final dataEntries = dailyData.entries
+              .map(
+                (e) => RadarEntry(
+                  value: e.value.toDouble(),
+                ),
+              )
+              .toList();
+
+          final ThemeData theme = Theme.of(context);
+
+          return RadarChart(
+            RadarChartData(
+              dataSets: [
+                RadarDataSet(
+                  fillColor: theme.colorScheme.primary.withOpacity(0.2),
+                  borderColor: theme.colorScheme.primary,
+                  entryRadius: 6,
+                  dataEntries: dataEntries,
+                  borderWidth: 2,
+                ),
+              ],
+              radarBackgroundColor: Colors.transparent,
+              borderData: FlBorderData(
+                show: false,
+              ),
+              radarBorderData: const BorderSide(
+                color: Colors.transparent,
+              ),
+              radarShape: RadarShape.polygon,
+              titlePositionPercentageOffset: 0.2,
+              titleTextStyle: TextStyle(
+                color: theme.colorScheme.secondary,
+                fontSize: 14,
+              ),
+              getTitle: (index, angle) {
+                final Vice vice = vices.firstWhere(
+                  (v) => v.name == dailyData.keys.elementAt(index),
+                );
+                final int quantity = dailyData.values.elementAt(index);
+
+                return RadarChartTitle(
+                  text: '${vice.name} (${vice.unit.label(quantity)})',
+                  angle: angle,
+                );
+              },
+              tickCount: maxQuantity,
+              ticksTextStyle: TextStyle(
+                color: theme.colorScheme.secondary,
+                fontSize: 10,
+              ),
+              tickBorderData: BorderSide(
+                color: theme.colorScheme.tertiary,
+              ),
+              gridBorderData: BorderSide(
+                color: theme.colorScheme.tertiary,
+                width: 2,
+              ),
             ),
-            tickBorderData: const BorderSide(
-              color: Colors.pink,
+            swapAnimationDuration: const Duration(
+              milliseconds: 400,
             ),
-            gridBorderData: const BorderSide(
-              color: Colors.white,
-              width: 3,
-            ),
-          ),
-          swapAnimationDuration: const Duration(
-            milliseconds: 400,
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
