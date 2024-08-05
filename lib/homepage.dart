@@ -98,10 +98,12 @@ class _HomepageState extends State<Homepage> {
                   },
                   items: List.generate(30, (index) {
                     final date = today.subtract(Duration(days: index));
+                    final formattedDate =
+                        DateFormat("EEEE, MMMM d, yyyy").format(date);
+
                     return DropdownMenuItem(
                       value: date,
-                      child:
-                          Text(DateFormat("EEEE, MMMM d, yyyy").format(date)),
+                      child: Text(formattedDate),
                     );
                   }),
                 ),
