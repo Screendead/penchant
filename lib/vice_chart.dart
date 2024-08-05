@@ -81,7 +81,7 @@ class ViceChart extends ConsumerWidget {
             );
           }
 
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const InfoBox(
               message: 'No vice activities found.',
               color: Colors.blue,
