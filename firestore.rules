@@ -5,10 +5,12 @@ service cloud.firestore {
     match /{document=**} {
       match /vices/{vice} {
         allow read, write: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
+        allow write: if request.auth.uid != null && request.auth.uid == request.resource.data.ownerID;
       }
 
       match /activities/{activity} {
-        allow read, write: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
+        allow read: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
+        allow write: if request.auth.uid != null && request.auth.uid == request.resource.data.ownerID;
       }
     }
   }
