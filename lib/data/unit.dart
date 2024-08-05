@@ -11,7 +11,8 @@ enum Unit {
 
   String get singular => name;
 
-  String label(int count) => '$count ${count == 1 ? singular : plural}';
+  String nameFor(int count) => count == 1 ? singular : plural;
+  String label(int count) => '$count ${nameFor(count)}';
 
   @override
   String toString() {
