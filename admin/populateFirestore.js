@@ -13,7 +13,7 @@ const vices = [
     { name: 'Booze', unit: 'drink' },
     { name: 'Cigarettes', unit: 'item' },
     { name: 'Junk Food', unit: 'item' },
-    { name: 'Video Games', unit: 'minute' }
+    { name: 'Video Games', unit: 'hour' }
 ];
 
 const ownerID = '1J6xVvHsFWYLPd5VPmI2t4nuGNo1';
