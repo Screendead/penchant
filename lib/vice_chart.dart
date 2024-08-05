@@ -21,7 +21,9 @@ class ViceChart extends ConsumerWidget {
     final List<Vice>? vices = ref.watch(viceListProvider).value;
 
     if (vices == null) {
-      return const CircularProgressIndicator();
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
     }
 
     return Padding(
