@@ -148,10 +148,12 @@ class ViceChart extends ConsumerWidget {
                   (v) => v.name == dailyData.keys.elementAt(index),
                 );
                 final int quantity = dailyData.values.elementAt(index);
+                final double correctionFactor =
+                    angle > 90 && angle < 270 ? 180 : 0;
 
                 return RadarChartTitle(
                   text: '${vice.name} (${vice.unit.label(quantity)})',
-                  angle: angle,
+                  angle: angle + correctionFactor,
                 );
               },
               tickCount: maxQuantity,
