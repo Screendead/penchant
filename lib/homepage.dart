@@ -65,92 +65,97 @@ class _HomepageState extends State<Homepage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Column(
               children: [
-                const Icon(
-                  Icons.calendar_month,
-                  color: Colors.white,
-                ),
-                Text(
-                  daysAgo == 0
-                      ? 'Today'
-                      : daysAgo == 1
-                          ? 'Yesterday'
-                          : '$daysAgo days ago',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-                const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 3,
-                ),
-                DropdownButton<DateTime>(
-                  value: selectedDate,
-                  onChanged: (DateTime? newValue) {
-                    setState(() {
-                      selectedDate = newValue!;
-                    });
-                  },
-                  items: List.generate(30, (index) {
-                    final date = today.subtract(Duration(days: index));
-                    final formattedDate =
-                        DateFormat("EEEE, MMMM d, yyyy").format(date);
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    const Icon(
+                      Icons.calendar_month,
+                      color: Colors.white,
+                    ),
+                    Text(
+                      daysAgo == 0
+                          ? 'Today'
+                          : daysAgo == 1
+                              ? 'Yesterday'
+                              : '$daysAgo days ago',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const CircleAvatar(
+                      backgroundColor: Colors.white,
+                      radius: 3,
+                    ),
+                    DropdownButton<DateTime>(
+                      value: selectedDate,
+                      onChanged: (DateTime? newValue) {
+                        setState(() {
+                          selectedDate = newValue!;
+                        });
+                      },
+                      items: List.generate(30, (index) {
+                        final date = today.subtract(Duration(days: index));
+                        final formattedDate =
+                            DateFormat("EEEE, MMMM d, yyyy").format(date);
 
-                    return DropdownMenuItem(
-                      value: date,
-                      child: Text(formattedDate),
-                    );
-                  }),
+                        return DropdownMenuItem(
+                          value: date,
+                          child: Text(formattedDate),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: daysAgo >= 29
+                          ? null
+                          : () {
+                              setState(() {
+                                selectedDate = selectedDate
+                                    .subtract(const Duration(days: 1));
+                              });
+                            },
+                    ),
+                    TextButton.icon(
+                      onPressed: daysAgo == 0
+                          ? null
+                          : () {
+                              setState(() {
+                                selectedDate = today;
+                              });
+                            },
+                      icon: const Icon(Icons.today),
+                      label: const Text('Jump to Today'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward),
+                      onPressed: daysAgo <= 0
+                          ? null
+                          : () {
+                              setState(() {
+                                selectedDate =
+                                    selectedDate.add(const Duration(days: 1));
+                              });
+                            },
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: ViceChart(date: selectedDate),
                 ),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: daysAgo >= 29
-                      ? null
-                      : () {
-                          setState(() {
-                            selectedDate =
-                                selectedDate.subtract(const Duration(days: 1));
-                          });
-                        },
-                ),
-                TextButton.icon(
-                  onPressed: daysAgo == 0
-                      ? null
-                      : () {
-                          setState(() {
-                            selectedDate = today;
-                          });
-                        },
-                  icon: const Icon(Icons.today),
-                  label: const Text('Jump to Today'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward),
-                  onPressed: daysAgo <= 0
-                      ? null
-                      : () {
-                          setState(() {
-                            selectedDate =
-                                selectedDate.add(const Duration(days: 1));
-                          });
-                        },
-                ),
-              ],
-            ),
-            Expanded(
-              child: ViceChart(date: selectedDate),
-            ),
-          ],
+          ),
         ),
       ),
     );
