@@ -8,6 +8,7 @@ class Vice {
     required this.unit,
     required this.ownerID,
     required this.createdAt,
+    required this.archived,
   });
 
   final String id;
@@ -15,6 +16,7 @@ class Vice {
   final Unit unit;
   final String ownerID;
   final Timestamp createdAt;
+  final bool archived;
 
   factory Vice.fromJson({
     required String id,
@@ -26,6 +28,7 @@ class Vice {
       unit: Unit.fromString(json['unit'] as String),
       ownerID: json['ownerID'] as String,
       createdAt: json['createdAt'] as Timestamp,
+      archived: json['archived'] as bool,
     );
   }
 
@@ -43,6 +46,7 @@ class Vice {
       'unit': unit.name,
       'ownerID': ownerID,
       'createdAt': createdAt,
+      'archived': archived,
     };
   }
 }

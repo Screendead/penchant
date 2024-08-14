@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activities_by_vice_id_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -35,7 +36,7 @@ class ViceChartState extends ConsumerState<ViceChart> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;
     final Map<String, List<ViceActivity>>? viceActivityListByViceID =
         ref.watch(viceActivityListByViceIDProvider);
 
@@ -60,6 +61,12 @@ class ViceChartState extends ConsumerState<ViceChart> {
         color: Colors.red,
       );
     }
+
+    print('Vices:');
+    vices.forEach((Vice vice) {
+      print(vice.name);
+    });
+    print('');
 
     final Map<String, int> todayData = {};
 

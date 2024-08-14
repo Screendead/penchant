@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
   const RecordNewActivityDialog({
@@ -48,7 +48,7 @@ class _RecordNewActivityDialogState
 
   @override
   Widget build(BuildContext context) {
-    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;
 
     if (vices == null) {
       return const Center(
@@ -85,6 +85,9 @@ class _RecordNewActivityDialogState
                     ),
                   )
                   .toList(),
+              decoration: const InputDecoration(
+                labelText: 'Vice',
+              ),
               validator: (Vice? value) {
                 if (value == null) {
                   return 'Please select a vice';
