@@ -27,6 +27,14 @@ class ViceActivity {
         createdAt: json['createdAt'] as Timestamp,
       );
 
+  static List<ViceActivity> fromQuerySnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return snapshot.docs.map((doc) {
+      return ViceActivity.fromJson(id: doc.id, json: doc.data());
+    }).toList();
+  }
+
   Map<String, dynamic> toJson() => {
         'viceID': viceID,
         'quantity': quantity,
