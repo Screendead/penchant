@@ -12,10 +12,24 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  final GlobalKey<ViceChartState> viceChartKey = GlobalKey<ViceChartState>();
   int selectedDataSetIndex = -1;
   final DateTime now = DateTime.now();
   late final DateTime today;
-  late DateTime selectedDate;
+
+  late DateTime _selectedDate;
+  DateTime get selectedDate => _selectedDate;
+  set selectedDate(DateTime value) {
+    _selectedDate = value;
+
+    if (viceChartKey.currentState != null) {
+      viceChartKey.currentState!.updateDate(value);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        viceChartKey.currentState?.updateDate(value);
+      });
+    }
+  }
 
   int get daysAgo => today.difference(selectedDate).inDays;
 
@@ -158,7 +172,9 @@ class _HomepageState extends State<Homepage> {
                   ],
                 ),
                 Expanded(
-                  child: ViceChart(date: selectedDate),
+                  child: ViceChart(
+                    key: viceChartKey,
+                  ),
                 ),
               ],
             ),
