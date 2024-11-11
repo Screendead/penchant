@@ -246,9 +246,7 @@ class _RecordNewActivityDialogState
                       'viceID': selectedVice!.id,
                     }).timeout(
                       const Duration(seconds: 10),
-                      onTimeout: () => Future.error(
-                        TimeoutException('Request timed out'),
-                      ),
+                      onTimeout: () => Future.error(TimeoutException(null)),
                     );
                   } on FirebaseException catch (e) {
                     setState(() {
