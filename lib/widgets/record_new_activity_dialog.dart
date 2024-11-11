@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,8 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
+  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+
   const RecordNewActivityDialog({
     super.key,
     required this.context,
@@ -27,15 +31,24 @@ class _RecordNewActivityDialogState
   final TextEditingController dateController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   String unit = Unit.item.nameFor(0);
+  bool manualDate = false;
 
+  late Timer dateUpdaterTimer;
   String? error;
+
+  String get dateTime =>
+      RecordNewActivityDialog.dateFormat.format(DateTime.now());
 
   @override
   void initState() {
     super.initState();
 
-    final DateTime now = DateTime.now();
-    dateController.text = DateFormat('dd/MM/yyyy, HH:mm').format(now);
+    dateController.text = dateTime;
+    dateUpdaterTimer = Timer.periodic(Duration(seconds: 1), (Timer timer) {
+      if (mounted && manualDate == false) {
+        dateController.text = dateTime;
+      }
+    });
   }
 
   void updateUnit(int quantity) {
@@ -99,10 +112,75 @@ class _RecordNewActivityDialogState
             const SizedBox(height: 16),
             TextFormField(
               controller: dateController,
-              readOnly: true,
-              decoration: const InputDecoration(
+              readOnly: !manualDate,
+              focusNode: FocusNode(),
+              decoration: InputDecoration(
                 labelText: 'Date and Time',
+                suffixIcon: IconButton(
+                  tooltip: manualDate
+                      ? 'Use current date and time'
+                      : 'Manually enter date and time',
+                  icon: manualDate
+                      ? Icon(Icons.lock_open)
+                      : Icon(Icons.lock_clock),
+                  onPressed: () {
+                    setState(() {
+                      manualDate = !manualDate;
+                    });
+                  },
+                ),
               ),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a date and time';
+                }
+
+                try {
+                  RecordNewActivityDialog.dateFormat.parse(value);
+                } on FormatException {
+                  return 'Please enter a valid date and time';
+                }
+
+                return null;
+              },
+              onTap: () async {
+                if (!manualDate) {
+                  return;
+                }
+
+                FocusScope.of(context).requestFocus(FocusNode());
+
+                final DateTime? date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+
+                if (date == null || !context.mounted) {
+                  return;
+                }
+
+                final TimeOfDay? time = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(date),
+                );
+
+                if (time == null) {
+                  return;
+                }
+
+                final DateTime dateTime = DateTime(
+                  date.year,
+                  date.month,
+                  date.day,
+                  time.hour,
+                  time.minute,
+                );
+
+                dateController.text =
+                    RecordNewActivityDialog.dateFormat.format(dateTime);
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -179,5 +257,11 @@ class _RecordNewActivityDialogState
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    dateUpdaterTimer.cancel();
+    super.dispose();
   }
 }
