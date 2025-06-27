@@ -202,6 +202,14 @@ class _ViceTimeSeriesChartState extends ConsumerState<ViceTimeSeriesChart> {
     final List<DateTime> timePoints = _generateTimePoints();
     final Map<String, String> timeLabels = _generateTimeLabels(timePoints);
 
+    // Check if we have any data points
+    if (timePoints.isEmpty) {
+      return const InfoBox(
+        message: 'No time points available for the selected scale.',
+        color: Colors.orange,
+      );
+    }
+
     for (int i = 0; i < timePoints.length; i++) {
       final DateTime timePoint = timePoints[i];
       
@@ -473,8 +481,14 @@ class _ViceTimeSeriesChartState extends ConsumerState<ViceTimeSeriesChart> {
   }
 
   int _getWeekOfYear(DateTime date) {
-    final DateTime firstDayOfYear = DateTime(date.year, 1, 1);
-    final int daysFromFirstDay = date.difference(firstDayOfYear).inDays;
-    return (daysFromFirstDay / 7).floor() + 1;
+    // ISO 8601 week calculation
+    final DateTime jan1 = DateTime(date.year, 1, 1);
+    final int daysFromJan1 = date.difference(jan1).inDays;
+    final int jan1Weekday = jan1.weekday;
+    
+    // Adjust for the first week of the year
+    final int weekNumber = ((daysFromJan1 + jan1Weekday - 1) / 7).floor() + 1;
+    
+    return weekNumber;
   }
 }
