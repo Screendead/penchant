@@ -149,35 +149,26 @@ class _ViceTimeSeriesChartState extends ConsumerState<ViceTimeSeriesChart> {
   DateTime _getStartDate() {
     switch (selectedTimeScale) {
       case TimeScale.day:
-        return DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day);
+        // Last 24 hours
+        return widget.selectedDate.subtract(const Duration(hours: 24));
       case TimeScale.week:
-        final int daysFromMonday = widget.selectedDate.weekday - 1;
-        return widget.selectedDate.subtract(Duration(days: daysFromMonday));
+        // Last 7 days
+        return widget.selectedDate.subtract(const Duration(days: 7));
       case TimeScale.month:
-        return DateTime(widget.selectedDate.year, widget.selectedDate.month, 1);
+        // Last 30 days
+        return widget.selectedDate.subtract(const Duration(days: 30));
       case TimeScale.quarter:
-        final int quarterStartMonth = ((widget.selectedDate.month - 1) ~/ 3) * 3 + 1;
-        return DateTime(widget.selectedDate.year, quarterStartMonth, 1);
+        // Last 90 days
+        return widget.selectedDate.subtract(const Duration(days: 90));
       case TimeScale.year:
-        return DateTime(widget.selectedDate.year, 1, 1);
+        // Last 365 days
+        return widget.selectedDate.subtract(const Duration(days: 365));
     }
   }
 
   DateTime _getEndDate() {
-    switch (selectedTimeScale) {
-      case TimeScale.day:
-        return DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day + 1);
-      case TimeScale.week:
-        final int daysFromMonday = widget.selectedDate.weekday - 1;
-        return widget.selectedDate.subtract(Duration(days: daysFromMonday)).add(const Duration(days: 7));
-      case TimeScale.month:
-        return DateTime(widget.selectedDate.year, widget.selectedDate.month + 1, 1);
-      case TimeScale.quarter:
-        final int quarterStartMonth = ((widget.selectedDate.month - 1) ~/ 3) * 3 + 1;
-        return DateTime(widget.selectedDate.year, quarterStartMonth + 3, 1);
-      case TimeScale.year:
-        return DateTime(widget.selectedDate.year + 1, 1, 1);
-    }
+    // For all scales, end at the selected date
+    return widget.selectedDate;
   }
 
   Widget _buildTimeSeriesChart(List<Vice> vices, Map<String, List<ViceActivity>> viceActivities) {
@@ -363,37 +354,46 @@ class _ViceTimeSeriesChartState extends ConsumerState<ViceTimeSeriesChart> {
 
     switch (selectedTimeScale) {
       case TimeScale.day:
-        // Generate hourly points
+        // Generate hourly points for last 24 hours
         for (int hour = 0; hour < 24; hour++) {
           points.add(startDate.add(Duration(hours: hour)));
         }
         break;
       case TimeScale.week:
-        // Generate daily points for the week
+        // Generate daily points for last 7 days
         for (int day = 0; day < 7; day++) {
           points.add(startDate.add(Duration(days: day)));
         }
         break;
       case TimeScale.month:
-        // Generate daily points for the month
-        DateTime current = startDate;
-        while (current.isBefore(endDate)) {
-          points.add(current);
-          current = current.add(const Duration(days: 1));
+        // Generate daily points for last 30 days
+        for (int day = 0; day < 30; day++) {
+          points.add(startDate.add(Duration(days: day)));
         }
         break;
       case TimeScale.quarter:
-        // Generate weekly points for the quarter
-        DateTime current = startDate;
-        while (current.isBefore(endDate)) {
-          points.add(current);
-          current = current.add(const Duration(days: 7));
+        // Generate weekly points for last 90 days (~13 weeks)
+        for (int week = 0; week < 13; week++) {
+          points.add(startDate.add(Duration(days: week * 7)));
         }
         break;
       case TimeScale.year:
-        // Generate monthly points for the year
-        for (int month = 1; month <= 12; month++) {
-          points.add(DateTime(startDate.year, month, 1));
+        // Generate monthly points for last 365 days (~12 months)
+        DateTime current = startDate;
+        for (int month = 0; month < 12; month++) {
+          // Add months from start date
+          DateTime monthPoint = DateTime(current.year, current.month, 1);
+          if (month > 0) {
+            // Add months properly handling year transitions
+            int newMonth = current.month + month;
+            int newYear = current.year;
+            while (newMonth > 12) {
+              newMonth -= 12;
+              newYear += 1;
+            }
+            monthPoint = DateTime(newYear, newMonth, 1);
+          }
+          points.add(monthPoint);
         }
         break;
     }
