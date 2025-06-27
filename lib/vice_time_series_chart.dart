@@ -379,22 +379,19 @@ class _ViceTimeSeriesChartState extends ConsumerState<ViceTimeSeriesChart> {
         break;
       case TimeScale.year:
         // Generate monthly points for last 365 days (~12 months)
-        DateTime current = startDate;
+        // Start from selected date and go back month by month
+        DateTime current = DateTime(endDate.year, endDate.month, 1);
         for (int month = 0; month < 12; month++) {
-          // Add months from start date
-          DateTime monthPoint = DateTime(current.year, current.month, 1);
-          if (month > 0) {
-            // Add months properly handling year transitions
-            int newMonth = current.month + month;
-            int newYear = current.year;
-            while (newMonth > 12) {
-              newMonth -= 12;
-              newYear += 1;
-            }
-            monthPoint = DateTime(newYear, newMonth, 1);
+          points.add(current);
+          // Go back one month
+          if (current.month == 1) {
+            current = DateTime(current.year - 1, 12, 1);
+          } else {
+            current = DateTime(current.year, current.month - 1, 1);
           }
-          points.add(monthPoint);
         }
+        // Reverse to have chronological order
+        points.sort();
         break;
     }
 
