@@ -12,6 +12,7 @@ class InfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('InfoBox: $message');
     return Center(
       heightFactor: 1,
       child: ColoredBox(

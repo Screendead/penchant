@@ -1,4 +1,5 @@
 enum Unit {
+  time('times'),
   item('items'),
   puff('puffs'),
   drink('drinks'),
@@ -22,6 +23,11 @@ enum Unit {
   static Unit fromString(String unit) {
     return Unit.values.firstWhere(
       (e) => e.toString().split('.').last == unit,
+      orElse: () {
+        // Log the unknown unit for debugging
+        print('Unknown unit: "$unit", defaulting to "item"');
+        return Unit.item;
+      },
     );
   }
 }
