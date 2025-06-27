@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/vice_chart.dart';
+import 'package:tracker/vice_time_series_chart.dart';
 import 'package:tracker/widgets/record_new_activity_button.dart';
 
 class Homepage extends StatefulWidget {
@@ -13,6 +14,7 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   int selectedDataSetIndex = -1;
+  int selectedTabIndex = 0; // Add tab index for bottom navigation
   final DateTime now = DateTime.now();
   late final DateTime today;
   late DateTime selectedDate;
@@ -151,12 +153,34 @@ class _HomepageState extends State<Homepage> {
                   ],
                 ),
                 Expanded(
-                  child: ViceChart(date: selectedDate),
+                  child: selectedTabIndex == 0 
+                    ? ViceChart(date: selectedDate)
+                    : ViceTimeSeriesChart(selectedDate: selectedDate),
                 ),
               ],
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: selectedTabIndex,
+        onTap: (int index) {
+          setState(() {
+            selectedTabIndex = index;
+          });
+        },
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.radar),
+            activeIcon: Icon(Icons.radar),
+            label: 'Daily View',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.show_chart),
+            activeIcon: Icon(Icons.show_chart),
+            label: 'Time Series',
+          ),
+        ],
       ),
     );
   }
