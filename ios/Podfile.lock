@@ -96,7 +96,7 @@ DEPENDENCIES:
   - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
-  - FirebaseFirestore (from `https://github.com/invertase/firestore-ios-sdk-frameworks.git`, tag `10.28.0`)
+  - FirebaseFirestore (from `https://github.com/invertase/firestore-ios-sdk-frameworks.git`, tag `11.13.0`)
   - Flutter (from `Flutter`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
 
@@ -131,7 +131,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_core/ios"
   FirebaseFirestore:
     :git: https://github.com/invertase/firestore-ios-sdk-frameworks.git
-    :tag: 10.28.0
+    :tag: 11.13.0
   Flutter:
     :path: Flutter
   path_provider_foundation:
@@ -140,7 +140,7 @@ EXTERNAL SOURCES:
 CHECKOUT OPTIONS:
   FirebaseFirestore:
     :git: https://github.com/invertase/firestore-ios-sdk-frameworks.git
-    :tag: 10.28.0
+    :tag: 11.13.0
 
 SPEC CHECKSUMS:
   cloud_firestore: 71f0ffec97ce23c51587ec906f4cc470c518bc70
@@ -152,7 +152,6 @@ SPEC CHECKSUMS:
   FirebaseCore: 857dc1c6dd1255675047404d8466f7dfaac5d779
   FirebaseCoreExtension: f63147b723e2a700fe0f34ec6fb7f358d6fe83e0
   FirebaseCoreInternal: 58d07f1362fddeb0feb6a857d1d1d1c5e558e698
-  FirebaseFirestore: 992ccba0fb5e5bd4c53facb241a9e2466f316d4b
   FirebaseFirestoreAbseilBinary: bd0451946879e0e01327c8efc35896bb273009c4
   FirebaseFirestoreBinary: 93543ac3d053002f6fa130ce51a26bf2aa999c41
   FirebaseFirestoreGRPCBoringSSLBinary: c3007e61593e4583ec3bb8b34ce654663663b690
