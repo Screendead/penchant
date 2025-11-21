@@ -56,6 +56,13 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
             ListTile(
+              title: const Text('Settings'),
+              leading: const Icon(Icons.settings),
+              onTap: () {
+                Navigator.of(context).pushNamed('/settings');
+              },
+            ),
+            ListTile(
               title: const Text('Sign Out'),
               leading: const Icon(Icons.logout),
               onTap: FirebaseAuth.instance.signOut,

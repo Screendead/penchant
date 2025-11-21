@@ -1,5 +1,6 @@
 enum Unit {
   item('items'),
+  time('times'),
   puff('puffs'),
   drink('drinks'),
   minute('minutes'),
