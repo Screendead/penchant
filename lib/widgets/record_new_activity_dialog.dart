@@ -82,7 +82,7 @@ class _RecordNewActivityDialogState
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<Vice>(
-                  value: selectedVice,
+                  initialValue: selectedVice,
                   isExpanded: true,
                   hint: const Text('Select Vice'),
                   onChanged: (Vice? value) {
@@ -281,7 +281,7 @@ class _RecordNewActivityDialogState
         if (loading) ...[
           Expanded(
             child: Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
             ),
           ),
           const CircularProgressIndicator(),
