@@ -62,12 +62,6 @@ class ViceChartState extends ConsumerState<ViceChart> {
       );
     }
 
-    print('Vices:');
-    vices.forEach((Vice vice) {
-      print(vice.name);
-    });
-    print('');
-
     final Map<String, int> todayData = {};
 
     for (final Vice vice in vices) {
@@ -99,7 +93,7 @@ class ViceChartState extends ConsumerState<ViceChart> {
     );
 
     final RadarDataSet dataSet = RadarDataSet(
-      fillColor: theme.colorScheme.primary.withOpacity(0.2),
+      fillColor: theme.colorScheme.primary.withValues(alpha: 0.2),
       borderColor: theme.colorScheme.primary,
       entryRadius: 6,
       dataEntries: dataEntries,
@@ -114,7 +108,7 @@ class ViceChartState extends ConsumerState<ViceChart> {
           // radarBackgroundColor: Colors.pink.withOpacity(0.25),
           borderData: FlBorderData(show: false),
           radarBorderData: BorderSide(
-            color: theme.colorScheme.tertiary.withOpacity(0.5),
+            color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
           ),
           radarShape: RadarShape.polygon,
           titlePositionPercentageOffset: 0.2,
@@ -146,15 +140,15 @@ class ViceChartState extends ConsumerState<ViceChart> {
             fontSize: 10,
           ),
           tickBorderData: BorderSide(
-            color: theme.colorScheme.tertiary.withOpacity(0.5),
+            color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
           ),
           gridBorderData: BorderSide(
             color: theme.colorScheme.tertiary,
             width: 1,
           ),
         ),
-        swapAnimationDuration: const Duration(milliseconds: 600),
-        swapAnimationCurve: Curves.fastOutSlowIn,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.fastOutSlowIn,
       ),
     );
   }

@@ -84,7 +84,7 @@ class _AddViceState extends ConsumerState<AddVice> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<Unit>(
-                value: unit,
+                initialValue: unit,
                 items: Unit.values
                     .map(
                       (Unit unit) => DropdownMenuItem<Unit>(
