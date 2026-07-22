@@ -3,10 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
+import 'package:tracker/add_vice.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_options.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 
@@ -59,8 +61,13 @@ class MyApp extends ConsumerWidget {
         home: user == null ? const Authenticate() : const Homepage(),
         onGenerateRoute: (RouteSettings settings) {
           return MaterialPageRoute<void>(
+            fullscreenDialog: true,
             builder: (BuildContext context) {
               switch (settings.name) {
+                case '/manage-data':
+                  return const ManageData();
+                case '/vices/add':
+                  return const AddVice();
                 case '/settings':
                   return const Settings();
                 case '/settings/account':
