@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tracker/firebase_options.dart';
 
-const bool useFirebaseEmulators = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
+const bool useFirebaseEmulators = bool.fromEnvironment(
+  'USE_FIREBASE_EMULATORS',
+);
 
 // A demo-* project has no live resources, so a call that misses the emulators
 // fails instead of reaching production. tools/e2e.sh and tools/run-emulated.sh
@@ -45,8 +47,9 @@ Future<void> initializeFirebase() async {
 
   // The emulators lose their data on shutdown; an on-device cache would
   // outlive it.
-  FirebaseFirestore.instance.settings =
-      const Settings(persistenceEnabled: false);
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false,
+  );
   FirebaseFirestore.instance.useFirestoreEmulator(
     emulatorHost,
     firestoreEmulatorPort,
