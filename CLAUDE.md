@@ -123,7 +123,8 @@ date range as a line chart, bucketing activities by day or week and overlaying a
 average.
 
 `functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
-logic. The test suite is a single smoke test.
+logic. The Flutter suite under `test/` is a single smoke test; the rules suite is
+described under Commands.
 
 The app always talks to production Firebase. `firebase.json` configures the full emulator
 suite, but nothing in `lib/` calls `useEmulator`, so `firebase emulators:start` does not
