@@ -1,16 +1,14 @@
-# The emulator suite is configured but unused and the only project alias is production
+# The only project alias is production, so every firebase command defaults to it
 
 **Severity:** medium
 
-`firebase.json` declares ports for the auth, functions, firestore, hosting and storage emulators plus the emulator UI, but no file in `lib/` calls `useEmulator` or references `localhost`, and `firebase_options.dart` hardcodes the production project on every platform.
+The app can run against the Auth and Firestore emulators under `demo-tracker`, but only through `tools/e2e.sh` and `tools/run-emulated.sh`. `.firebaserc` maps only `default` to `screendead-vice-tracker` with no staging, dev or demo alias, so any `firebase` command run without `--project` (`deploy`, `firestore:*`, a bare `emulators:start`) targets the live project, and `flutter run` without the dart-define talks to production.
 
-`.firebaserc` maps only `default` to `screendead-vice-tracker` with no staging or dev alias, `singleProjectMode` is on, and both workflows hardcode the same project id rather than reading the alias. All local development, manual testing and every firebase command consequently read and write the live project.
+Both workflows hardcode the same project id rather than reading an alias, and there is no staging project in which to try a rules or index deploy before production.
 
 ## Evidence
 
-- `firebase.json:34` — `"emulators": { "auth": { "port": 9099 },`
-- **`grep -rn "useEmulator\|Emulator\|localhost\|127.0.0.1" lib/ pubspec.yaml`** → `(exit 1, no matches)`
-- `lib/firebase_options.dart:50` — `projectId: 'screendead-vice-tracker',`
 - `.firebaserc:2` — `"projects": { "default": "screendead-vice-tracker" }`
-- `firebase.json:53` — `"singleProjectMode": true`
+- `lib/firebase_options.dart:50` — `projectId: 'screendead-vice-tracker',`
 - `.github/workflows/firebase-hosting-pull-request.yml:30` — `projectId: screendead-vice-tracker`
+- `tools/emulator-env.sh:5` — `E2E_PROJECT=demo-tracker`

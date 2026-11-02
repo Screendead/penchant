@@ -1,12 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/add_vice.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/errors/not_found.dart';
-import 'package:tracker/firebase_options.dart';
+import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -16,9 +15,7 @@ import 'package:tracker/vice_activity_history_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await initializeFirebase();
 
   runApp(
     const ProviderScope(
