@@ -27,8 +27,8 @@ Claude's recommendation, not a decision: **A.** It reuses rules that must be fix
 **Revenue impact:** A release blocker. There is no iOS release, and so no revenue, without it.
 
 **Depends on:**
-- [`activity-deletes-permitted-by-no-rule`](../../tech-debt/firebase-data-layer/activity-deletes-permitted-by-no-rule.md)
-- [`write-rules-authorize-on-the-post-write-owner`](../../tech-debt/firebase-data-layer/write-rules-authorize-on-the-post-write-owner.md)
+- `activity-deletes-permitted-by-no-rule` (fixed in PR #27; live once the rules are deployed)
+- `write-rules-authorize-on-the-post-write-owner` (fixed in PR #27; live once the rules are deployed)
 - [`profile-update-never-reauthenticates`](../../tech-debt/auth-and-account-lifecycle/profile-update-never-reauthenticates.md)
 - [`sign-out-leaves-firestore-cache-on-device`](../../tech-debt/auth-and-account-lifecycle/sign-out-leaves-firestore-cache-on-device.md)
 - [`no-account-deletion-or-data-export`](../../tech-debt/auth-and-account-lifecycle/no-account-deletion-or-data-export.md)

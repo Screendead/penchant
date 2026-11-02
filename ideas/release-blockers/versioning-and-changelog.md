@@ -34,6 +34,6 @@ Claude's recommendation, not a decision: **B.** It removes the "forgot to bump" 
 - [`version-never-incremented-and-no-tags`](../../tech-debt/repo-docs-and-release-hygiene/version-never-incremented-and-no-tags.md)
 - [`no-changelog-or-release-notes`](../../tech-debt/repo-docs-and-release-hygiene/no-changelog-or-release-notes.md)
 - [`android-version-fallback-diverges-from-pubspec`](../../tech-debt/platform-and-delivery-config/android-version-fallback-diverges-from-pubspec.md)
-- [`production-deploys-with-no-quality-gate`](../../tech-debt/ci-and-quality-gates/production-deploys-with-no-quality-gate.md)
+- `production-deploys-with-no-quality-gate` (fixed in PR #25)
 
 **Needs Jack:** no

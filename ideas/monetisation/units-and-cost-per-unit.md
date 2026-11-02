@@ -39,7 +39,7 @@ Show spend for free, and make "saved against baseline" and spend history Pro. Tr
 **Depends on:**
 - [per-vice goals](../v1-must-haves/per-vice-goals-and-limits.md)
 - [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
-- [`writes-carry-no-field-or-type-validation`](../../tech-debt/firebase-data-layer/writes-carry-no-field-or-type-validation.md)
+- `writes-carry-no-field-or-type-validation` (fixed in PR #27; live once the rules are deployed)
 - [`value-rendering-is-english-and-locale-insensitive`](../../tech-debt/accessibility-and-localization/value-rendering-is-english-and-locale-insensitive.md)
 
 **Needs Jack:** yes — Should currency follow the device locale or be a single currency in v1, and may quantity change from `int` to `num`?

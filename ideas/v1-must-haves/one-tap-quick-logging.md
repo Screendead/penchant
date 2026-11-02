@@ -32,7 +32,7 @@ Claude's recommendation, not a decision: **A.** It is the biggest daily-use impr
 **Revenue impact:** High, through retention.
 
 **Depends on:**
-- [`activity-deletes-permitted-by-no-rule`](../../tech-debt/firebase-data-layer/activity-deletes-permitted-by-no-rule.md)
+- `activity-deletes-permitted-by-no-rule` (fixed in PR #27; live once the rules are deployed)
 - [`record-action-disappears-on-the-graph-tab`](../../tech-debt/navigation-and-unreachable-ui/record-action-disappears-on-the-graph-tab.md)
 - [`writes-bypass-providers-with-inline-firestore-calls`](../../tech-debt/widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
 - [per-vice goals](per-vice-goals-and-limits.md), for where the default quantity lives
