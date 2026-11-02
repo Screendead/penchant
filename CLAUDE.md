@@ -2,6 +2,39 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## State and the current task
+
+This file holds how the code works. `HANDOVER.md` holds the current task: the queue, where each item stands, the
+calls waiting on Jack, and the options set aside with their reasons. Read it at the start of every session; "do the
+next thing" means the top unblocked item in its queue. Update it in the same commit that closes an item or records a
+call. If this file and `HANDOVER.md` disagree about state, `HANDOVER.md` wins. Record a recommendation as a
+recommendation until Jack decides it.
+
+`tech-debt/` is the debt register and `ideas/` is the product backlog. Both burn down by deletion: when an issue is
+fixed or an idea ships or is rejected, delete its file (and its README line) in the same PR.
+
+## Hard rules
+
+- **Production Firestore is untouchable.** Never read or write the live data of `screendead-vice-tracker`, and never
+  run a `firebase` or `gcloud` command that could contact that project (no `deploy`, no `firestore:*`, no
+  `--project screendead-vice-tracker`). The documented data shape must stay compatible with existing documents.
+  Deploying rules or indexes to production is Jack's to run.
+- **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
+  `demo-` project has no cloud counterpart, so nothing can leak to production.
+- **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
+  emulators, read the current Firebase documentation for it (firebase.google.com/docs) and cite the page in the PR.
+- **End-to-end before merge.** A change that touches app behaviour merges only after it has run end to end on an iOS
+  Simulator against the Firebase emulators (`tools/e2e.sh`, see HANDOVER.md), and the PR says what was exercised.
+
+## Git, pull requests and merging
+
+- Branch and PR for every change; never commit to `master`. Open PRs without asking. Worktrees go under
+  `~/development/tracker-worktrees/`.
+- **Claude may merge PRs without asking Jack** (Jack, 2026-11-02), once CI passes, the end-to-end run above passed
+  where it applies, and Claude is satisfied with the diff. A PR that rests on a call Jack hasn't made still waits for
+  him. Force-pushing `master` always needs Jack.
+- Merging to `master` deploys web hosting to production (CI); that is expected and allowed. It does not deploy rules.
+
 ## Commands
 
 ```bash
