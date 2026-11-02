@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**149 issues: 4 critical, 33 high, 69 medium, 43 low.**
+**148 issues: 4 critical, 32 high, 69 medium, 43 low.**
 
 ## Firebase Data Layer (17)
 
@@ -205,13 +205,12 @@ Workflow configuration, the absence of analyze, lint and test gates, the failing
 - **low** — [The PR build runs regardless of which branch the pull request targets](ci-and-quality-gates/pull-request-trigger-is-unfiltered-by-base-branch.md)
 - **low** — [PR and merge workflows build with different flags under generated headers](ci-and-quality-gates/workflows-are-unedited-boilerplate-with-divergent-builds.md)
 
-## Repo, Docs and Release Hygiene (16)
+## Repo, Docs and Release Hygiene (15)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
 - **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
 - **high** — [No LICENSE file exists, yet one manifest claims a license anyway](repo-docs-and-release-hygiene/no-license-file-anywhere.md)
-- **high** — [New feature work is piling onto a branch already merged and closed](repo-docs-and-release-hygiene/the-work-sits-on-a-branch-already-merged-upstream.md)
 - **high** — [Every production build reports version 1.0.0 with no tags to trace it](repo-docs-and-release-hygiene/version-never-incremented-and-no-tags.md)
 - **medium** — [Five factual claims in the guidance doc do not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
 - **medium** — [A generated file is ignored on two platforms but tracked on a third](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
