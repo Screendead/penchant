@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**160 issues: 4 critical, 34 high, 77 medium, 45 low.**
+**153 issues: 4 critical, 32 high, 74 medium, 43 low.**
 
 ## Firebase Data Layer (17)
 
@@ -200,22 +200,15 @@ The iOS, macOS, Android and web platform trees, scaffold leftovers, signing and 
 - **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
 - **low** — [The web page keeps an obsolete IE meta tag and has no no-JavaScript fallback](platform-and-delivery-config/web-index-html-retains-obsolete-template-markup.md)
 
-## CI and Quality Gates (12)
+## CI and Quality Gates (5)
 
-Workflow configuration, the absence of analyze, lint and test gates, the failing functions build, and unexercised build paths.
+Test depth, the failing and unchecked functions build, fork coverage, and unverified build state.
 
 - **critical** — [Cloud Functions cannot build, so any functions deploy fails before it starts](ci-and-quality-gates/functions-build-fails-so-any-deploy-aborts.md)
-- **high** — [Broken code that compiles reaches production automatically, nothing checks it first](ci-and-quality-gates/production-deploys-with-no-quality-gate.md)
 - **high** — [The only tests in the app check a hardcoded string against itself](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
-- **high** — [The exact build command production deploy uses has not been run locally](ci-and-quality-gates/the-web-release-build-is-unexercised.md)
-- **medium** — [CI installs whatever Flutter build is tagged stable that day, unpinned](ci-and-quality-gates/flutter-sdk-version-is-unpinned-in-ci.md)
 - **medium** — [No CI step ever touches the Cloud Functions code at all](ci-and-quality-gates/functions-directory-has-no-ci-coverage.md)
-- **medium** — [Two quick pushes can deploy the older commit last, overwriting the newer](ci-and-quality-gates/no-concurrency-group-on-either-workflow.md)
-- **medium** — [CI actions are pinned to floating tags publishers can silently repoint](ci-and-quality-gates/third-party-actions-on-floating-tags-behind-current.md)
-- **low** — [Fork-based pull requests never get a preview deploy or build check](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
-- **low** — [The PR build runs regardless of which branch the pull request targets](ci-and-quality-gates/pull-request-trigger-is-unfiltered-by-base-branch.md)
-- **low** — [PR and merge workflows build with different flags under generated headers](ci-and-quality-gates/workflows-are-unedited-boilerplate-with-divergent-builds.md)
+- **low** — [Fork-based pull requests never get a preview deploy](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
 
 ## Repo, Docs and Release Hygiene (15)
 
