@@ -1,0 +1,17 @@
+{
+  "name": "tracker-firestore-rules-tests",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-tracker \"npm run test:run\"",
+    "test:run": "node --test"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase": "12.19.0",
+    "firebase-tools": "15.33.0"
+  }
+}
