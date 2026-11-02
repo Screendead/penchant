@@ -61,8 +61,20 @@ Seed data: `node admin/populateFirestore.js`. It reads a service-account key fro
 so the script has no credentials until a new one is supplied. It also predates the
 `archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
 
+Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
+Firestore emulator on `demo-tracker`):
+
+```bash
+npm --prefix tests/firestore-rules ci
+npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.json ports
+```
+
+To run beside another emulator, point `firebase emulators:exec` at a config outside the
+repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
+
 CI (`.github/workflows/`) builds web and deploys to Firebase Hosting on PR and on
-merge to `master`. It runs neither tests nor `flutter analyze`.
+merge to `master`, and runs the rules tests on PR. It runs neither the Flutter tests
+nor `flutter analyze`.
 
 ## Architecture
 
@@ -89,7 +101,11 @@ means no data.
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
 `quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
-enforces on read and write. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+checks against the stored document on read, update and delete and against the incoming
+one on create. The rules also fix each collection's field set and types on create, allow
+updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+(activities), and validate only the changed fields on update so legacy documents
+(vices without `archived`) stay editable. A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from the today chart but keeps its history.
 

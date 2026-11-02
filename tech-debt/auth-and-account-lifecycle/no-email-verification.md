@@ -16,4 +16,4 @@ depends on the address having been proven to belong to the registrant.
                             email: emailController.text,
                             password: passwordController.text,
                           );`
-- `firestore.rules:7` — `allow read, write: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;`
+- `firestore.rules:5-7` — `function signedIn() {\n      return request.auth != null;\n    }`
