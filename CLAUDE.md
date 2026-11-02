@@ -33,6 +33,8 @@ fixed or an idea ships or is rejected, delete its file (and its README line) in 
 - **Claude may merge PRs without asking Jack** (Jack, 2026-11-02), once CI passes, the end-to-end run above passed
   where it applies, and Claude is satisfied with the diff. A PR that rests on a call Jack hasn't made still waits for
   him. Force-pushing `master` always needs Jack.
+- Workflow subagents cannot merge: the auto-mode permission classifier denies `gh pr merge` inside them ("Merge
+  Without Review"). They bring a PR to green and CLEAN; the main session merges.
 - Merging to `master` deploys web hosting to production (CI); that is expected and allowed. It does not deploy rules.
 
 ## Commands

@@ -59,7 +59,7 @@ button { font: inherit; cursor: pointer; }
 .why { font-size: .93rem; border-left: 3px solid var(--rec); padding-left: 10px; max-width: 70ch; }
 .why b { color: var(--rec); }
 textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: vertical; font: inherit; font-size: .93rem; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
-.note { font-size: .85rem; color: var(--muted); }
+.note { font-size: .85rem; color: var(--accent); }
 .banner { font-size: .9rem; color: var(--muted); }
 .banner.err { color: var(--warn); }
 @media (prefers-reduced-motion: no-preference) { .opt { transition: border-color .12s, background .12s; } }
@@ -81,7 +81,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
           <div class="cmd"><pre id="c1">cd ~/development/tracker && git switch master && git pull
 firebase firestore:indexes --project screendead-vice-tracker
 firebase deploy --only firestore:rules,firestore:indexes --project screendead-vice-tracker</pre><button class="copy" data-copy="c1">Copy</button></div>
-          Then tell Claude it is done. Claude merges PR #28 (day navigation, history, editor, usage graph) after one more end-to-end run.</li>
+          The new rules check field types on every write, so an app build older than master may get permission-denied when it saves; rebuild any installed copy from master. Then tell Claude it is done. Claude merges PR #28 (day navigation, history, editor, usage graph) after one more end-to-end run.</li>
         <li><b>Optional:</b> upgrade the global Firebase CLI (15.8.0 here, 15.34 current). Another project on this Mac shares its emulator files.
           <div class="cmd"><pre id="c2">npm install -g firebase-tools@latest</pre><button class="copy" data-copy="c2">Copy</button></div></li>
       </ol>
@@ -97,11 +97,11 @@ const GROUPS = [
     { id: "rules-deploy", q: "How do Firestore rules reach production from now on?",
       ctx: "CI deploys web hosting on merge but never rules, so a rules fix sits undeployed until someone remembers.",
       opts: [
-        { k: "A", t: "CI deploys rules on merge", c: "Needs the hosting service account given the Firebase Rules Admin and index admin roles (a one-time console change). Rules tests gate the deploy." },
+        { k: "A", t: "CI deploys rules on merge", c: "Needs the hosting service account given the Firebase Rules Admin and index admin roles (a one-time console change). Rules tests gate the deploy. It also means every rules PR Claude merges goes to production, so the CLAUDE.md rule that deploying rules is yours to run changes." },
         { k: "B", t: "Jack runs the deploy each time", c: "No setup. Every rules change waits for you." } ],
-      rec: "A", why: "It takes away a manual step that will otherwise be forgotten, and the 55 rules tests already run on every PR." },
+      rec: "A", why: "It takes away a manual step that will otherwise be forgotten, and the 55 rules tests already run on every PR. If you would rather keep production changes in your own hands, pick B; the cost is only the waiting." },
     { id: "today-few-vices", q: "What should Today show when someone has only 1 or 2 vices?",
-      ctx: "The radar chart cannot draw fewer than 3 axes; on master it crashes. PR #28 shows a plain list instead.",
+      ctx: "The radar chart cannot draw fewer than 3 axes: on master a debug build asserts and a release build draws a broken chart. PR #28 shows a plain list instead.",
       opts: [
         { k: "A", t: "A plain list (built)", c: "Done. Two looks for one screen." },
         { k: "B", t: "A bar chart for every count", c: "Small. One chart that reads at any count; the radar goes." },
@@ -253,10 +253,25 @@ function renderTally() {
 }
 
 function render() {
+  if (document.getElementById("call-" + ALL[0].id)) { sync(); return; }
   const root = document.getElementById("groups");
   root.replaceChildren(...GROUPS.map(g => el("section", {},
     el("div", { class: "sechead" }, el("h2", { text: g.title }), el("p", { text: g.sub })),
     ...g.calls.map(callNode))));
+  renderTally();
+}
+
+function sync() {
+  for (const c of ALL) {
+    const p = picks[c.id] || {};
+    const node = document.getElementById("call-" + c.id);
+    const st = node.querySelector(".status");
+    st.className = "status" + (p.choice ? " done" : "");
+    st.textContent = p.choice ? "Picked " + p.choice : "Open";
+    for (const o of c.opts) document.getElementById("opt-" + c.id + "-" + o.k).setAttribute("aria-pressed", String(p.choice === o.k));
+    const ta = document.getElementById("note-" + c.id);
+    if (document.activeElement !== ta && ta.value !== (p.note || "")) ta.value = p.note || "";
+  }
   renderTally();
 }
 
@@ -268,7 +283,7 @@ function callNode(c) {
     const b = el("button", { class: "opt", type: "button", "aria-pressed": String(p.choice === o.k), id: "opt-" + c.id + "-" + o.k },
       el("span", { class: "lab" }, o.k + ". " + o.t, o.k === c.rec ? el("span", { class: "badge", text: "Recommended" }) : null),
       el("span", { class: "cost", text: o.c }));
-    b.addEventListener("click", () => save(c.id, { choice: p.choice === o.k ? "" : o.k }));
+    b.addEventListener("click", () => { const cur = (picks[c.id] || {}).choice; save(c.id, { choice: cur === o.k ? "" : o.k }); });
     opts.append(b);
   }
   const why = el("p", { class: "why" }, el("b", { text: "Recommend " + c.rec + ". " }), c.why);
@@ -276,7 +291,7 @@ function callNode(c) {
   ta.value = p.note || "";
   ta.addEventListener("change", () => save(c.id, { note: ta.value.trim() }));
   const ctx = el("p", { class: "ctx" }, c.ctx);
-  if (c.link) ctx.append(" ", el("span", { class: "note", text: "Full pitch: " + c.link }));
+  if (c.link) ctx.append(" ", el("a", { class: "note", href: "https://github.com/Screendead/tracker/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
   return el("div", { class: "call", id: "call-" + c.id },
     el("div", { class: "qrow" }, el("h3", { text: c.q }), status), ctx, opts, why, ta);
 }

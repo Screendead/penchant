@@ -87,6 +87,8 @@ project's emulator files share.
   `firestore.indexes.json` first, and decline any offered index deletion:
   `firebase firestore:indexes --project screendead-vice-tracker`, then
   `firebase deploy --only firestore:rules,firestore:indexes --project screendead-vice-tracker`.
+  The new rules check field types on every write, so an app build older than master may get permission-denied when it
+  saves; rebuild any installed copy from master.
 - Pick on the pitch page.
 
 ## How to test here
@@ -110,8 +112,9 @@ project's emulator files share.
 
 ## Thoughts
 
-- The app is a small Flutter + Firestore codebase (about 3,000 lines in `lib/`) with no tests worth the name; most
-  of the work before release is making it trustworthy, not adding screens.
+- The app is a small Flutter + Firestore codebase (about 3,000 lines in `lib/`). Tests now exist at three levels
+  (55 rules tests and 1 e2e test on master; 17 unit and widget tests and 4 e2e tests once #28 lands), but most of the
+  app is still untested. Most of the work before release is making it trustworthy, not adding screens.
 - Writes are inline `FirebaseFirestore.instance` calls in widgets. A thin repository layer would make the write paths
   testable without the emulator; it is in the register as debt, not yet a decision.
 
@@ -119,5 +122,3 @@ project's emulator files share.
 
 - **Rebasing or force-pushing the recovered feature branch** to tidy its history: it was already pushed, and
   force-pushing needs Jack. It merges `master` in instead.
-- **Merging from workflow subagents:** the auto-mode permission classifier denies `gh pr merge` inside subagents
-  ("Merge Without Review"). Subagents prepare PRs to CLEAN and green; the main session merges.
