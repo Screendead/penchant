@@ -1,0 +1,307 @@
+<title>Tracker Decisions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: one reading column; each call is a row of option tiles you tap to pick. */
+:root {
+  --bg: #f3f5f6; --surface: #ffffff; --fg: #17222a; --muted: #5a6872; --line: #d8dee2;
+  --accent: #0d6b66; --accent-soft: #dcefed; --rec: #9a5b00; --rec-soft: #fbedd6; --warn: #a2321f;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1518; --surface: #172025; --fg: #e4eaed; --muted: #95a3ab; --line: #2a363d;
+  --accent: #4fc2b9; --accent-soft: #163a38; --rec: #f0b45a; --rec-soft: #3a2a12; --warn: #f08a76; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1518; --surface: #172025; --fg: #e4eaed; --muted: #95a3ab; --line: #2a363d;
+  --accent: #4fc2b9; --accent-soft: #163a38; --rec: #f0b45a; --rec-soft: #3a2a12; --warn: #f08a76; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--body); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.08rem; font-weight: 600; line-height: 1.3; }
+p { margin: 0; }
+header { display: grid; gap: 10px; }
+.lede { color: var(--muted); max-width: 65ch; }
+.tally { display: flex; gap: 18px; flex-wrap: wrap; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .95rem; }
+.tally b { color: var(--fg); font-family: var(--display); font-size: 1.15rem; }
+.marks { font-family: var(--mono); letter-spacing: .05em; color: var(--accent); }
+section { display: grid; gap: 16px; }
+.sechead { display: grid; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.sechead p { color: var(--muted); font-size: .95rem; }
+.todo { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 6px; padding: 16px; display: grid; gap: 10px; }
+.todo ol { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
+.cmd { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; margin-top: 6px; }
+code, .cmd pre { font-family: var(--mono); font-size: .82rem; }
+.cmd pre { margin: 0; flex: 1 1 320px; min-width: 0; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+button { font: inherit; cursor: pointer; }
+.copy { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 4px; padding: 0 12px; }
+.call { display: grid; gap: 10px; padding: 16px 0; border-bottom: 1px dashed var(--line); }
+.call:last-child { border-bottom: 0; }
+.qrow { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.qrow h3 { flex: 1 1 400px; min-width: 0; }
+.status { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); white-space: nowrap; }
+.status.done { color: var(--accent); font-weight: 600; }
+.ctx { color: var(--muted); font-size: .95rem; max-width: 70ch; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.opt { text-align: left; background: var(--surface); color: var(--fg); border: 1.5px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.opt:hover { border-color: var(--accent); }
+.opt:focus-visible, .copy:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt .lab { font-weight: 600; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.opt .cost { font-size: .88rem; color: var(--muted); }
+.badge { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; background: var(--rec-soft); color: var(--rec); border-radius: 3px; padding: 1px 6px; font-weight: 600; }
+.why { font-size: .93rem; border-left: 3px solid var(--rec); padding-left: 10px; max-width: 70ch; }
+.why b { color: var(--rec); }
+textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: vertical; font: inherit; font-size: .93rem; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+.note { font-size: .85rem; color: var(--muted); }
+.banner { font-size: .9rem; color: var(--muted); }
+.banner.err { color: var(--warn); }
+@media (prefers-reduced-motion: no-preference) { .opt { transition: border-color .12s, background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Tracker: calls for Jack</h1>
+    <p class="lede">The bugs you reported are fixed on branches, with end-to-end tests run on an iOS Simulator against the emulators. One thing blocks them reaching users: the new Firestore rules must be deployed to production, and Claude may not touch production. Everything below is undecided. Tap an option to pick it; picks save as you go and Claude reads them back.</p>
+    <div class="tally" id="tally"></div>
+    <p class="banner" id="banner">Connecting to saved picks…</p>
+  </header>
+
+  <section>
+    <div class="sechead"><h2>For you to do</h2><p>Actions, not decisions.</p></div>
+    <div class="todo">
+      <ol>
+        <li><b>Deploy the Firestore rules and indexes.</b> This fixes Undo and the two other delete buttons for users, and gives the chart query its index. First list the live indexes and compare them with <code>firestore.indexes.json</code> on master. When the deploy offers to delete an index that isn't in the file, answer no.
+          <div class="cmd"><pre id="c1">cd ~/development/tracker && git switch master && git pull
+firebase firestore:indexes --project screendead-vice-tracker
+firebase deploy --only firestore:rules,firestore:indexes --project screendead-vice-tracker</pre><button class="copy" data-copy="c1">Copy</button></div>
+          Then tell Claude it is done. Claude merges PR #28 (day navigation, history, editor, usage graph) after one more end-to-end run.</li>
+        <li><b>Optional:</b> upgrade the global Firebase CLI (15.8.0 here, 15.34 current). Another project on this Mac shares its emulator files.
+          <div class="cmd"><pre id="c2">npm install -g firebase-tools@latest</pre><button class="copy" data-copy="c2">Copy</button></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <div id="groups"></div>
+</div>
+
+<script>
+const GROUPS = [
+  { title: "Unblocks the next merge", sub: "Small calls about the recovered features in PR #28.", calls: [
+    { id: "rules-deploy", q: "How do Firestore rules reach production from now on?",
+      ctx: "CI deploys web hosting on merge but never rules, so a rules fix sits undeployed until someone remembers.",
+      opts: [
+        { k: "A", t: "CI deploys rules on merge", c: "Needs the hosting service account given the Firebase Rules Admin and index admin roles (a one-time console change). Rules tests gate the deploy." },
+        { k: "B", t: "Jack runs the deploy each time", c: "No setup. Every rules change waits for you." } ],
+      rec: "A", why: "It takes away a manual step that will otherwise be forgotten, and the 55 rules tests already run on every PR." },
+    { id: "today-few-vices", q: "What should Today show when someone has only 1 or 2 vices?",
+      ctx: "The radar chart cannot draw fewer than 3 axes; on master it crashes. PR #28 shows a plain list instead.",
+      opts: [
+        { k: "A", t: "A plain list (built)", c: "Done. Two looks for one screen." },
+        { k: "B", t: "A bar chart for every count", c: "Small. One chart that reads at any count; the radar goes." },
+        { k: "C", t: "Bars below 3, radar from 3 up", c: "Small. Keeps the radar, but the chart changes as vices are added." } ],
+      rec: "B", why: "One chart type is simpler and reads better at any count. The bigger Today redesign (progress cards against limits) is in ideas/ and can replace it later." },
+    { id: "record-timeout", q: "When saving an entry times out after 10 seconds, what does the user see?",
+      ctx: "Firestore keeps the write queued and may save it later, so a retry after the error can create a duplicate.",
+      opts: [
+        { k: "A", t: "Close and say it will sync", c: "Small. Matches what Firestore actually does offline." },
+        { k: "B", t: "Keep the error (built)", c: "No work. Invites duplicate entries." } ],
+      rec: "A", why: "The write is not lost, so an error message tells the user something false and leads to duplicates." },
+    { id: "clean-day", q: "How should a day with nothing recorded look?",
+      ctx: "PR #28 shows a neutral grey “Nothing recorded on this day”. This sets the app's tone.",
+      opts: [
+        { k: "A", t: "Neutral (built)", c: "No judgement either way." },
+        { k: "B", t: "Quietly positive", c: "Green tint, short encouraging copy. Small." } ],
+      rec: "B", why: "Under the harm-reduction positioning recommended below, a day without a vice is the outcome users want to see marked. Keep the copy low-key, with no streak pressure." } ] },
+
+  { title: "Foundations", sub: "Repo and release plumbing.", calls: [
+    { id: "functions", q: "What happens to functions/?",
+      ctx: "It is commented-out scaffolding on an end-of-life Node version. Its build fails, and it carries 9 of the 10 open Dependabot PRs.",
+      opts: [
+        { k: "A", t: "Delete it", c: "Small. Close its Dependabot PRs. Re-add when a server feature needs it." },
+        { k: "B", t: "Repair it and add CI", c: "Medium. Keeps a home for future server code." },
+        { k: "C", t: "Leave it", c: "No work. The noise and the failing build stay." } ],
+      rec: "A", why: "No server logic exists, and the paid tier can be built without one (see the IAP idea). Git keeps the history." },
+    { id: "platforms", q: "Which platforms ship first?",
+      ctx: "Android builds fail today and are debug-signed. The web build is live and talks to production.",
+      opts: [
+        { k: "A", t: "iOS first, via TestFlight", c: "Large but direct. The end-to-end gate already runs on iOS." },
+        { k: "B", t: "iOS and Android together", c: "Twice the review work. Android needs repair first." },
+        { k: "C", t: "Web, sold outside the stores", c: "No review, but no store discovery and no in-app purchase." } ],
+      rec: "A", why: "iOS is closest to shippable and the competitors' audience is iOS-heavy. Android follows once its build is fixed." },
+    { id: "licence", q: "What licence does the code carry?",
+      ctx: "There is no LICENSE file, yet one manifest claims a licence.",
+      opts: [
+        { k: "A", t: "Proprietary, all rights reserved", c: "Trivial." },
+        { k: "B", t: "Open source", c: "Trivial to add. Anyone could ship a clone." } ],
+      rec: "A", why: "This is a paid app, and the repo is private." },
+    { id: "git-cleanup", q: "Clear out the stale git state?",
+      ctx: "There are two stashes over a year old and six merged or abandoned branches. Dropping a stash cannot be undone.",
+      opts: [
+        { k: "A", t: "Archive, then clean", c: "Each stash saved as a commit on a local archive branch, then dropped. Merged branches deleted; copilot/fix-9 kept." },
+        { k: "B", t: "Leave everything", c: "No risk, and the clutter stays." } ],
+      rec: "A", why: "Nothing is lost, because the archive branch keeps the stashes' contents, and the branch list then means something again." },
+    { id: "e2e-ci", q: "Should the iOS end-to-end tests run in CI?",
+      ctx: "They run locally today, and Claude runs them before every merge. The repo is private, so macOS runner minutes count 10×.",
+      opts: [
+        { k: "A", t: "Local only", c: "Free. Relies on Claude running them (a CLAUDE.md rule)." },
+        { k: "B", t: "On every PR, on a macOS runner", c: "Medium setup, and it costs runner minutes." },
+        { k: "C", t: "Nightly on master only", c: "A tenth of B's minutes. Breaks show up a day late." } ],
+      rec: "A", why: "The suite is small and the merge rule already demands it. Revisit when someone other than Claude merges." },
+    { id: "pr-previews", q: "Keep the hosting preview deploy on every PR?",
+      ctx: "Each PR deploys a preview channel inside the production Firebase project. Previews never touch the live site or Firestore data.",
+      opts: [
+        { k: "A", t: "Keep as is", c: "No change." },
+        { k: "B", t: "Only after checks pass", c: "Checks then run twice per PR." },
+        { k: "C", t: "Drop previews", c: "Less to maintain. Rely on the emulator tests." } ],
+      rec: "A", why: "They cost nothing and give you a link to click on each PR." } ] },
+
+  { title: "Rules details", sub: "Tighter validation. Each one also changes what the app accepts.", calls: [
+    { id: "quantity", q: "Which quantities may a new entry have?",
+      ctx: "The rules mirror the dialog, which accepts zero and negative numbers.",
+      opts: [
+        { k: "A", t: "Greater than 0", c: "Strictest. Rules out logging a free day as zero." },
+        { k: "B", t: "0 or more", c: "Rejects negatives. Zero stays available for free days." },
+        { k: "C", t: "No check", c: "As now." } ],
+      rec: "B", why: "Negative entries are always wrong, and the reminders idea marks a free day as a zero entry. Existing documents are not affected; only new writes are checked." },
+    { id: "name-length", q: "Cap the length of a vice's name?",
+      ctx: "Nothing limits it today, and a long name breaks the chart's axis labels.",
+      opts: [
+        { k: "A", t: "60 characters", c: "Fits a chart label." },
+        { k: "B", t: "100 characters", c: "Lenient." },
+        { k: "C", t: "No cap", c: "As now." } ],
+      rec: "A", why: "60 is plenty for a name and keeps the chart readable. Only new writes are checked." },
+    { id: "vice-owner", q: "Check that an entry's vice belongs to the person logging it?",
+      ctx: "Today an entry can point to any vice id. The check costs one extra billed read per entry logged.",
+      opts: [
+        { k: "A", t: "Check it", c: "One get() in the rules per write. Fractions of a cent at this scale." },
+        { k: "B", t: "Don't", c: "The link stays unenforced." } ],
+      rec: "A", why: "It closes a data-integrity gap for a negligible cost." } ] },
+
+  { title: "Product keystones", sub: "Most of the ideas backlog (ideas/ on master: 26 pitches) hangs on these. Each links its full pitch.", calls: [
+    { id: "positioning", q: "Who is 1.0 for?", link: "ideas/release-blockers/positioning-and-target-user.md",
+      ctx: "This sets the market size, the copy and the price anchor.",
+      opts: [
+        { k: "A", t: "Cutting down on several habits", c: "No obvious incumbent. Matches the current data model." },
+        { k: "B", t: "Alcohol only", c: "Up against Reframe and Sunnyside." },
+        { k: "C", t: "Quitting, with a streak counter", c: "Up against I Am Sober and Quitzilla." },
+        { k: "D", t: "A neutral journal", c: "No framing at all." } ],
+      rec: "A", why: "It is the only one of these positions without a strong incumbent, and the radar and per-vice units only make sense across several substances." },
+    { id: "framing", q: "Neutral tracker or harm-reduction tool?", link: "ideas/release-blockers/substance-framing-and-age-rating.md",
+      ctx: "App Store guidelines 1.4.1 and 1.4.3 scrutinise apps about substance use.",
+      opts: [
+        { k: "A", t: "Neutral, rated 17+", c: "A disclaimer and nothing else." },
+        { k: "B", t: "Harm reduction, rated 17+", c: "Medium. A disclaimer, support links and limits shown on the chart." },
+        { k: "C", t: "Full coaching", c: "Much bigger, with more review scrutiny." } ],
+      rec: "B", why: "It lowers the review risk without making medical claims, and it gives the paid tier something to build on." },
+    { id: "business", q: "How does the app make money?", link: "ideas/monetisation/business-model-and-paywall.md",
+      ctx: "Indicative prices are from the market scan; check the live store listings before setting ours.",
+      opts: [
+        { k: "A", t: "Free 1.0, one-time Pro in 1.1", c: "$9.99–19.99. Pro sells depth (long history, insights, widgets), never a cap on vices." },
+        { k: "B", t: "Freemium, 3-vice cap, subscription", c: "Highest ceiling, but it caps what makes the app different." },
+        { k: "C", t: "A subscription for depth", c: "Recurring revenue. Must show ongoing value." },
+        { k: "D", t: "Free, with a tip jar", c: "Lowest friction, and little revenue." } ],
+      rec: "A", why: "A one-time unlock fits a self-contained tracker, makes “no subscription traps” a credible line, and keeps in-app purchase out of the first review." },
+    { id: "goals-fields", q: "May vices gain optional goal and limit fields?", link: "ideas/v1-must-haves/per-vice-goals-and-limits.md",
+      ctx: "Your rule says the data shape must stay. Optional fields leave every existing document valid and readable by the current app.",
+      opts: [
+        { k: "A", t: "Yes, optional fields only", c: "Unlocks limits, “on track” and the paid history." },
+        { k: "B", t: "No new fields", c: "Goals and limits cannot be built." } ],
+      rec: "A", why: "Adding fields does not change or move any existing data, and goals and limits are the clearest thing worth paying for." },
+    { id: "name", q: "What is the app called?", link: "ideas/release-blockers/name-and-bundle-id.md",
+      ctx: "The bundle ID locks at the first TestFlight upload. Put name ideas in the note.",
+      opts: [
+        { k: "A", t: "Keep “Vice Tracker”", c: "No work. Generic in search." },
+        { k: "B", t: "Brand plus subtitle", c: "For example “<Brand>: Habit & Vice Log”. Needs a trademark check." },
+        { k: "C", t: "A neutral wellness name", c: "Leaves “vice” out." } ],
+      rec: "B", why: "A distinct brand is searchable and ownable, and the subtitle carries the keywords. Decide it before any upload, because renaming after launch costs reviews." } ] },
+];
+
+const ALL = GROUPS.flatMap(g => g.calls);
+const picks = {};
+let db = null;
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v);
+  }
+  for (const kid of kids) if (kid) e.append(kid);
+  return e;
+}
+
+function renderTally() {
+  const done = ALL.filter(c => picks[c.id] && picks[c.id].choice).length;
+  const t = document.getElementById("tally");
+  t.replaceChildren(
+    el("span", {}, el("b", { text: String(ALL.length) }), " calls"),
+    el("span", {}, el("b", { text: String(done) }), " picked"),
+    el("span", { class: "marks", "aria-hidden": "true", text: "│".repeat(done) + "·".repeat(ALL.length - done) }));
+}
+
+function render() {
+  const root = document.getElementById("groups");
+  root.replaceChildren(...GROUPS.map(g => el("section", {},
+    el("div", { class: "sechead" }, el("h2", { text: g.title }), el("p", { text: g.sub })),
+    ...g.calls.map(callNode))));
+  renderTally();
+}
+
+function callNode(c) {
+  const p = picks[c.id] || {};
+  const status = el("span", { class: "status" + (p.choice ? " done" : ""), text: p.choice ? "Picked " + p.choice : "Open" });
+  const opts = el("div", { class: "opts", role: "group", "aria-label": c.q });
+  for (const o of c.opts) {
+    const b = el("button", { class: "opt", type: "button", "aria-pressed": String(p.choice === o.k), id: "opt-" + c.id + "-" + o.k },
+      el("span", { class: "lab" }, o.k + ". " + o.t, o.k === c.rec ? el("span", { class: "badge", text: "Recommended" }) : null),
+      el("span", { class: "cost", text: o.c }));
+    b.addEventListener("click", () => save(c.id, { choice: p.choice === o.k ? "" : o.k }));
+    opts.append(b);
+  }
+  const why = el("p", { class: "why" }, el("b", { text: "Recommend " + c.rec + ". " }), c.why);
+  const ta = el("textarea", { id: "note-" + c.id, placeholder: "Note for Claude (optional)", "aria-label": "Note on: " + c.q });
+  ta.value = p.note || "";
+  ta.addEventListener("change", () => save(c.id, { note: ta.value.trim() }));
+  const ctx = el("p", { class: "ctx" }, c.ctx);
+  if (c.link) ctx.append(" ", el("span", { class: "note", text: "Full pitch: " + c.link }));
+  return el("div", { class: "call", id: "call-" + c.id },
+    el("div", { class: "qrow" }, el("h3", { text: c.q }), status), ctx, opts, why, ta);
+}
+
+async function save(id, patch) {
+  const next = { ...(picks[id] || {}), ...patch, at: new Date().toISOString() };
+  picks[id] = next;
+  render();
+  if (!db) { setBanner("Picks can't be saved in this view. Open the page signed in to claude.ai.", true); return; }
+  try { await db.collection("picks").doc(id).set(next); }
+  catch (e) { setBanner("That pick didn't save (" + (e && e.code || "error") + "). Try again in a moment.", true); }
+}
+
+function setBanner(msg, err) { const b = document.getElementById("banner"); b.textContent = msg; b.className = "banner" + (err ? " err" : ""); }
+
+document.addEventListener("click", e => {
+  const id = e.target && e.target.getAttribute && e.target.getAttribute("data-copy");
+  if (!id) return;
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => { e.target.textContent = "Copied"; },
+    () => { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+});
+
+render();
+(async () => {
+  try { db = window.claude && await window.claude.use("db"); } catch (e) { db = null; }
+  if (!db) { setBanner("Picks can't be saved in this view. Open the page signed in to claude.ai.", true); return; }
+  const timer = setTimeout(() => setBanner("Saved picks can't be reached yet. Picks you make now will save once they can.", true), 10000);
+  db.collection("picks").onSnapshot(snap => {
+    for (const d of snap.docs) picks[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setBanner("Picks save as you go."); }
+    render();
+  }, err => { clearTimeout(timer); setBanner("Saved picks are unavailable (" + (err && err.code || "error") + ").", true); });
+})();
+</script>
