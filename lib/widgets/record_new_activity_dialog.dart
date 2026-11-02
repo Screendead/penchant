@@ -117,8 +117,13 @@ class _RecordNewActivityDialogState
     }
 
     Navigator.of(context).pop();
+    // A snackbar with an action persists by default and queues every later
+    // snackbar behind it, so an earlier recording's Undo would stay on screen
+    // and delete the wrong activity.
+    messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(
+        persist: false,
         content: const Text('Activity recorded'),
         action: SnackBarAction(
           label: 'Undo',
