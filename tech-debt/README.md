@@ -205,12 +205,7 @@ The iOS, macOS, Android and web platform trees, scaffold leftovers, signing and 
 Test depth, the failing and unchecked functions build, fork coverage, and unverified build state.
 
 - **critical** — [Cloud Functions cannot build, so any functions deploy fails before it starts](ci-and-quality-gates/functions-build-fails-so-any-deploy-aborts.md)
-<<<<<<< HEAD
-- **high** — [Broken code that compiles reaches production automatically, nothing checks it first](ci-and-quality-gates/production-deploys-with-no-quality-gate.md)
 - **high** — [No unit or widget tests; one end-to-end happy path is the only real coverage](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
-=======
-- **high** — [The only tests in the app check a hardcoded string against itself](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
->>>>>>> origin/master
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
 - **medium** — [No CI step ever touches the Cloud Functions code at all](ci-and-quality-gates/functions-directory-has-no-ci-coverage.md)
 - **low** — [Fork-based pull requests never get a preview deploy](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
