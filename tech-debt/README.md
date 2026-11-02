@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**155 issues: 5 critical, 33 high, 74 medium, 43 low.**
+**153 issues: 4 critical, 32 high, 74 medium, 43 low.**
 
 ## Firebase Data Layer (17)
 
@@ -210,14 +210,12 @@ Test depth, the failing and unchecked functions build, fork coverage, and unveri
 - **medium** — [No CI step ever touches the Cloud Functions code at all](ci-and-quality-gates/functions-directory-has-no-ci-coverage.md)
 - **low** — [Fork-based pull requests never get a preview deploy](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
 
-## Repo, Docs and Release Hygiene (17)
+## Repo, Docs and Release Hygiene (15)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
-- **critical** — [Four finished features exist only on one machine, invisible to git diff or stash](repo-docs-and-release-hygiene/feature-work-exists-only-in-one-working-tree.md)
 - **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
 - **high** — [No LICENSE file exists, yet one manifest claims a license anyway](repo-docs-and-release-hygiene/no-license-file-anywhere.md)
-- **high** — [New feature work is piling onto a branch already merged and closed](repo-docs-and-release-hygiene/the-work-sits-on-a-branch-already-merged-upstream.md)
 - **high** — [Every production build reports version 1.0.0 with no tags to trace it](repo-docs-and-release-hygiene/version-never-incremented-and-no-tags.md)
 - **medium** — [Five factual claims in the guidance doc do not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
 - **medium** — [A generated file is ignored on two platforms but tracked on a third](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
