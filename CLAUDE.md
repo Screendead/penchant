@@ -12,6 +12,8 @@ recommendation until Jack decides it.
 
 `tech-debt/` is the debt register and `ideas/` is the product backlog. Both burn down by deletion: when an issue is
 fixed or an idea ships or is rejected, delete its file (and its README line) in the same PR.
+`tools/tech-debt-recount.py` recomputes the register's counts, drops lines whose file is gone, keeps both sides of
+a merge conflict in `tech-debt/README.md`, and fails if a report file has no line.
 
 ## Hard rules
 
@@ -55,6 +57,7 @@ tools/e2e.sh                      # integration_test/ on the first available "iP
 tools/e2e.sh integration_test/smoke_test.dart
 E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
+tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each screenshot(tester, name) call
 ```
 
 Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), refuse to start if an emulator port
