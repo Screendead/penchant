@@ -270,6 +270,13 @@ describe('vices', () => {
     it('denies an unauthenticated delete', async () => {
       await assertFails(deleteDoc(doc(asGuest(), 'vices/aliceVice')));
     });
+
+    // resource is null, so ownsExisting() cannot hold: a repeat delete is denied, not a no-op.
+    it('denies deleting a missing document, even its last owner', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertSucceeds(deleteDoc(ref));
+      await assertFails(deleteDoc(ref));
+    });
   });
 });
 
@@ -440,6 +447,13 @@ describe('activities', () => {
 
     it('denies an unauthenticated delete', async () => {
       await assertFails(deleteDoc(doc(asGuest(), 'activities/aliceActivity')));
+    });
+
+    // resource is null, so ownsExisting() cannot hold: a repeat delete is denied, not a no-op.
+    it('denies deleting a missing document, even its last owner', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertSucceeds(deleteDoc(ref));
+      await assertFails(deleteDoc(ref));
     });
   });
 });
