@@ -7,7 +7,6 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 
 class ViceChart extends ConsumerWidget {
@@ -15,67 +14,82 @@ class ViceChart extends ConsumerWidget {
 
   final DateTime selectedDate;
 
+  static const int minimumRadarAxes = 3;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;
-    final List<ViceActivity>? activityList =
-        ref.watch(viceActivityDayProvider(selectedDate)).value;
+    final AsyncValue<List<Vice>?> vicesValue = ref.watch(
+      unarchivedViceListProvider,
+    );
+    final AsyncValue<List<ViceActivity>?> activitiesValue = ref.watch(
+      viceActivityDayProvider(selectedDate),
+    );
+
+    if (vicesValue.error ?? activitiesValue.error case final Object error) {
+      return InfoBox(
+        message: 'Unable to load this day: $error',
+        color: Colors.red,
+      );
+    }
+
+    final List<Vice>? vices = vicesValue.value;
+    final List<ViceActivity>? activityList = activitiesValue.value;
 
     if (vices == null || activityList == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (vices.isEmpty) {
       return const InfoBox(
-        message: 'No vices found',
-        color: Colors.red,
+        message: 'No vices yet. Add one from Manage Data in the menu.',
+        color: Colors.blueGrey,
       );
     }
 
-    if (activityList.isEmpty) {
-      return const InfoBox(
-        message: 'No activities found',
-        color: Colors.red,
-      );
-    }
-
-    final Map<String, Vice> vicesByID = {
-      for (final Vice vice in vices) vice.id: vice,
-    };
-    final Map<String, int> todayData = {
-      for (final Vice vice in vices) vice.name: 0,
+    final Map<String, int> quantityByViceID = {
+      for (final Vice vice in vices) vice.id: 0,
     };
 
     for (final ViceActivity activity in activityList) {
-      final Vice? vice = vicesByID[activity.viceID];
-      if (vice == null) {
-        continue;
+      final int? quantity = quantityByViceID[activity.viceID];
+      if (quantity != null) {
+        quantityByViceID[activity.viceID] = quantity + activity.quantity;
       }
+    }
 
-      todayData[vice.name] = (todayData[vice.name] ?? 0) + activity.quantity;
+    if (quantityByViceID.values.every((int quantity) => quantity == 0)) {
+      return const InfoBox(
+        message: 'Nothing recorded on this day',
+        color: Colors.blueGrey,
+      );
     }
 
     final ThemeData theme = Theme.of(context);
-    final List<RadarEntry> dataEntries = todayData.entries
-        .map(
-          (e) => RadarEntry(
-            value: e.value.toDouble(),
-          ),
-        )
-        .toList();
+    final List<int> quantities = [
+      for (final Vice vice in vices) quantityByViceID[vice.id]!,
+    ];
 
-    final int tickCount = max(
-      todayData.values.fold(0, (a, b) => a > b ? a : b),
-      1,
-    );
+    // fl_chart asserts that a radar data set has at least three entries.
+    if (vices.length < minimumRadarAxes) {
+      return ListView(
+        children: [
+          for (int i = 0; i < vices.length; i++)
+            ListTile(
+              title: Text(vices[i].name),
+              trailing: Text(vices[i].unit.label(quantities[i])),
+            ),
+        ],
+      );
+    }
 
     final RadarDataSet dataSet = RadarDataSet(
       fillColor: theme.colorScheme.primary.withValues(alpha: 0.2),
       borderColor: theme.colorScheme.primary,
       entryRadius: 6,
-      dataEntries: dataEntries,
+      dataEntries: [
+        for (final int quantity in quantities)
+          RadarEntry(value: quantity.toDouble()),
+      ],
       borderWidth: 2,
     );
 
@@ -84,7 +98,6 @@ class ViceChart extends ConsumerWidget {
       child: RadarChart(
         RadarChartData(
           dataSets: [dataSet],
-          // radarBackgroundColor: Colors.pink.withOpacity(0.25),
           borderData: FlBorderData(show: false),
           radarBorderData: BorderSide(
             color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
@@ -96,16 +109,8 @@ class ViceChart extends ConsumerWidget {
             fontSize: 14,
           ),
           getTitle: (int index, double angle) {
-            final List<Vice>? vices = ref.watch(viceListProvider).value;
-
-            if (vices == null) {
-              return const RadarChartTitle(text: '');
-            }
-
-            final Vice vice = vices.firstWhere(
-              (v) => v.name == todayData.keys.elementAt(index),
-            );
-            final int quantity = todayData.values.elementAt(index);
+            final Vice vice = vices[index];
+            final int quantity = quantities[index];
             final double correctionFactor = angle > 90 && angle < 270 ? 180 : 0;
 
             return RadarChartTitle(
@@ -113,7 +118,7 @@ class ViceChart extends ConsumerWidget {
               angle: angle + correctionFactor,
             );
           },
-          tickCount: tickCount,
+          tickCount: max(quantities.reduce(max), 1),
           ticksTextStyle: TextStyle(
             color: theme.colorScheme.secondary,
             fontSize: 10,
