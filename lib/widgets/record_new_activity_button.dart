@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 class RecordNewActivityButton extends StatelessWidget {
-  const RecordNewActivityButton({
-    super.key,
-  });
+  const RecordNewActivityButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +12,7 @@ class RecordNewActivityButton extends StatelessWidget {
       onPressed: () {
         showDialog(
           context: context,
-          builder: (_) {
-            return RecordNewActivityDialog(
-              context: context,
-            );
-          },
+          builder: (_) => const RecordNewActivityDialog(),
         );
       },
     );
