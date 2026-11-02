@@ -61,7 +61,7 @@ Seed data: `node admin/populateFirestore.js`. It reads a service-account key fro
 so the script has no credentials until a new one is supplied. It also predates the
 `archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
 
-CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos`,
+CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`,
 `custom_lint` and `flutter test` on every PR to `master`. PRs also get a hosting
 preview; a push to `master` re-runs the checks and deploys hosting live only if they
 pass. Flutter is pinned in `.github/actions/setup-flutter/action.yml`; bump it there
