@@ -3,8 +3,10 @@
 # Must match emulatorProjectId in lib/firebase_init.dart. A demo-* id has no
 # live resources, so nothing run under it can reach production.
 E2E_PROJECT=demo-tracker
-# iPhone 18 Pro. Other simulators on this machine belong to other projects.
-E2E_DEVICE="${E2E_DEVICE:-C1CE5005-9E7C-4C4E-8E55-E00A4C671D29}"
+# Resolved by name so flutter never picks an attached iPhone or another
+# project's simulator.
+E2E_DEVICE_NAME="iPhone 18 Pro"
+E2E_DEVICE="${E2E_DEVICE:-}"
 EMULATOR_PORTS="8080 9099 9150 4000 4400 4500"
 
 case "$E2E_PROJECT" in
@@ -31,6 +33,14 @@ require_free_ports() {
 }
 
 boot_simulator() {
+  if [ -z "$E2E_DEVICE" ]; then
+    E2E_DEVICE="$(xcrun simctl list devices available \
+      | sed -nE "s/^ +$E2E_DEVICE_NAME \(([0-9A-F-]{36})\).*/\1/p" | head -n 1)"
+    if [ -z "$E2E_DEVICE" ]; then
+      echo "No available simulator named '$E2E_DEVICE_NAME'; set E2E_DEVICE to a UDID from 'xcrun simctl list devices'." >&2
+      exit 1
+    fi
+  fi
   if ! xcrun simctl list devices | grep -q "($E2E_DEVICE)"; then
     echo "No simulator with UDID $E2E_DEVICE; set E2E_DEVICE to one from 'xcrun simctl list devices'." >&2
     exit 1

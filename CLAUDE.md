@@ -51,15 +51,16 @@ dart run flutter_launcher_icons  # after changing assets/icon.webp
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
 
 ```bash
-tools/e2e.sh                      # integration_test/ on the iPhone 18 Pro simulator; exits with the test status
+tools/e2e.sh                      # integration_test/ on the first available "iPhone 18 Pro" simulator; exits with the test status
 tools/e2e.sh integration_test/smoke_test.dart
-E2E_DEVICE=<udid> tools/e2e.sh    # another simulator; never let flutter pick (a physical iPhone may be attached)
+E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
 ```
 
-Both boot the simulator by UDID, refuse to start if an emulator port (8080, 9099, 9150, 4000, 4400, 4500) is taken,
-and start the emulators under `demo-tracker` from `tools/emulator-env.sh`. `flutter test integration_test` without
-`--dart-define=USE_FIREBASE_EMULATORS=true` fails in `setUpAll` rather than run against production.
+Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), refuse to start if an emulator port
+(8080, 9099, 9150, 4000, 4400, 4500) is taken, and start the emulators under `demo-tracker` from
+`tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
+`setUpAll` rather than run against production.
 
 Cloud Functions (`functions/`, Node 18, TypeScript):
 
