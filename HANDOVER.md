@@ -24,12 +24,13 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Standing rules (production safety, e2e gate, merge authority) | Written 2026-11-02 | `CLAUDE.md` |
 | Emulator wiring and iOS end-to-end harness | In progress (wave 1) | `feat/emulator-e2e` |
 | Firestore rules fix (Undo's permission-denied) and rules tests | In progress (wave 1); **not deployed to production** — see J1 | `fix/firestore-rules` |
-| CI quality gates (analyze, lint, test) | In progress (wave 1) | `ci/quality-gates` |
+| CI quality gates (analyze, test) | In progress (wave 1) | `ci/quality-gates` |
 | Product ideas backlog | In progress (wave 1) | `docs/ideas` → `ideas/` |
 | Tech-debt register | 162 issues catalogued 2026-08-11, burning down | `tech-debt/README.md` |
 
 Baseline, measured 2026-11-02 on Flutter 3.44.7: after `flutter pub get`, `flutter analyze` reports 2 infos and no
-errors, `dart run custom_lint` is clean, and `flutter test` passes its one smoke test. Re-measure; don't trust this.
+errors, `dart run custom_lint` reports nothing because it loads no rules (see the register's
+custom-lint-plugin-cannot-load-riverpod-lint entry), and `flutter test` passes its one smoke test. Re-measure; don't trust this.
 
 ## The queue (DECIDED work, in order)
 
