@@ -15,26 +15,20 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**160 issues: 4 critical, 34 high, 77 medium, 45 low.**
+**147 issues: 2 critical, 30 high, 73 medium, 42 low.**
 
-## Firebase Data Layer (17)
+## Firebase Data Layer (11)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **critical** — [Every activity delete is silently denied by the security rules](firebase-data-layer/activity-deletes-permitted-by-no-rule.md)
-- **critical** — [A user can overwrite and reassign another account's document](firebase-data-layer/write-rules-authorize-on-the-post-write-owner.md)
 - **high** — [Saving a vice throws internally and stalls the list a round trip](firebase-data-layer/model-parsers-cast-unconditionally.md)
 - **high** — [Documented seed command produces data that crashes the app](firebase-data-layer/seed-script-writes-documents-that-crash-the-parser.md)
-- **high** — [Main chart's query has no matching index in the repo](firebase-data-layer/unarchived-vices-query-has-no-matching-index.md)
-- **high** — [Security rules never check field types or required fields](firebase-data-layer/writes-carry-no-field-or-type-validation.md)
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [Unused providers would fail instantly if ever wired up](firebase-data-layer/dead-providers-query-an-unindexed-shape.md)
-- **medium** — [No dev or staging project; every command hits production](firebase-data-layer/every-firebase-command-targets-production.md)
+- **medium** — [No dev or staging alias; every firebase command defaults to production](firebase-data-layer/every-firebase-command-targets-production.md)
 - **medium** — [Every list screen streams unbounded data with no limit](firebase-data-layer/no-query-is-bounded-or-paginated.md)
 - **medium** — [Security rules and indexes can silently drift from production](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
-- **medium** — [Rules wrapper leaks permissions to any future nested collection](firebase-data-layer/rules-nested-in-an-unused-recursive-wildcard.md)
 - **medium** — [Vice count growth will eventually break the main chart](firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
-- **low** — [Auth check works by accident, not by the condition written](firebase-data-layer/auth-guard-dereferences-a-null-request-auth.md)
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
 - **low** — [Unused Firebase Storage rules still deploy on every release](firebase-data-layer/storage-rules-configured-for-an-unused-product.md)
 - **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
@@ -112,7 +106,7 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **low** — [Two cosmetic lint warnings make flutter analyze exit with a failure code](duplication-and-dead-code/analyzer-info-lints-leave-the-gate-red.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
 - **low** — [Email validation is defined three separate times, two identically, one different](duplication-and-dead-code/email-validation-regex-declared-three-times.md)
-- **low** — [Firebase config files still carry empty CLI scaffolding and missing newlines](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
+- **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
 - **low** — [Formatting drift and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
 - **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
 - **low** — [Serialization helpers exist but every write site hand-builds its own map instead](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
@@ -200,22 +194,15 @@ The iOS, macOS, Android and web platform trees, scaffold leftovers, signing and 
 - **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
 - **low** — [The web page keeps an obsolete IE meta tag and has no no-JavaScript fallback](platform-and-delivery-config/web-index-html-retains-obsolete-template-markup.md)
 
-## CI and Quality Gates (12)
+## CI and Quality Gates (5)
 
-Workflow configuration, the absence of analyze, lint and test gates, the failing functions build, and unexercised build paths.
+Test depth, the failing and unchecked functions build, fork coverage, and unverified build state.
 
 - **critical** — [Cloud Functions cannot build, so any functions deploy fails before it starts](ci-and-quality-gates/functions-build-fails-so-any-deploy-aborts.md)
-- **high** — [Broken code that compiles reaches production automatically, nothing checks it first](ci-and-quality-gates/production-deploys-with-no-quality-gate.md)
-- **high** — [The only tests in the app check a hardcoded string against itself](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
+- **high** — [No unit or widget tests; one end-to-end happy path is the only real coverage](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
-- **high** — [The exact build command production deploy uses has not been run locally](ci-and-quality-gates/the-web-release-build-is-unexercised.md)
-- **medium** — [CI installs whatever Flutter build is tagged stable that day, unpinned](ci-and-quality-gates/flutter-sdk-version-is-unpinned-in-ci.md)
 - **medium** — [No CI step ever touches the Cloud Functions code at all](ci-and-quality-gates/functions-directory-has-no-ci-coverage.md)
-- **medium** — [Two quick pushes can deploy the older commit last, overwriting the newer](ci-and-quality-gates/no-concurrency-group-on-either-workflow.md)
-- **medium** — [CI actions are pinned to floating tags publishers can silently repoint](ci-and-quality-gates/third-party-actions-on-floating-tags-behind-current.md)
-- **low** — [Fork-based pull requests never get a preview deploy or build check](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
-- **low** — [The PR build runs regardless of which branch the pull request targets](ci-and-quality-gates/pull-request-trigger-is-unfiltered-by-base-branch.md)
-- **low** — [PR and merge workflows build with different flags under generated headers](ci-and-quality-gates/workflows-are-unedited-boilerplate-with-divergent-builds.md)
+- **low** — [Fork-based pull requests never get a preview deploy](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
 
 ## Repo, Docs and Release Hygiene (15)
 
