@@ -1,8 +1,9 @@
 #!/bin/sh
 # Run by the Runner target's "Strip Firebase plist for emulators" build phase,
 # after Copy Bundle Resources. firebase_core configures the native default app
-# from GoogleService-Info.plist before Dart runs, which would bind an emulator
-# build to the production project. Builds without the define are untouched.
+# from GoogleService-Info.plist before Dart runs; its API key differs from the
+# emulator options, so initializeApp would throw duplicate-app. Builds without
+# the define are untouched.
 plist="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist"
 for define in $(echo "${DART_DEFINES:-}" | tr ',' ' '); do
   if [ "$(echo "$define" | base64 --decode 2>/dev/null)" = "USE_FIREBASE_EMULATORS=true" ]; then
