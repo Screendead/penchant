@@ -34,9 +34,9 @@ Claude's recommendation, not a decision: **B**, plus the budget alerts from C, w
 **Revenue impact:** Avoids risk. A breach or a runaway Firestore bill would end a privacy-positioned app.
 
 **Depends on:**
-- [`write-rules-authorize-on-the-post-write-owner`](../../tech-debt/firebase-data-layer/write-rules-authorize-on-the-post-write-owner.md)
-- [`writes-carry-no-field-or-type-validation`](../../tech-debt/firebase-data-layer/writes-carry-no-field-or-type-validation.md)
-- [`unarchived-vices-query-has-no-matching-index`](../../tech-debt/firebase-data-layer/unarchived-vices-query-has-no-matching-index.md)
+- `write-rules-authorize-on-the-post-write-owner` (fixed in PR #27; live once the rules are deployed)
+- `writes-carry-no-field-or-type-validation` (fixed in PR #27; live once the rules are deployed)
+- `unarchived-vices-query-has-no-matching-index` (fixed in PR #27; live once the rules are deployed)
 - [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
 - [`rules-and-indexes-are-never-deployed-or-tested`](../../tech-debt/firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - [`every-firebase-command-targets-production`](../../tech-debt/firebase-data-layer/every-firebase-command-targets-production.md)

@@ -36,6 +36,6 @@ Claude's recommendation, not a decision: **B.** Weekly limits suit alcohol and g
 **Depends on:**
 - [positioning](../release-blockers/positioning-and-target-user.md)
 - [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
-- [`writes-carry-no-field-or-type-validation`](../../tech-debt/firebase-data-layer/writes-carry-no-field-or-type-validation.md)
+- `writes-carry-no-field-or-type-validation` (fixed in PR #27; live once the rules are deployed)
 
 **Needs Jack:** yes — May new optional fields be added to `vices` (here goal, limit and baseline) under the rule that the data shape must stay?
