@@ -1,75 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/vice_chart.dart';
 
 class ViceTracker extends ConsumerStatefulWidget {
   const ViceTracker({super.key});
+
+  static const int selectableDays = 30;
 
   @override
   ConsumerState<ViceTracker> createState() => _ViceTrackerState();
 }
 
 class _ViceTrackerState extends ConsumerState<ViceTracker> {
-  final DateTime now = DateTime.now();
-  late final DateTime today;
+  static final DateFormat _dateFormat = DateFormat('EEEE, MMMM d, yyyy');
 
-  late DateTime _selectedDate;
-  DateTime get selectedDate => _selectedDate;
-  set selectedDate(DateTime value) {
-    _selectedDate = value;
-  }
+  DateTime selectedDay = startOfDay(DateTime.now());
 
-  int get daysAgo => today.difference(selectedDate).inDays;
-  bool loadingDate = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    today = DateTime(now.year, now.month, now.day);
-    selectedDate = today;
-  }
-
-  Future<void> _selectDate(DateTime nextDate) async {
-    if (loadingDate || nextDate == selectedDate) {
-      return;
-    }
-
+  void _selectDay(DateTime day) {
     setState(() {
-      loadingDate = true;
-    });
-
-    try {
-      await ref.read(viceActivityDayProvider(nextDate).future);
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Unable to load that day: $error'),
-          ),
-        );
-        setState(() {
-          loadingDate = false;
-        });
-      }
-
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      selectedDate = nextDate;
-      loadingDate = false;
+      selectedDay = day;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final DateTime today = startOfDay(DateTime.now());
+    final DateTime oldestDay = addDays(
+      today,
+      -(ViceTracker.selectableDays - 1),
+    );
+    // The dropdown asserts that its value is one of its items, and the item
+    // range moves forward when the build runs on a later day than selection.
+    final DateTime day = selectedDay.isAfter(today)
+        ? today
+        : selectedDay.isBefore(oldestDay)
+        ? oldestDay
+        : selectedDay;
+    final int daysAgo = daysBetween(day, today);
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Center(
@@ -80,44 +50,37 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  const Icon(
-                    Icons.calendar_month,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.calendar_month, color: Colors.white),
                   Text(
                     daysAgo == 0
                         ? 'Today'
                         : daysAgo == 1
-                            ? 'Yesterday'
-                            : '$daysAgo days ago',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                        ? 'Yesterday'
+                        : '$daysAgo days ago',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
-                  const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 3,
-                  ),
-                  DropdownButton<DateTime>(
-                    value: selectedDate,
-                    onChanged: loadingDate
-                        ? null
-                        : (DateTime? newValue) {
-                            if (newValue != null) {
-                              _selectDate(newValue);
-                            }
-                          },
-                    items: List.generate(30, (index) {
-                      final date = today.subtract(Duration(days: index));
-                      final formattedDate =
-                          DateFormat('EEEE, MMMM d, yyyy').format(date);
+                  const CircleAvatar(backgroundColor: Colors.white, radius: 3),
+                  Flexible(
+                    child: DropdownButton<DateTime>(
+                      isExpanded: true,
+                      value: day,
+                      onChanged: (DateTime? newValue) {
+                        if (newValue != null) {
+                          _selectDay(newValue);
+                        }
+                      },
+                      items: List.generate(ViceTracker.selectableDays, (index) {
+                        final DateTime item = addDays(today, -index);
 
-                      return DropdownMenuItem(
-                        value: date,
-                        child: Text(formattedDate),
-                      );
-                    }),
+                        return DropdownMenuItem(
+                          value: item,
+                          child: Text(
+                            _dateFormat.format(item),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }),
+                    ),
                   ),
                 ],
               ),
@@ -125,41 +88,27 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
+                    tooltip: 'Previous day',
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: daysAgo >= 29 || loadingDate
+                    onPressed: daysAgo >= ViceTracker.selectableDays - 1
                         ? null
-                        : () {
-                            _selectDate(
-                              selectedDate.subtract(const Duration(days: 1)),
-                            );
-                          },
+                        : () => _selectDay(addDays(day, -1)),
                   ),
                   TextButton.icon(
-                    onPressed: daysAgo == 0 || loadingDate
-                        ? null
-                        : () {
-                            _selectDate(today);
-                          },
+                    onPressed: daysAgo == 0 ? null : () => _selectDay(today),
                     icon: const Icon(Icons.today),
                     label: const Text('Jump to Today'),
                   ),
                   IconButton(
+                    tooltip: 'Next day',
                     icon: const Icon(Icons.arrow_forward),
-                    onPressed: daysAgo <= 0 || loadingDate
+                    onPressed: daysAgo <= 0
                         ? null
-                        : () {
-                            _selectDate(
-                              selectedDate.add(const Duration(days: 1)),
-                            );
-                          },
+                        : () => _selectDay(addDays(day, 1)),
                   ),
                 ],
               ),
-              Expanded(
-                child: ViceChart(
-                  selectedDate: selectedDate,
-                ),
-              ),
+              Expanded(child: ViceChart(selectedDate: day)),
             ],
           ),
         ),
