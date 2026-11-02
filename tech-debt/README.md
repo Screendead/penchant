@@ -29,7 +29,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **high** — [Security rules never check field types or required fields](firebase-data-layer/writes-carry-no-field-or-type-validation.md)
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [Unused providers would fail instantly if ever wired up](firebase-data-layer/dead-providers-query-an-unindexed-shape.md)
-- **medium** — [No dev or staging project; every command hits production](firebase-data-layer/every-firebase-command-targets-production.md)
+- **medium** — [No dev or staging alias; every firebase command defaults to production](firebase-data-layer/every-firebase-command-targets-production.md)
 - **medium** — [Every list screen streams unbounded data with no limit](firebase-data-layer/no-query-is-bounded-or-paginated.md)
 - **medium** — [Security rules and indexes can silently drift from production](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **medium** — [Rules wrapper leaks permissions to any future nested collection](firebase-data-layer/rules-nested-in-an-unused-recursive-wildcard.md)
@@ -205,7 +205,7 @@ The iOS, macOS, Android and web platform trees, scaffold leftovers, signing and 
 Test depth, the failing and unchecked functions build, fork coverage, and unverified build state.
 
 - **critical** — [Cloud Functions cannot build, so any functions deploy fails before it starts](ci-and-quality-gates/functions-build-fails-so-any-deploy-aborts.md)
-- **high** — [The only tests in the app check a hardcoded string against itself](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
+- **high** — [No unit or widget tests; one end-to-end happy path is the only real coverage](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
 - **medium** — [No CI step ever touches the Cloud Functions code at all](ci-and-quality-gates/functions-directory-has-no-ci-coverage.md)
 - **low** — [Fork-based pull requests never get a preview deploy](ci-and-quality-gates/fork-pull-requests-get-no-preview.md)
