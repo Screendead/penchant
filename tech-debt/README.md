@@ -15,26 +15,20 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**141 issues: 4 critical, 30 high, 66 medium, 41 low.**
+**135 issues: 2 critical, 28 high, 65 medium, 40 low.**
 
-## Firebase Data Layer (17)
+## Firebase Data Layer (11)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **critical** — [Every activity delete is silently denied by the security rules](firebase-data-layer/activity-deletes-permitted-by-no-rule.md)
-- **critical** — [A user can overwrite and reassign another account's document](firebase-data-layer/write-rules-authorize-on-the-post-write-owner.md)
 - **high** — [Saving a vice throws internally and stalls the list a round trip](firebase-data-layer/model-parsers-cast-unconditionally.md)
 - **high** — [Documented seed command produces data that crashes the app](firebase-data-layer/seed-script-writes-documents-that-crash-the-parser.md)
-- **high** — [Main chart's query has no matching index in the repo](firebase-data-layer/unarchived-vices-query-has-no-matching-index.md)
-- **high** — [Security rules never check field types or required fields](firebase-data-layer/writes-carry-no-field-or-type-validation.md)
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [Unused providers would fail instantly if ever wired up](firebase-data-layer/dead-providers-query-an-unindexed-shape.md)
 - **medium** — [No dev or staging project; every command hits production](firebase-data-layer/every-firebase-command-targets-production.md)
 - **medium** — [Every list screen streams unbounded data with no limit](firebase-data-layer/no-query-is-bounded-or-paginated.md)
 - **medium** — [Security rules and indexes can silently drift from production](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
-- **medium** — [Rules wrapper leaks permissions to any future nested collection](firebase-data-layer/rules-nested-in-an-unused-recursive-wildcard.md)
 - **medium** — [Vice count growth will eventually break the main chart](firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
-- **low** — [Auth check works by accident, not by the condition written](firebase-data-layer/auth-guard-dereferences-a-null-request-auth.md)
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
 - **low** — [Unused Firebase Storage rules still deploy on every release](firebase-data-layer/storage-rules-configured-for-an-unused-product.md)
 - **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
@@ -100,7 +94,7 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **medium** — [A provider has zero callers while another screen re-derives its grouping manually](duplication-and-dead-code/orphaned-vice-activities-by-vice-id-provider.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
 - **low** — [Email validation is defined three separate times, two identically, one different](duplication-and-dead-code/email-validation-regex-declared-three-times.md)
-- **low** — [Firebase config files still carry empty CLI scaffolding and missing newlines](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
+- **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
 - **low** — [Formatting drift and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
 - **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
 - **low** — [Serialization helpers exist but every write site hand-builds its own map instead](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
