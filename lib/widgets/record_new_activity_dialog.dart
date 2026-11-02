@@ -232,14 +232,23 @@ class _RecordNewActivityDialogState
             ),
             TextButton.icon(
               onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final DateTime date = DateFormat('dd/MM/yyyy, HH:mm')
-                      .parse(dateController.text);
+                if (!formKey.currentState!.validate()) {
+                  return;
+                }
 
-                  try {
-                    await FirebaseFirestore.instance
-                        .collection('activities')
-                        .add({
+                setState(() {
+                  loading = true;
+                  error = null;
+                });
+
+                final DateTime date = RecordNewActivityDialog.dateFormat
+                    .parse(dateController.text);
+
+                final DocumentReference<Map<String, dynamic>> activityRef =
+                    FirebaseFirestore.instance.collection('activities').doc();
+
+                try {
+                  await activityRef.set({
                       'createdAt': date,
                       'ownerID': FirebaseAuth.instance.currentUser!.uid,
                       'quantity': int.parse(quantityController.text),
@@ -248,29 +257,52 @@ class _RecordNewActivityDialogState
                       const Duration(seconds: 10),
                       onTimeout: () => Future.error(TimeoutException(null)),
                     );
-                  } on FirebaseException catch (e) {
+                } on FirebaseException catch (e) {
+                  setState(() {
+                    error = 'Error recording activity: ${e.message}';
+                  });
+
+                  return;
+                } on TimeoutException {
+                  setState(() {
+                    error = 'Request timed out';
+                  });
+
+                  return;
+                } finally {
+                  if (mounted) {
                     setState(() {
-                      error = 'Error recording activity: ${e.message}';
+                      loading = false;
                     });
-
-                    return;
-                  } on TimeoutException {
-                    setState(() {
-                      error = 'Request timed out';
-                    });
-
-                    return;
-                  } finally {
-                    if (widget.context.mounted) {
-                      setState(() {
-                        loading = false;
-                      });
-                    }
                   }
+                }
 
-                  if (widget.context.mounted) {
-                    Navigator.of(widget.context).pop();
-                  }
+                if (widget.context.mounted) {
+                  Navigator.of(widget.context).pop();
+                  ScaffoldMessenger.of(widget.context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Activity recorded'),
+                      action: SnackBarAction(
+                        label: 'Undo',
+                        onPressed: () async {
+                          try {
+                            await activityRef.delete();
+                          } on FirebaseException catch (e) {
+                            if (widget.context.mounted) {
+                              ScaffoldMessenger.of(widget.context)
+                                  .showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e.message ?? 'Unable to undo activity',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  );
                 }
               },
               label: const Text('Record'),
@@ -279,12 +311,14 @@ class _RecordNewActivityDialogState
           ],
         ),
         if (loading) ...[
-          Expanded(
+          Positioned.fill(
             child: Container(
               color: Colors.black.withValues(alpha: 0.5),
             ),
           ),
-          const CircularProgressIndicator(),
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
         ],
       ],
     );

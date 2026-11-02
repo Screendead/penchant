@@ -5,44 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
-import 'package:tracker/providers/vice_activities_by_vice_id_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 
-class ViceChart extends ConsumerStatefulWidget {
-  const ViceChart({super.key});
+class ViceChart extends ConsumerWidget {
+  const ViceChart({super.key, required this.selectedDate});
+
+  final DateTime selectedDate;
 
   @override
-  ConsumerState<ViceChart> createState() => ViceChartState();
-}
-
-class ViceChartState extends ConsumerState<ViceChart> {
-  DateTime? selectedDate;
-
-  void updateDate(DateTime newDate) {
-    if (selectedDate == newDate) {
-      return;
-    }
-
-    selectedDate = newDate;
-  }
-
-  bool isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;
-    final Map<String, List<ViceActivity>>? viceActivityListByViceID =
-        ref.watch(viceActivityListByViceIDProvider);
+    final List<ViceActivity>? activityList =
+        ref.watch(viceActivityDayProvider(selectedDate)).value;
 
-    if (vices == null ||
-        viceActivityListByViceID == null ||
-        selectedDate == null) {
+    if (vices == null || activityList == null) {
       return const Center(
         child: CircularProgressIndicator(),
       );
@@ -55,28 +34,28 @@ class ViceChartState extends ConsumerState<ViceChart> {
       );
     }
 
-    if (viceActivityListByViceID.isEmpty) {
+    if (activityList.isEmpty) {
       return const InfoBox(
         message: 'No activities found',
         color: Colors.red,
       );
     }
 
-    final Map<String, int> todayData = {};
+    final Map<String, Vice> vicesByID = {
+      for (final Vice vice in vices) vice.id: vice,
+    };
+    final Map<String, int> todayData = {
+      for (final Vice vice in vices) vice.name: 0,
+    };
 
-    for (final Vice vice in vices) {
-      todayData[vice.name] = 0;
-    }
-
-    viceActivityListByViceID.forEach((viceID, activities) {
-      for (final ViceActivity activity in activities) {
-        if (isSameDay(activity.createdAt.toDate(), selectedDate!)) {
-          final vice = vices.firstWhere((v) => v.id == viceID);
-          todayData[vice.name] =
-              (todayData[vice.name] ?? 0) + activity.quantity;
-        }
+    for (final ViceActivity activity in activityList) {
+      final Vice? vice = vicesByID[activity.viceID];
+      if (vice == null) {
+        continue;
       }
-    });
+
+      todayData[vice.name] = (todayData[vice.name] ?? 0) + activity.quantity;
+    }
 
     final ThemeData theme = Theme.of(context);
     final List<RadarEntry> dataEntries = todayData.entries
