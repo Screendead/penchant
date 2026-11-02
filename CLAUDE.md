@@ -41,12 +41,26 @@ fixed or an idea ships or is rejected, delete its file (and its README line) in 
 flutter pub get
 flutter run                      # device picker; -d chrome for web
 flutter analyze
-dart run custom_lint             # riverpod_lint; analyze alone does not run it
+dart run custom_lint             # loads no rules: riverpod_lint 3.1 left custom_lint (see tech-debt)
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build web --release      # what CI builds and deploys
 dart run flutter_launcher_icons  # after changing assets/icon.webp
 ```
+
+End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
+
+```bash
+tools/e2e.sh                      # integration_test/ on the first available "iPhone 18 Pro" simulator; exits with the test status
+tools/e2e.sh integration_test/smoke_test.dart
+E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
+tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
+```
+
+Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), refuse to start if an emulator port
+(8080, 9099, 9150, 4000, 4400, 4500) is taken, and start the emulators under `demo-tracker` from
+`tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
+`setUpAll` rather than run against production.
 
 Cloud Functions (`functions/`, Node 18, TypeScript):
 
@@ -72,9 +86,13 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
-CI (`.github/workflows/`) builds web and deploys to Firebase Hosting on PR and on
-merge to `master`, and runs the rules tests on PR. It runs neither the Flutter tests
-nor `flutter analyze`.
+CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
+and `flutter test` on every PR to `master`. PRs also get a hosting preview; a push to `master`
+re-runs the checks and deploys hosting live only if they pass. Flutter is pinned in
+`.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
+changes. `rules-tests.yml` runs the rules suite on every PR. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
+CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
+is fixed.
 
 ## Architecture
 
@@ -123,9 +141,16 @@ date range as a line chart, bucketing activities by day or week and overlaying a
 average.
 
 `functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
-logic. The Flutter suite under `test/` is a single smoke test; the rules suite is
-described under Commands.
+logic. `test/` holds a single boilerplate smoke test; `integration_test/smoke_test.dart`
+drives the real app (register, add a vice, record an activity) against the emulators. The rules suite is described under Commands.
 
-The app always talks to production Firebase. `firebase.json` configures the full emulator
-suite, but nothing in `lib/` calls `useEmulator`, so `firebase emulators:start` does not
-affect the running app without wiring that up first.
+**Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
+`USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against
+production. With it, the default app is initialized with `demo-tracker` options, Firestore
+persistence is off, Auth and Firestore point at `localhost`, and startup throws if the
+default app resolves to a non-`demo-` project. On iOS, firebase_core configures the native
+default app from the bundled `GoogleService-Info.plist` before Dart runs, so the Runner
+target's "Strip Firebase plist for emulators" build phase
+(`tools/ios-strip-firebase-plist.sh`) moves it out of the bundle for flagged builds. macOS
+bundles its own plist with no such phase, so a flagged macOS build should fail at startup;
+Android and web are untested with the flag.
