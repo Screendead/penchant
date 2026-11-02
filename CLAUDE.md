@@ -41,7 +41,7 @@ fixed or an idea ships or is rejected, delete its file (and its README line) in 
 flutter pub get
 flutter run                      # device picker; -d chrome for web
 flutter analyze
-dart run custom_lint             # riverpod_lint; analyze alone does not run it
+dart run custom_lint             # loads no rules: riverpod_lint 3.1 left custom_lint (see tech-debt)
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build web --release      # what CI builds and deploys
@@ -75,8 +75,13 @@ Seed data: `node admin/populateFirestore.js`. It reads a service-account key fro
 so the script has no credentials until a new one is supplied. It also predates the
 `archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
 
-CI (`.github/workflows/`) builds web and deploys to Firebase Hosting on PR and on
-merge to `master`. It runs neither tests nor `flutter analyze`.
+CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
+and `flutter test` on every PR to `master`. PRs also get a hosting preview; a push to `master`
+re-runs the checks and deploys hosting live only if they pass. Flutter is pinned in
+`.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
+changes. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
+CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
+is fixed.
 
 ## Architecture
 
