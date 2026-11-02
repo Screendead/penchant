@@ -10,7 +10,7 @@ A day with nothing logged shows a calm card ("Nothing logged: a free day"), neve
 
 ## Why
 
-- SOURCED (code): fl_chart 1.2.0 asserts at least 3 radar entries (`radar_chart_data.dart:298`), and `lib/vice_chart.dart` guards only zero vices. A user with one or two vices gets a broken chart. The register does not list this.
+- SOURCED (code): fl_chart 1.2.0 asserts at least 3 radar entries (`radar_chart_data.dart:298`), and `lib/vice_chart.dart` builds one entry per unarchived vice name while guarding only the zero-vice and zero-activity cases. A user with one or two vices gets a broken chart. The register does not list this.
 - SOURCED (register): the radar has no screen-reader semantics, ignores text scale and merges vices that share a name. A zero day renders as an error in the error colour, and the day picker can freeze.
 - INFERENCE: a strict streak that resets on one slip is a known reason people quit sobriety apps. A calendar filling with free days motivates without reading as a "high score" (1.4.3).
 

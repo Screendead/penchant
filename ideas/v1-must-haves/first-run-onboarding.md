@@ -15,7 +15,7 @@ The flow ends on Today with the first log in place. Ask for notification permiss
 ## Why
 
 - SOURCED (register): a zero-vice account loads forever, an ordinary zero-activity day renders as an error, and Manage Data hides its add-vice button when there are no activities.
-- SOURCED (code): fl_chart 1.2.0 asserts `'Radar needs at least 3 RadarEntry'` (`radar_chart_data.dart:298`). `lib/vice_chart.dart` guards the zero-vice case only, so one or two vices trip the assert in debug builds and draw a degenerate chart in release. The register does not list this.
+- SOURCED (code): fl_chart 1.2.0 asserts `'Radar needs at least 3 RadarEntry'` (`radar_chart_data.dart:298`). `lib/vice_chart.dart` builds one entry per unarchived vice name and guards only the zero-vice and zero-activity cases, so one or two vices trip the assert in debug builds and draw a degenerate chart in release. The register does not list this.
 - SOURCED (code): `Unit` already covers item, time, puff, drink, minute and hour, so the presets need no schema change.
 - INFERENCE: App Review and every new user see this flow first.
 
