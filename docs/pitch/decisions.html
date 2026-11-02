@@ -113,6 +113,13 @@ const GROUPS = [
         { k: "A", t: "Close and say it will sync", c: "Small. Matches what Firestore actually does offline." },
         { k: "B", t: "Keep the error (built)", c: "No work. Invites duplicate entries." } ],
       rec: "A", why: "The write is not lost, so an error message tells the user something false and leads to duplicates." },
+    { id: "undo-duration", q: "How long does the Undo offer stay on screen after logging?",
+      ctx: "On Flutter 3.44 a snackbar with an action stays until dismissed, and later ones queue behind it. That made Undo delete the wrong entry, so PR #28 now closes it after 4 seconds.",
+      opts: [
+        { k: "A", t: "4 seconds (built)", c: "Done. Tested end to end." },
+        { k: "B", t: "8 seconds", c: "Trivial. More time to notice a mistake." },
+        { k: "C", t: "Until the next entry or a close tap", c: "Small. Never misses, but stays on screen." } ],
+      rec: "B", why: "Logging is often one-handed and quick. 4 seconds is short for noticing a wrong entry, and the bug that forced a timeout is fixed either way." },
     { id: "clean-day", q: "How should a day with nothing recorded look?",
       ctx: "PR #28 shows a neutral grey “Nothing recorded on this day”. This sets the app's tone.",
       opts: [
