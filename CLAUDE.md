@@ -75,11 +75,22 @@ Seed data: `node admin/populateFirestore.js`. It reads a service-account key fro
 so the script has no credentials until a new one is supplied. It also predates the
 `archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
 
+Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
+Firestore emulator on `demo-tracker`):
+
+```bash
+npm --prefix tests/firestore-rules ci
+npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.json ports
+```
+
+To run beside another emulator, point `firebase emulators:exec` at a config outside the
+repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
+
 CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
 and `flutter test` on every PR to `master`. PRs also get a hosting preview; a push to `master`
 re-runs the checks and deploys hosting live only if they pass. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
+changes. `rules-tests.yml` runs the rules suite on every PR. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
 CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
 is fixed.
 
@@ -108,7 +119,11 @@ means no data.
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
 `quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
-enforces on read and write. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+checks against the stored document on read, update and delete and against the incoming
+one on create. The rules also fix each collection's field set and types on create, allow
+updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+(activities), and validate only the changed fields on update so legacy documents
+(vices without `archived`) stay editable. A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from the today chart but keeps its history.
 
@@ -127,7 +142,7 @@ average.
 
 `functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
 logic. `test/` holds a single boilerplate smoke test; `integration_test/smoke_test.dart`
-drives the real app (register, add a vice, record an activity) against the emulators.
+drives the real app (register, add a vice, record an activity) against the emulators. The rules suite is described under Commands.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against

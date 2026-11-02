@@ -2,16 +2,64 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      match /vices/{vice} {
-        allow read, write: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
-        allow write: if request.auth.uid != null && request.auth.uid == request.resource.data.ownerID;
-      }
+    function signedIn() {
+      return request.auth != null;
+    }
 
-      match /activities/{activity} {
-        allow read: if request.auth.uid != null && request.auth.uid == resource.data.ownerID;
-        allow write: if request.auth.uid != null && request.auth.uid == request.resource.data.ownerID;
-      }
+    function ownsExisting() {
+      return signedIn() && resource.data.ownerID == request.auth.uid;
+    }
+
+    function createsOwn() {
+      return signedIn() && request.resource.data.ownerID == request.auth.uid;
+    }
+
+    // Updates validate only the fields they change, so documents written before
+    // a field existed (vices without `archived`) or holding a unit outside the
+    // current enum stay editable.
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Must match the names of the Unit enum in lib/data/unit.dart.
+    function validUnit(unit) {
+      return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
+    }
+
+    match /vices/{viceID} {
+      allow read, delete: if ownsExisting();
+
+      allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+        && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && validUnit(request.resource.data.unit)
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.archived is bool;
+
+      allow update: if ownsExisting()
+        && changedKeys().hasOnly(['name', 'unit', 'archived'])
+        && (!('name' in changedKeys())
+          || (request.resource.data.name is string && request.resource.data.name.size() > 0))
+        && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
+        && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
+    }
+
+    match /activities/{activityID} {
+      allow read, delete: if ownsExisting();
+
+      allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
+        && request.resource.data.viceID is string
+        && request.resource.data.quantity is int
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if ownsExisting()
+        && changedKeys().hasOnly(['quantity', 'createdAt'])
+        && (!('quantity' in changedKeys()) || request.resource.data.quantity is int)
+        && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
     }
   }
 }
