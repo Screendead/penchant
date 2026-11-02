@@ -84,7 +84,11 @@ provider, but write with inline `FirebaseFirestore.instance` calls (`add_vice.da
 list to build their `whereIn` clause; the history, graph, and window providers depend on
 `userProvider` alone. Each returns `Stream.empty()` when the user is null, so `.value`
 stays `null` and widgets render a spinner. A `null` list means loading; an empty list
-means no data.
+means no data. The day and list activity providers emit an empty list for an empty vice
+list, since Firestore rejects an empty `whereIn`, and forward a vice-list error rather
+than staying in loading. Never gate UI on `ref.read(provider.future)`: in riverpod 3 a
+read with no other listener pauses the provider's stream, so the future never resolves.
+Render loading and error from the watched `AsyncValue` instead.
 
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
@@ -107,7 +111,9 @@ date range as a line chart, bucketing activities by day or week and overlaying a
 average.
 
 `functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
-logic. The test suite is a single smoke test.
+logic. Tests in `test/` run without Firebase: they override providers in a
+`ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
+`User`). Anything that calls `FirebaseFirestore.instance` is untestable that way.
 
 The app always talks to production Firebase. `firebase.json` configures the full emulator
 suite, but nothing in `lib/` calls `useEmulator`, so `firebase emulators:start` does not
