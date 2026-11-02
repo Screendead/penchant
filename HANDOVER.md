@@ -20,7 +20,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 
 | Item | State | Where |
 |---|---|---|
-| Recovered feature work (day navigation, history, editor, usage graph, undo) | Committed 2026-11-02; PR open, waiting on its end-to-end run | `feat/day-navigation-history-graph` |
+| Recovered feature work (day navigation, history, editor, usage graph, undo) | PR #28; end-to-end tests for both reported bugs and the delete paths pass on the simulator (2026-11-02). Carries the other wave-1 branches merged in; merges after J1 | `feat/day-navigation-history-graph` |
 | Standing rules (production safety, e2e gate, merge authority) | Written 2026-11-02 | `CLAUDE.md` |
 | Emulator wiring and iOS end-to-end harness | In progress (wave 1) | `feat/emulator-e2e` |
 | Firestore rules fix (Undo's permission-denied) and rules tests | In progress (wave 1); **not deployed to production** — see J1 | `fix/firestore-rules` |
@@ -39,9 +39,9 @@ of the same number can run in parallel in separate worktrees.
 
 1. **Land wave 1.** Merge in this order, each after CI passes and (for app-behaviour changes) an end-to-end run on
    the iOS Simulator against the emulators: `feat/emulator-e2e` → `fix/firestore-rules` → `ci/quality-gates` →
-   `feat/day-navigation-history-graph` (merge `master` into it first; never rebase a pushed branch). Before the
-   last one merges, add integration tests for the two bugs Jack reported: the day picker's back/forward and dropdown
-   change the data shown and never grey out, and Undo on the record snackbar deletes the activity.
+   `feat/day-navigation-history-graph` (merge `master` into it first; never rebase a pushed branch). The last one
+   adds activity deletes that production rules deny, so it merges only after Jack deploys the rules (J1). Its
+   integration tests for Jack's two reported bugs are written and passing (`integration_test/activity_flows_test.dart`).
 2. **Wave 2: the remaining critical and high tech debt** that touches the app, grouped one class per worktree:
    - `error-handling-and-observability/` — bootstrap failure, AsyncValue error states, sign-up errors;
    - `widget-state-and-view-logic/` — the previous user's data showing after sign-out, and the write layer;

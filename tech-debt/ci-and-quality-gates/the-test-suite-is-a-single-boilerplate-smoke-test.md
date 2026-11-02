@@ -1,17 +1,14 @@
-# No unit or widget tests: one boilerplate Flutter test, two empty Xcode stubs, one end-to-end path
+# Forms, auth, archiving and model parsing have no tests, and CI never runs the end-to-end suite
 
-**Severity:** high
+**Severity:** medium
 
-`test/widget_test.dart` pumps a hand-built `MaterialApp` holding a `Text` widget and asserts that text renders; it never constructs the app's own root widget, touches Firebase or Riverpod, or exercises any real widget. Nothing unit-tests model serialization or any provider, including their empty-stream branches and `whereIn` construction. There are no widget tests of a form, validator or dialog, and no goldens.
+`test/` covers the day and list activity providers, calendar arithmetic and the Today tab through provider overrides. `integration_test/` drives the real app against the emulators: registering, adding vices, recording, day navigation, record Undo, and deleting from the history page and editor. Nothing tests model serialization (`fromJson` on documents missing a field), form validators, sign-in and its error paths, archiving and unarchiving, saving an edit, or the usage graph's bucketing. There are no goldens.
 
-The only real coverage is `integration_test/smoke_test.dart`, one happy path (register, add vices, record an activity, see it in Manage Data). It needs a simulator and the emulators, takes minutes, and CI does not run it. Archiving, editing, deleting, sign-in, validation errors and date navigation have no test at any level.
-
-The iOS and macOS RunnerTests files are both the unmodified template, a single example method containing only comments, wired into their schemes' test action and reporting a pass with zero coverage.
+The end-to-end suite needs an iOS Simulator and takes minutes; CI does not run it, so it guards only the runs someone starts by hand. `test/widget_test.dart` is still the template check of a hardcoded string, and the iOS and macOS RunnerTests files are still the unmodified template, wired into their schemes' test action and passing with zero coverage.
 
 ## Evidence
 
-- `test/widget_test.dart:7` — `const MaterialApp(\n        home: Scaffold(\n          body: Text('Tracker smoke test'),\n        ),\n      ),`
+- **`ls test/ integration_test/`** → `activity_providers_test.dart day_test.dart fakes.dart vice_tracker_test.dart widget_test.dart`; `activity_flows_test.dart smoke_test.dart support.dart`
 - `test/widget_test.dart:14` — `expect(find.text('Tracker smoke test'), findsOneWidget);`
-- **`ls integration_test/`** → `smoke_test.dart`
-- `ios/RunnerTests/RunnerTests.swift:6` — `func testExample() {\n    // If you add code to the Runner application, consider adding tests here.\n    // See https://developer.apple.com/documentation/xctest for more information about using XCTest.\n  }`
-- `macos/RunnerTests/RunnerTests.swift:6` — `func testExample() {\n    // If you add code to the Runner application, consider adding tests here.\n    // See https://developer.apple.com/documentation/xctest for more information about using XCTest.\n  }`
+- **`grep -rn integration_test .github/`** → no matches
+- `ios/RunnerTests/RunnerTests.swift:6` — `func testExample() {`
