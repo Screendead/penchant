@@ -164,8 +164,8 @@ Pitched later, with mock-ups, when their work starts: the starter trigger tree's
 - `npm --prefix tests/firestore-rules test` runs the rules suite; CI runs it on every PR.
 - Only one agent at a time may use the simulator and the default emulator ports. Parallel agents that need an
   emulator use other ports (Firestore 8180, hub 4410, logging 4510, UI off) through a config outside the repo.
-- `flutter pub get` rewrites `macos/Flutter/GeneratedPluginRegistrant.swift`; revert it, don't commit it (in the
-  register).
+- `macos/Flutter/GeneratedPluginRegistrant.swift` is tracked (iOS gitignores its own; in the register).
+  `flutter pub get` rewrites it only when the plugin set changes; commit the rewrite with the change that caused it.
 - Read the Firebase documentation before any change to rules, indexes, queries or emulator wiring, and cite it in
   the PR.
 
