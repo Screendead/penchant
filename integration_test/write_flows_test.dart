@@ -10,7 +10,14 @@ import 'package:tracker/vice_activity_editor_page.dart';
 
 import 'support.dart';
 
+// A get() merges writes the server has not acknowledged, even with
+// Source.server. Waiting first makes the read the emulator's, and a write the
+// rules reject has been rolled back by then.
+Future<void> _waitForEmulator() =>
+    FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
+
 Future<Map<String, dynamic>> _storedVice(String name) async {
+  await _waitForEmulator();
   final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
       .instance
       .collection('vices')
@@ -37,14 +44,7 @@ Future<void> _setArchived(
     tester,
     _rowButton(viceName, archived ? 'Unarchive' : 'Archive'),
   );
-  // The button flips on the local snapshot, before the server has the write.
-  final DateTime deadline = DateTime.now().add(timeout);
-  while ((await _storedVice(viceName))['archived'] != archived) {
-    if (DateTime.now().isAfter(deadline)) {
-      fail('$viceName never stored archived: $archived');
-    }
-    await pumpFor(tester, const Duration(milliseconds: 500));
-  }
+  expect((await _storedVice(viceName))['archived'], archived);
   await closeDrawerPage(tester);
 }
 
@@ -113,6 +113,7 @@ void main() {
     );
     await pumpUntil(tester, find.text('Quantity: 5'));
 
+    await _waitForEmulator();
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
         await storedActivities('Coffee');
     expect(stored, hasLength(1));
