@@ -1,12 +1,10 @@
-# Two specific statements in CLAUDE.md are wrong about the code they describe
+# CLAUDE.md's provider chain is wrong about which vice list the activity providers watch
 
 **Severity:** medium
-
-It asserts every provider in `lib/providers/` is a `StreamProvider` wrapping a Firestore snapshot stream, while `vice_activities_by_vice_id_provider.dart` defines a plain `Provider` deriving from another provider's already-resolved value.
 
 Its provider chain groups `unarchivedViceListProvider` with `viceListProvider` as feeding the day and list providers, when only the latter is watched by them and the former is a leaf read by two widgets.
 
 ## Evidence
 
-- `CLAUDE.md:40` — `` Every provider in `lib/providers/` is a hand-written `StreamProvider` or `StreamProvider.family` wrapping a Firestore snapshot stream. ``
-- `lib/providers/vice_activities_by_vice_id_provider.dart:5` — `final viceActivityListByViceIDProvider = Provider<Map<String, List<ViceActivity>>?>((ref) {`
+- `CLAUDE.md`, "Provider chain" — `` `userProvider` (auth state) → `viceListProvider` / `unarchivedViceListProvider` → the day and list activity providers ``
+- `lib/providers/vice_activity_day_provider.dart:13` and `lib/providers/vice_activity_list_provider.dart:11` watch `viceListProvider` only; `unarchivedViceListProvider` is watched by `lib/vice_chart.dart` and `lib/widgets/record_new_activity_dialog.dart`.

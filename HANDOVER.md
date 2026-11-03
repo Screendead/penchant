@@ -165,7 +165,7 @@ Pitched later, with mock-ups, when their work starts: the starter trigger tree's
 ## Thoughts
 
 - The app is a small Flutter + Firestore codebase (about 3,000 lines in `lib/`). Tests now exist at three levels
-  (55 rules tests, 17 unit and widget tests, 4 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
+  (72 rules tests, 47 unit and widget tests, 8 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
 - Firestore writes go through `TrackerWrites` (`trackerWritesProvider`), so widget tests cover every write path with
   a fake. Auth calls are still inline `FirebaseAuth.instance`; that remainder is in the register.
 

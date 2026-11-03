@@ -177,7 +177,7 @@ Git working state and refs, documentation that contradicts the code, and version
 
 - **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
 - **high** — [Every production build reports version 1.0.0 with no tags to trace it](repo-docs-and-release-hygiene/version-never-incremented-and-no-tags.md)
-- **medium** — [Two factual claims in the guidance doc do not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
+- **medium** — [The guidance doc's provider chain does not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
 - **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 - **medium** — [The only records of failing quality gates are gitignored, unseen](repo-docs-and-release-hygiene/gitignored-logs-hid-the-failing-gates.md)
 - **medium** — [Local master is three commits behind what CI actually deploys](repo-docs-and-release-hygiene/local-master-is-three-commits-behind.md)

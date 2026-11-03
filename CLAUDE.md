@@ -104,10 +104,12 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
-annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is a
-hand-written `StreamProvider` or `StreamProvider.family` wrapping a Firestore snapshot
-stream, except `trackerWritesProvider`, a plain `Provider` (below). Match that style;
-running `build_runner` generates nothing.
+annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
+hand-written. Most are a `StreamProvider` or `StreamProvider.family` wrapping a Firestore
+snapshot stream (`userProvider` wraps `authStateChanges()`). Two are plain `Provider`s:
+`viceActivityListByViceIDProvider` groups `viceActivityListProvider`'s resolved list by
+vice and returns `null` until that list has a value, and `trackerWritesProvider` hands
+out the write layer (below). Match that style; running `build_runner` generates nothing.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
