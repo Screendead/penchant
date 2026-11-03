@@ -69,10 +69,17 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 `tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
-Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
-`admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
-so the script has no credentials until a new one is supplied. It also predates the
-`archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
+Seed data, into emulators only (Node 22, `npm --prefix admin ci` once):
+
+```bash
+firebase emulators:exec --project demo-tracker --only auth,firestore "node admin/populateFirestore.js"
+```
+
+`admin/populateFirestore.js` refuses to start unless `FIRESTORE_EMULATOR_HOST` and
+`FIREBASE_AUTH_EMULATOR_HOST` are set and the project id (`SEED_PROJECT_ID`, default `demo-tracker`)
+starts with `demo-`; it needs no credentials. It creates the Auth user `seed@example.com` (password
+`seed-password`) and replaces that user's vices (one archived) and 30 days of activities with documents in the
+current data shape. To keep the data, run it against a long-lived `firebase emulators:start` and log in as that user.
 
 Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
 Firestore emulator on `demo-tracker`):
