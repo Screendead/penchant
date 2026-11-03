@@ -63,6 +63,9 @@ void main() {
     );
 
     await tap(tester, find.text('Graph'));
+    await pumpUntil(tester, find.text('Usage Graph'));
+    await tap(tester, find.byType(DropdownButtonFormField<String>));
+    await tap(tester, find.text('Coffee').last);
     await pumpUntil(tester, find.byType(LineChart));
     expect(
       find.bySemanticsLabel(
