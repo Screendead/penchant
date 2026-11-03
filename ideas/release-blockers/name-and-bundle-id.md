@@ -1,31 +1,35 @@
-# Lock the public name and bundle ID before the first TestFlight upload
+# Apply the brand everywhere and lock the bundle ID before the first upload
 
 **Priority:** release blocker
 
 ## What
 
-Choose the public name, the App Store subtitle, the bundle ID and the Android applicationId. Then make every identity string match: the `MaterialApp` title, the iOS display name, the Android label, the web manifest, the pubspec description and the README. Register the new bundle ID as an app in Firebase and regenerate the platform config.
+Once Jack picks the [brand](brand-name.md), make every identity string match it: the `MaterialApp` title, the iOS and
+macOS display and bundle names, the pubspec name and description, and the README. Change the iOS and macOS bundle IDs
+to `com.screendead.<brand>`, register the new app IDs in Firebase, and regenerate the Apple platform config.
+
+## Decision
+
+Decided by Jack 2026-11-03 (C19): **a distinct brand plus a descriptive subtitle.** The brand itself is open, pitched
+in [brand name](brand-name.md). Android and web are removed (C6), so there is no applicationId or web manifest to
+rename.
 
 ## Why
 
-- SOURCED (repo): the in-app title is "Vice Tracker" (`lib/main.dart:38`), while `CFBundleDisplayName` is "Tracker" and `CFBundleName` is "tracker". The iOS bundle ID and the Android applicationId are both `com.screendead.tracker.tracker`, with the segment doubled by the scaffold. The pubspec description is still "A new Flutter project."
-- From memory, to verify: an App Store Connect record's bundle ID cannot change once a build has been uploaded.
-- INFERENCE: "Tracker" is impossible to find in search. "Vice" is a hook, but it can read as moralising or glamorising, which matters for 1.4.3.
-
-## Options
-
-- **A.** Keep "Vice Tracker".
-- **B.** A short, distinct brand plus a descriptive subtitle (for example "\<Brand\>: Habit & Vice Log"), with a bundle ID of the form `com.screendead.<brand>`.
-- **C.** A neutral wellness name ("Tally", "Intake" and similar) that leaves "vice" out.
+- SOURCED (repo): the in-app title is "Vice Tracker" (`lib/main.dart`), `CFBundleDisplayName` is "Tracker", the bundle
+  ID is `com.screendead.tracker.tracker`, and the pubspec description is "A new Flutter project."
+- SOURCED (register): the macOS Firebase config carries the iOS test bundle ID.
+- From memory, to verify: an App Store Connect record's bundle ID cannot change once a build is uploaded.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **B**, decided before any TestFlight upload, screenshots or marketing. A rename after launch costs reviews and search momentum. Check trademark and App Store name availability before committing.
+Claude's recommendation: one PR, done after the brand call and before any TestFlight upload, screenshots or
+marketing. Registering the apps in the Firebase console is a production action, so Jack does it.
 
 **Effort:** S
 
-**Revenue impact:** Direct, through search and store conversion. It is a release prerequisite because of the bundle-ID lock-in.
+**Revenue impact:** A release prerequisite, because of the bundle-ID lock-in.
 
-**Depends on:** [positioning](positioning-and-target-user.md); [`placeholder-app-identity-strings`](../../tech-debt/platform-and-delivery-config/placeholder-app-identity-strings.md); [`macos-firebase-config-carries-the-ios-test-bundle-id`](../../tech-debt/platform-and-delivery-config/macos-firebase-config-carries-the-ios-test-bundle-id.md). Registering the app in the Firebase console is a production action, so Jack does it.
+**Depends on:** [brand name](brand-name.md); [`placeholder-app-identity-strings`](../../tech-debt/platform-and-delivery-config/placeholder-app-identity-strings.md); [`macos-firebase-config-carries-the-ios-test-bundle-id`](../../tech-debt/platform-and-delivery-config/macos-firebase-config-carries-the-ios-test-bundle-id.md).
 
-**Needs Jack:** yes — What is the app called, and what is its bundle ID?
+**Needs Jack:** no, beyond the brand. He registers the Firebase apps.
