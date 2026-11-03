@@ -1,36 +1,43 @@
-# Remind users once a day, and let them mark a free day from the reminder
+# Offer one optional daily check-in that closes the day's journal
 
 **Priority:** v1 must-have
 
 ## What
 
-Wire the dead `/settings/notifications` row to local notifications:
+Wire the dead `/settings/notifications` row to local notifications, off by default:
 
-- A daily check-in at a time the user chooses ("How did today go?"), with two actions: "Mark as a free day" and "Log something".
-- Optional nudges that tell the user when they are close to a limit ("That's 2 of 3 today").
+- An evening check-in at a time the user picks ("Anything to add to today?"), with two actions: "Nothing to log
+  today" and "Add an entry".
+- Nudges toward a limit only for vices with an [optional goal](../growth-later/optional-goals-and-limits.md).
 
-Reminders are off by default. Ask for notification permission only from onboarding or Settings. Never send guilt copy, and respect [discreet mode](../growth-later/app-lock-and-discreet-mode.md).
+The permission is asked only when the user turns the check-in on. Copy is neutral (C16) and respects
+[discreet mode](../growth-later/app-lock-and-discreet-mode.md).
 
 ## Why
 
-- INFERENCE: a daily check-in is the cheapest retention lever for journaling-style apps.
-- It also fixes a data gap: today the app cannot tell "had nothing" from "forgot to log".
-- INFERENCE: a zero-quantity activity would record a free day without changing the existing shape.
+- INFERENCE: a check-in is the cheapest retention lever for journals, and it fixes a data gap the insights care about:
+  the app cannot tell "nothing happened" from "forgot to log". A day the user confirmed as empty is a real zero; an
+  unconfirmed day is missing data, and the [insights engine](../insights/insights-engine.md) should treat it so.
+- SOURCED (C12): a new activity's quantity must be greater than 0, so "nothing today" can no longer be a zero-quantity
+  activity. It needs its own record.
 
 ## Options
 
-- **A.** Local notifications only (for example flutter_local_notifications). No server and no push certificates, and it works for guests.
-- **B.** Server push through FCM and Cloud Functions. This needs `functions/` and raises consent questions.
-- **C.** No notifications in 1.0, and remove the Settings row.
+- **A.** A `days` collection: one document per user per local date (`ownerID`, `date`, `confirmed`, optional note),
+  written by the check-in. A new collection, with rules and tests.
+- **B.** A `confirmedThrough` date on the user's profile. One field, but no per-day note and no gaps.
+- **C.** No check-in in 1.0; remove the Settings row.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **A, free.** Retention feeds every paywall moment, so gating reminders would cost more than it earns.
+Claude's recommendation: **A, free, in 1.0.** Per-day confirmation is what lets the engine count a zero, and the same
+document can later carry a daily mood or note. It sits outside C18 (which covers fields on vices), so it needs Jack's
+yes.
 
 **Effort:** M
 
-**Revenue impact:** Medium to high, through retention. More users reach the 30-day paywall moment.
+**Revenue impact:** Medium to high, through retention and insight quality.
 
-**Depends on:** [quick logging](one-tap-quick-logging.md); [per-vice goals](per-vice-goals-and-limits.md); [`four-named-routes-dead-end-at-not-found`](../../tech-debt/navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md).
+**Depends on:** [quick logging](one-tap-quick-logging.md); [`four-named-routes-dead-end-at-not-found`](../../tech-debt/navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md); [`day-windows-use-device-local-midnight`](../../tech-debt/firebase-data-layer/day-windows-use-device-local-midnight.md).
 
-**Needs Jack:** yes — Are reminders free or Pro, and does recording a free day as a zero-quantity activity fit his data-shape rule?
+**Needs Jack:** yes — May "nothing logged today" be a new `days` collection?

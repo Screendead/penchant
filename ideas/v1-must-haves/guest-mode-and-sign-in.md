@@ -4,34 +4,40 @@
 
 ## What
 
-Today `main.dart` sends any user who is not signed in to an email-and-password screen before they see anything. There is no password reset and no email verification. The proposal has four parts:
+Today `main.dart` sends anyone not signed in to an email-and-password screen before they see anything, with no
+password reset and no verification. The proposal:
 
-- On first launch, sign the user in with Firebase anonymous auth.
-- Offer "Back up and sync" later, which links an email credential to the same uid.
-- Add forgot-password and verification flows.
-- Show readable sign-up errors.
+- On first launch, sign in with Firebase anonymous auth.
+- Offer "Back up and sync" later, which links an email or Apple credential to the same uid.
+- Add forgot-password and verification flows, and readable sign-up errors.
 
 ## Why
 
-- SOURCED ([Apple 5.1.1](https://developer.apple.com/app-store/review/guidelines/)): if an app lacks significant account-based features, people should be able to use it without logging in. This app's only account feature is sync.
-- SOURCED (register): there is no password reset and no verification. Registration failures are unhandled, and a signed-in user briefly sees the login screen on every cold start.
-- INFERENCE: a sign-up wall before the first moment of value is the biggest funnel leak a tracker can have. People logging gambling or drug use are the least willing to hand over an email.
+- SOURCED ([Apple 5.1.1](https://developer.apple.com/app-store/review/guidelines/)): an app without significant
+  account-based features should work without a login. This app's only account feature is sync, which now also means
+  sync between iPhone and Mac.
+- SOURCED (register): no password reset, no verification, unhandled registration failures, and a signed-in user
+  briefly sees the login screen on every cold start.
+- INFERENCE: people journaling drug use or gambling are the least willing to hand over an email before seeing value.
 - From the Firebase docs, to verify: linking keeps the uid, so the `ownerID` rules and the data shape are unchanged.
 
 ## Options
 
-- **A.** Email only, with reset, verification and readable errors added.
-- **B.** Anonymous auth on first launch with optional email linking, plus everything in A.
-- **C.** B, plus Sign in with Apple, and Google on Android. From memory, to verify: guideline 4.8 requires a privacy-focused login option whenever a third-party social login is offered.
-- **D.** Local-only storage for guests, migrated into Firestore on sign-up. This doubles the data layer.
+- **A.** Email only, with reset, verification and readable errors.
+- **B.** Anonymous start with optional linking, plus everything in A.
+- **C.** B, plus Sign in with Apple. From memory, to verify: guideline 4.8 requires an Apple or equivalent private
+  login whenever a third-party social login is offered; Apple-only avoids the question.
+- **D.** Local-only storage for guests, migrated on sign-up. It doubles the data layer.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **B for 1.0, with C in 1.1** when cross-device sync becomes a selling point. B keeps one data path and the current rules. Test the account-linking edge cases end to end in the Auth emulator.
+Claude's recommendation: **C in 1.0.** With Android and web gone (C6), every user has an Apple ID, and Sign in with
+Apple is the one-tap way to get a second device (the Mac) on the same data. Test the linking edge cases end to end in
+the Auth emulator.
 
 **Effort:** M
 
-**Revenue impact:** High. More installs reach a first log. The link-account prompt is also the natural moment for a soft upsell.
+**Revenue impact:** High: more installs reach a first log, and linking is a natural soft-upsell moment.
 
 **Depends on:**
 - [`no-password-reset-path`](../../tech-debt/auth-and-account-lifecycle/no-password-reset-path.md)
@@ -39,6 +45,6 @@ Claude's recommendation, not a decision: **B for 1.0, with C in 1.1** when cross
 - [`auth-errors-are-surfaced-verbatim`](../../tech-debt/auth-and-account-lifecycle/auth-errors-are-surfaced-verbatim.md)
 - [`registration-failures-are-unhandled`](../../tech-debt/error-handling-and-observability/registration-failures-are-unhandled.md)
 - [`auth-loading-is-treated-as-signed-out`](../../tech-debt/widget-state-and-view-logic/auth-loading-is-treated-as-signed-out.md)
-- [`empty-stream-shortcircuit-reads-as-permanent-loading`](../../tech-debt/widget-state-and-view-logic/empty-stream-shortcircuit-reads-as-permanent-loading.md)
 
-**Needs Jack:** yes — Allow guests in 1.0, and accept that a guest who deletes the app without linking an account loses their data (shown with a clear warning)?
+**Needs Jack:** yes — Allow guests in 1.0, and accept that a guest who deletes the app without linking loses their
+data (behind a clear warning)?
