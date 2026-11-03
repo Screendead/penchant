@@ -9,8 +9,8 @@ None writes the error anywhere else, so once the message leaves the screen the o
 ## Evidence
 
 - `lib/manage_data.dart:105` — `SnackBar(content: Text(e.toString())),`
-- `lib/vice_activity_editor_page.dart:88` — `error = e.message ?? 'Unable to delete activity';`
-- `lib/vice_activity_history_page.dart:90` — `e.message ?? 'Unable to delete activity',`
+- `lib/vice_activity_editor_page.dart:87` — `error = e.message ?? 'Unable to delete activity';`
+- `lib/vice_activity_history_page.dart:101` — `e.message ?? 'Unable to delete activity',`
 - `lib/widgets/record_new_activity_dialog.dart:128` — `: 'Error recording activity: ${e.message}';`
 - `lib/sign_in.dart:53` — `setState(() => error = authErrorMessage(e));`
 - `lib/account_settings.dart:138` — `_show(<String>[...done, 'Not saved: ${authErrorMessage(e)}'].join(' '));`
