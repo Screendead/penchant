@@ -131,6 +131,9 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
         }
         if (emailChanged) {
           await _account.changeEmail(email, password: password!);
+          // user.email changes only once the link is followed; until then a
+          // field still holding the new address would re-send on every save.
+          _email.text = user.email ?? '';
           done.add(AccountCopy.emailChangeSent(email));
         }
         _show(done.isEmpty ? 'Nothing to save.' : done.join(' '));
