@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**110 issues: 0 critical, 22 high, 56 medium, 32 low.**
+**108 issues: 0 critical, 21 high, 55 medium, 32 low.**
 
 ## Firebase Data Layer (10)
 
@@ -171,17 +171,15 @@ Test depth and unverified build state.
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
 - **medium** — [The end-to-end run's Add Vice save intermittently never completes](ci-and-quality-gates/e2e-add-vice-save-sometimes-never-returns.md)
 
-## Repo, Docs and Release Hygiene (11)
+## Repo, Docs and Release Hygiene (9)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
 - **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
-- **high** — [Every production build reports version 1.0.0 with no tags to trace it](repo-docs-and-release-hygiene/version-never-incremented-and-no-tags.md)
 - **medium** — [Three factual claims in the guidance doc do not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
 - **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 - **medium** — [The only records of failing quality gates are gitignored, unseen](repo-docs-and-release-hygiene/gitignored-logs-hid-the-failing-gates.md)
 - **medium** — [Local master is three commits behind what CI actually deploys](repo-docs-and-release-hygiene/local-master-is-three-commits-behind.md)
-- **medium** — [Two years of shipped changes have no changelog record at all](repo-docs-and-release-hygiene/no-changelog-or-release-notes.md)
 - **medium** — [The README is still the default flutter create scaffold text](repo-docs-and-release-hygiene/readme-is-the-unmodified-flutter-template.md)
 - **medium** — [Bundled third-party license text ships in the app but no screen shows it](repo-docs-and-release-hygiene/third-party-license-attribution-never-surfaced.md)
 - **low** — [Six gigabytes of ignored build and IDE clutter sit at the repo root](repo-docs-and-release-hygiene/stray-local-build-and-ide-artifacts.md)

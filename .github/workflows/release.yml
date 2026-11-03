@@ -1,0 +1,40 @@
+name: Release
+# Tags vX.Y.Z from the version in pubspec.yaml and publishes the matching CHANGELOG.md section as a GitHub release.
+# Run it from master after the version bump and changelog date have merged.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/checks.yml
+  release:
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read the version and changelog section
+        run: |
+          version=$(sed -n 's/^version: *\([0-9][0-9.]*\)\(+.*\)\{0,1\}$/\1/p' pubspec.yaml)
+          [ -n "$version" ] || { echo "no version in pubspec.yaml" >&2; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          tools/changelog-section.sh "$version" > "$RUNNER_TEMP/notes.md"
+      - name: Create the tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$VERSION already exists; bump version in pubspec.yaml first" >&2
+            exit 1
+          fi
+          prerelease=()
+          if [ "${VERSION%%.*}" = 0 ]; then prerelease=(--prerelease); fi
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${prerelease[@]}"

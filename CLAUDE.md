@@ -69,6 +69,21 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 `tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
+Versions and releases. `version:` in `pubspec.yaml` is the user-facing semantic version (0.x until the first App
+Store release); its `+N` is a placeholder. The build number of any shipped build is the commit count on `master`, so it
+rises with every merge and App Store Connect never sees a repeat. Build with the helper's flags, never by hand:
+
+```bash
+tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
+flutter build ipa $(tools/build-version.sh)
+```
+
+To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
+rename that section to `## [X.Y.Z] - <date>`, and merge. Then run the Release workflow
+(`gh workflow run release.yml --repo Screendead/tracker`) on `master`: it re-runs the checks, tags `vX.Y.Z` and
+publishes that changelog section as the release notes (`tools/changelog-section.sh X.Y.Z` prints it). It refuses a
+version that already has a release. The app shows `version (build)` under Settings > About.
+
 Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
 `admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
 so the script has no credentials until a new one is supplied. It also predates the
