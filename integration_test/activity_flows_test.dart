@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
@@ -327,5 +329,89 @@ void main() {
       )).map((doc) => doc.data()['quantity']).toList(),
       <int>[1],
     );
+  });
+  testWidgets('editing a legacy activity writes only the field the user '
+      'changed, never a parser default', (WidgetTester tester) async {
+    await _startApp(tester, 'e2e-legacy@example.com');
+
+    final String viceID = await storedViceID('Coffee');
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    final DateTime today = startOfDay(DateTime.now());
+    await createBypassingRules('activities', 'legacy-date', <String, Object>{
+      'viceID': <String, Object>{'stringValue': viceID},
+      'ownerID': <String, Object>{'stringValue': uid},
+      'quantity': <String, Object>{'integerValue': '4'},
+      'createdAt': <String, Object>{'stringValue': '2024-01-01'},
+    });
+    await createBypassingRules(
+      'activities',
+      'legacy-quantity',
+      <String, Object>{
+        'viceID': <String, Object>{'stringValue': viceID},
+        'ownerID': <String, Object>{'stringValue': uid},
+        'quantity': <String, Object>{'doubleValue': 2.5},
+        'createdAt': <String, Object>{
+          'timestampValue': addDays(
+            today,
+            -2,
+          ).add(const Duration(hours: 12)).toUtc().toIso8601String(),
+        },
+      },
+    );
+
+    Future<Map<String, dynamic>> stored(String id) async =>
+        (await FirebaseFirestore.instance
+                .collection('activities')
+                .doc(id)
+                .get(const GetOptions(source: Source.server)))
+            .data()!;
+
+    Future<void> saveEditor() async {
+      await tap(tester, find.widgetWithText(TextButton, 'Save'));
+      await pumpUntil(
+        tester,
+        find.byType(ViceActivityEditorPage),
+        present: false,
+      );
+    }
+
+    await openFromDrawer(tester, 'Manage Data');
+    await tap(tester, find.text('Coffee'));
+    await pumpUntil(tester, find.text('Coffee history'));
+
+    await tap(tester, find.text('Quantity: 4'));
+    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+    expect(
+      tester
+          .widget<TextFormField>(
+            find.widgetWithText(TextFormField, 'Date and Time'),
+          )
+          .controller!
+          .text,
+      ViceActivityEditorPage.dateFormat.format(epoch.toDate()),
+    );
+    await enterText(tester, 'Quantity', '5');
+    await saveEditor();
+    expect(await stored('legacy-date'), <String, dynamic>{
+      'viceID': viceID,
+      'ownerID': uid,
+      'quantity': 5,
+      'createdAt': '2024-01-01',
+    });
+
+    // 2.5 reads as 3.
+    await pumpUntil(tester, find.text('Quantity: 3').hitTestable());
+    await tap(tester, find.text('Quantity: 3'));
+    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+    final DateTime moved = addDays(today, -1).add(const Duration(hours: 9));
+    await enterText(
+      tester,
+      'Date and Time',
+      ViceActivityEditorPage.dateFormat.format(moved),
+    );
+    await saveEditor();
+    final Map<String, dynamic> requantified = await stored('legacy-quantity');
+    expect(requantified['quantity'], 2.5);
+    expect((requantified['createdAt'] as Timestamp).toDate(), moved);
   });
 }

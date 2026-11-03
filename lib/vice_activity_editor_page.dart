@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
@@ -20,13 +21,15 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
   final String viceID;
   final String activityID;
 
+  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+
   @override
   ConsumerState<ViceActivityEditorPage> createState() =>
       _ViceActivityEditorPageState();
 }
 
 class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage> {
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+  static final DateFormat dateFormat = ViceActivityEditorPage.dateFormat;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
@@ -36,6 +39,8 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
   String? error;
   Timer? dateUpdaterTimer;
   bool initialized = false;
+  String initialDateText = '';
+  String initialQuantityText = '';
 
   String get nowText => dateFormat.format(DateTime.now());
 
@@ -44,8 +49,10 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
       return;
     }
 
-    dateController.text = dateFormat.format(activity.createdAt.toDate());
-    quantityController.text = activity.quantity.toString();
+    initialDateText = dateFormat.format(activity.createdAt.toDate());
+    initialQuantityText = activity.quantity.toString();
+    dateController.text = initialDateText;
+    quantityController.text = initialQuantityText;
     initialized = true;
   }
 
@@ -70,10 +77,7 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
 
   Future<void> _deleteActivity() async {
     try {
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(widget.activityID)
-          .delete();
+      await ref.read(trackerWritesProvider).deleteActivity(widget.activityID);
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -91,23 +95,37 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
       return;
     }
 
+    // A field the user left alone may show a parser default for a legacy value
+    // the rules would still accept, so only edited fields are written.
+    final Map<String, Object> changes = <String, Object>{
+      if (dateController.text != initialDateText)
+        'createdAt': dateFormat.parse(dateController.text),
+      if (quantityController.text != initialQuantityText)
+        'quantity': int.parse(quantityController.text),
+    };
+
+    if (changes.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     setState(() {
       loading = true;
       error = null;
     });
 
     try {
-      final DateTime parsedDate = dateFormat.parse(dateController.text);
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(widget.activityID)
-          .update({
-        'createdAt': parsedDate,
-        'quantity': int.parse(quantityController.text),
-      }).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => Future.error(TimeoutException(null)),
-      );
+      await ref
+          .read(trackerWritesProvider)
+          .updateActivity(
+            widget.activityID,
+            quantity: changes['quantity'] as int?,
+            createdAt: changes['createdAt'] as DateTime?,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => Future.error(TimeoutException(null)),
+          );
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -239,11 +257,20 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
 
                       FocusScope.of(context).requestFocus(FocusNode());
 
+                      final DateTime firstDate = DateTime(2000);
+                      final DateTime lastDate = DateTime(2100);
+                      final DateTime stored = activity.createdAt.toDate();
+                      // The picker asserts its initial date is in range; an
+                      // unreadable legacy date reads as the epoch.
                       final DateTime? date = await showDatePicker(
                         context: context,
-                        initialDate: activity.createdAt.toDate(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
+                        initialDate: stored.isBefore(firstDate)
+                            ? firstDate
+                            : stored.isAfter(lastDate)
+                            ? lastDate
+                            : stored,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
                       );
 
                       if (date == null || !context.mounted) {

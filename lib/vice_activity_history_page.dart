@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
@@ -82,10 +83,9 @@ class ViceActivityHistoryPage extends ConsumerWidget {
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () async {
                             try {
-                              await FirebaseFirestore.instance
-                                  .collection('activities')
-                                  .doc(activity.id)
-                                  .delete();
+                              await ref
+                                  .read(trackerWritesProvider)
+                                  .deleteActivity(activity.id);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(

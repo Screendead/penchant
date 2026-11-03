@@ -84,10 +84,25 @@ rename that section to `## [X.Y.Z] - <date>`, and merge. Then run the Release wo
 publishes that changelog section as the release notes (`tools/changelog-section.sh X.Y.Z` prints it). It refuses a
 version that already has a release. The app shows `version (build)` under Settings > About.
 
-Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
-`admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
-so the script has no credentials until a new one is supplied. It also predates the
-`archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
+Seed data, into emulators only (Node 22, `npm --prefix admin ci` once). `emulators:exec` sets the emulator hosts
+itself but discards the data when the script exits, so it only checks that the script runs:
+
+```bash
+firebase emulators:exec --project demo-tracker --only auth,firestore "node admin/populateFirestore.js"
+```
+
+To keep the data, start `tools/run-emulated.sh` (or `firebase emulators:start --project demo-tracker`), then in
+another terminal point the script at its ports and log in as the seed user:
+
+```bash
+FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node admin/populateFirestore.js
+```
+
+`admin/populateFirestore.js` refuses to start unless `FIRESTORE_EMULATOR_HOST` and
+`FIREBASE_AUTH_EMULATOR_HOST` are set and the project id (`SEED_PROJECT_ID`, default `demo-tracker`)
+starts with `demo-`; it needs no credentials. It creates the Auth user `seed@example.com` (password
+`seed-password`) and replaces that user's vices (one archived) and 30 days of activities with documents in the
+current data shape.
 
 Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
 Firestore emulator on `demo-tracker`):
@@ -119,14 +134,24 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
-annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is a
-hand-written `StreamProvider` or `StreamProvider.family` wrapping a Firestore snapshot
-stream. Match that style; running `build_runner` generates nothing.
+annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
+hand-written. Most are a `StreamProvider` or `StreamProvider.family` wrapping a Firestore
+snapshot stream (`userProvider` wraps `authStateChanges()`). Two are plain `Provider`s:
+`viceActivityListByViceIDProvider` groups `viceActivityListProvider`'s resolved list by
+vice and returns `null` until that list has a value, and `trackerWritesProvider` hands
+out the write layer (below). `packageInfoProvider` is a `FutureProvider` over
+`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style; running `build_runner` generates nothing.
 
-**Reads go through providers, writes do not.** Widgets read via `ref.watch(...)` on a
-provider, but write with inline `FirebaseFirestore.instance` calls (`add_vice.dart`,
-`manage_data.dart`, `vice_activity_editor_page.dart`,
-`widgets/record_new_activity_dialog.dart`). There is no repository layer.
+**Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
+stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
+`TrackerWrites` (`lib/writes/tracker_writes.dart`), the only code in `lib/` that writes
+Firestore documents. It has one method
+per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
+`updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
+error messages and Undo stay in the widgets. The record dialog takes one id from
+`newActivityID()` per dialog, so a second press after a failed save writes the same
+document. Auth mutations (sign-in, register, sign-out, account settings) still call
+`FirebaseAuth.instance` inline.
 
 **Provider chain.** `userProvider` (auth state) → `viceListProvider` /
 `unarchivedViceListProvider` → the day and list activity providers, which need the vice
@@ -150,7 +175,10 @@ updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
 stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
 Dart `String.length`); a quantity is an int of at least 1; a new activity's `viceID`
 must name a vice the writer owns, checked with one `get()` (a billed read, even when
-denied). `lib/data/limits.dart` holds the form validators that mirror these. A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
+`lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
+(empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
+while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from the today chart but keeps its history.
 
@@ -169,7 +197,9 @@ average.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
-`User`). Anything that calls `FirebaseFirestore.instance` is untestable that way;
+`User`; `test/fake_writes.dart` is a `TrackerWrites` that records each write, for
+`trackerWritesProvider.overrideWithValue`). Anything that calls `FirebaseFirestore.instance`
+or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.
 
