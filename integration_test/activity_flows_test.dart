@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,8 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
+import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'support.dart';
 
@@ -73,7 +76,7 @@ void main() {
       'Tea (3 drinks)',
       'Water (1 drink)',
     };
-    final Finder emptyDay = find.text('Nothing recorded on this day');
+    final Finder emptyDay = find.text('A clear day');
 
     await recordActivity(tester, 'Coffee', 2);
     await recordActivity(
@@ -143,13 +146,15 @@ void main() {
     await recordActivity(tester, 'Coffee', 2);
     await pumpUntil(tester, find.text('Activity recorded'));
     await recordActivity(tester, 'Water', 1);
-    // Undo is on screen for four seconds, so check the write before the chart.
     // Only the latest recording's snackbar may be showing, or Undo would reach
     // an older activity.
     await pumpUntil(tester, find.text('Activity recorded'));
     await pumpFor(tester, const Duration(milliseconds: 500));
     expect(find.text('Activity recorded'), findsOneWidget);
     expect(await storedActivities('Water'), hasLength(1));
+    // Past the old four-second duration, inside the eight-second one.
+    await pumpFor(tester, const Duration(seconds: 6));
+    expect(find.text('Undo').hitTestable(), findsOneWidget);
     await tap(tester, find.text('Undo'));
     await pumpUntil(tester, find.text('Activity removed'));
 
@@ -160,6 +165,94 @@ void main() {
       'Tea (0 drinks)',
       'Water (0 drinks)',
     });
+  });
+
+  testWidgets('one or two vices chart as bars, three as a radar, and an empty '
+      'day reads as a clear day', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-bars@example.com');
+    await addVicesThroughManageData(tester, const <String>['Coffee']);
+
+    final DateTime today = startOfDay(DateTime.now());
+    await pumpUntil(tester, find.byType(CleanDay));
+    expect(find.text('A clear day so far'), findsOneWidget);
+    await screenshot(tester, 'today-clean-day');
+
+    await recordActivity(tester, 'Coffee', 2);
+    await expectBars(tester, const <String>{'Coffee (2 drinks)'});
+    await screenshot(tester, 'today-bars-one-vice');
+
+    await addVicesThroughManageData(tester, const <String>['Tea']);
+    await recordActivity(tester, 'Tea', 1);
+    await recordActivity(
+      tester,
+      'Tea',
+      3,
+      at: addDays(today, -1).add(const Duration(hours: 12)),
+    );
+    await expectBars(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (1 drink)',
+    });
+    await screenshot(tester, 'today-bars-two-vices');
+
+    await tap(tester, _back);
+    expect(_shownDay(tester), addDays(today, -1));
+    await expectBars(tester, const <String>{
+      'Coffee (0 drinks)',
+      'Tea (3 drinks)',
+    });
+    await tap(tester, _back);
+    await pumpUntil(tester, find.text('A clear day'));
+    await tap(tester, find.text('Jump to Today'));
+    await expectBars(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (1 drink)',
+    });
+
+    await addVicesThroughManageData(tester, const <String>['Water']);
+    await expectRadar(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (1 drink)',
+      'Water (0 drinks)',
+    });
+    await screenshot(tester, 'today-radar-three-vices');
+  });
+
+  testWidgets('a save that times out closes the dialog, says it will sync, '
+      'and lands once', (WidgetTester tester) async {
+    await _startApp(tester, 'e2e-offline@example.com');
+
+    await FirebaseFirestore.instance.disableNetwork();
+    try {
+      await recordActivity(tester, 'Coffee', 2);
+      await pumpUntil(tester, find.text(RecordNewActivityDialog.queuedMessage));
+      expect(find.text('Request timed out'), findsNothing);
+      await expectChart(tester, const <String>{
+        'Coffee (2 drinks)',
+        'Tea (0 drinks)',
+        'Water (0 drinks)',
+      });
+      await screenshot(tester, 'record-queued-offline');
+    } finally {
+      await FirebaseFirestore.instance.enableNetwork();
+    }
+
+    // Reads from the server, so a count of one is the emulator's, not the
+    // local cache's; it must stay one once the queue has drained.
+    final DateTime deadline = DateTime.now().add(timeout);
+    while ((await storedActivities('Coffee')).isEmpty) {
+      if (DateTime.now().isAfter(deadline)) {
+        fail('The queued activity never reached the emulator');
+      }
+      await pumpFor(tester, const Duration(seconds: 1));
+    }
+    await FirebaseFirestore.instance.waitForPendingWrites();
+    await pumpFor(tester, const Duration(seconds: 5));
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
+        await storedActivities('Coffee');
+    expect(stored, hasLength(1));
+    expect(stored.single.data()['quantity'], 2);
   });
 
   testWidgets('an activity can be deleted from the history page and from the '
