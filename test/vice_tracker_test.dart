@@ -18,6 +18,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fakes.dart';
 
@@ -326,6 +327,50 @@ void main() {
         }
       });
     }
+  });
+
+  testWidgets('the recorded snackbar offers Undo for eight seconds and '
+      'replaces an earlier one', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox.expand())),
+    );
+    final ScaffoldMessengerState messenger = tester.state(
+      find.byType(ScaffoldMessenger),
+    );
+    final List<String> undone = <String>[];
+
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: true,
+      onUndo: () => undone.add('first'),
+    );
+    await tester.pumpAndSettle();
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: false,
+      onUndo: () => undone.add('second'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(RecordNewActivityDialog.recordedMessage), findsNothing);
+    expect(find.text(RecordNewActivityDialog.queuedMessage), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 7));
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    expect(undone, ['second']);
+
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: true,
+      onUndo: () {},
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 7));
+    expect(find.text(RecordNewActivityDialog.recordedMessage), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text(RecordNewActivityDialog.recordedMessage), findsNothing);
   });
 
   group('an account with no vices', () {

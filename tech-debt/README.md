@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**135 issues: 2 critical, 28 high, 65 medium, 40 low.**
+**135 issues: 2 critical, 27 high, 66 medium, 40 low.**
 
 ## Firebase Data Layer (11)
 
@@ -80,8 +80,8 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **high** — [Offline caching and write durability silently differ between web and mobile](offline-and-write-reliability/firestore-persistence-is-never-configured.md)
 - **high** — [Loading scrim blocks touch but not screen readers; Record button unguarded](offline-and-write-reliability/loading-overlay-does-not-block-input.md)
 - **high** — [App can't tell a stale offline cache from a confirmed empty result](offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
-- **high** — [A timeout error can be followed by the write succeeding anyway, twice](offline-and-write-reliability/the-timeout-abandons-the-await-not-the-write.md)
 - **high** — [Delete buttons can hang offline with no timeout and no visible feedback](offline-and-write-reliability/three-delete-paths-have-no-timeout-or-pending-state.md)
+- **medium** — [The activity editor reports a queued save as a failure](offline-and-write-reliability/editor-reports-a-queued-save-as-timed-out.md)
 - **medium** — [Add and archive buttons can be pressed repeatedly while offline](offline-and-write-reliability/add-vice-and-archive-writes-have-no-timeout.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 - **medium** — [No banner, badge, or retry button ever tells the user they're offline](offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)

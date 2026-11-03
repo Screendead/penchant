@@ -16,7 +16,7 @@ Then put "works offline" in the store copy.
 - SOURCED (register):
   - Persistence is never configured, and it differs between web and native.
   - No read path checks snapshot metadata.
-  - A timeout can be followed by the write succeeding twice.
+  - The activity editor still reports a queued save as timed out.
   - There is no connectivity indicator.
 - INFERENCE: people log where the activity happens (a pub, outside, on a commute), so offline is the core case, not an edge case. A lost or duplicated log is a one-star review.
 
@@ -37,7 +37,7 @@ Claude's recommendation, not a decision: **A.** Firestore already queues writes 
 **Depends on:**
 - [`firestore-persistence-is-never-configured`](../../tech-debt/offline-and-write-reliability/firestore-persistence-is-never-configured.md)
 - [`no-read-path-inspects-snapshotmetadata`](../../tech-debt/offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
-- [`the-timeout-abandons-the-await-not-the-write`](../../tech-debt/offline-and-write-reliability/the-timeout-abandons-the-await-not-the-write.md)
+- [`editor-reports-a-queued-save-as-timed-out`](../../tech-debt/offline-and-write-reliability/editor-reports-a-queued-save-as-timed-out.md)
 - [`no-connectivity-indicator-or-retry-affordance`](../../tech-debt/offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
 
 **Needs Jack:** no
