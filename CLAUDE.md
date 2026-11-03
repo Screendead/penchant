@@ -186,9 +186,11 @@ Any new composite query shape needs a matching entry in `firestore.indexes.json`
 Firestore throws `failed-precondition` at runtime until the index is deployed.
 
 **Navigation.** `main.dart` gates on `userProvider`: null user → `Authenticate`, otherwise
-`Homepage`. `onGenerateRoute` parses the route as a URI, so `/vices/:viceID/activities` and
-`/vices/:viceID/activities/:activityID` are matched by path segments; the rest are a
-`switch` on the literal name.
+`Homepage`. `generateRoute` maps a route's path segments to a page through `routePage`, a
+pattern `switch` (`/vices/:viceID/edit`, `/vices/:viceID/activities[/:activityID]`, ...);
+anything else is `NotFound`. Only the forms (add or edit a vice, edit an activity) open as
+fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
+swapping `home` alone would leave the old session's pages on the stack.
 
 **Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
 (`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a

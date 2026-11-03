@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**104 issues: 0 critical, 17 high, 57 medium, 30 low.**
+**99 issues: 0 critical, 16 high, 55 medium, 28 low.**
 
 ## Firebase Data Layer (9)
 
@@ -49,16 +49,6 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **medium** — [Weekly graph's most recent point is always artificially depressed](widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md)
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
 
-## Navigation and Unreachable UI (5)
-
-Routes that dead-end, screens and empty states that cannot be reached or escaped, and routing configuration.
-
-- **high** — [Editing a vice, and two Settings rows, all dead-end on a 404 page](navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md)
-- **medium** — [Signing out leaves a stuck spinner screen floating over sign-in](navigation-and-unreachable-ui/routes-are-generated-without-consulting-auth-state.md)
-- **low** — [Every screen, including the error page, opens as a modal](navigation-and-unreachable-ui/every-route-is-a-fullscreen-dialog.md)
-- **low** — [Pages opened from the drawer leave the drawer open behind them](navigation-and-unreachable-ui/drawer-stays-open-under-pages-it-opens.md)
-- **low** — [The record-activity button vanishes while viewing the graph tab](navigation-and-unreachable-ui/record-action-disappears-on-the-graph-tab.md)
-
 ## Error Handling and Observability (7)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
@@ -68,8 +58,8 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 - **high** — [Sign-up errors like taken emails never reach the user at all](error-handling-and-observability/registration-failures-are-unhandled.md)
 - **medium** — [One screen silences a safety lint instead of checking the widget is still alive](error-handling-and-observability/async-buildcontext-lint-suppressed-instead-of-guarded.md)
 - **medium** — [Every caught error is shown once on screen and then lost for good](error-handling-and-observability/catch-sites-render-the-error-once-and-discard-it.md)
-- **medium** — [Inconsistent error display, and one path can crash the Save button itself](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
+- **low** — [The same save error reads four different ways depending on the screen](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 
 ## Offline and Write Reliability (8)
 

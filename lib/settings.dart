@@ -14,9 +14,7 @@ class Settings extends ConsumerWidget {
           data: (info) => 'Version ${info.version} (${info.buildNumber})',
         );
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -29,37 +27,18 @@ class Settings extends ConsumerWidget {
               },
             ),
             ListTile(
-              title: const Text('Notifications'),
-              leading: const Icon(Icons.notifications),
-              onTap: () {
-                Navigator.of(context).pushNamed('/settings/notifications');
-              },
-            ),
-            ListTile(
-              title: const Text('Privacy'),
-              leading: const Icon(Icons.privacy_tip),
-              onTap: () {
-                Navigator.of(context).pushNamed('/settings/privacy');
-              },
-            ),
-            ListTile(
               title: const Text('About'),
               subtitle: version == null ? null : Text(version),
               leading: const Icon(Icons.info),
               onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationVersion: version,
-                );
+                showAboutDialog(context: context, applicationVersion: version);
               },
             ),
             ListTile(
               title: const Text('Sign out'),
               leading: const Icon(Icons.exit_to_app),
-              onTap: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.of(context).pop();
-              },
+              // MyApp pops every page once the session ends.
+              onTap: () => FirebaseAuth.instance.signOut(),
             ),
           ],
         ),
