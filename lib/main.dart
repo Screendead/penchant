@@ -10,6 +10,8 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
+import 'package:tracker/vice_activity_editor_page.dart';
+import 'package:tracker/vice_activity_history_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +59,33 @@ class MyApp extends ConsumerWidget {
         ),
         home: user == null ? const Authenticate() : const Homepage(),
         onGenerateRoute: (RouteSettings settings) {
+          final Uri uri = Uri.parse(settings.name ?? '');
+
+          if (uri.pathSegments.length == 3 &&
+              uri.pathSegments[0] == 'vices' &&
+              uri.pathSegments[2] == 'activities') {
+            return MaterialPageRoute<void>(
+              fullscreenDialog: true,
+              builder: (BuildContext context) {
+                return ViceActivityHistoryPage(viceID: uri.pathSegments[1]);
+              },
+            );
+          }
+
+          if (uri.pathSegments.length == 4 &&
+              uri.pathSegments[0] == 'vices' &&
+              uri.pathSegments[2] == 'activities') {
+            return MaterialPageRoute<void>(
+              fullscreenDialog: true,
+              builder: (BuildContext context) {
+                return ViceActivityEditorPage(
+                  viceID: uri.pathSegments[1],
+                  activityID: uri.pathSegments[3],
+                );
+              },
+            );
+          }
+
           return MaterialPageRoute<void>(
             fullscreenDialog: true,
             builder: (BuildContext context) {

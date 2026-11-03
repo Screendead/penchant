@@ -1,46 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/vice_chart.dart';
 
-class ViceTracker extends StatefulWidget {
+class ViceTracker extends ConsumerStatefulWidget {
   const ViceTracker({super.key});
 
+  static const int selectableDays = 30;
+
   @override
-  State<ViceTracker> createState() => _ViceTrackerState();
+  ConsumerState<ViceTracker> createState() => _ViceTrackerState();
 }
 
-class _ViceTrackerState extends State<ViceTracker> {
-  final GlobalKey<ViceChartState> viceChartKey = GlobalKey<ViceChartState>();
-  int selectedDataSetIndex = -1;
-  final DateTime now = DateTime.now();
-  late final DateTime today;
+class _ViceTrackerState extends ConsumerState<ViceTracker> {
+  static final DateFormat _dateFormat = DateFormat('EEEE, MMMM d, yyyy');
 
-  late DateTime _selectedDate;
-  DateTime get selectedDate => _selectedDate;
-  set selectedDate(DateTime value) {
-    _selectedDate = value;
+  DateTime selectedDay = startOfDay(DateTime.now());
 
-    if (viceChartKey.currentState != null) {
-      viceChartKey.currentState!.updateDate(value);
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        viceChartKey.currentState?.updateDate(value);
-      });
-    }
-  }
-
-  int get daysAgo => today.difference(selectedDate).inDays;
-
-  @override
-  void initState() {
-    super.initState();
-
-    today = DateTime(now.year, now.month, now.day);
-    selectedDate = today;
+  void _selectDay(DateTime day) {
+    setState(() {
+      selectedDay = day;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final DateTime today = startOfDay(DateTime.now());
+    final DateTime oldestDay = addDays(
+      today,
+      -(ViceTracker.selectableDays - 1),
+    );
+    // The dropdown asserts that its value is one of its items, and the item
+    // range moves forward when the build runs on a later day than selection.
+    final DateTime day = selectedDay.isAfter(today)
+        ? today
+        : selectedDay.isBefore(oldestDay)
+        ? oldestDay
+        : selectedDay;
+    final int daysAgo = daysBetween(day, today);
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Center(
@@ -51,42 +50,37 @@ class _ViceTrackerState extends State<ViceTracker> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  const Icon(
-                    Icons.calendar_month,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.calendar_month, color: Colors.white),
                   Text(
                     daysAgo == 0
                         ? 'Today'
                         : daysAgo == 1
-                            ? 'Yesterday'
-                            : '$daysAgo days ago',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                        ? 'Yesterday'
+                        : '$daysAgo days ago',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
-                  const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 3,
-                  ),
-                  DropdownButton<DateTime>(
-                    value: selectedDate,
-                    onChanged: (DateTime? newValue) {
-                      setState(() {
-                        selectedDate = newValue!;
-                      });
-                    },
-                    items: List.generate(30, (index) {
-                      final date = today.subtract(Duration(days: index));
-                      final formattedDate =
-                          DateFormat("EEEE, MMMM d, yyyy").format(date);
+                  const CircleAvatar(backgroundColor: Colors.white, radius: 3),
+                  Flexible(
+                    child: DropdownButton<DateTime>(
+                      isExpanded: true,
+                      value: day,
+                      onChanged: (DateTime? newValue) {
+                        if (newValue != null) {
+                          _selectDay(newValue);
+                        }
+                      },
+                      items: List.generate(ViceTracker.selectableDays, (index) {
+                        final DateTime item = addDays(today, -index);
 
-                      return DropdownMenuItem(
-                        value: date,
-                        child: Text(formattedDate),
-                      );
-                    }),
+                        return DropdownMenuItem(
+                          value: item,
+                          child: Text(
+                            _dateFormat.format(item),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }),
+                    ),
                   ),
                 ],
               ),
@@ -94,45 +88,27 @@ class _ViceTrackerState extends State<ViceTracker> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
+                    tooltip: 'Previous day',
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: daysAgo >= 29
+                    onPressed: daysAgo >= ViceTracker.selectableDays - 1
                         ? null
-                        : () {
-                            setState(() {
-                              selectedDate = selectedDate
-                                  .subtract(const Duration(days: 1));
-                            });
-                          },
+                        : () => _selectDay(addDays(day, -1)),
                   ),
                   TextButton.icon(
-                    onPressed: daysAgo == 0
-                        ? null
-                        : () {
-                            setState(() {
-                              selectedDate = today;
-                            });
-                          },
+                    onPressed: daysAgo == 0 ? null : () => _selectDay(today),
                     icon: const Icon(Icons.today),
                     label: const Text('Jump to Today'),
                   ),
                   IconButton(
+                    tooltip: 'Next day',
                     icon: const Icon(Icons.arrow_forward),
                     onPressed: daysAgo <= 0
                         ? null
-                        : () {
-                            setState(() {
-                              selectedDate =
-                                  selectedDate.add(const Duration(days: 1));
-                            });
-                          },
+                        : () => _selectDay(addDays(day, 1)),
                   ),
                 ],
               ),
-              Expanded(
-                child: ViceChart(
-                  key: viceChartKey,
-                ),
-              ),
+              Expanded(child: ViceChart(selectedDate: day)),
             ],
           ),
         ),

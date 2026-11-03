@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**147 issues: 2 critical, 30 high, 73 medium, 42 low.**
+**135 issues: 2 critical, 28 high, 65 medium, 40 low.**
 
 ## Firebase Data Layer (11)
 
@@ -33,38 +33,28 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **low** — [Unused Firebase Storage rules still deploy on every release](firebase-data-layer/storage-rules-configured-for-an-unused-product.md)
 - **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 
-## Widget State and View Logic (20)
+## Widget State and View Logic (12)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
-- **high** — [Date navigation can permanently freeze the day picker with no error shown](widget-state-and-view-logic/date-navigation-awaits-a-future-that-never-completes.md)
-- **high** — [A new account with zero vices sees an endless loading spinner](widget-state-and-view-logic/empty-stream-shortcircuit-reads-as-permanent-loading.md)
 - **high** — [Signing out can briefly show the previous user's private data](widget-state-and-view-logic/provider-value-carries-the-previous-users-data.md)
 - **high** — [Every database write is hand-copied inline instead of shared code](widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
 - **medium** — [Archiving a vice hides it in some screens but not others](widget-state-and-view-logic/archived-means-hidden-in-two-pickers-only.md)
 - **medium** — [Signed-in users briefly see the login screen on every cold start](widget-state-and-view-logic/auth-loading-is-treated-as-signed-out.md)
-- **medium** — [Chart can crash mid-paint when two vice lists fall out of sync](widget-state-and-view-logic/axis-titles-resolve-against-a-different-provider.md)
 - **medium** — [Form fields leak controllers and focus nodes instead of cleaning up](widget-state-and-view-logic/controllers-and-focus-nodes-are-never-disposed.md)
-- **medium** — [Dialog holds onto another screen's context across async gaps](widget-state-and-view-logic/dialog-stores-a-foreign-buildcontext.md)
 - **medium** — [Editing form ignores live database changes after it first loads](widget-state-and-view-logic/editor-seeds-its-controllers-during-build.md)
 - **medium** — [Graph screen recomputes its entire chart pipeline on every rebuild](widget-state-and-view-logic/graph-build-method-recomputes-everything.md)
 - **medium** — [Browsing history can leave up to 30 live database listeners open](widget-state-and-view-logic/no-provider-is-autodispose.md)
-- **medium** — [Two vices sharing a name merge into one chart axis silently](widget-state-and-view-logic/radar-data-is-keyed-by-vice-name.md)
-- **medium** — [Recording an activity can crash if the session ends mid-dialog](widget-state-and-view-logic/record-dialog-reads-auth-directly-with-a-bang.md)
-- **medium** — [Chart title callback watches a provider outside Flutter's build phase](widget-state-and-view-logic/ref-watch-runs-inside-a-chart-paint-callback.md)
 - **medium** — [Smoothing slider, caption, and math can all disagree with each other](widget-state-and-view-logic/smoothing-window-escapes-its-own-bounds.md)
 - **medium** — [App left open past midnight keeps showing yesterday as today](widget-state-and-view-logic/today-is-frozen-at-widget-initialisation.md)
 - **medium** — [Weekly graph's most recent point is always artificially depressed](widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md)
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
-- **low** — [Same calendar day can spawn duplicate database listeners](widget-state-and-view-logic/day-provider-family-key-is-not-normalised.md)
 
-## Navigation and Unreachable UI (8)
+## Navigation and Unreachable UI (6)
 
 Routes that dead-end, screens and empty states that cannot be reached or escaped, and routing configuration.
 
 - **high** — [Editing a vice, and three Settings rows, all dead-end on a 404 page](navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md)
-- **medium** — [Every ordinary zero-activity day now looks like an error](navigation-and-unreachable-ui/a-zero-activity-day-renders-as-an-error.md)
-- **medium** — [No activities yet hides the add-vice button and close action](navigation-and-unreachable-ui/manage-data-hides-everything-when-activities-are-empty.md)
 - **medium** — [Signing out leaves a stuck spinner screen floating over sign-in](navigation-and-unreachable-ui/routes-are-generated-without-consulting-auth-state.md)
 - **low** — [Every screen, including the error page, opens as a modal](navigation-and-unreachable-ui/every-route-is-a-fullscreen-dialog.md)
 - **low** — [Deep links would 404 on Firebase Hosting if paths were ever used](navigation-and-unreachable-ui/hosting-has-no-spa-rewrite.md)
@@ -83,7 +73,7 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 - **medium** — [Inconsistent error display, and one path can crash the Save button itself](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (9)
+## Offline and Write Reliability (8)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
@@ -95,15 +85,13 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **medium** — [Add and archive buttons can be pressed repeatedly while offline](offline-and-write-reliability/add-vice-and-archive-writes-have-no-timeout.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 - **medium** — [No banner, badge, or retry button ever tells the user they're offline](offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
-- **medium** — [Tapping outside the record dialog mid-write misdirects both success and failure](offline-and-write-reliability/record-dialog-barrier-is-dismissible-mid-write.md)
 
-## Duplication and Dead Code (13)
+## Duplication and Dead Code (12)
 
 Copy-pasted logic, unused providers, methods and fields, commented-out code, and lint and formatting drift.
 
 - **medium** — [Date-entry field, timer, and lock toggle are copy-pasted across two files](duplication-and-dead-code/activity-date-entry-flow-duplicated.md)
 - **medium** — [A provider has zero callers while another screen re-derives its grouping manually](duplication-and-dead-code/orphaned-vice-activities-by-vice-id-provider.md)
-- **low** — [Two cosmetic lint warnings make flutter analyze exit with a failure code](duplication-and-dead-code/analyzer-info-lints-leave-the-gate-red.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
 - **low** — [Email validation is defined three separate times, two identically, one different](duplication-and-dead-code/email-validation-regex-declared-three-times.md)
 - **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)

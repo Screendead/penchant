@@ -15,6 +15,22 @@ class ViceActivity {
   final String ownerID;
   final Timestamp createdAt;
 
+  ViceActivity copyWith({
+    String? id,
+    String? viceID,
+    int? quantity,
+    String? ownerID,
+    Timestamp? createdAt,
+  }) {
+    return ViceActivity(
+      id: id ?? this.id,
+      viceID: viceID ?? this.viceID,
+      quantity: quantity ?? this.quantity,
+      ownerID: ownerID ?? this.ownerID,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   factory ViceActivity.fromJson({
     required String id,
     required Map<String, dynamic> json,

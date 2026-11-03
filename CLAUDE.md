@@ -12,6 +12,8 @@ recommendation until Jack decides it.
 
 `tech-debt/` is the debt register and `ideas/` is the product backlog. Both burn down by deletion: when an issue is
 fixed or an idea ships or is rejected, delete its file (and its README line) in the same PR.
+`tools/tech-debt-recount.py` recomputes the register's counts, drops lines whose file is gone, keeps both sides of
+a merge conflict in `tech-debt/README.md`, and fails if a report file has no line.
 
 ## Hard rules
 
@@ -57,6 +59,7 @@ tools/e2e.sh                      # integration_test/ on the first available "iP
 tools/e2e.sh integration_test/smoke_test.dart
 E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
+tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each screenshot(tester, name) call
 ```
 
 Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), refuse to start if an emulator port
@@ -90,9 +93,10 @@ repo with other ports: `npm --prefix tests/firestore-rules test -- --config <pat
 
 CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
 and `flutter test` on every PR to `master`. PRs also get a hosting preview; a push to `master`
-re-runs the checks and deploys hosting live only if they pass. Flutter is pinned in
+re-runs the checks and deploys hosting live only if they pass. `rules-tests.yml` runs the
+Firestore rules suite on every PR. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. `rules-tests.yml` runs the rules suite on every PR. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
+changes. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
 CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
 is fixed.
 
@@ -116,7 +120,11 @@ provider, but write with inline `FirebaseFirestore.instance` calls (`add_vice.da
 list to build their `whereIn` clause; the history, graph, and window providers depend on
 `userProvider` alone. Each returns `Stream.empty()` when the user is null, so `.value`
 stays `null` and widgets render a spinner. A `null` list means loading; an empty list
-means no data.
+means no data. The day and list activity providers emit an empty list for an empty vice
+list, since Firestore rejects an empty `whereIn`, and forward a vice-list error rather
+than staying in loading. Never gate UI on `ref.read(provider.future)`: in riverpod 3 a
+read with no other listener pauses the provider's stream, so the future never resolves.
+Render loading and error from the watched `AsyncValue` instead.
 
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
@@ -143,8 +151,11 @@ date range as a line chart, bucketing activities by day or week and overlaying a
 average.
 
 `functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
-logic. `test/` holds a single boilerplate smoke test; `integration_test/smoke_test.dart`
-drives the real app (register, add a vice, record an activity) against the emulators. The rules suite is described under Commands.
+logic. Tests in `test/` run without Firebase: they override providers in a
+`ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
+`User`). Anything that calls `FirebaseFirestore.instance` is untestable that way;
+`integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
+that and the rules suite are described under Commands.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against

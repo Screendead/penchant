@@ -8,10 +8,21 @@ import 'package:tracker/providers/vice_list_provider.dart';
 
 final viceActivityListProvider = StreamProvider<List<ViceActivity>?>((ref) {
   final User? user = ref.watch(userProvider).value;
-  final List<Vice>? viceList = ref.watch(viceListProvider).value;
+  final AsyncValue<List<Vice>?> viceListValue = ref.watch(viceListProvider);
 
-  if (user == null || viceList == null || viceList.isEmpty) {
+  if (viceListValue case AsyncError(:final error, :final stackTrace)) {
+    return Stream.error(error, stackTrace);
+  }
+
+  final List<Vice>? viceList = viceListValue.value;
+
+  if (user == null || viceList == null) {
     return const Stream<List<ViceActivity>?>.empty();
+  }
+
+  // Firestore rejects an `in` filter with an empty value list.
+  if (viceList.isEmpty) {
+    return Stream.value(const <ViceActivity>[]);
   }
 
   final Iterable<String> viceIDs = viceList.map((vice) => vice.id);
