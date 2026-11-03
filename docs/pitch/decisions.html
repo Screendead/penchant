@@ -89,6 +89,9 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
           <div class="cmd"><pre id="c2">firebase hosting:disable --project screendead-vice-tracker</pre><button class="copy" data-copy="c2">Copy</button></div></li>
         <li><b>Create the Mac development profile</b> (unblocks the macOS PR #47): open <code>macos/Runner.xcworkspace</code> in Xcode, select Runner › Signing &amp; Capabilities with team 8N575942RT, and build once (⌘B). Firebase sign-in on the Mac needs it, and Claude isn't allowed to create it.</li>
         <li><b>Close Dependabot PRs #22 and #42</b> if they are still open; #44 replaced them. <div class="cmd"><pre id="c3">gh pr close 22 && gh pr close 42</pre><button class="copy" data-copy="c3">Copy</button></div></li>
+        <li><b>Firebase console checks:</b> turn on Email Enumeration Protection (Authentication › Settings › User actions), and read the password-reset and verification email templates (Authentication › Templates); the app now sends both. Set a budget alert (Google Cloud console › Billing › Budgets &amp; alerts); alerts email you, they don’t stop Firestore.</li>
+        <li><b>App Check, once you have the paid Apple Developer Program:</b> register the iOS app under Firebase › Security › App Check (App Attest and DeviceCheck need your Team ID and a DeviceCheck key). Enforce on Firestore only after every installed copy runs a build from PR #55 or later.</li>
+        <li><b>Nothing to do for the new index:</b> Claude deployed it (activities by owner, newest first). Production also holds 4 indexes the repo doesn’t list; they were left in place.</li>
         <li><b>Send Claude in chat, when you have them:</b> the legal entity, contact address and data-controller details for the privacy policy; the support email address; and the TestFlight beta testers. They stay out of the repo.</li>
       </ol>
     </div>
@@ -153,6 +156,34 @@ const GROUPS = [
         { k: "A", t: "Reuse the iOS app's registration", c: "No console step: Claude copies the committed iOS config. Delete the RunnerTests app afterwards." },
         { k: "B", t: "Register a separate Apple app", c: "Needs a different bundle ID, which breaks one purchase covering both." } ],
       rec: "A", why: "Same bundle ID, same App Store record, one Pro purchase for both devices." } ] },
+
+  { title: "Round 3 (3 November): raised by account, offline and hardening work", sub: "Built and merging now. Each pick only changes copy or a default.", calls: [
+    { id: "r3-delete-copy", q: "Ship this wording for account deletion?", link: "lib/account/account_copy.dart",
+      ctx: "Confirm dialog: “Delete your account? This permanently deletes your account and everything in it: every vice and every entry you have logged, from our servers and from this device. It cannot be undone, and we cannot recover anything afterwards. If you want a copy, export your data first.” Buttons: Export first · Continue. Then a password prompt, then “Your account and all of its data are deleted.”",
+      opts: [
+        { k: "A", t: "Ship as written", c: "Plain, final, offers export first. Apple requires in-app deletion; this meets it." },
+        { k: "B", t: "Softer tone", c: "e.g. “We’re sorry to see you go”. Reads warmer, says less." },
+        { k: "C", t: "Your own words", c: "Write them in the note; Claude swaps them in (one file)." } ],
+      rec: "A", why: "Deletion copy should be unambiguous; this says what goes, that it is permanent, and how to keep a copy." },
+    { id: "r3-verify", q: "Does anything require a verified email?",
+      ctx: "Sign-up now sends a verification link and Settings shows the status. Nothing requires it yet. Existing accounts are unverified.",
+      opts: [
+        { k: "A", t: "Nothing requires it", c: "No lockouts. Unverified addresses only matter for password reset." },
+        { k: "B", t: "A banner until verified", c: "Nags, never blocks. Small UI change." },
+        { k: "C", t: "Rules require it for writes", c: "Stops throwaway accounts writing, but locks every existing account out until they verify." } ],
+      rec: "A", why: "A private journal has no abuse surface that verification fixes, and C would lock you out first. Revisit with sign-in options (r2-signin)." },
+    { id: "r3-cache", q: "Keep entries cached on the phone for offline logging?",
+      ctx: "Offline logging (PR #53) keeps a local Firestore cache. Firebase’s docs say clearing it at sign-out is not a secure wipe and advise turning persistence off for sensitive data. Encryption (r2-e2ee) makes the cached names and quantities ciphertext.",
+      opts: [
+        { k: "A", t: "Keep the cache", c: "Logging works with no signal; cache cleared at sign-out and deletion. Phone-level encryption (passcode) still covers it." },
+        { k: "B", t: "Memory-only cache", c: "Nothing on disk; no offline logging, entries fail without signal." } ],
+      rec: "A", why: "Offline logging is a v1 must-have, the iPhone encrypts its disk under the passcode, and E2EE removes the plaintext anyway." },
+    { id: "r3-attest", q: "Which App Check provider on iOS?",
+      ctx: "App Check (PR #55) blocks requests from anything but the real app. App Attest needs the paid Apple Developer Program; Xcode reports team 8N575942RT as personal. Nothing is enforced until you switch it on.",
+      opts: [
+        { k: "A", t: "App Attest, DeviceCheck fallback (as built)", c: "Starts working the day the paid team exists: one entitlement line." },
+        { k: "B", t: "DeviceCheck only for now", c: "Also needs the paid team for its key, and a second migration later." } ],
+      rec: "A", why: "B gains nothing today and costs a migration. You need the paid team for TestFlight anyway." } ] },
 
   { title: "Round 2 (3 November): what 1.0 hangs on", sub: "Raised by your round-1 picks and the reworked ideas backlog. Round 1 stays below with your picks.", calls: [
     { id: "r2-web-site", q: "When does the live web site go down?",
