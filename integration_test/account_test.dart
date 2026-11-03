@@ -201,6 +201,7 @@ void main() {
     await recordActivity(tester, 'Tea', 1);
 
     await _openAccountSettings(tester);
+    await tester.ensureVisible(find.text(AccountCopy.exportTitle));
     await tap(tester, find.text(AccountCopy.exportTitle));
     await pumpUntilTrue(
       tester,
@@ -248,6 +249,7 @@ void main() {
     expect(await _ownerIDs('activities'), <String>[deleted, deleted]);
 
     await _openAccountSettings(tester);
+    await tester.ensureVisible(find.text(AccountCopy.deleteTitle));
     await tap(tester, find.text(AccountCopy.deleteTitle));
     await pumpUntil(tester, find.text(AccountCopy.deleteConfirmBody));
     await tap(tester, find.text(AccountCopy.deleteConfirmContinue));
