@@ -20,9 +20,12 @@ enum Unit {
     return super.toString().split('.').last;
   }
 
-  static Unit fromString(String unit) {
+  static const Unit fallback = Unit.item;
+
+  static Unit fromString(Object? unit) {
     return Unit.values.firstWhere(
-      (e) => e.toString().split('.').last == unit,
+      (e) => e.name == unit,
+      orElse: () => fallback,
     );
   }
 }

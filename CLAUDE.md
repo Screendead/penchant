@@ -72,7 +72,8 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
 `admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
 so the script has no credentials until a new one is supplied. It also predates the
-`archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
+`archived` field and writes vices without it; they parse as unarchived, but the
+`archived == false` query never returns them.
 
 Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
 Firestore emulator on `demo-tracker`):
@@ -135,7 +136,10 @@ updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
 stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
 Dart `String.length`); a quantity is an int of at least 1; a new activity's `viceID`
 must name a vice the writer owns, checked with one `get()` (a billed read, even when
-denied). `lib/data/limits.dart` holds the form validators that mirror these. A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
+`lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
+(empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
+while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from the today chart but keeps its history.
 

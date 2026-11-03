@@ -15,17 +15,17 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**110 issues: 0 critical, 22 high, 56 medium, 32 low.**
+**110 issues: 0 critical, 21 high, 57 medium, 32 low.**
 
 ## Firebase Data Layer (10)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **high** — [Saving a vice throws internally and stalls the list a round trip](firebase-data-layer/model-parsers-cast-unconditionally.md)
 - **high** — [Documented seed command produces data that crashes the app](firebase-data-layer/seed-script-writes-documents-that-crash-the-parser.md)
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [Unused providers would fail instantly if ever wired up](firebase-data-layer/dead-providers-query-an-unindexed-shape.md)
 - **medium** — [No dev or staging alias; every firebase command defaults to production](firebase-data-layer/every-firebase-command-targets-production.md)
+- **medium** — [Legacy vices without `archived` cannot be recorded against](firebase-data-layer/vices-without-archived-never-reach-the-today-tab.md)
 - **medium** — [Every list screen streams unbounded data with no limit](firebase-data-layer/no-query-is-bounded-or-paginated.md)
 - **medium** — [The rules deploy job is off, and index or console drift goes unchecked](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **medium** — [Vice count growth will eventually break the main chart](firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
