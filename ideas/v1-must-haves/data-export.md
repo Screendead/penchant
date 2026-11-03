@@ -4,23 +4,28 @@
 
 ## What
 
-Add an "Export my data" action next to "Delete account". It reads all of the user's vices and activities and writes two files: a CSV with one row per activity (date, vice, unit, quantity) and a JSON dump. It then hands both to the share sheet.
+"Export my data" sits next to "Delete account". It reads all of the user's vices and activities, with every logged
+field (time, quantity, triggers, context, notes), and writes a CSV with one row per activity plus a full JSON dump,
+then hands both to the share sheet. Derived insights are not exported: they regenerate from the raw data.
 
 ## Why
 
 - SOURCED (register): there is no export path.
-- SOURCED ([market scan](../market-scan.md)): MyDrinkaware users complained when a redesign removed their old data presentation. Export answers the fear of lock-in.
-- INFERENCE, not researched: GDPR Art. 20 portability probably applies to EU users, so putting export behind a paywall carries legal and review risk.
+- SOURCED ([market scan](../market-scan.md)): MyDrinkaware users complained when a redesign removed their old data.
+  INFERENCE: a journal asks people to invest years of entries; export answers the fear of lock-in, and the
+  quantified-self audience expects it.
+- INFERENCE, not researched: GDPR Art. 20 portability probably applies to EU users, so a paywall on export carries
+  legal and review risk.
 
 ## Options
 
-- **A.** Client-side CSV and JSON through a share-sheet plugin (for example share_plus). It works offline from the cache.
-- **B.** A server-generated file, emailed by a Cloud Function. This depends on `functions/` (HANDOVER J2).
-- **C.** A, plus CSV import from other trackers, sold as a switching tool.
+- **A.** Client-side CSV and JSON through the share sheet. Works offline from the cache.
+- **B.** A, plus CSV import from other trackers (Daylio, Bearable), sold as a switching tool.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **A, free forever.** Putting your own data behind a paywall looks hostile. Paginate the read, because every query is unbounded today. Import (C) can wait until there is a paid tier to attach it to.
+Claude's recommendation: **A, free forever**, in 1.0. Paginate the read. Import (B) waits for Pro, where it is a
+switching tool for exactly the journal users the positioning targets.
 
 **Effort:** S
 

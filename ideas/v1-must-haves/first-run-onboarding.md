@@ -4,42 +4,40 @@
 
 ## What
 
-Replace today's first run, where a zero-vice account sees an endless spinner, with three skippable steps:
+Replace today's first run, where a new account lands on "No vices yet. Add one from Manage Data in the menu.", with three skippable steps:
 
-1. A one-line explanation of the app.
-2. One-tap starter vices, each preset with the right unit, plus a "custom" option.
-3. An optional limit per vice.
+1. One line on what the app is: a private journal that shows what goes with your habits.
+2. One-tap starter vices, each with the right unit, plus "custom".
+3. The disclaimer (C16), acknowledged once.
 
-The flow ends on Today with the first log in place. Ask for notification permission only if the user picks a reminder time.
+It ends on Today with the first log in place. Health, Calendar and notification permissions are never asked here:
+each is asked the first time the user turns on the feature that needs it, with a screen that says what is read and
+that it stays on the device.
 
 ## Why
 
-- SOURCED (register): a zero-vice account loads forever, an ordinary zero-activity day renders as an error, and Manage Data hides its add-vice button when there are no activities.
-- SOURCED (code): fl_chart 1.2.0 asserts `'Radar needs at least 3 RadarEntry'` (`radar_chart_data.dart:298`). `lib/vice_chart.dart` builds one entry per unarchived vice name and guards only the zero-vice and zero-activity cases, so one or two vices trip the assert in debug builds and draw a degenerate chart in release. The register does not list this.
-- SOURCED (code): `Unit` already covers item, time, puff, drink, minute and hour, so the presets need no schema change.
-- INFERENCE: App Review and every new user see this flow first.
+- SOURCED (code): `lib/vice_chart.dart` sends a new user to Manage Data, two screens away, to create the first vice.
+- SOURCED (code): `Unit` already covers item, time, puff, drink, minute and hour, so presets need no schema change.
+- INFERENCE: a permission asked before the user knows what it buys is usually refused, and a refused HealthKit read
+  cannot be detected by the app (see [Apple Health](../insights/apple-health-correlation.md)), so asking late matters.
 
 ## Options
 
-- **A.** An "Add your first vice" call to action on the empty Today screen, and nothing more.
-- **B.** A, plus the preset picker and the optional limit step (for example Alcohol/drinks, Coffee/items, Cigarettes/items, Vape/puffs, Screen time/minutes, Custom).
-- **C.** B, plus a three-screen intro carousel.
+- **A.** An "Add your first vice" call to action on the empty Today, and nothing more.
+- **B.** A, plus the preset picker and the disclaimer step.
+- **C.** B, plus an intro carousel.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **B**, starting as a guest. Presets get users to a meaningful Today screen in seconds. Skip the carousel, because those are usually skipped (INFERENCE). Use non-judgemental copy, for example "What would you like to keep an eye on?".
+Claude's recommendation: **B**, starting as a guest. Neutral copy: "What would you like to keep a journal of?" Skip
+the carousel (INFERENCE: usually skipped).
 
 **Effort:** M
 
-**Revenue impact:** High. The activation rate multiplies every later conversion number.
+**Revenue impact:** High: activation multiplies every later conversion.
 
 **Depends on:**
 - [guest mode](guest-mode-and-sign-in.md)
-- [per-vice goals](per-vice-goals-and-limits.md)
-- [Today rework](today-screen-rework.md)
-- [substance framing](../release-blockers/substance-framing-and-age-rating.md)
-- [`empty-stream-shortcircuit-reads-as-permanent-loading`](../../tech-debt/widget-state-and-view-logic/empty-stream-shortcircuit-reads-as-permanent-loading.md)
-- [`a-zero-activity-day-renders-as-an-error`](../../tech-debt/navigation-and-unreachable-ui/a-zero-activity-day-renders-as-an-error.md)
-- [`manage-data-hides-everything-when-activities-are-empty`](../../tech-debt/navigation-and-unreachable-ui/manage-data-hides-everything-when-activities-are-empty.md)
+- [neutral framing](../release-blockers/neutral-framing-and-age-rating.md)
 
-**Needs Jack:** yes — Which substances go in the preset list, and how are they worded? Naming substances is a tone and 1.4.3 question.
+**Needs Jack:** yes — Which presets, worded how? Naming substances is a tone and guideline 1.4.3 question.

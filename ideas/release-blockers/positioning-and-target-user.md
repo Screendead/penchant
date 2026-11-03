@@ -1,32 +1,45 @@
-# Position the app as a multi-substance moderation logger
+# Position the app as a neutral journal for learning about yourself
 
 **Priority:** release blocker
 
 ## What
 
-Decide who 1.0 is for, and how the store listing frames it. The code already supports any number of vices, each with a unit (`lib/data/unit.dart`: item, time, puff, drink, minute, hour), and a radar chart that shows all of them for one day. Every later choice depends on this one: onboarding presets, units, tone, the price anchor and the store keywords.
+The app is a journal for the things people consume or do by habit. They log each one in detail, and the app shows
+the trends and what goes with them, so the user learns about themselves. Cutting down can coexist as an optional goal
+(see [optional goals](../growth-later/optional-goals-and-limits.md)), but the journal and its insights are the point.
+What remains to build is the copy that says so: the store description and keywords, the onboarding line, the About
+text, and a short tone guide that every later screen follows.
 
-## Why
+## Decision
 
-- SOURCED ([market scan](../market-scan.md)): Reframe, Sunnyside and MyDrinkaware cover alcohol only. I Am Sober and Quitzilla count days abstinent rather than quantity.
-- INFERENCE: the scan found no mainstream app that logs quantities across several substances with a radar view. The search was not exhaustive.
-- SOURCED: the category's top review complaints are aggressive paywalls, trials that convert to annual plans unexpectedly, and hard-to-reach support. "Private data, honest billing, works offline" is the positioning those complaints leave open.
+Decided by Jack 2026-11-03 (C15): **a neutral journal, for seeing trends and learning about yourself.** His note asks
+for intelligent insights into what causes use (calendar events; triggers that get more specific as you drill down and
+remember your common ones; free text) and what follows from using one vice against another (Apple Health, including
+historical data, telling apart which vice a health effect goes with), at maximum granularity, with sensitive
+processing and storage on the device. Set aside: multi-substance moderation, alcohol-only moderation, and a
+quit/streak counter.
 
-## Options
+## Why the copy matters
 
-- **A. Multi-substance moderation:** "track and cut down on several habits at once". Harm-reduction tone, no abstinence requirement.
-- **B. Alcohol-only moderation**, competing with Reframe, Sunnyside and MyDrinkaware on price and privacy.
-- **C. Quit/streak counter**, competing with I Am Sober and Quitzilla.
-- **D. Neutral consumption journal**, with no reduction framing at all.
+- SOURCED ([market scan](../market-scan.md)): the self-tracking journals (Bearable, Exist, Daylio, Welltory) sell
+  correlation insight; the vice apps (Reframe, I Am Sober, Quitzilla) sell reduction or abstinence.
+- INFERENCE: no listing the scan found combines detailed vice logging with health and calendar correlation, so the
+  copy has to name both halves, or search files the app with one of them.
+- SOURCED (C16): the framing is neutral, so the copy describes and never judges: "logged", never "slipped"; "nothing
+  logged", never "clean".
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **A.** It is the only position without an obvious incumbent, and it matches what the data model already does (a quantity per vice per day). The radar and per-vice units only make sense across several substances. Moderation is also the safest reading of App Store guideline 1.4.3 (see [substance framing](substance-framing-and-age-rating.md)). The store copy should lead on privacy and honest billing.
+Claude's recommendation: lead the listing on the question the app answers ("what goes with your habits?"), then three
+proof points: detailed logging with triggers, insights computed on your device, no subscription. Write the tone guide
+as part of [neutral framing](neutral-framing-and-age-rating.md), and spend the keyword field on terms the subtitle
+leaves out (journal, habits, triggers, sleep, HRV).
 
-**Effort:** S (a decision, plus copy)
+**Effort:** S (copy)
 
-**Revenue impact:** Indirect but foundational. It sets the market size and the price anchor: alcohol-only apps charge in the $8–25/month class, generic trackers $2–5/month (indicative, from the [market scan](../market-scan.md)).
+**Revenue impact:** Foundational. It sets the audience (self-trackers who pay for insight, not people in a recovery
+programme) and the price anchor.
 
-**Depends on:** nothing.
+**Depends on:** [brand name](brand-name.md).
 
-**Needs Jack:** yes — Is 1.0 a multi-substance moderation logger (A), or one of alcohol-only, quit counter or neutral journal?
+**Needs Jack:** no
