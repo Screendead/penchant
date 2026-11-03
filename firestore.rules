@@ -54,11 +54,13 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp;
 
       allow update: if ownsExisting()
         && changedKeys().hasOnly(['quantity', 'createdAt'])
-        && (!('quantity' in changedKeys()) || request.resource.data.quantity is int)
+        && (!('quantity' in changedKeys())
+          || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
     }
   }

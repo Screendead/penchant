@@ -98,6 +98,8 @@ beforeEach(async () => {
       ...activity({ createdAt }),
       note: 'written from the console',
     });
+    // Written before quantities had to be positive.
+    await setDoc(doc(db, 'activities/aliceZeroActivity'), activity({ quantity: 0, createdAt }));
     await setDoc(
       doc(db, 'activities/bobActivity'),
       activity({ ownerID: BOB, viceID: 'bobVice', createdAt }),
@@ -290,9 +292,13 @@ describe('activities', () => {
       await assertSucceeds(setDoc(doc(collection(asAlice(), 'activities')), activity()));
     });
 
-    it('allows a negative or zero quantity, which the dialog accepts', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ quantity: 0 })));
-      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ quantity: -1 })));
+    it('allows a quantity of 1', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ quantity: 1 })));
+    });
+
+    it('denies a zero or negative quantity', async () => {
+      await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ quantity: 0 })));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ quantity: -1 })));
     });
 
     it('denies creating an activity owned by someone else', async () => {
@@ -329,6 +335,10 @@ describe('activities', () => {
   describe('read', () => {
     it('allows the owner to get their activity', async () => {
       await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceActivity')));
+    });
+
+    it('allows the owner to get a legacy activity with a zero quantity', async () => {
+      await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceZeroActivity')));
     });
 
     it('allows the activity list query', async () => {
@@ -397,6 +407,28 @@ describe('activities', () => {
       );
     });
 
+    it('allows moving a legacy zero-quantity activity, or fixing its quantity', async () => {
+      const ref = doc(asAlice(), 'activities/aliceZeroActivity');
+      await assertSucceeds(updateDoc(ref, { createdAt: new Date('2026-01-03T09:00:00Z') }));
+      await assertSucceeds(updateDoc(ref, { quantity: 1 }));
+    });
+
+    it('allows the editor writing back an unchanged zero quantity with a new time', async () => {
+      await assertSucceeds(
+        updateDoc(doc(asAlice(), 'activities/aliceZeroActivity'), {
+          createdAt: new Date('2026-01-03T09:00:00Z'),
+          quantity: 0,
+        }),
+      );
+    });
+
+    it('denies changing a quantity to zero or below', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertFails(updateDoc(ref, { quantity: 0 }));
+      await assertFails(updateDoc(ref, { quantity: -1 }));
+      await assertFails(updateDoc(doc(asAlice(), 'activities/aliceZeroActivity'), { quantity: -1 }));
+    });
+
     it('denies wrong types', async () => {
       const ref = doc(asAlice(), 'activities/aliceActivity');
       await assertFails(updateDoc(ref, { quantity: '3' }));
@@ -439,6 +471,7 @@ describe('activities', () => {
     it('allows the owner to delete an existing activity', async () => {
       await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceActivity')));
       await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceLegacyActivity')));
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceZeroActivity')));
     });
 
     it('denies a non-owner delete', async () => {
