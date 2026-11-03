@@ -53,26 +53,38 @@ Future<String> _get(Uri uri, {bool admin = false}) async {
 
 // The Auth emulator's record of the emails it would have sent:
 // https://firebase.google.com/docs/reference/rest/auth#section-auth-emulator-oob
+// Registration sends its email after the home screen appears, so this waits
+// for at least one.
 Future<List<Map<String, dynamic>>> _oobCodes(
   String email,
   String requestType,
 ) async {
-  final Map<String, dynamic> body =
-      jsonDecode(
-            await _get(
-              Uri.parse(
-                'http://$emulatorHost:$authEmulatorPort/emulator/v1/projects/'
-                '$emulatorProjectId/oobCodes',
+  final DateTime deadline = DateTime.now().add(timeout);
+  while (true) {
+    final Map<String, dynamic> body =
+        jsonDecode(
+              await _get(
+                Uri.parse(
+                  'http://$emulatorHost:$authEmulatorPort/emulator/v1/projects/'
+                  '$emulatorProjectId/oobCodes',
+                ),
               ),
-            ),
-          )
-          as Map<String, dynamic>;
-  return <Map<String, dynamic>>[
-    for (final dynamic code
-        in body['oobCodes'] as List<dynamic>? ?? <dynamic>[])
-      if (code['email'] == email && code['requestType'] == requestType)
-        code as Map<String, dynamic>,
-  ];
+            )
+            as Map<String, dynamic>;
+    final List<Map<String, dynamic>> codes = <Map<String, dynamic>>[
+      for (final dynamic code
+          in body['oobCodes'] as List<dynamic>? ?? <dynamic>[])
+        if (code['email'] == email && code['requestType'] == requestType)
+          code as Map<String, dynamic>,
+    ];
+    if (codes.isNotEmpty) {
+      return codes;
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      throw TestFailure('No $requestType email for $email');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  }
 }
 
 // Every stored document's ownerID, read past the rules.
@@ -104,12 +116,6 @@ Future<void> _openAccountSettings(WidgetTester tester) async {
   await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
 }
 
-Future<void> _signOutThroughSettings(WidgetTester tester) async {
-  await openFromDrawer(tester, 'Settings');
-  await tap(tester, find.text('Sign out'));
-  await pumpUntil(tester, find.byType(SignIn));
-}
-
 Future<void> _signInThroughForm(
   WidgetTester tester,
   String email,
@@ -137,10 +143,10 @@ void main() {
     const String newPassword = 'N3wPassw0rdE2E';
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, email);
-    expect(await _oobCodes(email, 'VERIFY_EMAIL'), isNotEmpty);
+    await _oobCodes(email, 'VERIFY_EMAIL');
 
     // Sign-out terminates Firestore; signing back in below shows it recovers.
-    await _signOutThroughSettings(tester);
+    await signOutThroughSettings(tester);
     await enterText(tester, 'Email', email);
     await tap(tester, find.text(AccountCopy.forgotPassword));
     final Finder dialog = find.byType(ResetPasswordDialog);
@@ -164,7 +170,6 @@ void main() {
       email,
       'PASSWORD_RESET',
     );
-    expect(resets, isNotEmpty);
     // The listed link leaves out newPassword; the emulator takes it as a
     // query parameter.
     final Uri link = Uri.parse(resets.last['oobLink'] as String);
@@ -204,7 +209,7 @@ void main() {
     );
     await _get(Uri.parse(links.last['oobLink'] as String));
 
-    await tap(tester, find.byTooltip('Close'));
+    await tap(tester, find.byType(BackButton));
     await pumpUntil(tester, find.text(AccountCopy.dataSection), present: false);
     await tap(tester, find.text('Account'));
     await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));

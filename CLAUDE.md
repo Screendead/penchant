@@ -139,7 +139,7 @@ hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges(
 `userProfileProvider` one over `userChanges()`. Each
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
-`count()` aggregation), read through a plain `Provider` (or `Provider.autoDispose.family`)
+`count()` aggregation), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
 of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
@@ -179,7 +179,10 @@ provider, so a value never belongs to a previous user: riverpod carries a provid
 value into the loading state of a rebuild, which is how a single provider rebuilt on a user
 change leaked the previous account's data. Widgets watch the wrapper; tests override it
 with an `AsyncValue`, or override the family to test the wrapper. The query families are
-`autoDispose`, so leaving a day, range or page closes its listener. No activity provider
+`autoDispose`, so leaving a day, range or page closes its listener, and so are the wrappers:
+a wrapper nothing watches would keep its family's listener open, and once sign-out has
+terminated Firestore that listener hears nothing, so the same user signing back in would
+see a frozen list. No activity provider
 depends on the vice list: the day query filters on `ownerID` and `createdAt` alone (an `in`
 filter on vice IDs takes at most 30) and the chart drops activities of vices it does not
 draw. A `null` value means loading; an empty list means no data. Never gate UI on

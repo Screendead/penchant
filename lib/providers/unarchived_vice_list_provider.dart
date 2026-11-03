@@ -14,6 +14,8 @@ final unarchivedViceListForUserProvider = StreamProvider.autoDispose
           .map(Vice.fromQuerySnapshot);
     });
 
-final unarchivedViceListProvider = Provider<AsyncValue<List<Vice>>>((ref) {
-  return watchForSignedInUser(ref, unarchivedViceListForUserProvider.call);
-});
+final unarchivedViceListProvider = Provider.autoDispose<AsyncValue<List<Vice>>>(
+  (ref) {
+    return watchForSignedInUser(ref, unarchivedViceListForUserProvider.call);
+  },
+);

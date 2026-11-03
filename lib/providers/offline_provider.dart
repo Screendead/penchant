@@ -47,7 +47,9 @@ Stream<bool> sustainedOffline(Stream<bool> fromCache, Duration delay) {
 
 // True while Firestore has been answering from the device's cache, which it
 // does when it cannot reach the backend, including after disableNetwork().
-final offlineProvider = StreamProvider<bool>((ref) {
+// autoDispose, as the query wrappers are: a listener kept open with no screen
+// watching would outlive sign-out's terminate() and never hear another event.
+final offlineProvider = StreamProvider.autoDispose<bool>((ref) {
   final User? user = ref.watch(userProvider).value;
 
   if (user == null) {

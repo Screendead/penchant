@@ -13,6 +13,6 @@ final viceListForUserProvider = StreamProvider.autoDispose
           .map(Vice.fromQuerySnapshot);
     });
 
-final viceListProvider = Provider<AsyncValue<List<Vice>>>((ref) {
+final viceListProvider = Provider.autoDispose<AsyncValue<List<Vice>>>((ref) {
   return watchForSignedInUser(ref, viceListForUserProvider.call);
 });
