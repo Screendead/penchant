@@ -19,8 +19,10 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 
 - **Production Firestore is untouchable.** Never read or write the live data of `screendead-vice-tracker`, and never
   run a `firebase` or `gcloud` command that could contact that project (no `deploy`, no `firestore:*`, no
-  `--project screendead-vice-tracker`). The documented data shape must stay compatible with existing documents.
-  Deploying rules or indexes to production is Jack's to run.
+  `--project screendead-vice-tracker`). The documented data shape must stay compatible with existing documents:
+  new optional fields are fine; a new mandatory field ships only with a migrator that adds it to existing records on
+  first launch (Jack, 2026-11-03). Rules and indexes reach production only through CI on merge to `master` (Jack,
+  2026-11-03), so merging a rules PR deploys it; until that job works, Jack deploys them by hand.
 - **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
   `demo-` project has no cloud counterpart, so nothing can leak to production.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
@@ -37,7 +39,7 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   him. Force-pushing `master` always needs Jack.
 - Workflow subagents cannot merge: the auto-mode permission classifier denies `gh pr merge` inside them ("Merge
   Without Review"). They bring a PR to green and CLEAN; the main session merges.
-- Merging to `master` deploys web hosting to production (CI); that is expected and allowed. It does not deploy rules.
+- Merging to `master` deploys web hosting to production (CI), until the web target is removed (HANDOVER, C6).
 
 ## Commands
 
