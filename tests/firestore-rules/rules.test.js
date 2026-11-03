@@ -20,6 +20,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 
 // Without an explicit host the library falls back to the default port, which may
@@ -102,6 +103,12 @@ beforeEach(async () => {
     });
     // Written before quantities had to be positive.
     await setDoc(doc(db, 'activities/aliceZeroActivity'), activity({ quantity: 0, createdAt }));
+    // Written before an activity's vice had to exist and belong to its owner.
+    await setDoc(doc(db, 'activities/aliceOrphanActivity'), activity({ viceID: 'gone', createdAt }));
+    await setDoc(
+      doc(db, 'activities/aliceForeignViceActivity'),
+      activity({ viceID: 'bobVice', createdAt }),
+    );
     await setDoc(
       doc(db, 'activities/bobActivity'),
       activity({ ownerID: BOB, viceID: 'bobVice', createdAt }),
@@ -333,6 +340,41 @@ describe('activities', () => {
       await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ quantity: -1 })));
     });
 
+    it("allows recording against the owner's legacy or archived vice", async () => {
+      await assertSucceeds(
+        addDoc(collection(asAlice(), 'activities'), activity({ viceID: 'aliceLegacyVice' })),
+      );
+      await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: true }));
+      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity()));
+    });
+
+    it("denies recording against another user's vice", async () => {
+      await assertFails(
+        addDoc(collection(asAlice(), 'activities'), activity({ viceID: 'bobVice' })),
+      );
+    });
+
+    it('denies recording against a vice that does not exist', async () => {
+      for (const viceID of ['gone', '', 'aliceVice/activities/x']) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ viceID })));
+      }
+    });
+
+    it('denies recording against a vice deleted earlier', async () => {
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'vices/aliceVice')));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), activity()));
+    });
+
+    // get() reads committed state; seeing the batch's own vice would need getAfter().
+    it('denies a batch that creates the vice and its first activity together', async () => {
+      const db = asAlice();
+      const viceRef = doc(collection(db, 'vices'));
+      const batch = writeBatch(db);
+      batch.set(viceRef, vice());
+      batch.set(doc(collection(db, 'activities')), activity({ viceID: viceRef.id }));
+      await assertFails(batch.commit());
+    });
+
     it('denies creating an activity owned by someone else', async () => {
       await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ ownerID: BOB })));
     });
@@ -371,6 +413,11 @@ describe('activities', () => {
 
     it('allows the owner to get a legacy activity with a zero quantity', async () => {
       await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceZeroActivity')));
+    });
+
+    it("allows the owner to get a legacy activity whose vice is missing or someone else's", async () => {
+      await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceOrphanActivity')));
+      await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceForeignViceActivity')));
     });
 
     it('allows the activity list query', async () => {
@@ -431,6 +478,14 @@ describe('activities', () => {
           quantity: 5,
         }),
       );
+    });
+
+    it("allows editing a legacy activity whose vice is missing or someone else's", async () => {
+      for (const id of ['aliceOrphanActivity', 'aliceForeignViceActivity']) {
+        const ref = doc(asAlice(), `activities/${id}`);
+        await assertSucceeds(updateDoc(ref, { quantity: 4 }));
+        await assertSucceeds(updateDoc(ref, { createdAt: new Date('2026-01-03T09:00:00Z') }));
+      }
     });
 
     it('allows editing a legacy activity carrying an extra field', async () => {
@@ -504,6 +559,8 @@ describe('activities', () => {
       await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceActivity')));
       await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceLegacyActivity')));
       await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceZeroActivity')));
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceOrphanActivity')));
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'activities/aliceForeignViceActivity')));
     });
 
     it('denies a non-owner delete', async () => {

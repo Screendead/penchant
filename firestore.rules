@@ -21,6 +21,12 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // A missing vice makes get() null and the field access an error, which
+    // denies. Each call is a billed read, even when the request is denied.
+    function ownsVice(viceID) {
+      return get(/databases/$(database)/documents/vices/$(viceID)).data.ownerID == request.auth.uid;
+    }
+
     // size() counts UTF-16 code units in the emulator, the same as Dart's
     // String.length, which lib/data/limits.dart checks against.
     function validName(name) {
@@ -59,7 +65,8 @@ service cloud.firestore {
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
-        && request.resource.data.createdAt is timestamp;
+        && request.resource.data.createdAt is timestamp
+        && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
         && changedKeys().hasOnly(['quantity', 'createdAt'])
