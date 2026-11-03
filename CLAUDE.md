@@ -144,14 +144,24 @@ out the write layer (below). `packageInfoProvider` is a `FutureProvider` over
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
-`TrackerWrites` (`lib/writes/tracker_writes.dart`), the only code in `lib/` that writes
-Firestore documents. It has one method
+`TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every per-document
+write. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
 `updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
 error messages and Undo stay in the widgets. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
-document. Auth mutations (sign-in, register, sign-out, account settings) still call
-`FirebaseAuth.instance` inline.
+document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
+(`lib/account/account.dart`): sign-in, register (which also sends the verification email),
+password reset, re-authentication, profile and email changes, sign-out, and the
+account-wide Firestore work: `fetchData` pages through the user's vices and activities for
+export (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
+to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
+batches of 500, then the Auth user. Sign-out and deletion then `terminate()` Firestore and
+`clearPersistence()`; the plugin builds a fresh native instance with the same settings on
+the next call. Sign-out first waits up to 5 s for pending writes and throws
+`UnsyncedEntriesException` rather than discard them silently. Auth error text shown to the
+user comes from `authErrorMessage` (`lib/account/auth_errors.dart`), never Firebase's own
+message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 
 **Provider chain.** `userProvider` (auth state) → `viceListProvider` /
 `unarchivedViceListProvider` → the day and list activity providers, which need the vice
@@ -198,7 +208,8 @@ average.
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
 `User`; `test/fake_writes.dart` is a `TrackerWrites` that records each write, for
-`trackerWritesProvider.overrideWithValue`). Anything that calls `FirebaseFirestore.instance`
+`trackerWritesProvider.overrideWithValue`; `test/fake_account.dart` does the same for
+`accountProvider` and `exportShareProvider`). Anything that calls `FirebaseFirestore.instance`
 or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.

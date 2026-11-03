@@ -292,9 +292,8 @@ Reasons for the choices inside O1:
   - Its done flag is per device, and R1 still accepts plaintext creates.
   - R2 (sealed-only rules) is not written yet.
 - **Contradiction to settle:** the research says both "keep a local plaintext copy" and "the cache holds only
-  ciphertext". Recommended: ciphertext only, with export as the backup that needs no key. That also shrinks
-  [`sign-out-leaves-firestore-cache-on-device`](../../tech-debt/auth-and-account-lifecycle/sign-out-leaves-firestore-cache-on-device.md)
-  to metadata (INFERENCE).
+  ciphertext". Recommended: ciphertext only, with export as the backup that needs no key. That also shrinks what the
+  on-device cache holds between sign-outs (sign-out now clears it) to metadata (INFERENCE).
 - **Untested:**
   - The end-to-end run on iOS: sign up, log, wipe the keychain, unlock with the recovery key, convert legacy
     documents.
@@ -315,8 +314,8 @@ Reasons for the choices inside O1:
 - [`macos-deployment-target-frozen-at-10-14`](../../tech-debt/platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
   and [`macos-sandbox-grants-no-outbound-network`](../../tech-debt/platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
 - Ideas: [name and bundle ID](name-and-bundle-id.md), [backend hardening](backend-hardening.md),
-  [account deletion](in-app-account-deletion.md) (it deletes the key too),
-  [privacy policy](privacy-policy-and-labels.md), [data export](../v1-must-haves/data-export.md) (export becomes the
+  account deletion (built in `lib/account/`; it must delete the key too),
+  [privacy policy](privacy-policy-and-labels.md), data export (built in `lib/account/`; export becomes the
   only backup that needs no key), [crash reporting](../v1-must-haves/crash-reporting-and-analytics.md),
   [macOS target](../v1-must-haves/macos-target.md),
   [granular logging](../insights/granular-logging-and-data-model.md),
