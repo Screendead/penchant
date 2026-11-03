@@ -99,10 +99,15 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 - **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand itself is open on the pitch page (`r2-brand`;
   candidates in `ideas/release-blockers/brand-name.md`).
 
+## Jack's calls, round 2
+
+- **`r2-web-site`** (2026-11-03, in chat): **take the live web site down now.** Claude can't: it is Firebase Hosting
+  on the production project, which the hard rules put out of Claude's reach, so it is on Jack's list below.
+
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
-recommendation. Ids: `r2-web-site` (when the live web site goes down), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
+recommendation. Ids: `r2-brand`, `r2-trademark`, `r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
 Firebase project), `r2-privacy`, `r2-icon`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
@@ -116,7 +121,9 @@ Pitched later, with mock-ups, when their work starts: the starter trigger tree's
   Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer, and keep Firebase Hosting Admin (or
   add Firebase Viewer) for `firebase.projects.get`; then
   `gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker`. Until then the deploy job is skipped
-  and #33's rules stay undeployed. The next merge after that deploys them; rebuild installed copies from master first.
+  and #33's rules stay undeployed. The next merge after that deploys them. Jack's iPhone runs master as of 2026-11-03.
+- **Take the web site down** (`r2-web-site`): `firebase hosting:disable --project screendead-vice-tracker`, then
+  confirm the site URL returns "Site Not Found". The deployed releases stay in the console, so this can be undone.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 - **PR #22** (a Dependabot bump in `admin/`) is open; it is safe to leave until the seed script is reworked.
