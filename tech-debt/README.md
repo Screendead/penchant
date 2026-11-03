@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**106 issues: 0 critical, 23 high, 52 medium, 31 low.**
+**107 issues: 0 critical, 23 high, 53 medium, 31 low.**
 
 ## Firebase Data Layer (10)
 
@@ -70,7 +70,7 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 - **medium** — [Inconsistent error display, and one path can crash the Save button itself](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (7)
+## Offline and Write Reliability (8)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
@@ -78,6 +78,7 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **high** — [App can't tell a stale offline cache from a confirmed empty result](offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
 - **high** — [A timeout error can be followed by the write succeeding anyway, twice](offline-and-write-reliability/the-timeout-abandons-the-await-not-the-write.md)
 - **high** — [Delete buttons can hang offline with no timeout and no visible feedback](offline-and-write-reliability/three-delete-paths-have-no-timeout-or-pending-state.md)
+- **medium** — [Offline persistence and cache size rest on SDK defaults nobody chose](offline-and-write-reliability/firestore-persistence-is-never-configured.md)
 - **medium** — [Add and archive buttons can be pressed repeatedly while offline](offline-and-write-reliability/add-vice-and-archive-writes-have-no-timeout.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 - **medium** — [No banner, badge, or retry button ever tells the user they're offline](offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
