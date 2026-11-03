@@ -45,12 +45,12 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 
 ```bash
 flutter pub get
-flutter run                      # device picker; -d chrome for web
+flutter run                      # device picker; -d macos for the desktop build
 flutter analyze
 dart run custom_lint             # loads no rules: riverpod_lint 3.1 left custom_lint (see tech-debt)
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
-flutter build web --release      # what CI builds and deploys
+flutter build macos --debug      # the macOS target still builds (CI builds no app)
 dart run flutter_launcher_icons  # after changing assets/icon.webp
 ```
 
@@ -97,6 +97,7 @@ is fixed.
 ## Architecture
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
+It targets iOS and macOS only; `firebase_options.dart` throws on any other platform.
 
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
@@ -158,5 +159,4 @@ default app resolves to a non-`demo-` project. On iOS, firebase_core configures 
 default app from the bundled `GoogleService-Info.plist` before Dart runs, so the Runner
 target's "Strip Firebase plist for emulators" build phase
 (`tools/ios-strip-firebase-plist.sh`) moves it out of the bundle for flagged builds. macOS
-bundles its own plist with no such phase, so a flagged macOS build should fail at startup;
-Android and web are untested with the flag.
+bundles its own plist with no such phase, so a flagged macOS build should fail at startup.
