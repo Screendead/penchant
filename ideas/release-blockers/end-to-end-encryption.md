@@ -239,7 +239,7 @@ Reasons for the choices inside O1:
      count towards the limits" (SOURCED:
      [rules conditions](https://firebase.google.com/docs/firestore/security/rules-conditions)), and billing is one
      read per dependent document per request (SOURCED: [pricing](https://firebase.google.com/docs/firestore/pricing)).
-   - On the emulator, 200-write batches pass with the guard (SOURCED: emulator run). That production behaves the same
+   - On the emulator, 200-write batches pass with the guard (SOURCED: a reviewer's emulator run, not in the branch's tests). That production behaves the same
      is INFERENCE.
 6. **Two keychain copies or one.**
    - Recommended: two, a synced copy and a this-device-only copy, but only once a device check shows the local copy
