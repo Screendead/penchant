@@ -32,9 +32,10 @@ Future<void> initializeFirebase() async {
     );
     // App Attest yields no token App Check accepts until the Runner target
     // has the App Attest entitlement, which the current signing team cannot
-    // sign (HANDOVER.md, "For Jack to do"). firebase_app_check 0.4.5 picks App
-    // Attest on any iOS or macOS 14 and later without asking whether the
-    // device can attest, so DeviceCheck covers only older systems.
+    // sign (HANDOVER.md, "For Jack to do"). firebase_app_check 0.4.9 picks App
+    // Attest whenever DCAppAttestService reports the device supports it,
+    // entitlement or not, so DeviceCheck covers only devices that cannot
+    // attest.
     await FirebaseAppCheck.instance.activate(
       providerApple: const AppleAppAttestWithDeviceCheckFallbackProvider(),
     );

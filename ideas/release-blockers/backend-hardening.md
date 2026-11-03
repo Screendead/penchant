@@ -22,9 +22,9 @@ Left before strangers install:
   (`HANDOVER.md`, "Calls waiting on Jack").
 - **App Check yields no accepted token on a device yet.** The App Attest entitlement can't be signed by the personal
   team, so App Attest has nothing to attest with. The DeviceCheck fallback does not cover this: in
-  `firebase_app_check` 0.4.5+2 (`FirebaseAppCheckPlugin.swift`, `appAttestWithDeviceCheckFallback`) the plugin picks
-  App Attest on the OS version alone (`if #available(iOS 14.0, macOS 14.0, *)`), so DeviceCheck never runs on a
-  current device. Fixing it needs the paid Apple Developer Program team, then the entitlement, the App Check
+  `firebase_app_check` 0.4.9 (`FirebaseAppCheckPlugin.swift`, `appAttestWithDeviceCheckFallback`) the plugin picks
+  App Attest whenever `DCAppAttestService.shared.isSupported`, without regard to the entitlement, so DeviceCheck
+  runs only on a device that cannot attest. Fixing it needs the paid Apple Developer Program team, then the entitlement, the App Check
   registration in the console, and enforcement once nearly all requests verify.
 - **Budget alerts** on the production project.
 
