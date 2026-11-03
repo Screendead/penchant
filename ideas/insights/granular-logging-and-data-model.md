@@ -40,9 +40,12 @@ new collections (`days`, `triggerNodes`), which most of the table needs.
   exists; "mandatory" can only mean "always present in the app's model", filled by the parser's default or the
   migrator.
 - SOURCED (code): `Vice.fromJson` and `ViceActivity.fromJson` read named keys and ignore the rest, so old clients
-  tolerate added fields. They cast unconditionally, so a new build must default every new field when it is missing.
-- SOURCED (code): `quantity` is parsed `as int` (`lib/data/vice_activity.dart`). INFERENCE: writing `1.5` crashes
-  every old client that reads it, so decimals cannot go into `quantity` while old clients exist.
+  tolerate added fields. Builds before the parser change cast unconditionally; the current build reads every field
+  through `lib/data/json_fields.dart`, which defaults a missing or mistyped value, so each new field needs a default
+  there too.
+- SOURCED (code): builds before the parser change parse `quantity` `as int`; the current build rounds a double to the
+  nearest int (`readInt`). INFERENCE: writing `1.5` crashes every older client that reads it, and the current one
+  reads it as 2, so decimals cannot go into `quantity` while old clients exist.
 - INFERENCE: the migrator is a client loop over the user's own documents with batched updates, idempotent and keyed
   on `schemaVersion`; it costs one write per document per migration and must survive being killed half way.
 - INFERENCE: the on-device insight store never migrates. It is derived, so a new engine version drops and rebuilds it
@@ -58,8 +61,8 @@ new collections (`days`, `triggerNodes`), which most of the table needs.
 
 ## Recommendation
 
-Claude's recommendation: **B and C, in this order:** first a build whose parsers default every missing field (the
-register's parser debt), then the fields in one rules PR with tests, then the migrator for `category` only. Keep
+Claude's recommendation: **B and C, in this order:** first a build whose parsers default every missing field (the code
+is in; it must ship before any new field is written), then the fields in one rules PR with tests, then the migrator for `category` only. Keep
 everything optional in the rules until the web site is down and no pre-1.0 build is in use.
 
 **Effort:** M (the fields, rules and tests) plus S per migration
@@ -67,7 +70,6 @@ everything optional in the rules until the web site is down and no pre-1.0 build
 **Revenue impact:** High, indirectly: every insight is only as good as these fields.
 
 **Depends on:**
-- [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
 - [`activity-timestamps-come-from-the-device-clock`](../../tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - [`day-windows-use-device-local-midnight`](../../tech-debt/firebase-data-layer/day-windows-use-device-local-midnight.md)
 

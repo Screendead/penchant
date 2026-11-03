@@ -329,7 +329,7 @@ void main() {
 
     final Finder editor = find.byType(ViceActivityEditorPage);
 
-    testWidgets('saves the new quantity with the shown time and closes', (
+    testWidgets('saves only the edited quantity and closes', (
       WidgetTester tester,
     ) async {
       await open(tester);
@@ -343,7 +343,6 @@ void main() {
       expect(writes.writes, [
         Write('updateActivity', activity.id, <String, Object?>{
           'quantity': 5,
-          'createdAt': at,
         }),
       ]);
       expect(editor, findsNothing);
@@ -353,6 +352,10 @@ void main() {
         'timed out', (WidgetTester tester) async {
       writes.respond = _never;
       await open(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '5',
+      );
       await tester.tap(find.widgetWithText(TextButton, 'Save'));
       await tester.pump(const Duration(seconds: 10));
       await tester.pump();

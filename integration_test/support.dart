@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -222,25 +223,59 @@ Future<void> recordActivity(
   await pumpUntil(tester, dialog, present: false);
 }
 
+Future<String> storedViceID(String viceName) async {
+  final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
+      .instance
+      .collection('vices')
+      .where('ownerID', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+      .where('name', isEqualTo: viceName)
+      .get();
+  expect(vices.docs, hasLength(1), reason: 'vice $viceName');
+  return vices.docs.single.id;
+}
+
 // What the signed-in user's account holds in Firestore for one vice.
 Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> storedActivities(
   String viceName,
 ) async {
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
-  final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
-      .instance
-      .collection('vices')
-      .where('ownerID', isEqualTo: uid)
-      .where('name', isEqualTo: viceName)
-      .get();
-  expect(vices.docs, hasLength(1), reason: 'vice $viceName');
+  final String viceID = await storedViceID(viceName);
   final QuerySnapshot<Map<String, dynamic>> activities = await FirebaseFirestore
       .instance
       .collection('activities')
-      .where('ownerID', isEqualTo: uid)
-      .where('viceID', isEqualTo: vices.docs.single.id)
+      .where('ownerID', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+      .where('viceID', isEqualTo: viceID)
       .get();
   return activities.docs;
+}
+
+// Writes a document the rules would refuse, as a legacy client could have
+// before they existed. The emulators treat the "owner" bearer token as an
+// admin that skips Security Rules; [fields] are Firestore REST Values.
+Future<void> createBypassingRules(
+  String collection,
+  String documentID,
+  Map<String, Object> fields,
+) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection'
+      '?documentId=$documentID',
+    );
+    final HttpClientRequest request = await client.postUrl(uri);
+    request.headers
+      ..set(HttpHeaders.authorizationHeader, 'Bearer owner')
+      ..contentType = ContentType.json;
+    request.write(jsonEncode(<String, Object>{'fields': fields}));
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    if (response.statusCode != HttpStatus.ok) {
+      throw StateError('POST $uri returned ${response.statusCode}: $body');
+    }
+  } finally {
+    client.close();
+  }
 }
 
 // The radar chart paints its labels, so they are not Text widgets; read them

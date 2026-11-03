@@ -35,6 +35,5 @@ switching tool for exactly the journal users the positioning targets.
 - [account deletion](../release-blockers/in-app-account-deletion.md)
 - [`no-account-deletion-or-data-export`](../../tech-debt/auth-and-account-lifecycle/no-account-deletion-or-data-export.md)
 - [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
-- [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
 
 **Needs Jack:** no

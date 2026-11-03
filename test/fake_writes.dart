@@ -79,12 +79,12 @@ class FakeTrackerWrites implements TrackerWrites {
   @override
   Future<void> updateActivity(
     String activityID, {
-    required int quantity,
-    required DateTime createdAt,
+    int? quantity,
+    DateTime? createdAt,
   }) => _write(
     Write('updateActivity', activityID, <String, Object?>{
-      'quantity': quantity,
-      'createdAt': createdAt,
+      'quantity': ?quantity,
+      'createdAt': ?createdAt,
     }),
   );
 

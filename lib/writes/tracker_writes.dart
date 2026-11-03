@@ -51,14 +51,16 @@ class TrackerWrites {
     });
   }
 
+  // Only the given fields are written: an untouched field may hold a legacy
+  // value that the parser shows as a default.
   Future<void> updateActivity(
     String activityID, {
-    required int quantity,
-    required DateTime createdAt,
+    int? quantity,
+    DateTime? createdAt,
   }) {
     return _activities.doc(activityID).update({
-      'createdAt': createdAt,
-      'quantity': quantity,
+      'createdAt': ?createdAt,
+      'quantity': ?quantity,
     });
   }
 
