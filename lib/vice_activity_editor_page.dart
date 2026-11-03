@@ -255,11 +255,20 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
 
                       FocusScope.of(context).requestFocus(FocusNode());
 
+                      final DateTime firstDate = DateTime(2000);
+                      final DateTime lastDate = DateTime(2100);
+                      final DateTime stored = activity.createdAt.toDate();
+                      // The picker asserts its initial date is in range; an
+                      // unreadable legacy date reads as the epoch.
                       final DateTime? date = await showDatePicker(
                         context: context,
-                        initialDate: activity.createdAt.toDate(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
+                        initialDate: stored.isBefore(firstDate)
+                            ? firstDate
+                            : stored.isAfter(lastDate)
+                            ? lastDate
+                            : stored,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
                       );
 
                       if (date == null || !context.mounted) {
