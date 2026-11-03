@@ -52,11 +52,12 @@ void main() {
     expect(radar.minEntry.value, 0);
     await screenshot(tester, 'a11y-radar-zero-at-centre');
 
+    // Vices list newest first.
     final DateTime today = startOfDay(DateTime.now());
     expect(
       find.bySemanticsLabel(
-        'Totals for ${ViceChart.dayFormat.format(today)}. Coffee: 2 drinks; '
-        'Tea: 1 drink; Water: 0 drinks',
+        'Totals for ${ViceChart.dayFormat.format(today)}. Water: 0 drinks; '
+        'Tea: 1 drink; Coffee: 2 drinks',
       ),
       findsOneWidget,
     );

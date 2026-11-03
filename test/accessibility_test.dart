@@ -17,6 +17,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_chart.dart';
 import 'package:tracker/vice_tracker.dart';
+import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fakes.dart';
@@ -254,6 +255,34 @@ void main() {
         }
         await tester.pumpAndSettle();
         expect(find.text('29 days ago'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      // The record dialog's keyboard shrinks the home screen behind it.
+      testWidgets('a clear day fits above the keyboard', (
+        WidgetTester tester,
+      ) async {
+        _usePhone(tester, textScale: textScale);
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300 * 2);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._day(_three, [0, 0, 0]),
+              userProvider.overrideWith(
+                (ref) => Stream.value(FakeUser(ownerID)),
+              ),
+              viceListProvider.overrideWith((ref) => Stream.value(_three)),
+              viceActivityGraphProvider.overrideWith(
+                (ref, ViceActivityGraphQuery query) =>
+                    Stream.value(<ViceActivity>[]),
+              ),
+            ],
+            child: const MaterialApp(home: Homepage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CleanDay), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
