@@ -135,15 +135,18 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
 annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
-hand-written. Most are a `StreamProvider` or `StreamProvider.family` wrapping a Firestore
-snapshot stream (`userProvider` wraps `authStateChanges()`). Two are plain `Provider`s:
-`viceActivityListByViceIDProvider` groups `viceActivityListProvider`'s resolved list by
-vice and returns `null` until that list has a value, and `trackerWritesProvider` hands
-out the write layer (below). `packageInfoProvider` is a `FutureProvider` over
+hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges()`. Each
+Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
+snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
+`count()` aggregation), read through a plain `Provider` (or `Provider.autoDispose.family`)
+of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
+query provider that watches `userProvider` itself: that shape leaked the previous user's
+data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
+(below), and `packageInfoProvider` is a `FutureProvider` over
 `PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style; running `build_runner` generates nothing.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
-stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
+provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
 `TrackerWrites` (`lib/writes/tracker_writes.dart`), the only code in `lib/` that writes
 Firestore documents. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,

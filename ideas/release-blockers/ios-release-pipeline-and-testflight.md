@@ -34,7 +34,7 @@ can be rehearsed. Creating that project is Jack's.
 
 **Revenue impact:** The gate to all store revenue.
 
-**Depends on:** [name and bundle ID](name-and-bundle-id.md); versioning (done: `CHANGELOG.md`, `tools/build-version.sh`, the Release workflow); [account deletion](in-app-account-deletion.md); [privacy policy](privacy-policy-and-labels.md); backend hardening (client side done: bounded queries, App Check wiring; the App Attest entitlement, App Check registration and enforcement, and budget alerts are on Jack's list in `HANDOVER.md`); `no-license-file-anywhere` (fixed in PR #34: proprietary LICENSE) (queue 1c, C8).
+**Depends on:** [name and bundle ID](name-and-bundle-id.md); versioning (done: `CHANGELOG.md`, `tools/build-version.sh`, the Release workflow); [account deletion](in-app-account-deletion.md); [privacy policy](privacy-policy-and-labels.md); [backend hardening](backend-hardening.md) (bounded activity queries and App Check wiring built; the App Attest entitlement needs the paid team); `no-license-file-anywhere` (fixed in PR #34: proprietary LICENSE) (queue 1c, C8).
 
 **Needs Jack:** yes — Will he pay for the Developer Program, who are the beta testers, and do TestFlight builds use
 production Firebase or a separate beta project?

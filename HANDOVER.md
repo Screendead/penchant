@@ -140,6 +140,12 @@ Built as mock-ups on branches and pitched with screenshots: the Today layout (`m
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
 icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
+Not yet on the pitch page: **`vice-cap`** (from backend hardening, PR #55): cap the number of vices per user, with a
+guard in Add Vice and the rules, or leave the vice lists unbounded. Claude's recommendation: **leave them unbounded
+for 1.0**: vices are created by hand, and since the day query dropped its `in` filter the number of vices limits no
+query. A bare `limit` is not an option: it would hide the oldest vices without saying so. Register:
+`tech-debt/firebase-data-layer/vice-lists-are-unbounded.md`; idea: `ideas/release-blockers/backend-hardening.md`.
+
 ## For Jack to do (not decisions)
 
 - **Let CI deploy rules (C1):** grant the service account behind `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER`
