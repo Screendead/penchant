@@ -39,7 +39,6 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   him. Force-pushing `master` always needs Jack.
 - Workflow subagents cannot merge: the auto-mode permission classifier denies `gh pr merge` inside them ("Merge
   Without Review"). They bring a PR to green and CLEAN; the main session merges.
-- Merging to `master` deploys web hosting to production (CI), until the web target is removed (HANDOVER, C6).
 
 ## Commands
 
@@ -86,9 +85,8 @@ To run beside another emulator, point `firebase emulators:exec` at a config outs
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
 CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
-and `flutter test` on every PR to `master`. PRs also get a hosting preview; a push to `master`
-re-runs the checks and deploys hosting live only if they pass. `rules-tests.yml` runs the
-Firestore rules suite on every PR. Flutter is pinned in
+and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
+every PR. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. No riverpod_lint rule runs anywhere, locally or in
 CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
