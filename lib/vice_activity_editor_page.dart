@@ -150,10 +150,11 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
   @override
   Widget build(BuildContext context) {
     final List<Vice>? viceList = ref.watch(viceListProvider).value;
-    final List<ViceActivity>? activityList =
-        ref.watch(viceActivityHistoryProvider(widget.viceID)).value;
+    final AsyncValue<ViceActivity?> activityValue = ref.watch(
+      viceActivityProvider(widget.activityID),
+    );
 
-    if (viceList == null || activityList == null) {
+    if (viceList == null || activityValue.isLoading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -164,11 +165,9 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
     final Vice? vice = viceList.where((Vice item) => item.id == widget.viceID).isEmpty
         ? null
         : viceList.firstWhere((Vice item) => item.id == widget.viceID);
-    final ViceActivity? activity = activityList.where((ViceActivity item) => item.id == widget.activityID).isEmpty
-        ? null
-        : activityList.firstWhere((ViceActivity item) => item.id == widget.activityID);
+    final ViceActivity? activity = activityValue.value;
 
-    if (vice == null || activity == null) {
+    if (vice == null || activity == null || activity.viceID != widget.viceID) {
       return const Scaffold(
         body: Center(
           child: Text('Activity not found'),

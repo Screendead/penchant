@@ -85,12 +85,22 @@ class ViceChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<Vice>?> vicesValue = ref.watch(
+    final AsyncValue<List<Vice>> vicesValue = ref.watch(
       unarchivedViceListProvider,
     );
-    final AsyncValue<List<ViceActivity>?> activitiesValue = ref.watch(
+    final AsyncValue<List<ViceActivity>> activitiesValue = ref.watch(
       viceActivityDayProvider(selectedDate),
     );
+
+    final List<Vice>? vices = vicesValue.value;
+
+    // With no vices there is nothing to chart, whatever the day's query did.
+    if (!vicesValue.hasError && vices != null && vices.isEmpty) {
+      return const InfoBox(
+        message: 'No vices yet. Add one from Manage Data in the menu.',
+        color: Colors.blueGrey,
+      );
+    }
 
     if (vicesValue.error ?? activitiesValue.error case final Object error) {
       return InfoBox(
@@ -99,18 +109,10 @@ class ViceChart extends ConsumerWidget {
       );
     }
 
-    final List<Vice>? vices = vicesValue.value;
     final List<ViceActivity>? activityList = activitiesValue.value;
 
     if (vices == null || activityList == null) {
       return const Center(child: CircularProgressIndicator());
-    }
-
-    if (vices.isEmpty) {
-      return const InfoBox(
-        message: 'No vices yet. Add one from Manage Data in the menu.',
-        color: Colors.blueGrey,
-      );
     }
 
     final Map<String, int> quantityByViceID = {

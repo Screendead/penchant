@@ -1,21 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
-import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/signed_in_user.dart';
 
-final unarchivedViceListProvider = StreamProvider<List<Vice>?>((ref) {
-  final User? user = ref.watch(userProvider).value;
+final unarchivedViceListForUserProvider = StreamProvider.autoDispose
+    .family<List<Vice>, String>((ref, uid) {
+      return FirebaseFirestore.instance
+          .collection('vices')
+          .where('ownerID', isEqualTo: uid)
+          .where('archived', isEqualTo: false)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map(Vice.fromQuerySnapshot);
+    });
 
-  if (user == null) {
-    return const Stream<List<Vice>?>.empty();
-  }
-
-  return FirebaseFirestore.instance
-      .collection('vices')
-      .where('ownerID', isEqualTo: user.uid)
-      .where('archived', isEqualTo: false)
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map<List<Vice>>(Vice.fromQuerySnapshot);
+final unarchivedViceListProvider = Provider<AsyncValue<List<Vice>>>((ref) {
+  return watchForSignedInUser(ref, unarchivedViceListForUserProvider.call);
 });
