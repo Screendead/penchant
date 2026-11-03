@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/journal_cipher.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/journal_reader.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/user_provider.dart';
 
@@ -8,9 +11,13 @@ final viceActivityHistoryProvider =
     StreamProvider.family<List<ViceActivity>?, String>((ref, viceID) {
   final User? user = ref.watch(userProvider).value;
 
-  if (user == null) {
+  final JournalCipher? cipher = watchJournalCipher(ref);
+
+  if (user == null || cipher == null) {
     return const Stream<List<ViceActivity>?>.empty();
   }
+
+  final DecryptMemo memo = ref.watch(decryptMemoProvider);
 
   return FirebaseFirestore.instance
       .collection('activities')
@@ -18,7 +25,7 @@ final viceActivityHistoryProvider =
       .where('ownerID', isEqualTo: user.uid)
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
+      .asyncMap((snapshot) => openActivities(snapshot, cipher, memo));
 });
 
 class ViceActivityGraphQuery {
@@ -49,9 +56,13 @@ final viceActivityGraphProvider =
         (ref, query) {
   final User? user = ref.watch(userProvider).value;
 
-  if (user == null) {
+  final JournalCipher? cipher = watchJournalCipher(ref);
+
+  if (user == null || cipher == null) {
     return const Stream<List<ViceActivity>?>.empty();
   }
+
+  final DecryptMemo memo = ref.watch(decryptMemoProvider);
 
   return FirebaseFirestore.instance
       .collection('activities')
@@ -64,22 +75,26 @@ final viceActivityGraphProvider =
       .where('createdAt', isLessThan: Timestamp.fromDate(query.end))
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
+      .asyncMap((snapshot) => openActivities(snapshot, cipher, memo));
 });
 
 final allViceActivityProvider = StreamProvider<List<ViceActivity>?>((ref) {
   final User? user = ref.watch(userProvider).value;
 
-  if (user == null) {
+  final JournalCipher? cipher = watchJournalCipher(ref);
+
+  if (user == null || cipher == null) {
     return const Stream<List<ViceActivity>?>.empty();
   }
+
+  final DecryptMemo memo = ref.watch(decryptMemoProvider);
 
   return FirebaseFirestore.instance
       .collection('activities')
       .where('ownerID', isEqualTo: user.uid)
       .orderBy('createdAt', descending: false)
       .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
+      .asyncMap((snapshot) => openActivities(snapshot, cipher, memo));
 });
 
 class ActivityWindow {
@@ -103,9 +118,13 @@ final viceActivityWindowProvider =
     StreamProvider.family<List<ViceActivity>?, ActivityWindow>((ref, window) {
   final User? user = ref.watch(userProvider).value;
 
-  if (user == null) {
+  final JournalCipher? cipher = watchJournalCipher(ref);
+
+  if (user == null || cipher == null) {
     return const Stream<List<ViceActivity>?>.empty();
   }
+
+  final DecryptMemo memo = ref.watch(decryptMemoProvider);
 
   return FirebaseFirestore.instance
       .collection('activities')
@@ -117,5 +136,5 @@ final viceActivityWindowProvider =
       .where('createdAt', isLessThan: Timestamp.fromDate(window.end))
       .orderBy('createdAt', descending: false)
       .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
+      .asyncMap((snapshot) => openActivities(snapshot, cipher, memo));
 });

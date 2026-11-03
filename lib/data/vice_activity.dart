@@ -7,6 +7,8 @@ class ViceActivity {
     required this.quantity,
     required this.ownerID,
     required this.createdAt,
+    this.sealed = false,
+    this.unreadable = false,
   });
 
   final String id;
@@ -14,6 +16,12 @@ class ViceActivity {
   final int quantity;
   final String ownerID;
   final Timestamp createdAt;
+
+  /// The quantity lives in `enc`, not in a plaintext field.
+  final bool sealed;
+
+  /// Sealed, but the blob did not open; [quantity] is 0 and not real.
+  final bool unreadable;
 
   ViceActivity copyWith({
     String? id,
@@ -28,27 +36,31 @@ class ViceActivity {
       quantity: quantity ?? this.quantity,
       ownerID: ownerID ?? this.ownerID,
       createdAt: createdAt ?? this.createdAt,
+      sealed: sealed,
+      unreadable: unreadable,
     );
   }
 
+  /// Reads either shape: plaintext `quantity`, or `enc` with [opened]
+  /// holding what it decrypted to (null when it did not open).
   factory ViceActivity.fromJson({
     required String id,
     required Map<String, dynamic> json,
-  }) =>
-      ViceActivity(
-        id: id,
-        viceID: json['viceID'] as String,
-        quantity: json['quantity'] as int,
-        ownerID: json['ownerID'] as String,
-        createdAt: json['createdAt'] as Timestamp,
-      );
+    Map<String, dynamic>? opened,
+  }) {
+    final bool sealed = json.containsKey('enc');
 
-  static List<ViceActivity> fromQuerySnapshot(
-    QuerySnapshot<Map<String, dynamic>> snapshot,
-  ) {
-    return snapshot.docs.map((doc) {
-      return ViceActivity.fromJson(id: doc.id, json: doc.data());
-    }).toList();
+    return ViceActivity(
+      id: id,
+      viceID: json['viceID'] as String,
+      quantity: sealed
+          ? (opened?['q'] as int? ?? 0)
+          : json['quantity'] as int,
+      ownerID: json['ownerID'] as String,
+      createdAt: json['createdAt'] as Timestamp,
+      sealed: sealed,
+      unreadable: sealed && opened == null,
+    );
   }
 
   Map<String, dynamic> toJson() => {

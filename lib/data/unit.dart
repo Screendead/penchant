@@ -20,6 +20,15 @@ enum Unit {
     return super.toString().split('.').last;
   }
 
+  static Unit? tryParse(String? unit) {
+    for (final Unit value in Unit.values) {
+      if (value.name == unit) {
+        return value;
+      }
+    }
+    return null;
+  }
+
   static Unit fromString(String unit) {
     return Unit.values.firstWhere(
       (e) => e.toString().split('.').last == unit,

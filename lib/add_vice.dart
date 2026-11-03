@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/journal_reader.dart';
+import 'package:tracker/crypto/key_service.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -38,14 +41,28 @@ class _AddViceState extends ConsumerState<AddVice> {
             child: const Text('Save'),
             onPressed: () async {
               if (formKey.currentState!.validate() && unit != null) {
+                final JournalKeyState? key = ref.read(journalKeyProvider).value;
+                if (key is! KeyReady) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Your journal is locked')),
+                  );
+                  return;
+                }
+
                 try {
-                  await FirebaseFirestore.instance.collection('vices').add({
-                    'name': viceNameController.text,
-                    'unit': unit!.name,
-                    'ownerID': user.uid,
-                    'createdAt': FieldValue.serverTimestamp(),
-                    'archived': false,
-                  });
+                  // The ID is part of the seal's AAD, so it is chosen
+                  // before the write rather than by add().
+                  final DocumentReference<Map<String, dynamic>> viceRef =
+                      FirebaseFirestore.instance.collection('vices').doc();
+                  await viceRef.set(
+                    await sealedVice(
+                      cipher: key.cipher,
+                      docId: viceRef.id,
+                      ownerID: user.uid,
+                      name: viceNameController.text,
+                      unit: unit!.name,
+                    ),
+                  );
 
                   if (context.mounted) {
                     Navigator.of(context).pop();

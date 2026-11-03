@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/journal_cipher.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/journal_reader.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -25,6 +28,14 @@ final viceActivityListProvider = StreamProvider<List<ViceActivity>?>((ref) {
     return Stream.value(const <ViceActivity>[]);
   }
 
+  final JournalCipher? cipher = watchJournalCipher(ref);
+
+  if (cipher == null) {
+    return const Stream<List<ViceActivity>?>.empty();
+  }
+
+  final DecryptMemo memo = ref.watch(decryptMemoProvider);
+
   final Iterable<String> viceIDs = viceList.map((vice) => vice.id);
 
   return FirebaseFirestore.instance
@@ -33,5 +44,5 @@ final viceActivityListProvider = StreamProvider<List<ViceActivity>?>((ref) {
       .where('ownerID', isEqualTo: user.uid)
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
+      .asyncMap((snapshot) => openActivities(snapshot, cipher, memo));
 });

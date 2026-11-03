@@ -49,7 +49,32 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerID",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "vices",
+      "fieldPath": "enc",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "activities",
+      "fieldPath": "enc",
+      "indexes": []
+    }
+  ]
 }

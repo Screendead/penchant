@@ -5,6 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/crypto/key_service.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/journal_reader.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -84,10 +87,11 @@ class _RecordNewActivityDialogState
     }
 
     final User? user = ref.read(userProvider).value;
+    final JournalKeyState? key = ref.read(journalKeyProvider).value;
 
-    if (user == null) {
+    if (user == null || key is! KeyReady) {
       setState(() {
-        error = 'You are signed out';
+        error = user == null ? 'You are signed out' : 'Your journal is locked';
       });
 
       return;
@@ -107,11 +111,18 @@ class _RecordNewActivityDialogState
     bool synced = true;
 
     try {
+      final Blob enc = await sealQuantity(
+        cipher: key.cipher,
+        docId: activityRef.id,
+        ownerID: user.uid,
+        viceID: selectedVice!.id,
+        quantity: int.parse(quantityController.text),
+      );
       await activityRef
           .set({
             'createdAt': date,
             'ownerID': user.uid,
-            'quantity': int.parse(quantityController.text),
+            'enc': enc,
             'viceID': selectedVice!.id,
           })
           .timeout(RecordNewActivityDialog.writeTimeout);

@@ -38,6 +38,10 @@ void main() {
 
     expect(remote.docs[uid]!.keyId, ready.stored.keyId);
     expect(store.keys[uid]!.dek, ready.stored.dek);
+    // The sizes firestore.rules requires of keys/{uid}.
+    expect(remote.docs[uid]!.keyId.length, 11);
+    expect(remote.docs[uid]!.check.length, 53);
+    expect(remote.docs[uid]!.recoveryWrap.length, 60);
     expect(RecoveryKey.parse(ready.stored.recoveryKey!), isA<RecoveryKeyOk>());
     expect(await service.resolve(uid), isA<KeyReady>());
   });

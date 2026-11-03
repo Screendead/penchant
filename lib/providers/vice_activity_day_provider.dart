@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/journal_cipher.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/journal_reader.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -27,6 +30,14 @@ final viceActivityDayProvider =
         return Stream.value(const <ViceActivity>[]);
       }
 
+      final JournalCipher? cipher = watchJournalCipher(ref);
+
+      if (cipher == null) {
+        return const Stream<List<ViceActivity>?>.empty();
+      }
+
+      final DecryptMemo memo = ref.watch(decryptMemoProvider);
+
       final DateTime startOfSelectedDay = startOfDay(selectedDate);
       final DateTime startOfNextDay = addDays(startOfSelectedDay, 1);
       final List<String> viceIDs = viceList
@@ -44,5 +55,5 @@ final viceActivityDayProvider =
           .where('createdAt', isLessThan: Timestamp.fromDate(startOfNextDay))
           .orderBy('createdAt', descending: true)
           .snapshots()
-          .map(ViceActivity.fromQuerySnapshot);
+          .asyncMap((snapshot) => openActivities(snapshot, cipher, memo));
     });

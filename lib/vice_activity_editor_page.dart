@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/journal_reader.dart';
+import 'package:tracker/crypto/key_service.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -86,7 +89,7 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
     }
   }
 
-  Future<void> _saveActivity() async {
+  Future<void> _saveActivity(ViceActivity activity) async {
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -98,12 +101,30 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
 
     try {
       final DateTime parsedDate = dateFormat.parse(dateController.text);
+      final int quantity = int.parse(quantityController.text);
+      final JournalKeyState? key = ref.read(journalKeyProvider).value;
+
+      if (activity.sealed && key is! KeyReady) {
+        throw StateError('The journal is locked');
+      }
+
+      // A sealed activity is re-sealed whole; writing `quantity` beside `enc`
+      // is denied by the rules.
       await FirebaseFirestore.instance
           .collection('activities')
           .doc(widget.activityID)
           .update({
         'createdAt': parsedDate,
-        'quantity': int.parse(quantityController.text),
+        if (activity.sealed)
+          'enc': await sealQuantity(
+            cipher: (key as KeyReady).cipher,
+            docId: activity.id,
+            ownerID: activity.ownerID,
+            viceID: activity.viceID,
+            quantity: quantity,
+          )
+        else
+          'quantity': quantity,
       }).timeout(
         const Duration(seconds: 10),
         onTimeout: () => Future.error(TimeoutException(null)),
@@ -173,7 +194,7 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
                 onPressed: loading ? null : _deleteActivity,
               ),
               TextButton(
-                onPressed: loading ? null : _saveActivity,
+                onPressed: loading ? null : () => _saveActivity(activity),
                 child: const Text('Save'),
               ),
             ],
