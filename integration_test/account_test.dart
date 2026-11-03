@@ -204,7 +204,7 @@ void main() {
     );
     await _get(Uri.parse(links.last['oobLink'] as String));
 
-    await tap(tester, find.byTooltip('Back'));
+    await tap(tester, find.byTooltip('Close'));
     await pumpUntil(tester, find.text(AccountCopy.dataSection), present: false);
     await tap(tester, find.text('Account'));
     await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
@@ -217,7 +217,8 @@ void main() {
     await enterText(tester, 'Display Name', '');
     await tap(tester, find.text('Update Profile'));
     await pumpUntil(tester, find.text('Display name saved.'));
-    expect(FirebaseAuth.instance.currentUser!.displayName, isNull);
+    // iOS clears a name by setting it empty.
+    expect(FirebaseAuth.instance.currentUser!.displayName ?? '', isEmpty);
   });
 
   testWidgets('export shares a CSV row per entry and a JSON of the account, '

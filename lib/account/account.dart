@@ -100,8 +100,10 @@ class Account {
     }
   }
 
+  // The iOS SDK leaves a nil name out of the request, and the plugin's reload
+  // afterwards brings the old one back; an empty name clears it.
   Future<void> updateDisplayName(String? displayName) {
-    return _signedInUser().updateDisplayName(displayName);
+    return _signedInUser().updateDisplayName(displayName ?? '');
   }
 
   Future<void> updatePhotoURL(String? photoURL) {

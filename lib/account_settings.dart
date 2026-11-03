@@ -121,7 +121,7 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     await _run('Saving…', () async {
       final List<String> done = <String>[];
       try {
-        if (displayName != user.displayName) {
+        if (displayName != _blankToNull(user.displayName ?? '')) {
           await _account.updateDisplayName(displayName);
           done.add('Display name saved.');
         }
