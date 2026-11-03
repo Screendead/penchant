@@ -58,11 +58,9 @@ class _RecordNewActivityDialogState
 
   late Timer dateUpdaterTimer;
   // One reference per dialog, so a second press writes the same document
-  // rather than a duplicate.
-  final DocumentReference<Map<String, dynamic>> activityRef = FirebaseFirestore
-      .instance
-      .collection('activities')
-      .doc();
+  // rather than a duplicate. Lazy, so building the dialog needs no Firebase.
+  late final DocumentReference<Map<String, dynamic>> activityRef =
+      FirebaseFirestore.instance.collection('activities').doc();
   String? error;
 
   String get dateTime =>
