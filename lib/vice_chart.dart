@@ -3,10 +3,12 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
 
 class ViceChart extends ConsumerWidget {
@@ -15,6 +17,71 @@ class ViceChart extends ConsumerWidget {
   final DateTime selectedDate;
 
   static const int minimumRadarAxes = 3;
+
+  static String title(Vice vice, int quantity) =>
+      '${vice.name} (${vice.unit.label(quantity)})';
+
+  Widget _bars(ThemeData theme, List<Vice> vices, List<int> quantities) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceEvenly,
+          minY: 0,
+          maxY: quantities.reduce(max) * 1.15,
+          gridData: const FlGridData(show: false),
+          borderData: FlBorderData(show: false),
+          barTouchData: BarTouchData(enabled: false),
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(),
+            leftTitles: const AxisTitles(),
+            rightTitles: const AxisTitles(),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 48,
+                getTitlesWidget: (double value, TitleMeta meta) {
+                  final int index = value.toInt();
+
+                  return SideTitleWidget(
+                    meta: meta,
+                    child: Text(
+                      title(vices[index], quantities[index]),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: theme.colorScheme.secondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          barGroups: [
+            for (int i = 0; i < vices.length; i++)
+              BarChartGroupData(
+                x: i,
+                barRods: [
+                  BarChartRodData(
+                    toY: quantities[i].toDouble(),
+                    width: 48,
+                    color: theme.colorScheme.primary,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(6),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.fastOutSlowIn,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,9 +125,8 @@ class ViceChart extends ConsumerWidget {
     }
 
     if (quantityByViceID.values.every((int quantity) => quantity == 0)) {
-      return const InfoBox(
-        message: 'Nothing recorded on this day',
-        color: Colors.blueGrey,
+      return CleanDay(
+        isToday: daysBetween(selectedDate, startOfDay(DateTime.now())) == 0,
       );
     }
 
@@ -71,15 +137,7 @@ class ViceChart extends ConsumerWidget {
 
     // fl_chart asserts that a radar data set has at least three entries.
     if (vices.length < minimumRadarAxes) {
-      return ListView(
-        children: [
-          for (int i = 0; i < vices.length; i++)
-            ListTile(
-              title: Text(vices[i].name),
-              trailing: Text(vices[i].unit.label(quantities[i])),
-            ),
-        ],
-      );
+      return _bars(theme, vices, quantities);
     }
 
     final RadarDataSet dataSet = RadarDataSet(
@@ -114,7 +172,7 @@ class ViceChart extends ConsumerWidget {
             final double correctionFactor = angle > 90 && angle < 270 ? 180 : 0;
 
             return RadarChartTitle(
-              text: '${vice.name} (${vice.unit.label(quantity)})',
+              text: title(vice, quantity),
               angle: angle + correctionFactor,
             );
           },

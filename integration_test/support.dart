@@ -166,13 +166,13 @@ Future<void> openFromDrawer(WidgetTester tester, String title) async {
   await tap(tester, find.text(title));
 }
 
-// Three vices by default, because the home radar chart needs three axes.
+// Three vices by default, the fewest the home chart draws as a radar.
 Future<void> addVicesThroughManageData(
   WidgetTester tester, [
   List<String> names = const <String>['Coffee', 'Tea', 'Water'],
 ]) async {
   await openFromDrawer(tester, 'Manage Data');
-  await pumpUntil(tester, find.text('No vices yet. Tap + to add one.'));
+  await pumpUntil(tester, find.text('Your Vices'));
   for (final String name in names) {
     await tap(tester, find.byTooltip('Add vice'));
     await pumpUntil(tester, find.text('Add Vice'));
@@ -244,8 +244,16 @@ Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> storedActivities(
 }
 
 // The radar chart paints its labels, so they are not Text widgets; read them
-// from the chart's data instead.
+// from the chart's data instead. The bar chart's labels are Text widgets.
 Set<String>? chartTitles(WidgetTester tester) {
+  final Finder bars = find.byType(BarChart);
+  if (bars.evaluate().isNotEmpty) {
+    return <String>{
+      for (final Element e
+          in find.descendant(of: bars, matching: find.byType(Text)).evaluate())
+        (e.widget as Text).data!,
+    };
+  }
   final Finder chart = find.byType(RadarChart);
   if (chart.evaluate().isEmpty) {
     return null;
@@ -263,5 +271,15 @@ Future<void> expectChart(WidgetTester tester, Set<String> titles) =>
       () => setEquals(chartTitles(tester), titles),
       () => 'the chart to show $titles (showing ${chartTitles(tester)})',
     );
+
+Future<void> expectBars(WidgetTester tester, Set<String> titles) async {
+  await expectChart(tester, titles);
+  expect(find.byType(RadarChart), findsNothing);
+}
+
+Future<void> expectRadar(WidgetTester tester, Set<String> titles) async {
+  await expectChart(tester, titles);
+  expect(find.byType(BarChart), findsNothing);
+}
 
 final DateFormat dayMenuFormat = DateFormat('EEEE, MMMM d, yyyy');
