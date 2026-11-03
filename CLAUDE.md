@@ -144,8 +144,8 @@ out the write layer (below). `packageInfoProvider` is a `FutureProvider` over
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
-`TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every per-document
-write. It has one method
+`TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every write the
+screens make to a single document. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
 `updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
 error messages and Undo stay in the widgets. The record dialog takes one id from
