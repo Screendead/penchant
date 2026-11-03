@@ -54,7 +54,7 @@ void main() {
       await tap(tester, find.text('Coffee'));
       await pumpUntil(tester, find.text('Coffee history'));
       await pumpUntil(tester, notSynced);
-      expect(banner, findsWidgets);
+      await pumpUntil(tester, banner);
 
       await tap(tester, find.text('Quantity: 2'));
       await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));

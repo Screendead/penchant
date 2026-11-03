@@ -7,6 +7,16 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Added
+
+- Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
+  and an empty day offline says the device may not have it rather than calling it clear.
+
+### Changed
+
+- Saving, editing, deleting, adding a vice and archiving no longer report a slow connection as a failure: after ten
+  seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+
 ## [0.1.0] - Unreleased
 
 ### Added
