@@ -49,9 +49,9 @@ void _usePhone(WidgetTester tester, {double textScale = 1}) {
 }
 
 List<Override> _day(List<Vice> vices, List<int> quantities) => [
-  unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+  unarchivedViceListProvider.overrideWith((ref) => AsyncData(vices)),
   viceActivityDayProvider.overrideWith(
-    (ref, DateTime day) => Stream.value([
+    (ref, DateTime day) => AsyncData([
       for (int i = 0; i < vices.length; i++)
         if (quantities[i] > 0) fakeActivity(vices[i].id, quantities[i], day),
     ]),
@@ -151,9 +151,9 @@ void main() {
       final SemanticsHandle semantics = tester.ensureSemantics();
       final DateTime peakDay = addDays(_today, -3);
       await _pump(tester, [
-        viceListProvider.overrideWith((ref) => Stream.value([_three.first])),
+        viceListProvider.overrideWith((ref) => AsyncData([_three.first])),
         viceActivityGraphProvider.overrideWith(
-          (ref, ViceActivityGraphQuery query) => Stream.value(<ViceActivity>[
+          (ref, ViceActivityGraphQuery query) => AsyncData(<ViceActivity>[
             fakeActivity('coffee', 4, peakDay.add(const Duration(hours: 9))),
             fakeActivity('coffee', 1, _today.add(const Duration(hours: 9))),
           ]),
@@ -185,9 +185,7 @@ void main() {
         _usePhone(tester, textScale: textScale);
         await _pump(tester, [
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-          unarchivedViceListProvider.overrideWith(
-            (ref) => Stream.value(_three),
-          ),
+          unarchivedViceListProvider.overrideWith((ref) => AsyncData(_three)),
         ], const RecordNewActivityDialog());
 
         expect(tester.takeException(), isNull);
@@ -217,11 +215,11 @@ void main() {
               userProvider.overrideWith(
                 (ref) => Stream.value(FakeUser(ownerID)),
               ),
-              viceListProvider.overrideWith((ref) => Stream.value(_three)),
+              viceListProvider.overrideWith((ref) => AsyncData(_three)),
               viceActivityGraphProvider.overrideWith(
-                (ref, ViceActivityGraphQuery query) => Stream.value(
-                  <ViceActivity>[fakeActivity('coffee', 2, _today)],
-                ),
+                (ref, ViceActivityGraphQuery query) => AsyncData(<ViceActivity>[
+                  fakeActivity('coffee', 2, _today),
+                ]),
               ),
             ],
             child: const MaterialApp(home: Homepage()),
@@ -271,10 +269,10 @@ void main() {
               userProvider.overrideWith(
                 (ref) => Stream.value(FakeUser(ownerID)),
               ),
-              viceListProvider.overrideWith((ref) => Stream.value(_three)),
+              viceListProvider.overrideWith((ref) => AsyncData(_three)),
               viceActivityGraphProvider.overrideWith(
                 (ref, ViceActivityGraphQuery query) =>
-                    Stream.value(<ViceActivity>[]),
+                    AsyncData(<ViceActivity>[]),
               ),
             ],
             child: const MaterialApp(home: Homepage()),
@@ -291,11 +289,10 @@ void main() {
       ) async {
         _usePhone(tester, textScale: textScale);
         await _pump(tester, [
-          viceListProvider.overrideWith((ref) => Stream.value([_three.first])),
+          viceListProvider.overrideWith((ref) => AsyncData([_three.first])),
           viceActivityGraphProvider.overrideWith(
-            (ref, ViceActivityGraphQuery query) => Stream.value(<ViceActivity>[
-              fakeActivity('coffee', 1200, _today),
-            ]),
+            (ref, ViceActivityGraphQuery query) =>
+                AsyncData(<ViceActivity>[fakeActivity('coffee', 1200, _today)]),
           ),
         ], const UsageGraphView());
         expect(tester.takeException(), isNull);

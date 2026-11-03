@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tracker/firebase_options.dart';
@@ -44,6 +45,15 @@ Future<void> initializeFirebase() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // App Attest yields no token App Check accepts until the Runner target
+    // has the App Attest entitlement, which the current signing team cannot
+    // sign (HANDOVER.md, "For Jack to do"). firebase_app_check 0.4.9 picks App
+    // Attest whenever DCAppAttestService reports the device supports it,
+    // entitlement or not, so DeviceCheck covers only devices that cannot
+    // attest.
+    await FirebaseAppCheck.instance.activate(
+      providerApple: const AppleAppAttestWithDeviceCheckFallbackProvider(),
+    );
     _configureFirestoreCache();
     return;
   }
@@ -60,6 +70,12 @@ Future<void> initializeFirebase() async {
       '"${app.options.projectId}". Refusing to start.',
     );
   }
+
+  // The emulators ignore App Check. A debug token is a production credential
+  // once registered in the console, so none is committed here.
+  await FirebaseAppCheck.instance.activate(
+    providerApple: const AppleDebugProvider(),
+  );
 
   // The emulators lose their data on shutdown; an on-device cache would
   // outlive it.

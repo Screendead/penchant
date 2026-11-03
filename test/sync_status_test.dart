@@ -27,23 +27,24 @@ void main() {
 
   testWidgets('Today counts the day\'s entries the server has not '
       'acknowledged', (WidgetTester tester) async {
-    final StreamController<List<ViceActivity>?> day =
-        StreamController<List<ViceActivity>?>();
+    final StreamController<List<ViceActivity>> day =
+        StreamController<List<ViceActivity>>();
     // close() completes only once a listener has drained the stream.
     addTearDown(() => unawaited(day.close()));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           unarchivedViceListProvider.overrideWith(
-            (ref) => Stream.value([fakeVice('coffee')]),
+            (ref) => AsyncData([fakeVice('coffee')]),
           ),
-          viceActivityDayProvider.overrideWith(
-            (ref, DateTime selected) => day.stream,
-          ),
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          viceActivityDayForUserProvider.overrideWith((ref, key) => day.stream),
         ],
         child: const MaterialApp(home: Scaffold(body: ViceTracker())),
       ),
     );
+    // Lets the user resolve, so the day's query is listening.
+    await tester.pump();
 
     day.add([synced, pending]);
     await tester.pump();
@@ -65,10 +66,10 @@ void main() {
       ProviderScope(
         overrides: [
           unarchivedViceListProvider.overrideWith(
-            (ref) => Stream.value([fakeVice('coffee')]),
+            (ref) => AsyncData([fakeVice('coffee')]),
           ),
           viceActivityDayProvider.overrideWith(
-            (ref, DateTime selected) => Stream.value([pending]),
+            (ref, DateTime selected) => AsyncData([pending]),
           ),
         ],
         child: const MaterialApp(home: Scaffold(body: ViceTracker())),
@@ -89,10 +90,11 @@ void main() {
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
           offlineProvider.overrideWith((ref) => Stream.value(false)),
           viceListProvider.overrideWith(
-            (ref) => Stream.value([fakeVice('coffee')]),
+            (ref) => AsyncData([fakeVice('coffee')]),
           ),
           viceActivityHistoryProvider.overrideWith(
-            (ref, String viceID) => Stream.value([synced, pending]),
+            (ref, ViceActivityHistoryQuery query) =>
+                AsyncData([synced, pending]),
           ),
         ],
         child: const MaterialApp(

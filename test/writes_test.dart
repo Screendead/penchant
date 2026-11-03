@@ -14,7 +14,6 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
-import 'package:tracker/providers/vice_activity_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
@@ -165,7 +164,7 @@ void main() {
     );
 
     Future<void> open(WidgetTester tester) => _pumpOpened(tester, writes, [
-      viceListProvider.overrideWith((ref) => Stream.value([legacy])),
+      viceListProvider.overrideWith((ref) => AsyncData([legacy])),
     ], const EditVice(viceID: 'coffee'));
 
     Future<void> pickUnit(WidgetTester tester, Unit unit) async {
@@ -275,7 +274,9 @@ void main() {
         addTearDown(() => unawaited(vices.close()));
         vices.add([coffee]);
         await _pumpOpened(tester, writes, [
-          viceListProvider.overrideWith((ref) => vices.stream),
+          viceListForUserProvider.overrideWith(
+            (ref, String uid) => vices.stream,
+          ),
         ], const EditVice(viceID: 'coffee'));
         vices.add([renamed]);
         await tester.pumpAndSettle();
@@ -322,7 +323,7 @@ void main() {
 
     testWidgets('says so when the vice is gone', (WidgetTester tester) async {
       await _pumpOpened(tester, writes, [
-        viceListProvider.overrideWith((ref) => Stream.value(<Vice>[])),
+        viceListProvider.overrideWith((ref) => AsyncData(<Vice>[])),
       ], const EditVice(viceID: 'coffee'));
 
       expect(find.text('Vice not found'), findsOneWidget);
@@ -341,9 +342,9 @@ void main() {
     );
 
     List<Override> overrides() => [
-      viceListProvider.overrideWith((ref) => Stream.value([active, archived])),
-      viceActivityListProvider.overrideWith(
-        (ref) => Stream.value(const <ViceActivity>[]),
+      viceListProvider.overrideWithValue(AsyncData([active, archived])),
+      viceActivityCountProvider.overrideWith(
+        (ref, String viceID) => const AsyncData(0),
       ),
     ];
 
@@ -414,7 +415,7 @@ void main() {
     final Vice coffee = fakeVice('coffee');
 
     List<Override> overrides() => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value([coffee])),
+      unarchivedViceListProvider.overrideWithValue(AsyncData([coffee])),
     ];
 
     final Finder dialog = find.byType(RecordNewActivityDialog);
@@ -566,9 +567,9 @@ void main() {
     final ViceActivity activity = fakeActivity(coffee.id, 3, at);
 
     List<Override> overrides() => [
-      viceListProvider.overrideWith((ref) => Stream.value([coffee])),
-      viceActivityHistoryProvider.overrideWith(
-        (ref, String viceID) => Stream.value([activity]),
+      viceListProvider.overrideWithValue(AsyncData([coffee])),
+      viceActivityProvider.overrideWith(
+        (ref, String activityID) => AsyncData(activity),
       ),
     ];
 
@@ -681,9 +682,9 @@ void main() {
     );
 
     List<Override> overrides() => [
-      viceListProvider.overrideWith((ref) => Stream.value([coffee])),
+      viceListProvider.overrideWithValue(AsyncData([coffee])),
       viceActivityHistoryProvider.overrideWith(
-        (ref, String viceID) => Stream.value([activity]),
+        (ref, ViceActivityHistoryQuery query) => AsyncData([activity]),
       ),
     ];
 

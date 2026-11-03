@@ -2,9 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
-import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
-import 'package:tracker/providers/vice_activity_list_provider.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -49,10 +48,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<Vice>?> viceListValue = ref.watch(viceListProvider);
-    final AsyncValue<List<ViceActivity>?> viceActivityListValue = ref.watch(
-      viceActivityListProvider,
-    );
+    final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -67,26 +63,18 @@ class _ManageDataState extends ConsumerState<ManageData> {
           ),
         ],
       ),
-      body: _buildBody(
-        viceListValue: viceListValue,
-        viceActivityListValue: viceActivityListValue,
-      ),
+      body: _buildBody(viceListValue: viceListValue),
     );
   }
 
-  Widget _buildBody({
-    required AsyncValue<List<Vice>?> viceListValue,
-    required AsyncValue<List<ViceActivity>?> viceActivityListValue,
-  }) {
-    if (viceListValue.error ?? viceActivityListValue.error
-        case final Object error) {
+  Widget _buildBody({required AsyncValue<List<Vice>> viceListValue}) {
+    if (viceListValue.error case final Object error) {
       return Center(child: Text('Unable to load your vices: $error'));
     }
 
     final List<Vice>? viceList = viceListValue.value;
-    final List<ViceActivity>? viceActivityList = viceActivityListValue.value;
 
-    if (viceList == null || viceActivityList == null) {
+    if (viceList == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -99,17 +87,19 @@ class _ManageDataState extends ConsumerState<ManageData> {
       padding: const EdgeInsets.all(16),
       itemBuilder: (BuildContext context, int index) {
         final Vice vice = viceList[index];
-        final List<ViceActivity> viceActivities = viceActivityList
-            .where(
-              (ViceActivity viceActivity) => viceActivity.viceID == vice.id,
-            )
-            .toList();
 
         return ListTile(
           enabled: !vice.archived,
           contentPadding: EdgeInsets.zero,
           title: Text(vice.name),
-          subtitle: Text('${viceActivities.length} activities'),
+          subtitle: Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              final int? count = ref
+                  .watch(viceActivityCountProvider(vice.id))
+                  .value;
+              return Text(count == null ? ' ' : '$count activities');
+            },
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -143,8 +133,14 @@ class _ManageDataState extends ConsumerState<ManageData> {
                     ),
             ],
           ),
-          onTap: () {
-            Navigator.of(context).pushNamed('/vices/${vice.id}/activities');
+          onTap: () async {
+            await Navigator.of(
+              context,
+            ).pushNamed('/vices/${vice.id}/activities');
+            // The count is not live; the history page can delete entries.
+            if (context.mounted) {
+              ref.invalidate(viceActivityCountForUserProvider);
+            }
           },
         );
       },

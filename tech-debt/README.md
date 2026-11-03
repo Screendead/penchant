@@ -15,34 +15,30 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**87 issues: 0 critical, 12 high, 48 medium, 27 low.**
+**80 issues: 0 critical, 11 high, 42 medium, 27 low.**
 
-## Firebase Data Layer (9)
+## Firebase Data Layer (7)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
-- **medium** — [Unused providers would fail instantly if ever wired up](firebase-data-layer/dead-providers-query-an-unindexed-shape.md)
 - **medium** — [No dev or staging alias; every firebase command defaults to production](firebase-data-layer/every-firebase-command-targets-production.md)
 - **medium** — [Legacy vices without `archived` cannot be recorded against](firebase-data-layer/vices-without-archived-never-reach-the-today-tab.md)
-- **medium** — [Every list screen streams unbounded data with no limit](firebase-data-layer/no-query-is-bounded-or-paginated.md)
 - **medium** — [The rules deploy job is off, and index or console drift goes unchecked](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
-- **medium** — [Vice count growth will eventually break the main chart](firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
-- **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
+- **low** — [Legacy activities of a missing vice are fetched but unreachable](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
+- **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
-## Widget State and View Logic (14)
+## Widget State and View Logic (12)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
-- **high** — [Signing out can briefly show the previous user's private data](widget-state-and-view-logic/provider-value-carries-the-previous-users-data.md)
 - **medium** — [Sign-in, sign-up, sign-out and profile edits can't be tested with a fake](widget-state-and-view-logic/auth-calls-bypass-providers.md)
 - **medium** — [Archiving a vice hides it in some screens but not others](widget-state-and-view-logic/archived-means-hidden-in-two-pickers-only.md)
 - **medium** — [Signed-in users briefly see the login screen on every cold start](widget-state-and-view-logic/auth-loading-is-treated-as-signed-out.md)
 - **medium** — [Form fields leak controllers and focus nodes instead of cleaning up](widget-state-and-view-logic/controllers-and-focus-nodes-are-never-disposed.md)
 - **medium** — [Editing form ignores live database changes after it first loads](widget-state-and-view-logic/editor-seeds-its-controllers-during-build.md)
 - **medium** — [Graph screen recomputes its entire chart pipeline on every rebuild](widget-state-and-view-logic/graph-build-method-recomputes-everything.md)
-- **medium** — [Browsing history can leave up to 30 live database listeners open](widget-state-and-view-logic/no-provider-is-autodispose.md)
 - **medium** — [Smoothing slider, caption, and math can all disagree with each other](widget-state-and-view-logic/smoothing-window-escapes-its-own-bounds.md)
 - **medium** — [App left open past midnight keeps showing yesterday as today](widget-state-and-view-logic/today-is-frozen-at-widget-initialisation.md)
 - **medium** — [Usage graph draws below zero and repeats or overlaps its axis labels](widget-state-and-view-logic/usage-graph-misdraws-sparse-data.md)
@@ -69,12 +65,11 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **high** — [A change made offline that the server later refuses vanishes without a word](offline-and-write-reliability/rejected-queued-write-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
-## Duplication and Dead Code (12)
+## Duplication and Dead Code (10)
 
 Copy-pasted logic, unused providers, methods and fields, commented-out code, and lint and formatting drift.
 
 - **medium** — [Date-entry field, timer, and lock toggle are copy-pasted across two files](duplication-and-dead-code/activity-date-entry-flow-duplicated.md)
-- **medium** — [A provider has zero callers while another screen re-derives its grouping manually](duplication-and-dead-code/orphaned-vice-activities-by-vice-id-provider.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
 - **low** — [Email validation is defined three separate times, two identically, one different](duplication-and-dead-code/email-validation-regex-declared-three-times.md)
 - **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
@@ -82,7 +77,6 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
 - **low** — [Serialization helpers exist but every write site hand-builds its own map instead](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
 - **low** — [The same nullable-lookup pattern is typed out separately three times](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-three-times.md)
-- **low** — [One query builder orders its clauses backwards compared to seven siblings](duplication-and-dead-code/query-clause-order-differs-between-providers.md)
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
 - **low** — [Auth widgets carry dead fields and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
@@ -146,12 +140,11 @@ Test depth and unverified build state.
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
 - **medium** — [The end-to-end run's Add Vice save intermittently never completes](ci-and-quality-gates/e2e-add-vice-save-sometimes-never-returns.md)
 
-## Repo, Docs and Release Hygiene (8)
+## Repo, Docs and Release Hygiene (7)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
 - **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
-- **medium** — [Three factual claims in the guidance doc do not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
 - **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 - **medium** — [The only records of failing quality gates are gitignored, unseen](repo-docs-and-release-hygiene/gitignored-logs-hid-the-failing-gates.md)
 - **medium** — [Local master is three commits behind what CI actually deploys](repo-docs-and-release-hygiene/local-master-is-three-commits-behind.md)

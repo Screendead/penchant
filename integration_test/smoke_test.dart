@@ -26,10 +26,15 @@ void main() {
 
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntil(tester, find.text('Your Vices'));
+    // Each row's count is its own server request, so the rows fill in any order.
     await pumpUntil(tester, find.text('1 activities'));
+    await pumpUntilTrue(
+      tester,
+      () => find.text('0 activities').evaluate().length == 2,
+      () => "two '0 activities' rows",
+    );
     expect(find.text('Coffee'), findsOneWidget);
     expect(find.text('Tea'), findsOneWidget);
     expect(find.text('Water'), findsOneWidget);
-    expect(find.text('0 activities'), findsNWidgets(2));
   });
 }

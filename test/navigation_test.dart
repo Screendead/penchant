@@ -11,7 +11,6 @@ import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
-import 'package:tracker/providers/vice_activity_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
@@ -67,15 +66,12 @@ void main() {
         ProviderScope(
           overrides: [
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-            viceListProvider.overrideWith((ref) => Stream.value(<Vice>[])),
+            viceListProvider.overrideWith((ref) => AsyncData(<Vice>[])),
             unarchivedViceListProvider.overrideWith(
-              (ref) => Stream.value(<Vice>[]),
-            ),
-            viceActivityListProvider.overrideWith(
-              (ref) => Stream.value(<ViceActivity>[]),
+              (ref) => AsyncData(<Vice>[]),
             ),
             viceActivityDayProvider.overrideWith(
-              (ref, DateTime day) => Stream.value(<ViceActivity>[]),
+              (ref, DateTime day) => AsyncData(<ViceActivity>[]),
             ),
           ],
           child: const MaterialApp(

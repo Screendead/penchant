@@ -163,11 +163,12 @@ class _ViceActivityEditorPageState
   @override
   Widget build(BuildContext context) {
     final List<Vice>? viceList = ref.watch(viceListProvider).value;
-    final List<ViceActivity>? activityList = ref
-        .watch(viceActivityHistoryProvider(widget.viceID))
-        .value;
+    final AsyncValue<ViceActivity?> activityValue = ref.watch(
+      viceActivityProvider(widget.activityID),
+    );
 
-    if (viceList == null || activityList == null) {
+    if (viceList == null ||
+        (activityValue.isLoading && !activityValue.hasError)) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -175,12 +176,15 @@ class _ViceActivityEditorPageState
         viceList.where((Vice item) => item.id == widget.viceID).isEmpty
         ? null
         : viceList.firstWhere((Vice item) => item.id == widget.viceID);
-    final ViceActivity? found = activityList
-        .where((ViceActivity item) => item.id == widget.activityID)
-        .firstOrNull;
+    final ViceActivity? found = activityValue.hasError
+        ? null
+        : activityValue.value;
     // A delete leaves the local snapshot at once, long before the server
     // acknowledges it; keep the form up until this page pops.
-    final ViceActivity? activity = found ?? (loading ? shown : null);
+    final ViceActivity? activity =
+        (found != null && found.viceID == widget.viceID)
+        ? found
+        : (loading ? shown : null);
     shown = activity;
 
     if (vice == null || activity == null) {

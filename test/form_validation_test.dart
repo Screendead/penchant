@@ -93,7 +93,7 @@ void main() {
     final Vice vice = fakeVice('coffee');
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value([vice])),
+      unarchivedViceListProvider.overrideWithValue(AsyncData([vice])),
     ], const RecordNewActivityDialog());
 
     await tester.enterText(_field('Quantity'), '0');
@@ -110,11 +110,11 @@ void main() {
     Future<void> pumpEditor(WidgetTester tester, int quantity) => _pump(
       tester,
       [
-        viceListProvider.overrideWith((ref) => Stream.value([vice])),
-        viceActivityHistoryProvider.overrideWith(
-          (ref, String viceID) => Stream.value([
+        viceListProvider.overrideWithValue(AsyncData([vice])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(
             fakeActivity(vice.id, quantity, DateTime(2026, 1, 2, 8, 30)),
-          ]),
+          ),
         ),
       ],
       ViceActivityEditorPage(

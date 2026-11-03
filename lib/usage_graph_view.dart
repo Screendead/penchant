@@ -127,13 +127,11 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
     final DateTime rangeEnd = today.add(const Duration(days: 1));
     final List<ViceActivity>? activityList = ref
         .watch(
-          viceActivityGraphProvider(
-            ViceActivityGraphQuery(
-              viceID: selectedVice.id,
-              start: rangeStart,
-              end: rangeEnd,
-            ),
-          ),
+          viceActivityGraphProvider((
+            viceID: selectedVice.id,
+            start: rangeStart,
+            end: rangeEnd,
+          )),
         )
         .value;
 

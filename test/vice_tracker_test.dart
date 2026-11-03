@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -72,31 +71,23 @@ void main() {
     final DateTime today = startOfDay(DateTime.now());
     final Vice vice = fakeVice('coffee');
     final List<Vice> vices = [vice, fakeVice('beer'), fakeVice('cigarettes')];
-    late StreamController<List<ViceActivity>?> neverEmits;
     late List<DateTime> requestedDays;
 
     setUp(() {
-      neverEmits = StreamController<List<ViceActivity>?>();
       requestedDays = <DateTime>[];
     });
 
-    // close() completes only once a listener receives done, and most tests
-    // never subscribe to this stream.
-    tearDown(() {
-      neverEmits.close();
-    });
-
     List<Override> overrides() => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         requestedDays.add(day);
         final int daysAgo = daysBetween(day, today);
 
         if (daysAgo == 2) {
-          return neverEmits.stream;
+          return const AsyncLoading();
         }
 
-        return Stream.value([fakeActivity(vice.id, daysAgo + 1, day)]);
+        return AsyncData([fakeActivity(vice.id, daysAgo + 1, day)]);
       }),
     ];
 
@@ -191,11 +182,11 @@ void main() {
     final Vice beer = fakeVice('beer');
 
     List<Override> overrides(List<Vice> vices) => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         final int daysAgo = daysBetween(day, today);
 
-        return Stream.value([
+        return AsyncData([
           fakeActivity(coffee.id, daysAgo + 2, day),
           fakeActivity(beer.id, daysAgo + 1, day),
         ]);
@@ -259,9 +250,9 @@ void main() {
     final List<Vice> vices = [fakeVice('coffee')];
 
     List<Override> overrides() => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
       viceActivityDayProvider.overrideWith(
-        (ref, DateTime day) => Stream.value(const <ViceActivity>[]),
+        (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
       ),
     ];
 
@@ -391,10 +382,8 @@ void main() {
   group('an account with no vices', () {
     List<Override> overrides() => [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-      viceListProvider.overrideWith((ref) => Stream.value(const <Vice>[])),
-      unarchivedViceListProvider.overrideWith(
-        (ref) => Stream.value(const <Vice>[]),
-      ),
+      viceListProvider.overrideWithValue(AsyncData(const <Vice>[])),
+      unarchivedViceListProvider.overrideWithValue(const AsyncData(<Vice>[])),
     ];
 
     testWidgets('sees an empty state on the Today tab, not a spinner', (

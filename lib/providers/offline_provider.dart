@@ -60,8 +60,8 @@ final offlineProvider = StreamProvider<bool>((ref) {
   return sustainedOffline(
     FirebaseFirestore.instance
         .collection('vices')
-        .orderBy('createdAt', descending: true)
         .where('ownerID', isEqualTo: user.uid)
+        .orderBy('createdAt', descending: true)
         .snapshots(includeMetadataChanges: true)
         .map(
           (QuerySnapshot<Map<String, dynamic>> snapshot) =>
