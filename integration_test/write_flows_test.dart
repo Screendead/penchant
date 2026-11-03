@@ -37,7 +37,14 @@ Future<void> _setArchived(
     tester,
     _rowButton(viceName, archived ? 'Unarchive' : 'Archive'),
   );
-  expect((await _storedVice(viceName))['archived'], archived);
+  // The button flips on the local snapshot, before the server has the write.
+  final DateTime deadline = DateTime.now().add(timeout);
+  while ((await _storedVice(viceName))['archived'] != archived) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('$viceName never stored archived: $archived');
+    }
+    await pumpFor(tester, const Duration(milliseconds: 500));
+  }
   await closeDrawerPage(tester);
 }
 
