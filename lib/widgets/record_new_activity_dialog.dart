@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
   static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
@@ -57,10 +58,11 @@ class _RecordNewActivityDialogState
   bool loading = false;
 
   late Timer dateUpdaterTimer;
-  // One reference per dialog, so a second press writes the same document
-  // rather than a duplicate. Lazy, so building the dialog needs no Firebase.
-  late final DocumentReference<Map<String, dynamic>> activityRef =
-      FirebaseFirestore.instance.collection('activities').doc();
+  // One id per dialog, so a second press writes the same document rather
+  // than a duplicate. Lazy, so building the dialog needs no Firebase.
+  late final String activityID = ref
+      .read(trackerWritesProvider)
+      .newActivityID();
   String? error;
 
   String get dateTime =>
@@ -94,6 +96,7 @@ class _RecordNewActivityDialogState
     }
 
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final TrackerWrites writes = ref.read(trackerWritesProvider);
 
     setState(() {
       loading = true;
@@ -107,13 +110,14 @@ class _RecordNewActivityDialogState
     bool synced = true;
 
     try {
-      await activityRef
-          .set({
-            'createdAt': date,
-            'ownerID': user.uid,
-            'quantity': int.parse(quantityController.text),
-            'viceID': selectedVice!.id,
-          })
+      await writes
+          .recordActivity(
+            activityID,
+            ownerID: user.uid,
+            viceID: selectedVice!.id,
+            quantity: int.parse(quantityController.text),
+            createdAt: date,
+          )
           .timeout(RecordNewActivityDialog.writeTimeout);
     } on FirebaseException catch (e) {
       if (mounted) {
@@ -142,12 +146,12 @@ class _RecordNewActivityDialogState
       return;
     }
 
-    final DocumentReference<Map<String, dynamic>> written = activityRef;
+    final String written = activityID;
     Navigator.of(context).pop();
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      onUndo: () => _undo(messenger, written),
+      onUndo: () => _undo(messenger, writes, written),
     );
   }
 
@@ -155,12 +159,15 @@ class _RecordNewActivityDialogState
   // is disposed by the time Undo can be pressed.
   static Future<void> _undo(
     ScaffoldMessengerState messenger,
-    DocumentReference<Map<String, dynamic>> activityRef,
+    TrackerWrites writes,
+    String activityID,
   ) async {
     String message;
 
     try {
-      await activityRef.delete().timeout(RecordNewActivityDialog.writeTimeout);
+      await writes
+          .deleteActivity(activityID)
+          .timeout(RecordNewActivityDialog.writeTimeout);
       message = 'Activity removed';
     } on FirebaseException catch (e) {
       message = 'Unable to undo: ${e.message ?? e.code}';

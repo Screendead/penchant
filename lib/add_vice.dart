@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 
 class AddVice extends ConsumerStatefulWidget {
@@ -39,13 +39,13 @@ class _AddViceState extends ConsumerState<AddVice> {
             onPressed: () async {
               if (formKey.currentState!.validate() && unit != null) {
                 try {
-                  await FirebaseFirestore.instance.collection('vices').add({
-                    'name': viceNameController.text,
-                    'unit': unit!.name,
-                    'ownerID': user.uid,
-                    'createdAt': FieldValue.serverTimestamp(),
-                    'archived': false,
-                  });
+                  await ref
+                      .read(trackerWritesProvider)
+                      .addVice(
+                        ownerID: user.uid,
+                        name: viceNameController.text,
+                        unit: unit!,
+                      );
 
                   if (context.mounted) {
                     Navigator.of(context).pop();

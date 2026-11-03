@@ -38,7 +38,6 @@ Claude's recommendation: **A.** It reuses the write path, and widgets, Shortcuts
 
 **Depends on:**
 - [`record-action-disappears-on-the-graph-tab`](../../tech-debt/navigation-and-unreachable-ui/record-action-disappears-on-the-graph-tab.md)
-- [`writes-bypass-providers-with-inline-firestore-calls`](../../tech-debt/widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
 - [granular logging](../insights/granular-logging-and-data-model.md), for where the default quantity lives
 
 **Needs Jack:** no
