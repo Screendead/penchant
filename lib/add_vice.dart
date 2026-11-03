@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/providers/user_provider.dart';
 
@@ -74,13 +75,7 @@ class _AddViceState extends ConsumerState<AddVice> {
                 decoration: const InputDecoration(
                   labelText: 'Vice Name',
                 ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
-                  }
-
-                  return null;
-                },
+                validator: viceNameError,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<Unit>(

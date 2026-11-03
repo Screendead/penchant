@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**107 issues: 0 critical, 23 high, 53 medium, 31 low.**
+**110 issues: 0 critical, 22 high, 56 medium, 32 low.**
 
 ## Firebase Data Layer (10)
 
@@ -32,7 +32,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
 - **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 
-## Widget State and View Logic (12)
+## Widget State and View Logic (13)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
@@ -46,16 +46,18 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **medium** — [Browsing history can leave up to 30 live database listeners open](widget-state-and-view-logic/no-provider-is-autodispose.md)
 - **medium** — [Smoothing slider, caption, and math can all disagree with each other](widget-state-and-view-logic/smoothing-window-escapes-its-own-bounds.md)
 - **medium** — [App left open past midnight keeps showing yesterday as today](widget-state-and-view-logic/today-is-frozen-at-widget-initialisation.md)
+- **medium** — [Usage graph draws below zero and repeats or overlaps its axis labels](widget-state-and-view-logic/usage-graph-misdraws-sparse-data.md)
 - **medium** — [Weekly graph's most recent point is always artificially depressed](widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md)
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
 
-## Navigation and Unreachable UI (4)
+## Navigation and Unreachable UI (5)
 
 Routes that dead-end, screens and empty states that cannot be reached or escaped, and routing configuration.
 
 - **high** — [Editing a vice, and three Settings rows, all dead-end on a 404 page](navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md)
 - **medium** — [Signing out leaves a stuck spinner screen floating over sign-in](navigation-and-unreachable-ui/routes-are-generated-without-consulting-auth-state.md)
 - **low** — [Every screen, including the error page, opens as a modal](navigation-and-unreachable-ui/every-route-is-a-fullscreen-dialog.md)
+- **low** — [Pages opened from the drawer leave the drawer open behind them](navigation-and-unreachable-ui/drawer-stays-open-under-pages-it-opens.md)
 - **low** — [The record-activity button vanishes while viewing the graph tab](navigation-and-unreachable-ui/record-action-disappears-on-the-graph-tab.md)
 
 ## Error Handling and Observability (7)
@@ -76,9 +78,9 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 
 - **high** — [Loading scrim blocks touch but not screen readers; Record button unguarded](offline-and-write-reliability/loading-overlay-does-not-block-input.md)
 - **high** — [App can't tell a stale offline cache from a confirmed empty result](offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
-- **high** — [A timeout error can be followed by the write succeeding anyway, twice](offline-and-write-reliability/the-timeout-abandons-the-await-not-the-write.md)
 - **high** — [Delete buttons can hang offline with no timeout and no visible feedback](offline-and-write-reliability/three-delete-paths-have-no-timeout-or-pending-state.md)
 - **medium** — [Offline persistence and cache size rest on SDK defaults nobody chose](offline-and-write-reliability/firestore-persistence-is-never-configured.md)
+- **medium** — [The activity editor reports a queued save as a failure](offline-and-write-reliability/editor-reports-a-queued-save-as-timed-out.md)
 - **medium** — [Add and archive buttons can be pressed repeatedly while offline](offline-and-write-reliability/add-vice-and-archive-writes-have-no-timeout.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 - **medium** — [No banner, badge, or retry button ever tells the user they're offline](offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
@@ -161,12 +163,13 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 - **low** — [macOS still targets a years-unsupported OS version while iOS was upgraded](platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
 - **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
 
-## CI and Quality Gates (2)
+## CI and Quality Gates (3)
 
 Test depth and unverified build state.
 
 - **high** — [No unit or widget tests; one end-to-end happy path is the only real coverage](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
+- **medium** — [The end-to-end run's Add Vice save intermittently never completes](ci-and-quality-gates/e2e-add-vice-save-sometimes-never-returns.md)
 
 ## Repo, Docs and Release Hygiene (11)
 

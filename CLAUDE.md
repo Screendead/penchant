@@ -131,7 +131,11 @@ checks against the stored document on read, update and delete and against the in
 one on create. The rules also fix each collection's field set and types on create, allow
 updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
 (activities), and validate only the changed fields on update so legacy documents
-(vices without `archived`) stay editable. A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+(vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
+stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
+Dart `String.length`); a quantity is an int of at least 1; a new activity's `viceID`
+must name a vice the writer owns, checked with one `get()` (a billed read, even when
+denied). `lib/data/limits.dart` holds the form validators that mirror these. A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from the today chart but keeps its history.
 
