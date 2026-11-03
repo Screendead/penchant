@@ -193,7 +193,11 @@ Firestore throws `failed-precondition` at runtime until the index is deployed.
 **Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
 (`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
 date range as a line chart, bucketing activities by day or week and overlaying a moving
-average.
+average. Below three vices Today draws bars instead (fl_chart's radar needs three axes). The radar carries
+a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
+centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
+text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
+outside the widget tree, so tests read them from the chart's data.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
