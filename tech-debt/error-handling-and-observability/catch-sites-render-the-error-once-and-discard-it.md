@@ -8,10 +8,10 @@ None writes the error anywhere else, so once the message leaves the screen the o
 
 ## Evidence
 
-- `lib/manage_data.dart:94` — `content: Text(e.toString()),`
-- `lib/vice_activity_editor_page.dart:82` — `error = e.message ?? 'Unable to delete activity';`
-- `lib/vice_activity_history_page.dart:101` — `e.message ?? 'Unable to delete activity',`
-- `lib/sign_in.dart:105` — `error = e.message;`
+- `lib/manage_data.dart:37` — `message = e.toString();`
+- `lib/vice_activity_editor_page.dart:105` — `error = e.message ?? 'Unable to delete activity';`
+- `lib/vice_activity_history_page.dart:46` — `message = e.message ?? 'Unable to delete activity';`
+- `lib/sign_in.dart:108` — `error = e.message;`
 - `lib/account_settings.dart:54` — `content: Text('Failed to update profile: $e'),`
 - `lib/vice_tracker.dart:50` — `content: Text('Unable to load that day: $error'),`
-- `lib/widgets/record_new_activity_dialog.dart:262` — `error = 'Error recording activity: ${e.message}';`
+- `lib/widgets/record_new_activity_dialog.dart:126` — `: 'Error recording activity: ${e.message}';`

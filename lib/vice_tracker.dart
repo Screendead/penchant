@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/vice_chart.dart';
+import 'package:tracker/widgets/sync_status.dart';
 
 class ViceTracker extends ConsumerStatefulWidget {
   const ViceTracker({super.key});
@@ -117,6 +118,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 ],
               ),
               Expanded(child: ViceChart(selectedDate: day)),
+              PendingDayNote(selectedDate: day),
             ],
           ),
         ),

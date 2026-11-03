@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**93 issues: 0 critical, 14 high, 52 medium, 27 low.**
+**87 issues: 0 critical, 12 high, 48 medium, 27 low.**
 
 ## Firebase Data Layer (9)
 
@@ -62,18 +62,12 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 - **low** — [The same save error reads four different ways depending on the screen](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 
-## Offline and Write Reliability (8)
+## Offline and Write Reliability (2)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **high** — [Loading scrim blocks touch but not screen readers; Record button unguarded](offline-and-write-reliability/loading-overlay-does-not-block-input.md)
-- **high** — [App can't tell a stale offline cache from a confirmed empty result](offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
-- **high** — [Delete buttons can hang offline with no timeout and no visible feedback](offline-and-write-reliability/three-delete-paths-have-no-timeout-or-pending-state.md)
-- **medium** — [Offline persistence and cache size rest on SDK defaults nobody chose](offline-and-write-reliability/firestore-persistence-is-never-configured.md)
-- **medium** — [The activity editor reports a queued save as a failure](offline-and-write-reliability/editor-reports-a-queued-save-as-timed-out.md)
-- **medium** — [Add and archive buttons can be pressed repeatedly while offline](offline-and-write-reliability/add-vice-and-archive-writes-have-no-timeout.md)
+- **high** — [A change made offline that the server later refuses vanishes without a word](offline-and-write-reliability/rejected-queued-write-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
-- **medium** — [No banner, badge, or retry button ever tells the user they're offline](offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
 
 ## Duplication and Dead Code (12)
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/record_new_activity_button.dart';
+import 'package:tracker/widgets/sync_status.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -58,9 +59,16 @@ class _HomepageState extends State<Homepage> {
           ],
         ),
       ),
-      body: IndexedStack(
-        index: selectedTabIndex,
-        children: const [ViceTracker(), UsageGraphView()],
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: selectedTabIndex,
+              children: const [ViceTracker(), UsageGraphView()],
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedTabIndex,

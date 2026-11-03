@@ -7,6 +7,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 // Adds a vice, or with [vice] edits that one.
 class ViceForm extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     text: opened?.name,
   );
   late Unit? unit = opened?.unit;
+  bool saving = false;
 
   @override
   void dispose() {
@@ -41,32 +43,44 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
     final Vice? vice = opened;
     final String name = viceNameController.text;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    final Future<void>? write;
+    if (vice == null) {
+      write = ref
+          .read(trackerWritesProvider)
+          .addVice(ownerID: user.uid, name: name, unit: unit!);
+    } else if (name != vice.name || unit != vice.unit) {
+      // Only the changed fields are written: an untouched unit may be a
+      // legacy value the parser shows as the fallback.
+      write = ref
+          .read(trackerWritesProvider)
+          .updateVice(
+            vice.id,
+            name: name == vice.name ? null : name,
+            unit: unit == vice.unit ? null : unit,
+          );
+    } else {
+      write = null;
+    }
+
+    setState(() {
+      saving = true;
+    });
 
     try {
-      if (vice == null) {
-        await ref
-            .read(trackerWritesProvider)
-            .addVice(ownerID: user.uid, name: name, unit: unit!);
-      } else if (name != vice.name || unit != vice.unit) {
-        // Only the changed fields are written: an untouched unit may be a
-        // legacy value the parser shows as the fallback.
-        await ref
-            .read(trackerWritesProvider)
-            .updateVice(
-              vice.id,
-              name: name == vice.name ? null : name,
-              unit: unit == vice.unit ? null : unit,
-            );
+      if (write != null && !await settleWrite(write)) {
+        messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
-
       if (mounted) {
         Navigator.of(context).pop();
       }
     } on FirebaseException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message ?? e.code)));
+        setState(() {
+          saving = false;
+        });
+        messenger.showSnackBar(SnackBar(content: Text(e.message ?? e.code)));
       }
     }
   }
@@ -85,8 +99,17 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        bottom: saving
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(4),
+                child: LinearProgressIndicator(),
+              )
+            : null,
         actions: <Widget>[
-          TextButton(child: const Text('Save'), onPressed: () => _save(user)),
+          TextButton(
+            onPressed: saving ? null : () => _save(user),
+            child: const Text('Save'),
+          ),
         ],
       ),
       body: Padding(

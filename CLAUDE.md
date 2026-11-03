@@ -209,6 +209,15 @@ or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.
 
+**Offline.** Production Firestore runs with disk persistence and an explicit 100 MB cache
+(`_configureFirestoreCache` in `lib/firebase_init.dart`); the emulator path keeps persistence off. Every
+write awaits through `settleWrite` (`lib/writes/settle_write.dart`): an acknowledgement within ten seconds
+is success, a timeout means the write is queued and the UI says it will sync, and only a
+`FirebaseException` is a failure. `ViceActivity.pending` carries `hasPendingWrites`; the day and history
+providers listen with `includeMetadataChanges: true` so the server's acknowledgement clears it.
+`offlineProvider` is true once a vices listener has answered from the cache for three seconds, which
+drives the offline banner and the offline wording of an empty day.
+
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against
 production. With it, the default app is initialized with `demo-tracker` options, Firestore

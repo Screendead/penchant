@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/widgets/chart_text.dart';
@@ -160,6 +161,7 @@ class ViceChart extends ConsumerWidget {
     if (quantityByViceID.values.every((int quantity) => quantity == 0)) {
       return CleanDay(
         isToday: daysBetween(selectedDate, startOfDay(DateTime.now())) == 0,
+        offline: ref.watch(offlineProvider).value ?? false,
       );
     }
 

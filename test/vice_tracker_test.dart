@@ -11,6 +11,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -19,6 +20,7 @@ import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 import 'fakes.dart';
 
@@ -281,6 +283,19 @@ void main() {
       expect(find.text('Nothing recorded on this day.'), findsOneWidget);
     });
 
+    testWidgets('offline, says the device may not have the day rather than '
+        'calling it clear', (WidgetTester tester) async {
+      await _pumpApp(tester, [
+        ...overrides(),
+        offlineProvider.overrideWith((ref) => Stream.value(true)),
+      ], const ViceTracker());
+      await tester.pump();
+
+      expect(find.byType(CleanDay), findsOneWidget);
+      expect(find.text(CleanDay.offlineHeadline), findsOneWidget);
+      expect(find.text('A clear day so far'), findsNothing);
+    });
+
     for (final Brightness brightness in Brightness.values) {
       testWidgets('is green with readable text in the ${brightness.name} '
           'theme', (WidgetTester tester) async {
@@ -353,7 +368,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(RecordNewActivityDialog.recordedMessage), findsNothing);
-    expect(find.text(RecordNewActivityDialog.queuedMessage), findsOneWidget);
+    expect(find.text(queuedMessage), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 7));
     expect(find.text('Undo'), findsOneWidget);
