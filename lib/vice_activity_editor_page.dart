@@ -312,7 +312,9 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
                     const SizedBox(height: 16),
                     Text(
                       error!,
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ],
                 ],

@@ -30,30 +30,28 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final User? user = ref.watch(userProvider).value;
+    final ColorScheme colorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.pink,
+      brightness: Brightness.dark,
+    );
 
     return GestureDetector(
-      onTap: FocusManager.instance.primaryFocus?.unfocus,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      excludeFromSemantics: true,
       child: MaterialApp(
         title: 'Vice Tracker',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.pink,
-            brightness: Brightness.dark,
-          ),
+          colorScheme: colorScheme,
           useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(
+          inputDecorationTheme: InputDecorationTheme(
             floatingLabelBehavior: FloatingLabelBehavior.always,
             floatingLabelAlignment: FloatingLabelAlignment.center,
             border: OutlineInputBorder(),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.pink,
-              ),
+              borderSide: BorderSide(color: Colors.pink),
             ),
             errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.red,
-              ),
+              borderSide: BorderSide(color: colorScheme.error),
             ),
           ),
         ),

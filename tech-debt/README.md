@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**108 issues: 0 critical, 17 high, 61 medium, 30 low.**
+**98 issues: 0 critical, 15 high, 54 medium, 29 low.**
 
 ## Firebase Data Layer (9)
 
@@ -102,24 +102,14 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
 - **low** — [Auth widgets carry dead fields and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
-## Accessibility and Localization (17)
+## Accessibility and Localization (7)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
-- **high** — [Neither chart exposes any data to screen readers](accessibility-and-localization/charts-carry-no-screen-reader-semantics.md)
-- **high** — [Main logging dialog can overflow at larger text sizes](accessibility-and-localization/record-dialog-content-cannot-scroll.md)
 - **medium** — [Dates always render in English regardless of device locale](accessibility-and-localization/dateformat-constructed-without-a-locale.md)
-- **medium** — [Date navigation row can overflow at larger text sizes](accessibility-and-localization/day-selector-row-overflows-at-large-text-scale.md)
-- **medium** — [Two mismatched reds represent the same error concept](accessibility-and-localization/error-red-is-hardcoded-instead-of-the-theme-role.md)
-- **medium** — [Graph's two lines are indistinguishable by colour or label](accessibility-and-localization/graph-series-distinguished-only-by-opacity.md)
-- **medium** — [Some icon buttons have no accessible name at all](accessibility-and-localization/icon-button-tooltip-coverage-is-inconsistent.md)
-- **medium** — [Chart axis labels clip when text size is increased](accessibility-and-localization/line-chart-axis-labels-clip-at-large-text-scale.md)
 - **medium** — [App has no localization setup at all, English only](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
-- **medium** — [Radar chart text ignores accessibility text-size settings](accessibility-and-localization/radar-chart-text-ignores-system-text-scale.md)
-- **medium** — [Tap-to-dismiss-keyboard handler goes stale after focus moves](accessibility-and-localization/root-gesturedetector-unfocus-handler-is-stale.md)
 - **low** — [Same date shown in four different formats across screens](accessibility-and-localization/date-patterns-differ-between-write-and-read-screens.md)
 - **low** — [Day header colours are hardcoded white, not theme-derived](accessibility-and-localization/day-header-hardcodes-colors-white.md)
-- **low** — [Empty-data messages look identical to real error messages](accessibility-and-localization/neutral-empty-states-use-the-error-colour.md)
 - **low** — [No declared app language on iOS or macOS](accessibility-and-localization/platform-shells-declare-no-language-metadata.md)
 - **low** — [Relative date labels are hand-rolled English with no localization](accessibility-and-localization/relative-date-labels-are-hardcoded-english.md)
 - **low** — [Pluralisation and number formatting assume English rules](accessibility-and-localization/value-rendering-is-english-and-locale-insensitive.md)
