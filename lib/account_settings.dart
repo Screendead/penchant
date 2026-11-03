@@ -15,7 +15,7 @@ class AccountSettings extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final User? user = ref.watch(userProvider).value;
+    final User? user = ref.watch(userProfileProvider).value;
     return Scaffold(
       appBar: AppBar(title: const Text('Account Settings')),
       body: user == null
@@ -47,10 +47,21 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
   late final TextEditingController _photoURL = TextEditingController(
     text: widget.user.photoURL,
   );
+  late final AppLifecycleListener _lifecycle;
   String? _busy;
+
+  // A verification link is usually opened outside the app, so the address's
+  // status is fetched on opening and again on returning to the app.
+  @override
+  void initState() {
+    super.initState();
+    _account.reloadUser();
+    _lifecycle = AppLifecycleListener(onResume: _account.reloadUser);
+  }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _displayName.dispose();
     _email.dispose();
     _photoURL.dispose();
@@ -190,6 +201,9 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     await _run(AccountCopy.deleting, () async {
       try {
         await _account.deleteAccount(password: password);
+      } on DeletionIncompleteException catch (e) {
+        _show(AccountCopy.deleteIncomplete(authErrorMessage(e.cause)));
+        return;
       } catch (e) {
         _show(AccountCopy.deleteFailed(authErrorMessage(e)));
         return;

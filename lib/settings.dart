@@ -6,29 +6,6 @@ import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 
-// Routes pushed above the root outlive the session, so the stack is cleared
-// back to the root, which shows sign-in once the user is null.
-Future<void> signOut(BuildContext context, WidgetRef ref) async {
-  final Account account = ref.read(accountProvider);
-  final NavigatorState navigator = Navigator.of(context);
-  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-  try {
-    try {
-      await account.signOut();
-    } on UnsyncedEntriesException {
-      if (!context.mounted || !await _confirmDiscard(context)) {
-        return;
-      }
-      await account.signOut(discardUnsynced: true);
-    }
-    navigator.popUntil((Route<dynamic> route) => route.isFirst);
-  } catch (e) {
-    messenger.showSnackBar(
-      SnackBar(content: Text(AccountCopy.signOutFailed(authErrorMessage(e)))),
-    );
-  }
-}
-
 Future<bool> _confirmDiscard(BuildContext context) async {
   final bool? discard = await showDialog<bool>(
     context: context,
@@ -50,11 +27,54 @@ Future<bool> _confirmDiscard(BuildContext context) async {
   return discard ?? false;
 }
 
-class Settings extends ConsumerWidget {
+class Settings extends ConsumerStatefulWidget {
   const Settings({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends ConsumerState<Settings> {
+  bool _signingOut = false;
+
+  // Routes pushed above the root outlive the session, so the stack is cleared
+  // back to the root, which shows sign-in once the user is null.
+  Future<void> _signOut() async {
+    final Account account = ref.read(accountProvider);
+    final NavigatorState navigator = Navigator.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    try {
+      try {
+        await _whileSigningOut(account.signOut);
+      } on UnsyncedEntriesException {
+        if (!mounted || !await _confirmDiscard(context)) {
+          return;
+        }
+        await _whileSigningOut(() => account.signOut(discardUnsynced: true));
+      }
+      navigator.popUntil((Route<dynamic> route) => route.isFirst);
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(AccountCopy.signOutFailed(authErrorMessage(e)))),
+      );
+    }
+  }
+
+  // Waiting for unsynced entries can take seconds; the tile stays disabled
+  // meanwhile so a second tap cannot start a second sign-out.
+  Future<void> _whileSigningOut(Future<void> Function() signOut) async {
+    setState(() => _signingOut = true);
+    try {
+      await signOut();
+    } finally {
+      if (mounted) {
+        setState(() => _signingOut = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final String? version = ref
         .watch(packageInfoProvider)
         .whenOrNull(
@@ -98,7 +118,14 @@ class Settings extends ConsumerWidget {
             ListTile(
               title: const Text('Sign out'),
               leading: const Icon(Icons.exit_to_app),
-              onTap: () => signOut(context, ref),
+              enabled: !_signingOut,
+              trailing: _signingOut
+                  ? const SizedBox.square(
+                      dimension: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+              onTap: _signOut,
             ),
           ],
         ),

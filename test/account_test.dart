@@ -25,17 +25,17 @@ Future<void> _pump(
   FakeAccount account,
   Widget home, {
   FakeExportShare? share,
-  User? user,
+  Stream<User?>? users,
   Map<String, WidgetBuilder> routes = const <String, WidgetBuilder>{},
 }) async {
+  final User user = FakeUser(ownerID, email: _email);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         accountProvider.overrideWithValue(account),
         exportShareProvider.overrideWithValue(share ?? FakeExportShare()),
-        userProvider.overrideWith(
-          (ref) => Stream.value(user ?? FakeUser(ownerID, email: _email)),
-        ),
+        userProvider.overrideWith((ref) => Stream.value(user)),
+        userProfileProvider.overrideWith((ref) => users ?? Stream.value(user)),
       ],
       child: MaterialApp(home: home, routes: routes),
     ),
@@ -61,6 +61,8 @@ Future<void> _enter(WidgetTester tester, String label, String text) async {
 
 Future<void> _tapText(WidgetTester tester, String text) async {
   await tester.ensureVisible(find.text(text).last);
+  // Scrolling ignores taps until it settles, and focusing a field scrolls.
+  await tester.pumpAndSettle();
   await tester.tap(find.text(text).last);
   await tester.pumpAndSettle();
 }
@@ -166,9 +168,8 @@ void main() {
       await _tapText(tester, 'root');
     }
 
-    testWidgets('waits for the sign-out, then returns to the root', (
-      tester,
-    ) async {
+    testWidgets('waits for the sign-out, ignoring a second tap, then returns '
+        'to the root', (tester) async {
       final Completer<void> signedOut = Completer<void>();
       final FakeAccount account = FakeAccount()
         ..respond = (_) => signedOut.future;
@@ -176,6 +177,10 @@ void main() {
       await tester.tap(find.text('Sign out'));
       await tester.pump();
       expect(find.byType(Settings), findsOneWidget);
+
+      await tester.tap(find.text('Sign out'), warnIfMissed: false);
+      await tester.pump();
+      expect(account.calls, hasLength(1));
 
       signedOut.complete();
       await tester.pumpAndSettle();
@@ -237,6 +242,58 @@ void main() {
         const Write('updateDisplayName', '', {'displayName': 'Sam'}),
       ]);
       expect(find.text('Display name saved.'), findsOneWidget);
+    });
+
+    testWidgets('compares the form with the latest profile, not the one the '
+        'screen opened with', (tester) async {
+      final StreamController<User?> users = StreamController<User?>();
+      addTearDown(users.close);
+      final FakeAccount account = FakeAccount();
+      await _pump(
+        tester,
+        account,
+        const AccountSettings(),
+        users: users.stream,
+      );
+      users.add(FakeUser(ownerID, email: _email));
+      await tester.pump();
+      await _enter(tester, 'Display Name', 'Sam');
+      await _tapText(tester, 'Update Profile');
+      users.add(FakeUser(ownerID, email: _email, displayName: 'Sam'));
+      await tester.pump();
+
+      await _enter(tester, 'Display Name', '');
+      await _tapText(tester, 'Update Profile');
+      expect(account.calls, <Write>[
+        const Write('updateDisplayName', '', {'displayName': 'Sam'}),
+        const Write('updateDisplayName', '', {'displayName': null}),
+      ]);
+      expect(find.text('Display name saved.'), findsOneWidget);
+    });
+
+    testWidgets('reloads the user on opening and on returning to the app, and '
+        'shows the address as verified once it is', (tester) async {
+      final StreamController<User?> users = StreamController<User?>();
+      addTearDown(users.close);
+      final FakeAccount account = FakeAccount();
+      await _pump(
+        tester,
+        account,
+        const AccountSettings(),
+        users: users.stream,
+      );
+      users.add(FakeUser(ownerID, email: _email));
+      await tester.pump();
+      expect(account.reloads, 1);
+      expect(find.text(AccountCopy.notVerified), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      expect(account.reloads, 2);
+      users.add(FakeUser(ownerID, email: _email, emailVerified: true));
+      await tester.pump();
+      expect(find.text(AccountCopy.verified), findsOneWidget);
+      expect(find.text(AccountCopy.resendVerification), findsNothing);
     });
 
     testWidgets('a new email asks for the password first and then sends the '
@@ -354,9 +411,8 @@ void main() {
         expect(account.ops, <String>['fetchData']);
       });
 
-      testWidgets('a wrong password leaves the account and says so', (
-        tester,
-      ) async {
+      testWidgets('a wrong password leaves the account and says nothing was '
+          'removed', (tester) async {
         final FakeAccount account = FakeAccount()
           ..respond = (_) async => throw _authError('wrong-password');
         await startDeletion(tester, account);
@@ -370,6 +426,29 @@ void main() {
           find.text(
             AccountCopy.deleteFailed(
               'That email and password do not match an account.',
+            ),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a failure after removal began says some entries may be '
+          'gone', (tester) async {
+        final FakeAccount account = FakeAccount()
+          ..respond = (_) async => throw DeletionIncompleteException(
+            FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
+          );
+        await startDeletion(tester, account);
+        await _tapText(tester, AccountCopy.deleteConfirmContinue);
+        await tester.enterText(find.byType(TextField).last, 'Passw0rd');
+        await tester.pump();
+        await _tapText(tester, AccountCopy.deleteConfirmAction);
+
+        expect(find.byType(AccountSettings), findsOneWidget);
+        expect(
+          find.text(
+            AccountCopy.deleteIncomplete(
+              'No connection. Check your internet and try again.',
             ),
           ),
           findsOneWidget,

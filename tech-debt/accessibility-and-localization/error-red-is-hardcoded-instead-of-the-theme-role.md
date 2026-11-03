@@ -11,6 +11,6 @@ Two different reds end up representing the same error concept on screen: the fra
 - `lib/errors/not_found.dart:23` — `color: Colors.red,`
 - `lib/vice_chart.dart:33` — `color: Colors.red,`
 - `lib/usage_graph_view.dart:82` — `color: Colors.red,`
-- `lib/register.dart:55` — `color: emailIsValid! ? Colors.green : Colors.red,`
+- `lib/register.dart:94` — `color: emailIsValid! ? Colors.green : Colors.red,`
 - `lib/main.dart:58` — `color: Colors.red,`
 - `lib/vice_activity_editor_page.dart:296` — `style: const TextStyle(color: Colors.red),`

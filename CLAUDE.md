@@ -136,7 +136,8 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
 annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
 hand-written. Most are a `StreamProvider` or `StreamProvider.family` wrapping a Firestore
-snapshot stream (`userProvider` wraps `authStateChanges()`). Two are plain `Provider`s:
+snapshot stream (`userProvider` wraps `authStateChanges()`, `userProfileProvider`
+`userChanges()`). Two are plain `Provider`s:
 `viceActivityListByViceIDProvider` groups `viceActivityListProvider`'s resolved list by
 vice and returns `null` until that list has a value, and `trackerWritesProvider` hands
 out the write layer (below). `packageInfoProvider` is a `FutureProvider` over
@@ -156,7 +157,8 @@ password reset, re-authentication, profile and email changes, sign-out, and the
 account-wide Firestore work: `fetchData` pages through the user's vices and activities for
 export (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
 to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
-batches of 500, then the Auth user. Sign-out and deletion then `terminate()` Firestore and
+batches of 500, then the Auth user; a failure after the first batch is a
+`DeletionIncompleteException`, and any other failure removed nothing. Sign-out and deletion then `terminate()` Firestore and
 `clearPersistence()`; the plugin builds a fresh native instance with the same settings on
 the next call. Sign-out first waits up to 5 s for pending writes and throws
 `UnsyncedEntriesException` rather than discard them silently. Auth error text shown to the
@@ -172,7 +174,11 @@ means no data. The day and list activity providers emit an empty list for an emp
 list, since Firestore rejects an empty `whereIn`, and forward a vice-list error rather
 than staying in loading. Never gate UI on `ref.read(provider.future)`: in riverpod 3 a
 read with no other listener pauses the provider's stream, so the future never resolves.
-Render loading and error from the watched `AsyncValue` instead.
+Render loading and error from the watched `AsyncValue` instead. A `User` is a snapshot
+that profile updates and `reload()` never change: only `userChanges()` re-emits after
+them, and it also fires on every token refresh. So Account Settings alone watches
+`userProfileProvider`, and calls `Account.reloadUser()` on opening and on app resume to
+pick up a verification made elsewhere; the chain stays on `userProvider`.
 
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,

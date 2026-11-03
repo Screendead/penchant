@@ -184,6 +184,42 @@ void main() {
     ]);
   });
 
+  testWidgets('Account Settings shows the profile as saved and a verification '
+      'made outside the app', (tester) async {
+    await clearEmulators();
+    const String email = 'e2e-profile@example.com';
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, email);
+
+    await _openAccountSettings(tester);
+    expect(find.text(AccountCopy.notVerified), findsOneWidget);
+    await enterText(tester, 'Display Name', 'Sam');
+    await tap(tester, find.text('Update Profile'));
+    await pumpUntil(tester, find.text('Display name saved.'));
+
+    // Following the emailed link is what the user does in their mail app.
+    final List<Map<String, dynamic>> links = await _oobCodes(
+      email,
+      'VERIFY_EMAIL',
+    );
+    await _get(Uri.parse(links.last['oobLink'] as String));
+
+    await tap(tester, find.byTooltip('Back'));
+    await pumpUntil(tester, find.text(AccountCopy.dataSection), present: false);
+    await tap(tester, find.text('Account'));
+    await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
+    await pumpUntil(tester, find.text(AccountCopy.verified));
+    expect(find.text(AccountCopy.resendVerification), findsNothing);
+    expect(find.widgetWithText(TextFormField, 'Sam'), findsOneWidget);
+
+    // The first save's snackbar outlives the route it was shown on.
+    await pumpUntil(tester, find.text('Display name saved.'), present: false);
+    await enterText(tester, 'Display Name', '');
+    await tap(tester, find.text('Update Profile'));
+    await pumpUntil(tester, find.text('Display name saved.'));
+    expect(FirebaseAuth.instance.currentUser!.displayName, isNull);
+  });
+
   testWidgets('export shares a CSV row per entry and a JSON of the account', (
     tester,
   ) async {

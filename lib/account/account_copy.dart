@@ -35,6 +35,8 @@ abstract final class AccountCopy {
   static const String deleting = 'Deleting your account…';
   static const String deleted = 'Your account and all of its data are deleted.';
   static String deleteFailed(String reason) =>
+      'Your account is not deleted. $reason Nothing was removed.';
+  static String deleteIncomplete(String reason) =>
       'Your account is not deleted. $reason Some entries may already be gone; '
       'try again to finish.';
 

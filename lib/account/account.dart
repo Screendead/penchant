@@ -20,6 +20,15 @@ class UnsyncedEntriesException implements Exception {
   const UnsyncedEntriesException();
 }
 
+// Thrown by deleteAccount when it fails after it began removing data: some
+// documents may be gone while the account remains. Any other failure from it
+// removed nothing.
+class DeletionIncompleteException implements Exception {
+  const DeletionIncompleteException(this.cause);
+
+  final Object cause;
+}
+
 // Every Firebase Auth call the app makes, and the account-wide Firestore work
 // that goes with them: export, deletion and clearing the on-device cache.
 class Account {
@@ -81,6 +90,16 @@ class Account {
     );
   }
 
+  // Picks up what changed outside the app, such as a verified address. The
+  // snapshot already held stays usable, so a failure is only reported.
+  Future<void> reloadUser() async {
+    try {
+      await _auth.currentUser?.reload();
+    } on FirebaseAuthException catch (e, stack) {
+      _report(e, stack, 'reloading the signed-in user');
+    }
+  }
+
   Future<void> updateDisplayName(String? displayName) {
     return _signedInUser().updateDisplayName(displayName);
   }
@@ -120,10 +139,22 @@ class Account {
   Future<void> deleteAccount({required String password}) async {
     await reauthenticate(password);
     final User user = _signedInUser();
-    for (final String collection in _ownedCollections) {
-      await _deleteOwned(collection, user.uid);
+    bool removing = false;
+    try {
+      for (final String collection in _ownedCollections) {
+        await _deleteOwned(
+          collection,
+          user.uid,
+          beforeCommit: () => removing = true,
+        );
+      }
+      await user.delete();
+    } catch (e, stack) {
+      if (!removing) {
+        rethrow;
+      }
+      Error.throwWithStackTrace(DeletionIncompleteException(e), stack);
     }
-    await user.delete();
     await _clearLocalCache();
   }
 
@@ -152,7 +183,11 @@ class Account {
 
   // Reads from the server so that, offline, deletion fails before it removes
   // anything rather than queueing deletes it cannot confirm.
-  Future<void> _deleteOwned(String collection, String uid) async {
+  Future<void> _deleteOwned(
+    String collection,
+    String uid, {
+    required void Function() beforeCommit,
+  }) async {
     final Query<Map<String, dynamic>> query = _firestore
         .collection(collection)
         .where('ownerID', isEqualTo: uid)
@@ -169,6 +204,7 @@ class Account {
           in snapshot.docs) {
         batch.delete(doc.reference);
       }
+      beforeCommit();
       await batch.commit();
     }
   }

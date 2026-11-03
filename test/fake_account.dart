@@ -21,6 +21,9 @@ class FakeAccount implements Account {
     return respond?.call(call) ?? Future<void>.value();
   }
 
+  // Counted apart from [calls]: Account Settings reloads on every open.
+  int reloads = 0;
+
   List<String> get ops => <String>[for (final Write call in calls) call.op];
 
   @override
@@ -44,6 +47,11 @@ class FakeAccount implements Account {
   @override
   Future<void> reauthenticate(String password) =>
       _call('reauthenticate', <String, Object?>{'password': password});
+
+  @override
+  Future<void> reloadUser() async {
+    reloads++;
+  }
 
   @override
   Future<void> updateDisplayName(String? displayName) =>

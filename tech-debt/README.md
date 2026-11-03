@@ -95,7 +95,7 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **low** — [The same nullable-lookup pattern is typed out separately three times](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-three-times.md)
 - **low** — [One query builder orders its clauses backwards compared to seven siblings](duplication-and-dead-code/query-clause-order-differs-between-providers.md)
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
-- **low** — [Auth widgets carry dead fields and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
+- **low** — [An auth widget carries a dead field and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
 ## Accessibility and Localization (17)
 
