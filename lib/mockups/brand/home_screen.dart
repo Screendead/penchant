@@ -90,7 +90,11 @@ class HomeScreenMock extends StatelessWidget {
         'Vice Tracker',
         MaskedIcon(
           size: iconSize,
-          child: Image(image: currentIcon, fit: BoxFit.cover),
+          child: Image(
+            image: currentIcon,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.medium,
+          ),
         ),
       ),
       for (final (String label, IconData glyph, Color colour) in _placeholders)
@@ -242,11 +246,19 @@ class IconOverview extends StatelessWidget {
               _tile(
                 MaskedIcon(
                   size: 72,
-                  child: Image(image: currentIcon, fit: BoxFit.cover),
+                  child: Image(
+                    image: currentIcon,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.medium,
+                  ),
                 ),
                 MaskedIcon(
                   size: 29,
-                  child: Image(image: currentIcon, fit: BoxFit.cover),
+                  child: Image(
+                    image: currentIcon,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.medium,
+                  ),
                 ),
                 'Current',
                 'assets/icon.webp',

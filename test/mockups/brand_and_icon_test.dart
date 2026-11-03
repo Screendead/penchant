@@ -52,8 +52,10 @@ Future<void> _render(
   double pixelRatio = 3,
   Future<void> Function()? beforeCapture,
 }) async {
+  // Golden capture rasterizes at one pixel per logical pixel, so the view
+  // runs at 1x and the mock-up is scaled up to reach its pixel ratio.
   tester.view.physicalSize = size * pixelRatio;
-  tester.view.devicePixelRatio = pixelRatio;
+  tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   // flutter_test draws shadows as outlines unless this is off, and checks
   // that it is back on before the test ends.
@@ -65,9 +67,19 @@ Future<void> _render(
       theme: ThemeData(fontFamily: 'Roboto', useMaterial3: true),
       home: RepaintBoundary(
         key: _capture,
-        child: MediaQuery(
-          data: MediaQueryData(size: size, devicePixelRatio: pixelRatio),
-          child: Material(type: MaterialType.transparency, child: child),
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Transform.scale(
+            scale: pixelRatio,
+            alignment: Alignment.topLeft,
+            child: SizedBox.fromSize(
+              size: size,
+              child: MediaQuery(
+                data: MediaQueryData(size: size, devicePixelRatio: pixelRatio),
+                child: Material(type: MaterialType.transparency, child: child),
+              ),
+            ),
+          ),
         ),
       ),
     ),
@@ -165,7 +177,11 @@ void main() {
       tester,
       StoreListingMock(
         name: 'Vice Tracker',
-        icon: Image(image: currentIcon, fit: BoxFit.cover),
+        icon: Image(
+          image: currentIcon,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+        ),
       ),
       'current-store.png',
       beforeCapture: () => precacheCurrent(tester),
