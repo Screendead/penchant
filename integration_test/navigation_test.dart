@@ -23,7 +23,8 @@ Finder _rowButton(String viceName, String tooltip) => find.descendant(
 );
 
 Future<void> _expectSignedOutWithNothingAbove(WidgetTester tester) async {
-  await pumpUntil(tester, find.byType(Authenticate).hitTestable());
+  await pumpUntil(tester, find.text('Register').hitTestable());
+  expect(find.byType(Authenticate), findsOneWidget);
   expect(find.byType(ManageData, skipOffstage: false), findsNothing);
   expect(find.byType(Settings, skipOffstage: false), findsNothing);
   expect(

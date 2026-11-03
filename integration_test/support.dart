@@ -194,7 +194,7 @@ Future<void> closeDrawerPage(WidgetTester tester) async {
   await tap(tester, find.byType(BackButton));
   await pumpUntil(tester, find.byType(BackButton), present: false);
   await pumpUntil(tester, find.byType(Drawer), present: false);
-  await pumpUntil(tester, find.byType(Homepage).hitTestable());
+  await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
 }
 
 // Records through the app's dialog. With [at], unlocks the date field and
