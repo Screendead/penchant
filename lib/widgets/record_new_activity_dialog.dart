@@ -16,6 +16,29 @@ class RecordNewActivityDialog extends ConsumerStatefulWidget {
   const RecordNewActivityDialog({super.key});
 
   static const Duration writeTimeout = Duration(seconds: 10);
+  static const Duration undoDuration = Duration(seconds: 8);
+  static const String recordedMessage = 'Activity recorded';
+  static const String queuedMessage =
+      'Saved on this device. It will sync when you are back online.';
+
+  static void showRecorded(
+    ScaffoldMessengerState messenger, {
+    required bool synced,
+    required VoidCallback onUndo,
+  }) {
+    // A snackbar with an action persists by default and queues every later
+    // snackbar behind it, so an earlier recording's Undo would stay on screen
+    // and delete the wrong activity.
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        persist: false,
+        duration: undoDuration,
+        content: Text(synced ? recordedMessage : queuedMessage),
+        action: SnackBarAction(label: 'Undo', onPressed: onUndo),
+      ),
+    );
+  }
 
   @override
   ConsumerState<RecordNewActivityDialog> createState() =>
@@ -33,6 +56,12 @@ class _RecordNewActivityDialogState
   bool loading = false;
 
   late Timer dateUpdaterTimer;
+  // One reference per dialog, so a second press writes the same document
+  // rather than a duplicate.
+  final DocumentReference<Map<String, dynamic>> activityRef = FirebaseFirestore
+      .instance
+      .collection('activities')
+      .doc();
   String? error;
 
   String get dateTime =>
@@ -76,8 +105,7 @@ class _RecordNewActivityDialogState
       dateController.text,
     );
 
-    final DocumentReference<Map<String, dynamic>> activityRef =
-        FirebaseFirestore.instance.collection('activities').doc();
+    bool synced = true;
 
     try {
       await activityRef
@@ -97,13 +125,9 @@ class _RecordNewActivityDialogState
 
       return;
     } on TimeoutException {
-      if (mounted) {
-        setState(() {
-          error = 'Request timed out';
-        });
-      }
-
-      return;
+      // The write stays queued in the SDK and commits once the device
+      // reconnects.
+      synced = false;
     } finally {
       if (mounted) {
         setState(() {
@@ -116,20 +140,12 @@ class _RecordNewActivityDialogState
       return;
     }
 
+    final DocumentReference<Map<String, dynamic>> written = activityRef;
     Navigator.of(context).pop();
-    // A snackbar with an action persists by default and queues every later
-    // snackbar behind it, so an earlier recording's Undo would stay on screen
-    // and delete the wrong activity.
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        persist: false,
-        content: const Text('Activity recorded'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () => _undo(messenger, activityRef),
-        ),
-      ),
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: synced,
+      onUndo: () => _undo(messenger, written),
     );
   }
 

@@ -14,8 +14,8 @@ Then put "works offline" in the store copy.
 
 ## Why
 
-- SOURCED (register): persistence is never configured; no read path checks snapshot metadata; a timeout can be
-  followed by the write succeeding twice; there is no connectivity indicator.
+- SOURCED (register): persistence is never configured; no read path checks snapshot metadata; the activity editor still
+  reports a queued save as timed out; there is no connectivity indicator.
 - INFERENCE: a journal is only as good as its completeness. People log where the thing happens, often with no signal,
   and a lost or doubled entry also corrupts every insight computed from it.
 
@@ -38,7 +38,7 @@ is separate and derived, so it needs no sync at all (see the [insights engine](.
 **Depends on:**
 - [`firestore-persistence-is-never-configured`](../../tech-debt/offline-and-write-reliability/firestore-persistence-is-never-configured.md)
 - [`no-read-path-inspects-snapshotmetadata`](../../tech-debt/offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
-- [`the-timeout-abandons-the-await-not-the-write`](../../tech-debt/offline-and-write-reliability/the-timeout-abandons-the-await-not-the-write.md)
+- [`editor-reports-a-queued-save-as-timed-out`](../../tech-debt/offline-and-write-reliability/editor-reports-a-queued-save-as-timed-out.md)
 - [`no-connectivity-indicator-or-retry-affordance`](../../tech-debt/offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
 
 **Needs Jack:** no

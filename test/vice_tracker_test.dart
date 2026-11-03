@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,9 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_tracker.dart';
+import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fakes.dart';
 
@@ -40,6 +43,13 @@ double _chartedQuantity(WidgetTester tester) => tester
     .dataEntries
     .first
     .value;
+
+// WCAG 2.x contrast ratio.
+double _contrast(Color a, Color b) {
+  final double la = a.computeLuminance();
+  final double lb = b.computeLuminance();
+  return (max(la, lb) + 0.05) / (min(la, lb) + 0.05);
+}
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -171,38 +181,196 @@ void main() {
       expect(_enabled(tester, 'Previous day'), isFalse);
       expect(_enabled(tester, 'Next day'), isTrue);
     });
+  });
 
-    testWidgets('a day with nothing recorded is not shown as an error', (
+  group('fewer vices than radar axes', () {
+    final DateTime today = startOfDay(DateTime.now());
+    final Vice coffee = fakeVice('coffee');
+    final Vice beer = fakeVice('beer');
+
+    List<Override> overrides(List<Vice> vices) => [
+      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      viceActivityDayProvider.overrideWith((ref, DateTime day) {
+        final int daysAgo = daysBetween(day, today);
+
+        return Stream.value([
+          fakeActivity(coffee.id, daysAgo + 2, day),
+          fakeActivity(beer.id, daysAgo + 1, day),
+        ]);
+      }),
+    ];
+
+    List<double> barValues(WidgetTester tester) => [
+      for (final BarChartGroupData group
+          in tester.widget<BarChart>(find.byType(BarChart)).data.barGroups)
+        group.barRods.single.toY,
+    ];
+
+    Finder barTitle(String text) =>
+        find.descendant(of: find.byType(BarChart), matching: find.text(text));
+
+    testWidgets('one vice is charted as a bar', (WidgetTester tester) async {
+      await _pumpApp(tester, overrides([coffee]), const ViceTracker());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RadarChart), findsNothing);
+      expect(barValues(tester), [2]);
+      expect(barTitle('coffee (2 items)'), findsOneWidget);
+    });
+
+    testWidgets('two vices are charted as bars that follow the selected day', (
       WidgetTester tester,
     ) async {
-      await _pumpApp(tester, [
-        unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
-        viceActivityDayProvider.overrideWith(
-          (ref, DateTime day) => Stream.value(const <ViceActivity>[]),
-        ),
-      ], const ViceTracker());
+      await _pumpApp(tester, overrides([coffee, beer]), const ViceTracker());
+      await tester.pumpAndSettle();
 
-      expect(find.text('Nothing recorded on this day'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(RadarChart), findsNothing);
+      expect(barValues(tester), [2, 1]);
+      expect(barTitle('coffee (2 items)'), findsOneWidget);
+      expect(barTitle('beer (1 item)'), findsOneWidget);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Yesterday'), findsOneWidget);
+      expect(barValues(tester), [3, 2]);
+      expect(barTitle('coffee (3 items)'), findsOneWidget);
+      expect(barTitle('beer (2 items)'), findsOneWidget);
+    });
+
+    testWidgets('a third vice switches to the radar', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(
+        tester,
+        overrides([coffee, beer, fakeVice('tea')]),
+        const ViceTracker(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BarChart), findsNothing);
+      expect(find.byType(RadarChart), findsOneWidget);
     });
   });
 
-  testWidgets('fewer vices than radar axes are listed instead of charted', (
-    WidgetTester tester,
-  ) async {
-    final DateTime today = startOfDay(DateTime.now());
-    final Vice vice = fakeVice('coffee');
+  group('a day with nothing recorded', () {
+    final List<Vice> vices = [fakeVice('coffee')];
 
-    await _pumpApp(tester, [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value([vice])),
+    List<Override> overrides() => [
+      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
       viceActivityDayProvider.overrideWith(
-        (ref, DateTime day) => Stream.value([fakeActivity(vice.id, 2, today)]),
+        (ref, DateTime day) => Stream.value(const <ViceActivity>[]),
       ),
-    ], const ViceTracker());
+    ];
 
-    expect(find.byType(RadarChart), findsNothing);
-    expect(find.text('coffee'), findsOneWidget);
-    expect(find.text('2 items'), findsOneWidget);
+    testWidgets('reads as a clear day, today and on past days', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      expect(find.byType(CleanDay), findsOneWidget);
+      expect(find.text('A clear day so far'), findsOneWidget);
+      expect(find.text('Nothing recorded today.'), findsOneWidget);
+      expect(find.byType(BarChart), findsNothing);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('A clear day'), findsOneWidget);
+      expect(find.text('Nothing recorded on this day.'), findsOneWidget);
+    });
+
+    for (final Brightness brightness in Brightness.values) {
+      testWidgets('is green with readable text in the ${brightness.name} '
+          'theme', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides(),
+            child: MaterialApp(
+              theme: ThemeData(brightness: brightness),
+              home: const Scaffold(body: ViceTracker()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final Color background =
+            (tester
+                        .widget<DecoratedBox>(
+                          find
+                              .descendant(
+                                of: find.byType(CleanDay),
+                                matching: find.byType(DecoratedBox),
+                              )
+                              .first,
+                        )
+                        .decoration
+                    as BoxDecoration)
+                .color!;
+        final HSLColor hsl = HSLColor.fromColor(background);
+        expect(hsl.hue, inInclusiveRange(80, 160), reason: 'green hue');
+
+        for (final String text in [
+          'A clear day so far',
+          'Nothing recorded today.',
+        ]) {
+          final Color foreground = tester
+              .widget<Text>(find.text(text))
+              .style!
+              .color!;
+          expect(
+            _contrast(foreground, background),
+            greaterThanOrEqualTo(4.5),
+            reason: text,
+          );
+        }
+      });
+    }
+  });
+
+  testWidgets('the recorded snackbar offers Undo for eight seconds and '
+      'replaces an earlier one', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox.expand())),
+    );
+    final ScaffoldMessengerState messenger = tester.state(
+      find.byType(ScaffoldMessenger),
+    );
+    final List<String> undone = <String>[];
+
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: true,
+      onUndo: () => undone.add('first'),
+    );
+    await tester.pumpAndSettle();
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: false,
+      onUndo: () => undone.add('second'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(RecordNewActivityDialog.recordedMessage), findsNothing);
+    expect(find.text(RecordNewActivityDialog.queuedMessage), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 7));
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    expect(undone, ['second']);
+
+    RecordNewActivityDialog.showRecorded(
+      messenger,
+      synced: true,
+      onUndo: () {},
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 7));
+    expect(find.text(RecordNewActivityDialog.recordedMessage), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text(RecordNewActivityDialog.recordedMessage), findsNothing);
   });
 
   group('an account with no vices', () {
