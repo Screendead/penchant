@@ -1,0 +1,501 @@
+<title>Journal Encryption Pitch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: the Tracker pitch pages' reading column; options as tiles, screens as phone-sized frames, evidence folded. */
+:root {
+  --bg: #f3f5f6; --surface: #ffffff; --fg: #17222a; --muted: #5a6872; --line: #d8dee2;
+  --accent: #0d6b66; --accent-soft: #dcefed; --rec: #9a5b00; --rec-soft: #fbedd6; --warn: #a2321f; --warn-soft: #f8e1dc;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1518; --surface: #172025; --fg: #e4eaed; --muted: #95a3ab; --line: #2a363d;
+  --accent: #4fc2b9; --accent-soft: #163a38; --rec: #f0b45a; --rec-soft: #3a2a12; --warn: #f08a76; --warn-soft: #3a1d17; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1518; --surface: #172025; --fg: #e4eaed; --muted: #95a3ab; --line: #2a363d;
+  --accent: #4fc2b9; --accent-soft: #163a38; --rec: #f0b45a; --rec-soft: #3a2a12; --warn: #f08a76; --warn-soft: #3a1d17; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--body); }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 44px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 600; line-height: 1.3; }
+p, ul, ol { margin: 0; }
+ul, ol { padding-left: 1.2em; display: grid; gap: 6px; }
+a { color: var(--accent); }
+header { display: grid; gap: 12px; }
+.lede { color: var(--muted); max-width: 68ch; }
+section { display: grid; gap: 16px; }
+.sechead { display: grid; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.sechead p { color: var(--muted); font-size: .95rem; max-width: 70ch; }
+code, pre { font-family: var(--mono); font-size: .8rem; }
+pre { margin: 0; overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px; line-height: 1.45; }
+.tag { font-family: var(--mono); font-size: .68rem; letter-spacing: .04em; border-radius: 3px; padding: 0 5px; white-space: nowrap; vertical-align: 1px; }
+.tag.s { background: var(--accent-soft); color: var(--accent); }
+.tag.i { background: var(--rec-soft); color: var(--rec); }
+.pick { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--rec); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; }
+.pick h2 { font-size: 1.15rem; }
+.badge { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; background: var(--rec-soft); color: var(--rec); border-radius: 3px; padding: 1px 6px; font-weight: 600; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.opt { background: var(--surface); border: 1.5px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.opt.rec { border-color: var(--rec); }
+.opt .lab { font-weight: 600; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.opt .id { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+.opt p { font-size: .9rem; }
+.opt .eff { font-size: .82rem; color: var(--muted); }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+details[open] { display: grid; gap: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+details .body { display: grid; gap: 10px; font-size: .93rem; }
+.call { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+.call:last-child { border-bottom: 0; }
+.why { font-size: .93rem; border-left: 3px solid var(--rec); padding-left: 10px; max-width: 72ch; }
+.why b { color: var(--rec); }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+.shots.two { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+figure { margin: 0; display: grid; gap: 6px; align-content: start; min-width: 0; }
+figure img { width: 100%; max-width: 100%; height: auto; aspect-ratio: 393 / 852; border-radius: 14px; border: 1px solid var(--line); background: #1b1416; }
+figcaption { font-size: .85rem; color: var(--muted); }
+figcaption b { color: var(--fg); font-weight: 600; }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ok { color: var(--accent); font-weight: 600; }
+.no { color: var(--warn); font-weight: 600; }
+.warnbox { background: var(--warn-soft); border-radius: 6px; padding: 12px 14px; font-size: .93rem; display: grid; gap: 6px; }
+.meta { font-size: .85rem; color: var(--muted); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.cols > * { min-width: 0; }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Encrypting the journal</h1>
+  <p class="lede">You asked for end-to-end encryption because the data "could be sensitive", and steered: encrypt the names and quantities, dates aren't a big deal. This spike builds that (option O1) on the <code>mockup/e2e-encryption</code> branch against the Firestore emulator only, and shows what it still leaves visible, so you can judge it against hiding timing too (O3). Every claim is tagged <span class="tag s">SOURCED</span> with its source or <span class="tag i">INFERENCE</span>.</p>
+</header>
+
+<div class="pick">
+  <h2>Recommendation: O1, content sealed before 1.0, dates in plaintext</h2>
+  <p>It fits your steer, keeps every query, index and ownership rule working, and is now working code: crypto core, rules with 41 new tests (the 72 existing pass unchanged), sealed reads and writes, the first-launch migrator and the key screens. The cost is what the server still sees: who logs, when, how often per opaque vice, and how many vices. The console view below shows exactly that. Hiding timing needs O3, about twice the work, against your steer.</p>
+  <p class="meta">Sub-calls I recommend with it: recovery key offered on Today after a week (variant A); <code>enc</code> stored as a Blob; every vice padded to 285 bytes; a 32-character recovery key that locates a typo; owner may delete <code>keys/{uid}</code> for "Start a new journal". Each is below with its alternatives.</p>
+</div>
+
+<section>
+  <div class="sechead"><h2>The four options</h2><p>As pitched before the spike. O1 is the one built here; O3 is judged from the console view, not built.</p></div>
+  <div class="opts">
+    <div class="opt"><div class="lab"><span class="id">O0</span>No E2EE, accurate wording</div><p>Say what is true: Firestore encrypts at rest with Google-held keys <span class="tag s"><a href="https://docs.cloud.google.com/firestore/docs/server-side-encryption">SOURCED</a></span>; insights stay on the device. You, Google and anyone who breaches the project can read every entry.</p><p class="eff">S. Goes against the aim you stated.</p></div>
+    <div class="opt rec"><div class="lab"><span class="id">O1</span>Seal content before 1.0 <span class="badge">Recommended</span></div><p>Names, units, quantities and every later note or trigger go in one sealed <code>enc</code> field. <code>ownerID</code>, <code>viceID</code>, <code>createdAt</code>, <code>archived</code> stay plaintext. Key in iCloud Keychain, plus a recovery key.</p><p class="eff">L. Built in this spike.</p></div>
+    <div class="opt"><div class="lab"><span class="id">O2</span>Same, deferred to 1.1</div><p>Ship 1.0 in plaintext, migrate strangers' production data later. 1.0 parsers must already read both shapes, and the most revealing fields get written in plaintext first.</p><p class="eff">L+, across two releases. Riskier than O1.</p></div>
+    <div class="opt"><div class="lab"><span class="id">O3</span>Sealed vault, timing hidden too</div><p>Per-user encrypted op log in fixed-size segments, flushed at random times with cover traffic. The only design that hides <em>when</em>, since Firestore stamps its own <code>createTime</code> <span class="tag s"><a href="https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents">SOURCED</a></span>.</p><p class="eff">XL, about 2x O1 <span class="tag i">INFERENCE</span>. Against your steer on dates.</p></div>
+  </div>
+  <details><summary>Full costs and risks of each option (from the original pitch)</summary><div class="body">
+    <p><b>O0.</b> A breach means notifying users under GDPR Art. 34, because the 34(3)(a) encryption exemption is unavailable <span class="tag s"><a href="https://gdpr-info.eu/art-34-gdpr/">SOURCED</a></span>. Years of alcohol or drug logs next to Apple Health correlations are likely Art. 9 health data <span class="tag i">INFERENCE</span>. CMEK is no middle way: new databases only, and the project owner still reads plaintext <span class="tag s"><a href="https://docs.cloud.google.com/firestore/docs/cmek">SOURCED</a></span>.</p>
+    <p><b>O1.</b> C12 (quantity &ge; 1), C13 (name 1&ndash;60) and the unit enum stop being server checks and live only in <code>lib/data/limits.dart</code>; a modified client can corrupt only its own data <span class="tag i">INFERENCE</span>. The claim narrows to "we can see when you log, not what", as Apple's Advanced Data Protection does for its metadata <span class="tag s"><a href="https://support.apple.com/en-us/102651">SOURCED</a></span>. You lose console readability of your own data. Top risks: a second key minted beside ciphertext (data loss); every device and the recovery key lost; a bundle-ID rename orphaning keychain items <span class="tag s"><a href="https://developer.apple.com/documentation/security/sharing-access-to-keychain-items-among-a-collection-of-apps">SOURCED</a></span>; the app reaching a device before rules R1 are live, which denies every write; crash logs or notifications carrying decrypted names.</p>
+    <p><b>O2.</b> 1.0 plaintext stays in Google's deletion pipeline for about 180 days <span class="tag s"><a href="https://docs.cloud.google.com/docs/security/deletion">SOURCED</a></span> and in the PITR window <span class="tag s"><a href="https://firebase.google.com/docs/firestore/pitr">SOURCED</a></span>. Users who never update keep writing plaintext, so the strict rules (R2) can't land. Today's parsers cast unconditionally (<code>json['name'] as String</code>), so a pre-encryption build loses the whole list on the first sealed document <span class="tag s">SOURCED: lib/data/vice.dart on master</span>.</p>
+    <p><b>O3.</b> Retires the per-entry documents: every query becomes an in-memory filter, all composite indexes go, and it replaces the documented data shape, which needs your explicit yes under the hard rule. A device lost before a flush loses up to 6 hours of entries. Auth token refresh still shows when the app is open <span class="tag s"><a href="https://firebase.google.com/docs/auth/admin/manage-sessions">SOURCED</a></span>. The sync engine is homemade and its parameters are guesses <span class="tag i">INFERENCE</span>.</p>
+  </div></details>
+</section>
+
+<section>
+  <div class="sechead"><h2>What the console still sees under O1</h2><p><code>tools/e2ee-metadata-view.js</code> seeds eight weeks of a sealed journal (Coffee, Cigarettes, Wine, an archived Vape) into the emulator and reads it back over the REST API, as anyone with console access would. It also asserts that none of the 310 documents carries a name, unit or quantity and that every <code>enc</code> is a bucket length. Vice IDs are opaque; only this page knows which is which.</p></div>
+  <div class="cols">
+    <pre>WHAT THE CONSOLE SHOWS UNDER O1 (Firestore emulator, demo-tracker)
+Names, units and amounts are sealed; everything below is plaintext or Firestore metadata.
+
+Vices: 4 (archived: 1). Entries: 306. Owner: alice.
+
+viceID Kp3VwZ8sQe1RbT0yXuNa: 138 entries, enc 285 bytes
+  hour (UTC)  .......#+.#...#.........
+              0         1         2   
+              012345678901234567890123
+  Mon   20 #######################
+  Tue   19 ######################
+  Wed   20 #######################
+  Thu   19 ######################
+  Fri   19 ######################
+  Sat   20 #######################
+  Sun   21 ########################
+
+viceID Ue5BxG1kYs8vTr3mQaZw: 120 entries, enc 285 bytes
+  hour (UTC)  ...........#.#..#.#...+.
+              0         1         2   
+              012345678901234567890123
+  Mon   24 ########################
+  Tue   24 ########################
+  Wed   24 ########################
+  Thu   24 ########################
+  Fri   24 ########################
+  Sat    0 
+  Sun    0 
+
+viceID f7HdLq2MzA9cWn4oPjRt: 42 entries, enc 285 bytes
+  hour (UTC)  ...................###+.
+              0         1         2   
+              012345678901234567890123
+  Mon    0 
+  Tue    0 
+  Wed    0 
+  Thu    0 
+  Fri   15 ########################
+  Sat   14 ######################
+  Sun   13 #####################
+
+viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
+  hour (UTC)  ##.....................#
+              0         1         2   
+              012345678901234567890123
+  Mon    0 
+  Tue    0 
+  Wed    0 
+  Thu    0 
+  Fri    0 
+  Sat    4 ########################
+  Sun    2 ############</pre>
+    <div style="display:grid;gap:10px;align-content:start">
+      <p><b>Read it as an outsider.</b> Without a single name, the patterns say a lot: one vice twice a day every morning; one three times a day on weekdays only, daytime; one in the evening, Friday to Sunday; one late at night on weekends, now archived <span class="tag s">SOURCED: metadata-view.txt</span>. Anyone who knows the app's audience can guess coffee, work-hours smoking and weekend drinking <span class="tag i">INFERENCE</span>.</p>
+      <p><b>Why sealing the dates alone would not help.</b> Firestore writes its own <code>createTime</code> and <code>updateTime</code> on every document; for a live log they are the moment of logging <span class="tag s"><a href="https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents">SOURCED</a></span>. Only O3's batched, jittered vault hides them.</p>
+      <p><b>What it cannot see:</b> what any vice is, its unit, or any amount. Every vice blob is 285 bytes whatever the name; every activity is 93.</p>
+    </div>
+  </div>
+  <details><summary>Raw document as the REST API returns it</summary><pre>{
+  &quot;name&quot;: &quot;projects/demo-tracker/databases/(default)/documents/activities/a0305&quot;,
+  &quot;fields&quot;: {
+    &quot;viceID&quot;: {
+      &quot;stringValue&quot;: &quot;f7HdLq2MzA9cWn4oPjRt&quot;
+    },
+    &quot;enc&quot;: {
+      &quot;bytesValue&quot;: &quot;AUKegXwdj2voZ4XQEa+l6oGR2vYQZ0oLGQiw94eX52SGXH1xV/ATb319gvBLjO8r2t472uXlqIZrTXoVPX46DdpEueerxbKmPuQ3Ec6Key0xzzY6Vwn87xT2Eksj&quot;
+    },
+    &quot;ownerID&quot;: {
+      &quot;stringValue&quot;: &quot;alice&quot;
+    },
+    &quot;createdAt&quot;: {
+      &quot;timestampValue&quot;: &quot;2026-11-01T21:02:28.257Z&quot;
+    }
+  },
+  &quot;createTime&quot;: &quot;2026-11-03T16:48:19.972344Z&quot;,
+  &quot;updateTime&quot;: &quot;2026-11-03T16:48:19.972344Z&quot;
+}</pre></details>
+</section>
+
+<section>
+  <div class="sechead"><h2>The screens</h2><p>Rendered by <code>test/mockups/e2e_encryption_test.dart</code> at iPhone size (393&times;852, 3x) with the app's own theme and widgets. Wired into the app through <code>JournalGate</code>: the sign-up step and save sheet, Opening your journal, Enter recovery key with all its errors, Start a new journal, Settings &gt; Recovery key. <b>Render only</b>: the Today card (variant A) and the confirm-a-group step. PDF, Print, Share and "Make a new recovery key" are stubs; Copy works.</p></div>
+
+  <h3>When to offer the recovery key</h3>
+  <div class="shots two">
+    <figure><img src="img/a-today-deferred-card.png" alt="Today screen with a card: Save your recovery key, 41 entries over 7 days"><figcaption><b>A. Deferred, on Today</b> once there is something to protect (here after 7 days). Recommended.</figcaption></figure>
+    <figure><img src="img/b-signup-recovery-step.png" alt="Full-screen step after sign-up: Your journal is encrypted, with the key and a Later button"><figcaption><b>B. At sign-up, with Later.</b> Shown before the first entry exists.</figcaption></figure>
+  </div>
+
+  <h3>Saving and checking it</h3>
+  <div class="shots">
+    <figure><img src="img/save-sheet.png" alt="Save sheet with PDF, Print, Copy and Share"><figcaption><b>Save sheet.</b> Four ways out of the phone.</figcaption></figure>
+    <figure><img src="img/confirm-group.png" alt="Type group 3 of your recovery key"><figcaption><b>Confirm a group</b>, from the saved copy.</figcaption></figure>
+    <figure><img src="img/confirm-group-wrong.png" alt="Confirm group with an error"><figcaption><b>Wrong group</b>: save it again.</figcaption></figure>
+    <figure><img src="img/settings-recovery-key.png" alt="Settings recovery key page"><figcaption><b>Settings &gt; Recovery key</b>, shown again.</figcaption></figure>
+  </div>
+
+  <h3>A new device, or a lost one</h3>
+  <div class="shots">
+    <figure><img src="img/opening-journal.png" alt="Opening your journal spinner"><figcaption><b>Opening your journal</b> while the key is checked.</figcaption></figure>
+    <figure><img src="img/enter-key.png" alt="Enter recovery key, empty"><figcaption><b>Enter recovery key.</b> O reads as 0, I and L as 1.</figcaption></figure>
+    <figure><img src="img/enter-key-typo.png" alt="Enter recovery key with the error: character 2 of group 4 looks wrong"><figcaption><b>One typo, located</b> by the 32-bit checksum.</figcaption></figure>
+    <figure><img src="img/enter-key-wrong-journal.png" alt="Valid key for another journal"><figcaption><b>Valid key, wrong journal.</b></figcaption></figure>
+    <figure><img src="img/start-new-journal.png" alt="Start a new journal destructive dialog"><figcaption><b>Start a new journal</b>: deletes the data first, then the key.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><h2>Sub-decisions inside O1</h2><p>Each built or tested in the spike. One recommendation each; none is decided.</p></div>
+
+  <div class="call">
+    <h3>1. When the recovery key is first offered</h3>
+    <div class="opts">
+      <div class="opt rec"><div class="lab">A. Card on Today after a week <span class="badge">Recommended</span></div><p>Asks when there is a journal worth protecting. Sign-up stays fast.</p></div>
+      <div class="opt"><div class="lab">B. Step at sign-up, with Later</div><p>Everyone sees it once, before they have anything to lose.</p></div>
+    </div>
+    <p class="why"><b>Why A:</b> the key syncs silently through iCloud Keychain, so the recovery key matters only when every device and the keychain are lost <span class="tag i">INFERENCE</span>. Onboarding aims at a first log in under a minute <span class="tag s">SOURCED: ideas/v1-must-haves/first-run-onboarding.md</span>, and Tuta's study found users skipping recovery codes shown at setup <span class="tag s"><a href="https://www.usenix.org/system/files/usenixsecurity24-holtervennhoff.pdf">SOURCED</a></span>. The exposure is a week of entries on a phone lost with iCloud Keychain off <span class="tag i">INFERENCE</span>. Settings has the key from day one either way.</p>
+  </div>
+
+  <div class="call">
+    <h3>2. <code>enc</code> as a Blob or a base64 string</h3>
+    <div class="opts">
+      <div class="opt rec"><div class="lab">Blob <span class="badge">Recommended</span></div><p>Rules check exact byte sizes (93, 285, 1053, 4125). 25% smaller.</p></div>
+      <div class="opt"><div class="lab">base64 string</div><p>Lengths 124, 380, 1404, 5500. Uses only types the rules-language page documents.</p></div>
+    </div>
+    <p class="why"><b>Why Blob:</b> the emulator probe passes: a Blob is <code>bytes</code>, <code>size()</code> counts bytes, and it is neither a string nor accepted where a string is required <span class="tag s">SOURCED: tests/firestore-rules/bytes-probe.test.js</span>. But the rules-language page does not list <code>bytes</code> for <code>is</code> <span class="tag s"><a href="https://firebase.google.com/docs/rules/rules-language">SOURCED</a></span>, only the <code>rules.Bytes</code> reference does <span class="tag s"><a href="https://firebase.google.com/docs/reference/rules/rules.Bytes">SOURCED</a></span>. Production could differ from the emulator; a one-document check in the beta project (r2-testflight) settles it before any app build ships. Falling back to strings is a one-line change in the rules and in <code>journal_reader.dart</code> <span class="tag i">INFERENCE</span>.</p>
+  </div>
+
+  <div class="call">
+    <h3>3. Padding for vices</h3>
+    <div class="opts">
+      <div class="opt rec"><div class="lab">Every vice at least 256 <span class="badge">Recommended</span></div><p>All 285 bytes, from "A" to a 60-character name, 30 emoji or 60 escaped quotes.</p></div>
+      <div class="opt"><div class="lab">Smallest bucket that fits</div><p>Short names 93 bytes, long ones 285: name length leaks.</p></div>
+    </div>
+    <p class="why"><b>Why 256:</b> 192 bytes more per vice, a handful of documents per user. Only a name of 60 control characters reaches 1053 <span class="tag s">SOURCED: test/crypto/journal_cipher_test.dart</span>.</p>
+  </div>
+
+  <div class="call">
+    <h3>4. Recovery key format</h3>
+    <div class="opts">
+      <div class="opt rec"><div class="lab">32 characters, 32-bit checksum <span class="badge">Recommended</span></div><p><code>6EQC-8QDN-D27K-TC5R-ZZJ3-6WTD-3864-AX35</code>. Locates one wrong character.</p></div>
+      <div class="opt"><div class="lab">27 characters, Crockford mod-37 check</div><p>Five fewer to type; detects a typo but can't say where.</p></div>
+    </div>
+    <p class="why"><b>Why 32:</b> the hardest moment is typing it on a new device with no other way in. Locating the error turns "doesn't match" into "character 2 of group 4". Search takes 71 ms on this Mac in Dart <span class="tag s">SOURCED: test/bench/e2ee_bench_test.dart</span>.</p>
+  </div>
+
+  <div class="call">
+    <h3>5. Who may delete <code>keys/{uid}</code></h3>
+    <div class="opts">
+      <div class="opt rec"><div class="lab">The owner <span class="badge">Recommended</span></div><p>Start a new journal and account deletion work. A buggy client could delete it alone and mint a second key.</p></div>
+      <div class="opt"><div class="lab">Owner, plus a keyId guard on every sealed write</div><p>Rules <code>get()</code> the keys doc and match a key ID in each blob. Closes the hole server-side.</p></div>
+    </div>
+    <p class="why"><b>Why owner only, for now:</b> the guard costs a billed read on every write, even denied ones <span class="tag s"><a href="https://firebase.google.com/docs/firestore/security/rules-conditions">SOURCED</a></span>, and batched writes allow 20 such calls, so migration batches would shrink from 200 to about 19 documents <span class="tag s">same page</span>. The client invariant (never mint while <code>keys/{uid}</code> exists on the server) is tested against a fake <span class="tag s">SOURCED: test/crypto/key_service_test.dart</span>. Revisit if anything else ever deletes that document.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><h2>What the spike proves, and what it doesn't</h2><p>This run was barred from the iOS Simulator, <code>tools/e2e.sh</code> and the attached iPhones (other agents held them), so nothing ran on iOS. Everything below ran on this Mac or the emulator on spare ports.</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>Claim</th><th>Status</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>AES-256-GCM seal/open: round trip, wrong key, tamper anywhere, blob moved to another doc, owner, vice or collection (AAD)</td><td class="ok">Proven</td><td>38 crypto unit tests; Dart opens blobs the Node helper sealed</td></tr>
+      <tr><td>The app's AES runs in CryptoKit, never Dart</td><td class="ok">Proven on macOS</td><td>Bare macOS host: plugin present, NIST case 14 through CryptoKit. Not run on iOS.</td></tr>
+      <tr><td>Rules R1: sealed creates, exact lengths &plusmn;1, mixed shape, migration, downgrade, C14, <code>keys/{uid}</code></td><td class="ok">Proven on emulator</td><td>41 new tests; the 72 existing tests unchanged and passing</td></tr>
+      <tr><td>A second migration is denied</td><td>Partly</td><td>Denied when it writes plaintext back. One that only rewrites <code>enc</code> looks like a rename to the server; the migrator skips sealed docs (tested).</td></tr>
+      <tr><td>Never mint a second key while one exists</td><td class="ok">Proven on fakes</td><td>Second device, offline, lost race, stale key: all ask to unlock</td></tr>
+      <tr><td>Dual-shape parsers, Unreadable entry, migrator idempotence</td><td class="ok">Proven</td><td>10 unit tests</td></tr>
+      <tr><td>No plaintext reaches Firestore</td><td>For tool-seeded docs</td><td>Metadata view asserts it on 310 docs written in the app's format. The Dart write path never reached an emulator.</td></tr>
+      <tr><td>Sign up, log, wipe keychain, unlock with the key, legacy docs converted, on iOS</td><td class="no">Not run</td><td>Simulator and <code>e2e.sh</code> were off-limits. First job if you pick O1.</td></tr>
+      <tr><td>Decrypting 2,000 entries on an iPhone</td><td class="no">Not run</td><td>Measured on the Mac only (below)</td></tr>
+      <tr><td>iPhone-to-Mac keychain sync; the <code>.local</code> copy surviving iCloud Keychain off</td><td class="no">Manual</td><td>Needs two signed physical devices, the macOS target (queue 1) and Developer Program signing (r2-testflight)</td></tr>
+      <tr><td>The new <code>activities (ownerID, createdAt desc)</code> index</td><td>Unchecked</td><td>The emulator doesn't enforce composite indexes; it must deploy with R1</td></tr>
+    </tbody>
+  </table></div>
+  <div class="warnbox">
+    <p><b>Found on the way:</b> cryptography_flutter sends anything under 2,000 bytes to its pure-Dart fallback by default, which is every blob this app writes, and falls back silently when the plugin is missing <span class="tag s">SOURCED: cryptography_flutter 2.3.4, lib/src/flutter/flutter_cipher.dart (defaultChannelPolicy minLength 2000)</span>. That would have undone the reason for choosing AES-GCM through CryptoKit (export compliance). <code>lib/crypto/native_aes.dart</code> routes every length to the plugin and replaces the fallback with one that throws; <code>main()</code> runs a known-answer check and keeps the journal closed if it fails.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><h2>Measurements</h2><p>Apple M2 Max. There is no KDF in O1: the recovery key is 128 random bits used directly. PBKDF2 is listed for scale only.</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>What</th><th>Path</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Open 2,000 activities</td><td>Platform channel to CryptoKit, macOS debug build</td><td class="n">219 ms sequential, 194 ms concurrent</td></tr>
+      <tr><td>Seal 2,000 activities</td><td>Platform channel to CryptoKit, macOS debug build</td><td class="n">641 ms</td></tr>
+      <tr><td>Seal / open one 93-byte blob</td><td>CryptoKit alone (Swift)</td><td class="n">1.47 / 1.20 &micro;s</td></tr>
+      <tr><td>Seal / open one 93-byte blob</td><td>Pure Dart (host tests only)</td><td class="n">181 / 114 &micro;s</td></tr>
+      <tr><td>Key setup / unlock with recovery key</td><td>Pure Dart, fake server</td><td class="n">11 ms / 4.5 ms</td></tr>
+      <tr><td>Locate one typo in a recovery key</td><td>Pure Dart, up to 992 SHA-256</td><td class="n">71 ms</td></tr>
+      <tr><td>PBKDF2-HMAC-SHA256, 210k / 600k rounds</td><td>CommonCrypto (reference)</td><td class="n">66 / 128 ms</td></tr>
+    </tbody>
+  </table></div>
+  <p class="meta">The channel, not the cipher, sets the cost: about 100 &micro;s a call against 1.2 &micro;s of AES. A first open of 2,000 entries adds about a fifth of a second on this Mac; an iPhone and a release build will differ <span class="tag i">INFERENCE</span>. Later snapshots hit the memo.</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>If you pick O1</h2><p>The order matters, because a build that seals before R1 is in production gets every write denied.</p></div>
+  <ol>
+    <li>Enable rules deployment (<code>DEPLOY_FIRESTORE_RULES</code>), so #33 and then R1 reach production through CI <span class="tag s">SOURCED: HANDOVER.md</span>.</li>
+    <li>Land the prerequisites already queued: parsers that default missing fields, the shared write layer, the bundle-ID lock, and the macOS target.</li>
+    <li>Run the iOS end-to-end pass this spike couldn't: sign up, log, wipe the simulator keychain, unlock with the recovery key, legacy docs converted, and time 2,000 entries.</li>
+    <li>Ship the app build that reads both shapes and migrates on first launch; then strict rules (R2) once your devices have migrated.</li>
+  </ol>
+</section>
+
+<section>
+  <div class="sechead"><h2>Evidence</h2><p>Branch <code>mockup/e2e-encryption</code> at <code>d6551b1</code>, pushed, no PR (never merged: merging a rules change deploys it). Firebase pages read before touching rules and indexes: <a href="https://firebase.google.com/docs/rules/rules-language">rules language</a>, <a href="https://firebase.google.com/docs/reference/rules/rules.Bytes">rules.Bytes</a>, <a href="https://firebase.google.com/docs/reference/firestore/indexes">index definitions</a>, <a href="https://firebase.google.com/docs/firestore/quotas">quotas</a>, <a href="https://firebase.google.com/docs/firestore/manage-data/transactions">transactions and batches</a>, <a href="https://firebase.google.com/docs/reference/js/firestore_.md#clearindexeddbpersistence">clearIndexedDbPersistence</a>, <a href="https://firebase.google.com/docs/firestore/security/rules-conditions">rules conditions</a>.</p></div>
+  <details><summary>firestore.rules diff against master</summary><pre>diff --git a/firestore.rules b/firestore.rules
+index f11db0c..6bb7e5b 100644
+--- a/firestore.rules
++++ b/firestore.rules
+@@ -38,41 +38,111 @@ service cloud.firestore {
+       return unit in [&#x27;item&#x27;, &#x27;time&#x27;, &#x27;puff&#x27;, &#x27;drink&#x27;, &#x27;minute&#x27;, &#x27;hour&#x27;];
+     }
+ 
++    // R1, the dual-shape phase of end-to-end encryption: a document holds its
++    // private fields either in plaintext or sealed in one `enc` Blob, never
++    // both, and a sealed document never goes back. The server can no longer
++    // check a sealed name&#x27;s length, unit or quantity; lib/data/limits.dart
++    // still does on the client.
++    //
++    // JournalCipher.blobLengths in lib/crypto/journal_cipher.dart: 29 bytes of
++    // version, nonce and tag over each padding bucket. A Dart test compares.
++    function blobLengths() {
++      return [93, 285, 1053, 4125];
++    }
++
++    function validEnc(enc) {
++      return enc is bytes &amp;&amp; enc.size() in blobLengths();
++    }
++
++    function sealed(data) {
++      return &#x27;enc&#x27; in data;
++    }
++
+     match /vices/{viceID} {
+       allow read, delete: if ownsExisting();
+ 
+       allow create: if createsOwn()
+-        &amp;&amp; request.resource.data.keys().hasAll([&#x27;name&#x27;, &#x27;unit&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;, &#x27;archived&#x27;])
+-        &amp;&amp; request.resource.data.keys().hasOnly([&#x27;name&#x27;, &#x27;unit&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;, &#x27;archived&#x27;])
+-        &amp;&amp; validName(request.resource.data.name)
+-        &amp;&amp; validUnit(request.resource.data.unit)
++        &amp;&amp; ((request.resource.data.keys().hasAll([&#x27;name&#x27;, &#x27;unit&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; request.resource.data.keys().hasOnly([&#x27;name&#x27;, &#x27;unit&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; validName(request.resource.data.name)
++            &amp;&amp; validUnit(request.resource.data.unit))
++          || (request.resource.data.keys().hasAll([&#x27;enc&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; request.resource.data.keys().hasOnly([&#x27;enc&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; validEnc(request.resource.data.enc)))
+         &amp;&amp; request.resource.data.createdAt is timestamp
+         &amp;&amp; request.resource.data.archived is bool;
+ 
+       allow update: if ownsExisting()
+-        &amp;&amp; changedKeys().hasOnly([&#x27;name&#x27;, &#x27;unit&#x27;, &#x27;archived&#x27;])
+-        &amp;&amp; (!(&#x27;name&#x27; in changedKeys()) || validName(request.resource.data.name))
+-        &amp;&amp; (!(&#x27;unit&#x27; in changedKeys()) || validUnit(request.resource.data.unit))
+-        &amp;&amp; (!(&#x27;archived&#x27; in changedKeys()) || request.resource.data.archived is bool);
++        &amp;&amp; (!(&#x27;archived&#x27; in changedKeys()) || request.resource.data.archived is bool)
++        &amp;&amp; ((!sealed(resource.data)
++            &amp;&amp; changedKeys().hasOnly([&#x27;name&#x27;, &#x27;unit&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; (!(&#x27;name&#x27; in changedKeys()) || validName(request.resource.data.name))
++            &amp;&amp; (!(&#x27;unit&#x27; in changedKeys()) || validUnit(request.resource.data.unit)))
++          // A sealed vice: re-sealed on rename, never unsealed.
++          || (sealed(resource.data)
++            &amp;&amp; changedKeys().hasOnly([&#x27;enc&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; validEnc(request.resource.data.enc))
++          // The first-launch migrator: plaintext out, `enc` in, one write.
++          || (!sealed(resource.data)
++            &amp;&amp; changedKeys().hasOnly([&#x27;enc&#x27;, &#x27;name&#x27;, &#x27;unit&#x27;, &#x27;archived&#x27;])
++            &amp;&amp; validEnc(request.resource.data.enc)
++            &amp;&amp; !request.resource.data.keys().hasAny([&#x27;name&#x27;, &#x27;unit&#x27;])));
+     }
+ 
+     match /activities/{activityID} {
+       allow read, delete: if ownsExisting();
+ 
+       allow create: if createsOwn()
+-        &amp;&amp; request.resource.data.keys().hasAll([&#x27;viceID&#x27;, &#x27;quantity&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;])
+-        &amp;&amp; request.resource.data.keys().hasOnly([&#x27;viceID&#x27;, &#x27;quantity&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;])
++        &amp;&amp; ((request.resource.data.keys().hasAll([&#x27;viceID&#x27;, &#x27;quantity&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;])
++            &amp;&amp; request.resource.data.keys().hasOnly([&#x27;viceID&#x27;, &#x27;quantity&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;])
++            &amp;&amp; request.resource.data.quantity is int
++            &amp;&amp; request.resource.data.quantity &gt; 0)
++          || (request.resource.data.keys().hasAll([&#x27;viceID&#x27;, &#x27;enc&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;])
++            &amp;&amp; request.resource.data.keys().hasOnly([&#x27;viceID&#x27;, &#x27;enc&#x27;, &#x27;ownerID&#x27;, &#x27;createdAt&#x27;])
++            &amp;&amp; validEnc(request.resource.data.enc)))
+         &amp;&amp; request.resource.data.viceID is string
+-        &amp;&amp; request.resource.data.quantity is int
+-        &amp;&amp; request.resource.data.quantity &gt; 0
+         &amp;&amp; request.resource.data.createdAt is timestamp
+         &amp;&amp; ownsVice(request.resource.data.viceID);
+ 
+       allow update: if ownsExisting()
+-        &amp;&amp; changedKeys().hasOnly([&#x27;quantity&#x27;, &#x27;createdAt&#x27;])
+-        &amp;&amp; (!(&#x27;quantity&#x27; in changedKeys())
+-          || (request.resource.data.quantity is int &amp;&amp; request.resource.data.quantity &gt; 0))
+-        &amp;&amp; (!(&#x27;createdAt&#x27; in changedKeys()) || request.resource.data.createdAt is timestamp);
++        &amp;&amp; (!(&#x27;createdAt&#x27; in changedKeys()) || request.resource.data.createdAt is timestamp)
++        &amp;&amp; ((!sealed(resource.data)
++            &amp;&amp; changedKeys().hasOnly([&#x27;quantity&#x27;, &#x27;createdAt&#x27;])
++            &amp;&amp; (!(&#x27;quantity&#x27; in changedKeys())
++              || (request.resource.data.quantity is int &amp;&amp; request.resource.data.quantity &gt; 0)))
++          || (sealed(resource.data)
++            &amp;&amp; changedKeys().hasOnly([&#x27;enc&#x27;, &#x27;createdAt&#x27;])
++            &amp;&amp; validEnc(request.resource.data.enc))
++          || (!sealed(resource.data)
++            &amp;&amp; changedKeys().hasOnly([&#x27;enc&#x27;, &#x27;quantity&#x27;])
++            &amp;&amp; validEnc(request.resource.data.enc)
++            &amp;&amp; !(&#x27;quantity&#x27; in request.resource.data)));
++    }
++
++    // One per user. Create-only: keyId never changes, so a second key can&#x27;t be
++    // registered beside ciphertext sealed under the first. Delete is the
++    // &quot;Start a new journal&quot; path, after the journal&#x27;s documents are gone.
++    match /keys/{uid} {
++      allow read, delete: if signedIn() &amp;&amp; request.auth.uid == uid;
++
++      // check: nonce, the 25-byte check text, tag. recoveryWrap: nonce, the
++      // 32-byte key, tag (lib/crypto/key_service.dart).
++      allow create: if signedIn() &amp;&amp; request.auth.uid == uid
++        &amp;&amp; request.resource.data.keys().hasAll([&#x27;keyId&#x27;, &#x27;check&#x27;, &#x27;recoveryWrap&#x27;, &#x27;createdAt&#x27;])
++        &amp;&amp; request.resource.data.keys().hasOnly([&#x27;keyId&#x27;, &#x27;check&#x27;, &#x27;recoveryWrap&#x27;, &#x27;createdAt&#x27;])
++        &amp;&amp; request.resource.data.keyId is string
++        &amp;&amp; request.resource.data.keyId.size() == 11
++        &amp;&amp; request.resource.data.check is bytes
++        &amp;&amp; request.resource.data.check.size() == 53
++        &amp;&amp; request.resource.data.recoveryWrap is bytes
++        &amp;&amp; request.resource.data.recoveryWrap.size() == 60
++        &amp;&amp; request.resource.data.createdAt is timestamp;
++
++      // A new recovery key re-wraps the same journal key.
++      allow update: if signedIn() &amp;&amp; request.auth.uid == uid
++        &amp;&amp; changedKeys().hasOnly([&#x27;recoveryWrap&#x27;])
++        &amp;&amp; request.resource.data.recoveryWrap is bytes
++        &amp;&amp; request.resource.data.recoveryWrap.size() == 60;
+     }
+   }
+ }
+</pre></details>
+  <details><summary>The 43 new rules tests</summary><pre>e2ee R1: vices
+  - allows a sealed create (add_vice.dart: enc, ownerID, createdAt, archived)
+  - still allows the plaintext create, for builds that predate encryption
+  - allows enc of exactly n bytes and denies n-1 and n+1, for n = 93, 285, 1053, 4125
+  - denies enc as a base64 string of a valid blob
+  - denies a mixed shape: enc beside name or unit
+  - denies a sealed vice owned by someone else, or with a missing field
+  - allows the migration update: plaintext out, enc in, in one write
+  - allows migrating a legacy vice and adding its missing archived
+  - denies a migration that leaves plaintext behind
+  - denies a migration with a bad enc length, or by another user
+  - denies a downgrade: enc out, plaintext back
+  - denies a second migration that writes plaintext back beside enc
+  - allows re-sealing a sealed vice (a rename), which a repeat migration also looks like
+  - allows archiving a sealed vice without touching enc
+  - allows the vice list queries over sealed and plaintext vices together
+
+e2ee R1: activities
+  - allows a sealed create against an owned vice (record dialog: doc().set())
+  - allows enc of exactly n bytes and denies n-1 and n+1, for n = 93, 285, 1053, 4125
+  - denies a mixed shape: enc beside quantity
+  - C14 still holds: denies a sealed activity on another user
+  - denies a sealed activity owned by someone else, or from a guest
+  - allows the migration update, including a zero-quantity and an orphaned legacy activity
+  - allows a migration batch of 200 updates (the migrator pages by 200)
+  - denies a migration that keeps quantity
+  - denies a downgrade, and quantity written back beside enc
+  - allows the editor re-sealing and moving a sealed activity in time
+  - denies moving a sealed activity to another vice, or reassigning it
+  - allows the day-window query over sealed activities: createdAt stays plaintext
+
+e2ee R1: keys/{uid}
+  - allows the owner to create their keys doc
+  - denies creating keys for another uid, or as a guest
+  - denies the wrong shape: sizes, types, extra or missing fields
+  - is create-only: a second key over the first is denied
+  - keeps keyId and check immutable
+  - allows re-wrapping under a new recovery key
+  - allows the owner to read it and denies a stranger or a guest
+  - allows the owner to delete it (Start a new journal) and denies a stranger
+
+probe: is bytes on a Blob
+  - accepts a 93-byte Blob as bytes and measures it in bytes
+  - does not treat a Blob as a string, or a string as bytes</pre></details>
+  <details><summary>Where the code is</summary><div class="body"><ul>
+    <li><code>lib/crypto/</code>: <code>journal_cipher.dart</code> (seal/open, buckets, AAD), <code>recovery_key.dart</code>, <code>key_store.dart</code> (<code>.sync</code> and <code>.local</code> keychain items), <code>keys_remote.dart</code>, <code>key_service.dart</code> (the never-mint invariant), <code>journal_key_provider.dart</code>, <code>journal_reader.dart</code> (asyncMap decrypt and memo), <code>migrator.dart</code>, <code>native_aes.dart</code>.</li>
+    <li><code>lib/journal_key/</code>: the screens and <code>JournalGate</code>. Sealed writes in <code>add_vice.dart</code>, the record dialog and the activity editor.</li>
+    <li><code>firestore.rules</code>, <code>firestore.indexes.json</code>, <code>tests/firestore-rules/e2ee.test.js</code>, <code>bytes-probe.test.js</code>, <code>e2ee.js</code>.</li>
+    <li><code>tools/e2ee-metadata-view.js</code>, <code>tools/bench/</code>, <code>test/bench/</code>, <code>test/mockups/e2e_encryption_test.dart</code>.</li>
+  </ul></div></details>
+</section>
+</div>
