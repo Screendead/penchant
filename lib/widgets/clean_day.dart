@@ -21,8 +21,9 @@ class CleanDay extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme green = colors(theme.brightness);
 
+    // Scrolls when large text and the keyboard leave too little height.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: DecoratedBox(
           decoration: BoxDecoration(

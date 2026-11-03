@@ -14,7 +14,7 @@ class ViceTracker extends ConsumerStatefulWidget {
 }
 
 class _ViceTrackerState extends ConsumerState<ViceTracker> {
-  static final DateFormat _dateFormat = DateFormat('EEEE, MMMM d, yyyy');
+  static final DateFormat _dateFormat = ViceChart.dayFormat;
 
   DateTime selectedDay = startOfDay(DateTime.now());
 
@@ -51,13 +51,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   const Icon(Icons.calendar_month, color: Colors.white),
-                  Text(
-                    daysAgo == 0
-                        ? 'Today'
-                        : daysAgo == 1
-                        ? 'Yesterday'
-                        : '$daysAgo days ago',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  Flexible(
+                    child: Text(
+                      daysAgo == 0
+                          ? 'Today'
+                          : daysAgo == 1
+                          ? 'Yesterday'
+                          : '$daysAgo days ago',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
                   ),
                   const CircleAvatar(backgroundColor: Colors.white, radius: 3),
                   Flexible(
@@ -94,10 +97,15 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                         ? null
                         : () => _selectDay(addDays(day, -1)),
                   ),
-                  TextButton.icon(
-                    onPressed: daysAgo == 0 ? null : () => _selectDay(today),
-                    icon: const Icon(Icons.today),
-                    label: const Text('Jump to Today'),
+                  Flexible(
+                    child: TextButton.icon(
+                      onPressed: daysAgo == 0 ? null : () => _selectDay(today),
+                      icon: const Icon(Icons.today),
+                      label: const Text(
+                        'Jump to Today',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Next day',

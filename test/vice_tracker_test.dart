@@ -39,7 +39,7 @@ double _chartedQuantity(WidgetTester tester) => tester
     .widget<RadarChart>(find.byType(RadarChart))
     .data
     .dataSets
-    .single
+    .first
     .dataEntries
     .first
     .value;

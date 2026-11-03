@@ -33,6 +33,10 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final User? user = ref.watch(userProvider).value;
+    final ColorScheme colorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.pink,
+      brightness: Brightness.dark,
+    );
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen.
@@ -43,17 +47,15 @@ class _MyAppState extends ConsumerState<MyApp> {
     });
 
     return GestureDetector(
-      onTap: FocusManager.instance.primaryFocus?.unfocus,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      excludeFromSemantics: true,
       child: MaterialApp(
         navigatorKey: navigatorKey,
         title: 'Vice Tracker',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.pink,
-            brightness: Brightness.dark,
-          ),
+          colorScheme: colorScheme,
           useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(
+          inputDecorationTheme: InputDecorationTheme(
             floatingLabelBehavior: FloatingLabelBehavior.always,
             floatingLabelAlignment: FloatingLabelAlignment.center,
             border: OutlineInputBorder(),
@@ -61,7 +63,7 @@ class _MyAppState extends ConsumerState<MyApp> {
               borderSide: BorderSide(color: Colors.pink),
             ),
             errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.red),
+              borderSide: BorderSide(color: colorScheme.error),
             ),
           ),
         ),
