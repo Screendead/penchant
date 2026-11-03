@@ -3,44 +3,73 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/writes/settle_write.dart';
 
-class AddVice extends ConsumerStatefulWidget {
-  const AddVice({super.key});
+// Adds a vice, or with [vice] edits that one.
+class ViceForm extends ConsumerStatefulWidget {
+  const ViceForm({super.key, this.vice});
+
+  final Vice? vice;
 
   @override
-  ConsumerState<AddVice> createState() => _AddViceState();
+  ConsumerState<ViceForm> createState() => _ViceFormState();
 }
 
-class _AddViceState extends ConsumerState<AddVice> {
+class _ViceFormState extends ConsumerState<ViceForm> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  TextEditingController viceNameController = TextEditingController();
-  Unit? unit;
+  // EditVice rebuilds this with the live document, so a change is measured
+  // against what the form opened with, not against [widget.vice].
+  late final Vice? opened = widget.vice;
+  late final TextEditingController viceNameController = TextEditingController(
+    text: opened?.name,
+  );
+  late Unit? unit = opened?.unit;
   bool saving = false;
+
+  @override
+  void dispose() {
+    viceNameController.dispose();
+    super.dispose();
+  }
 
   Future<void> _save(User user) async {
     if (!formKey.currentState!.validate() || unit == null) {
       return;
     }
 
+    final Vice? vice = opened;
+    final String name = viceNameController.text;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    final Future<void>? write;
+    if (vice == null) {
+      write = ref
+          .read(trackerWritesProvider)
+          .addVice(ownerID: user.uid, name: name, unit: unit!);
+    } else if (name != vice.name || unit != vice.unit) {
+      // Only the changed fields are written: an untouched unit may be a
+      // legacy value the parser shows as the fallback.
+      write = ref
+          .read(trackerWritesProvider)
+          .updateVice(
+            vice.id,
+            name: name == vice.name ? null : name,
+            unit: unit == vice.unit ? null : unit,
+          );
+    } else {
+      write = null;
+    }
+
     setState(() {
       saving = true;
     });
 
     try {
-      final bool synced = await settleWrite(
-        ref
-            .read(trackerWritesProvider)
-            .addVice(
-              ownerID: user.uid,
-              name: viceNameController.text,
-              unit: unit!,
-            ),
-      );
-      if (!synced) {
+      if (write != null && !await settleWrite(write)) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
       if (mounted) {
@@ -59,6 +88,7 @@ class _AddViceState extends ConsumerState<AddVice> {
   @override
   Widget build(BuildContext context) {
     final User? user = ref.watch(userProvider).value;
+    final String title = widget.vice == null ? 'Add Vice' : 'Edit Vice';
 
     if (user == null) {
       return const Scaffold(
@@ -68,7 +98,7 @@ class _AddViceState extends ConsumerState<AddVice> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Vice'),
+        title: Text(title),
         bottom: saving
             ? const PreferredSize(
                 preferredSize: Size.fromHeight(4),
@@ -91,7 +121,8 @@ class _AddViceState extends ConsumerState<AddVice> {
               TextFormField(
                 controller: viceNameController,
                 decoration: const InputDecoration(labelText: 'Vice Name'),
-                validator: viceNameError,
+                validator: (String? value) =>
+                    viceNameError(value, unchanged: opened?.name),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<Unit>(
@@ -125,5 +156,39 @@ class _AddViceState extends ConsumerState<AddVice> {
         ),
       ),
     );
+  }
+}
+
+class EditVice extends ConsumerWidget {
+  const EditVice({super.key, required this.viceID});
+
+  final String viceID;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<Vice>?> viceListValue = ref.watch(viceListProvider);
+    final List<Vice>? viceList = viceListValue.value;
+
+    if (viceList == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Vice')),
+        body: Center(
+          child: viceListValue.hasError
+              ? Text('Unable to load your vices: ${viceListValue.error}')
+              : const CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final Vice? vice = viceList.where((Vice v) => v.id == viceID).firstOrNull;
+
+    if (vice == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Vice')),
+        body: const Center(child: Text('Vice not found')),
+      );
+    }
+
+    return ViceForm(key: ValueKey<String>(vice.id), vice: vice);
   }
 }

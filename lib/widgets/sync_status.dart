@@ -20,7 +20,9 @@ class NotSyncedMarker extends StatelessWidget {
       children: [
         Icon(Icons.cloud_upload_outlined, size: 16, color: color),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: color)),
+        Flexible(
+          child: Text(label, style: TextStyle(color: color)),
+        ),
       ],
     );
   }
@@ -43,10 +45,12 @@ class PendingDayNote extends ConsumerWidget {
         activities?.where((ViceActivity activity) => activity.pending).length ??
         0;
 
-    // A fixed height, so an online write's brief pending state does not
-    // resize the chart above.
-    return SizedBox(
-      height: 32,
+    // A reserved height, so an online write's brief pending state does not
+    // resize the chart above. It grows only when large text wraps the note.
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.textScalerOf(context).scale(32),
+      ),
       child: count == 0
           ? null
           : Center(child: NotSyncedMarker(label: text(count))),

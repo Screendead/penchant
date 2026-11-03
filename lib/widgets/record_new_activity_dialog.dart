@@ -196,6 +196,7 @@ class _RecordNewActivityDialogState
           ExcludeSemantics(
             excluding: loading,
             child: AlertDialog(
+              scrollable: true,
               title: const Text('Record New Vice Activity'),
               icon: const Icon(Icons.addchart),
               content: Form(
@@ -322,7 +323,12 @@ class _RecordNewActivityDialogState
                     ),
                     if (error != null) ...[
                       const SizedBox(height: 16),
-                      Text(error!, style: const TextStyle(color: Colors.red)),
+                      Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                     ],
                   ],
                 ),

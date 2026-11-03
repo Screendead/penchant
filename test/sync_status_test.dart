@@ -54,6 +54,32 @@ void main() {
     expect(find.textContaining('not yet synced'), findsNothing);
   });
 
+  testWidgets('at text scale 3 on a small phone the pending note wraps '
+      'rather than overflowing', (WidgetTester tester) async {
+    tester.view.devicePixelRatio = 2;
+    tester.view.physicalSize = const Size(375 * 2, 667 * 2);
+    tester.platformDispatcher.textScaleFactorTestValue = 3;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          unarchivedViceListProvider.overrideWith(
+            (ref) => Stream.value([fakeVice('coffee')]),
+          ),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime selected) => Stream.value([pending]),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ViceTracker())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(PendingDayNote.text(1)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the history page marks only the entries not yet synced', (
     WidgetTester tester,
   ) async {

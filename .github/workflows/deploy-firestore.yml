@@ -38,6 +38,8 @@ jobs:
         run: |
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
           (umask 077 && printf '%s' "$SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS")
+          # Firestore only: the lockfile's minimatch override breaks firebase-tools' functions, app-hosting and
+          # hosting-emulator paths (tech-debt/dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md).
           # Without --force, an index that exists only in production is reported, not deleted.
           tests/firestore-rules/node_modules/.bin/firebase deploy --only firestore \
             --project screendead-vice-tracker --non-interactive

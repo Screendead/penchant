@@ -14,8 +14,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
-- Saving, editing, deleting, adding a vice and archiving no longer report a slow connection as a failure: after ten
-  seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+- Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
+  after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
 
 ## [0.1.0] - Unreleased
 

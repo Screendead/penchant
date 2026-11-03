@@ -323,7 +323,12 @@ class _ViceActivityEditorPageState
                     ),
                     if (error != null) ...[
                       const SizedBox(height: 16),
-                      Text(error!, style: const TextStyle(color: Colors.red)),
+                      Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                     ],
                   ],
                 ),

@@ -21,9 +21,7 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(selectedTabIndex == 0 ? 'Vice Tracker' : 'Usage Graph'),
-        actions: selectedTabIndex == 0
-            ? const <Widget>[RecordNewActivityButton()]
-            : const <Widget>[],
+        actions: const <Widget>[RecordNewActivityButton()],
       ),
       drawer: Drawer(
         child: ListView(
@@ -44,14 +42,18 @@ class _HomepageState extends State<Homepage> {
               title: const Text('Manage Data'),
               leading: const Icon(Icons.list),
               onTap: () {
-                Navigator.of(context).pushNamed('/manage-data');
+                Navigator.of(context)
+                  ..pop()
+                  ..pushNamed('/manage-data');
               },
             ),
             ListTile(
               title: const Text('Settings'),
               leading: const Icon(Icons.settings),
               onTap: () {
-                Navigator.of(context).pushNamed('/settings');
+                Navigator.of(context)
+                  ..pop()
+                  ..pushNamed('/settings');
               },
             ),
           ],

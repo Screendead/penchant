@@ -18,7 +18,6 @@ Undo stays 8 seconds (C4). The dialog stays for edits and backfill.
 - INFERENCE: friction is what kills trackers, and in-the-moment logs are more accurate than ones rebuilt at bedtime.
   Maximum granularity (C15) pulls the other way: the answer is to capture the time instantly and ask for the rest
   without blocking.
-- SOURCED (register): the record action disappears on the Graph tab.
 
 ## Options
 
@@ -36,8 +35,6 @@ Claude's recommendation: **A.** It reuses the write path, and widgets, Shortcuts
 
 **Revenue impact:** High, through retention and through richer data for the insights Pro sells.
 
-**Depends on:**
-- [`record-action-disappears-on-the-graph-tab`](../../tech-debt/navigation-and-unreachable-ui/record-action-disappears-on-the-graph-tab.md)
-- [granular logging](../insights/granular-logging-and-data-model.md), for where the default quantity lives
+**Depends on:** [granular logging](../insights/granular-logging-and-data-model.md), for where the default quantity lives.
 
 **Needs Jack:** no
