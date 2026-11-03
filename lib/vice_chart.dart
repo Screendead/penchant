@@ -24,27 +24,45 @@ class ViceChart extends ConsumerWidget {
   Widget _bars(ThemeData theme, List<Vice> vices, List<int> quantities) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceEvenly,
-          minY: 0,
-          maxY: quantities.reduce(max) * 1.15,
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(enabled: false),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(),
-            leftTitles: const AxisTitles(),
-            rightTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 48,
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  final int index = value.toInt();
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) =>
+            _barChart(theme, vices, quantities, constraints.maxWidth),
+      ),
+    );
+  }
 
-                  return SideTitleWidget(
-                    meta: meta,
+  Widget _barChart(
+    ThemeData theme,
+    List<Vice> vices,
+    List<int> quantities,
+    double width,
+  ) {
+    // fl_chart does not bound a title's width, so long titles overlap.
+    final double titleWidth = width / vices.length - 8;
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceEvenly,
+        minY: 0,
+        maxY: quantities.reduce(max) * 1.15,
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(enabled: false),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(),
+          leftTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final int index = value.toInt();
+
+                return SideTitleWidget(
+                  meta: meta,
+                  child: SizedBox(
+                    width: titleWidth,
                     child: Text(
                       title(vices[index], quantities[index]),
                       maxLines: 2,
@@ -55,31 +73,31 @@ class ViceChart extends ConsumerWidget {
                         fontSize: 14,
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
-          barGroups: [
-            for (int i = 0; i < vices.length; i++)
-              BarChartGroupData(
-                x: i,
-                barRods: [
-                  BarChartRodData(
-                    toY: quantities[i].toDouble(),
-                    width: 48,
-                    color: theme.colorScheme.primary,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(6),
-                    ),
-                  ),
-                ],
-              ),
-          ],
         ),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.fastOutSlowIn,
+        barGroups: [
+          for (int i = 0; i < vices.length; i++)
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: quantities[i].toDouble(),
+                  width: 48,
+                  color: theme.colorScheme.primary,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(6),
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.fastOutSlowIn,
     );
   }
 

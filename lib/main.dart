@@ -10,6 +10,7 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
+import 'package:tracker/theme.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 
@@ -35,28 +36,7 @@ class MyApp extends ConsumerWidget {
       onTap: FocusManager.instance.primaryFocus?.unfocus,
       child: MaterialApp(
         title: 'Vice Tracker',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.pink,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-            floatingLabelAlignment: FloatingLabelAlignment.center,
-            border: OutlineInputBorder(),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.pink,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.red,
-              ),
-            ),
-          ),
-        ),
+        theme: appTheme(),
         home: user == null ? const Authenticate() : const Homepage(),
         onGenerateRoute: (RouteSettings settings) {
           final Uri uri = Uri.parse(settings.name ?? '');
