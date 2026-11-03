@@ -1,0 +1,26 @@
+{
+  "dek": "ebDUdiH9frfCTKu63laeJZZxXDUH92+eaGPG/7qqe24=",
+  "docs": [
+    {
+      "collection": "vices",
+      "docId": "v1",
+      "ownerID": "alice",
+      "fields": {
+        "n": "Coffee ☕",
+        "u": "drink"
+      },
+      "viceID": null,
+      "enc": "AeSaU1pAZvK6wHCTdH0rCJNY4ptN0/EGWuZNL+/rcUKQ5tFJe2Zvw77sBc63lTtWX4qThCkpjgDk011gAmK7Hq54v/4zYnDbk8LwZ8gGFd2iOJICfI9FeEXNSl6YR6lwysunJIlp21HpQrvJi2FBufLzlT5q2/ExvVugnGMwJAgEJXDb5fu0AMkVbahGGFz5krsQgyFLyL1Eep7AZRGx3TGqFQl4908NUPWBgwf2/b2EHVmReDWpTr1cOOOP3CWGOHSUlk28W7xbjr2YsRjVyBVecNaBVtPoD+PVLn03dqINO9/ssoH9suPKZh1DPdtP6Ze9hJqVv7RQY6siHkBnBXlmG6r23JzfRuU/4lb8pBO6z9uR8dBI0HJanhjN"
+    },
+    {
+      "collection": "activities",
+      "docId": "a1",
+      "ownerID": "alice",
+      "viceID": "v1",
+      "fields": {
+        "q": 2
+      },
+      "enc": "AQPh50LLEsAy3tZqEBdWvzGvnl2OoMz2kbzC0Kf8YWlmYymOgHS4AeQndvJ17+5y/jeILpBlxLTihXvYf2VbLnXgUT74h/HCKJcEqqWPkUhQmu3ELAs89VFp7+X9"
+    }
+  ]
+}
