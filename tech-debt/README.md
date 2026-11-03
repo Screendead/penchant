@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**95 issues: 0 critical, 15 high, 51 medium, 29 low.**
+**98 issues: 0 critical, 15 high, 54 medium, 29 low.**
 
 ## Firebase Data Layer (9)
 
@@ -31,7 +31,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
 - **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 
-## Widget State and View Logic (13)
+## Widget State and View Logic (14)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
@@ -48,6 +48,7 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **medium** — [Usage graph draws below zero and repeats or overlaps its axis labels](widget-state-and-view-logic/usage-graph-misdraws-sparse-data.md)
 - **medium** — [Weekly graph's most recent point is always artificially depressed](widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md)
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
+- **medium** — [Chart axis titles are not width-bounded, so long vice names can run into their neighbours](widget-state-and-view-logic/chart-axis-titles-are-not-width-bounded.md)
 
 ## Navigation and Unreachable UI (5)
 
@@ -125,7 +126,7 @@ Password reset, email verification, re-authentication, account deletion and expo
 - **medium** — [Sign-out failures go unhandled while navigation proceeds immediately regardless](auth-and-account-lifecycle/sign-out-is-neither-awaited-nor-guarded.md)
 - **medium** — [Signed-out user's synced data stays cached on the device](auth-and-account-lifecycle/sign-out-leaves-firestore-cache-on-device.md)
 
-## Dependency and Tooling Drift (6)
+## Dependency and Tooling Drift (7)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
@@ -135,8 +136,9 @@ Version lag and resolver locks across Dart, Node and Gradle, dead or incompatibl
 - **medium** — [Code-generation packages are installed but nothing in the app uses them](dependency-and-tooling-drift/riverpod-codegen-toolchain-declared-but-unused.md)
 - **medium** — [A plain dependency upgrade can never move the Riverpod packages forward](dependency-and-tooling-drift/riverpod-family-exact-pins-block-upgrades.md)
 - **low** — [Firebase plugins lag freely while test and build_runner sit stuck](dependency-and-tooling-drift/dart-dependencies-trail-pub-dev.md)
+- **medium** — [Firebase stops publishing to CocoaPods in October 2026, and both Apple builds depend on it](dependency-and-tooling-drift/cocoapods-sunset-ends-firebase-ios-publishing.md)
 
-## Platform and Delivery Config (10)
+## Platform and Delivery Config (11)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
@@ -150,6 +152,7 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 - **low** — [iOS Podfile forces one deployment target and relaxed includes on every pod](platform-and-delivery-config/ios-podfile-applies-blanket-pod-wide-overrides.md)
 - **low** — [macOS still targets a years-unsupported OS version while iOS was upgraded](platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
 - **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
+- **medium** — [`flutter build macos --release` fails because the pods target macOS versions Xcode no longer supports](platform-and-delivery-config/macos-release-build-fails-on-pod-deployment-targets.md)
 
 ## CI and Quality Gates (3)
 
