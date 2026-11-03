@@ -92,6 +92,8 @@ beforeEach(async () => {
       ownerID: ALICE,
       createdAt,
     });
+    // Written before names were capped at 60.
+    await setDoc(doc(db, 'vices/aliceLongNameVice'), vice({ name: 'x'.repeat(61), createdAt }));
     await setDoc(doc(db, 'vices/bobVice'), vice({ ownerID: BOB, createdAt }));
     await setDoc(doc(db, 'activities/aliceActivity'), activity({ createdAt }));
     await setDoc(doc(db, 'activities/aliceLegacyActivity'), {
@@ -141,6 +143,17 @@ describe('vices', () => {
       await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ colour: 'red' })));
     });
 
+    it('allows a name of 60 characters and denies 61', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ name: 'x'.repeat(60) })));
+      await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ name: 'x'.repeat(61) })));
+    });
+
+    // Pins the unit lib/data/limits.dart measures in: each emoji is two UTF-16 code units.
+    it('counts the name in UTF-16 code units', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ name: '😀'.repeat(30) })));
+      await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ name: '😀'.repeat(31) })));
+    });
+
     it('denies wrong types and invalid values', async () => {
       const bad = [
         { name: 42 },
@@ -164,6 +177,10 @@ describe('vices', () => {
 
     it('allows the owner to get a legacy vice', async () => {
       await assertSucceeds(getDoc(doc(asAlice(), 'vices/aliceLegacyVice')));
+    });
+
+    it('allows the owner to get a legacy vice whose name is over 60', async () => {
+      await assertSucceeds(getDoc(doc(asAlice(), 'vices/aliceLongNameVice')));
     });
 
     it('allows the vice list query', async () => {
@@ -224,6 +241,20 @@ describe('vices', () => {
       );
     });
 
+    it('allows archiving or changing the unit of a vice whose name is over 60', async () => {
+      const ref = doc(asAlice(), 'vices/aliceLongNameVice');
+      await assertSucceeds(updateDoc(ref, { archived: true }));
+      await assertSucceeds(updateDoc(ref, { unit: 'item' }));
+      await assertSucceeds(updateDoc(ref, { name: 'x'.repeat(60) }));
+    });
+
+    it('denies renaming to more than 60 characters', async () => {
+      await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: 'x'.repeat(61) }));
+      await assertFails(
+        updateDoc(doc(asAlice(), 'vices/aliceLongNameVice'), { name: 'x'.repeat(62) }),
+      );
+    });
+
     it('denies a non-bool archived', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: 'yes' }));
     });
@@ -263,6 +294,7 @@ describe('vices', () => {
     it('allows the owner to delete, including a legacy vice', async () => {
       await assertSucceeds(deleteDoc(doc(asAlice(), 'vices/aliceVice')));
       await assertSucceeds(deleteDoc(doc(asAlice(), 'vices/aliceLegacyVice')));
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'vices/aliceLongNameVice')));
     });
 
     it('denies a non-owner delete', async () => {
