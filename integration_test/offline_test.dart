@@ -22,8 +22,10 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('entries logged and edited offline show as not yet synced, '
-      'then sync once, when the network returns', (WidgetTester tester) async {
+  testWidgets('entries logged, edited and deleted offline show as not yet '
+      'synced, then sync once, when the network returns', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-offline@example.com');
     await addVicesThroughManageData(tester);
@@ -49,12 +51,28 @@ void main() {
       });
       await pumpUntil(tester, find.text(PendingDayNote.text(1)));
       await screenshot(tester, 'record-queued-offline');
+      await recordActivity(tester, 'Coffee', 5);
+      await recordActivity(tester, 'Coffee', 7);
+      await pumpUntil(tester, find.text(PendingDayNote.text(3)));
 
       await openFromDrawer(tester, 'Manage Data');
       await tap(tester, find.text('Coffee'));
       await pumpUntil(tester, find.text('Coffee history'));
       await pumpUntil(tester, notSynced);
+      expect(notSynced, findsNWidgets(3));
       await pumpUntil(tester, banner);
+
+      final Finder fiveRow = find.ancestor(
+        of: find.text('Quantity: 5'),
+        matching: find.byType(Card),
+      );
+      await tap(
+        tester,
+        find.descendant(of: fiveRow, matching: find.byTooltip('Delete')),
+      );
+      await pumpUntil(tester, find.text('Quantity: 5'), present: false);
+      await pumpUntil(tester, find.text(queuedDeleteMessage));
+      expect(find.text('Activity deleted'), findsNothing);
 
       await tap(tester, find.text('Quantity: 2'));
       await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
@@ -67,6 +85,26 @@ void main() {
       );
       await pumpUntil(tester, find.text(queuedMessage));
       await pumpUntil(tester, find.text('Quantity: 3'));
+
+      await tap(tester, find.text('Quantity: 7'));
+      await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+      await tap(
+        tester,
+        find.descendant(
+          of: find.byType(ViceActivityEditorPage),
+          matching: find.byTooltip('Delete'),
+        ),
+      );
+      // The history page is off stage until the editor has popped.
+      await pumpUntil(tester, find.text('Coffee history').hitTestable());
+      await pumpUntil(
+        tester,
+        find.byType(ViceActivityEditorPage),
+        present: false,
+      );
+      await pumpUntil(tester, find.text(queuedDeleteMessage));
+      await pumpUntil(tester, find.text('Quantity: 7'), present: false);
+      expect(find.byType(Card), findsOneWidget);
       expect(notSynced, findsOneWidget);
       await screenshot(tester, 'history-not-yet-synced');
     } finally {

@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**97 issues: 0 critical, 14 high, 53 medium, 30 low.**
+**98 issues: 0 critical, 15 high, 53 medium, 30 low.**
 
 ## Firebase Data Layer (9)
 
@@ -71,10 +71,11 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 - **medium** — [The same Firebase error is shown four different ways](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (1)
+## Offline and Write Reliability (2)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
+- **high** — [A change made offline that the server later refuses vanishes without a word](offline-and-write-reliability/rejected-queued-write-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
 ## Duplication and Dead Code (12)
