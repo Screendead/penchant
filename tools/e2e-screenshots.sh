@@ -7,6 +7,10 @@
 set -euo pipefail
 source "$(dirname "$0")/emulator-env.sh"
 
+if [ "$E2E_DEVICE" = macos ]; then
+  echo "Screenshots need a simulator; E2E_DEVICE=macos is not supported here." >&2
+  exit 1
+fi
 out_dir="$(mkdir -p "$1" && cd "$1" && pwd)"
 shift
 port=9600
