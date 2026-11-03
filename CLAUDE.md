@@ -155,7 +155,7 @@ document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one
 (`lib/account/account.dart`): sign-in, register (which also sends the verification email),
 password reset, re-authentication, profile and email changes, sign-out, and the
 account-wide Firestore work: `fetchData` pages through the user's vices and activities for
-export (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
+export, from the server so that offline it fails instead of returning a partial cache (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
 to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
 batches of 500, then the Auth user; a failure after the first batch is a
 `DeletionIncompleteException`, and any other failure removed nothing. Sign-out and deletion then `terminate()` Firestore and

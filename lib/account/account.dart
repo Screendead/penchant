@@ -160,6 +160,8 @@ class Account {
 
   // Equality on ownerID ordered by document id is served by the automatic
   // single-field index, so this needs no entry in firestore.indexes.json.
+  // Reads from the server: the cache holds only what screens have loaded, so
+  // an offline export would be partial with nothing to say so.
   Future<List<StoredDocument>> _readOwned(String collection, String uid) async {
     final List<StoredDocument> documents = <StoredDocument>[];
     Query<Map<String, dynamic>> page = _firestore
@@ -168,7 +170,9 @@ class Account {
         .orderBy(FieldPath.documentId)
         .limit(pageSize);
     while (true) {
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await page.get();
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await page.get(
+        const GetOptions(source: Source.server),
+      );
       documents.addAll(<StoredDocument>[
         for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
             in snapshot.docs)

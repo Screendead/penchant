@@ -220,9 +220,8 @@ void main() {
     expect(FirebaseAuth.instance.currentUser!.displayName, isNull);
   });
 
-  testWidgets('export shares a CSV row per entry and a JSON of the account', (
-    tester,
-  ) async {
+  testWidgets('export shares a CSV row per entry and a JSON of the account, '
+      'and offline fails instead of sharing the cache', (tester) async {
     await clearEmulators();
     final _CapturedShare share = _CapturedShare();
     await tester.pumpWidget(
@@ -265,6 +264,17 @@ void main() {
       <String>{'Coffee', 'Tea', 'Water'},
     );
     expect(json['activities'], hasLength(2));
+
+    await FirebaseFirestore.instance.disableNetwork();
+    addTearDown(FirebaseFirestore.instance.enableNetwork);
+    await pumpUntil(tester, find.text(AccountCopy.exportTitle));
+    await tester.ensureVisible(find.text(AccountCopy.exportTitle));
+    await tap(tester, find.text(AccountCopy.exportTitle));
+    await pumpUntil(
+      tester,
+      find.textContaining(AccountCopy.exportFailed('No connection')),
+    );
+    expect(share.shared, hasLength(1));
   });
 
   testWidgets('deleting an account removes its documents and its sign-in and '
