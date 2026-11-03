@@ -321,6 +321,9 @@ final DateFormat dayMenuFormat = DateFormat('EEEE, MMMM d, yyyy');
 
 Future<void> signOutThroughSettings(WidgetTester tester) async {
   await openFromDrawer(tester, 'Settings');
+  // Sign out pops Settings; popping while its push is still animating trips
+  // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
+  await pumpFor(tester, const Duration(seconds: 1));
   await tap(tester, find.text('Sign out'));
   await pumpUntil(tester, find.byType(Homepage), present: false);
 }
