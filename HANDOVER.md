@@ -25,12 +25,14 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Recovered features and the fixes for Jack's two reported bugs (#28) | Merged and live 2026-11-03 | `lib/` |
 | Jack's round-1 calls C1–C19 | Picked 2026-11-03; built in wave 3 | below |
 | Wave 3: Today and recording C2–C5 (#36), rules details C12–C14 (#33), platform and repo cleanup C1 C6–C11 (#34), ideas rework C15–C19 (#35) | Merged 2026-11-03. The rules from #33 are **not yet in production**: they deploy through CI once Jack enables it (below) | `lib/`, `firestore.rules`, `.github/workflows/deploy-firestore.yml`, `ideas/` |
-| Round-2 calls (16) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 110 issues, 0 critical (from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 33 ideas for the journal positioning, roadmap in its README | `ideas/README.md` |
+| Wave A of the finish-and-pitch run: Dependabot #37 #38, seed script emulator-only (#44), parsers default every field (#45), shared write layer `TrackerWrites` (#46), versioning 0.1.0 + changelog + release workflow (#43) | Merged 2026-11-03 | `lib/`, `admin/`, `CHANGELOG.md`, `.github/workflows/release.yml` |
+| macOS target (#47) | Green, held: its macOS e2e needs Jack's Mac development profile (below) | `macos/`, `.github/workflows/macos-build.yml` |
+| Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
+| Tech-debt register | 104 issues, 0 critical (from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 33 ideas for the journal positioning (versioning shipped; end-to-end encryption added), roadmap in its README | `ideas/README.md` |
 
 Baseline on master, measured 2026-11-03 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 32/32, rules
-tests 72/72, `tools/e2e.sh` 6/6. `flutter build macos` fails (deployment target; queue 1). `dart run custom_lint`
+tests 72/72, `tools/e2e.sh` 10/10 (after #43). `flutter build macos` fails on master (deployment target); #47 fixes it. `dart run custom_lint`
 loads no rules (see the register). Re-measure; don't trust this.
 
 ## The queue (DECIDED work, in order)
@@ -40,15 +42,18 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 `tools/e2e.sh` or uses the default emulator ports. Subagents write PR bodies to uniquely named scratchpad files: the
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
-1. **macOS as a fully supported target** (C6's note): it builds (the register's frozen-deployment-target entry), runs
-   against the emulators, has its own e2e run, and CI builds it. Registering a macOS app in the Firebase console is a
-   production action: if one is needed, it goes on Jack's list.
+1. **macOS as a fully supported target** (C6's note): built in #47 (deployment target 12.0, emulator plist strip,
+   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Blocked
+   on Jack** (the Mac development profile, below): Firebase Auth on macOS needs Keychain Sharing, which needs a real
+   profile, so the macOS e2e can't run yet. Once it exists: run the macOS e2e on #47, record it in the PR, merge.
 2. **What the reworked roadmap marks as needing no call** (`ideas/README.md`, step 2), in its order: parsers that
-   default every missing field (before any new field is written), backend hardening, account deletion, versioning,
-   offline logging, export, one-tap logging. Parallel where the files don't overlap.
+   default every missing field (done, #45), backend hardening, account deletion, versioning (done, #43), offline
+   logging, export, and the layout-neutral half of one-tap logging. One-tap's tiles are a Today layout, which waits
+   on Jack's Today call; only a shared "log one at the default quantity, now" action with the 8-second Undo is
+   decided. Parallel where the files don't overlap.
 3. **Wave 2: the remaining high tech debt** that touches the app, one class per worktree:
    - `error-handling-and-observability/`: bootstrap failure, AsyncValue error states, sign-up errors;
-   - `widget-state-and-view-logic/`: the previous user's data showing after sign-out, and the write layer;
+   - `widget-state-and-view-logic/`: the previous user's data showing after sign-out (the write layer is done, #46);
    - `offline-and-write-reliability/`: persistence and pending states on deletes;
    - `navigation-and-unreachable-ui/`: the routes that dead-end on 404 (Manage Data's Edit is one);
    - `auth-and-account-lifecycle/`: password reset, re-authentication;
@@ -64,12 +69,13 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 No round-2 call is picked yet, so nothing below rests on one. Waves merge in order; items in one wave run in
 parallel worktrees, and `tools/e2e.sh` runs one at a time.
 
-- **Wave A:** macOS target (queue 1); parsers that default missing fields; a shared write layer (register,
+- **Wave A (merged, except #47 as above):** macOS target (queue 1); parsers that default missing fields; a shared write layer (register,
   `writes-bypass-providers`); versioning and changelog; Dependabot #37 and #38 once green; deleting merged branches (C9).
-- **Wave B:** account export and deletion, with re-authentication and password reset (`auth-and-account-lifecycle/`);
-  backend hardening (bounded queries, App Check client wiring); one-tap logging.
-- **Wave C:** offline logging; the rest of wave-2 high debt (`error-handling-and-observability/`, the sign-out data
-  leak, `navigation-and-unreachable-ui/`, `accessibility-and-localization/` with the radar's 0 off-centre).
+- **Wave B:** account export and deletion, with re-authentication, password reset and auth calls behind a provider
+  (`auth-and-account-lifecycle/`); backend hardening (bounded queries, App Check client wiring, the sign-out data
+  leak); offline logging; `navigation-and-unreachable-ui/`; `accessibility-and-localization/` with the radar's 0
+  off-centre; the rules-test dependency alerts.
+- **Wave C:** `error-handling-and-observability/`; the "log one" action; anything wave B left.
 - **Wave D:** the register's medium and low items, one class per PR.
 - **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
   trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
@@ -122,13 +128,17 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
-recommendation. Ids: `r2-brand`, `r2-trademark`, `r2-age` (18+ in
+recommendation. Ids: `r2-e2ee` (end-to-end encryption of what each entry says; `ideas/release-blockers/end-to-end-encryption.md`,
+prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and quantities, dates may stay plaintext),
+`r2-mac-config` (the macOS Firebase config: reuse the iOS app's registration, recommended, or register a separate
+app), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
 Firebase project), `r2-privacy`, `r2-icon`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
 
-Pitched later, with mock-ups, when their work starts: the starter trigger tree's top two levels
-(`ideas/insights/trigger-tagging.md`), the onboarding presets and their wording, and the Today layout.
+Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
+presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
+icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
 ## For Jack to do (not decisions)
 
@@ -139,9 +149,13 @@ Pitched later, with mock-ups, when their work starts: the starter trigger tree's
   and #33's rules stay undeployed. The next merge after that deploys them. Jack's iPhone runs master as of 2026-11-03.
 - **Take the web site down** (`r2-web-site`): `firebase hosting:disable --project screendead-vice-tracker`, then
   confirm the site URL returns "Site Not Found". The deployed releases stay in the console, so this can be undone.
+- **Mac development profile** (unblocks #47): open `macos/Runner.xcworkspace` in Xcode, select Runner > Signing &
+  Capabilities with team 8N575942RT, and build once (Cmd-B), so Xcode registers this Mac and creates the Mac App
+  Development profile for `com.screendead.tracker.tracker`. Claude's attempt was refused by the permission classifier.
+- **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
+  Claude (`gh pr close 22 42`).
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
-- **PR #22** (a Dependabot bump in `admin/`) is open; it is safe to leave until the seed script is reworked.
 
 ## How to test here
 
