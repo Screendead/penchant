@@ -36,8 +36,11 @@ class JournalCipher {
   /// Padded plaintext sizes. Mirrored in firestore.rules as [blobLengths].
   static const List<int> buckets = <int>[64, 256, 1024, 4096];
 
-  /// A vice is always at least 256, so a name's length does not show for any
-  /// name the 60-code-unit limit allows (`test/crypto/journal_cipher_test.dart`).
+  /// A vice is always at least 256, which hides the length of any 60-code-unit
+  /// name whose JSON, with its unit, fits 254 bytes. jsonEncode writes a
+  /// control character or an unpaired surrogate as a 6-byte \uXXXX escape, so
+  /// about 35 of them in one name reach the 1024 bucket; limits.dart rejects
+  /// neither.
   static const Map<String, int> minimumBucket = <String, int>{
     'vices': 256,
     'activities': 64,

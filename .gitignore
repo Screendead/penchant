@@ -39,3 +39,6 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+
+# Golden-test failure output
+**/failures/

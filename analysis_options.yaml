@@ -13,6 +13,8 @@ analyzer:
   # firebase-tools ships Dart template files that do not compile.
   exclude:
     - "**/node_modules/**"
+    # Compiled only inside the bare host app in tools/bench/README.md, whose package it imports.
+    - "tools/bench/**"
   plugins:
     - custom_lint
 
