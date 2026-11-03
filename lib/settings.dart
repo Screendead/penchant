@@ -37,8 +37,8 @@ class Settings extends ConsumerStatefulWidget {
 class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
 
-  // Routes pushed above the root outlive the session, so the stack is cleared
-  // back to the root, which shows sign-in once the user is null.
+  // MyApp also pops every page once the uid changes; this pop does not wait
+  // for that event.
   Future<void> _signOut() async {
     final Account account = ref.read(accountProvider);
     final NavigatorState navigator = Navigator.of(context);
@@ -91,20 +91,6 @@ class _SettingsState extends ConsumerState<Settings> {
               leading: const Icon(Icons.account_circle),
               onTap: () {
                 Navigator.of(context).pushNamed('/settings/account');
-              },
-            ),
-            ListTile(
-              title: const Text('Notifications'),
-              leading: const Icon(Icons.notifications),
-              onTap: () {
-                Navigator.of(context).pushNamed('/settings/notifications');
-              },
-            ),
-            ListTile(
-              title: const Text('Privacy'),
-              leading: const Icon(Icons.privacy_tip),
-              onTap: () {
-                Navigator.of(context).pushNamed('/settings/privacy');
               },
             ),
             ListTile(

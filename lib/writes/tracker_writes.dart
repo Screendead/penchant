@@ -28,6 +28,10 @@ class TrackerWrites {
     });
   }
 
+  Future<void> updateVice(String viceID, {String? name, Unit? unit}) {
+    return _vices.doc(viceID).update({'name': ?name, 'unit': ?unit?.name});
+  }
+
   Future<void> setViceArchived(String viceID, {required bool archived}) {
     return _vices.doc(viceID).update({'archived': archived});
   }

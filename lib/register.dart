@@ -91,7 +91,9 @@ class _RegisterState extends ConsumerState<Register> {
                               : 'Please enter a valid email address',
                           child: Icon(
                             emailIsValid! ? Icons.check_circle : Icons.cancel,
-                            color: emailIsValid! ? Colors.green : Colors.red,
+                            color: emailIsValid!
+                                ? Colors.green
+                                : Theme.of(context).colorScheme.error,
                           ),
                         ),
                 ),
@@ -123,7 +125,9 @@ class _RegisterState extends ConsumerState<Register> {
                             passwordIsValid!
                                 ? Icons.check_circle
                                 : Icons.cancel,
-                            color: passwordIsValid! ? Colors.green : Colors.red,
+                            color: passwordIsValid!
+                                ? Colors.green
+                                : Theme.of(context).colorScheme.error,
                           ),
                         ),
                 ),
@@ -171,7 +175,9 @@ class _RegisterState extends ConsumerState<Register> {
                               : 'Passwords do not match',
                           child: Icon(
                             passwordsMatch! ? Icons.check_circle : Icons.cancel,
-                            color: passwordsMatch! ? Colors.green : Colors.red,
+                            color: passwordsMatch!
+                                ? Colors.green
+                                : Theme.of(context).colorScheme.error,
                           ),
                         ),
                 ),

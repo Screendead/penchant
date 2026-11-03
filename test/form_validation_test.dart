@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tracker/add_vice.dart';
+import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -49,6 +49,12 @@ void main() {
     });
   });
 
+  test("viceNameError accepts a legacy vice's unchanged out-of-range name", () {
+    expect(viceNameError('x' * 61, unchanged: 'x' * 61), isNull);
+    expect(viceNameError('', unchanged: ''), isNull);
+    expect(viceNameError('x' * 62, unchanged: 'x' * 61), isNotNull);
+  });
+
   group('quantityError', () {
     test('accepts a positive whole number', () {
       expect(quantityError('1'), isNull);
@@ -71,7 +77,7 @@ void main() {
   testWidgets('Add Vice shows the length message inline', (tester) async {
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-    ], const AddVice());
+    ], const ViceForm());
 
     await tester.enterText(_field('Vice Name'), 'x' * 61);
     // No unit is selected, so validation runs but nothing is written.
@@ -87,7 +93,7 @@ void main() {
     final Vice vice = fakeVice('coffee');
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value([vice])),
+      unarchivedViceListProvider.overrideWithValue(AsyncData([vice])),
     ], const RecordNewActivityDialog());
 
     await tester.enterText(_field('Quantity'), '0');
@@ -104,11 +110,11 @@ void main() {
     Future<void> pumpEditor(WidgetTester tester, int quantity) => _pump(
       tester,
       [
-        viceListProvider.overrideWith((ref) => Stream.value([vice])),
-        viceActivityHistoryProvider.overrideWith(
-          (ref, String viceID) => Stream.value([
+        viceListProvider.overrideWithValue(AsyncData([vice])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(
             fakeActivity(vice.id, quantity, DateTime(2026, 1, 2, 8, 30)),
-          ]),
+          ),
         ),
       ],
       ViceActivityEditorPage(

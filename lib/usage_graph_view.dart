@@ -8,10 +8,50 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/chart_text.dart';
 import 'package:tracker/widgets/info_box.dart';
 
 class UsageGraphView extends ConsumerStatefulWidget {
   const UsageGraphView({super.key});
+
+  static final DateFormat labelFormat = DateFormat('MMM d');
+
+  static String seriesName(int stepDays) =>
+      stepDays == 1 ? 'Daily total' : 'Weekly total';
+
+  static String averageName(int stepDays, int window) =>
+      '$window-${stepDays == 1 ? 'day' : 'week'} average';
+
+  static String summary({
+    required Vice vice,
+    required List<double> totals,
+    required DateTime rangeStart,
+    required int rangeDays,
+    required int stepDays,
+    required int smoothingWindow,
+  }) {
+    int peakIndex = 0;
+    for (int i = 1; i < totals.length; i++) {
+      if (totals[i] > totals[peakIndex]) {
+        peakIndex = i;
+      }
+    }
+
+    final int total = totals
+        .fold<double>(0, (double a, double b) => a + b)
+        .round();
+    final String peakDate = labelFormat.format(
+      rangeStart.add(Duration(days: peakIndex * stepDays)),
+    );
+    final String average = smoothingWindow > 1
+        ? ' Shown with a ${averageName(stepDays, smoothingWindow)}.'
+        : '';
+
+    return '${seriesName(stepDays)}s of ${vice.name} over the last '
+        '$rangeDays days: ${vice.unit.label(total)} in all. The most was '
+        '${vice.unit.label(totals[peakIndex].round())} '
+        '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average';
+  }
 
   @override
   ConsumerState<UsageGraphView> createState() => _UsageGraphViewState();
@@ -71,16 +111,11 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
     final List<Vice>? viceList = ref.watch(viceListProvider).value;
 
     if (viceList == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (viceList.isEmpty) {
-      return const InfoBox(
-        message: 'No vices available to graph',
-        color: Colors.red,
-      );
+      return const InfoBox(message: 'No vices available to graph');
     }
 
     final String? effectiveViceID = _effectiveViceID(viceList);
@@ -90,24 +125,25 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
 
     final DateTime rangeStart = today.subtract(Duration(days: rangeDays - 1));
     final DateTime rangeEnd = today.add(const Duration(days: 1));
-    final List<ViceActivity>? activityList =
-        ref.watch(
-          viceActivityGraphProvider(
-            ViceActivityGraphQuery(
-              viceID: selectedVice.id,
-              start: rangeStart,
-              end: rangeEnd,
-            ),
-          ),
-        ).value;
+    final List<ViceActivity>? activityList = ref
+        .watch(
+          viceActivityGraphProvider((
+            viceID: selectedVice.id,
+            start: rangeStart,
+            end: rangeEnd,
+          )),
+        )
+        .value;
 
     final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;
     final List<double> totals = List<double>.filled(bucketCount, 0);
 
     if (activityList != null) {
       for (final ViceActivity activity in activityList) {
-        final int deltaDays =
-            activity.createdAt.toDate().difference(rangeStart).inDays;
+        final int deltaDays = activity.createdAt
+            .toDate()
+            .difference(rangeStart)
+            .inDays;
 
         final int bucketIndex = deltaDays ~/ stepDays;
         if (bucketIndex >= 0 && bucketIndex < totals.length) {
@@ -122,7 +158,18 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       smoothed.fold<double>(0, (double a, double b) => a > b ? a : b),
     );
     final int smoothingMaxBuckets = max(1, min(7, bucketCount));
-    final DateFormat labelFormat = DateFormat('MMM d');
+    final DateFormat labelFormat = UsageGraphView.labelFormat;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    const TextStyle axisStyle = TextStyle(fontSize: 10);
+    final double chartMaxY = maxY == 0 ? 1 : maxY * 1.15;
+    final double leftTitlesWidth = max(
+      40,
+      chartLabelSize(context, '${chartMaxY.ceil()}', axisStyle).width + 8,
+    );
+    final double bottomTitlesHeight = max(
+      40,
+      chartLabelSize(context, 'May 30', axisStyle).height + 16,
+    );
 
     final List<FlSpot> rawSpots = List<FlSpot>.generate(
       totals.length,
@@ -151,10 +198,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
                     .map(
                       (Vice vice) => DropdownMenuItem<String>(
                         value: vice.id,
-                        child: Text(
-                          vice.name,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(vice.name, overflow: TextOverflow.ellipsis),
                       ),
                     )
                     .toList(),
@@ -262,99 +306,191 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: activityList == null
-                    ? const Center(
-                        child: CircularProgressIndicator(),
-                      )
+                    ? const Center(child: CircularProgressIndicator())
                     : totals.every((double value) => value == 0)
-                        ? Center(
-                            child: InfoBox(
-                              message:
-                                  'No activities found for ${selectedVice.name} in the selected range',
-                              color: Colors.red,
-                            ),
-                          )
-                        : LineChart(
-                            LineChartData(
-                              minX: 0,
-                              maxX: max(0, rawSpots.length - 1).toDouble(),
-                              minY: 0,
-                              maxY: maxY == 0 ? 1 : maxY * 1.15,
-                              gridData: const FlGridData(show: true),
-                              borderData: FlBorderData(show: false),
-                              titlesData: FlTitlesData(
-                                topTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                rightTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: 40,
-                                    interval: max(1, (maxY / 4).ceil()).toDouble(),
-                                    getTitlesWidget:
-                                        (double value, TitleMeta meta) {
-                                      return Text(
-                                        value.toInt().toString(),
-                                        style: const TextStyle(fontSize: 10),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: 40,
-                                    interval: max(1, rawSpots.length ~/ 4).toDouble(),
-                                    getTitlesWidget:
-                                        (double value, TitleMeta meta) {
-                                      final int index = value.round();
-                                      if (index < 0 || index >= rawSpots.length) {
-                                        return const SizedBox.shrink();
-                                      }
-
-                                      final DateTime labelDate = rangeStart
-                                          .add(Duration(days: index * stepDays));
-                                      return Padding(
-                                        padding: const EdgeInsets.only(top: 8),
-                                        child: Text(
-                                          labelFormat.format(labelDate),
-                                          style: const TextStyle(fontSize: 10),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                    ? Center(
+                        child: InfoBox(
+                          message:
+                              'No activities found for ${selectedVice.name} in the selected range',
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (smoothingWindow > 1)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: ExcludeSemantics(
+                                child: Wrap(
+                                  spacing: 16,
+                                  runSpacing: 4,
+                                  children: [
+                                    _LegendEntry(
+                                      color: scheme.primary.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      dashed: true,
+                                      label: UsageGraphView.seriesName(
+                                        stepDays,
+                                      ),
+                                    ),
+                                    _LegendEntry(
+                                      color: scheme.primary,
+                                      dashed: false,
+                                      label: UsageGraphView.averageName(
+                                        stepDays,
+                                        smoothingWindow,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: rawSpots,
-                                  isCurved: true,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withValues(alpha: 0.35),
-                                  barWidth: 2,
-                                  dotData: const FlDotData(show: false),
-                                ),
-                                if (smoothingWindow > 1)
-                                  LineChartBarData(
-                                    spots: smoothedSpots,
-                                    isCurved: true,
-                                    color: Theme.of(context).colorScheme.primary,
-                                    barWidth: 3,
-                                    dotData: const FlDotData(show: false),
-                                  ),
-                              ],
                             ),
-                            duration: const Duration(milliseconds: 500),
+                          Expanded(
+                            child: Semantics(
+                              container: true,
+                              label: UsageGraphView.summary(
+                                vice: selectedVice,
+                                totals: totals,
+                                rangeStart: rangeStart,
+                                rangeDays: rangeDays,
+                                stepDays: stepDays,
+                                smoothingWindow: smoothingWindow,
+                              ),
+                              excludeSemantics: true,
+                              child: LineChart(
+                                LineChartData(
+                                  minX: 0,
+                                  maxX: max(0, rawSpots.length - 1).toDouble(),
+                                  minY: 0,
+                                  maxY: chartMaxY,
+                                  gridData: const FlGridData(show: true),
+                                  borderData: FlBorderData(show: false),
+                                  titlesData: FlTitlesData(
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: leftTitlesWidth,
+                                        interval: max(
+                                          1,
+                                          (maxY / 4).ceil(),
+                                        ).toDouble(),
+                                        getTitlesWidget:
+                                            (double value, TitleMeta meta) {
+                                              return Text(
+                                                value.toInt().toString(),
+                                                style: axisStyle,
+                                              );
+                                            },
+                                      ),
+                                    ),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: bottomTitlesHeight,
+                                        interval: max(
+                                          1,
+                                          rawSpots.length ~/ 4,
+                                        ).toDouble(),
+                                        getTitlesWidget:
+                                            (double value, TitleMeta meta) {
+                                              final int index = value.round();
+                                              if (index < 0 ||
+                                                  index >= rawSpots.length) {
+                                                return const SizedBox.shrink();
+                                              }
+
+                                              final DateTime labelDate =
+                                                  rangeStart.add(
+                                                    Duration(
+                                                      days: index * stepDays,
+                                                    ),
+                                                  );
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 8,
+                                                ),
+                                                child: Text(
+                                                  labelFormat.format(labelDate),
+                                                  style: axisStyle,
+                                                ),
+                                              );
+                                            },
+                                      ),
+                                    ),
+                                  ),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: rawSpots,
+                                      isCurved: true,
+                                      color: scheme.primary.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      barWidth: 2,
+                                      dashArray: const [4, 4],
+                                      dotData: const FlDotData(show: false),
+                                    ),
+                                    if (smoothingWindow > 1)
+                                      LineChartBarData(
+                                        spots: smoothedSpots,
+                                        isCurved: true,
+                                        color: scheme.primary,
+                                        barWidth: 3,
+                                        dotData: const FlDotData(show: false),
+                                      ),
+                                  ],
+                                ),
+                                duration: const Duration(milliseconds: 500),
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LegendEntry extends StatelessWidget {
+  const _LegendEntry({
+    required this.color,
+    required this.dashed,
+    required this.label,
+  });
+
+  final Color color;
+  final bool dashed;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget segment = Container(width: 8, height: 3, color: color);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 24,
+          child: dashed
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [segment, segment],
+                )
+              : Container(height: 3, color: color),
+        ),
+        const SizedBox(width: 8),
+        Flexible(child: Text(label)),
+      ],
     );
   }
 }

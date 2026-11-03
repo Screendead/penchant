@@ -1,121 +1,130 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
-import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/signed_in_user.dart';
 
-final viceActivityHistoryProvider =
-    StreamProvider.family<List<ViceActivity>?, String>((ref, viceID) {
-  final User? user = ref.watch(userProvider).value;
+typedef ViceActivityHistoryQuery = ({String viceID, int limit});
 
-  if (user == null) {
-    return const Stream<List<ViceActivity>?>.empty();
-  }
+// The newest [limit] activities of one vice.
+final viceActivityHistoryForUserProvider = StreamProvider.autoDispose
+    .family<List<ViceActivity>, ({String uid, ViceActivityHistoryQuery query})>(
+      (ref, key) {
+        return FirebaseFirestore.instance
+            .collection('activities')
+            .where('viceID', isEqualTo: key.query.viceID)
+            .where('ownerID', isEqualTo: key.uid)
+            .orderBy('createdAt', descending: true)
+            .limit(key.query.limit)
+            // The server's acknowledgement of a local write changes only
+            // metadata, and clears an entry's not-yet-synced mark.
+            .snapshots(includeMetadataChanges: true)
+            .map(ViceActivity.fromQuerySnapshot);
+      },
+    );
 
-  return FirebaseFirestore.instance
-      .collection('activities')
-      .where('viceID', isEqualTo: viceID)
-      .where('ownerID', isEqualTo: user.uid)
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
+final viceActivityHistoryProvider = Provider.autoDispose
+    .family<AsyncValue<List<ViceActivity>>, ViceActivityHistoryQuery>((
+      ref,
+      query,
+    ) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) =>
+            viceActivityHistoryForUserProvider((uid: uid, query: query)),
+      );
+    });
+
+typedef ViceActivityGraphQuery = ({
+  String viceID,
+  DateTime start,
+  DateTime end,
 });
 
-class ViceActivityGraphQuery {
-  ViceActivityGraphQuery({
-    required this.viceID,
-    required this.start,
-    required this.end,
-  });
+final viceActivityGraphForUserProvider = StreamProvider.autoDispose
+    .family<List<ViceActivity>, ({String uid, ViceActivityGraphQuery query})>((
+      ref,
+      key,
+    ) {
+      return FirebaseFirestore.instance
+          .collection('activities')
+          .where('viceID', isEqualTo: key.query.viceID)
+          .where('ownerID', isEqualTo: key.uid)
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(key.query.start),
+          )
+          .where('createdAt', isLessThan: Timestamp.fromDate(key.query.end))
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map(ViceActivity.fromQuerySnapshot);
+    });
 
-  final String viceID;
-  final DateTime start;
-  final DateTime end;
+final viceActivityGraphProvider = Provider.autoDispose
+    .family<AsyncValue<List<ViceActivity>>, ViceActivityGraphQuery>((
+      ref,
+      query,
+    ) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) =>
+            viceActivityGraphForUserProvider((uid: uid, query: query)),
+      );
+    });
 
-  @override
-  bool operator ==(Object other) {
-    return other is ViceActivityGraphQuery &&
-        other.viceID == viceID &&
-        other.start == start &&
-        other.end == end;
-  }
+// The rules deny reading a missing or foreign document, so an activity that is
+// gone, or is deleted while this listens, ends the stream with
+// permission-denied. That is final, so it is not retried: riverpod's default
+// retry would hold the editor in loading for about 38 s while it reopened the
+// listener ten times, each a billed denied read.
+final viceActivityForUserProvider = StreamProvider.autoDispose
+    .family<ViceActivity?, ({String uid, String activityID})>(
+      retry: (_, _) => null,
+      (ref, key) {
+        return FirebaseFirestore.instance
+            .collection('activities')
+            .doc(key.activityID)
+            .snapshots()
+            .map(
+              (DocumentSnapshot<Map<String, dynamic>> snapshot) =>
+                  switch (snapshot.data()) {
+                    null => null,
+                    final Map<String, dynamic> json => ViceActivity.fromJson(
+                      id: snapshot.id,
+                      json: json,
+                      pending: snapshot.metadata.hasPendingWrites,
+                    ),
+                  },
+            );
+      },
+    );
 
-  @override
-  int get hashCode => Object.hash(viceID, start, end);
-}
+final viceActivityProvider = Provider.autoDispose
+    .family<AsyncValue<ViceActivity?>, String>((ref, activityID) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) =>
+            viceActivityForUserProvider((uid: uid, activityID: activityID)),
+      );
+    });
 
-final viceActivityGraphProvider =
-    StreamProvider.family<List<ViceActivity>?, ViceActivityGraphQuery>(
-        (ref, query) {
-  final User? user = ref.watch(userProvider).value;
+// Counted on the server, so it is not live, ignores writes still queued on the
+// device, and fails offline.
+final viceActivityCountForUserProvider = FutureProvider.autoDispose
+    .family<int, ({String uid, String viceID})>((ref, key) async {
+      final AggregateQuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('activities')
+          .where('viceID', isEqualTo: key.viceID)
+          .where('ownerID', isEqualTo: key.uid)
+          .count()
+          .get();
+      return snapshot.count ?? 0;
+    });
 
-  if (user == null) {
-    return const Stream<List<ViceActivity>?>.empty();
-  }
-
-  return FirebaseFirestore.instance
-      .collection('activities')
-      .where('viceID', isEqualTo: query.viceID)
-      .where('ownerID', isEqualTo: user.uid)
-      .where(
-        'createdAt',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(query.start),
-      )
-      .where('createdAt', isLessThan: Timestamp.fromDate(query.end))
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
-});
-
-final allViceActivityProvider = StreamProvider<List<ViceActivity>?>((ref) {
-  final User? user = ref.watch(userProvider).value;
-
-  if (user == null) {
-    return const Stream<List<ViceActivity>?>.empty();
-  }
-
-  return FirebaseFirestore.instance
-      .collection('activities')
-      .where('ownerID', isEqualTo: user.uid)
-      .orderBy('createdAt', descending: false)
-      .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
-});
-
-class ActivityWindow {
-  ActivityWindow({required this.start, required this.end});
-
-  final DateTime start;
-  final DateTime end;
-
-  @override
-  bool operator ==(Object other) {
-    return other is ActivityWindow &&
-        other.start == start &&
-        other.end == end;
-  }
-
-  @override
-  int get hashCode => Object.hash(start, end);
-}
-
-final viceActivityWindowProvider =
-    StreamProvider.family<List<ViceActivity>?, ActivityWindow>((ref, window) {
-  final User? user = ref.watch(userProvider).value;
-
-  if (user == null) {
-    return const Stream<List<ViceActivity>?>.empty();
-  }
-
-  return FirebaseFirestore.instance
-      .collection('activities')
-      .where('ownerID', isEqualTo: user.uid)
-      .where(
-        'createdAt',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(window.start),
-      )
-      .where('createdAt', isLessThan: Timestamp.fromDate(window.end))
-      .orderBy('createdAt', descending: false)
-      .snapshots()
-      .map(ViceActivity.fromQuerySnapshot);
-});
+final viceActivityCountProvider = Provider.autoDispose
+    .family<AsyncValue<int>, String>((ref, viceID) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) =>
+            viceActivityCountForUserProvider((uid: uid, viceID: viceID)),
+      );
+    });

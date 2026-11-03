@@ -14,15 +14,18 @@ import {
   deleteDoc,
   doc,
   documentId,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   startAfter,
   updateDoc,
+  waitForPendingWrites,
   where,
   writeBatch,
 } from 'firebase/firestore';
@@ -424,29 +427,98 @@ describe('activities', () => {
       await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceForeignViceActivity')));
     });
 
-    it('allows the activity list query', async () => {
+    it('allows the day-window query, across every vice', async () => {
+      const day = await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'activities'),
+            where('ownerID', '==', ALICE),
+            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'))),
+            where('createdAt', '<', Timestamp.fromDate(new Date('2026-01-02T00:00:00Z'))),
+            orderBy('createdAt', 'desc'),
+          ),
+        ),
+      );
+      assert.ok(day.docs.length > 0);
+      assert.ok(day.docs.every((d) => d.get('ownerID') === ALICE));
+    });
+
+    it('allows a page of the history query', async () => {
       await assertSucceeds(
         getDocs(
           query(
             collection(asAlice(), 'activities'),
-            where('viceID', 'in', ['aliceVice', 'aliceLegacyVice']),
+            where('viceID', '==', 'aliceVice'),
             where('ownerID', '==', ALICE),
             orderBy('createdAt', 'desc'),
+            limit(51),
           ),
         ),
       );
     });
 
-    it('allows the day-window query', async () => {
-      await assertSucceeds(
+    it("allows counting a vice's activities on the server", async () => {
+      const counted = await assertSucceeds(
+        getCountFromServer(
+          query(
+            collection(asAlice(), 'activities'),
+            where('viceID', '==', 'aliceVice'),
+            where('ownerID', '==', ALICE),
+          ),
+        ),
+      );
+      assert.ok(counted.data().count > 0);
+    });
+
+    it("denies counting someone else's activities", async () => {
+      await assertFails(
+        getCountFromServer(
+          query(collection(asAlice(), 'activities'), where('viceID', '==', 'bobVice')),
+        ),
+      );
+    });
+
+    it("fails the editor's listener once its activity is deleted", async () => {
+      const db = asAlice();
+      const seen = [];
+      const errors = [];
+      let first;
+      const firstSnapshot = new Promise((resolve) => {
+        first = resolve;
+      });
+      const unsubscribe = onSnapshot(
+        doc(db, 'activities/aliceActivity'),
+        { includeMetadataChanges: true },
+        (snapshot) => {
+          seen.push({ exists: snapshot.exists(), fromCache: snapshot.metadata.fromCache });
+          first();
+        },
+        (error) => errors.push(error.code),
+      );
+      try {
+        await firstSnapshot;
+        // Resolves on the server's acknowledgement, not the local write.
+        await deleteDoc(doc(db, 'activities/aliceActivity'));
+        await waitForPendingWrites(db);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      } finally {
+        unsubscribe();
+      }
+      // The local delete reports the document gone; the server then re-runs the
+      // get rule against a missing document and denies it.
+      assert.equal(seen[0].exists, true);
+      assert.equal(seen.at(-1).exists, false);
+      assert.deepEqual(errors, ['permission-denied']);
+    });
+
+    it('denies getting a missing activity, even to a signed-in user', async () => {
+      await assertFails(getDoc(doc(asAlice(), 'activities/missing')));
+      await assertFails(
         getDocs(
           query(
             collection(asAlice(), 'activities'),
-            where('viceID', 'in', ['aliceVice']),
             where('ownerID', '==', ALICE),
-            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'))),
-            where('createdAt', '<', Timestamp.fromDate(new Date('2026-01-02T00:00:00Z'))),
-            orderBy('createdAt', 'desc'),
+            where(documentId(), '==', 'missing'),
           ),
         ),
       );

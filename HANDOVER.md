@@ -140,6 +140,12 @@ Built as mock-ups on branches and pitched with screenshots: the Today layout (`m
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
 icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
+Not yet on the pitch page: **`vice-cap`** (from backend hardening, PR #55): cap the number of vices per user, with a
+guard in Add Vice and the rules, or leave the vice lists unbounded. Claude's recommendation: **leave them unbounded
+for 1.0**: vices are created by hand, and since the day query dropped its `in` filter the number of vices limits no
+query. A bare `limit` is not an option: it would hide the oldest vices without saying so. Register:
+`tech-debt/firebase-data-layer/vice-lists-are-unbounded.md`; idea: `ideas/release-blockers/backend-hardening.md`.
+
 ## For Jack to do (not decisions)
 
 - **Let CI deploy rules (C1):** grant the service account behind `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER`
@@ -154,6 +160,27 @@ icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r
   Development profile for `com.screendead.tracker.tracker`. Claude's attempt was refused by the permission classifier.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
   Claude (`gh pr close 22 42`).
+- **Deploy the new activities index before installing a build with backend hardening** (`feat/backend-hardening`,
+  PR #55): Today's day query now needs the `activities (ownerID ASC, createdAt DESC)` index in
+  `firestore.indexes.json`. The emulators don't check indexes, so the e2e run can't catch its absence; on a phone
+  without it, Today reads "Unable to load this day: failed-precondition". Merging deploys it only once CI deploys
+  are on (above); until then `firebase deploy --only firestore:indexes --project screendead-vice-tracker`. Install
+  only after the console (Firestore > Indexes) shows it **Enabled**; building takes minutes.
+- **App Attest needs a paid Apple Developer Program team.** Adding the App Attest entitlement to Runner broke
+  `flutter build ios --release`: Xcode said "Personal development teams, including "Jack Lusher", do not support the
+  App Attest capability" for team 8N575942RT, so the backend-hardening PR ships App Check without it, and App Attest
+  yields no accepted token until it is added. TestFlight needs the paid membership anyway. Once the team has it, tell
+  Claude: it adds the capability (`com.apple.developer.devicecheck.appattest-environment` = `production`) and proves the
+  release build still signs.
+- **Register the iOS app with App Check** (Firebase console > Security > App Check > Apps): App Attest (needs the
+  Team ID) and DeviceCheck (needs a DeviceCheck key from the developer portal: the .p8 file, its Key ID, the Team ID).
+  Both need the paid team. Enforce nothing yet.
+- **Enforce App Check on Firestore only after every installed copy has it:** your iPhone and every TestFlight
+  tester on a build from the backend-hardening PR or later, the App Attest entitlement in place, and Security >
+  App Check > APIs showing nearly all Firestore requests verified. An older build is refused once you click
+  Enforce; enforcement takes up to 15 minutes, and turning it off undoes it.
+- **Set budget alerts** on `screendead-vice-tracker` (Google Cloud console > Billing > Budgets & alerts, or the
+  prompt when upgrading to Blaze). Alerts only email; they don't pause Firestore.
 - **Check Email Enumeration Protection is on** (Firebase console > Authentication > Settings > User actions, for
   `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
   itself still answers "no such user" differently from "wrong password". Also check the password-reset and

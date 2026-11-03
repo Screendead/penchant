@@ -135,16 +135,19 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
 annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
-hand-written. Most are a `StreamProvider` or `StreamProvider.family` wrapping a Firestore
-snapshot stream (`userProvider` wraps `authStateChanges()`, `userProfileProvider`
-`userChanges()`). Two are plain `Provider`s:
-`viceActivityListByViceIDProvider` groups `viceActivityListProvider`'s resolved list by
-vice and returns `null` until that list has a value, and `trackerWritesProvider` hands
-out the write layer (below). `packageInfoProvider` is a `FutureProvider` over
+hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
+`userProfileProvider` one over `userChanges()`. Each
+Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
+snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
+`count()` aggregation), read through a plain `Provider` (or `Provider.autoDispose.family`)
+of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
+query provider that watches `userProvider` itself: that shape leaked the previous user's
+data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
+(below), and `packageInfoProvider` is a `FutureProvider` over
 `PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style; running `build_runner` generates nothing.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
-stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
+provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
 `TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every write the
 screens make to a single document. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
@@ -159,26 +162,42 @@ export, from the server so that offline it fails instead of returning a partial 
 to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
 batches of 500, then the Auth user; a failure after the first batch is a
 `DeletionIncompleteException`, and any other failure removed nothing. Sign-out and deletion then `terminate()` Firestore and
-`clearPersistence()`; the plugin builds a fresh native instance with the same settings on
-the next call. Sign-out first waits up to 5 s for pending writes and throws
+`clearPersistence()`; the Dart instance keeps the settings `firebase_init.dart` gave it (the
+cache, or the emulator host), and the plugin builds a fresh native instance from them on the
+next call. Sign-out first waits up to 5 s for pending writes and throws
 `UnsyncedEntriesException` rather than discard them silently. Auth error text shown to the
 user comes from `authErrorMessage` (`lib/account/auth_errors.dart`), never Firebase's own
 message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 
-**Provider chain.** `userProvider` (auth state) → `viceListProvider` /
-`unarchivedViceListProvider` → the day and list activity providers, which need the vice
-list to build their `whereIn` clause; the history, graph, and window providers depend on
-`userProvider` alone. Each returns `Stream.empty()` when the user is null, so `.value`
-stays `null` and widgets render a spinner. A `null` list means loading; an empty list
-means no data. The day and list activity providers emit an empty list for an empty vice
-list, since Firestore rejects an empty `whereIn`, and forward a vice-list error rather
-than staying in loading. Never gate UI on `ref.read(provider.future)`: in riverpod 3 a
-read with no other listener pauses the provider's stream, so the future never resolves.
-Render loading and error from the watched `AsyncValue` instead. A `User` is a snapshot
-that profile updates and `reload()` never change: only `userChanges()` re-emits after
-them, and it also fires on every token refresh. So Account Settings alone watches
-`userProfileProvider`, and calls `Account.reloadUser()` on opening and on app resume to
-pick up a verification made elsewhere; the chain stays on `userProvider`.
+**Provider chain.** Each Firestore query is a `...ForUserProvider` family keyed on the
+uid (and its other parameters), wrapped by a plain provider of `AsyncValue` that selects
+the uid from `userProvider` through `watchForSignedInUser`
+(`lib/providers/signed_in_user.dart`): `viceListProvider`, `unarchivedViceListProvider`,
+and the activity day, history, graph, single-activity and count providers. The wrapper is
+loading with no value while nobody is signed in, and each user's query is a separate
+provider, so a value never belongs to a previous user: riverpod carries a provider's last
+value into the loading state of a rebuild, which is how a single provider rebuilt on a user
+change leaked the previous account's data. Widgets watch the wrapper; tests override it
+with an `AsyncValue`, or override the family to test the wrapper. The query families are
+`autoDispose`, so leaving a day, range or page closes its listener. No activity provider
+depends on the vice list: the day query filters on `ownerID` and `createdAt` alone (an `in`
+filter on vice IDs takes at most 30) and the chart drops activities of vices it does not
+draw. A `null` value means loading; an empty list means no data. Never gate UI on
+`ref.read(provider.future)`: in riverpod 3 a read with no other listener pauses the
+provider's stream, so the future never resolves. Render loading and error from the watched
+`AsyncValue` instead. A `User` is a snapshot that profile updates and `reload()` never
+change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
+So Account Settings alone watches `userProfileProvider`, and calls `Account.reloadUser()` on
+opening and on app resume to pick up a verification made elsewhere; the chain stays on
+`userProvider`.
+
+**Query bounds.** The day and graph queries are bounded by their date window, the history
+page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether
+older entries exist), the editor listens to its one document, and Manage Data counts each
+vice's activities with a server-side `count()` aggregation, which is not live, ignores
+writes still queued on the device, and fails offline. The vice lists have no limit, and
+nothing caps how many vices a user creates; whether to add a cap is undecided (register,
+`vice-lists-are-unbounded`).
 
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
@@ -202,14 +221,20 @@ Any new composite query shape needs a matching entry in `firestore.indexes.json`
 Firestore throws `failed-precondition` at runtime until the index is deployed.
 
 **Navigation.** `main.dart` gates on `userProvider`: null user → `Authenticate`, otherwise
-`Homepage`. `onGenerateRoute` parses the route as a URI, so `/vices/:viceID/activities` and
-`/vices/:viceID/activities/:activityID` are matched by path segments; the rest are a
-`switch` on the literal name.
+`Homepage`. `generateRoute` maps a route's path segments to a page through `routePage`, a
+pattern `switch` (`/vices/:viceID/edit`, `/vices/:viceID/activities[/:activityID]`, ...);
+anything else is `NotFound`. Only the forms (add or edit a vice, edit an activity) open as
+fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
+swapping `home` alone would leave the old session's pages on the stack.
 
 **Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
 (`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
 date range as a line chart, bucketing activities by day or week and overlaying a moving
-average.
+average. Below three vices Today draws bars instead (fl_chart's radar needs three axes). The radar carries
+a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
+centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
+text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
+outside the widget tree, so tests read them from the chart's data.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
@@ -220,11 +245,24 @@ or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.
 
+**Offline.** Production Firestore runs with disk persistence and an explicit 100 MB cache
+(`_configureFirestoreCache` in `lib/firebase_init.dart`); the emulator path keeps persistence off. Every
+write awaits through `settleWrite` (`lib/writes/settle_write.dart`): an acknowledgement within ten seconds
+is success, a timeout means the write is queued and the UI says it will sync, and only a
+`FirebaseException` is a failure. `ViceActivity.pending` carries `hasPendingWrites`; the day and history
+providers listen with `includeMetadataChanges: true` so the server's acknowledgement clears it.
+`offlineProvider` is true once a vices listener has answered from the cache for three seconds, which
+drives the offline banner and the offline wording of an empty day.
+
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against
 production. With it, the default app is initialized with `demo-tracker` options, Firestore
 persistence is off, Auth and Firestore point at `localhost`, and startup throws if the
-default app resolves to a non-`demo-` project. On iOS, firebase_core configures the native
+default app resolves to a non-`demo-` project. App Check is activated right after
+`initializeApp` in both modes and enforced nowhere: App Attest with the DeviceCheck
+fallback in production, the debug provider (no committed token) under the emulators, which
+ignore App Check. App Attest yields no accepted token until the Runner target carries the
+App Attest entitlement, which the current signing team cannot sign (HANDOVER.md). On iOS, firebase_core configures the native
 default app from the bundled `GoogleService-Info.plist` before Dart runs, so the Runner
 target's "Strip Firebase plist for emulators" build phase
 (`tools/ios-strip-firebase-plist.sh`) moves it out of the bundle for flagged builds. macOS

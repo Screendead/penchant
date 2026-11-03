@@ -267,6 +267,10 @@ void main() {
       expect(activities.map((ViceActivity a) => a.id), <String>['a1', 'a2']);
       expect(activities[0].quantity, 1);
       expectRecent(activities[1].createdAt);
+      expect(activities.map((ViceActivity a) => a.pending), <bool>[
+        false,
+        true,
+      ]);
     });
   });
 }

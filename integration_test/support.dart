@@ -187,14 +187,14 @@ Future<void> addVicesThroughManageData(
   await closeDrawerPage(tester);
 }
 
-// The drawer stays open under a page pushed from it; dismiss both, as a user
-// would, by closing the page and tapping the scrim beside the drawer.
+// Closes a page opened from the drawer with its back button. The drawer was
+// told to close when the page opened, but its animation is paused while the
+// page covers it, so it may still be finishing.
 Future<void> closeDrawerPage(WidgetTester tester) async {
-  await tap(tester, find.byTooltip('Close'));
-  await pumpUntil(tester, find.byType(Drawer).hitTestable());
-  final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-  await tester.tapAt(Offset(screen.width - 16, screen.height / 2));
+  await tap(tester, find.byType(BackButton));
+  await pumpUntil(tester, find.byType(BackButton), present: false);
   await pumpUntil(tester, find.byType(Drawer), present: false);
+  await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
 }
 
 // Records through the app's dialog. With [at], unlocks the date field and
@@ -318,3 +318,51 @@ Future<void> expectRadar(WidgetTester tester, Set<String> titles) async {
 }
 
 final DateFormat dayMenuFormat = DateFormat('EEEE, MMMM d, yyyy');
+
+Future<void> signOutThroughSettings(WidgetTester tester) async {
+  await openFromDrawer(tester, 'Settings');
+  // Sign out pops Settings; popping while its push is still animating trips
+  // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
+  await pumpFor(tester, const Duration(seconds: 1));
+  await tap(tester, find.text('Sign out'));
+  await pumpUntil(tester, find.byType(Homepage), present: false);
+}
+
+Future<void> signIn(WidgetTester tester, String email) async {
+  await pumpUntil(tester, find.text('Sign In to Your Account'));
+  await enterText(tester, 'Email', email);
+  await enterText(tester, 'Password', 'Passw0rdE2E');
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
+}
+
+// Every string the app shows, offstage tabs and painted chart labels included.
+Set<String> shownStrings(WidgetTester tester) => <String>{
+  for (final Element e in find.byType(Text, skipOffstage: false).evaluate())
+    ?((e.widget as Text).data ?? (e.widget as Text).textSpan?.toPlainText()),
+  ...?chartTitles(tester),
+};
+
+// Pumps frame by frame until [until] appears, failing on the first frame that
+// shows any of [forbidden]: one look after the screen settles would miss a
+// flash of stale data.
+Future<void> pumpUntilNeverShowing(
+  WidgetTester tester,
+  Finder until,
+  Iterable<String> forbidden,
+) async {
+  void check() {
+    final Set<String> shown = shownStrings(tester);
+    for (final String text in forbidden) {
+      final Iterable<String> hits = shown.where((s) => s.contains(text));
+      if (hits.isNotEmpty) {
+        throw TestFailure('"$text" was on screen: $hits');
+      }
+    }
+  }
+
+  check();
+  await pumpUntilTrue(tester, () {
+    check();
+    return until.evaluate().isNotEmpty;
+  }, () => '$until to appear');
+}

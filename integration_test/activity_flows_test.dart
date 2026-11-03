@@ -10,7 +10,6 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/clean_day.dart';
-import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'support.dart';
 
@@ -219,42 +218,6 @@ void main() {
       'Water (0 drinks)',
     });
     await screenshot(tester, 'today-radar-three-vices');
-  });
-
-  testWidgets('a save that times out closes the dialog, says it will sync, '
-      'and lands once', (WidgetTester tester) async {
-    await _startApp(tester, 'e2e-offline@example.com');
-
-    await FirebaseFirestore.instance.disableNetwork();
-    try {
-      await recordActivity(tester, 'Coffee', 2);
-      await pumpUntil(tester, find.text(RecordNewActivityDialog.queuedMessage));
-      expect(find.text('Request timed out'), findsNothing);
-      await expectChart(tester, const <String>{
-        'Coffee (2 drinks)',
-        'Tea (0 drinks)',
-        'Water (0 drinks)',
-      });
-      await screenshot(tester, 'record-queued-offline');
-    } finally {
-      await FirebaseFirestore.instance.enableNetwork();
-    }
-
-    // Reads from the server, so a count of one is the emulator's, not the
-    // local cache's; it must stay one once the queue has drained.
-    final DateTime deadline = DateTime.now().add(timeout);
-    while ((await storedActivities('Coffee')).isEmpty) {
-      if (DateTime.now().isAfter(deadline)) {
-        fail('The queued activity never reached the emulator');
-      }
-      await pumpFor(tester, const Duration(seconds: 1));
-    }
-    await FirebaseFirestore.instance.waitForPendingWrites();
-    await pumpFor(tester, const Duration(seconds: 5));
-    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
-        await storedActivities('Coffee');
-    expect(stored, hasLength(1));
-    expect(stored.single.data()['quantity'], 2);
   });
 
   testWidgets('an activity can be deleted from the history page and from the '

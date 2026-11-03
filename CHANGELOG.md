@@ -7,6 +7,19 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Added
+
+- Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
+  and an empty day offline says the device may not have it rather than calling it clear.
+- Account Settings exports your data as CSV and JSON, deletes the account with everything in it, resends the
+  verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
+  device's copy of your data, and asks first if entries have not synced (#54).
+
+### Changed
+
+- Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
+  after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+
 ## [0.1.0] - Unreleased
 
 ### Added

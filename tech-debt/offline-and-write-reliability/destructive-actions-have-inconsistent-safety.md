@@ -1,13 +1,14 @@
-# The three activity-removal paths differ in confirmation, feedback and in-flight state
+# The three activity-removal paths differ in confirmation and recovery
 
 **Severity:** medium
 
-The record dialog's Undo deletes from a snackbar closure with no confirmation and no feedback that it succeeded, and the closure outlives the dialog `State` that created it. The history page's trash icon deletes immediately with no confirmation and no undo, showing a deleted-confirmation snackbar after the fact.
-
-The editor's delete acts immediately and pops the page, and unlike its own save path it never sets the loading flag, so the button stays live during the round trip. A user who mis-taps the history row's icon has no recovery route in the app.
+The record dialog's Undo deletes from a snackbar with no confirmation. The history page's trash icon deletes
+immediately with no confirmation and no undo, showing a deleted-confirmation snackbar after the fact. The editor's
+delete also acts at once and pops the page. A user who mis-taps the history row's icon, or the editor's, has no
+recovery route in the app.
 
 ## Evidence
 
-- `lib/vice_activity_history_page.dart:83` — `onPressed: () async {\n                            try {\n                              await FirebaseFirestore.instance\n                                  .collection('activities')\n                                  .doc(activity.id)\n                                  .delete();`
-- `lib/vice_activity_editor_page.dart:70` — `Future<void> _deleteActivity() async {\n    try {\n      await FirebaseFirestore.instance`
-- `lib/widgets/record_new_activity_dialog.dart:285` — `action: SnackBarAction(\n                        label: 'Undo',\n                        onPressed: () async {`
+- `lib/vice_activity_history_page.dart` — the row's Delete button calls `_delete(activity.id)` directly.
+- `lib/vice_activity_editor_page.dart` — the app bar's Delete button calls `_deleteActivity` directly.
+- `lib/widgets/record_new_activity_dialog.dart` — `SnackBarAction(label: 'Undo', onPressed: onUndo)`.

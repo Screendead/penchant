@@ -309,7 +309,7 @@ Reasons for the choices inside O1:
 
 **Depends on:**
 - [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
-- [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
+- `no-query-is-bounded-or-paginated` (fixed by backend hardening)
 - [`writes-bypass-providers-with-inline-firestore-calls`](../../tech-debt/widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
 - [`macos-deployment-target-frozen-at-10-14`](../../tech-debt/platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
   and [`macos-sandbox-grants-no-outbound-network`](../../tech-debt/platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
