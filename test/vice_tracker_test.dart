@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_tracker.dart';
+import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
 
 import 'fakes.dart';
@@ -40,6 +42,13 @@ double _chartedQuantity(WidgetTester tester) => tester
     .dataEntries
     .first
     .value;
+
+// WCAG 2.x contrast ratio.
+double _contrast(Color a, Color b) {
+  final double la = a.computeLuminance();
+  final double lb = b.computeLuminance();
+  return (max(la, lb) + 0.05) / (min(la, lb) + 0.05);
+}
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -171,20 +180,6 @@ void main() {
       expect(_enabled(tester, 'Previous day'), isFalse);
       expect(_enabled(tester, 'Next day'), isTrue);
     });
-
-    testWidgets('a day with nothing recorded is not shown as an error', (
-      WidgetTester tester,
-    ) async {
-      await _pumpApp(tester, [
-        unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
-        viceActivityDayProvider.overrideWith(
-          (ref, DateTime day) => Stream.value(const <ViceActivity>[]),
-        ),
-      ], const ViceTracker());
-
-      expect(find.text('Nothing recorded on this day'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-    });
   });
 
   group('fewer vices than radar axes', () {
@@ -255,6 +250,82 @@ void main() {
       expect(find.byType(BarChart), findsNothing);
       expect(find.byType(RadarChart), findsOneWidget);
     });
+  });
+
+  group('a day with nothing recorded', () {
+    final List<Vice> vices = [fakeVice('coffee')];
+
+    List<Override> overrides() => [
+      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      viceActivityDayProvider.overrideWith(
+        (ref, DateTime day) => Stream.value(const <ViceActivity>[]),
+      ),
+    ];
+
+    testWidgets('reads as a clear day, today and on past days', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      expect(find.byType(CleanDay), findsOneWidget);
+      expect(find.text('A clear day so far'), findsOneWidget);
+      expect(find.text('Nothing recorded today.'), findsOneWidget);
+      expect(find.byType(BarChart), findsNothing);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('A clear day'), findsOneWidget);
+      expect(find.text('Nothing recorded on this day.'), findsOneWidget);
+    });
+
+    for (final Brightness brightness in Brightness.values) {
+      testWidgets('is green with readable text in the ${brightness.name} '
+          'theme', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: overrides(),
+            child: MaterialApp(
+              theme: ThemeData(brightness: brightness),
+              home: const Scaffold(body: ViceTracker()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final Color background =
+            (tester
+                        .widget<DecoratedBox>(
+                          find
+                              .descendant(
+                                of: find.byType(CleanDay),
+                                matching: find.byType(DecoratedBox),
+                              )
+                              .first,
+                        )
+                        .decoration
+                    as BoxDecoration)
+                .color!;
+        final HSLColor hsl = HSLColor.fromColor(background);
+        expect(hsl.hue, inInclusiveRange(80, 160), reason: 'green hue');
+
+        for (final String text in [
+          'A clear day so far',
+          'Nothing recorded today.',
+        ]) {
+          final Color foreground = tester
+              .widget<Text>(find.text(text))
+              .style!
+              .color!;
+          expect(
+            _contrast(foreground, background),
+            greaterThanOrEqualTo(4.5),
+            reason: text,
+          );
+        }
+      });
+    }
   });
 
   group('an account with no vices', () {
