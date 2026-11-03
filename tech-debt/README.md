@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**110 issues: 0 critical, 22 high, 56 medium, 32 low.**
+**107 issues: 0 critical, 21 high, 55 medium, 31 low.**
 
 ## Firebase Data Layer (10)
 
@@ -148,19 +148,16 @@ Version lag and resolver locks across Dart, Node and Gradle, dead or incompatibl
 - **low** — [Firebase plugins lag freely while test and build_runner sit stuck](dependency-and-tooling-drift/dart-dependencies-trail-pub-dev.md)
 - **low** — [The seed script hardcodes a real user's ID and cannot run on a fresh clone](dependency-and-tooling-drift/seed-script-is-a-hardcoded-one-off.md)
 
-## Platform and Delivery Config (10)
+## Platform and Delivery Config (7)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
-- **high** — [macOS Firebase pods are missing from the lockfile despite being registered in code](platform-and-delivery-config/macos-tree-is-stale-and-lockfile-has-no-firebase-pods.md)
 - **medium** — [The macOS build ships Firebase config registered under an iOS test bundle id](platform-and-delivery-config/macos-firebase-config-carries-the-ios-test-bundle-id.md)
-- **medium** — [macOS sandbox entitlements omit outbound network access that Firebase needs](platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
 - **medium** — [Flutter's migration metadata tracks neither shipped platform](platform-and-delivery-config/metadata-tracks-only-two-of-four-platforms.md)
 - **medium** — [App name and description are still flutter-create scaffold text outside Dart code](platform-and-delivery-config/placeholder-app-identity-strings.md)
 - **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
 - **low** — [Unused placeholder icons and launch images from scaffolding remain in the repo](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
 - **low** — [iOS Podfile forces one deployment target and relaxed includes on every pod](platform-and-delivery-config/ios-podfile-applies-blanket-pod-wide-overrides.md)
-- **low** — [macOS still targets a years-unsupported OS version while iOS was upgraded](platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
 - **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
 
 ## CI and Quality Gates (3)

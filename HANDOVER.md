@@ -139,6 +139,19 @@ Pitched later, with mock-ups, when their work starts: the starter trigger tree's
   and #33's rules stay undeployed. The next merge after that deploys them. Jack's iPhone runs master as of 2026-11-03.
 - **Take the web site down** (`r2-web-site`): `firebase hosting:disable --project screendead-vice-tracker`, then
   confirm the site URL returns "Site Not Found". The deployed releases stay in the console, so this can be undone.
+- **Mac development profile (macOS target):** open `macos/Runner.xcworkspace` in Xcode, select Runner, Signing &
+  Capabilities, team `8N575942RT`, and build once (⌘B). Xcode registers this Mac and creates the Mac App Development
+  profile for `com.screendead.tracker.tracker`. Firebase Auth on macOS needs it for its keychain; until then every
+  signed macOS build fails ("No profiles … were found") and `E2E_DEVICE=macos tools/e2e.sh` cannot run. Claude's
+  attempt to create it was refused by the permission classifier.
+- **macOS Firebase app config:** `macos/Runner/GoogleService-Info.plist` and `DefaultFirebaseOptions.macos` point
+  at an iOS app registered for `com.screendead.tracker.tracker.RunnerTests`; the macOS app's bundle ID is
+  `com.screendead.tracker.tracker`, the same as iOS. Firebase's setup page associates each bundle ID with one
+  registered app and its own plist (firebase.google.com/docs/ios/setup). Options: **A (recommended)** reuse the iOS
+  app's registration for macOS: say so, and Claude copies the committed iOS config over the macOS one (no console
+  step); **B** register a separate Apple app, which needs its own bundle ID and breaks the shared App Store record.
+  Either way the `RunnerTests` app in the console can then go. Emulator builds strip the plist, so this matters only
+  for production macOS builds.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 - **PR #22** (a Dependabot bump in `admin/`) is open; it is safe to leave until the seed script is reworked.

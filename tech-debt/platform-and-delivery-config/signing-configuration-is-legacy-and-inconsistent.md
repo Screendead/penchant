@@ -1,10 +1,10 @@
-# iOS uses the deprecated identity string with a hardcoded team while macOS has no team at all
+# iOS uses the deprecated identity string, and both platforms hardcode a personal team
 
 **Severity:** low
 
 Three iOS build configurations set the code-sign identity to iPhone Developer, a name Xcode deprecated in favour of Apple Development though automatic signing still resolves it, and three hardcode a personal development team rather than leaving it to local or CI configuration.
 
-The macOS project has no development team setting anywhere and mixes automatic provisioning on the main Runner target with manual provisioning on a secondary target that names no team or profile, so that target cannot codesign as committed. LastUpgradeCheck is still stamped at Xcode 15.1 on both platforms.
+The macOS Runner target hardcodes the same team, and the macOS project mixes automatic provisioning on Runner with manual provisioning on a secondary target that names no team or profile. LastUpgradeCheck is still stamped at Xcode 15.1 on both platforms.
 
 ## Evidence
 
