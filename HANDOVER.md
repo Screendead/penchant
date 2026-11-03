@@ -59,6 +59,21 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
 5. **The rest of the register**, medium then low, one class per PR.
 
+### This run (`/finish-and-pitch`, started 2026-11-03)
+
+No round-2 call is picked yet, so nothing below rests on one. Waves merge in order; items in one wave run in
+parallel worktrees, and `tools/e2e.sh` runs one at a time.
+
+- **Wave A:** macOS target (queue 1); parsers that default missing fields; a shared write layer (register,
+  `writes-bypass-providers`); versioning and changelog; Dependabot #37 and #38 once green; deleting merged branches (C9).
+- **Wave B:** account export and deletion, with re-authentication and password reset (`auth-and-account-lifecycle/`);
+  backend hardening (bounded queries, App Check client wiring); one-tap logging.
+- **Wave C:** offline logging; the rest of wave-2 high debt (`error-handling-and-observability/`, the sign-out data
+  leak, `navigation-and-unreachable-ui/`, `accessibility-and-localization/` with the radar's 0 off-centre).
+- **Wave D:** the register's medium and low items, one class per PR.
+- **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
+  trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
+
 Housekeeping that rides along with whatever PR touches it: delete each tech-debt file a PR fixes, and each idea file
 a PR ships, with its README line; run `tools/tech-debt-recount.py` to fix the counts. It resolves paths from its own
 location, so run the copy inside the worktree you are changing.
