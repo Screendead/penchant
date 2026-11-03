@@ -15,13 +15,12 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**110 issues: 0 critical, 21 high, 57 medium, 32 low.**
+**109 issues: 0 critical, 19 high, 58 medium, 32 low.**
 
-## Firebase Data Layer (10)
+## Firebase Data Layer (9)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **high** — [Documented seed command produces data that crashes the app](firebase-data-layer/seed-script-writes-documents-that-crash-the-parser.md)
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [Unused providers would fail instantly if ever wired up](firebase-data-layer/dead-providers-query-an-unindexed-shape.md)
 - **medium** — [No dev or staging alias; every firebase command defaults to production](firebase-data-layer/every-firebase-command-targets-production.md)
@@ -167,7 +166,7 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
 Test depth and unverified build state.
 
-- **high** — [No unit or widget tests; one end-to-end happy path is the only real coverage](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
+- **medium** — [Auth, archiving and the usage graph are untested, and CI skips the end-to-end suite](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
 - **medium** — [The end-to-end run's Add Vice save intermittently never completes](ci-and-quality-gates/e2e-add-vice-save-sometimes-never-returns.md)
 
