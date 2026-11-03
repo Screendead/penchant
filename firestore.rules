@@ -119,9 +119,10 @@ service cloud.firestore {
             && !('quantity' in request.resource.data)));
     }
 
-    // One per user. Create-only: keyId never changes, so a second key can't be
-    // registered beside ciphertext sealed under the first. Delete is the
-    // "Start a new journal" path, after the journal's documents are gone.
+    // One per user, created once; keyId and check never change. The owner may
+    // delete it ("Start a new journal", account deletion) and then create
+    // another, and the rules can't see whether ciphertext sealed under the
+    // first key remains, so only the client keeps a second key from being minted.
     match /keys/{uid} {
       allow read, delete: if signedIn() && request.auth.uid == uid;
 

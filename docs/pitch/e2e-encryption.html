@@ -240,7 +240,7 @@ viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
       <div class="opt rec"><div class="lab">Every vice at least 256 <span class="badge">Recommended</span></div><p>All 285 bytes, from "A" to a 60-character name, 30 emoji or 60 escaped quotes.</p></div>
       <div class="opt"><div class="lab">Smallest bucket that fits</div><p>Short names 93 bytes, long ones 285: name length leaks.</p></div>
     </div>
-    <p class="why"><b>Why 256:</b> 192 bytes more per vice, a handful of documents per user. Only a name of 60 control characters reaches 1053 <span class="tag s">SOURCED: test/crypto/journal_cipher_test.dart</span>.</p>
+    <p class="why"><b>Why 256:</b> 192 bytes more per vice, a handful of documents per user. Corrected after review: 256 does not cover every allowed name. JSON writes a control character or an unpaired surrogate as a 6-byte <code>\uXXXX</code> escape, so about 35 of them in a 60-unit name reach 1053, and <code>lib/data/limits.dart</code> rejects neither <span class="tag s">SOURCED: dart run of jsonEncode sizes</span>. Rejecting control characters and lone surrogates in names closes it <span class="tag i">INFERENCE</span>.</p>
   </div>
 
   <div class="call">
@@ -249,7 +249,7 @@ viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
       <div class="opt rec"><div class="lab">32 characters, 32-bit checksum <span class="badge">Recommended</span></div><p><code>6EQC-8QDN-D27K-TC5R-ZZJ3-6WTD-3864-AX35</code>. Locates one wrong character.</p></div>
       <div class="opt"><div class="lab">27 characters, Crockford mod-37 check</div><p>Five fewer to type; detects a typo but can't say where.</p></div>
     </div>
-    <p class="why"><b>Why 32:</b> the hardest moment is typing it on a new device with no other way in. Locating the error turns "doesn't match" into "character 2 of group 4". Search takes 71 ms on this Mac in Dart <span class="tag s">SOURCED: test/bench/e2ee_bench_test.dart</span>.</p>
+    <p class="why"><b>Why 32:</b> the hardest moment is typing it on a new device with no other way in. Locating the error turns "doesn't match" into "character 2 of group 4". Search takes 14&ndash;71 ms on this Mac in Dart over two runs <span class="tag s">SOURCED: test/bench/e2ee_bench_test.dart</span>.</p>
   </div>
 
   <div class="call">
@@ -258,7 +258,7 @@ viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
       <div class="opt rec"><div class="lab">The owner <span class="badge">Recommended</span></div><p>Start a new journal and account deletion work. A buggy client could delete it alone and mint a second key.</p></div>
       <div class="opt"><div class="lab">Owner, plus a keyId guard on every sealed write</div><p>Rules <code>get()</code> the keys doc and match a key ID in each blob. Closes the hole server-side.</p></div>
     </div>
-    <p class="why"><b>Why owner only, for now:</b> the guard costs a billed read on every write, even denied ones <span class="tag s"><a href="https://firebase.google.com/docs/firestore/security/rules-conditions">SOURCED</a></span>, and batched writes allow 20 such calls, so migration batches would shrink from 200 to about 19 documents <span class="tag s">same page</span>. The client invariant (never mint while <code>keys/{uid}</code> exists on the server) is tested against a fake <span class="tag s">SOURCED: test/crypto/key_service_test.dart</span>. Revisit if anything else ever deletes that document.</p>
+    <p class="why"><b>Why owner only, for now:</b> corrected after review, the guard is cheaper than first stated. Document access calls "may be cached, and cached calls do not count towards the limits" <span class="tag s"><a href="https://firebase.google.com/docs/firestore/security/rules-conditions">SOURCED</a></span>, and you pay one read per dependent document per request <span class="tag s"><a href="https://firebase.google.com/docs/firestore/pricing">SOURCED</a></span>. On the emulator a 200-write batch that reads the same <code>keys/{uid}</code> in every write passed <span class="tag s">SOURCED: emulator run</span>. So the migrator keeps 200-document batches and the guard costs about one read per request, not per document; that production caches the same way is <span class="tag i">INFERENCE</span>. It is still extra rules surface and a read on every single-document log. The client invariant (never mint while <code>keys/{uid}</code> exists on the server) is tested against a fake <span class="tag s">SOURCED: test/crypto/key_service_test.dart</span>. Revisit if anything else ever deletes that document.</p>
   </div>
 </section>
 
@@ -283,6 +283,18 @@ viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
   <div class="warnbox">
     <p><b>Found on the way:</b> cryptography_flutter sends anything under 2,000 bytes to its pure-Dart fallback by default, which is every blob this app writes, and falls back silently when the plugin is missing <span class="tag s">SOURCED: cryptography_flutter 2.3.4, lib/src/flutter/flutter_cipher.dart (defaultChannelPolicy minLength 2000)</span>. That would have undone the reason for choosing AES-GCM through CryptoKit (export compliance). <code>lib/crypto/native_aes.dart</code> routes every length to the plugin and replaces the fallback with one that throws; <code>main()</code> runs a known-answer check and keeps the journal closed if it fails.</p>
   </div>
+  <div class="warnbox">
+    <p><b>Corrected after review</b> <span class="tag s">SOURCED: worktree code and rules, unless tagged</span>:</p>
+    <ul>
+      <li><code>keys/{uid}</code> is created once, not create-only: the owner may delete it and create another, and may replace <code>recoveryWrap</code> with any 60 bytes. The never-mint invariant is enforced only by the client.</li>
+      <li>A new recovery key is a re-wrap, not a revocation: whoever holds an old wrap and the old key still opens the journal. The only key rotation today is Start a new journal.</li>
+      <li>The AAD binds collection, document, owner and vice, not <code>createdAt</code>, <code>archived</code> or a version. Someone with database access can move an entry in time, flip archived, or roll <code>enc</code> back to an earlier valid blob, undetected <span class="tag i">INFERENCE</span>.</li>
+      <li>C14 survives: <code>ownsVice()</code> still runs on sealed creates. Only C12, C13 and the unit enum become app-only.</li>
+      <li>The migrator adds a fourth composite index, <code>activities (ownerID, createdAt desc)</code>, which must reach production before any device migrates.</li>
+      <li>The macOS Runner has no signing team and no <code>keychain-access-groups</code> or <code>network.client</code> entitlement, so the synced key can't work on the Mac as configured.</li>
+      <li><code>SecureKeyStore.read()</code> prefers the synced copy; if it holds another key while <code>.local</code> holds the right one, the app asks for the recovery key and offers Start a new journal <span class="tag i">INFERENCE</span>.</li>
+    </ul>
+  </div>
 </section>
 
 <section>
@@ -290,16 +302,16 @@ viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
   <div class="tw"><table>
     <thead><tr><th>What</th><th>Path</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>Open 2,000 activities</td><td>Platform channel to CryptoKit, macOS debug build</td><td class="n">219 ms sequential, 194 ms concurrent</td></tr>
-      <tr><td>Seal 2,000 activities</td><td>Platform channel to CryptoKit, macOS debug build</td><td class="n">641 ms</td></tr>
-      <tr><td>Seal / open one 93-byte blob</td><td>CryptoKit alone (Swift)</td><td class="n">1.47 / 1.20 &micro;s</td></tr>
-      <tr><td>Seal / open one 93-byte blob</td><td>Pure Dart (host tests only)</td><td class="n">181 / 114 &micro;s</td></tr>
-      <tr><td>Key setup / unlock with recovery key</td><td>Pure Dart, fake server</td><td class="n">11 ms / 4.5 ms</td></tr>
-      <tr><td>Locate one typo in a recovery key</td><td>Pure Dart, up to 992 SHA-256</td><td class="n">71 ms</td></tr>
-      <tr><td>PBKDF2-HMAC-SHA256, 210k / 600k rounds</td><td>CommonCrypto (reference)</td><td class="n">66 / 128 ms</td></tr>
+      <tr><td>Open 2,000 activities</td><td>Platform channel to CryptoKit, macOS debug build</td><td class="n">209&ndash;219 ms sequential, 194 ms concurrent</td></tr>
+      <tr><td>Seal 2,000 activities</td><td>Platform channel to CryptoKit, macOS debug build</td><td class="n">378&ndash;641 ms</td></tr>
+      <tr><td>Seal / open one 93-byte blob</td><td>CryptoKit alone (Swift)</td><td class="n">1.39&ndash;1.47 / 1.16&ndash;1.23 &micro;s</td></tr>
+      <tr><td>Seal / open one 93-byte blob</td><td>Pure Dart (host tests only)</td><td class="n">51&ndash;181 / 30&ndash;114 &micro;s</td></tr>
+      <tr><td>Key setup / unlock with recovery key</td><td>Pure Dart, fake server</td><td class="n">4.6&ndash;11 ms / 2.0&ndash;4.5 ms</td></tr>
+      <tr><td>Locate one typo in a recovery key</td><td>Pure Dart, up to 992 SHA-256</td><td class="n">14&ndash;71 ms</td></tr>
+      <tr><td>PBKDF2-HMAC-SHA256, 210k / 600k rounds</td><td>CommonCrypto (reference)</td><td class="n">31&ndash;66 / 89&ndash;128 ms</td></tr>
     </tbody>
   </table></div>
-  <p class="meta">The channel, not the cipher, sets the cost: about 100 &micro;s a call against 1.2 &micro;s of AES. A first open of 2,000 entries adds about a fifth of a second on this Mac; an iPhone and a release build will differ <span class="tag i">INFERENCE</span>. Later snapshots hit the memo.</p>
+  <p class="meta">Ranges are the spike's run and a reviewer's rerun on the same Mac. The CryptoKit, channel-open and size figures reproduced; the pure-Dart, setup, typo and PBKDF2 figures came in 2&ndash;4x faster on the rerun, and the Swift bench times one sample, so treat those as orders of magnitude <span class="tag s">SOURCED: both runs</span>. The channel, not the cipher, sets the cost: about 100 &micro;s a call against 1.2 &micro;s of AES. A first open of 2,000 entries adds about a fifth of a second on this Mac; an iPhone and a release build will differ <span class="tag i">INFERENCE</span>. Later snapshots hit the memo.</p>
 </section>
 
 <section>
@@ -313,7 +325,7 @@ viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
 </section>
 
 <section>
-  <div class="sechead"><h2>Evidence</h2><p>Branch <code>mockup/e2e-encryption</code> at <code>d6551b1</code>, pushed, no PR (never merged: merging a rules change deploys it). Firebase pages read before touching rules and indexes: <a href="https://firebase.google.com/docs/rules/rules-language">rules language</a>, <a href="https://firebase.google.com/docs/reference/rules/rules.Bytes">rules.Bytes</a>, <a href="https://firebase.google.com/docs/reference/firestore/indexes">index definitions</a>, <a href="https://firebase.google.com/docs/firestore/quotas">quotas</a>, <a href="https://firebase.google.com/docs/firestore/manage-data/transactions">transactions and batches</a>, <a href="https://firebase.google.com/docs/reference/js/firestore_.md#clearindexeddbpersistence">clearIndexedDbPersistence</a>, <a href="https://firebase.google.com/docs/firestore/security/rules-conditions">rules conditions</a>.</p></div>
+  <div class="sechead"><h2>Evidence</h2><p>Branch <code>mockup/e2e-encryption</code> at <code>247c539</code> and later, pushed, no PR (never merged: merging a rules change deploys it). Firebase pages read before touching rules and indexes: <a href="https://firebase.google.com/docs/rules/rules-language">rules language</a>, <a href="https://firebase.google.com/docs/reference/rules/rules.Bytes">rules.Bytes</a>, <a href="https://firebase.google.com/docs/reference/firestore/indexes">index definitions</a>, <a href="https://firebase.google.com/docs/firestore/quotas">quotas</a>, <a href="https://firebase.google.com/docs/firestore/manage-data/transactions">transactions and batches</a>, <a href="https://firebase.google.com/docs/reference/js/firestore_.md#clearindexeddbpersistence">clearIndexedDbPersistence</a>, <a href="https://firebase.google.com/docs/firestore/security/rules-conditions">rules conditions</a>.</p></div>
   <details><summary>firestore.rules diff against master</summary><pre>diff --git a/firestore.rules b/firestore.rules
 index f11db0c..6bb7e5b 100644
 --- a/firestore.rules
@@ -419,9 +431,10 @@ index f11db0c..6bb7e5b 100644
 +            &amp;&amp; !(&#x27;quantity&#x27; in request.resource.data)));
 +    }
 +
-+    // One per user. Create-only: keyId never changes, so a second key can&#x27;t be
-+    // registered beside ciphertext sealed under the first. Delete is the
-+    // &quot;Start a new journal&quot; path, after the journal&#x27;s documents are gone.
+++    // One per user, created once; keyId and check never change. The owner may
++    // delete it (&quot;Start a new journal&quot;, account deletion) and then create
++    // another, and the rules can&#x27;t see whether ciphertext sealed under the
++    // first key remains, so only the client keeps a second key from being minted.
 +    match /keys/{uid} {
 +      allow read, delete: if signedIn() &amp;&amp; request.auth.uid == uid;
 +
@@ -482,7 +495,7 @@ e2ee R1: keys/{uid}
   - allows the owner to create their keys doc
   - denies creating keys for another uid, or as a guest
   - denies the wrong shape: sizes, types, extra or missing fields
-  - is create-only: a second key over the first is denied
+  - is created once: a second key over the first is denied (delete, then create, is allowed)
   - keeps keyId and check immutable
   - allows re-wrapping under a new recovery key
   - allows the owner to read it and denies a stranger or a guest
