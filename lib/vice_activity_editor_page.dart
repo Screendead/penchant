@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -277,17 +278,8 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
                       labelText: 'Quantity',
                       suffixText: vice.unit.nameFor(1),
                     ),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a quantity';
-                      }
-
-                      if (int.tryParse(value) == null) {
-                        return 'Please enter a valid number';
-                      }
-
-                      return null;
-                    },
+                    validator: (String? value) =>
+                        quantityError(value, unchanged: activity.quantity),
                   ),
                   if (error != null) ...[
                     const SizedBox(height: 16),

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -57,11 +58,9 @@ class _RecordNewActivityDialogState
 
   late Timer dateUpdaterTimer;
   // One reference per dialog, so a second press writes the same document
-  // rather than a duplicate.
-  final DocumentReference<Map<String, dynamic>> activityRef = FirebaseFirestore
-      .instance
-      .collection('activities')
-      .doc();
+  // rather than a duplicate. Lazy, so building the dialog needs no Firebase.
+  late final DocumentReference<Map<String, dynamic>> activityRef =
+      FirebaseFirestore.instance.collection('activities').doc();
   String? error;
 
   String get dateTime =>
@@ -119,7 +118,10 @@ class _RecordNewActivityDialogState
     } on FirebaseException catch (e) {
       if (mounted) {
         setState(() {
-          error = 'Error recording activity: ${e.message}';
+          // The rules deny a vice that was deleted after this list loaded.
+          error = e.code == 'permission-denied'
+              ? 'That vice no longer exists'
+              : 'Error recording activity: ${e.message}';
         });
       }
 
@@ -311,17 +313,7 @@ class _RecordNewActivityDialogState
                       labelText: 'Quantity',
                       suffixText: unit,
                     ),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a quantity';
-                      }
-
-                      if (int.tryParse(value) == null) {
-                        return 'Please enter a valid number';
-                      }
-
-                      return null;
-                    },
+                    validator: quantityError,
                     onChanged: (String value) {
                       final int parsed = int.tryParse(value) ?? 0;
                       updateUnit(parsed);
