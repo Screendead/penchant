@@ -165,7 +165,9 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
     final Vice? vice = viceList.where((Vice item) => item.id == widget.viceID).isEmpty
         ? null
         : viceList.firstWhere((Vice item) => item.id == widget.viceID);
-    final ViceActivity? activity = activityValue.value;
+    final ViceActivity? activity = activityValue.hasError
+        ? null
+        : activityValue.value;
 
     if (vice == null || activity == null || activity.viceID != widget.viceID) {
       return const Scaffold(

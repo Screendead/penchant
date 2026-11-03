@@ -7,6 +7,6 @@
 ## Evidence
 
 - `lib/vice_activity_editor_page.dart:154` — `viceActivityProvider(widget.activityID),`
-- `lib/vice_activity_editor_page.dart:168` — `final ViceActivity? activity = activityValue.value;`
-- `lib/vice_activity_editor_page.dart:178` — `initializeFromActivity(activity);`
+- `lib/vice_activity_editor_page.dart:168` — `final ViceActivity? activity = activityValue.hasError`
+- `lib/vice_activity_editor_page.dart:180` — `initializeFromActivity(activity);`
 - `lib/vice_activity_editor_page.dart:41` — `void initializeFromActivity(ViceActivity activity) {\n    if (initialized) {\n      return;\n    }\n\n    dateController.text = dateFormat.format(activity.createdAt.toDate());`

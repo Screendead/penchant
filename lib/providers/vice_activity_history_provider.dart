@@ -69,8 +69,9 @@ final viceActivityGraphProvider = Provider.autoDispose
       );
     });
 
-// Null once the activity is deleted. The rules deny reading a missing or
-// foreign document, so one that is already gone arrives as permission-denied.
+// The rules deny reading a missing or foreign document, so an activity that is
+// gone, or is deleted while this listens, ends the stream with
+// permission-denied.
 final viceActivityForUserProvider = StreamProvider.autoDispose
     .family<ViceActivity?, ({String uid, String activityID})>((ref, key) {
       return FirebaseFirestore.instance

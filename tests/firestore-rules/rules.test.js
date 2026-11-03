@@ -24,6 +24,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  waitForPendingWrites,
   where,
   writeBatch,
 } from 'firebase/firestore';
@@ -476,25 +477,37 @@ describe('activities', () => {
       );
     });
 
-    it("tells the editor's listener that its activity was deleted, rather than failing", async () => {
+    it("fails the editor's listener once its activity is deleted", async () => {
       const db = asAlice();
-      const seen = await new Promise((resolve, reject) => {
-        const exists = [];
-        const unsubscribe = onSnapshot(
-          doc(db, 'activities/aliceActivity'),
-          (snapshot) => {
-            exists.push(snapshot.exists());
-            if (exists.length === 1) {
-              deleteDoc(doc(db, 'activities/aliceActivity')).catch(reject);
-            } else {
-              unsubscribe();
-              resolve(exists);
-            }
-          },
-          reject,
-        );
+      const seen = [];
+      const errors = [];
+      let first;
+      const firstSnapshot = new Promise((resolve) => {
+        first = resolve;
       });
-      assert.deepEqual(seen, [true, false]);
+      const unsubscribe = onSnapshot(
+        doc(db, 'activities/aliceActivity'),
+        { includeMetadataChanges: true },
+        (snapshot) => {
+          seen.push({ exists: snapshot.exists(), fromCache: snapshot.metadata.fromCache });
+          first();
+        },
+        (error) => errors.push(error.code),
+      );
+      try {
+        await firstSnapshot;
+        // Resolves on the server's acknowledgement, not the local write.
+        await deleteDoc(doc(db, 'activities/aliceActivity'));
+        await waitForPendingWrites(db);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      } finally {
+        unsubscribe();
+      }
+      // The local delete reports the document gone; the server then re-runs the
+      // get rule against a missing document and denies it.
+      assert.equal(seen[0].exists, true);
+      assert.equal(seen.at(-1).exists, false);
+      assert.deepEqual(errors, ['permission-denied']);
     });
 
     it('denies getting a missing activity, even to a signed-in user', async () => {
