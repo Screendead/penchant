@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**108 issues: 0 critical, 21 high, 55 medium, 32 low.**
+**107 issues: 0 critical, 21 high, 54 medium, 32 low.**
 
 ## Firebase Data Layer (10)
 
@@ -54,7 +54,7 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 
 Routes that dead-end, screens and empty states that cannot be reached or escaped, and routing configuration.
 
-- **high** — [Editing a vice, and three Settings rows, all dead-end on a 404 page](navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md)
+- **high** — [Editing a vice, and two Settings rows, all dead-end on a 404 page](navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md)
 - **medium** — [Signing out leaves a stuck spinner screen floating over sign-in](navigation-and-unreachable-ui/routes-are-generated-without-consulting-auth-state.md)
 - **low** — [Every screen, including the error page, opens as a modal](navigation-and-unreachable-ui/every-route-is-a-fullscreen-dialog.md)
 - **low** — [Pages opened from the drawer leave the drawer open behind them](navigation-and-unreachable-ui/drawer-stays-open-under-pages-it-opens.md)
@@ -171,7 +171,7 @@ Test depth and unverified build state.
 - **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
 - **medium** — [The end-to-end run's Add Vice save intermittently never completes](ci-and-quality-gates/e2e-add-vice-save-sometimes-never-returns.md)
 
-## Repo, Docs and Release Hygiene (9)
+## Repo, Docs and Release Hygiene (8)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
@@ -181,7 +181,6 @@ Git working state and refs, documentation that contradicts the code, and version
 - **medium** — [The only records of failing quality gates are gitignored, unseen](repo-docs-and-release-hygiene/gitignored-logs-hid-the-failing-gates.md)
 - **medium** — [Local master is three commits behind what CI actually deploys](repo-docs-and-release-hygiene/local-master-is-three-commits-behind.md)
 - **medium** — [The README is still the default flutter create scaffold text](repo-docs-and-release-hygiene/readme-is-the-unmodified-flutter-template.md)
-- **medium** — [Bundled third-party license text ships in the app but no screen shows it](repo-docs-and-release-hygiene/third-party-license-attribution-never-surfaced.md)
 - **low** — [Six gigabytes of ignored build and IDE clutter sit at the repo root](repo-docs-and-release-hygiene/stray-local-build-and-ide-artifacts.md)
 - **low** — [A commented-out ignore line left the .vscode folder tracked by accident](repo-docs-and-release-hygiene/vscode-launch-json-tracked-by-template-default.md)
 

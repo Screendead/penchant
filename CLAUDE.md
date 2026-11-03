@@ -75,7 +75,7 @@ rises with every merge and App Store Connect never sees a repeat. Build with the
 
 ```bash
 tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
-flutter build ipa $(tools/build-version.sh)
+flags=$(tools/build-version.sh) && flutter build ipa $flags
 ```
 
 To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,

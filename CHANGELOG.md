@@ -14,6 +14,7 @@ pull request titles (`gh pr list --state merged`).
 - Day navigation, activity history, an activity editor and a usage graph (#28).
 - Today shows bars below three vices and the radar from three up, a quiet "clean day" state, a queued-save message
   when a save is waiting to sync, and an 8 second Undo (#36).
+- Vices can be archived: an archived vice disappears from recording and from Today but keeps its history (#12).
 - The app shows its version and build number under Settings > About.
 
 ### Changed
