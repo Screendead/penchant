@@ -31,7 +31,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **medium** — [Vice count growth will eventually break the main chart](firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
 - **low** — [Unused Firebase Storage rules still deploy on every release](firebase-data-layer/storage-rules-configured-for-an-unused-product.md)
-- **low** — [An activity's vice link is never validated anywhere](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
+- **low** — [Nothing ties an activity to the vice in its route](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 
 ## Widget State and View Logic (12)
 
