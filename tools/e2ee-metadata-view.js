@@ -11,7 +11,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { seal } from '../tests/firestore-rules/e2ee.js';
+import { BLOB_LENGTHS, seal } from '../tests/firestore-rules/e2ee.js';
 
 const host = process.env.FIRESTORE_EMULATOR_HOST;
 if (!host) throw new Error('FIRESTORE_EMULATOR_HOST is unset; run under emulators:exec.');
@@ -139,8 +139,24 @@ function render(viceDocs, activityDocs) {
   return { text: lines.join('\n'), summary, sample };
 }
 
+// Section 5's REST assertion, on documents the tool seeded in the app's format
+// (test/crypto/journal_cipher_test.dart opens the same helper's blobs in Dart).
+function assertSealed(docs) {
+  for (const d of docs) {
+    for (const field of ['name', 'unit', 'quantity']) {
+      if (field in d.fields) throw new Error(`${d.name} carries plaintext ${field}`);
+    }
+    const length = Buffer.from(d.fields.enc.bytesValue, 'base64').length;
+    if (!BLOB_LENGTHS.includes(length)) throw new Error(`${d.name}: enc is ${length} bytes`);
+  }
+}
+
 const seeded = await seed();
-const view = render(await list('vices'), await list('activities'));
+const viceDocs = await list('vices');
+const activityDocs = await list('activities');
+assertSealed([...viceDocs, ...activityDocs]);
+console.error(`checked ${viceDocs.length + activityDocs.length} documents: no name/unit/quantity, enc at a bucket length`);
+const view = render(viceDocs, activityDocs);
 console.log(view.text);
 console.error(`seeded ${seeded} activities`);
 if (outDir) {

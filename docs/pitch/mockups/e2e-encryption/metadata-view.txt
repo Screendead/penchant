@@ -61,7 +61,7 @@ equal the moment of logging, so sealing createdAt as well would hide nothing.
       "stringValue": "f7HdLq2MzA9cWn4oPjRt"
     },
     "enc": {
-      "bytesValue": "AT5KiFllpaxEbzjT4vT2AUvZxhbFlc0h0Y/yUFWwpd0IOkYBfAHCvBTan8GZEsbIR1GYwwWR9Ur7ksTQpKKG9oaNHkSlzmgnHJh3N7NxA4UUXboWsKc7J2jj5Z4N"
+      "bytesValue": "AUKegXwdj2voZ4XQEa+l6oGR2vYQZ0oLGQiw94eX52SGXH1xV/ATb319gvBLjO8r2t472uXlqIZrTXoVPX46DdpEueerxbKmPuQ3Ec6Key0xzzY6Vwn87xT2Eksj"
     },
     "ownerID": {
       "stringValue": "alice"
@@ -70,6 +70,6 @@ equal the moment of logging, so sealing createdAt as well would hide nothing.
       "timestampValue": "2026-11-01T21:02:28.257Z"
     }
   },
-  "createTime": "2026-11-03T16:42:48.579192Z",
-  "updateTime": "2026-11-03T16:42:48.579192Z"
+  "createTime": "2026-11-03T16:48:19.972344Z",
+  "updateTime": "2026-11-03T16:48:19.972344Z"
 }
