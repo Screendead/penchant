@@ -187,14 +187,14 @@ Future<void> addVicesThroughManageData(
   await closeDrawerPage(tester);
 }
 
-// The drawer stays open under a page pushed from it; dismiss both, as a user
-// would, by closing the page and tapping the scrim beside the drawer.
+// Closes a page opened from the drawer with its back button. The drawer was
+// told to close when the page opened, but its animation is paused while the
+// page covers it, so it may still be finishing.
 Future<void> closeDrawerPage(WidgetTester tester) async {
-  await tap(tester, find.byTooltip('Close'));
-  await pumpUntil(tester, find.byType(Drawer).hitTestable());
-  final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-  await tester.tapAt(Offset(screen.width - 16, screen.height / 2));
+  await tap(tester, find.byType(BackButton));
+  await pumpUntil(tester, find.byType(BackButton), present: false);
   await pumpUntil(tester, find.byType(Drawer), present: false);
+  await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
 }
 
 // Records through the app's dialog. With [at], unlocks the date field and

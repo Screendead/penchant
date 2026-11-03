@@ -8,6 +8,7 @@ class ViceActivity {
     required this.quantity,
     required this.ownerID,
     required this.createdAt,
+    this.pending = false,
   });
 
   final String id;
@@ -15,6 +16,8 @@ class ViceActivity {
   final int quantity;
   final String ownerID;
   final Timestamp createdAt;
+  // A local write the server has not acknowledged yet.
+  final bool pending;
 
   ViceActivity copyWith({
     String? id,
@@ -22,6 +25,7 @@ class ViceActivity {
     int? quantity,
     String? ownerID,
     Timestamp? createdAt,
+    bool? pending,
   }) {
     return ViceActivity(
       id: id ?? this.id,
@@ -29,6 +33,7 @@ class ViceActivity {
       quantity: quantity ?? this.quantity,
       ownerID: ownerID ?? this.ownerID,
       createdAt: createdAt ?? this.createdAt,
+      pending: pending ?? this.pending,
     );
   }
 
@@ -42,6 +47,7 @@ class ViceActivity {
     quantity: readInt(json['quantity']),
     ownerID: readString(json['ownerID']),
     createdAt: readTimestamp(json['createdAt'], pending: pending),
+    pending: pending,
   );
 
   static List<ViceActivity> fromQuerySnapshot(

@@ -8,6 +8,8 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityHistoryPage extends ConsumerStatefulWidget {
   const ViceActivityHistoryPage({super.key, required this.viceID});
@@ -27,8 +29,39 @@ class _ViceActivityHistoryPageState
   // Asking for more starts a new query, which has no value until it loads;
   // until then the shorter list stays on screen instead of a spinner.
   ({String uid, List<ViceActivity> activities})? previous;
+  final Set<String> deleting = <String>{};
 
   String get viceID => widget.viceID;
+
+  // The messenger is taken from this State, not the row: a delete drops the
+  // row from the local snapshot before the server answers.
+  Future<void> _delete(String activityID) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      deleting.add(activityID);
+    });
+
+    String message;
+    try {
+      message =
+          await settleWrite(
+            ref.read(trackerWritesProvider).deleteActivity(activityID),
+          )
+          ? 'Activity deleted'
+          : queuedDeleteMessage;
+    } on FirebaseException catch (e) {
+      message = e.message ?? 'Unable to delete activity';
+    }
+
+    if (mounted) {
+      setState(() {
+        deleting.remove(activityID);
+      });
+    }
+    if (messenger.mounted) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,86 +96,85 @@ class _ViceActivityHistoryPageState
 
     return Scaffold(
       appBar: AppBar(title: Text('${vice.name} history')),
-      body: activityList.isEmpty
-          ? const Center(child: Text('No activities found for this vice'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: activityList.length + (hasOlder ? 1 : 0),
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (BuildContext context, int index) {
-                if (index == activityList.length) {
-                  return Center(
-                    child: TextButton(
-                      onPressed: () {
-                        setState(() {
-                          shown += ViceActivityHistoryPage.pageSize;
-                        });
-                      },
-                      child: const Text('Show older'),
-                    ),
-                  );
-                }
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: _list(vice, activityList, hasOlder: hasOlder)),
+        ],
+      ),
+    );
+  }
 
-                final ViceActivity activity = activityList[index];
-                final DateTime createdAt = activity.createdAt.toDate();
-
-                return Card(
-                  child: ListTile(
-                    title: Text(
-                      '${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',
-                    ),
-                    subtitle: Text('Quantity: ${activity.quantity}'),
-                    onTap: () {
-                      Navigator.of(
-                        context,
-                      ).pushNamed('/vices/$viceID/activities/${activity.id}');
+  Widget _list(
+    Vice vice,
+    List<ViceActivity> activityList, {
+    required bool hasOlder,
+  }) {
+    return activityList.isEmpty
+        ? const Center(child: Text('No activities found for this vice'))
+        : ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: activityList.length + (hasOlder ? 1 : 0),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (BuildContext context, int index) {
+              if (index == activityList.length) {
+                return Center(
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        shown += ViceActivityHistoryPage.pageSize;
+                      });
                     },
-                    trailing: Wrap(
-                      spacing: 8,
-                      children: [
-                        IconButton(
-                          tooltip: 'Edit',
-                          icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            Navigator.of(context).pushNamed(
-                              '/vices/$viceID/activities/${activity.id}',
-                            );
-                          },
-                        ),
-                        IconButton(
-                          tooltip: 'Delete',
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () async {
-                            try {
-                              await ref
-                                  .read(trackerWritesProvider)
-                                  .deleteActivity(activity.id);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Activity deleted'),
-                                  ),
-                                );
-                              }
-                            } on FirebaseException catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      e.message ?? 'Unable to delete activity',
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ],
-                    ),
+                    child: const Text('Show older'),
                   ),
                 );
-              },
-            ),
-    );
+              }
+
+              final ViceActivity activity = activityList[index];
+              final DateTime createdAt = activity.createdAt.toDate();
+
+              return Card(
+                child: ListTile(
+                  title: Text(
+                    '${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',
+                  ),
+                  subtitle: Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text('Quantity: ${activity.quantity}'),
+                      if (activity.pending) const NotSyncedMarker(),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.of(
+                      context,
+                    ).pushNamed('/vices/$viceID/activities/${activity.id}');
+                  },
+                  trailing: Wrap(
+                    spacing: 8,
+                    children: [
+                      IconButton(
+                        tooltip: 'Edit',
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          Navigator.of(context).pushNamed(
+                            '/vices/$viceID/activities/${activity.id}',
+                          );
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'Delete',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: deleting.contains(activity.id)
+                            ? null
+                            : () => _delete(activity.id),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
   }
 }

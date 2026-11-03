@@ -71,6 +71,9 @@ class _SignInState extends State<SignIn> {
                   labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
+                    tooltip: passwordIsObscured
+                        ? 'Show password'
+                        : 'Hide password',
                     icon: Icon(
                       passwordIsObscured
                           ? Icons.visibility

@@ -27,13 +27,17 @@ quit/streak counter.
   copy has to name both halves, or search files the app with one of them.
 - SOURCED (C16): the framing is neutral, so the copy describes and never judges: "logged", never "slipped"; "nothing
   logged", never "clean".
+- SOURCED (PR #53): logging works with no signal; entries are kept on the device and marked until they sync. The
+  offline idea that shipped it ended with "put 'works offline' in the store copy"; that step lives here now.
+- INFERENCE ([market scan](../market-scan.md)): positioning on the competitors' main complaints would be "no
+  dark-pattern billing, private data, works offline".
 
 ## Recommendation
 
-Claude's recommendation: lead the listing on the question the app answers ("what goes with your habits?"), then three
-proof points: detailed logging with triggers, insights computed on your device, no subscription. Write the tone guide
-as part of [neutral framing](neutral-framing-and-age-rating.md), and spend the keyword field on terms the subtitle
-leaves out (journal, habits, triggers, sleep, HRV).
+Claude's recommendation: lead the listing on the question the app answers ("what goes with your habits?"), then four
+proof points: detailed logging with triggers, insights computed on your device, logging that works with no signal, no
+subscription. Write the tone guide as part of [neutral framing](neutral-framing-and-age-rating.md), and spend the
+keyword field on terms the subtitle leaves out (journal, habits, triggers, sleep, HRV).
 
 **Effort:** S (copy)
 

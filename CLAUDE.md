@@ -204,14 +204,20 @@ Any new composite query shape needs a matching entry in `firestore.indexes.json`
 Firestore throws `failed-precondition` at runtime until the index is deployed.
 
 **Navigation.** `main.dart` gates on `userProvider`: null user → `Authenticate`, otherwise
-`Homepage`. `onGenerateRoute` parses the route as a URI, so `/vices/:viceID/activities` and
-`/vices/:viceID/activities/:activityID` are matched by path segments; the rest are a
-`switch` on the literal name.
+`Homepage`. `generateRoute` maps a route's path segments to a page through `routePage`, a
+pattern `switch` (`/vices/:viceID/edit`, `/vices/:viceID/activities[/:activityID]`, ...);
+anything else is `NotFound`. Only the forms (add or edit a vice, edit an activity) open as
+fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
+swapping `home` alone would leave the old session's pages on the stack.
 
 **Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
 (`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
 date range as a line chart, bucketing activities by day or week and overlaying a moving
-average.
+average. Below three vices Today draws bars instead (fl_chart's radar needs three axes). The radar carries
+a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
+centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
+text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
+outside the widget tree, so tests read them from the chart's data.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
@@ -220,6 +226,15 @@ There is no server-side logic. Tests in `test/` run without Firebase: they overr
 or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.
+
+**Offline.** Production Firestore runs with disk persistence and an explicit 100 MB cache
+(`_configureFirestoreCache` in `lib/firebase_init.dart`); the emulator path keeps persistence off. Every
+write awaits through `settleWrite` (`lib/writes/settle_write.dart`): an acknowledgement within ten seconds
+is success, a timeout means the write is queued and the UI says it will sync, and only a
+`FirebaseException` is a failure. `ViceActivity.pending` carries `hasPendingWrites`; the day and history
+providers listen with `includeMetadataChanges: true` so the server's acknowledgement clears it.
+`offlineProvider` is true once a vices listener has answered from the cache for three seconds, which
+drives the offline banner and the offline wording of an empty day.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against

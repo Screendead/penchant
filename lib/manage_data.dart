@@ -5,12 +5,49 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/writes/settle_write.dart';
 
-class ManageData extends ConsumerWidget {
+class ManageData extends ConsumerStatefulWidget {
   const ManageData({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManageData> createState() => _ManageDataState();
+}
+
+class _ManageDataState extends ConsumerState<ManageData> {
+  final Set<String> archiving = <String>{};
+
+  Future<void> _setArchived(Vice vice, {required bool archived}) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      archiving.add(vice.id);
+    });
+
+    String? message;
+    try {
+      if (!await settleWrite(
+        ref
+            .read(trackerWritesProvider)
+            .setViceArchived(vice.id, archived: archived),
+      )) {
+        message = queuedMessage;
+      }
+    } on FirebaseException catch (e) {
+      message = e.toString();
+    }
+
+    if (mounted) {
+      setState(() {
+        archiving.remove(vice.id);
+      });
+    }
+    if (message != null && messenger.mounted) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
 
     return Scaffold(
@@ -26,15 +63,11 @@ class ManageData extends ConsumerWidget {
           ),
         ],
       ),
-      body: _buildBody(context, ref, viceListValue: viceListValue),
+      body: _buildBody(viceListValue: viceListValue),
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    WidgetRef ref, {
-    required AsyncValue<List<Vice>> viceListValue,
-  }) {
+  Widget _buildBody({required AsyncValue<List<Vice>> viceListValue}) {
     if (viceListValue.error case final Object error) {
       return Center(child: Text('Unable to load your vices: $error'));
     }
@@ -84,38 +117,18 @@ class ManageData extends ConsumerWidget {
                       message: 'Unarchive',
                       child: IconButton(
                         icon: const Icon(Icons.unarchive),
-                        onPressed: () async {
-                          try {
-                            await ref
-                                .read(trackerWritesProvider)
-                                .setViceArchived(vice.id, archived: false);
-                          } on FirebaseException catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
-                              );
-                            }
-                          }
-                        },
+                        onPressed: archiving.contains(vice.id)
+                            ? null
+                            : () => _setArchived(vice, archived: false),
                       ),
                     )
                   : Tooltip(
                       message: 'Archive',
                       child: IconButton(
                         icon: const Icon(Icons.archive),
-                        onPressed: () async {
-                          try {
-                            await ref
-                                .read(trackerWritesProvider)
-                                .setViceArchived(vice.id, archived: true);
-                          } on FirebaseException catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
-                              );
-                            }
-                          }
-                        },
+                        onPressed: archiving.contains(vice.id)
+                            ? null
+                            : () => _setArchived(vice, archived: true),
                       ),
                     ),
             ],

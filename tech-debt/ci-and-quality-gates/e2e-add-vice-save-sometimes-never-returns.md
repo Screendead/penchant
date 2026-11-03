@@ -11,4 +11,4 @@ The page awaits the Firestore `add` with no timeout of its own and closes only w
 - `HANDOVER.md` queue item 1a — "`tools/e2e.sh`'s Add Vice save timed out in 2 of 23 early runs (cause unconfirmed)" (the wave 1 report; the failing runs' logs were not kept).
 - `integration_test/support.dart:182` — `await tap(tester, find.widgetWithText(TextButton, 'Save'));\n    await pumpUntil(tester, find.text('Add Vice'), present: false);`
 - `integration_test/support.dart:16` — `const Duration timeout = Duration(seconds: 30);`
-- `lib/add_vice.dart:41` — `await FirebaseFirestore.instance.collection('vices').add({`
+- `lib/vice_form.dart:46` — `.addVice(ownerID: user.uid, name: name, unit: unit!);` (awaited, through `TrackerWrites.addVice`)

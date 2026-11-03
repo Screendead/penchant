@@ -15,7 +15,9 @@ final viceActivityHistoryForUserProvider = StreamProvider.autoDispose
             .where('ownerID', isEqualTo: key.uid)
             .orderBy('createdAt', descending: true)
             .limit(key.query.limit)
-            .snapshots()
+            // The server's acknowledgement of a local write changes only
+            // metadata, and clears an entry's not-yet-synced mark.
+            .snapshots(includeMetadataChanges: true)
             .map(ViceActivity.fromQuerySnapshot);
       },
     );
