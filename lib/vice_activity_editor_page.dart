@@ -154,7 +154,8 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
       viceActivityProvider(widget.activityID),
     );
 
-    if (viceList == null || activityValue.isLoading) {
+    if (viceList == null ||
+        (activityValue.isLoading && !activityValue.hasError)) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),

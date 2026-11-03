@@ -175,8 +175,9 @@ provider's stream, so the future never resolves. Render loading and error from t
 page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether
 older entries exist), the editor listens to its one document, and Manage Data counts each
 vice's activities with a server-side `count()` aggregation, which is not live, ignores
-writes still queued on the device, and fails offline. The vice lists are unbounded: a
-user-created vice must not vanish behind a limit.
+writes still queued on the device, and fails offline. The vice lists have no limit, and
+nothing caps how many vices a user creates; whether to add a cap is undecided (register,
+`vice-lists-are-unbounded`).
 
 **Data model.** Two flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,

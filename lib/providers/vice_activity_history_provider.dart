@@ -71,25 +71,30 @@ final viceActivityGraphProvider = Provider.autoDispose
 
 // The rules deny reading a missing or foreign document, so an activity that is
 // gone, or is deleted while this listens, ends the stream with
-// permission-denied.
+// permission-denied. That is final, so it is not retried: riverpod's default
+// retry would hold the editor in loading for about 38 s while it reopened the
+// listener ten times, each a billed denied read.
 final viceActivityForUserProvider = StreamProvider.autoDispose
-    .family<ViceActivity?, ({String uid, String activityID})>((ref, key) {
-      return FirebaseFirestore.instance
-          .collection('activities')
-          .doc(key.activityID)
-          .snapshots()
-          .map(
-            (DocumentSnapshot<Map<String, dynamic>> snapshot) =>
-                switch (snapshot.data()) {
-                  null => null,
-                  final Map<String, dynamic> json => ViceActivity.fromJson(
-                    id: snapshot.id,
-                    json: json,
-                    pending: snapshot.metadata.hasPendingWrites,
-                  ),
-                },
-          );
-    });
+    .family<ViceActivity?, ({String uid, String activityID})>(
+      retry: (_, _) => null,
+      (ref, key) {
+        return FirebaseFirestore.instance
+            .collection('activities')
+            .doc(key.activityID)
+            .snapshots()
+            .map(
+              (DocumentSnapshot<Map<String, dynamic>> snapshot) =>
+                  switch (snapshot.data()) {
+                    null => null,
+                    final Map<String, dynamic> json => ViceActivity.fromJson(
+                      id: snapshot.id,
+                      json: json,
+                      pending: snapshot.metadata.hasPendingWrites,
+                    ),
+                  },
+            );
+      },
+    );
 
 final viceActivityProvider = Provider.autoDispose
     .family<AsyncValue<ViceActivity?>, String>((ref, activityID) {

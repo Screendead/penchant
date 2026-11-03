@@ -15,9 +15,9 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**96 issues: 0 critical, 16 high, 51 medium, 29 low.**
+**97 issues: 0 critical, 16 high, 51 medium, 30 low.**
 
-## Firebase Data Layer (6)
+## Firebase Data Layer (7)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
@@ -27,6 +27,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **medium** — [The rules deploy job is off, and index or console drift goes unchecked](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
 - **low** — [Legacy activities of a missing vice are fetched but unreachable](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
+- **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
 ## Widget State and View Logic (11)
 

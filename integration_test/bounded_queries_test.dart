@@ -45,12 +45,15 @@ void main() {
     });
   });
 
-  testWidgets('the history page shows 50 entries at a time and the rest on '
+  testWidgets('the history page shows 50 entries at a time and the next 50 on '
       'request', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-history-pages@example.com');
 
-    const int stored = ViceActivityHistoryPage.pageSize + 1;
+    const int pageSize = ViceActivityHistoryPage.pageSize;
+    // Two pages and two more, so the second page is full and still has older
+    // entries.
+    const int stored = 2 * pageSize + 2;
     await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink);
     final String viceID = await storedViceID('Coffee');
     final DateTime newest = DateTime(2026, 1, 31, 12);
@@ -73,16 +76,24 @@ void main() {
     final Finder list = find.byType(Scrollable).last;
     final Finder showOlder = find.text('Show older');
     await tester.scrollUntilVisible(showOlder, 400, scrollable: list);
-    expect(find.text('Quantity: ${stored - 1}'), findsOneWidget);
-    expect(find.text('Quantity: $stored'), findsNothing);
+    expect(find.text('Quantity: $pageSize'), findsOneWidget);
+    expect(find.text('Quantity: ${pageSize + 1}'), findsNothing);
 
     await tap(tester, showOlder);
-    await pumpUntil(tester, showOlder, present: false);
-    await tester.scrollUntilVisible(
-      find.text('Quantity: $stored'),
-      400,
-      scrollable: list,
+    // Until the larger query delivers, the page shows the first query's
+    // look-ahead list, which has pageSize + 1 rows and no button. Only the
+    // second query yields 2 * pageSize rows plus the button.
+    await pumpUntilTrue(
+      tester,
+      () =>
+          tester
+              .widget<ListView>(find.byType(ListView).last)
+              .semanticChildCount ==
+          2 * pageSize + 1,
+      () => 'the history list to hold ${2 * pageSize} rows and "Show older"',
     );
-    expect(showOlder, findsNothing);
+    await tester.scrollUntilVisible(showOlder, 400, scrollable: list);
+    expect(find.text('Quantity: ${2 * pageSize}'), findsOneWidget);
+    expect(find.text('Quantity: ${2 * pageSize + 1}'), findsNothing);
   });
 }
