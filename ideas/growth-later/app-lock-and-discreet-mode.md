@@ -1,4 +1,4 @@
-# Add an app lock and a discreet mode for people logging sensitive habits
+# Add an app lock and a discreet mode for people journaling sensitive habits
 
 **Priority:** growth / later
 
@@ -6,28 +6,31 @@
 
 Two privacy features under "Your data" in Settings:
 
-- An optional Face ID or passcode app lock.
-- Discreet mode, which uses neutral notification text and offers an alternate app icon.
+- An optional Face ID, Touch ID or passcode lock (Touch ID on the Mac).
+- Discreet mode: neutral notification text, a neutral widget, and an alternate app icon.
 
 ## Why
 
-- INFERENCE: someone logging drinking or gambling on a shared or work phone needs to trust the app before they log honestly every day.
-- SOURCED ([market scan](../market-scan.md)): "private data" is one leg of the positioning the competitors' complaints leave open.
+- INFERENCE: someone journaling drinking, cannabis or gambling on a shared or work device needs to trust the app
+  before they log honestly every day, and an honest journal is the only one whose insights mean anything.
+- SOURCED ([market scan](../market-scan.md)): privacy is the gap the competitors leave open; C15 makes "on the device"
+  the positioning.
 
 ## Options
 
-- **A.** Both features, free.
-- **B.** Both features, as Pro.
-- **C.** The app lock only.
+- **A.** Both free.
+- **B.** Both Pro.
+- **C.** The lock only.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **A, after launch.** Charging for privacy undercuts the positioning. The alternate icon could go to Pro as a cosmetic if Jack wants a cosmetic tier.
+Claude's recommendation: **A, after 1.1.** Charging for privacy undercuts the positioning. Alternate icons beyond the
+discreet one could be a Pro cosmetic.
 
 **Effort:** S
 
-**Revenue impact:** Low directly. It supports the trust positioning, and so paid conversion.
+**Revenue impact:** Low directly; it supports trust, and so conversion.
 
-**Depends on:** [reminders](../v1-must-haves/evening-check-in-and-reminders.md), for the notification text.
+**Depends on:** [check-in](../v1-must-haves/evening-check-in-and-reminders.md), for the notification text; [widgets](widgets-and-shortcuts.md).
 
 **Needs Jack:** yes — Free or Pro?

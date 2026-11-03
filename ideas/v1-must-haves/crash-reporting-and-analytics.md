@@ -4,31 +4,35 @@
 
 ## What
 
-Add crash reporting before the first TestFlight build, so that beta crashes are seen. Later, add a small set of product events: sign-up, first vice, first log, day-7 return, paywall shown and purchase. No event may ever carry a vice name, a quantity or any other log content.
+Add crash reporting before the first TestFlight build, so beta crashes are seen. Later, add a few content-free product
+events: sign-up, first vice, first log, day-7 return, paywall shown, purchase. No event ever carries a vice name, a
+quantity, a trigger, a note, or anything read from Health or Calendar.
 
 ## Why
 
-- SOURCED (register):
-  - Nothing is recorded on any platform.
-  - Caught errors are shown once and then discarded.
-  - A failed Firebase start leaves a blank screen.
-- SOURCED ([Apple 5.1.3](https://developer.apple.com/app-store/review/guidelines/)): health data must not be used for advertising or data mining.
-- INFERENCE: every SDK becomes a line in the privacy label, which weighs against the "private" positioning. Pricing cannot be tuned without conversion events.
+- SOURCED (register): nothing is recorded on any platform; caught errors are shown once and discarded; a failed
+  Firebase start leaves a blank screen.
+- SOURCED ([Apple 5.1.3](https://developer.apple.com/app-store/review/guidelines/)): health data may not be used for
+  advertising, marketing or data mining.
+- INFERENCE: every SDK is a line in the privacy label, and "insights stay on your device" is a selling point. Pricing
+  the Pro unlock needs conversion events.
 
 ## Options
 
-- **A.** Firebase Crashlytics only. Already inside the Firebase vendor, and a small label impact.
-- **B.** Crashlytics plus Google Analytics for Firebase with content-free events. Verify the configuration that turns off ad-ID collection.
-- **C.** Sentry plus a privacy-first analytics service (for example TelemetryDeck). A better privacy story, but another vendor.
-- **D.** Nothing. You fly blind in beta.
+- **A.** Firebase Crashlytics only.
+- **B.** Crashlytics plus Google Analytics for Firebase with content-free events (check how to turn off ad-ID
+  collection).
+- **C.** Sentry plus a privacy-first analytics service (for example TelemetryDeck). Better story, another vendor.
+- **D.** Nothing.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **A at TestFlight.** Add content-free funnel events (B or C) only when the paywall ships, because that is the first time conversion data drives a decision.
+Claude's recommendation: **A at TestFlight**, then content-free funnel events (B or C) when the paywall ships in 1.1,
+the first time conversion data drives a decision.
 
 **Effort:** S
 
-**Revenue impact:** Indirect. Crash-free sessions protect ratings, and the funnel events later set prices.
+**Revenue impact:** Indirect: crash-free sessions protect ratings, and funnel events later set the price.
 
 **Depends on:**
 - [`no-logging-crash-reporting-or-telemetry`](../../tech-debt/error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
@@ -36,4 +40,4 @@ Claude's recommendation, not a decision: **A at TestFlight.** Add content-free f
 - [`catch-sites-render-the-error-once-and-discard-it`](../../tech-debt/error-handling-and-observability/catch-sites-render-the-error-once-and-discard-it.md)
 - [privacy policy](../release-blockers/privacy-policy-and-labels.md)
 
-**Needs Jack:** yes — Is crash reporting alone acceptable at launch, and how much product analytics can the privacy positioning carry later?
+**Needs Jack:** yes — Crash reporting alone at launch, and how much product analytics can "on your device" carry later?
