@@ -5,14 +5,13 @@
 ## What
 
 Publish three static pages, /privacy, /terms and /support (an FAQ and a contact address), and build the Settings rows
-that 404 today. About shows the version and build, links to the three pages, and shows open-source licences through
-`showLicensePage`. Privacy holds export, delete, the policy, and the Health and Calendar permission switches. "Contact
-support" opens a mail draft pre-filled with the version and platform.
+that 404 today. About, which already shows the version and the open-source licences, also links to the three pages. Privacy holds export, delete, the
+policy, and the Health and Calendar permission switches. "Contact support" opens a mail draft pre-filled with the version and platform.
 
 ## Why
 
-- SOURCED (repo): `lib/settings.dart` pushes `/settings/notifications`, `/settings/privacy` and `/settings/about`, and
-  all three dead-end on a 404. Bundled licence text is never shown.
+- SOURCED (repo): `lib/settings.dart` pushes `/settings/notifications` and `/settings/privacy`, and both dead-end on a
+  404. About already shows the version and, through `showAboutDialog`, the open-source licences.
 - SOURCED ([market scan](../market-scan.md)): hard-to-reach support is a top complaint about Reframe.
 - From memory, to verify: App Store Connect requires a support URL and a privacy policy URL on the listing.
 - SOURCED (C6): `web/` and the hosting workflows are being deleted, so the pages need a host that is not the Flutter
@@ -37,7 +36,6 @@ through CI on merge, never from an agent's machine.
 **Depends on:**
 - [brand name](brand-name.md), for the domain
 - [`four-named-routes-dead-end-at-not-found`](../../tech-debt/navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md)
-- [`third-party-license-attribution-never-surfaced`](../../tech-debt/repo-docs-and-release-hygiene/third-party-license-attribution-never-surfaced.md)
 
 **Needs Jack:** yes — Which address is the support contact, and where do the pages live (Firebase Hosting or the brand
 domain)?

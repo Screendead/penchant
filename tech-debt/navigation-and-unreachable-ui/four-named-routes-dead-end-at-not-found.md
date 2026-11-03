@@ -1,10 +1,10 @@
-# Four pushNamed targets have no matching route and land on the Not Found page
+# Three pushNamed targets have no matching route and land on the Not Found page
 
 **Severity:** high
 
-Settings offers Notifications, Privacy and About rows that push `/settings/notifications`, `/settings/privacy` and `/settings/about`, and every row of Manage Data pushes `/vices/<id>/edit`. `onGenerateRoute` matches three- and four-segment `/vices` paths whose third segment is literally `activities`, then switches on a literal name list holding only `/manage-data`, `/vices/add`, `/settings` and `/settings/account`.
+Settings offers Notifications and Privacy rows that push `/settings/notifications` and `/settings/privacy`, and every row of Manage Data pushes `/vices/<id>/edit`. `onGenerateRoute` matches three- and four-segment `/vices` paths whose third segment is literally `activities`, then switches on a literal name list holding only `/manage-data`, `/vices/add`, `/settings` and `/settings/account`.
 
-All four targets fall through to the default `NotFound` case, so four rendered and enabled affordances dead-end, including the only route for editing a vice.
+All three targets fall through to the default `NotFound` case, so three rendered and enabled affordances dead-end, including the only route for editing a vice.
 
 ## Evidence
 
@@ -13,4 +13,3 @@ All four targets fall through to the default `NotFound` case, so four rendered a
 - `lib/main.dart:105` — `default:\n                  return const NotFound();`
 - `lib/settings.dart:33` — `Navigator.of(context).pushNamed('/settings/notifications');`
 - `lib/settings.dart:40` — `Navigator.of(context).pushNamed('/settings/privacy');`
-- `lib/settings.dart:47` — `Navigator.of(context).pushNamed('/settings/about');`

@@ -24,7 +24,7 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**33 ideas: 11 release blockers, 9 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 17 need a call from
+**32 ideas: 10 release blockers, 9 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 17 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
@@ -38,7 +38,6 @@ Each list is in the recommended build order.
 - [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M
 - [Offer in-app account deletion that removes the data and the Auth user](release-blockers/in-app-account-deletion.md). M
-- [Give every build a unique version, a tag and a changelog entry](release-blockers/versioning-and-changelog.md). S
 - [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M, Needs Jack
 - [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S, Needs Jack
 - [Make a final icon and generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M, Needs Jack
@@ -85,7 +84,7 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 1. **Jack makes the four calls 1.0 hangs on:** the brand (and so the bundle ID), extending C18 to activity fields and
    the `days` and `triggerNodes` collections, 18+ in place of the retired 17+, and Mac in 1.0 or 1.0.x.
 2. **Meanwhile agents build what needs no call,** beside the wave-2 debt: parsers that default every missing field
-   (before any new field is written), backend hardening, account deletion, versioning, offline logging, export and
+   (before any new field is written), backend hardening, account deletion, offline logging, export and
    one-tap logging.
 3. **1.0 captures everything that cannot be backfilled:** the granular fields, trigger tagging, the check-in, the
    timeline Today and the free trend views. Health and Calendar history can be read later, so they wait for 1.1.
