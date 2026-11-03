@@ -68,7 +68,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 <div class="wrap">
   <header>
     <h1>Tracker: calls for Jack</h1>
-    <p class="lede">The bugs you reported are fixed on branches, with end-to-end tests run on an iOS Simulator against the emulators. One thing blocks them reaching users: the new Firestore rules must be deployed to production, and Claude may not touch production. Everything below is undecided. Tap an option to pick it; picks save as you go and Claude reads them back.</p>
+    <p class="lede">Round 1 is decided and built. Round 2 holds the calls that 1.0 hangs on. Tap an option to pick it; picks save as you go and Claude reads them back. Three more calls (the starter trigger tree, the onboarding presets and the Today layout) come later with mock-ups.</p>
     <div class="tally" id="tally"></div>
     <p class="banner" id="banner">Connecting to saved picks…</p>
   </header>
@@ -77,13 +77,10 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
     <div class="sechead"><h2>For you to do</h2><p>Actions, not decisions.</p></div>
     <div class="todo">
       <ol>
-        <li><b>Deploy the Firestore rules and indexes.</b> This fixes Undo and the two other delete buttons for users, and gives the chart query its index. First list the live indexes and compare them with <code>firestore.indexes.json</code> on master. When the deploy offers to delete an index that isn't in the file, answer no.
-          <div class="cmd"><pre id="c1">cd ~/development/tracker && git switch master && git pull
-firebase firestore:indexes --project screendead-vice-tracker
-firebase deploy --only firestore:rules,firestore:indexes --project screendead-vice-tracker</pre><button class="copy" data-copy="c1">Copy</button></div>
-          The new rules check field types on every write, so an app build older than master may get permission-denied when it saves; rebuild any installed copy from master. Then tell Claude it is done. Claude merges PR #28 (day navigation, history, editor, usage graph) after one more end-to-end run.</li>
-        <li><b>Optional:</b> upgrade the global Firebase CLI (15.8.0 here, 15.34 current). Another project on this Mac shares its emulator files.
-          <div class="cmd"><pre id="c2">npm install -g firebase-tools@latest</pre><button class="copy" data-copy="c2">Copy</button></div></li>
+        <li><b>Let CI deploy the rules (your C1 pick).</b> Give the service account behind the GitHub secret <code>FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER</code> these roles in the Google Cloud console (IAM): Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer. It also needs <code>firebase.projects.get</code>; it probably already has that through Firebase Hosting Admin, so keep that role or add Firebase Viewer. Then set the repository variable:
+          <div class="cmd"><pre id="c1">gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker</pre><button class="copy" data-copy="c1">Copy</button></div>
+          The next merge to master then deploys today's stricter rules (quantity above 0, names up to 60 characters, entries must point at your own vice). Rebuild any installed copy from master first, so the app refuses that input before the rules do.</li>
+        <li><b>Send Claude in chat, when you have them:</b> the legal entity, contact address and data-controller details for the privacy policy; the support email address; and the TestFlight beta testers. They stay out of the repo.</li>
       </ol>
     </div>
   </section>
@@ -93,6 +90,114 @@ firebase deploy --only firestore:rules,firestore:indexes --project screendead-vi
 
 <script>
 const GROUPS = [
+  { title: "Round 2 (3 November): what 1.0 hangs on", sub: "Raised by your round-1 picks and the reworked ideas backlog. Round 1 stays below with your picks.", calls: [
+    { id: "r2-web-site", q: "When does the live web site go down?",
+      ctx: "Web is deleted from the repo (C6), so the site keeps serving its last build against production. While it is up, every new field must stay optional in the rules, because its old code writes documents without them.",
+      opts: [
+        { k: "A", t: "Once your phone and Mac run the app", c: "You keep access meanwhile. You run firebase hosting:disable then." },
+        { k: "B", t: "Now", c: "You run firebase hosting:disable today. No app access until a build is on your phone." },
+        { k: "C", t: "Keep it up", c: "It slowly diverges from the app, and it keeps the data model loose." } ],
+      rec: "A", why: "Nobody else uses it, and you shouldn't lose your journal in the gap. Taking it down unblocks mandatory fields later." },
+    { id: "r2-brand", q: "What is the brand?", link: "ideas/release-blockers/brand-name.md",
+      ctx: "These are quick checks only: web and App Store searches, plus domain lookups. Every exact .com and .app is taken, so plan on a variant domain. Write your own idea in the note if none fits.",
+      opts: [
+        { k: "A", t: "Penchant", c: "A habitual liking, without judgement. No app or brand conflict found." },
+        { k: "B", t: "Kenning", c: "Old English for knowing; reads as self-knowledge." },
+        { k: "C", t: "Sounding", c: "A depth reading of what lies beneath." } ],
+      rec: "A", why: "It names the leaning without moralising, which fits a neutral journal. Subtitle: “Habit journal & sleep insights”. Bundle ID com.screendead.penchant on iOS and macOS." },
+    { id: "r2-trademark", q: "Pay for a trademark search before committing to the brand?",
+      ctx: "Classes 9, 42 and 44. A rename after launch costs reviews and search ranking.",
+      opts: [
+        { k: "A", t: "Yes, before the first TestFlight upload", c: "A professional search: tens to a few hundred dollars." },
+        { k: "B", t: "No, the quick checks are enough", c: "Free. The risk is found later." } ],
+      rec: "A", why: "The bundle ID locks at the first upload, and the search is cheap next to a rename." },
+    { id: "r2-age", q: "Rate the app 18+?", link: "ideas/release-blockers/neutral-framing-and-age-rating.md",
+      ctx: "You picked 17+ (C16), but Apple retired 17+ in July 2025. The tiers are now 4+, 9+, 13+, 16+ and 18+, and frequent alcohol, tobacco or drug references rate 18+.",
+      opts: [
+        { k: "A", t: "18+", c: "The rating your C16 pick intended." },
+        { k: "B", t: "16+", c: "Only if alcohol, tobacco and drug references stay infrequent. Hard to promise for this app." } ],
+      rec: "A", why: "The app's whole subject is logging these substances, so the references are frequent." },
+    { id: "r2-data-model", q: "How far may the data model grow?", link: "ideas/insights/granular-logging-and-data-model.md",
+      ctx: "C18 covered fields on vices. Maximum granularity also needs fields on activities (triggers, context, local time zone), a decimal amount, and new collections (days, triggerNodes).",
+      opts: [
+        { k: "A", t: "Everything optional, no migrator", c: "Safest. Some fields stay unknown for old entries." },
+        { k: "B", t: "Optional, plus a migrator and decimals", c: "Optional fields, a first-launch migrator for a vice category, and a decimal amount next to the whole-number quantity." },
+        { k: "C", t: "Vices only (C18 as is)", c: "Rules out triggers and context on entries." } ],
+      rec: "B", why: "Triggers and context can't be backfilled, so 1.0 has to capture them. Everything stays optional in the rules until the web site is down." },
+    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "ideas/v1-must-haves/evening-check-in-and-reminders.md",
+      ctx: "C12 forbids zero-quantity entries, but the insights need to tell a confirmed zero day from a day you forgot to log.",
+      opts: [
+        { k: "A", t: "A days collection", c: "One document per day, written by an evening check-in; can later carry a note or mood." },
+        { k: "B", t: "One “confirmed through” date", c: "One field. No per-day note, and gaps are lost." },
+        { k: "C", t: "No check-in in 1.0", c: "The insights can't count clean days." } ],
+      rec: "A", why: "Per-day confirmation is what lets the engine count a zero, and it is free capture that can't be backfilled." },
+    { id: "r2-mac", q: "When does the Mac app ship?", link: "ideas/v1-must-haves/macos-target.md",
+      ctx: "HealthKit has no data on macOS, so Health insights are iPhone-only. Syncing Health-derived results to the Mac would break “Health data never leaves your phone”.",
+      opts: [
+        { k: "A", t: "With iOS 1.0 if its e2e is green", c: "Health cards on Mac say “available on iPhone”. Never blocks iOS." },
+        { k: "B", t: "In a 1.0.x update", c: "iOS goes out alone first." } ],
+      rec: "A", why: "One purchase covers both, and your note asked for it fully supported. A green-e2e gate keeps it from delaying iOS." },
+    { id: "r2-pro", q: "What does Pro contain, and at what price?", link: "ideas/monetisation/business-model-and-paywall.md",
+      ctx: "One purchase in 1.1 (C17). Free forever under every option: unlimited vices, every logging field and trigger, all history, basic trends, export, deletion, the Mac app.",
+      opts: [
+        { k: "A", t: "The analysis layer, $24.99", c: "Insights engine, Apple Health, Calendar, weekly review, trend overlays." },
+        { k: "B", t: "A, plus history beyond 90 days", c: "More pressure to buy, but it holds the journal itself back." },
+        { k: "C", t: "A, with Health correlation free", c: "Health as the hook; Calendar, separating effects across vices, and the weekly review stay Pro." } ],
+      rec: "A", why: "Capture is free because a journal is only worth what it has recorded; reflection is what you pay for. Check live competitor prices before setting the number." },
+    { id: "r2-billing", q: "How is Pro sold?", link: "ideas/monetisation/iap-and-entitlements.md",
+      ctx: "Apple platforms only, one non-consumable purchase.",
+      opts: [
+        { k: "A", t: "StoreKit 2 directly", c: "No vendor, no revenue share." },
+        { k: "B", t: "RevenueCat", c: "Dashboards and paywall experiments, for a revenue share above a free threshold." } ],
+      rec: "A", why: "With one product on Apple platforms, a vendor buys little." },
+    { id: "r2-signin", q: "How do people sign in?", link: "ideas/v1-must-haves/guest-mode-and-sign-in.md",
+      ctx: "Today it's email and password only, with no password reset.",
+      opts: [
+        { k: "A", t: "Email only, finished properly", c: "Reset, verification, readable errors." },
+        { k: "B", t: "Guest start, link an account later", c: "Plus A. A guest who deletes the app without linking loses their data (warned)." },
+        { k: "C", t: "B plus Sign in with Apple", c: "One tap to get the Mac onto the same data." },
+        { k: "D", t: "Local-only guests", c: "Doubles the data layer." } ],
+      rec: "C", why: "Every user has an Apple ID now Android and web are gone, and it is the easy way to put the Mac on the same journal." },
+    { id: "r2-crash", q: "What telemetry ships at launch?", link: "ideas/v1-must-haves/crash-reporting-and-analytics.md",
+      opts: [
+        { k: "A", t: "Crashlytics only", c: "Inside Firebase already; small privacy label." },
+        { k: "B", t: "Crashlytics plus content-free analytics", c: "Funnel data from day one; a bigger label." },
+        { k: "C", t: "Sentry plus TelemetryDeck", c: "Better privacy story, two more vendors." },
+        { k: "D", t: "Nothing", c: "Blind in beta." } ],
+      ctx: "“On your device” is part of the pitch, so every SDK becomes a privacy-label line.",
+      rec: "A", why: "Crashes protect ratings now. Add content-free funnel events only when the 1.1 paywall needs conversion data." },
+    { id: "r2-testflight", q: "Which Firebase project do TestFlight builds use?", link: "ideas/release-blockers/ios-release-pipeline-and-testflight.md",
+      ctx: "Beta builds would otherwise write to the production project that holds your journal.",
+      opts: [
+        { k: "A", t: "A separate beta project", c: "A new Firebase project you create; testers never touch production data." },
+        { k: "B", t: "Production", c: "No setup. Beta bugs can corrupt real data." } ],
+      rec: "A", why: "Production data is the one thing that must not break; a beta project costs a few minutes of console setup." },
+    { id: "r2-privacy", q: "What privacy policy ships?", link: "ideas/release-blockers/privacy-policy-and-labels.md",
+      opts: [
+        { k: "A", t: "Generated (Termly, iubenda)", c: "Fast, generic." },
+        { k: "B", t: "Short and hand-written, then a legal review before 1.1", c: "Specific; reviewed when Health and payments arrive." },
+        { k: "C", t: "Hand-written and legally reviewed for 1.0", c: "Costs earlier." } ],
+      ctx: "Needs your legal entity, contact address and data-controller details whichever you pick (see the to-do list).",
+      rec: "B", why: "“Health and calendar data never leave your phone” is the trust line; it reads best in plain words. Pay for the review when the risk arrives in 1.1." },
+    { id: "r2-icon", q: "Who makes the app icon?", link: "ideas/release-blockers/store-icon-and-screenshots.md",
+      ctx: "It waits on the brand. Store screenshots are generated by the e2e harness whichever you pick.",
+      opts: [
+        { k: "A", t: "You", c: "Free; your taste." },
+        { k: "B", t: "A commissioned designer", c: "Roughly a few hundred dollars." },
+        { k: "C", t: "Claude generates candidates", c: "You pick from a set." } ],
+      rec: "C", why: "Cheap to try first; commission a designer only if none of the candidates lands." },
+    { id: "r2-applock", q: "Are the app lock and discreet mode free or Pro?", link: "ideas/growth-later/app-lock-and-discreet-mode.md",
+      ctx: "After 1.1. A Face ID lock, and a discreet icon and notification text.",
+      opts: [
+        { k: "A", t: "Both free", c: "" }, { k: "B", t: "Both Pro", c: "" }, { k: "C", t: "The lock only, free", c: "" } ],
+      rec: "A", why: "Charging for privacy undercuts a journal that sells on privacy." },
+    { id: "r2-cli", q: "Upgrade the global Firebase CLI on this Mac?",
+      ctx: "15.8.0 is installed; the repo's CI already uses 15.33. Another project on this Mac shares its emulator files.",
+      opts: [
+        { k: "A", t: "Yes", c: "npm install -g firebase-tools@latest; other projects pick it up too." },
+        { k: "B", t: "No", c: "Local emulators stay a few versions behind CI." } ],
+      rec: "A", why: "Local runs then match CI. Check the other project's emulator run once afterwards." } ] },
+
   { title: "Unblocks the next merge", sub: "Small calls about the recovered features in PR #28.", calls: [
     { id: "rules-deploy", q: "How do Firestore rules reach production from now on?",
       ctx: "CI deploys web hosting on merge but never rules, so a rules fix sits undeployed until someone remembers.",

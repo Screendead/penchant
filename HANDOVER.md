@@ -20,60 +20,50 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 
 | Item | State | Where |
 |---|---|---|
-| Standing rules (production safety, e2e gate, merge authority) | Merged 2026-11-02 (#24) | `CLAUDE.md` |
-| CI checks: analyze and test on every PR; live deploy waits on them | Merged 2026-11-02 (#25) | `.github/workflows/checks.yml` |
-| Emulator wiring and iOS end-to-end harness | Merged 2026-11-02 (#29) | `tools/e2e.sh`, `lib/firebase_init.dart` |
-| Firestore rules rewrite, 55 rules tests, missing index | Merged 2026-11-02 (#27); **deployed to production by Jack 2026-11-03** | `firestore.rules`, `tests/firestore-rules/` |
-| Product ideas backlog | Merged 2026-11-02 (#26); being reworked for the journal positioning (queue 1d) | `ideas/README.md` |
-| Recovered features (day navigation, history, editor, usage graph, Undo) and the fixes for Jack's two reported bugs | Merged 2026-11-03 (#28), e2e 4/4 after the rules deploy; live for users | `lib/` |
-| Jack's 19 calls | Picked 2026-11-03; recorded below | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 135 issues (from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Standing rules, CI checks, emulator and iOS e2e harness | Merged 2026-11-02 (#24, #25, #29) | `CLAUDE.md`, `.github/workflows/`, `tools/e2e.sh` |
+| Firestore rules rewrite (#27) | Deployed to production by Jack 2026-11-03 | `firestore.rules` |
+| Recovered features and the fixes for Jack's two reported bugs (#28) | Merged and live 2026-11-03 | `lib/` |
+| Jack's round-1 calls C1–C19 | Picked 2026-11-03; built in wave 3 | below |
+| Wave 3: Today and recording C2–C5 (#36), rules details C12–C14 (#33), platform and repo cleanup C1 C6–C11 (#34), ideas rework C15–C19 (#35) | Merged 2026-11-03. The rules from #33 are **not yet in production**: they deploy through CI once Jack enables it (below) | `lib/`, `firestore.rules`, `.github/workflows/deploy-firestore.yml`, `ideas/` |
+| Round-2 calls (16) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
+| Tech-debt register | 110 issues, 0 critical (from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 33 ideas for the journal positioning, roadmap in its README | `ideas/README.md` |
 
-Baseline on master, measured 2026-11-03 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 17/17, rules
-tests 55/55, `tools/e2e.sh` 4/4. `dart run custom_lint` loads no rules (see the register). Re-measure; don't trust
-this.
+Baseline on master, measured 2026-11-03 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 32/32, rules
+tests 72/72, `tools/e2e.sh` 6/6. `flutter build macos` fails (deployment target; queue 1). `dart run custom_lint`
+loads no rules (see the register). Re-measure; don't trust this.
 
 ## The queue (DECIDED work, in order)
 
 Each item is decided: its goal is clear or follows from Jack's calls below. Work it top down; skip what is blocked
 and say so. Items under one number can run in parallel in separate worktrees; only one agent at a time runs
-`tools/e2e.sh` or uses the default emulator ports.
+`tools/e2e.sh` or uses the default emulator ports. Subagents write PR bodies to uniquely named scratchpad files: the
+scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
-1. **Wave 3: apply Jack's calls of 2026-11-03.**
-   - **1a. Today and recording** (C2–C5): bars below 3 vices and the radar from 3 up; Undo stays 8 seconds; a clean
-     day looks quietly positive; a timed-out save closes the dialog and says it will sync. Also register what wave 1
-     found (non-prescriptive): the usage graph's curve dips below zero around a single spike, its y-axis repeats "1"
-     and its last two date labels overlap; pages opened from the drawer leave the drawer open; `tools/e2e.sh`'s Add
-     Vice save timed out in 2 of 23 early runs (cause unconfirmed). Uses the simulator.
-   - **1b. Rules details** (C12–C14): a new activity's quantity must be greater than 0; a vice name is at most 60
-     characters; an activity's vice must belong to its owner. Each with rules tests, and with the app's own forms
-     refusing the same input first, so users see a message and never a permission error.
-   - **1c. Repo and platform cleanup** (C1, C6–C11): delete `functions/` and close its Dependabot PRs; delete
-     `android/` and `web/` and the hosting workflows (no PR previews); add a proprietary LICENSE; archive the two
-     stashes as commits on a local `archive/stashes` branch, then drop them, and delete merged branches (keep
-     `copilot/fix-9`); CI deploys rules and indexes on merge to `master` after the checks and rules tests pass (needs
-     Jack's role grant, below). Retire register entries for code that no longer exists.
-   - **1d. Rework `ideas/` for the journal positioning** (C15–C19): rewrite the backlog around a neutral journal
-     with insights (see C15). Mark each decided idea as decided, drop what the calls rejected, add the insight ideas
-     Jack named, and add a naming pitch with brand candidates for C19. Docs only.
-2. **macOS as a fully supported target** (C6's note), after 1a and 1c: builds, runs against the emulators, its own
-   e2e run, CI covers it. Registering a macOS app in the Firebase console is a production action: Jack's.
-3. **Wave 2: the remaining critical and high tech debt** that touches the app, one class per worktree:
+1. **macOS as a fully supported target** (C6's note): it builds (the register's frozen-deployment-target entry), runs
+   against the emulators, has its own e2e run, and CI builds it. Registering a macOS app in the Firebase console is a
+   production action: if one is needed, it goes on Jack's list.
+2. **What the reworked roadmap marks as needing no call** (`ideas/README.md`, step 2), in its order: parsers that
+   default every missing field (before any new field is written), backend hardening, account deletion, versioning,
+   offline logging, export, one-tap logging. Parallel where the files don't overlap.
+3. **Wave 2: the remaining high tech debt** that touches the app, one class per worktree:
    - `error-handling-and-observability/`: bootstrap failure, AsyncValue error states, sign-up errors;
    - `widget-state-and-view-logic/`: the previous user's data showing after sign-out, and the write layer;
-   - `offline-and-write-reliability/`: persistence, timeouts, pending states on deletes;
+   - `offline-and-write-reliability/`: persistence and pending states on deletes;
    - `navigation-and-unreachable-ui/`: the routes that dead-end on 404 (Manage Data's Edit is one);
    - `auth-and-account-lifecycle/`: password reset, re-authentication;
-   - `accessibility-and-localization/`: chart semantics, the record dialog at large text sizes.
+   - `accessibility-and-localization/`: chart semantics, the record dialog at large text sizes. Register first (not
+     yet in it): the radar plots 0 away from the centre, with a "0.0" tick on the middle ring.
    Classes that touch the same files go in sequence, not in parallel.
-4. **The reworked `ideas/` roadmap** (from 1d), items marked "Needs Jack: no", in the order its README gives.
+4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
+   call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
 5. **The rest of the register**, medium then low, one class per PR.
 
 Housekeeping that rides along with whatever PR touches it: delete each tech-debt file a PR fixes, and each idea file
 a PR ships, with its README line; run `tools/tech-debt-recount.py` to fix the counts. It resolves paths from its own
 location, so run the copy inside the worktree you are changing.
 
-## Jack's calls (2026-11-03)
+## Jack's calls, round 1 (2026-11-03)
 
 Picked on the pitch page; the page keeps the options and costs each was chosen from.
 
@@ -101,27 +91,35 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   historical data, disambiguating which vice a health effect correlates with over time). Maximum granularity.
   Privacy is not a concern as long as sensitive processing and storage stay on the device; it can all be regenerated
   from the raw data.
-- **C16. Framing** (`framing`): **neutral, rated 17+**, with a disclaimer.
+- **C16. Framing** (`framing`): **neutral, rated 17+**, with a disclaimer. Apple retired 17+ in July 2025; round 2
+  (`r2-age`) asks Jack to confirm 18+.
 - **C17. Business model** (`business`): **free 1.0, then a one-time Pro unlock in 1.1.**
 - **C18. New fields on vices** (`goals-fields`): **yes.** Optional fields are fine. Mandatory fields are allowed too,
   but only with a migrator that runs on first launch and adds them to existing records.
-- **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand itself is not chosen yet: 1d
-  pitches candidates.
+- **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand itself is open on the pitch page (`r2-brand`;
+  candidates in `ideas/release-blockers/brand-name.md`).
 
 ## Calls waiting on Jack (UNDECIDED)
 
-- **The live web site.** Deleting `web/` (C6) stops deploys, but the site keeps serving its last build against
-  production until hosting is disabled (`firebase hosting:disable --project screendead-vice-tracker`, Jack's to run).
-  Keep it up until iOS ships, or take it down now?
-- **The brand name** (C19): pitched by 1d.
-- **The global Firebase CLI**: upgrade from 15.8.0 (15.34 is current)? Another project shares its emulator files.
+Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
+recommendation. Ids: `r2-web-site` (when the live web site goes down), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
+place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
+`r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
+Firebase project), `r2-privacy`, `r2-icon`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
+
+Pitched later, with mock-ups, when their work starts: the starter trigger tree's top two levels
+(`ideas/insights/trigger-tagging.md`), the onboarding presets and their wording, and the Today layout.
 
 ## For Jack to do (not decisions)
 
-- **Let CI deploy rules (C1):** grant the GitHub Actions service account (the one behind the
-  `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER` secret) the roles the rules and index deploy needs. 1c's PR names
-  the exact roles from the Firebase docs. Until then the deploy job fails and rules changes still need your manual
-  deploy.
+- **Let CI deploy rules (C1):** grant the service account behind `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER`
+  Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer, and keep Firebase Hosting Admin (or
+  add Firebase Viewer) for `firebase.projects.get`; then
+  `gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker`. Until then the deploy job is skipped
+  and #33's rules stay undeployed. The next merge after that deploys them; rebuild installed copies from master first.
+- **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
+  support email; the TestFlight testers. They stay out of the repo.
+- **PR #22** (a Dependabot bump in `admin/`) is open; it is safe to leave until the seed script is reworked.
 
 ## How to test here
 
@@ -153,3 +151,7 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 
 - **Rebasing or force-pushing the recovered feature branch** to tidy its history: it was already pushed, and
   force-pushing needs Jack. It merges `master` in instead.
+- **Android release, the web app, Cloud Functions, PR previews** (C6, C7, C11): removed 2026-11-03; re-add only on a
+  new call.
+- **Harm-reduction framing, and the moderation, alcohol-only and quit-counter positionings** (C15, C16): the app is a
+  neutral journal. Goals and limits survive as an optional, later feature.
