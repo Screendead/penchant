@@ -4,22 +4,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/add_vice.dart';
 import 'package:tracker/authenticate.dart';
+import 'package:tracker/crypto/journal_key_provider.dart';
+import 'package:tracker/crypto/native_aes.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/journal_key/journal_gate.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
+import 'package:tracker/theme.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeFirebase();
+  // Logged as "E2EE native AES-GCM: ..." for the e2e run to check.
+  final NativeAesReport aes = await checkNativeAesGcm(
+    nativeAesGcm(secretKeyLength: 32),
+  );
 
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [nativeAesReportProvider.overrideWithValue(aes)],
+      child: const MyApp(),
     ),
   );
 }
@@ -35,29 +44,10 @@ class MyApp extends ConsumerWidget {
       onTap: FocusManager.instance.primaryFocus?.unfocus,
       child: MaterialApp(
         title: 'Vice Tracker',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.pink,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-            floatingLabelAlignment: FloatingLabelAlignment.center,
-            border: OutlineInputBorder(),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.pink,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.red,
-              ),
-            ),
-          ),
-        ),
-        home: user == null ? const Authenticate() : const Homepage(),
+        theme: appTheme(),
+        home: user == null
+            ? const Authenticate()
+            : const JournalGate(child: Homepage()),
         onGenerateRoute: (RouteSettings settings) {
           final Uri uri = Uri.parse(settings.name ?? '');
 
@@ -98,6 +88,8 @@ class MyApp extends ConsumerWidget {
                   return const Settings();
                 case '/settings/account':
                   return const AccountSettings();
+                case '/settings/recovery-key':
+                  return const RecoveryKeySettingsRoute();
                 default:
                   return const NotFound();
               }

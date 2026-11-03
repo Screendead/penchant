@@ -27,6 +27,13 @@ class _SettingsState extends State<Settings> {
               },
             ),
             ListTile(
+              title: const Text('Recovery key'),
+              leading: const Icon(Icons.key),
+              onTap: () {
+                Navigator.of(context).pushNamed('/settings/recovery-key');
+              },
+            ),
+            ListTile(
               title: const Text('Notifications'),
               leading: const Icon(Icons.notifications),
               onTap: () {
