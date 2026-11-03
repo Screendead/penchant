@@ -24,11 +24,27 @@ const FirebaseOptions _emulatorOptions = FirebaseOptions(
   iosBundleId: 'com.screendead.tracker.tracker',
 );
 
+// Offline logging rests on this: the disk cache keeps queued writes across
+// app restarts and answers reads with no signal. Settings apply only before
+// Firestore's first use.
+void _configureFirestoreCache() {
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: _firestoreCacheBytes,
+  );
+}
+
+// The SDK's own default, chosen on purpose: a journal's documents are a few
+// hundred bytes, so this holds well over a hundred thousand entries before the
+// SDK evicts any that no listener uses.
+const int _firestoreCacheBytes = 100 * 1024 * 1024;
+
 Future<void> initializeFirebase() async {
   if (!useFirebaseEmulators) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    _configureFirestoreCache();
     return;
   }
 

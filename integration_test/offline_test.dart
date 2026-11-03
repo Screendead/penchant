@@ -1,0 +1,87 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:tracker/firebase_init.dart';
+import 'package:tracker/main.dart';
+import 'package:tracker/vice_activity_editor_page.dart';
+import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/settle_write.dart';
+
+import 'support.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  WidgetController.hitTestWarningShouldBeFatal = true;
+
+  setUpAll(() async {
+    requireEmulators();
+    await initializeFirebase();
+    await clearEmulators();
+  });
+
+  testWidgets('entries logged and edited offline show as not yet synced, '
+      'then sync once, when the network returns', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-offline@example.com');
+    await addVicesThroughManageData(tester);
+    final Finder banner = find.text(OfflineBanner.message);
+    final Finder notSynced = find.text(NotSyncedMarker.defaultLabel);
+    expect(banner, findsNothing);
+
+    await FirebaseFirestore.instance.disableNetwork();
+    try {
+      await pumpUntil(tester, banner);
+      // An empty day offline may be one this device never fetched.
+      await tap(tester, find.byTooltip('Previous day'));
+      await pumpUntil(tester, find.text(CleanDay.offlineHeadline));
+      await tap(tester, find.text('Jump to Today'));
+
+      await recordActivity(tester, 'Coffee', 2);
+      await pumpUntil(tester, find.text(queuedMessage));
+      expect(find.text('Request timed out'), findsNothing);
+      await expectChart(tester, const <String>{
+        'Coffee (2 drinks)',
+        'Tea (0 drinks)',
+        'Water (0 drinks)',
+      });
+      await pumpUntil(tester, find.text(PendingDayNote.text(1)));
+      await screenshot(tester, 'record-queued-offline');
+
+      await openFromDrawer(tester, 'Manage Data');
+      await tap(tester, find.text('Coffee'));
+      await pumpUntil(tester, find.text('Coffee history'));
+      await pumpUntil(tester, notSynced);
+      expect(banner, findsWidgets);
+
+      await tap(tester, find.text('Quantity: 2'));
+      await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+      await enterText(tester, 'Quantity', '3');
+      await tap(tester, find.widgetWithText(TextButton, 'Save'));
+      await pumpUntil(
+        tester,
+        find.byType(ViceActivityEditorPage),
+        present: false,
+      );
+      await pumpUntil(tester, find.text(queuedMessage));
+      await pumpUntil(tester, find.text('Quantity: 3'));
+      expect(notSynced, findsOneWidget);
+      await screenshot(tester, 'history-not-yet-synced');
+    } finally {
+      await FirebaseFirestore.instance.enableNetwork();
+    }
+
+    await pumpUntil(tester, notSynced, present: false);
+    await pumpUntil(tester, banner, present: false);
+
+    // A get() merges unacknowledged writes even from the server, so wait for
+    // the queue to drain before reading what the emulator holds.
+    await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
+        await storedActivities('Coffee');
+    expect(stored, hasLength(1));
+    expect(stored.single.data()['quantity'], 3);
+  });
+}

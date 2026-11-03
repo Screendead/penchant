@@ -19,6 +19,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -112,6 +113,36 @@ void main() {
       expect(find.byType(AddVice), findsNothing);
     });
 
+    testWidgets('a save in flight disables Save, and one that outlasts the '
+        'timeout closes and says it will sync', (WidgetTester tester) async {
+      writes.respond = _never;
+      await _pumpOpened(tester, writes, const [], const AddVice());
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Vice Name'),
+        'Coffee',
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Unit.drink.plural).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+
+      await tester.pump(writeTimeout);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, hasLength(1));
+      expect(find.byType(AddVice), findsNothing);
+      expect(find.text(queuedMessage), findsOneWidget);
+    });
+
     testWidgets('stays open and shows the error when the save fails', (
       WidgetTester tester,
     ) async {
@@ -159,6 +190,36 @@ void main() {
           'archived': false,
         }),
       ]);
+    });
+
+    testWidgets('an archive in flight disables that row, and one that '
+        'outlasts the timeout says it will sync', (WidgetTester tester) async {
+      writes.respond = _never;
+      await _pumpOpened(tester, writes, overrides(), const ManageData());
+
+      await tester.tap(find.byTooltip('Archive'));
+      await tester.pump();
+
+      expect(writes.writes, hasLength(1));
+      expect(
+        tester
+            .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.archive))
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.unarchive),
+            )
+            .onPressed,
+        isNotNull,
+      );
+
+      await tester.pump(writeTimeout);
+      await tester.pumpAndSettle();
+
+      expect(find.text(queuedMessage), findsOneWidget);
     });
 
     testWidgets('shows the error when archiving fails', (
@@ -278,20 +339,36 @@ void main() {
       await tester.tap(record);
       await tester.pump();
 
-      await tester.pump(
-        RecordNewActivityDialog.writeTimeout - const Duration(seconds: 1),
-      );
+      await tester.pump(writeTimeout - const Duration(seconds: 1));
       expect(dialog, findsOneWidget);
 
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
       expect(dialog, findsNothing);
-      expect(find.text(RecordNewActivityDialog.queuedMessage), findsOneWidget);
+      expect(find.text(queuedMessage), findsOneWidget);
       expectRecorded(writes.writes.single, 'activity-1');
     });
 
-    testWidgets('an Undo that outlasts the timeout says so', (
+    testWidgets('while saving, a screen reader cannot reach the form', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      writes.respond = _never;
+      await fill(tester);
+      expect(find.semantics.byLabel('Record'), findsOneWidget);
+
+      await tester.tap(record);
+      await tester.pump();
+
+      expect(find.semantics.byLabel('Record'), findsNothing);
+      expect(find.semantics.byLabel('Quantity'), findsNothing);
+      await tester.pump(writeTimeout);
+      await tester.pumpAndSettle();
+      semantics.dispose();
+    });
+
+    testWidgets('an Undo that outlasts the timeout says it will sync', (
       WidgetTester tester,
     ) async {
       await fill(tester);
@@ -300,11 +377,11 @@ void main() {
 
       writes.respond = _never;
       await tester.tap(find.text('Undo'));
-      await tester.pump(RecordNewActivityDialog.writeTimeout);
+      await tester.pump(writeTimeout);
       await tester.pumpAndSettle();
 
       expect(writes.writes.last, const Write('deleteActivity', 'activity-1'));
-      expect(find.text('Undo has not reached the server yet'), findsOneWidget);
+      expect(find.text(queuedDeleteMessage), findsOneWidget);
     });
   });
 
@@ -341,15 +418,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(writes.writes, [
-        Write('updateActivity', activity.id, <String, Object?>{
-          'quantity': 5,
-        }),
+        Write('updateActivity', activity.id, <String, Object?>{'quantity': 5}),
       ]);
       expect(editor, findsNothing);
     });
 
-    testWidgets('a save that outlasts ten seconds stays open and says it '
-        'timed out', (WidgetTester tester) async {
+    testWidgets('a save that outlasts the timeout closes and says it will '
+        'sync', (WidgetTester tester) async {
       writes.respond = _never;
       await open(tester);
       await tester.enterText(
@@ -357,11 +432,47 @@ void main() {
         '5',
       );
       await tester.tap(find.widgetWithText(TextButton, 'Save'));
-      await tester.pump(const Duration(seconds: 10));
+      await tester.pump(writeTimeout - const Duration(seconds: 1));
+      expect(editor, findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(editor, findsNothing);
+      expect(find.text(queuedMessage), findsOneWidget);
+      expect(find.text('Request timed out'), findsNothing);
+    });
+
+    testWidgets('a delete in flight disables both actions, and one that '
+        'outlasts the timeout closes and says it will sync', (
+      WidgetTester tester,
+    ) async {
+      writes.respond = _never;
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
       await tester.pump();
 
-      expect(editor, findsOneWidget);
-      expect(find.text('Request timed out'), findsOneWidget);
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.delete_outline),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+
+      await tester.pump(writeTimeout);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [Write('deleteActivity', activity.id)]);
+      expect(editor, findsNothing);
+      expect(find.text(queuedDeleteMessage), findsOneWidget);
     });
 
     testWidgets('deletes the activity and closes', (WidgetTester tester) async {
@@ -413,6 +524,35 @@ void main() {
 
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
       expect(find.text('Activity deleted'), findsOneWidget);
+    });
+
+    testWidgets('a delete in flight disables its button, and one that '
+        'outlasts the timeout says it will sync', (WidgetTester tester) async {
+      writes.respond = _never;
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: coffee.id),
+      );
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+
+      expect(writes.writes, [Write('deleteActivity', activity.id)]);
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.delete_outline),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await tester.pump(writeTimeout);
+      await tester.pumpAndSettle();
+
+      expect(find.text(queuedDeleteMessage), findsOneWidget);
+      expect(find.text('Activity deleted'), findsNothing);
     });
 
     testWidgets('shows the error when the delete fails', (

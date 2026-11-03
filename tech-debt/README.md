@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**104 issues: 0 critical, 17 high, 57 medium, 30 low.**
+**97 issues: 0 critical, 14 high, 53 medium, 30 low.**
 
 ## Firebase Data Layer (9)
 
@@ -68,21 +68,14 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 - **high** — [Sign-up errors like taken emails never reach the user at all](error-handling-and-observability/registration-failures-are-unhandled.md)
 - **medium** — [One screen silences a safety lint instead of checking the widget is still alive](error-handling-and-observability/async-buildcontext-lint-suppressed-instead-of-guarded.md)
 - **medium** — [Every caught error is shown once on screen and then lost for good](error-handling-and-observability/catch-sites-render-the-error-once-and-discard-it.md)
-- **medium** — [Inconsistent error display, and one path can crash the Save button itself](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
+- **medium** — [The same Firebase error is shown four different ways](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (8)
+## Offline and Write Reliability (1)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **high** — [Loading scrim blocks touch but not screen readers; Record button unguarded](offline-and-write-reliability/loading-overlay-does-not-block-input.md)
-- **high** — [App can't tell a stale offline cache from a confirmed empty result](offline-and-write-reliability/no-read-path-inspects-snapshotmetadata.md)
-- **high** — [Delete buttons can hang offline with no timeout and no visible feedback](offline-and-write-reliability/three-delete-paths-have-no-timeout-or-pending-state.md)
-- **medium** — [Offline persistence and cache size rest on SDK defaults nobody chose](offline-and-write-reliability/firestore-persistence-is-never-configured.md)
-- **medium** — [The activity editor reports a queued save as a failure](offline-and-write-reliability/editor-reports-a-queued-save-as-timed-out.md)
-- **medium** — [Add and archive buttons can be pressed repeatedly while offline](offline-and-write-reliability/add-vice-and-archive-writes-have-no-timeout.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
-- **medium** — [No banner, badge, or retry button ever tells the user they're offline](offline-and-write-reliability/no-connectivity-indicator-or-retry-affordance.md)
 
 ## Duplication and Dead Code (12)
 

@@ -10,6 +10,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
@@ -17,11 +18,8 @@ class RecordNewActivityDialog extends ConsumerStatefulWidget {
 
   const RecordNewActivityDialog({super.key});
 
-  static const Duration writeTimeout = Duration(seconds: 10);
   static const Duration undoDuration = Duration(seconds: 8);
   static const String recordedMessage = 'Activity recorded';
-  static const String queuedMessage =
-      'Saved on this device. It will sync when you are back online.';
 
   static void showRecorded(
     ScaffoldMessengerState messenger, {
@@ -107,18 +105,18 @@ class _RecordNewActivityDialogState
       dateController.text,
     );
 
-    bool synced = true;
+    final bool synced;
 
     try {
-      await writes
-          .recordActivity(
-            activityID,
-            ownerID: user.uid,
-            viceID: selectedVice!.id,
-            quantity: int.parse(quantityController.text),
-            createdAt: date,
-          )
-          .timeout(RecordNewActivityDialog.writeTimeout);
+      synced = await settleWrite(
+        writes.recordActivity(
+          activityID,
+          ownerID: user.uid,
+          viceID: selectedVice!.id,
+          quantity: int.parse(quantityController.text),
+          createdAt: date,
+        ),
+      );
     } on FirebaseException catch (e) {
       if (mounted) {
         setState(() {
@@ -130,10 +128,6 @@ class _RecordNewActivityDialogState
       }
 
       return;
-    } on TimeoutException {
-      // The write stays queued in the SDK and commits once the device
-      // reconnects.
-      synced = false;
     } finally {
       if (mounted) {
         setState(() {
@@ -165,14 +159,11 @@ class _RecordNewActivityDialogState
     String message;
 
     try {
-      await writes
-          .deleteActivity(activityID)
-          .timeout(RecordNewActivityDialog.writeTimeout);
-      message = 'Activity removed';
+      message = await settleWrite(writes.deleteActivity(activityID))
+          ? 'Activity removed'
+          : queuedDeleteMessage;
     } on FirebaseException catch (e) {
       message = 'Unable to undo: ${e.message ?? e.code}';
-    } on TimeoutException {
-      message = 'Undo has not reached the server yet';
     }
 
     if (messenger.mounted) {
@@ -201,152 +192,156 @@ class _RecordNewActivityDialogState
       child: Stack(
         alignment: Alignment.center,
         children: [
-          AlertDialog(
-            title: const Text('Record New Vice Activity'),
-            icon: const Icon(Icons.addchart),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<Vice>(
-                    initialValue: selectedVice,
-                    isExpanded: true,
-                    hint: const Text('Select Vice'),
-                    onChanged: (Vice? value) {
-                      final int parsedQuantity =
-                          int.tryParse(quantityController.text) ?? 0;
+          // The scrim below stops pointers but not a screen reader.
+          ExcludeSemantics(
+            excluding: loading,
+            child: AlertDialog(
+              title: const Text('Record New Vice Activity'),
+              icon: const Icon(Icons.addchart),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<Vice>(
+                      initialValue: selectedVice,
+                      isExpanded: true,
+                      hint: const Text('Select Vice'),
+                      onChanged: (Vice? value) {
+                        final int parsedQuantity =
+                            int.tryParse(quantityController.text) ?? 0;
 
-                      setState(() {
-                        selectedVice = value;
-                        updateUnit(parsedQuantity);
-                      });
-                    },
-                    items: vices
-                        .map(
-                          (Vice vice) => DropdownMenuItem<Vice>(
-                            value: vice,
-                            child: Text(vice.name),
-                          ),
-                        )
-                        .toList(),
-                    decoration: const InputDecoration(labelText: 'Vice'),
-                    validator: (Vice? value) {
-                      if (value == null) {
-                        return 'Please select a vice';
-                      }
+                        setState(() {
+                          selectedVice = value;
+                          updateUnit(parsedQuantity);
+                        });
+                      },
+                      items: vices
+                          .map(
+                            (Vice vice) => DropdownMenuItem<Vice>(
+                              value: vice,
+                              child: Text(vice.name),
+                            ),
+                          )
+                          .toList(),
+                      decoration: const InputDecoration(labelText: 'Vice'),
+                      validator: (Vice? value) {
+                        if (value == null) {
+                          return 'Please select a vice';
+                        }
 
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: dateController,
-                    readOnly: !manualDate,
-                    focusNode: FocusNode(),
-                    decoration: InputDecoration(
-                      labelText: 'Date and Time',
-                      suffixIcon: IconButton(
-                        tooltip: manualDate
-                            ? 'Use current date and time'
-                            : 'Manually enter date and time',
-                        icon: manualDate
-                            ? Icon(Icons.lock_open)
-                            : Icon(Icons.lock_clock),
-                        onPressed: () {
-                          setState(() {
-                            manualDate = !manualDate;
-                          });
-                        },
-                      ),
+                        return null;
+                      },
                     ),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a date and time';
-                      }
-
-                      try {
-                        RecordNewActivityDialog.dateFormat.parse(value);
-                      } on FormatException {
-                        return 'Please enter a valid date and time';
-                      }
-
-                      return null;
-                    },
-                    onTap: () async {
-                      if (!manualDate) {
-                        return;
-                      }
-
-                      FocusScope.of(context).requestFocus(FocusNode());
-
-                      final DateTime? date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-
-                      if (date == null || !context.mounted) {
-                        return;
-                      }
-
-                      final TimeOfDay? time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(date),
-                      );
-
-                      if (time == null) {
-                        return;
-                      }
-
-                      final DateTime dateTime = DateTime(
-                        date.year,
-                        date.month,
-                        date.day,
-                        time.hour,
-                        time.minute,
-                      );
-
-                      dateController.text = RecordNewActivityDialog.dateFormat
-                          .format(dateTime);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: quantityController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Quantity',
-                      suffixText: unit,
-                    ),
-                    validator: quantityError,
-                    onChanged: (String value) {
-                      final int parsed = int.tryParse(value) ?? 0;
-                      updateUnit(parsed);
-                    },
-                  ),
-                  if (error != null) ...[
                     const SizedBox(height: 16),
-                    Text(error!, style: const TextStyle(color: Colors.red)),
+                    TextFormField(
+                      controller: dateController,
+                      readOnly: !manualDate,
+                      focusNode: FocusNode(),
+                      decoration: InputDecoration(
+                        labelText: 'Date and Time',
+                        suffixIcon: IconButton(
+                          tooltip: manualDate
+                              ? 'Use current date and time'
+                              : 'Manually enter date and time',
+                          icon: manualDate
+                              ? Icon(Icons.lock_open)
+                              : Icon(Icons.lock_clock),
+                          onPressed: () {
+                            setState(() {
+                              manualDate = !manualDate;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (String? value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a date and time';
+                        }
+
+                        try {
+                          RecordNewActivityDialog.dateFormat.parse(value);
+                        } on FormatException {
+                          return 'Please enter a valid date and time';
+                        }
+
+                        return null;
+                      },
+                      onTap: () async {
+                        if (!manualDate) {
+                          return;
+                        }
+
+                        FocusScope.of(context).requestFocus(FocusNode());
+
+                        final DateTime? date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+
+                        if (date == null || !context.mounted) {
+                          return;
+                        }
+
+                        final TimeOfDay? time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(date),
+                        );
+
+                        if (time == null) {
+                          return;
+                        }
+
+                        final DateTime dateTime = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+
+                        dateController.text = RecordNewActivityDialog.dateFormat
+                            .format(dateTime);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: quantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Quantity',
+                        suffixText: unit,
+                      ),
+                      validator: quantityError,
+                      onChanged: (String value) {
+                        final int parsed = int.tryParse(value) ?? 0;
+                        updateUnit(parsed);
+                      },
+                    ),
+                    if (error != null) ...[
+                      const SizedBox(height: 16),
+                      Text(error!, style: const TextStyle(color: Colors.red)),
+                    ],
                   ],
-                ],
+                ),
               ),
+              actionsAlignment: MainAxisAlignment.spaceBetween,
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton.icon(
+                  onPressed: loading ? null : _record,
+                  label: const Text('Record'),
+                  icon: const Icon(Icons.add),
+                ),
+              ],
             ),
-            actionsAlignment: MainAxisAlignment.spaceBetween,
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Cancel'),
-              ),
-              TextButton.icon(
-                onPressed: loading ? null : _record,
-                label: const Text('Record'),
-                icon: const Icon(Icons.add),
-              ),
-            ],
           ),
           if (loading) ...[
             Positioned.fill(

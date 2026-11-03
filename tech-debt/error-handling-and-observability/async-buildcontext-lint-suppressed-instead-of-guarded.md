@@ -10,4 +10,4 @@
 
 - `lib/account_settings.dart:44` — `// ignore: use_build_context_synchronously`
 - `lib/account_settings.dart:51` — `// ignore: use_build_context_synchronously`
-- `lib/add_vice.dart:49` — `if (context.mounted) {`
+- `lib/add_vice.dart` — `if (mounted) {`

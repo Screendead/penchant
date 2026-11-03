@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 class CleanDay extends StatelessWidget {
-  const CleanDay({super.key, required this.isToday});
+  const CleanDay({super.key, required this.isToday, this.offline = false});
 
   final bool isToday;
+  // Offline, an empty day may only be one this device never fetched.
+  final bool offline;
+
+  static const String offlineHeadline = 'Nothing on this device';
+  static const String offlineBody =
+      'Entries made elsewhere show once you are back online.';
 
   static String headline({required bool isToday}) =>
       isToday ? 'A clear day so far' : 'A clear day';
@@ -37,7 +43,7 @@ class CleanDay extends StatelessWidget {
                 Icon(Icons.eco_outlined, color: green.onPrimaryContainer),
                 const SizedBox(height: 8),
                 Text(
-                  headline(isToday: isToday),
+                  offline ? offlineHeadline : headline(isToday: isToday),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: green.onPrimaryContainer,
@@ -45,7 +51,7 @@ class CleanDay extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  body(isToday: isToday),
+                  offline ? offlineBody : body(isToday: isToday),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: green.onPrimaryContainer,

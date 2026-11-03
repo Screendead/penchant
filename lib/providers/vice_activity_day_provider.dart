@@ -43,6 +43,8 @@ final viceActivityDayProvider =
           )
           .where('createdAt', isLessThan: Timestamp.fromDate(startOfNextDay))
           .orderBy('createdAt', descending: true)
-          .snapshots()
+          // The server's acknowledgement of a local write changes only
+          // metadata, and clears an entry's not-yet-synced mark.
+          .snapshots(includeMetadataChanges: true)
           .map(ViceActivity.fromQuerySnapshot);
     });
