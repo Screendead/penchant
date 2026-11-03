@@ -11,8 +11,7 @@ at each required device size.
 
 ## Why
 
-- SOURCED (register): the only icon source is `assets/icon.webp`, and the documented seed script writes vices without
-  `archived`, which never reach the Today tab or the record dialog.
+- SOURCED (register): the only icon source is `assets/icon.webp`.
 - INFERENCE: an emulator-seeded screenshot run is mostly the e2e harness the repo already requires before merge, so it
   pays twice. Insight cards need weeks of plausible data; generating it is the only honest way to show them.
 - From memory, to verify: App Store Connect requires screenshots for the largest iPhone size class, and a Mac listing
@@ -33,6 +32,6 @@ obviously illustrative (round numbers, neutral vices like coffee) so screenshots
 
 **Revenue impact:** Direct, through store conversion.
 
-**Depends on:** [brand name](brand-name.md); [`vices-without-archived-never-reach-the-today-tab`](../../tech-debt/firebase-data-layer/vices-without-archived-never-reach-the-today-tab.md); [`seed-script-is-a-hardcoded-one-off`](../../tech-debt/dependency-and-tooling-drift/seed-script-is-a-hardcoded-one-off.md).
+**Depends on:** [brand name](brand-name.md).
 
 **Needs Jack:** yes — Who makes the icon: Jack, a commissioned designer, or generated candidates for him to pick from?

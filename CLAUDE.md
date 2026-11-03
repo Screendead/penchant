@@ -72,8 +72,7 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
 `admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
 so the script has no credentials until a new one is supplied. It also predates the
-`archived` field and writes vices without it; they parse as unarchived, but the
-`archived == false` query never returns them.
+`archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
 
 Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
 Firestore emulator on `demo-tracker`):
