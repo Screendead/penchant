@@ -8,8 +8,6 @@ Both listeners stay subscribed whichever tab is visible, and both pipelines reco
 
 ## Evidence
 
-- `lib/homepage.dart:63` — `body: IndexedStack(\n        index: selectedTabIndex,`
-- `lib/homepage.dart:66` — `ViceTracker(),`
-- `lib/homepage.dart:67` — `UsageGraphView(),`
+- `lib/homepage.dart:61` — `body: IndexedStack(\n        index: selectedTabIndex,`
+- `lib/homepage.dart:63` — `children: const [ViceTracker(), UsageGraphView()],`
 - `lib/usage_graph_view.dart:28` — `void initState() {`
-- `lib/homepage.dart:23` — `actions: selectedTabIndex == 0\n            ? const <Widget>[\n                RecordNewActivityButton(),\n              ]\n            : const <Widget>[],`

@@ -2,7 +2,7 @@
 
 **Severity:** medium
 
-Across `manage_data.dart`, `add_vice.dart`, the editor and history pages, `sign_in.dart`, `account_settings.dart`, `vice_tracker.dart` and the record dialog, every block that handles a `FirebaseException`, `FirebaseAuthException` or untyped exception formats it for display and lets the object fall out of scope.
+Across `manage_data.dart`, `vice_form.dart`, the editor and history pages, `sign_in.dart`, `account_settings.dart`, `vice_tracker.dart` and the record dialog, every block that handles a `FirebaseException`, `FirebaseAuthException` or untyped exception formats it for display and lets the object fall out of scope.
 
 None writes the error anywhere else, so once the message leaves the screen the only remaining record is whatever the user happened to notice.
 

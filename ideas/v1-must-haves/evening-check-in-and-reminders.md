@@ -4,7 +4,8 @@
 
 ## What
 
-Wire the dead `/settings/notifications` row to local notifications, off by default:
+Give Settings a Notifications row (it had one that dead-ended on a 404, since removed) for local notifications, off
+by default:
 
 - An evening check-in at a time the user picks ("Anything to add to today?"), with two actions: "Nothing to log
   today" and "Add an entry".
@@ -26,7 +27,7 @@ The permission is asked only when the user turns the check-in on. Copy is neutra
 - **A.** A `days` collection: one document per user per local date (`ownerID`, `date`, `confirmed`, optional note),
   written by the check-in. A new collection, with rules and tests.
 - **B.** A `confirmedThrough` date on the user's profile. One field, but no per-day note and no gaps.
-- **C.** No check-in in 1.0; remove the Settings row.
+- **C.** No check-in in 1.0; Settings stays without a Notifications row.
 
 ## Recommendation
 
@@ -38,6 +39,6 @@ yes.
 
 **Revenue impact:** Medium to high, through retention and insight quality.
 
-**Depends on:** [quick logging](one-tap-quick-logging.md); [`four-named-routes-dead-end-at-not-found`](../../tech-debt/navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md); [`day-windows-use-device-local-midnight`](../../tech-debt/firebase-data-layer/day-windows-use-device-local-midnight.md).
+**Depends on:** [quick logging](one-tap-quick-logging.md); [`day-windows-use-device-local-midnight`](../../tech-debt/firebase-data-layer/day-windows-use-device-local-midnight.md).
 
 **Needs Jack:** yes — May "nothing logged today" be a new `days` collection?

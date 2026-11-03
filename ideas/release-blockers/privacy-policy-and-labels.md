@@ -41,7 +41,7 @@ leave your phone" is both the safest reading of Apple's rules and the trust line
 
 **Revenue impact:** A release blocker, and the base of the trust positioning.
 
-**Depends on:** [support pages](support-about-and-legal-pages.md); [crash reporting](../v1-must-haves/crash-reporting-and-analytics.md); [Apple Health](../insights/apple-health-correlation.md); [`four-named-routes-dead-end-at-not-found`](../../tech-debt/navigation-and-unreachable-ui/four-named-routes-dead-end-at-not-found.md).
+**Depends on:** [support pages](support-about-and-legal-pages.md); [crash reporting](../v1-must-haves/crash-reporting-and-analytics.md); [Apple Health](../insights/apple-health-correlation.md).
 
 **Needs Jack:** yes — Which legal entity, contact address and data-controller details go in the policy, and is a paid
 legal review in budget before 1.1?

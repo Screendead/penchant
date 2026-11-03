@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tracker/add_vice.dart';
+import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -84,7 +84,7 @@ void main() {
 
   group('Add Vice', () {
     Future<void> fillAndSave(WidgetTester tester) async {
-      await _pumpOpened(tester, writes, const [], const AddVice());
+      await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Vice Name'),
         'Coffee',
@@ -109,7 +109,7 @@ void main() {
           'unit': Unit.drink,
         }),
       ]);
-      expect(find.byType(AddVice), findsNothing);
+      expect(find.byType(ViceForm), findsNothing);
     });
 
     testWidgets('stays open and shows the error when the save fails', (
@@ -118,8 +118,160 @@ void main() {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
       await fillAndSave(tester);
 
-      expect(find.byType(AddVice), findsOneWidget);
+      expect(find.byType(ViceForm), findsOneWidget);
       expect(find.text('unavailable'), findsOneWidget);
+    });
+  });
+
+  group('Edit Vice', () {
+    final Vice legacy = Vice(
+      id: 'coffee',
+      name: 'x' * 61,
+      unit: Unit.drink,
+      ownerID: ownerID,
+      createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+      archived: false,
+    );
+
+    Future<void> open(WidgetTester tester) => _pumpOpened(tester, writes, [
+      viceListProvider.overrideWith((ref) => Stream.value([legacy])),
+    ], const EditVice(viceID: 'coffee'));
+
+    Future<void> pickUnit(WidgetTester tester, Unit unit) async {
+      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(unit.plural).last);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> save(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens filled with the vice', (WidgetTester tester) async {
+      await open(tester);
+
+      expect(find.text('Edit Vice'), findsOneWidget);
+      expect(find.text('x' * 61), findsOneWidget);
+      expect(find.text(Unit.drink.plural), findsOneWidget);
+    });
+
+    testWidgets('writes only a changed unit, keeping a legacy name as it is', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await pickUnit(tester, Unit.hour);
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'unit': Unit.hour,
+        }),
+      ]);
+      expect(find.byType(EditVice), findsNothing);
+    });
+
+    testWidgets('writes only a changed name', (WidgetTester tester) async {
+      await open(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Vice Name'),
+        'Espresso',
+      );
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'name': 'Espresso',
+        }),
+      ]);
+    });
+
+    testWidgets('writes nothing when nothing changed, and closes', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await save(tester);
+
+      expect(writes.writes, isEmpty);
+      expect(find.byType(EditVice), findsNothing);
+    });
+
+    group('when another device edits the vice while the form is open', () {
+      final Vice coffee = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+      );
+      final Vice renamed = Vice(
+        id: 'coffee',
+        name: 'Espresso',
+        unit: Unit.hour,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+      );
+
+      Future<void> openThenRename(WidgetTester tester) async {
+        final StreamController<List<Vice>> vices =
+            StreamController<List<Vice>>();
+        addTearDown(() => unawaited(vices.close()));
+        vices.add([coffee]);
+        await _pumpOpened(tester, writes, [
+          viceListProvider.overrideWith((ref) => vices.stream),
+        ], const EditVice(viceID: 'coffee'));
+        vices.add([renamed]);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('an untouched save writes nothing', (
+        WidgetTester tester,
+      ) async {
+        await openThenRename(tester);
+        await save(tester);
+
+        expect(writes.writes, isEmpty);
+      });
+
+      testWidgets('a save writes only what this form changed', (
+        WidgetTester tester,
+      ) async {
+        await openThenRename(tester);
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Vice Name'),
+          'Latte',
+        );
+        await save(tester);
+
+        expect(writes.writes, [
+          const Write('updateVice', 'coffee', <String, Object?>{
+            'name': 'Latte',
+          }),
+        ]);
+      });
+    });
+
+    testWidgets('stays open and shows the error when the save fails', (
+      WidgetTester tester,
+    ) async {
+      writes.respond = (_) => Future.error(_firebaseError('unavailable'));
+      await open(tester);
+      await pickUnit(tester, Unit.hour);
+      await save(tester);
+
+      expect(find.byType(EditVice), findsOneWidget);
+      expect(find.text('unavailable'), findsOneWidget);
+    });
+
+    testWidgets('says so when the vice is gone', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => Stream.value(<Vice>[])),
+      ], const EditVice(viceID: 'coffee'));
+
+      expect(find.text('Vice not found'), findsOneWidget);
     });
   });
 
@@ -341,9 +493,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(writes.writes, [
-        Write('updateActivity', activity.id, <String, Object?>{
-          'quantity': 5,
-        }),
+        Write('updateActivity', activity.id, <String, Object?>{'quantity': 5}),
       ]);
       expect(editor, findsNothing);
     });

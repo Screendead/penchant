@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
-import 'package:tracker/add_vice.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_init.dart';
@@ -12,33 +11,46 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
+import 'package:tracker/vice_form.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeFirebase();
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  Widget build(BuildContext context) {
     final User? user = ref.watch(userProvider).value;
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: Colors.pink,
       brightness: Brightness.dark,
     );
 
+    // Swapping `home` leaves pushed routes on the stack, where the previous
+    // session's pages would sit over the sign-in screen.
+    ref.listen<AsyncValue<User?>>(userProvider, (previous, next) {
+      if (previous?.value?.uid != next.value?.uid) {
+        navigatorKey.currentState?.popUntil((Route<dynamic> r) => r.isFirst);
+      }
+    });
+
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       excludeFromSemantics: true,
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'Vice Tracker',
         theme: ThemeData(
           colorScheme: colorScheme,
@@ -56,53 +68,42 @@ class MyApp extends ConsumerWidget {
           ),
         ),
         home: user == null ? const Authenticate() : const Homepage(),
-        onGenerateRoute: (RouteSettings settings) {
-          final Uri uri = Uri.parse(settings.name ?? '');
-
-          if (uri.pathSegments.length == 3 &&
-              uri.pathSegments[0] == 'vices' &&
-              uri.pathSegments[2] == 'activities') {
-            return MaterialPageRoute<void>(
-              fullscreenDialog: true,
-              builder: (BuildContext context) {
-                return ViceActivityHistoryPage(viceID: uri.pathSegments[1]);
-              },
-            );
-          }
-
-          if (uri.pathSegments.length == 4 &&
-              uri.pathSegments[0] == 'vices' &&
-              uri.pathSegments[2] == 'activities') {
-            return MaterialPageRoute<void>(
-              fullscreenDialog: true,
-              builder: (BuildContext context) {
-                return ViceActivityEditorPage(
-                  viceID: uri.pathSegments[1],
-                  activityID: uri.pathSegments[3],
-                );
-              },
-            );
-          }
-
-          return MaterialPageRoute<void>(
-            fullscreenDialog: true,
-            builder: (BuildContext context) {
-              switch (settings.name) {
-                case '/manage-data':
-                  return const ManageData();
-                case '/vices/add':
-                  return const AddVice();
-                case '/settings':
-                  return const Settings();
-                case '/settings/account':
-                  return const AccountSettings();
-                default:
-                  return const NotFound();
-              }
-            },
-          );
-        },
+        onGenerateRoute: generateRoute,
       ),
     );
+  }
+}
+
+Route<void> generateRoute(RouteSettings settings) {
+  final Widget page = routePage(settings.name);
+  // Forms that save or discard open as modals; pages to browse push.
+  return MaterialPageRoute<void>(
+    fullscreenDialog:
+        page is ViceForm || page is EditVice || page is ViceActivityEditorPage,
+    settings: settings,
+    builder: (_) => page,
+  );
+}
+
+Widget routePage(String? name) {
+  final List<String> segments = Uri.parse(name ?? '').pathSegments;
+
+  switch (segments) {
+    case ['vices', 'add']:
+      return const ViceForm();
+    case ['vices', final String viceID, 'edit']:
+      return EditVice(viceID: viceID);
+    case ['vices', final String viceID, 'activities']:
+      return ViceActivityHistoryPage(viceID: viceID);
+    case ['vices', final String viceID, 'activities', final String activityID]:
+      return ViceActivityEditorPage(viceID: viceID, activityID: activityID);
+    case ['manage-data']:
+      return const ManageData();
+    case ['settings']:
+      return const Settings();
+    case ['settings', 'account']:
+      return const AccountSettings();
+    default:
+      return const NotFound();
   }
 }

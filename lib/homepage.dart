@@ -20,19 +20,13 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(selectedTabIndex == 0 ? 'Vice Tracker' : 'Usage Graph'),
-        actions: selectedTabIndex == 0
-            ? const <Widget>[
-                RecordNewActivityButton(),
-              ]
-            : const <Widget>[],
+        actions: const <Widget>[RecordNewActivityButton()],
       ),
       drawer: Drawer(
         child: ListView(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.primary),
               child: Center(
                 child: Text(
                   'Vice Tracker',
@@ -47,14 +41,18 @@ class _HomepageState extends State<Homepage> {
               title: const Text('Manage Data'),
               leading: const Icon(Icons.list),
               onTap: () {
-                Navigator.of(context).pushNamed('/manage-data');
+                Navigator.of(context)
+                  ..pop()
+                  ..pushNamed('/manage-data');
               },
             ),
             ListTile(
               title: const Text('Settings'),
               leading: const Icon(Icons.settings),
               onTap: () {
-                Navigator.of(context).pushNamed('/settings');
+                Navigator.of(context)
+                  ..pop()
+                  ..pushNamed('/settings');
               },
             ),
           ],
@@ -62,10 +60,7 @@ class _HomepageState extends State<Homepage> {
       ),
       body: IndexedStack(
         index: selectedTabIndex,
-        children: const [
-          ViceTracker(),
-          UsageGraphView(),
-        ],
+        children: const [ViceTracker(), UsageGraphView()],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedTabIndex,

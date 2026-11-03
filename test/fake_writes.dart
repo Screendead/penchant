@@ -50,6 +50,14 @@ class FakeTrackerWrites implements TrackerWrites {
   );
 
   @override
+  Future<void> updateVice(String viceID, {String? name, Unit? unit}) => _write(
+    Write('updateVice', viceID, <String, Object?>{
+      'name': ?name,
+      'unit': ?unit,
+    }),
+  );
+
+  @override
   Future<void> setViceArchived(String viceID, {required bool archived}) =>
       _write(
         Write('setViceArchived', viceID, <String, Object?>{
