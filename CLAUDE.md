@@ -69,10 +69,25 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 `tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
-Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
-`admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
-so the script has no credentials until a new one is supplied. It also predates the
-`archived` field and writes vices without it, so `Vice.fromJson` throws on seeded data.
+Seed data, into emulators only (Node 22, `npm --prefix admin ci` once). `emulators:exec` sets the emulator hosts
+itself but discards the data when the script exits, so it only checks that the script runs:
+
+```bash
+firebase emulators:exec --project demo-tracker --only auth,firestore "node admin/populateFirestore.js"
+```
+
+To keep the data, start `tools/run-emulated.sh` (or `firebase emulators:start --project demo-tracker`), then in
+another terminal point the script at its ports and log in as the seed user:
+
+```bash
+FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node admin/populateFirestore.js
+```
+
+`admin/populateFirestore.js` refuses to start unless `FIRESTORE_EMULATOR_HOST` and
+`FIREBASE_AUTH_EMULATOR_HOST` are set and the project id (`SEED_PROJECT_ID`, default `demo-tracker`)
+starts with `demo-`; it needs no credentials. It creates the Auth user `seed@example.com` (password
+`seed-password`) and replaces that user's vices (one archived) and 30 days of activities with documents in the
+current data shape.
 
 Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
 Firestore emulator on `demo-tracker`):
@@ -104,14 +119,23 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
-annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is a
-hand-written `StreamProvider` or `StreamProvider.family` wrapping a Firestore snapshot
-stream. Match that style; running `build_runner` generates nothing.
+annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
+hand-written. Most are a `StreamProvider` or `StreamProvider.family` wrapping a Firestore
+snapshot stream (`userProvider` wraps `authStateChanges()`). Two are plain `Provider`s:
+`viceActivityListByViceIDProvider` groups `viceActivityListProvider`'s resolved list by
+vice and returns `null` until that list has a value, and `trackerWritesProvider` hands
+out the write layer (below). Match that style; running `build_runner` generates nothing.
 
-**Reads go through providers, writes do not.** Widgets read via `ref.watch(...)` on a
-provider, but write with inline `FirebaseFirestore.instance` calls (`add_vice.dart`,
-`manage_data.dart`, `vice_activity_editor_page.dart`,
-`widgets/record_new_activity_dialog.dart`). There is no repository layer.
+**Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
+stream provider and write via `ref.read(trackerWritesProvider)`, which hands out one
+`TrackerWrites` (`lib/writes/tracker_writes.dart`), the only code in `lib/` that writes
+Firestore documents. It has one method
+per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
+`updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
+error messages and Undo stay in the widgets. The record dialog takes one id from
+`newActivityID()` per dialog, so a second press after a failed save writes the same
+document. Auth mutations (sign-in, register, sign-out, account settings) still call
+`FirebaseAuth.instance` inline.
 
 **Provider chain.** `userProvider` (auth state) → `viceListProvider` /
 `unarchivedViceListProvider` → the day and list activity providers, which need the vice
@@ -157,7 +181,9 @@ average.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
-`User`). Anything that calls `FirebaseFirestore.instance` is untestable that way;
+`User`; `test/fake_writes.dart` is a `TrackerWrites` that records each write, for
+`trackerWritesProvider.overrideWithValue`). Anything that calls `FirebaseFirestore.instance`
+or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.
 

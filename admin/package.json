@@ -9,7 +9,10 @@
   "license": "UNLICENSED",
   "private": true,
   "description": "",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
-    "firebase-admin": "^12.3.0"
+    "firebase-admin": "^14.5.0"
   }
 }

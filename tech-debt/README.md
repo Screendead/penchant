@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**109 issues: 0 critical, 19 high, 58 medium, 32 low.**
+**107 issues: 0 critical, 18 high, 59 medium, 30 low.**
 
 ## Firebase Data Layer (9)
 
@@ -36,7 +36,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
 - **high** — [Signing out can briefly show the previous user's private data](widget-state-and-view-logic/provider-value-carries-the-previous-users-data.md)
-- **high** — [Every database write is hand-copied inline instead of shared code](widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
+- **medium** — [Sign-in, sign-up, sign-out and profile edits can't be tested with a fake](widget-state-and-view-logic/auth-calls-bypass-providers.md)
 - **medium** — [Archiving a vice hides it in some screens but not others](widget-state-and-view-logic/archived-means-hidden-in-two-pickers-only.md)
 - **medium** — [Signed-in users briefly see the login screen on every cold start](widget-state-and-view-logic/auth-loading-is-treated-as-signed-out.md)
 - **medium** — [Form fields leak controllers and focus nodes instead of cleaning up](widget-state-and-view-logic/controllers-and-focus-nodes-are-never-disposed.md)
@@ -135,7 +135,7 @@ Password reset, email verification, re-authentication, account deletion and expo
 - **medium** — [Sign-out failures go unhandled while navigation proceeds immediately regardless](auth-and-account-lifecycle/sign-out-is-neither-awaited-nor-guarded.md)
 - **medium** — [Signed-out user's synced data stays cached on the device](auth-and-account-lifecycle/sign-out-leaves-firestore-cache-on-device.md)
 
-## Dependency and Tooling Drift (7)
+## Dependency and Tooling Drift (5)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
@@ -143,9 +143,7 @@ Version lag and resolver locks across Dart, Node and Gradle, dead or incompatibl
 - **high** — [Unused lint tooling holds the resolved analyzer package six majors back](dependency-and-tooling-drift/unused-lint-tooling-caps-the-analyzer-package.md)
 - **medium** — [Code-generation packages are installed but nothing in the app uses them](dependency-and-tooling-drift/riverpod-codegen-toolchain-declared-but-unused.md)
 - **medium** — [A plain dependency upgrade can never move the Riverpod packages forward](dependency-and-tooling-drift/riverpod-family-exact-pins-block-upgrades.md)
-- **low** — [The admin script's dependencies have not changed since the day they were added](dependency-and-tooling-drift/admin-dependencies-never-revisited.md)
 - **low** — [Firebase plugins lag freely while test and build_runner sit stuck](dependency-and-tooling-drift/dart-dependencies-trail-pub-dev.md)
-- **low** — [The seed script hardcodes a real user's ID and cannot run on a fresh clone](dependency-and-tooling-drift/seed-script-is-a-hardcoded-one-off.md)
 
 ## Platform and Delivery Config (10)
 
@@ -176,7 +174,7 @@ Git working state and refs, documentation that contradicts the code, and version
 
 - **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
 - **high** — [Every production build reports version 1.0.0 with no tags to trace it](repo-docs-and-release-hygiene/version-never-incremented-and-no-tags.md)
-- **medium** — [Three factual claims in the guidance doc do not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
+- **medium** — [The guidance doc's provider chain does not match the actual code](repo-docs-and-release-hygiene/claude-md-claims-contradicted-by-the-code.md)
 - **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 - **medium** — [The only records of failing quality gates are gitignored, unseen](repo-docs-and-release-hygiene/gitignored-logs-hid-the-failing-gates.md)
 - **medium** — [Local master is three commits behind what CI actually deploys](repo-docs-and-release-hygiene/local-master-is-three-commits-behind.md)

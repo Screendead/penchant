@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
@@ -76,10 +77,7 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
 
   Future<void> _deleteActivity() async {
     try {
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(widget.activityID)
-          .delete();
+      await ref.read(trackerWritesProvider).deleteActivity(widget.activityID);
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -117,13 +115,17 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
     });
 
     try {
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(widget.activityID)
-          .update(changes).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => Future.error(TimeoutException(null)),
-      );
+      await ref
+          .read(trackerWritesProvider)
+          .updateActivity(
+            widget.activityID,
+            quantity: changes['quantity'] as int?,
+            createdAt: changes['createdAt'] as DateTime?,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => Future.error(TimeoutException(null)),
+          );
 
       if (mounted) {
         Navigator.of(context).pop();

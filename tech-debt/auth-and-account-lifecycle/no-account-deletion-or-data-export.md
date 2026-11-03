@@ -22,4 +22,3 @@ them; `populateFirestore.js` is a one-off seeder, not a lifecycle tool.
                 Navigator.of(context).pushNamed('/settings/account');
               },
             ),`
-- `admin/populateFirestore.js:19` — `const ownerID = '1J6xVvHsFWYLPd5VPmI2t4nuGNo1';`

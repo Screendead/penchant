@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
@@ -31,6 +32,7 @@ class ManageData extends ConsumerWidget {
       ),
       body: _buildBody(
         context,
+        ref,
         viceListValue: viceListValue,
         viceActivityListValue: viceActivityListValue,
       ),
@@ -38,7 +40,8 @@ class ManageData extends ConsumerWidget {
   }
 
   Widget _buildBody(
-    BuildContext context, {
+    BuildContext context,
+    WidgetRef ref, {
     required AsyncValue<List<Vice>?> viceListValue,
     required AsyncValue<List<ViceActivity>?> viceActivityListValue,
   }) {
@@ -93,10 +96,9 @@ class ManageData extends ConsumerWidget {
                         icon: const Icon(Icons.unarchive),
                         onPressed: () async {
                           try {
-                            await FirebaseFirestore.instance
-                                .collection('vices')
-                                .doc(vice.id)
-                                .update({'archived': false});
+                            await ref
+                                .read(trackerWritesProvider)
+                                .setViceArchived(vice.id, archived: false);
                           } on FirebaseException catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -113,10 +115,9 @@ class ManageData extends ConsumerWidget {
                         icon: const Icon(Icons.archive),
                         onPressed: () async {
                           try {
-                            await FirebaseFirestore.instance
-                                .collection('vices')
-                                .doc(vice.id)
-                                .update({'archived': true});
+                            await ref
+                                .read(trackerWritesProvider)
+                                .setViceArchived(vice.id, archived: true);
                           } on FirebaseException catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
