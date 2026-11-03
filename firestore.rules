@@ -38,41 +38,111 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
+    // R1, the dual-shape phase of end-to-end encryption: a document holds its
+    // private fields either in plaintext or sealed in one `enc` Blob, never
+    // both, and a sealed document never goes back. The server can no longer
+    // check a sealed name's length, unit or quantity; lib/data/limits.dart
+    // still does on the client.
+    //
+    // JournalCipher.blobLengths in lib/crypto/journal_cipher.dart: 29 bytes of
+    // version, nonce and tag over each padding bucket. A Dart test compares.
+    function blobLengths() {
+      return [93, 285, 1053, 4125];
+    }
+
+    function validEnc(enc) {
+      return enc is bytes && enc.size() in blobLengths();
+    }
+
+    function sealed(data) {
+      return 'enc' in data;
+    }
+
     match /vices/{viceID} {
       allow read, delete: if ownsExisting();
 
       allow create: if createsOwn()
-        && request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-        && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-        && validName(request.resource.data.name)
-        && validUnit(request.resource.data.unit)
+        && ((request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+            && validName(request.resource.data.name)
+            && validUnit(request.resource.data.unit))
+          || (request.resource.data.keys().hasAll(['enc', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['enc', 'ownerID', 'createdAt', 'archived'])
+            && validEnc(request.resource.data.enc)))
         && request.resource.data.createdAt is timestamp
         && request.resource.data.archived is bool;
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived'])
-        && (!('name' in changedKeys()) || validName(request.resource.data.name))
-        && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
-        && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
+        && (!('archived' in changedKeys()) || request.resource.data.archived is bool)
+        && ((!sealed(resource.data)
+            && changedKeys().hasOnly(['name', 'unit', 'archived'])
+            && (!('name' in changedKeys()) || validName(request.resource.data.name))
+            && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit)))
+          // A sealed vice: re-sealed on rename, never unsealed.
+          || (sealed(resource.data)
+            && changedKeys().hasOnly(['enc', 'archived'])
+            && validEnc(request.resource.data.enc))
+          // The first-launch migrator: plaintext out, `enc` in, one write.
+          || (!sealed(resource.data)
+            && changedKeys().hasOnly(['enc', 'name', 'unit', 'archived'])
+            && validEnc(request.resource.data.enc)
+            && !request.resource.data.keys().hasAny(['name', 'unit'])));
     }
 
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
       allow create: if createsOwn()
-        && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
+        && ((request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
+            && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
+            && request.resource.data.quantity is int
+            && request.resource.data.quantity > 0)
+          || (request.resource.data.keys().hasAll(['viceID', 'enc', 'ownerID', 'createdAt'])
+            && request.resource.data.keys().hasOnly(['viceID', 'enc', 'ownerID', 'createdAt'])
+            && validEnc(request.resource.data.enc)))
         && request.resource.data.viceID is string
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt'])
-        && (!('quantity' in changedKeys())
-          || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
-        && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
+        && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp)
+        && ((!sealed(resource.data)
+            && changedKeys().hasOnly(['quantity', 'createdAt'])
+            && (!('quantity' in changedKeys())
+              || (request.resource.data.quantity is int && request.resource.data.quantity > 0)))
+          || (sealed(resource.data)
+            && changedKeys().hasOnly(['enc', 'createdAt'])
+            && validEnc(request.resource.data.enc))
+          || (!sealed(resource.data)
+            && changedKeys().hasOnly(['enc', 'quantity'])
+            && validEnc(request.resource.data.enc)
+            && !('quantity' in request.resource.data)));
+    }
+
+    // One per user. Create-only: keyId never changes, so a second key can't be
+    // registered beside ciphertext sealed under the first. Delete is the
+    // "Start a new journal" path, after the journal's documents are gone.
+    match /keys/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+
+      // check: nonce, the 25-byte check text, tag. recoveryWrap: nonce, the
+      // 32-byte key, tag (lib/crypto/key_service.dart).
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['keyId', 'check', 'recoveryWrap', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['keyId', 'check', 'recoveryWrap', 'createdAt'])
+        && request.resource.data.keyId is string
+        && request.resource.data.keyId.size() == 11
+        && request.resource.data.check is bytes
+        && request.resource.data.check.size() == 53
+        && request.resource.data.recoveryWrap is bytes
+        && request.resource.data.recoveryWrap.size() == 60
+        && request.resource.data.createdAt is timestamp;
+
+      // A new recovery key re-wraps the same journal key.
+      allow update: if signedIn() && request.auth.uid == uid
+        && changedKeys().hasOnly(['recoveryWrap'])
+        && request.resource.data.recoveryWrap is bytes
+        && request.resource.data.recoveryWrap.size() == 60;
     }
   }
 }
