@@ -154,6 +154,27 @@ icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r
   Development profile for `com.screendead.tracker.tracker`. Claude's attempt was refused by the permission classifier.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
   Claude (`gh pr close 22 42`).
+- **Deploy the new activities index before installing a build with backend hardening** (`feat/backend-hardening`,
+  PR #PRNUM): Today's day query now needs the `activities (ownerID ASC, createdAt DESC)` index in
+  `firestore.indexes.json`. The emulators don't check indexes, so the e2e run can't catch its absence; on a phone
+  without it, Today reads "Unable to load this day: failed-precondition". Merging deploys it only once CI deploys
+  are on (above); until then `firebase deploy --only firestore:indexes --project screendead-vice-tracker`. Install
+  only after the console (Firestore > Indexes) shows it **Enabled**; building takes minutes.
+- **App Attest needs a paid Apple Developer Program team.** Adding the App Attest entitlement to Runner broke
+  `flutter build ios --release`: Xcode said "Personal development teams, including "Jack Lusher", do not support the
+  App Attest capability" for team 8N575942RT, so the backend-hardening PR ships App Check without it, and App Attest
+  yields no accepted token until it is added. TestFlight needs the paid membership anyway. Once the team has it, tell
+  Claude: it adds the capability (`com.apple.developer.devicecheck.appattest-environment` = `production`) and proves the
+  release build still signs.
+- **Register the iOS app with App Check** (Firebase console > Security > App Check > Apps): App Attest (needs the
+  Team ID) and DeviceCheck (needs a DeviceCheck key from the developer portal: the .p8 file, its Key ID, the Team ID).
+  Both need the paid team. Enforce nothing yet.
+- **Enforce App Check on Firestore only after every installed copy has it:** your iPhone and every TestFlight
+  tester on a build from the backend-hardening PR or later, the App Attest entitlement in place, and Security >
+  App Check > APIs showing nearly all Firestore requests verified. An older build is refused once you click
+  Enforce; enforcement takes up to 15 minutes, and turning it off undoes it.
+- **Set budget alerts** on `screendead-vice-tracker` (Google Cloud console > Billing > Budgets & alerts, or the
+  prompt when upgrading to Blaze). Alerts only email; they don't pause Firestore.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 

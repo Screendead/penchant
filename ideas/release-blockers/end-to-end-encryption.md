@@ -310,11 +310,11 @@ Reasons for the choices inside O1:
 
 **Depends on:**
 - [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
-- [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
+- `no-query-is-bounded-or-paginated` (fixed by backend hardening)
 - [`writes-bypass-providers-with-inline-firestore-calls`](../../tech-debt/widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
 - [`macos-deployment-target-frozen-at-10-14`](../../tech-debt/platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
   and [`macos-sandbox-grants-no-outbound-network`](../../tech-debt/platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
-- Ideas: [name and bundle ID](name-and-bundle-id.md), [backend hardening](backend-hardening.md),
+- Ideas: [name and bundle ID](name-and-bundle-id.md), backend hardening (client side done; App Check enforcement is Jack's, `HANDOVER.md`),
   [account deletion](in-app-account-deletion.md) (it deletes the key too),
   [privacy policy](privacy-policy-and-labels.md), [data export](../v1-must-haves/data-export.md) (export becomes the
   only backup that needs no key), [crash reporting](../v1-must-haves/crash-reporting-and-analytics.md),

@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
@@ -12,8 +13,12 @@ import {
   collection,
   deleteDoc,
   doc,
+  documentId,
+  getCountFromServer,
   getDoc,
   getDocs,
+  limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -420,29 +425,86 @@ describe('activities', () => {
       await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceForeignViceActivity')));
     });
 
-    it('allows the activity list query', async () => {
+    it('allows the day-window query, across every vice', async () => {
+      const day = await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'activities'),
+            where('ownerID', '==', ALICE),
+            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'))),
+            where('createdAt', '<', Timestamp.fromDate(new Date('2026-01-02T00:00:00Z'))),
+            orderBy('createdAt', 'desc'),
+          ),
+        ),
+      );
+      assert.ok(day.docs.length > 0);
+      assert.ok(day.docs.every((d) => d.get('ownerID') === ALICE));
+    });
+
+    it('allows a page of the history query', async () => {
       await assertSucceeds(
         getDocs(
           query(
             collection(asAlice(), 'activities'),
-            where('viceID', 'in', ['aliceVice', 'aliceLegacyVice']),
+            where('viceID', '==', 'aliceVice'),
             where('ownerID', '==', ALICE),
             orderBy('createdAt', 'desc'),
+            limit(51),
           ),
         ),
       );
     });
 
-    it('allows the day-window query', async () => {
-      await assertSucceeds(
+    it("allows counting a vice's activities on the server", async () => {
+      const counted = await assertSucceeds(
+        getCountFromServer(
+          query(
+            collection(asAlice(), 'activities'),
+            where('viceID', '==', 'aliceVice'),
+            where('ownerID', '==', ALICE),
+          ),
+        ),
+      );
+      assert.ok(counted.data().count > 0);
+    });
+
+    it("denies counting someone else's activities", async () => {
+      await assertFails(
+        getCountFromServer(
+          query(collection(asAlice(), 'activities'), where('viceID', '==', 'bobVice')),
+        ),
+      );
+    });
+
+    it("tells the editor's listener that its activity was deleted, rather than failing", async () => {
+      const db = asAlice();
+      const seen = await new Promise((resolve, reject) => {
+        const exists = [];
+        const unsubscribe = onSnapshot(
+          doc(db, 'activities/aliceActivity'),
+          (snapshot) => {
+            exists.push(snapshot.exists());
+            if (exists.length === 1) {
+              deleteDoc(doc(db, 'activities/aliceActivity')).catch(reject);
+            } else {
+              unsubscribe();
+              resolve(exists);
+            }
+          },
+          reject,
+        );
+      });
+      assert.deepEqual(seen, [true, false]);
+    });
+
+    it('denies getting a missing activity, even to a signed-in user', async () => {
+      await assertFails(getDoc(doc(asAlice(), 'activities/missing')));
+      await assertFails(
         getDocs(
           query(
             collection(asAlice(), 'activities'),
-            where('viceID', 'in', ['aliceVice']),
             where('ownerID', '==', ALICE),
-            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'))),
-            where('createdAt', '<', Timestamp.fromDate(new Date('2026-01-02T00:00:00Z'))),
-            orderBy('createdAt', 'desc'),
+            where(documentId(), '==', 'missing'),
           ),
         ),
       );

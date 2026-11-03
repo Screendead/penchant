@@ -69,20 +69,24 @@ final viceActivityGraphProvider = Provider.autoDispose
       );
     });
 
-// Null when the signed-in user has no activity with this id. A query rather
-// than a document read: the rules deny reading a missing document, so a
-// deleted activity would surface as permission-denied.
+// Null once the activity is deleted. The rules deny reading a missing or
+// foreign document, so one that is already gone arrives as permission-denied.
 final viceActivityForUserProvider = StreamProvider.autoDispose
     .family<ViceActivity?, ({String uid, String activityID})>((ref, key) {
       return FirebaseFirestore.instance
           .collection('activities')
-          .where('ownerID', isEqualTo: key.uid)
-          .where(FieldPath.documentId, isEqualTo: key.activityID)
-          .limit(1)
+          .doc(key.activityID)
           .snapshots()
           .map(
-            (QuerySnapshot<Map<String, dynamic>> snapshot) =>
-                ViceActivity.fromQuerySnapshot(snapshot).firstOrNull,
+            (DocumentSnapshot<Map<String, dynamic>> snapshot) =>
+                switch (snapshot.data()) {
+                  null => null,
+                  final Map<String, dynamic> json => ViceActivity.fromJson(
+                    id: snapshot.id,
+                    json: json,
+                    pending: snapshot.metadata.hasPendingWrites,
+                  ),
+                },
           );
     });
 

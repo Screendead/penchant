@@ -34,6 +34,6 @@ switching tool for exactly the journal users the positioning targets.
 **Depends on:**
 - [account deletion](../release-blockers/in-app-account-deletion.md)
 - [`no-account-deletion-or-data-export`](../../tech-debt/auth-and-account-lifecycle/no-account-deletion-or-data-export.md)
-- [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
+- `no-query-is-bounded-or-paginated` (fixed by backend hardening: every activity list query is bounded, so an export needs its own paged read)
 
 **Needs Jack:** no
