@@ -1,0 +1,179 @@
+{
+  "summary": {
+    "Kp3VwZ8sQe1RbT0yXuNa": {
+      "entries": 138,
+      "archived": false,
+      "hours": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        35,
+        26,
+        0,
+        33,
+        0,
+        0,
+        0,
+        44,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "days": [
+        20,
+        19,
+        20,
+        19,
+        19,
+        20,
+        21
+      ]
+    },
+    "Ue5BxG1kYs8vTr3mQaZw": {
+      "entries": 120,
+      "archived": false,
+      "hours": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        23,
+        0,
+        31,
+        0,
+        0,
+        24,
+        0,
+        24,
+        0,
+        0,
+        0,
+        18,
+        0
+      ],
+      "days": [
+        24,
+        24,
+        24,
+        24,
+        24,
+        0,
+        0
+      ]
+    },
+    "f7HdLq2MzA9cWn4oPjRt": {
+      "entries": 42,
+      "archived": false,
+      "hours": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        11,
+        13,
+        11,
+        7,
+        0
+      ],
+      "days": [
+        0,
+        0,
+        0,
+        0,
+        15,
+        14,
+        13
+      ]
+    },
+    "n0RjCw6tHy2LpX9eDbKs": {
+      "entries": 6,
+      "archived": true,
+      "hours": [
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      "days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        2
+      ]
+    }
+  },
+  "sample": {
+    "name": "projects/demo-tracker/databases/(default)/documents/activities/a0305",
+    "fields": {
+      "viceID": {
+        "stringValue": "f7HdLq2MzA9cWn4oPjRt"
+      },
+      "enc": {
+        "bytesValue": "AT5KiFllpaxEbzjT4vT2AUvZxhbFlc0h0Y/yUFWwpd0IOkYBfAHCvBTan8GZEsbIR1GYwwWR9Ur7ksTQpKKG9oaNHkSlzmgnHJh3N7NxA4UUXboWsKc7J2jj5Z4N"
+      },
+      "ownerID": {
+        "stringValue": "alice"
+      },
+      "createdAt": {
+        "timestampValue": "2026-11-01T21:02:28.257Z"
+      }
+    },
+    "createTime": "2026-11-03T16:42:48.579192Z",
+    "updateTime": "2026-11-03T16:42:48.579192Z"
+  }
+}

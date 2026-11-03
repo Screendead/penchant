@@ -1,0 +1,75 @@
+WHAT THE CONSOLE SHOWS UNDER O1 (Firestore emulator, demo-tracker)
+Names, units and amounts are sealed; everything below is plaintext or Firestore metadata.
+
+Vices: 4 (archived: 1). Entries: 306. Owner: alice.
+
+viceID Kp3VwZ8sQe1RbT0yXuNa: 138 entries, enc 285 bytes
+  hour (UTC)  .......#+.#...#.........
+              0         1         2   
+              012345678901234567890123
+  Mon   20 #######################
+  Tue   19 ######################
+  Wed   20 #######################
+  Thu   19 ######################
+  Fri   19 ######################
+  Sat   20 #######################
+  Sun   21 ########################
+
+viceID Ue5BxG1kYs8vTr3mQaZw: 120 entries, enc 285 bytes
+  hour (UTC)  ...........#.#..#.#...+.
+              0         1         2   
+              012345678901234567890123
+  Mon   24 ########################
+  Tue   24 ########################
+  Wed   24 ########################
+  Thu   24 ########################
+  Fri   24 ########################
+  Sat    0 
+  Sun    0 
+
+viceID f7HdLq2MzA9cWn4oPjRt: 42 entries, enc 285 bytes
+  hour (UTC)  ...................###+.
+              0         1         2   
+              012345678901234567890123
+  Mon    0 
+  Tue    0 
+  Wed    0 
+  Thu    0 
+  Fri   15 ########################
+  Sat   14 ######################
+  Sun   13 #####################
+
+viceID n0RjCw6tHy2LpX9eDbKs (archived): 6 entries, enc 285 bytes
+  hour (UTC)  ##.....................#
+              0         1         2   
+              012345678901234567890123
+  Mon    0 
+  Tue    0 
+  Wed    0 
+  Thu    0 
+  Fri    0 
+  Sat    4 ########################
+  Sun    2 ############
+
+One activity as the REST API returns it. createTime and updateTime are
+Firestore's own, written by the server and not editable: for a live log they
+equal the moment of logging, so sealing createdAt as well would hide nothing.
+{
+  "name": "projects/demo-tracker/databases/(default)/documents/activities/a0305",
+  "fields": {
+    "viceID": {
+      "stringValue": "f7HdLq2MzA9cWn4oPjRt"
+    },
+    "enc": {
+      "bytesValue": "AT5KiFllpaxEbzjT4vT2AUvZxhbFlc0h0Y/yUFWwpd0IOkYBfAHCvBTan8GZEsbIR1GYwwWR9Ur7ksTQpKKG9oaNHkSlzmgnHJh3N7NxA4UUXboWsKc7J2jj5Z4N"
+    },
+    "ownerID": {
+      "stringValue": "alice"
+    },
+    "createdAt": {
+      "timestampValue": "2026-11-01T21:02:28.257Z"
+    }
+  },
+  "createTime": "2026-11-03T16:42:48.579192Z",
+  "updateTime": "2026-11-03T16:42:48.579192Z"
+}
