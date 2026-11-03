@@ -155,7 +155,7 @@ icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
   Claude (`gh pr close 22 42`).
 - **Deploy the new activities index before installing a build with backend hardening** (`feat/backend-hardening`,
-  PR #PRNUM): Today's day query now needs the `activities (ownerID ASC, createdAt DESC)` index in
+  PR #55): Today's day query now needs the `activities (ownerID ASC, createdAt DESC)` index in
   `firestore.indexes.json`. The emulators don't check indexes, so the e2e run can't catch its absence; on a phone
   without it, Today reads "Unable to load this day: failed-precondition". Merging deploys it only once CI deploys
   are on (above); until then `firebase deploy --only firestore:indexes --project screendead-vice-tracker`. Install
