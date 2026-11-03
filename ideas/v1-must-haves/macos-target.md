@@ -54,7 +54,7 @@ once for two devices.
 - [`macos-sandbox-grants-no-outbound-network`](../../tech-debt/platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
 - [`macos-tree-is-stale-and-lockfile-has-no-firebase-pods`](../../tech-debt/platform-and-delivery-config/macos-tree-is-stale-and-lockfile-has-no-firebase-pods.md)
 - [`macos-firebase-config-carries-the-ios-test-bundle-id`](../../tech-debt/platform-and-delivery-config/macos-firebase-config-carries-the-ios-test-bundle-id.md)
-- [`macos-platform-is-undocumented`](../../tech-debt/repo-docs-and-release-hygiene/macos-platform-is-undocumented.md)
+- `macos-platform-is-undocumented` (fixed in PR #34: CLAUDE.md documents the platforms)
 - [name and bundle ID](../release-blockers/name-and-bundle-id.md)
 
 **Needs Jack:** yes — Mac in 1.0 or 1.0.x, and confirm Health results never sync to the Mac.

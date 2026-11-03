@@ -1,14 +1,17 @@
-# No Firestore settings are configured, so cache and queued-write behaviour diverge by platform
+# Firestore persistence and cache settings are SDK defaults nobody chose
 
-**Severity:** high
+**Severity:** medium
 
-`main.dart` initializes Firebase and never touches `FirebaseFirestore.instance.settings`; no file sets `persistenceEnabled`, a cache size, or any persistence option. Firestore enables disk persistence by default on mobile and desktop and leaves it off on web, so the same provider code behaves differently per target: a listener started offline on mobile can emit a cached result immediately, while on web it has nothing to emit until a server round trip succeeds and the screen sits on its spinner.
+Outside the emulator path, `initializeFirebase` never touches `FirebaseFirestore.instance.settings`; no file sets
+`persistenceEnabled`, a cache size, or any other persistence option for production builds. iOS and macOS, the only
+targets, both enable disk persistence by default, so offline reads and the queued-write durability every write site
+relies on rest on a default, not a decision.
 
-The same default governs write durability. A write made offline is held in the SDK mutation queue, and that queue survives a process restart only where persistence is on, so closing or reloading a web tab with a pending write from any of the eight write sites discards it with nothing shown and nothing recorded. No code branches on platform to account for either difference.
+Nothing records that the app depends on that default, the cache is bounded only by the SDK's own default size, and the
+emulator path turns persistence off, so `tools/e2e.sh` never exercises the cached behaviour production users get.
 
 ## Evidence
 
-- `lib/main.dart:19` — `await Firebase.initializeApp(\n    options: DefaultFirebaseOptions.currentPlatform,\n  );`
-- **`grep -rn "persistenceEnabled|enablePersistence|cacheSettings|PersistentCacheSettings" lib/ --include=*.dart`** → (no output — zero matches in lib/)
-- `pubspec.yaml:39` — `cloud_firestore: ^6.7.1`
-- `lib/widgets/record_new_activity_dialog.dart:251` — `await activityRef.set({`
+- `lib/firebase_init.dart:28` — `if (!useFirebaseEmulators) {\n    await Firebase.initializeApp(\n      options: DefaultFirebaseOptions.currentPlatform,\n    );\n    return;\n  }`
+- `lib/firebase_init.dart:50` — `FirebaseFirestore.instance.settings = const Settings(\n    persistenceEnabled: false,\n  );` (emulator path only)
+- **`grep -rn "persistenceEnabled|cacheSizeBytes|PersistentCacheSettings" lib/`** → only `lib/firebase_init.dart:51`

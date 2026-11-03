@@ -22,7 +22,8 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   `--project screendead-vice-tracker`). The documented data shape must stay compatible with existing documents:
   new optional fields are fine; a new mandatory field ships only with a migrator that adds it to existing records on
   first launch (Jack, 2026-11-03). Rules and indexes reach production only through CI on merge to `master` (Jack,
-  2026-11-03), so merging a rules PR deploys it; until that job works, Jack deploys them by hand.
+  2026-11-03), so merging a rules PR deploys it; until Jack enables that job (the `DEPLOY_FIRESTORE_RULES`
+  repository variable), he deploys them by hand.
 - **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
   `demo-` project has no cloud counterpart, so nothing can leak to production.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
@@ -39,18 +40,17 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   him. Force-pushing `master` always needs Jack.
 - Workflow subagents cannot merge: the auto-mode permission classifier denies `gh pr merge` inside them ("Merge
   Without Review"). They bring a PR to green and CLEAN; the main session merges.
-- Merging to `master` deploys web hosting to production (CI), until the web target is removed (HANDOVER, C6).
 
 ## Commands
 
 ```bash
 flutter pub get
-flutter run                      # device picker; -d chrome for web
+flutter run                      # device picker; -d macos for the desktop build
 flutter analyze
 dart run custom_lint             # loads no rules: riverpod_lint 3.1 left custom_lint (see tech-debt)
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
-flutter build web --release      # what CI builds and deploys
+flutter build macos --debug      # the macOS target still builds (CI builds no app)
 dart run flutter_launcher_icons  # after changing assets/icon.webp
 ```
 
@@ -69,14 +69,6 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 `tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
-Cloud Functions (`functions/`, Node 18, TypeScript):
-
-```bash
-npm --prefix functions run lint
-npm --prefix functions run build
-firebase deploy --only functions   # predeploy hook runs lint + build
-```
-
 Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
 `admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
 so the script has no credentials until a new one is supplied. It also predates the
@@ -94,17 +86,21 @@ To run beside another emulator, point `firebase emulators:exec` at a config outs
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
 CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
-and `flutter test` on every PR to `master`. PRs also get a hosting preview; a push to `master`
-re-runs the checks and deploys hosting live only if they pass. `rules-tests.yml` runs the
-Firestore rules suite on every PR. Flutter is pinned in
+and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
+every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
+`firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
+`tests/firestore-rules/package-lock.json`. Its deploy job is skipped unless the repository variable
+`DEPLOY_FIRESTORE_RULES` is `true`, and deploys queue in one concurrency group so the newest commit lands
+last. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
+changes. No riverpod_lint rule runs anywhere, locally or in
 CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
 is fixed.
 
 ## Architecture
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
+It targets iOS and macOS only; `firebase_options.dart` throws on any other platform.
 
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
@@ -156,8 +152,7 @@ Firestore throws `failed-precondition` at runtime until the index is deployed.
 date range as a line chart, bucketing activities by day or week and overlaying a moving
 average.
 
-`functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
-logic. Tests in `test/` run without Firebase: they override providers in a
+There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
 `User`). Anything that calls `FirebaseFirestore.instance` is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
@@ -171,5 +166,4 @@ default app resolves to a non-`demo-` project. On iOS, firebase_core configures 
 default app from the bundled `GoogleService-Info.plist` before Dart runs, so the Runner
 target's "Strip Firebase plist for emulators" build phase
 (`tools/ios-strip-firebase-plist.sh`) moves it out of the bundle for flagged builds. macOS
-bundles its own plist with no such phase, so a flagged macOS build should fail at startup;
-Android and web are untested with the flag.
+bundles its own plist with no such phase, so a flagged macOS build should fail at startup.

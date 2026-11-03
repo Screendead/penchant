@@ -1,13 +1,16 @@
-# Nothing in the repository deploys the rules or index files
+# The rules deploy job is off, and nothing checks the index file or console drift
 
 **Severity:** medium
 
-Both hosting workflows build Flutter web and call the hosting-deploy action with no other deploy targets, and no workflow runs `firebase deploy --only firestore`. The rules are unit-tested against the emulator on pull requests, but the emulator does not enforce composite indexes, so nothing checks the index file against the queries either.
+`deploy-firestore.yml` deploys the rules and index files on every push to `master`, but its deploy job is skipped
+unless the repository variable `DEPLOY_FIRESTORE_RULES` is `true`, which needs the service account to hold the deploy
+roles first. Until then an edit here reaches production only when someone deploys it by hand.
 
-Both files can therefore drift from the live project in either direction: an edit here reaches production only when someone deploys it by hand, and a console-side change never appears here.
+The rules suite runs against the emulator, which does not enforce composite indexes, so nothing checks the index file
+against the queries. A console-side change to either never appears here, and once the job runs it overwrites the live
+rules with this file's.
 
 ## Evidence
 
-- `.github/workflows/firebase-hosting-merge.yml:24` — `- uses: FirebaseExtended/action-hosting-deploy@v0`
-- `.github/workflows/firebase-hosting-merge.yml:28` — `channelId: live, projectId: screendead-vice-tracker`
-- **`grep -rn "deploy" .github/workflows/`** → only `action-hosting-deploy` steps
+- `.github/workflows/deploy-firestore.yml:22` — `if: ${{ vars.DEPLOY_FIRESTORE_RULES == 'true' }}`
+- `.github/workflows/rules-tests.yml:38` — `- run: npm test` (emulator only)

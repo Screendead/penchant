@@ -2,7 +2,7 @@
 
 **Severity:** medium
 
-`viceActivityDayProvider` and `viceActivityListProvider` build their filters from the full vice list and pass it to `whereIn`, which `cloud_firestore` caps at 30 elements through an assert. Debug builds trip the assertion; release builds, including the web build CI deploys, send an oversized filter and receive `invalid-argument` from the backend.
+`viceActivityDayProvider` and `viceActivityListProvider` build their filters from the full vice list and pass it to `whereIn`, which `cloud_firestore` caps at 30 elements through an assert. Debug builds trip the assertion; release builds send an oversized filter and receive `invalid-argument` from the backend.
 
 Both read `viceListProvider` rather than the unarchived list, so archived vices consume the budget and their activities are fetched over the network on every date change and then discarded by the chart's ID lookup. No path in `lib/` deletes a vice, so the ID count only grows, and reaching the cap takes out the today chart and the manage-data screen together.
 

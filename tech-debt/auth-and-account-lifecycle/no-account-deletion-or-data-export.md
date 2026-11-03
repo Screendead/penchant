@@ -4,9 +4,8 @@
 
 Nothing under `lib/` offers account deletion or a data download, despite two
 owner-scoped collections holding personal behavioural-tracking data.
-`functions/src/index.ts` contains no deployed function at all, so there is no
-auth `onDelete` trigger or any other server-side hook that could remove a
-user's documents.
+The repository has no Cloud Functions, so there is no auth `onDelete` trigger
+or any other server-side hook that could remove a user's documents.
 
 Firebase never reissues a UID, so vices and activities whose `ownerID` points
 at a deleted account can never again be matched by any live user, yet remain
@@ -23,8 +22,4 @@ them; `populateFirestore.js` is a one-off seeder, not a lifecycle tool.
                 Navigator.of(context).pushNamed('/settings/account');
               },
             ),`
-- `functions/src/index.ts:16` — `// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });`
 - `admin/populateFirestore.js:19` — `const ownerID = '1J6xVvHsFWYLPd5VPmI2t4nuGNo1';`
