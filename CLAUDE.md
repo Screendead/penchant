@@ -22,7 +22,8 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   `--project screendead-vice-tracker`). The documented data shape must stay compatible with existing documents:
   new optional fields are fine; a new mandatory field ships only with a migrator that adds it to existing records on
   first launch (Jack, 2026-11-03). Rules and indexes reach production only through CI on merge to `master` (Jack,
-  2026-11-03), so merging a rules PR deploys it; until that job works, Jack deploys them by hand.
+  2026-11-03), so merging a rules PR deploys it; until Jack enables that job (the `DEPLOY_FIRESTORE_RULES`
+  repository variable), he deploys them by hand.
 - **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
   `demo-` project has no cloud counterpart, so nothing can leak to production.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
@@ -86,7 +87,11 @@ repo with other ports: `npm --prefix tests/firestore-rules test -- --config <pat
 
 CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
 and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
-every PR. Nothing builds or deploys the app. Flutter is pinned in
+every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
+`firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
+`tests/firestore-rules/package-lock.json`. Its deploy job is skipped unless the repository variable
+`DEPLOY_FIRESTORE_RULES` is `true`, and deploys queue in one concurrency group so the newest commit lands
+last. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. No riverpod_lint rule runs anywhere, locally or in
 CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`

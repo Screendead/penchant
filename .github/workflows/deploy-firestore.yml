@@ -1,0 +1,43 @@
+name: Deploy Firestore rules and indexes
+on:
+  push:
+    branches:
+      - master
+permissions:
+  contents: read
+concurrency:
+  # Queued, not cancelled: GitHub keeps only the newest pending run, so the newest commit always deploys last.
+  group: firestore-deploy
+  cancel-in-progress: false
+jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+  rules-tests:
+    uses: ./.github/workflows/rules-tests.yml
+  deploy:
+    needs:
+      - checks
+      - rules-tests
+    # Skipped, not failed, until the service account holds the deploy roles and the variable is set.
+    if: ${{ vars.DEPLOY_FIRESTORE_RULES == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.1'
+          cache: npm
+          cache-dependency-path: tests/firestore-rules/package-lock.json
+      # Installs the firebase-tools the rules tests ran with, pinned by that lockfile.
+      - run: npm --prefix tests/firestore-rules ci
+      - name: Deploy
+        env:
+          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER }}
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
+          (umask 077 && printf '%s' "$SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS")
+          # Without --force, an index that exists only in production is reported, not deleted.
+          tests/firestore-rules/node_modules/.bin/firebase deploy --only firestore \
+            --project screendead-vice-tracker --non-interactive
