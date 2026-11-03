@@ -4,41 +4,41 @@
 
 ## What
 
-Before any stranger can install the app, the backend needs five things:
+The rules rewrite (PR #27) is live in production since 2026-11-03, with 55 emulator tests in CI, and queue item 1b
+adds the quantity, name-length and vice-ownership checks. What is left before strangers install:
 
-- close the cross-account write hole;
-- validate fields and types in the rules;
 - bound or paginate every list query;
-- add the missing composite index;
-- cover the rules with emulator tests that run in CI.
+- turn on Firebase App Check (App Attest on iOS and macOS), monitor mode first, enforcement after;
+- budget alerts on the production project.
 
-Then turn on Firebase App Check: monitor mode first, enforcement after.
+Health and calendar data never reach Firestore (see the [insights engine](../insights/insights-engine.md)), so the
+backend holds only the user's own logs.
 
 ## Why
 
-- SOURCED (register): a user can overwrite and reassign another account's document. Writes carry no field validation. The main chart's query has no matching index. Every list streams unbounded data. The rules and indexes are never tested.
-- INFERENCE: once installs are public, a rules hole is a data breach. The market scan has an unverified report of a Reframe breach, which shows the stakes for a privacy-positioned app.
+- SOURCED (register): every list query streams unbounded data, which grows the read bill and the cold-start time
+  with every year of history a journal user builds.
+- INFERENCE: a privacy-positioned journal survives a bug, not a breach or a runaway bill.
 
 ## Options
 
-- **A.** Rules fixes plus emulator rules tests only.
-- **B.** A, plus App Check: App Attest or DeviceCheck on iOS, Play Integrity on Android, reCAPTCHA on web. Verify the current Flutter setup in the Firebase docs.
-- **C.** B, plus budget alerts and per-user write-rate limits in the rules.
+- **A.** Bounded queries only.
+- **B.** A, plus App Check. Read the current Firebase App Check docs for Flutter on Apple platforms first.
+- **C.** B, plus per-user write-rate limits in the rules.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **B**, plus the budget alerts from C, which cost nothing. Agents write and emulator-test the rules and the client App Check wiring. Turning on enforcement and setting budgets are production console actions that Jack performs. They are tasks for him, not decisions.
+Claude's recommendation: **B**, plus budget alerts, which cost nothing. Agents write the queries and the client App
+Check wiring and test them on the emulators. Turning on enforcement and setting budgets are production console actions
+for Jack: tasks, not decisions.
 
 **Effort:** M
 
-**Revenue impact:** Avoids risk. A breach or a runaway Firestore bill would end a privacy-positioned app.
+**Revenue impact:** Avoids risk.
 
 **Depends on:**
-- `write-rules-authorize-on-the-post-write-owner` (fixed in PR #27; live once the rules are deployed)
-- `writes-carry-no-field-or-type-validation` (fixed in PR #27; live once the rules are deployed)
-- `unarchived-vices-query-has-no-matching-index` (fixed in PR #27; live once the rules are deployed)
 - [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
-- [`rules-and-indexes-are-never-deployed-or-tested`](../../tech-debt/firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
-- [`every-firebase-command-targets-production`](../../tech-debt/firebase-data-layer/every-firebase-command-targets-production.md)
+- [`wherein-filter-is-unbounded-and-includes-archived`](../../tech-debt/firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
+- [`vice-activity-relationship-is-unenforced`](../../tech-debt/firebase-data-layer/vice-activity-relationship-is-unenforced.md) (queue 1b)
 
 **Needs Jack:** no

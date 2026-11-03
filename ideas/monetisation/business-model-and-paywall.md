@@ -1,55 +1,50 @@
-# Charge once for depth, never for the number of vices
+# Sell the insights once: free journal in 1.0, a one-time Pro unlock in 1.1
 
 **Priority:** monetisation
 
 ## What
 
-Decide how the app charges and where the paywall line sits. There is nothing paid today: `pubspec.yaml` has no purchase plugin and `lib/` has no entitlement. The code already has a natural seam: the day dropdown offers only the last 30 days (`lib/vice_tracker.dart:80`, `List.generate(30, …)`), and the Graph tab offers ranges.
+What is left of the business model is the line between free and Pro, and the price. There is nothing paid today:
+`pubspec.yaml` has no purchase plugin and `lib/` has no entitlement.
+
+## Decision
+
+Decided by Jack 2026-11-03 (C17): **free 1.0, then a one-time Pro unlock in 1.1.** Set aside: a vice-count cap,
+subscriptions, and a tip jar.
 
 ## Why
 
-- SOURCED ([market scan](../market-scan.md)):
-  - Generic trackers usually cap the free tier at 2–3 habits (Quitzilla 2, Habitify 3), and users complain about it.
-  - Lifetime prices in the sobriety apps sit around $65–90. Generic trackers sell one-time unlocks at $5–30.
-  - The top complaints are aggressive paywalls, trials that convert to annual plans unexpectedly (Reframe's BBB F) and support that is hard to reach.
-  - All prices are indicative and conflict between sources.
-- SOURCED ([Apple 3.1.1, 3.1.2](https://developer.apple.com/app-store/review/guidelines/)): unlocks must use in-app purchase. A subscription must provide ongoing value and say clearly what the user gets before they pay.
-- SOURCED (code): fl_chart's radar needs at least 3 entries (`radar_chart_data.dart:298`). A 2-vice free cap therefore shows free users a broken hero chart, and a 3-vice cap gates the multi-vice view that sets the app apart.
+- SOURCED ([market scan](../market-scan.md)): insight is what the journals charge for. Bearable gates its Factor
+  Effect report (USD 34.99/yr or 6.99/mo); Exist has no free tier (USD 62.90/yr); Daylio's correlations are premium,
+  with a reported USD 59.99 lifetime option; Welltory's lifetime is USD 299.99. All indicative.
+- SOURCED (same): in the vice category the top complaints are paywalls on basics and trials that turn into annual
+  plans.
+- INFERENCE: of the apps priced, only Daylio and Welltory sell a one-time purchase, so "pay once, insights on your
+  phone" is a distinct offer.
+- SOURCED ([Apple 3.1.1](https://developer.apple.com/app-store/review/guidelines/)): unlocking features requires
+  in-app purchase.
 
-## Options
+## Options for the line
 
-- **A. Free 1.0, then a one-time Pro unlock in 1.1** (indicative $9.99–19.99). Pro adds depth:
-  - history and graph ranges beyond 30 days;
-  - limit history and "days within limit";
-  - weekly insights;
-  - widgets;
-  - themes.
-
-  Unlimited vices, logging, export and deletion stay free. Accounts created before 1.1 get Pro free.
-- **B. Freemium with a 3-vice cap,** and Plus sold monthly, annually and lifetime (the I Am Sober and Quitzilla pattern). The highest ceiling per user, but it caps the differentiator.
-- **C. Depth-gated subscription,** monthly and annual with a clear 7-day trial, plus a lifetime option. Recurring revenue, but it carries the 3.1.2(a) "ongoing value" obligation and invites the trial-surprise complaint.
-- **D. Free, with a tip jar** (consumable IAP). Lowest friction, and little revenue.
+- **A. Pro is the analysis layer:** the [insights engine](../insights/insights-engine.md),
+  [Apple Health](../insights/apple-health-correlation.md), [calendar](../insights/calendar-integration.md), the
+  [weekly review](../insights/weekly-review.md), trend overlays, and later widgets and import. Free forever: unlimited
+  vices, every logging field and trigger, all history, the basic trends, export, deletion, the Mac app.
+- **B.** A, but also history beyond 90 days in Pro.
+- **C.** A, but Health correlation free as a hook, with calendar, multi-vice separation and the weekly review Pro.
 
 ## Recommendation
 
-Claude's recommendation, not a decision: **A.**
+Claude's recommendation: **A, at USD 24.99** (indicative band 19.99–29.99; check live listings before setting it).
+Capture is free because a journal is worth only what it has recorded; reflection is what costs. No grandfathering is
+needed, since nothing free in 1.0 moves behind the paywall; give TestFlight testers Pro through promo or offer codes (from memory, to verify for a non-consumable). Show one
+locked insight card, with its real effect blurred, once the engine has something to say: the paywall appears at the
+moment of value, never on launch.
 
-- A one-time unlock fits a self-contained tracker with no coaching or content, so it needs no "ongoing value" justification.
-- It makes "no subscription traps" a credible marketing line.
-- Shipping 1.0 free keeps IAP out of the first review and builds ratings. It also gives [analytics](../v1-must-haves/crash-reporting-and-analytics.md) a baseline to price against.
-- Grandfathering 1.0 users heads off "they took features away" reviews.
-- Keep C open for a later feature with real running cost, such as an AI coach.
-- Check every competitor price in its live App Store listing before setting ours.
+**Effort:** M (paywall screens and copy)
 
-**Effort:** M (the decision is S; the paywall screens and copy are M)
+**Revenue impact:** Direct: this is the revenue model.
 
-**Revenue impact:** Direct, since this is the revenue model. Draw the line too generously and the app earns nothing. Put the radar behind the paywall and it earns one-star reviews.
+**Depends on:** [IAP plumbing](iap-and-entitlements.md); [insights engine](../insights/insights-engine.md).
 
-**Depends on:**
-- [positioning](../release-blockers/positioning-and-target-user.md)
-- [per-vice goals](../v1-must-haves/per-vice-goals-and-limits.md)
-- [IAP plumbing](iap-and-entitlements.md)
-- [`date-navigation-awaits-a-future-that-never-completes`](../../tech-debt/widget-state-and-view-logic/date-navigation-awaits-a-future-that-never-completes.md)
-- [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
-
-**Needs Jack:** yes — Which model (A–D), at what price, and is a subscription ever on the table?
+**Needs Jack:** yes — Approve the free/Pro line (A, B or C) and the price.
