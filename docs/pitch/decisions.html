@@ -61,6 +61,11 @@ button { font: inherit; cursor: pointer; }
 textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: vertical; font: inherit; font-size: .93rem; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
 .note { font-size: .85rem; color: var(--accent); }
 .banner { font-size: .9rem; color: var(--muted); }
+.shots { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x proximity; }
+.shots figure { margin: 0; flex: 0 0 auto; width: 168px; display: grid; gap: 4px; scroll-snap-align: start; }
+.shots figure.wide { width: 300px; }
+.shots img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); display: block; }
+.shots figcaption { font-size: .8rem; color: var(--muted); line-height: 1.3; }
 .banner.err { color: var(--warn); }
 @media (prefers-reduced-motion: no-preference) { .opt { transition: border-color .12s, background .12s; } }
 </style>
@@ -68,7 +73,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 <div class="wrap">
   <header>
     <h1>Tracker: calls for Jack</h1>
-    <p class="lede">Round 1 is decided and built. Round 2 holds the calls that 1.0 hangs on. Tap an option to pick it; picks save as you go and Claude reads them back. Three more calls (the starter trigger tree, the onboarding presets and the Today layout) come later with mock-ups.</p>
+    <p class="lede">Round 1 is decided and built. Round 2 holds the calls that 1.0 hangs on; the first group has screenshots of options built on branches. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
     <div class="tally" id="tally"></div>
     <p class="banner" id="banner">Connecting to saved picks…</p>
   </header>
@@ -80,6 +85,10 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
         <li><b>Let CI deploy the rules (your C1 pick).</b> Give the service account behind the GitHub secret <code>FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER</code> these roles in the Google Cloud console (IAM): Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer. It also needs <code>firebase.projects.get</code>; it probably already has that through Firebase Hosting Admin, so keep that role or add Firebase Viewer. Then set the repository variable:
           <div class="cmd"><pre id="c1">gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker</pre><button class="copy" data-copy="c1">Copy</button></div>
           The next merge to master then deploys today's stricter rules (quantity above 0, names up to 60 characters, entries must point at your own vice). Rebuild any installed copy from master first, so the app refuses that input before the rules do.</li>
+        <li><b>Take the web site down</b> (your call in chat):
+          <div class="cmd"><pre id="c2">firebase hosting:disable --project screendead-vice-tracker</pre><button class="copy" data-copy="c2">Copy</button></div></li>
+        <li><b>Create the Mac development profile</b> (unblocks the macOS PR #47): open <code>macos/Runner.xcworkspace</code> in Xcode, select Runner › Signing &amp; Capabilities with team 8N575942RT, and build once (⌘B). Firebase sign-in on the Mac needs it, and Claude isn't allowed to create it.</li>
+        <li><b>Close Dependabot PRs #22 and #42</b> if they are still open; #44 replaced them. <div class="cmd"><pre id="c3">gh pr close 22 && gh pr close 42</pre><button class="copy" data-copy="c3">Copy</button></div></li>
         <li><b>Send Claude in chat, when you have them:</b> the legal entity, contact address and data-controller details for the privacy policy; the support email address; and the TestFlight beta testers. They stay out of the repo.</li>
       </ol>
     </div>
@@ -90,6 +99,61 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 
 <script>
 const GROUPS = [
+  { title: "Round 2: built options", sub: "Each option below was built as real app code on a branch and rendered. Nothing here is merged until you pick.", calls: [
+    { id: "r2-e2ee", q: "Encrypt what each entry says before it leaves the phone?", link: "ideas/release-blockers/end-to-end-encryption.md",
+      ctx: "Your steer: encrypt names and quantities; dates can stay readable. A working prototype is on mockup/e2e-encryption. What it costs either way: the database can no longer check quantity above 0 (C12) or names up to 60 (C13), so the app enforces them; and if every device, the iCloud Keychain and the recovery key are all lost, the journal is unreadable for good.",
+      imgs: [["e2ee-signup", "Recovery key at sign-up"], ["e2ee-card", "…or a Today card after a week"], ["e2ee-settings", "Settings shows the key again"], ["e2ee-enter", "New device: enter the key"], ["e2ee-new", "Key lost: start a new journal"]],
+      opts: [
+        { k: "A", t: "Yes, before 1.0 (your scope)", c: "Names, units, amounts and later notes sealed on the device with AES-256-GCM; dates, IDs and the owner stay plaintext, so every query and rule keeps working. Key in iCloud Keychain plus a printable recovery key. Effort L." },
+        { k: "B", t: "Yes, but in 1.1", c: "Same design. Strangers' plaintext then has to be migrated in the field, and 1.0 launches without the claim. Effort L+, over two releases." },
+        { k: "C", t: "Also hide the dates", c: "A sealed vault synced as blobs. Hides when you log too, but the rules can check nothing and sync is homemade. Effort XL." },
+        { k: "D", t: "No; describe the protection honestly", c: "Encrypted at rest by Google, readable by you, Google and anyone who breaches the project. Effort S." } ],
+      rec: "A", why: "It is what you asked for, it keeps every query and the ownership rule, and doing it before strangers have data avoids a risky migration. Store wording: “What you log is encrypted on your device before it syncs; we can't read it. We can see when you log.”" },
+    { id: "r2-e2ee-key", q: "When does a new user first see their recovery key?",
+      ctx: "Only if you pick encryption. The key lives in iCloud Keychain, so most people never need it; the recovery key is for losing every device or turning iCloud Keychain off.",
+      opts: [
+        { k: "A", t: "A Today card after a week, and Settings any time", c: "No extra sign-up step. Someone who loses everything in the first week loses that week." },
+        { k: "B", t: "During sign-up", c: "Everyone has it from day one, at the cost of a step before the first log." } ],
+      rec: "A", why: "The under-a-minute first log matters more than a week of data, and iCloud Keychain already covers a new phone." },
+    { id: "r2-today", q: "Which Today layout ships?", link: "ideas/v1-must-haves/today-screen-rework.md",
+      ctx: "All three keep bars below 3 vices (C2) and the quiet green clean day (C5). Icons, default amounts and triggers in A and B need r2-data-model.",
+      imgs: [["today-a5", "A. Journal, 5 vices"], ["today-a2", "A. Journal, 2 vices"], ["today-aclean", "A. Clean day"], ["today-b5", "B. Tiles first"], ["today-btap", "B. After a tap"], ["today-c5", "C. Today's screen + timeline"]],
+      opts: [
+        { k: "A", t: "Journal: tiles, chart, timeline", c: "Tap a tile to log one, hold for the editor; the day's entries with times and triggers below. Effort L." },
+        { k: "B", t: "Tiles first", c: "Big tiles fill the screen; the chart and timeline start below the fold at 5 vices. Effort M–L." },
+        { k: "C", t: "Today's screen plus a timeline", c: "Logging stays in the dialog, so no one-tap log. Effort S." } ],
+      rec: "A", why: "It is the only layout that shows the timeline on the first screen, and the timeline is what the insights are built from. Its tiles log in one tap like B's." },
+    { id: "r2-presets", q: "Which starter presets and voice does a new user see?", link: "ideas/v1-must-haves/first-run-onboarding.md",
+      ctx: "One flow for all three: what the app is, pick what to track, a disclaimer, an optional first log, then Today.",
+      imgs: [["pre-plain", "Plain: substances named"], ["pre-every", "Everyday habits first"], ["pre-own", "Own words: nothing named"], ["pre-intro", "Plain: intro"], ["pre-disc", "Plain: disclaimer"]],
+      opts: [
+        { k: "A", t: "Plain names", c: "Alcohol, Coffee, Cigarettes, Vape, Cannabis, Energy drinks, Sweets, Gambling. Highest review exposure; describes, never encourages." },
+        { k: "B", t: "Everyday habits first", c: "Coffee, Social media, Gaming… with Alcohol and Nicotine below. Blurs the niche." },
+        { k: "C", t: "Own words", c: "The user types each one. Lowest exposure, slowest first log." } ],
+      rec: "A", why: "The app is for people journaling exactly these things; naming them plainly is fastest, and 18+ plus the disclaimer manage review risk. Gambling stays only if it doesn't change the age rating; ship custom unit labels alongside (“Counted in cigarettes”)." },
+    { id: "r2-triggers", q: "Which starter trigger tree ships?", link: "ideas/insights/trigger-tagging.md",
+      ctx: "Same picker for all three: “Usual for <vice>” chips learned on the device, a two-level drill-down, and free text that becomes a choice after three uses. Only the tree differs; it is cheap to change until users have saved triggers.",
+      imgs: [["trig-a", "A. Areas of life"], ["trig-b", "B. Reasons only"], ["trig-c", "C. Feelings first"], ["trig-b2", "B. Second level"], ["trig-b3", "B. Usual choices"]],
+      opts: [
+        { k: "A", t: "Areas of life", c: "Social, Feeling, Work, Body, Routine, Place, Craving. Mixes causes with where and who." },
+        { k: "B", t: "Reasons only", c: "Feeling, Body, Pressure, Occasion, People, Habit, Cue. Where and who go in separate context fields." },
+        { k: "C", t: "Feelings first", c: "Stressed, Bored, Tired, Low, Anxious, Good mood, Just routine. Leans toward a mood tracker." } ],
+      rec: "B", why: "Every root is a cause, so insights like “Pressure comes before 40% of your coffees” stay clean. If you decline the context fields in r2-data-model, Place comes back as an eighth root." },
+    { id: "r2-brand-icon", q: "Which icon, for the brand you pick above?", link: "ideas/release-blockers/store-icon-and-screenshots.md",
+      ctx: "Nine generated candidates, three per brand, on one palette so you compare marks. The current icon (cannabis leaf, whisky, cigar) contradicts the neutral framing and has to go whatever you pick.",
+      imgs: [["brand-overview", "All nine, at two sizes", "wide"], ["brand-penchant", "Penchant store page"], ["brand-kenning", "Kenning store page"], ["brand-sounding", "Sounding store page"]],
+      opts: [
+        { k: "A", t: "Penchant A, “Lean”", c: "A stroke leaning off the upright. Reads at every size and belongs to its word." },
+        { k: "B", t: "The lead mark of another brand", c: "Kenning B “Overlap” or Sounding B “Sonar”; name it in the note." },
+        { k: "C", t: "None: commission a designer", c: "A few hundred dollars; these become the brief." } ],
+      rec: "A", why: "Of the nine, Lean is the one that is specific to its name and still reads at home-screen size." },
+    { id: "r2-mac-config", q: "Which Firebase registration does the Mac app use?", link: "ideas/v1-must-haves/macos-target.md",
+      ctx: "The Mac's Firebase config points at a leftover test app (…RunnerTests). macOS and iOS share the bundle ID com.screendead.tracker.tracker.",
+      opts: [
+        { k: "A", t: "Reuse the iOS app's registration", c: "No console step: Claude copies the committed iOS config. Delete the RunnerTests app afterwards." },
+        { k: "B", t: "Register a separate Apple app", c: "Needs a different bundle ID, which breaks one purchase covering both." } ],
+      rec: "A", why: "Same bundle ID, same App Store record, one Pro purchase for both devices." } ] },
+
   { title: "Round 2 (3 November): what 1.0 hangs on", sub: "Raised by your round-1 picks and the reworked ideas backlog. Round 1 stays below with your picks.", calls: [
     { id: "r2-web-site", q: "When does the live web site go down?",
       ctx: "Web is deleted from the repo (C6), so the site keeps serving its last build against production. While it is up, every new field must stay optional in the rules, because its old code writes documents without them.",
@@ -179,13 +243,6 @@ const GROUPS = [
         { k: "C", t: "Hand-written and legally reviewed for 1.0", c: "Costs earlier." } ],
       ctx: "Needs your legal entity, contact address and data-controller details whichever you pick (see the to-do list).",
       rec: "B", why: "“Health and calendar data never leave your phone” is the trust line; it reads best in plain words. Pay for the review when the risk arrives in 1.1." },
-    { id: "r2-icon", q: "Who makes the app icon?", link: "ideas/release-blockers/store-icon-and-screenshots.md",
-      ctx: "It waits on the brand. Store screenshots are generated by the e2e harness whichever you pick.",
-      opts: [
-        { k: "A", t: "You", c: "Free; your taste." },
-        { k: "B", t: "A commissioned designer", c: "Roughly a few hundred dollars." },
-        { k: "C", t: "Claude generates candidates", c: "You pick from a set." } ],
-      rec: "C", why: "Cheap to try first; commission a designer only if none of the candidates lands." },
     { id: "r2-applock", q: "Are the app lock and discreet mode free or Pro?", link: "ideas/growth-later/app-lock-and-discreet-mode.md",
       ctx: "After 1.1. A Face ID lock, and a discreet icon and notification text.",
       opts: [
@@ -335,6 +392,16 @@ const GROUPS = [
       rec: "B", why: "A distinct brand is searchable and ownable, and the subtitle carries the keywords. Decide it before any upload, because renaming after launch costs reviews." } ] },
 ];
 
+const IMG = {
+  "e2ee-signup": "/_blob/92fa58e31fa0888d7164ec22fd2d79aa", "e2ee-card": "/_blob/6a0e4e18522aca6512a1baf2fbdbdb4e", "e2ee-settings": "/_blob/9f9afeae669044b3f46b8020ac58912a",
+  "e2ee-enter": "/_blob/cf12f6a9ccdce16050af0c8ca6159c2e", "e2ee-new": "/_blob/dfadb3e4a9d8ad28031fdc2242647541",
+  "today-a5": "/_blob/06d1b15c4e429f15b0667147045d3378", "today-a2": "/_blob/e2f3e0f5fd3fcf5aa433e0398e9769a5", "today-aclean": "/_blob/dfe5f1dfa9667ec5c9e7258e84d7192c",
+  "today-b5": "/_blob/d57144b2a5ea76959343282ae1088d28", "today-btap": "/_blob/d70e09b07803f7454753873c048eab94", "today-c5": "/_blob/04f3fdc20bf8813803ca32b89863899f",
+  "pre-plain": "/_blob/8bcf8ddcc38eb3fb9158347447d30ac7", "pre-every": "/_blob/d1cd38502999935f245b761bd3bd6989", "pre-own": "/_blob/e675ad163070c4f78f715e8a9cbb51ea",
+  "pre-intro": "/_blob/3f4d5a24a7e59dee4ae730c056ac4754", "pre-disc": "/_blob/a7b9465bacc47dc8abb8f124ad17ea11",
+  "trig-a": "/_blob/51a4ec54a2a9b899c6f5e9930c4abd85", "trig-b": "/_blob/c36bb6710c16ad8694020d9b258f5041", "trig-c": "/_blob/aef923021944f058571aac98caa0243f",
+  "trig-b2": "/_blob/0944df869a2cf6421d2cea80e4b7137b", "trig-b3": "/_blob/1208657076a0b972ad882ad44666b602",
+  "brand-overview": "/_blob/9681985e021bcb5048c8bffc1d046bfe", "brand-penchant": "/_blob/864af59e45732ce7e68fa6b4f2bf2c2c", "brand-kenning": "/_blob/2bcc243eb323908882b0528883bb8c7d", "brand-sounding": "/_blob/5b0ce6ca2f371b3c0d9a0f697c90f1a6" };
 const ALL = GROUPS.flatMap(g => g.calls);
 const picks = {};
 let db = null;
@@ -396,9 +463,12 @@ function callNode(c) {
   ta.value = p.note || "";
   ta.addEventListener("change", () => save(c.id, { note: ta.value.trim() }));
   const ctx = el("p", { class: "ctx" }, c.ctx);
+  const shots = c.imgs ? el("div", { class: "shots" }, ...c.imgs.filter(([k]) => IMG[k]).map(([k, cap, cls]) =>
+    el("figure", cls ? { class: cls } : {}, el("a", { href: IMG[k], target: "_blank", rel: "noopener" },
+      el("img", { src: IMG[k], alt: cap, loading: "lazy" })), el("figcaption", { text: cap })))) : null;
   if (c.link) ctx.append(" ", el("a", { class: "note", href: "https://github.com/Screendead/tracker/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
   return el("div", { class: "call", id: "call-" + c.id },
-    el("div", { class: "qrow" }, el("h3", { text: c.q }), status), ctx, opts, why, ta);
+    el("div", { class: "qrow" }, el("h3", { text: c.q }), status), ctx, shots, opts, why, ta);
 }
 
 async function save(id, patch) {
