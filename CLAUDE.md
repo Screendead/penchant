@@ -69,14 +69,6 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 `tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
-Cloud Functions (`functions/`, Node 18, TypeScript):
-
-```bash
-npm --prefix functions run lint
-npm --prefix functions run build
-firebase deploy --only functions   # predeploy hook runs lint + build
-```
-
 Seed data: `node admin/populateFirestore.js`. It reads a service-account key from
 `admin/privateKey.json`, which is gitignored; that file was deleted and its key rotated,
 so the script has no credentials until a new one is supplied. It also predates the
@@ -98,7 +90,7 @@ and `flutter test` on every PR to `master`. PRs also get a hosting preview; a pu
 re-runs the checks and deploys hosting live only if they pass. `rules-tests.yml` runs the
 Firestore rules suite on every PR. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. Nothing in CI touches `functions/`. No riverpod_lint rule runs anywhere, locally or in
+changes. No riverpod_lint rule runs anywhere, locally or in
 CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
 is fixed.
 
@@ -152,8 +144,7 @@ Firestore throws `failed-precondition` at runtime until the index is deployed.
 date range as a line chart, bucketing activities by day or week and overlaying a moving
 average.
 
-`functions/src/index.ts` is entirely commented-out scaffolding — there is no server-side
-logic. Tests in `test/` run without Firebase: they override providers in a
+There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
 `User`). Anything that calls `FirebaseFirestore.instance` is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
