@@ -20,10 +20,13 @@ class ViceForm extends ConsumerStatefulWidget {
 
 class _ViceFormState extends ConsumerState<ViceForm> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  // EditVice rebuilds this with the live document, so a change is measured
+  // against what the form opened with, not against [widget.vice].
+  late final Vice? opened = widget.vice;
   late final TextEditingController viceNameController = TextEditingController(
-    text: widget.vice?.name,
+    text: opened?.name,
   );
-  late Unit? unit = widget.vice?.unit;
+  late Unit? unit = opened?.unit;
 
   @override
   void dispose() {
@@ -36,7 +39,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
       return;
     }
 
-    final Vice? vice = widget.vice;
+    final Vice? vice = opened;
     final String name = viceNameController.text;
 
     try {
@@ -96,7 +99,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 controller: viceNameController,
                 decoration: const InputDecoration(labelText: 'Vice Name'),
                 validator: (String? value) =>
-                    viceNameError(value, unchanged: widget.vice?.name),
+                    viceNameError(value, unchanged: opened?.name),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<Unit>(

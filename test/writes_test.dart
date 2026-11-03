@@ -197,6 +197,63 @@ void main() {
       expect(find.byType(EditVice), findsNothing);
     });
 
+    group('when another device edits the vice while the form is open', () {
+      final Vice coffee = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+      );
+      final Vice renamed = Vice(
+        id: 'coffee',
+        name: 'Espresso',
+        unit: Unit.hour,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+      );
+
+      Future<void> openThenRename(WidgetTester tester) async {
+        final StreamController<List<Vice>> vices =
+            StreamController<List<Vice>>();
+        addTearDown(() => unawaited(vices.close()));
+        vices.add([coffee]);
+        await _pumpOpened(tester, writes, [
+          viceListProvider.overrideWith((ref) => vices.stream),
+        ], const EditVice(viceID: 'coffee'));
+        vices.add([renamed]);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('an untouched save writes nothing', (
+        WidgetTester tester,
+      ) async {
+        await openThenRename(tester);
+        await save(tester);
+
+        expect(writes.writes, isEmpty);
+      });
+
+      testWidgets('a save writes only what this form changed', (
+        WidgetTester tester,
+      ) async {
+        await openThenRename(tester);
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Vice Name'),
+          'Latte',
+        );
+        await save(tester);
+
+        expect(writes.writes, [
+          const Write('updateVice', 'coffee', <String, Object?>{
+            'name': 'Latte',
+          }),
+        ]);
+      });
+    });
+
     testWidgets('stays open and shows the error when the save fails', (
       WidgetTester tester,
     ) async {
