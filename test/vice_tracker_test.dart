@@ -187,22 +187,74 @@ void main() {
     });
   });
 
-  testWidgets('fewer vices than radar axes are listed instead of charted', (
-    WidgetTester tester,
-  ) async {
+  group('fewer vices than radar axes', () {
     final DateTime today = startOfDay(DateTime.now());
-    final Vice vice = fakeVice('coffee');
+    final Vice coffee = fakeVice('coffee');
+    final Vice beer = fakeVice('beer');
 
-    await _pumpApp(tester, [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value([vice])),
-      viceActivityDayProvider.overrideWith(
-        (ref, DateTime day) => Stream.value([fakeActivity(vice.id, 2, today)]),
-      ),
-    ], const ViceTracker());
+    List<Override> overrides(List<Vice> vices) => [
+      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      viceActivityDayProvider.overrideWith((ref, DateTime day) {
+        final int daysAgo = daysBetween(day, today);
 
-    expect(find.byType(RadarChart), findsNothing);
-    expect(find.text('coffee'), findsOneWidget);
-    expect(find.text('2 items'), findsOneWidget);
+        return Stream.value([
+          fakeActivity(coffee.id, daysAgo + 2, day),
+          fakeActivity(beer.id, daysAgo + 1, day),
+        ]);
+      }),
+    ];
+
+    List<double> barValues(WidgetTester tester) => [
+      for (final BarChartGroupData group
+          in tester.widget<BarChart>(find.byType(BarChart)).data.barGroups)
+        group.barRods.single.toY,
+    ];
+
+    Finder barTitle(String text) =>
+        find.descendant(of: find.byType(BarChart), matching: find.text(text));
+
+    testWidgets('one vice is charted as a bar', (WidgetTester tester) async {
+      await _pumpApp(tester, overrides([coffee]), const ViceTracker());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RadarChart), findsNothing);
+      expect(barValues(tester), [2]);
+      expect(barTitle('coffee (2 items)'), findsOneWidget);
+    });
+
+    testWidgets('two vices are charted as bars that follow the selected day', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides([coffee, beer]), const ViceTracker());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RadarChart), findsNothing);
+      expect(barValues(tester), [2, 1]);
+      expect(barTitle('coffee (2 items)'), findsOneWidget);
+      expect(barTitle('beer (1 item)'), findsOneWidget);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Yesterday'), findsOneWidget);
+      expect(barValues(tester), [3, 2]);
+      expect(barTitle('coffee (3 items)'), findsOneWidget);
+      expect(barTitle('beer (2 items)'), findsOneWidget);
+    });
+
+    testWidgets('a third vice switches to the radar', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(
+        tester,
+        overrides([coffee, beer, fakeVice('tea')]),
+        const ViceTracker(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BarChart), findsNothing);
+      expect(find.byType(RadarChart), findsOneWidget);
+    });
   });
 
   group('an account with no vices', () {
