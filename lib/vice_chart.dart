@@ -23,6 +23,9 @@ class ViceChart extends ConsumerWidget {
 
   static const int minimumRadarAxes = 3;
   static const int maximumRadarRings = 5;
+  static const double barWidth = 48;
+  static const double titleGap = 8;
+  static const double radarTitleOffset = 0.2;
 
   static final DateFormat dayFormat = DateFormat('EEEE, MMMM d, yyyy');
 
@@ -56,58 +59,69 @@ class ViceChart extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceEvenly,
-          minY: 0,
-          maxY: quantities.reduce(max) * 1.15,
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(enabled: false),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(),
-            leftTitles: const AxisTitles(),
-            rightTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: max(48, 2 * lineHeight + 8),
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  final int index = value.toInt();
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double titleWidth =
+              barTitleWidth(constraints.maxWidth, vices.length, barWidth) -
+              titleGap;
 
-                  return SideTitleWidget(
-                    meta: meta,
-                    child: Text(
-                      title(vices[index], quantities[index]),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: titleStyle,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          barGroups: [
-            for (int i = 0; i < vices.length; i++)
-              BarChartGroupData(
-                x: i,
-                barRods: [
-                  BarChartRodData(
-                    toY: quantities[i].toDouble(),
-                    width: 48,
-                    color: theme.colorScheme.primary,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(6),
-                    ),
+          return BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceEvenly,
+              minY: 0,
+              maxY: quantities.reduce(max) * 1.15,
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              barTouchData: BarTouchData(enabled: false),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(),
+                leftTitles: const AxisTitles(),
+                rightTitles: const AxisTitles(),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: max(48, 2 * lineHeight + 8),
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      final int index = value.toInt();
+
+                      return SideTitleWidget(
+                        meta: meta,
+                        child: SizedBox(
+                          width: titleWidth,
+                          child: Text(
+                            title(vices[index], quantities[index]),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: titleStyle,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ],
+                ),
               ),
-          ],
-        ),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.fastOutSlowIn,
+              barGroups: [
+                for (int i = 0; i < vices.length; i++)
+                  BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: quantities[i].toDouble(),
+                        width: barWidth,
+                        color: theme.colorScheme.primary,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.fastOutSlowIn,
+          );
+        },
       ),
     );
   }
@@ -213,48 +227,70 @@ class ViceChart extends ConsumerWidget {
       ],
     );
 
+    final TextStyle titleStyle = TextStyle(
+      color: theme.colorScheme.secondary,
+      fontSize: 14,
+    );
+
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: RadarChart(
-        RadarChartData(
-          dataSets: [dataSet, scaleSet],
-          isMinValueAtCenter: true,
-          borderData: FlBorderData(show: false),
-          radarBorderData: BorderSide(
-            color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-          ),
-          radarShape: RadarShape.polygon,
-          titlePositionPercentageOffset: 0.2,
-          titleTextStyle: TextStyle(
-            color: theme.colorScheme.secondary,
-            fontSize: 14,
-          ),
-          getTitle: (int index, double angle) {
-            final Vice vice = vices[index];
-            final int quantity = quantities[index];
-            final double correctionFactor = angle > 90 && angle < 270 ? 180 : 0;
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double titleWidth =
+              radarTitleWidth(
+                constraints.biggest,
+                vices.length,
+                radarTitleOffset,
+              ) -
+              titleGap;
 
-            return RadarChartTitle(
-              text: title(vice, quantity),
-              angle: angle + correctionFactor,
-            );
-          },
-          tickCount: scale.top ~/ scale.step,
-          // fl_chart scales the titles by the device text size, not the ticks.
-          ticksTextStyle: TextStyle(
-            color: theme.colorScheme.secondary,
-            fontSize: MediaQuery.textScalerOf(context).scale(10),
-          ),
-          tickBorderData: BorderSide(
-            color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-          ),
-          gridBorderData: BorderSide(
-            color: theme.colorScheme.tertiary,
-            width: 1,
-          ),
-        ),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.fastOutSlowIn,
+          return RadarChart(
+            RadarChartData(
+              dataSets: [dataSet, scaleSet],
+              isMinValueAtCenter: true,
+              borderData: FlBorderData(show: false),
+              radarBorderData: BorderSide(
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
+              ),
+              radarShape: RadarShape.polygon,
+              titlePositionPercentageOffset: radarTitleOffset,
+              titleTextStyle: titleStyle,
+              getTitle: (int index, double angle) {
+                final Vice vice = vices[index];
+                final int quantity = quantities[index];
+                final double correctionFactor = angle > 90 && angle < 270
+                    ? 180
+                    : 0;
+
+                return RadarChartTitle(
+                  text: fitChartLabel(
+                    context,
+                    name: vice.name,
+                    suffix: ' (${vice.unit.label(quantity)})',
+                    style: titleStyle,
+                    maxWidth: titleWidth,
+                  ),
+                  angle: angle + correctionFactor,
+                );
+              },
+              tickCount: scale.top ~/ scale.step,
+              // fl_chart scales the titles by the device text size, not the ticks.
+              ticksTextStyle: TextStyle(
+                color: theme.colorScheme.secondary,
+                fontSize: MediaQuery.textScalerOf(context).scale(10),
+              ),
+              tickBorderData: BorderSide(
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
+              ),
+              gridBorderData: BorderSide(
+                color: theme.colorScheme.tertiary,
+                width: 1,
+              ),
+            ),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.fastOutSlowIn,
+          );
+        },
       ),
     );
   }
