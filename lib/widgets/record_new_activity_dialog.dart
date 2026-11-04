@@ -213,6 +213,11 @@ class _RecordNewActivityDialogState
     if (vices == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    // Each emission brings new Vice instances, so the dropdown keys on the id;
+    // a vice archived meanwhile drops out of the selection.
+    selectedVice = vices
+        .where((Vice v) => v.id == selectedVice?.id)
+        .firstOrNull;
 
     return PopScope(
       canPop: !loading,
@@ -231,29 +236,31 @@ class _RecordNewActivityDialogState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    DropdownButtonFormField<Vice>(
-                      initialValue: selectedVice,
+                    DropdownButtonFormField<String>(
+                      key: ValueKey<String?>(selectedVice?.id),
+                      initialValue: selectedVice?.id,
                       isExpanded: true,
                       hint: const Text('Select Vice'),
-                      onChanged: (Vice? value) {
+                      onChanged: (String? id) {
                         final int parsedQuantity =
                             int.tryParse(quantityController.text) ?? 0;
 
                         setState(() {
-                          selectedVice = value;
+                          selectedVice =
+                              vices.firstWhere((Vice v) => v.id == id);
                           updateUnit(parsedQuantity);
                         });
                       },
                       items: vices
                           .map(
-                            (Vice vice) => DropdownMenuItem<Vice>(
-                              value: vice,
+                            (Vice vice) => DropdownMenuItem<String>(
+                              value: vice.id,
                               child: Text(vice.name),
                             ),
                           )
                           .toList(),
                       decoration: const InputDecoration(labelText: 'Vice'),
-                      validator: (Vice? value) {
+                      validator: (String? value) {
                         if (value == null) {
                           return 'Please select a vice';
                         }

@@ -442,7 +442,7 @@ void main() {
         const RecordNewActivityDialog(),
         dialog: true,
       );
-      await tester.tap(find.byType(DropdownButtonFormField<Vice>));
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('coffee').last);
       await tester.pumpAndSettle();
