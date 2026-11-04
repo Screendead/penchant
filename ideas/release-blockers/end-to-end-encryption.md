@@ -311,8 +311,7 @@ Reasons for the choices inside O1:
 - [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
 - `no-query-is-bounded-or-paginated` (fixed by backend hardening)
 - [`writes-bypass-providers-with-inline-firestore-calls`](../../tech-debt/widget-state-and-view-logic/writes-bypass-providers-with-inline-firestore-calls.md)
-- [`macos-deployment-target-frozen-at-10-14`](../../tech-debt/platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
-  and [`macos-sandbox-grants-no-outbound-network`](../../tech-debt/platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
+- `macos-deployment-target-frozen-at-10-14` and `macos-sandbox-grants-no-outbound-network` (fixed in PR #47)
 - Ideas: [name and bundle ID](name-and-bundle-id.md), [backend hardening](backend-hardening.md),
   account deletion (built in `lib/account/`; it must delete the key too),
   [privacy policy](privacy-policy-and-labels.md), data export (built in `lib/account/`; export becomes the

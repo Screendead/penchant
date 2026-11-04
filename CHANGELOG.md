@@ -16,6 +16,7 @@ pull request titles (`gh pr list --state merged`).
 - Account Settings exports your data as CSV and JSON, deletes the account with everything in it, resends the
   verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
   device's copy of your data, and asks first if entries have not synced (#54).
+- The app builds for the Mac, on macOS 12 Monterey or later (#47).
 
 ### Changed
 

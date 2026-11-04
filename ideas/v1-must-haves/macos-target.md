@@ -57,6 +57,7 @@ once for two devices.
 - `macos-deployment-target-frozen-at-10-14` (fixed in PR #47)
 - `macos-sandbox-grants-no-outbound-network` (fixed in PR #47)
 - `macos-tree-is-stale-and-lockfile-has-no-firebase-pods` (fixed in PR #47)
+- [`macos-release-build-fails-in-flutter-unpack`](../../tech-debt/platform-and-delivery-config/macos-release-build-fails-in-flutter-unpack.md)
 - [`macos-firebase-config-carries-the-ios-test-bundle-id`](../../tech-debt/platform-and-delivery-config/macos-firebase-config-carries-the-ios-test-bundle-id.md)
 - `macos-platform-is-undocumented` (fixed in PR #34: CLAUDE.md documents the platforms)
 - [name and bundle ID](../release-blockers/name-and-bundle-id.md)

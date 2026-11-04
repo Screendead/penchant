@@ -9,4 +9,5 @@ The macOS Runner target hardcodes the same team, and the macOS project mixes aut
 ## Evidence
 
 - `ios/Runner.xcodeproj/project.pbxproj:494` — `DEVELOPMENT_TEAM = 8N575942RT;`
-- `macos/Runner.xcodeproj/project.pbxproj:285` — `ProvisioningStyle = Manual;`
+- `macos/Runner.xcodeproj/project.pbxproj:597` — `DEVELOPMENT_TEAM = 8N575942RT;`
+- `macos/Runner.xcodeproj/project.pbxproj:286` — `ProvisioningStyle = Manual;`
