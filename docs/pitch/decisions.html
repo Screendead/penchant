@@ -73,7 +73,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 <div class="wrap">
   <header>
     <h1>Tracker: calls for Jack</h1>
-    <p class="lede">Round 1 is decided and built. Round 4 is new today; Round 2 holds the calls that 1.0 hangs on; the first group has screenshots of options built on branches. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
+    <p class="lede">Round 1 is decided and built. Round 5 is new today (the Today chart at large text); Round 4 is open; Round 2 holds the calls that 1.0 hangs on; the first group has screenshots of options built on branches. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
     <div class="tally" id="tally"></div>
     <p class="banner" id="banner">Connecting to saved picks…</p>
   </header>
@@ -82,10 +82,8 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
     <div class="sechead"><h2>For you to do</h2><p>Actions, not decisions.</p></div>
     <div class="todo">
       <ol>
-        <li><b>Let CI deploy the rules (your C1 pick).</b> Give the service account behind the GitHub secret <code>FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER</code> these roles in the Google Cloud console (IAM): Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer. It also needs <code>firebase.projects.get</code>; it probably already has that through Firebase Hosting Admin, so keep that role or add Firebase Viewer. Then set the repository variable:
-          <div class="cmd"><pre id="c1">gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker</pre><button class="copy" data-copy="c1">Copy</button></div>
-          The next merge to master then deploys today's stricter rules (quantity above 0, names up to 60 characters, entries must point at your own vice). Rebuild any installed copy from master first, so the app refuses that input before the rules do.</li>
-        <li><b>Create the Mac development profile</b> (unblocks the macOS PR #47): open <code>macos/Runner.xcworkspace</code> in Xcode, select Runner › Signing &amp; Capabilities with team 8N575942RT, and build once (⌘B). Firebase sign-in on the Mac needs it, and Claude isn't allowed to create it.</li>
+        <li><b>Create the Mac development profile</b> (unblocks the macOS PR #47, which is merged with master, green on iOS e2e 31/31 and the macOS CI build, and waits only on this and the macOS e2e): open <code>~/development/tracker-worktrees/feat-macos-target/macos/Runner.xcworkspace</code> in Xcode, select Runner › Signing &amp; Capabilities with team 8N575942RT, and build once (⌘B). Then discard the stray signing change in the main checkout:
+          <div class="cmd"><pre id="c5">cd ~/development/tracker && git checkout -- macos/Runner.xcodeproj/project.pbxproj</pre><button class="copy" data-copy="c5">Copy</button></div></li>
         <li><b>Close Dependabot PRs #22 and #42</b> if they are still open; #44 replaced them. <div class="cmd"><pre id="c3">gh pr close 22 && gh pr close 42</pre><button class="copy" data-copy="c3">Copy</button></div></li>
         <li><b>Firebase console checks:</b> turn on Email Enumeration Protection (Authentication › Settings › User actions), and read the password-reset and verification email templates (Authentication › Templates); the app now sends both. Set a budget alert (Google Cloud console › Billing › Budgets &amp; alerts); alerts email you, they don’t stop Firestore.</li>
         <li><b>App Check, once you have the paid Apple Developer Program:</b> register the iOS app under Firebase › Security › App Check (App Attest and DeviceCheck need your Team ID and a DeviceCheck key). Enforce on Firestore only after every installed copy runs a build from PR #55 or later.</li>
@@ -156,6 +154,26 @@ const GROUPS = [
         { k: "A", t: "Reuse the iOS app's registration", c: "No console step: Claude copies the committed iOS config. Delete the RunnerTests app afterwards." },
         { k: "B", t: "Register a separate Apple app", c: "Needs a different bundle ID, which breaks one purchase covering both." } ],
       rec: "A", why: "Same bundle ID, same App Store record, one Pro purchase for both devices." } ] },
+
+  { title: "Round 5 (4 November): Today chart at large text", sub: "Built one way in PR #74; a pick changes a few lines.", calls: [
+    { id: "r5-radar-inset", q: "Inset the Today radar by one title line on every side, at every text size?",
+      ctx: "At large text the vice names around the radar were clipped. PR #74 pulls the radar in by one title line on all sides at all text sizes, and shows a key of vice names below the chart.",
+      opts: [
+        { k: "A", t: "Always inset (as built)", c: "One layout at every size; the radar is slightly smaller at normal text." },
+        { k: "B", t: "Inset only when the key shows", c: "Full-size radar at normal text; the layout changes when text grows." } ],
+      rec: "A", why: "The chart does not jump between layouts as text size changes, and the cost is a few pixels." },
+    { id: "r5-key-height", q: "How tall may the key below the Today chart be?",
+      ctx: "The key lists every vice name. With many vices or very large text it takes a lot of height.",
+      opts: [
+        { k: "A", t: "Take the height it needs (as built)", c: "The chart is left out when fewer than four title lines of room remain; the key still names every vice." },
+        { k: "B", t: "Cap at half the height, scrolling", c: "The chart always shows; the key scrolls inside a small box." } ],
+      rec: "A", why: "A chart squeezed to a sliver says nothing, and a nested scroller is awkward with VoiceOver and large text." },
+    { id: "r5-key-always", q: "Show the key whenever amounts are dropped from titles, not only when a name is cut?",
+      ctx: "At large text the chart titles drop the amounts to fit. Today the key shows when a name is cut; the amounts are then lost with nothing to read them from.",
+      opts: [
+        { k: "A", t: "Yes: also when amounts are dropped", c: "The key carries the amounts, so nothing is lost." },
+        { k: "B", t: "Only when a name is cut", c: "Fewer cases show the key; amounts can vanish with no other place to read them." } ],
+      rec: "A", why: "Dropping data from the chart should always leave it readable somewhere." } ] },
 
   { title: "Round 4 (4 November): raised by the wave D fixes", sub: "Each is built one way now; a pick changes a few lines.", calls: [
     { id: "r4-weekly", q: "How should Weekly view handle days that don't make a whole week?", link: "lib/data/usage_series.dart",
