@@ -156,7 +156,7 @@ class _ViceActivityHistoryPageState
               return Card(
                 child: ListTile(
                   title: Text(
-                    '${vice.unit.label(activity.quantity)} on ${formatDayAndTime(createdAt)}',
+                    '${vice.unit.label(activity.quantity)} on ${formatDayAndTime(createdAt, alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
                   ),
                   subtitle: Wrap(
                     spacing: 8,

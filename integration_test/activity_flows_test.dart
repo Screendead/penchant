@@ -379,7 +379,11 @@ void main() {
     expect((requantified['createdAt'] as Timestamp).toDate(), moved);
     await pumpUntil(
       tester,
-      find.textContaining('on ${formatDayAndTime(moved)}').hitTestable(),
+      find
+          .textContaining(
+            'on ${formatDayAndTime(moved, alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat)}',
+          )
+          .hitTestable(),
     );
   });
 }

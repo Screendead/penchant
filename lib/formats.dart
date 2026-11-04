@@ -39,8 +39,19 @@ String formatDay(DateTime day) =>
 String formatShortDay(DateTime day) =>
     DateFormat.MMMd(formatLocale).format(day);
 
-String formatDayAndTime(DateTime moment) =>
-    DateFormat.yMMMEd(formatLocale).add_jm().format(moment);
+// On iOS and macOS the flag is the device's effective clock, 24-Hour Time
+// setting included, so false means 12-hour time even where the region's
+// default is 24-hour. intl has no 12-hour skeleton, so that pattern is
+// CLDR English's, with the region still choosing the AM/PM words.
+String formatDayAndTime(
+  DateTime moment, {
+  required bool alwaysUse24HourFormat,
+}) {
+  final DateFormat day = DateFormat.yMMMEd(formatLocale);
+
+  return (alwaysUse24HourFormat ? day.add_Hm() : day.addPattern('h:mm\u202fa'))
+      .format(moment);
+}
 
 // Typed by hand and parsed back with the same instance, so it stays numeric
 // and 24-hour: a 12-hour pattern puts a narrow no-break space before AM/PM.

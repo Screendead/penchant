@@ -56,6 +56,17 @@ void main() {
     expect(formatCount(12345), '12,345');
   });
 
+  test('the history time follows the device clock', () {
+    expect(
+      formatDayAndTime(moment, alwaysUse24HourFormat: true),
+      'Wed, Nov 4, 2026 14:03',
+    );
+    expect(
+      formatDayAndTime(moment, alwaysUse24HourFormat: false),
+      'Wed, Nov 4, 2026 2:03\u202fPM',
+    );
+  });
+
   test('relative days', () {
     expect(relativeDay(0), 'Today');
     expect(relativeDay(1), 'Yesterday');
