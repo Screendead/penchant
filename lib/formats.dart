@@ -7,22 +7,27 @@ const List<Locale> appLocales = [Locale('en')];
 
 bool _dateSymbolsLoaded = false;
 
-// English is the only language the app speaks, so the device supplies only
-// the regional conventions (day order, 12 or 24 hours, digit grouping): the
-// user's first English variant, else English in their region, else en.
 String get formatLocale {
   if (!_dateSymbolsLoaded) {
     // Synchronous despite the Future: the data is compiled in.
     initializeDateFormatting();
     _dateSymbolsLoaded = true;
   }
-  final List<Locale> locales = PlatformDispatcher.instance.locales;
+
+  return localeForFormatting(PlatformDispatcher.instance.locales);
+}
+
+// English is the only language the app speaks, so the device supplies only
+// the regional conventions (day order, 12 or 24 hours, digit grouping): the
+// user's first English variant, else English in their region, else en.
+// Call through [formatLocale], which loads the data this checks against.
+String localeForFormatting(List<Locale> deviceLocales) {
   final Iterable<String> candidates = [
-    for (final Locale locale in locales)
+    for (final Locale locale in deviceLocales)
       if (locale.languageCode == 'en' && locale.countryCode != null)
         'en_${locale.countryCode}',
-    if (locales.isNotEmpty && locales.first.countryCode != null)
-      'en_${locales.first.countryCode}',
+    if (deviceLocales.isNotEmpty && deviceLocales.first.countryCode != null)
+      'en_${deviceLocales.first.countryCode}',
   ];
 
   return candidates.firstWhere(DateFormat.localeExists, orElse: () => 'en');

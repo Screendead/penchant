@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:intl/intl.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
-import 'package:tracker/vice_chart.dart';
 
 import 'support.dart';
 
@@ -56,7 +55,7 @@ void main() {
     final DateTime today = startOfDay(DateTime.now());
     expect(
       find.bySemanticsLabel(
-        'Totals for ${ViceChart.dayFormat.format(today)}. Water: 0 drinks; '
+        'Totals for ${formatDay(today)}. Water: 0 drinks; '
         'Tea: 1 drink; Coffee: 2 drinks',
       ),
       findsOneWidget,
@@ -70,7 +69,7 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Daily totals of Coffee over the last 30 days: 2 drinks in all. '
-        'The most was 2 drinks on ${DateFormat('MMM d').format(today)}.',
+        'The most was 2 drinks on ${formatShortDay(today)}.',
       ),
       findsOneWidget,
     );

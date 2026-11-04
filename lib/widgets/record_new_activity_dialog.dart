@@ -247,9 +247,8 @@ class _RecordNewActivityDialogState
                             int.tryParse(quantityController.text) ?? 0;
 
                         setState(() {
-                          selectedVice = vices.firstWhere(
-                            (Vice v) => v.id == id,
-                          );
+                          selectedVice =
+                              vices.firstWhere((Vice v) => v.id == id);
                           updateUnit(parsedQuantity);
                         });
                       },
