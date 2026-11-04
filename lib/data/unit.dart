@@ -17,11 +17,6 @@ enum Unit {
   String nameFor(int count) => pluralWord(count, one: singular, other: plural);
   String label(int count) => '${formatCount(count)} ${nameFor(count)}';
 
-  @override
-  String toString() {
-    return super.toString().split('.').last;
-  }
-
   static const Unit fallback = Unit.item;
 
   static Unit fromString(Object? unit) {

@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**35 issues: 0 critical, 1 high, 14 medium, 20 low.**
+**28 issues: 0 critical, 1 high, 14 medium, 13 low.**
 
 ## Firebase Data Layer (5)
 
@@ -45,18 +45,6 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 
 - **medium** — [A queued change the server refuses after the app restarts vanishes without a word](offline-and-write-reliability/rejected-write-from-an-earlier-launch-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
-
-## Duplication and Dead Code (7)
-
-Copy-pasted logic, unused providers, methods and fields, commented-out code, and lint and formatting drift.
-
-- **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
-- **low** — [Long lines and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
-- **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
-- **low** — [Serialization helpers are used only by tests while every write site hand-builds its own map](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
-- **low** — [The same nullable-lookup pattern is typed out separately twice](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-twice.md)
-- **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
-- **low** — [An auth widget carries a dead field](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
 ## Accessibility and Localization (3)
 
