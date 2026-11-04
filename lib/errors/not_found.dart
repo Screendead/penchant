@@ -6,10 +6,14 @@ class NotFound extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Not Found')),
+      appBar: AppBar(
+        title: const Text('Not Found'),
+      ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
+          constraints: const BoxConstraints(
+            maxWidth: 400,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

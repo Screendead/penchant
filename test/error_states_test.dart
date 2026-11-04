@@ -205,7 +205,9 @@ void main() {
         coffee,
       ]);
       await _pump(tester, [
-        viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
+        viceListForUserProvider.overrideWith(
+          (ref, uid) => vices.listen(),
+        ),
         viceActivityDayForUserProvider.overrideWith(
           (ref, key) => Stream.value(<ViceActivity>[]),
         ),
@@ -443,7 +445,9 @@ void main() {
         coffee,
       ]);
       await _pump(tester, [
-        viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
+        viceListForUserProvider.overrideWith(
+          (ref, uid) => vices.listen(),
+        ),
       ], const Scaffold(body: RecordNewActivityDialog()));
 
       expect(
