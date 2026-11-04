@@ -14,18 +14,16 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**56 issues: 0 critical, 2 high, 30 medium, 24 low.**
+**54 issues: 0 critical, 2 high, 29 medium, 23 low.**
 
-## Firebase Data Layer (7)
+## Firebase Data Layer (5)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
-- **medium** — [No dev or staging alias; every firebase command defaults to production](firebase-data-layer/every-firebase-command-targets-production.md)
-- **medium** — [Legacy vices without `archived` cannot be recorded against](firebase-data-layer/vices-without-archived-never-reach-the-today-tab.md)
+- **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
 - **medium** — [The rules deploy job is off, and index or console drift goes unchecked](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
-- **low** — [Daily totals shift depending on the device's timezone](firebase-data-layer/day-windows-use-device-local-midnight.md)
-- **low** — [Legacy activities of a missing vice are fetched but unreachable](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
+- **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 - **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
 ## Widget State and View Logic (11)

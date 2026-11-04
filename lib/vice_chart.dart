@@ -11,6 +11,7 @@ import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/chart_text.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -145,7 +146,7 @@ class ViceChart extends ConsumerWidget {
         message: loadErrorMessage('this day', error),
         isError: true,
         onRetry: () {
-          ref.invalidate(unarchivedViceListForUserProvider, asReload: true);
+          ref.invalidate(viceListForUserProvider, asReload: true);
           ref.invalidate(viceActivityDayForUserProvider, asReload: true);
         },
       );
