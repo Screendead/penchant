@@ -28,6 +28,7 @@ pull request titles (`gh pr list --state merged`).
 - Today and the Graph move on at midnight, and on returning to the app the next day, instead of staying on yesterday.
 - The activity editor shows changes made elsewhere while it is open, until you edit that field.
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
+- The Graph counts each entry on its own day around a daylight-saving change, and its range still ends on today.
 
 ## [0.1.0] - Unreleased
 

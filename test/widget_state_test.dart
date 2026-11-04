@@ -175,29 +175,47 @@ void main() {
       );
     });
 
-    testWidgets("the graph's range ends on the new day", (
-      WidgetTester tester,
-    ) async {
-      final List<ViceActivityGraphQuery> queries = <ViceActivityGraphQuery>[];
-      final _FakeToday clock = _FakeToday(addDays(today, -1));
-      await _pump(tester, [
-        todayProvider.overrideWith(() => clock),
-        viceListProvider.overrideWithValue(AsyncData([coffee])),
-        viceActivityGraphProvider.overrideWith((
-          ref,
-          ViceActivityGraphQuery query,
-        ) {
-          queries.add(query);
-          return AsyncData(<ViceActivity>[]);
-        }),
-      ], const Scaffold(body: UsageGraphView()));
-      expect(queries.last.end, today);
+    // The days New York and London move their clocks, which last 23 or 25
+    // hours under TZ=America/New_York or TZ=Europe/London.
+    for (final DateTime day in <DateTime>[
+      DateTime(2026, 3, 8),
+      DateTime(2026, 3, 29),
+      DateTime(2026, 10, 25),
+      DateTime(2026, 11, 1),
+    ]) {
+      testWidgets("the graph's range ends on the new day (${day.month}/"
+          '${day.day})', (WidgetTester tester) async {
+        final DateTime next = addDays(day, 1);
+        final List<ViceActivityGraphQuery> queries = <ViceActivityGraphQuery>[];
+        final _FakeToday clock = _FakeToday(day);
+        await _pump(tester, [
+          todayProvider.overrideWith(() => clock),
+          viceListProvider.overrideWithValue(AsyncData([coffee])),
+          viceActivityGraphProvider.overrideWith((
+            ref,
+            ViceActivityGraphQuery query,
+          ) {
+            queries.add(query);
+            return AsyncData(<ViceActivity>[
+              fakeActivity(coffee.id, 5, day.copyWith(hour: 23, minute: 30)),
+              fakeActivity(coffee.id, 3, next.copyWith(minute: 30)),
+            ]);
+          }),
+        ], const Scaffold(body: UsageGraphView()));
+        expect(queries.last.end, next);
 
-      clock.moveTo(today);
-      await tester.pump();
+        clock.moveTo(next);
+        await tester.pump();
 
-      expect(queries.last.end, addDays(today, 1));
-    });
+        expect(queries.last.start, addDays(next, -29));
+        expect(queries.last.end, addDays(next, 1));
+        final String dayLabel = UsageGraphView.labelFormat.format(day);
+        expect(
+          find.bySemanticsLabel(RegExp('The most was 5 items on $dayLabel\\.')),
+          findsOneWidget,
+        );
+      });
+    }
   });
 
   group('an archived vice', () {

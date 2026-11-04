@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
@@ -43,7 +44,7 @@ class UsageGraphView extends ConsumerStatefulWidget {
         .fold<double>(0, (double a, double b) => a + b)
         .round();
     final String peakDate = labelFormat.format(
-      rangeStart.add(Duration(days: peakIndex * stepDays)),
+      addDays(rangeStart, peakIndex * stepDays),
     );
     final String average = smoothingWindow > 1
         ? ' Shown with a ${averageName(stepDays, smoothingWindow)}.'
@@ -171,8 +172,8 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
     );
 
     final DateTime today = ref.watch(todayProvider);
-    final DateTime rangeStart = today.subtract(Duration(days: rangeDays - 1));
-    final DateTime rangeEnd = today.add(const Duration(days: 1));
+    final DateTime rangeStart = addDays(today, -(rangeDays - 1));
+    final DateTime rangeEnd = addDays(today, 1);
     final AsyncValue<List<ViceActivity>> activityValue = ref.watch(
       viceActivityGraphProvider((
         viceID: selectedVice.id,
@@ -190,10 +191,10 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
 
     if (activityList != null) {
       for (final ViceActivity activity in activityList) {
-        final int deltaDays = activity.createdAt
-            .toDate()
-            .difference(rangeStart)
-            .inDays;
+        final int deltaDays = daysBetween(
+          rangeStart,
+          activity.createdAt.toDate(),
+        );
 
         final int bucketIndex = deltaDays ~/ stepDays;
         if (bucketIndex >= 0 && bucketIndex < totals.length) {
@@ -472,10 +473,9 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
                                               }
 
                                               final DateTime labelDate =
-                                                  rangeStart.add(
-                                                    Duration(
-                                                      days: index * stepDays,
-                                                    ),
+                                                  addDays(
+                                                    rangeStart,
+                                                    index * stepDays,
                                                   );
                                               return Padding(
                                                 padding: const EdgeInsets.only(
