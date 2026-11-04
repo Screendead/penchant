@@ -9,5 +9,5 @@ This is the same collapse of null and loading present in the leaf screens, occur
 ## Evidence
 
 - `lib/main.dart:35` — `final User? user = ref.watch(userProvider).value;`
-- `lib/main.dart:63` — `home: user == null ? const Authenticate() : const Homepage(),`
+- `lib/main.dart:70` — `home: user == null ? const Authenticate() : const Homepage(),`
 - `lib/providers/user_provider.dart:5` — `return FirebaseAuth.instance.authStateChanges();`

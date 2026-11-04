@@ -10,7 +10,7 @@ Every quantity is shown or written back through plain string interpolation or `t
 
 - `lib/data/unit.dart:15` — `String nameFor(int count) => count == 1 ? singular : plural;`
 - `lib/data/unit.dart:16` — `String label(int count) => '$count ${nameFor(count)}';`
-- `pubspec.yaml:42` — `intl: ^0.20.3`
-- `lib/vice_activity_history_page.dart:62` — `subtitle: Text('Quantity: ${activity.quantity}'),`
-- `lib/vice_activity_editor_page.dart:47` — `quantityController.text = activity.quantity.toString();`
+- `pubspec.yaml:40` — `intl: ^0.20.3`
+- `lib/vice_activity_history_page.dart:145` — `Text('Quantity: ${activity.quantity}'),`
+- `lib/vice_activity_editor_page.dart:56` — `initialQuantityText = activity.quantity.toString();`
 - **`grep -rn "NumberFormat" lib/`** → (no output — zero matches)

@@ -10,6 +10,6 @@ The report that prompted this entry described a `lipo` architecture error. That 
 
 - **`flutter build macos --release`** (Flutter 3.44.7, run 2026-11-03 in a fresh worktree) → `/Users/.../macos/Pods/Pods.xcodeproj: error: The macOS deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to 10.15, but the range of supported deployment target versions is 12.0 to 27.2.x. (in target 'Firebase' from project 'Pods')`, the same for `FirebaseAuth`, `GoogleUtilities`, `nanopb` and others; `leveldb-library` is 10.13. 42 lines contain `error:`; the output ends `** BUILD FAILED **`.
 - Same run → `macos/Runner.xcodeproj: error: ... set to 10.15, but the range ... is 12.0 to 27.2.x. (in target 'Flutter Assemble' from project 'Runner')`.
-- `macos/Runner.xcodeproj/project.pbxproj:564`, `:646`, `:696` — `MACOSX_DEPLOYMENT_TARGET = 10.15;`
+- `macos/Runner.xcodeproj/project.pbxproj:564`, `:646`, `:696` — `MACOSX_DEPLOYMENT_TARGET = 10.14;` as committed; the Flutter tool rewrote them to 10.15 during that run, which is the value the Xcode error names
 - `macos/Podfile:1` — `platform :osx, '10.14'`
 - The run also rewrote tracked files under `macos/` (Podfile, Podfile.lock, project.pbxproj, scheme, AppDelegate.swift); they were reverted and are not part of this PR.

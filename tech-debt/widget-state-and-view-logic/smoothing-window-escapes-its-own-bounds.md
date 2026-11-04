@@ -8,9 +8,9 @@ The result is a slider sitting at its maximum, a caption showing a larger number
 
 ## Evidence
 
-- `lib/usage_graph_view.dart:70` — `Widget build(BuildContext context) {`
-- `lib/usage_graph_view.dart:104` — `final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;`
-- `lib/usage_graph_view.dart:119` — `final List<double> smoothed = _movingAverage(totals, smoothingWindow);`
-- `lib/usage_graph_view.dart:205` — `smoothingWindow = min(smoothingWindow, bucketCount);`
-- `lib/usage_graph_view.dart:241` — `'Smoothing: $smoothingWindow buckets for ${selectedVice.name}',`
-- `lib/usage_graph_view.dart:252` — `value: smoothingWindow.clamp(1, smoothingMaxBuckets).toDouble(),`
+- `lib/usage_graph_view.dart:110` — `Widget build(BuildContext context) {`
+- `lib/usage_graph_view.dart:138` — `final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;`
+- `lib/usage_graph_view.dart:155` — `final List<double> smoothed = _movingAverage(totals, smoothingWindow);`
+- `lib/usage_graph_view.dart:249` — `smoothingWindow = min(smoothingWindow, bucketCount);`
+- `lib/usage_graph_view.dart:285` — `'Smoothing: $smoothingWindow buckets for ${selectedVice.name}',`
+- `lib/usage_graph_view.dart:296` — `value: smoothingWindow.clamp(1, smoothingMaxBuckets).toDouble(),`

@@ -9,7 +9,7 @@
 ## Evidence
 
 - `lib/writes/tracker_writes.dart:26` — `'createdAt': FieldValue.serverTimestamp(),`
-- `lib/writes/tracker_writes.dart:47` — `'createdAt': createdAt,`
-- `lib/widgets/record_new_activity_dialog.dart:119` — `createdAt: date,`
-- `lib/vice_activity_editor_page.dart:104` — `createdAt: parsedDate,`
-- `firestore.rules:57` — `&& request.resource.data.createdAt is timestamp;`
+- `lib/writes/tracker_writes.dart:51` — `'createdAt': createdAt,`
+- `lib/widgets/record_new_activity_dialog.dart:117` — `createdAt: date,`
+- `lib/vice_activity_editor_page.dart:120` — `'createdAt': dateFormat.parse(dateController.text),`
+- `firestore.rules:68` — `&& request.resource.data.createdAt is timestamp`

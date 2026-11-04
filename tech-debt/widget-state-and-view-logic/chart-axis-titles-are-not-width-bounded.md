@@ -8,7 +8,7 @@ This was reported by an earlier agent. It was **reported, not reproduced**: no s
 
 ## Evidence
 
-- `lib/vice_chart.dart:21` — `'${vice.name} (${vice.unit.label(quantity)})'` builds the label from a free-text name (up to 60 UTF-16 code units).
-- `lib/vice_chart.dart:43-56` — `getTitlesWidget` returns `SideTitleWidget(meta: meta, child: Text(title(...), maxLines: 2, overflow: TextOverflow.ellipsis, ...))` with no `SizedBox`, `ConstrainedBox` or width on the text.
-- `lib/vice_chart.dart:29` — `alignment: BarChartAlignment.spaceEvenly` with bars `width: 48` (`:70`), so the space per label shrinks as vices are added.
-- `lib/usage_graph_view.dart:296-304` and `:310-326` — the usage graph's `getTitlesWidget` callbacks return an unbounded `Text` the same way.
+- `lib/vice_chart.dart:28` — `'${vice.name} (${vice.unit.label(quantity)})'` builds the label from a free-text name (up to 60 UTF-16 code units).
+- `lib/vice_chart.dart:84-97` — `getTitlesWidget` returns `SideTitleWidget(meta: meta, child: Text(title(...), maxLines: 2, overflow: TextOverflow.ellipsis, ...))` with no `SizedBox`, `ConstrainedBox` or width on the text.
+- `lib/vice_chart.dart:70` — `alignment: BarChartAlignment.spaceEvenly` with bars `width: 48` (`:108`), so the space per label shrinks as vices are added.
+- `lib/usage_graph_view.dart:384-390` and `:401-422` — the usage graph's `getTitlesWidget` callbacks return an unbounded `Text` the same way.

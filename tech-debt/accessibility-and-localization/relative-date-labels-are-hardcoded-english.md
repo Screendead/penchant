@@ -8,4 +8,4 @@ The days-ago branch hardcodes a single English plural form, with no provision fo
 
 ## Evidence
 
-- `lib/vice_tracker.dart:88` — `daysAgo == 0\n                        ? 'Today'\n                        : daysAgo == 1\n                            ? 'Yesterday'\n                            : '$daysAgo days ago',`
+- `lib/vice_tracker.dart:57` — `daysAgo == 0\n                        ? 'Today'\n                        : daysAgo == 1\n                            ? 'Yesterday'\n                            : '$daysAgo days ago',`
