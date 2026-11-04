@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**33 issues: 0 critical, 1 high, 14 medium, 18 low.**
+**35 issues: 0 critical, 1 high, 14 medium, 20 low.**
 
 ## Firebase Data Layer (5)
 
@@ -58,11 +58,13 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
 - **low** — [An auth widget carries a dead field](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
-## Accessibility and Localization (1)
+## Accessibility and Localization (3)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
+- **low** — [The usage graph sizes its date labels from one sample date](accessibility-and-localization/date-axis-sizes-labels-from-one-sample-month.md)
+- **low** — [The radar's ring numbers print with a decimal and skip the region's number format](accessibility-and-localization/radar-ring-numbers-skip-the-region-format.md)
 
 ## Auth and Account Lifecycle (1)
 
