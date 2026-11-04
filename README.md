@@ -1,8 +1,8 @@
 # Tracker
 
-A journal for tracking things you do and want to understand, such as a habit you are cutting down on. You define a
-"vice" (a name and a unit), log activities against it, and read the trends: a per-day radar chart across your vices and
-a line chart of one vice over a date range.
+A journal for logging what you do, seeing the trends and learning about yourself. You define a "vice" (a name
+and a unit), log activities against it, and read the trends: a per-day radar chart across your vices and a line chart
+of one vice over a date range.
 
 A Flutter app for iOS and macOS over Firebase Auth and Cloud Firestore. There is no server-side code. The product
 name is not settled; "Tracker" is the working name.
@@ -19,7 +19,7 @@ tools/run-emulated.sh      # flutter run against local Firebase emulators (proje
 development must never touch.
 
 ```bash
-flutter analyze
+dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze skips riverpod_lint
 flutter test
 tools/e2e.sh               # integration tests on an iOS Simulator against the emulators
 ```
