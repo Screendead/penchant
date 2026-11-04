@@ -46,6 +46,5 @@ largest sizes, VoiceOver checks in the e2e run. Show Jack a mock-up first.
 - [quick logging](one-tap-quick-logging.md)
 - [`charts-carry-no-screen-reader-semantics`](../../tech-debt/accessibility-and-localization/charts-carry-no-screen-reader-semantics.md)
 - [`radar-chart-text-ignores-system-text-scale`](../../tech-debt/accessibility-and-localization/radar-chart-text-ignores-system-text-scale.md)
-- [`today-is-frozen-at-widget-initialisation`](../../tech-debt/widget-state-and-view-logic/today-is-frozen-at-widget-initialisation.md)
 
 **Needs Jack:** yes — Sign off the layout from a mock-up.

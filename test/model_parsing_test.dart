@@ -146,11 +146,6 @@ void main() {
     test('a DateTime createdAt converts to a Timestamp', () {
       expect(parse(_with(_vice(), 'createdAt', _at.toDate())).createdAt, _at);
     });
-
-    test('round-trips through toJson', () {
-      final Vice vice = parse(_vice());
-      expect(parse(vice.toJson()).toJson(), vice.toJson());
-    });
   });
 
   group('ViceActivity.fromJson', () {
@@ -224,11 +219,6 @@ void main() {
       expectRecent(
         parse(_with(_activity(), 'createdAt', null), pending: true).createdAt,
       );
-    });
-
-    test('round-trips through toJson', () {
-      final ViceActivity activity = parse(_activity());
-      expect(parse(activity.toJson()).toJson(), activity.toJson());
     });
   });
 

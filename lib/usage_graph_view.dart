@@ -4,12 +4,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/chart_scale.dart';
-import 'package:tracker/data/day.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/chart_text.dart';
@@ -56,8 +56,16 @@ class UsageGraphView extends ConsumerStatefulWidget {
   ConsumerState<UsageGraphView> createState() => _UsageGraphViewState();
 }
 
+typedef _GraphSelection = ({
+  String? viceID,
+  int rangeDays,
+  int stepDays,
+  int pickedWindow,
+});
+
 class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
-  late final DateTime today;
+  static const String _storageID = 'UsageGraphView.selection';
+
   String? selectedViceID;
   int rangeDays = 30;
   int stepDays = 1;
@@ -74,7 +82,26 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
   @override
   void initState() {
     super.initState();
-    today = startOfDay(DateTime.now());
+    if (PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
+        case final _GraphSelection saved) {
+      selectedViceID = saved.viceID;
+      rangeDays = saved.rangeDays;
+      stepDays = saved.stepDays;
+      pickedWindow = saved.pickedWindow;
+    }
+  }
+
+  void _update(VoidCallback change) {
+    setState(change);
+    final _GraphSelection selection = (
+      viceID: selectedViceID,
+      rangeDays: rangeDays,
+      stepDays: stepDays,
+      pickedWindow: pickedWindow,
+    );
+    PageStorage.maybeOf(
+      context,
+    )?.writeState(context, selection, identifier: _storageID);
   }
 
   List<double> _totalsFor(UsageRange range, List<ViceActivity> activities) {
@@ -100,6 +127,9 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
     return viceList.first.id;
   }
 
+  static String _viceLabel(Vice vice) =>
+      vice.archived ? '${vice.name} (archived)' : vice.name;
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
@@ -111,11 +141,18 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       );
     }
 
-    final List<Vice>? viceList = viceListValue.value;
+    final List<Vice>? allVices = viceListValue.value;
 
-    if (viceList == null) {
+    if (allVices == null) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    // An archived vice keeps its history, so it stays graphable, after the
+    // vices in use.
+    final List<Vice> viceList = <Vice>[
+      ...allVices.where((Vice vice) => !vice.archived),
+      ...allVices.where((Vice vice) => vice.archived),
+    ];
 
     if (viceList.isEmpty) {
       return const InfoBox(message: 'No vices available to graph');
@@ -126,6 +163,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       (Vice vice) => vice.id == effectiveViceID,
     );
 
+    final DateTime today = ref.watch(todayProvider);
     final UsageRange range = usageRange(today, rangeDays, stepDays);
     final AsyncValue<List<ViceActivity>> activityValue = ref.watch(
       viceActivityGraphProvider((
@@ -197,7 +235,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
               value: window.toDouble(),
               label: formatCount(window),
               onChanged: (double value) {
-                setState(() {
+                _update(() {
                   pickedWindow = value.round();
                 });
               },
@@ -222,13 +260,13 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
           .map(
             (Vice vice) => DropdownMenuItem<String>(
               value: vice.id,
-              child: Text(vice.name, overflow: TextOverflow.ellipsis),
+              child: Text(_viceLabel(vice), overflow: TextOverflow.ellipsis),
             ),
           )
           .toList(),
       onChanged: (String? value) {
         if (value != null) {
-          setState(() {
+          _update(() {
             selectedViceID = value;
           });
         }
@@ -249,7 +287,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
           .toList(),
       onChanged: (int? value) {
         if (value != null && value != rangeDays) {
-          setState(() {
+          _update(() {
             rangeDays = value;
           });
         }
@@ -270,7 +308,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
           .toList(),
       onChanged: (int? value) {
         if (value != null) {
-          setState(() {
+          _update(() {
             stepDays = value;
           });
         }
