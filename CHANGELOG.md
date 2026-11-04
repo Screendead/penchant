@@ -45,6 +45,10 @@ pull request titles (`gh pr list --state merged`).
   short remainder that looked like a drop; the smoothing control, its caption and the average always agree; the
   lines no longer dip below zero; and axis labels no longer repeat or overlap, at any text size. Long vice names on
   the Today chart are cut short instead of running into their neighbours.
+- Today keeps vice names readable at large text sizes: a title that does not fit drops its amount before its name is
+  cut, and when any name is cut, a key below the chart lists every vice with its total. The chart's titles no longer
+  run into the rows above and below it; at the largest sizes, when there is no room left for the chart, the key
+  takes its place.
 
 ## [0.1.0] - Unreleased
 

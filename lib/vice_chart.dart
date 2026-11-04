@@ -27,14 +27,14 @@ class ViceChart extends ConsumerWidget {
   static const double barWidth = 48;
   static const double titleGap = 8;
   static const double radarTitleOffset = 0.2;
+  static const int barTitleLines = 2;
 
-  static String title(Vice vice, int quantity) =>
-      '${vice.name} (${vice.unit.label(quantity)})';
+  static String total(Vice vice, int quantity) =>
+      '${vice.name}: ${vice.unit.label(quantity)}';
 
   static String summary(DateTime day, List<Vice> vices, List<int> quantities) {
     final String totals = [
-      for (int i = 0; i < vices.length; i++)
-        '${vices[i].name}: ${vices[i].unit.label(quantities[i])}',
+      for (int i = 0; i < vices.length; i++) total(vices[i], quantities[i]),
     ].join('; ');
 
     return 'Totals for ${formatDay(day)}. $totals';
@@ -44,84 +44,163 @@ class ViceChart extends ConsumerWidget {
   static ({int top, int step}) radarScale(int largest) =>
       roundScale(largest, maximumRadarRings);
 
-  Widget _bars(
+  static String _suffix(Vice vice, int quantity) =>
+      ' (${vice.unit.label(quantity)})';
+
+  static TextStyle _titleStyle(ThemeData theme) =>
+      TextStyle(color: theme.colorScheme.secondary, fontSize: 14);
+
+  static List<({String text, bool nameWhole})> _barTitles(
     BuildContext context,
-    ThemeData theme,
+    TextStyle style,
+    double width,
     List<Vice> vices,
     List<int> quantities,
   ) {
-    final TextStyle titleStyle = TextStyle(
-      color: theme.colorScheme.secondary,
-      fontSize: 14,
+    final double titleWidth =
+        barTitleWidth(width, vices.length, barWidth) - titleGap;
+    bool fits(String text) => chartLabelWraps(
+      context,
+      text,
+      style,
+      maxWidth: titleWidth,
+      maxLines: barTitleLines,
     );
+
+    return [
+      for (int i = 0; i < vices.length; i++)
+        if (fits('${vices[i].name}${_suffix(vices[i], quantities[i])}'))
+          (
+            text: '${vices[i].name}${_suffix(vices[i], quantities[i])}',
+            nameWhole: true,
+          )
+        else
+          (text: vices[i].name, nameWhole: fits(vices[i].name)),
+    ];
+  }
+
+  // fl_chart draws each radar title up to a full line beyond its rings
+  // (0.96 of the half side plus the title's height), outside the chart's box.
+  static EdgeInsets _radarInset(BuildContext context, TextStyle style) =>
+      EdgeInsets.all(chartLabelSize(context, 'Ag', style).height);
+
+  static List<({String text, bool nameWhole})> _radarTitles(
+    BuildContext context,
+    TextStyle style,
+    Size size,
+    List<Vice> vices,
+    List<int> quantities,
+  ) {
+    final double titleWidth =
+        radarTitleWidth(size, vices.length, radarTitleOffset) - titleGap;
+
+    return [
+      for (int i = 0; i < vices.length; i++)
+        fitChartLabel(
+          context,
+          name: vices[i].name,
+          suffix: _suffix(vices[i], quantities[i]),
+          style: style,
+          maxWidth: titleWidth,
+        ),
+    ];
+  }
+
+  Widget _key(
+    TextStyle style,
+    double maxHeight,
+    List<Vice> vices,
+    List<int> quantities,
+  ) => ConstrainedBox(
+    constraints: BoxConstraints(maxHeight: maxHeight),
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 16,
+        runSpacing: 4,
+        children: [
+          for (int i = 0; i < vices.length; i++)
+            Text(
+              total(vices[i], quantities[i]),
+              textAlign: TextAlign.center,
+              style: style,
+            ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _bars(
+    BuildContext context,
+    ThemeData theme,
+    List<({String text, bool nameWhole})> titles,
+    List<int> quantities,
+  ) {
+    final TextStyle titleStyle = _titleStyle(theme);
     final double lineHeight = chartLabelSize(context, 'Ag', titleStyle).height;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double titleWidth =
-              barTitleWidth(constraints.maxWidth, vices.length, barWidth) -
-              titleGap;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double titleWidth =
+            barTitleWidth(constraints.maxWidth, titles.length, barWidth) -
+            titleGap;
 
-          return BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceEvenly,
-              minY: 0,
-              maxY: quantities.reduce(max) * 1.15,
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                topTitles: const AxisTitles(),
-                leftTitles: const AxisTitles(),
-                rightTitles: const AxisTitles(),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: max(48, 2 * lineHeight + 8),
-                    getTitlesWidget: (double value, TitleMeta meta) {
-                      final int index = value.toInt();
-
-                      return SideTitleWidget(
-                        meta: meta,
-                        child: SizedBox(
-                          width: titleWidth,
-                          child: Text(
-                            title(vices[index], quantities[index]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: titleStyle,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              barGroups: [
-                for (int i = 0; i < vices.length; i++)
-                  BarChartGroupData(
-                    x: i,
-                    barRods: [
-                      BarChartRodData(
-                        toY: quantities[i].toDouble(),
-                        width: barWidth,
-                        color: theme.colorScheme.primary,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(6),
+        return BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceEvenly,
+            minY: 0,
+            maxY: quantities.reduce(max) * 1.15,
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            barTouchData: BarTouchData(enabled: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(),
+              leftTitles: const AxisTitles(),
+              rightTitles: const AxisTitles(),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: max(48, barTitleLines * lineHeight + 8),
+                  getTitlesWidget: (double value, TitleMeta meta) {
+                    return SideTitleWidget(
+                      meta: meta,
+                      child: SizedBox(
+                        width: titleWidth,
+                        child: Text(
+                          titles[value.toInt()].text,
+                          maxLines: barTitleLines,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: titleStyle,
                         ),
                       ),
-                    ],
-                  ),
-              ],
+                    );
+                  },
+                ),
+              ),
             ),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.fastOutSlowIn,
-          );
-        },
-      ),
+            barGroups: [
+              for (int i = 0; i < quantities.length; i++)
+                BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      toY: quantities[i].toDouble(),
+                      width: barWidth,
+                      color: theme.colorScheme.primary,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.fastOutSlowIn,
+        );
+      },
     );
   }
 
@@ -183,14 +262,68 @@ class ViceChart extends ConsumerWidget {
       for (final Vice vice in vices) quantityByViceID[vice.id]!,
     ];
 
+    final TextStyle titleStyle = _titleStyle(theme);
+    // fl_chart asserts that a radar data set has at least three entries.
+    final bool asBars = vices.length < minimumRadarAxes;
+
     return Semantics(
       container: true,
       label: summary(selectedDate, vices, quantities),
       excludeSemantics: true,
-      // fl_chart asserts that a radar data set has at least three entries.
-      child: vices.length < minimumRadarAxes
-          ? _bars(context, theme, vices, quantities)
-          : _radar(context, theme, vices, quantities),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final List<({String text, bool nameWhole})>? barTitles = asBars
+                ? _barTitles(
+                    context,
+                    titleStyle,
+                    constraints.maxWidth,
+                    vices,
+                    quantities,
+                  )
+                : null;
+            final Widget chart = barTitles != null
+                ? _bars(context, theme, barTitles, quantities)
+                : _radar(context, theme, vices, quantities);
+            // Decided on the whole area: the key's height would otherwise
+            // change the radar's size, and with it whether the names fit.
+            final bool namesWhole =
+                (barTitles ??
+                        _radarTitles(
+                          context,
+                          titleStyle,
+                          _radarInset(
+                            context,
+                            titleStyle,
+                          ).deflateSize(constraints.biggest),
+                          vices,
+                          quantities,
+                        ))
+                    .every((({String text, bool nameWhole}) t) => t.nameWhole);
+            if (namesWhole) {
+              return chart;
+            }
+
+            // A chart under four title lines tall cannot be read.
+            final double minimumChart =
+                4 * chartLabelSize(context, 'Ag', titleStyle).height;
+            return Column(
+              children: [
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints space) =>
+                        space.maxHeight < minimumChart
+                        ? const SizedBox.shrink()
+                        : chart,
+                  ),
+                ),
+                _key(titleStyle, constraints.maxHeight, vices, quantities),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -226,32 +359,19 @@ class ViceChart extends ConsumerWidget {
       ],
     );
 
-    final TextStyle titleStyle = TextStyle(
-      color: theme.colorScheme.secondary,
-      fontSize: 14,
-    );
+    final TextStyle titleStyle = _titleStyle(theme);
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: _radarInset(context, titleStyle),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double titleWidth =
-              radarTitleWidth(
-                constraints.biggest,
-                vices.length,
-                radarTitleOffset,
-              ) -
-              titleGap;
-          final List<String> titles = [
-            for (int i = 0; i < vices.length; i++)
-              fitChartLabel(
-                context,
-                name: vices[i].name,
-                suffix: ' (${vices[i].unit.label(quantities[i])})',
-                style: titleStyle,
-                maxWidth: titleWidth,
-              ),
-          ];
+          final List<({String text, bool nameWhole})> titles = _radarTitles(
+            context,
+            titleStyle,
+            constraints.biggest,
+            vices,
+            quantities,
+          );
 
           return RadarChart(
             RadarChartData(
@@ -270,7 +390,7 @@ class ViceChart extends ConsumerWidget {
                     : 0;
 
                 return RadarChartTitle(
-                  text: titles[index],
+                  text: titles[index].text,
                   angle: angle + correctionFactor,
                 );
               },
