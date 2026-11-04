@@ -20,10 +20,14 @@ Future<bool> settleWrite(
   required void Function(FirebaseException error) onRejectedLater,
 }) async {
   bool timedOut = false;
+  // A caller's Future<DocumentReference> typed as Future<void> keeps its
+  // runtime type, and Future.timeout rejects an onTimeout that returns null
+  // for it, so time out a true Future<void> instead.
+  final Future<void> settled = write.then<void>((_) {});
   // Future.timeout discards an error that arrives after its timer fired, so
-  // only a listener on [write] itself hears the server refuse it.
+  // only a separate listener hears the server refuse it.
   unawaited(
-    write.then<void>(
+    settled.then<void>(
       (_) {},
       onError: (Object error) {
         if (timedOut && error is FirebaseException) {
@@ -32,7 +36,7 @@ Future<bool> settleWrite(
       },
     ),
   );
-  await write.timeout(
+  await settled.timeout(
     writeTimeout,
     onTimeout: () {
       timedOut = true;

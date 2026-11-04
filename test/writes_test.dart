@@ -842,6 +842,24 @@ void main() {
       expect(late, isEmpty);
     });
 
+    testWidgets(
+      'a write whose future carries a value still times out to false',
+      (WidgetTester tester) async {
+        final Completer<DocumentReference<Map<String, dynamic>>> write =
+            Completer<DocumentReference<Map<String, dynamic>>>();
+        bool? settled;
+        unawaited(
+          settleWrite(
+            write.future,
+            onRejectedLater: (_) {},
+          ).then((bool value) => settled = value),
+        );
+
+        await tester.pump(writeTimeout);
+        expect(settled, isFalse);
+      },
+    );
+
     test(
       'a refusal before the timeout throws and is not reported later',
       () async {
