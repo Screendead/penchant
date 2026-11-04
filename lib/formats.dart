@@ -1,27 +1,44 @@
 import 'dart:ui' show Locale, PlatformDispatcher;
 
+import 'package:intl/date_symbol_data_custom.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/date_symbols.dart';
+import 'package:intl/date_time_patterns.dart';
 import 'package:intl/intl.dart';
 
 const List<Locale> appLocales = [Locale('en')];
 
-bool _dateSymbolsLoaded = false;
+bool _dateDataLoaded = false;
 
-String get formatLocale {
-  if (!_dateSymbolsLoaded) {
-    // Synchronous despite the Future: the data is compiled in.
-    initializeDateFormatting();
-    _dateSymbolsLoaded = true;
+// The app's localization delegates fill intl's date table before anything is
+// formatted, with only Flutter's locales (no en_MY), and intl will not replace
+// a filled table, so intl's other locales are added one by one.
+void _loadDateData() {
+  if (_dateDataLoaded) return;
+  initializeDateFormatting();
+  final Map<String, Map<String, String>> patterns = dateTimePatternMap();
+  for (final MapEntry<String, DateSymbols>(:key, :value)
+      in dateTimeSymbolMap().entries) {
+    if (!DateFormat.localeExists(key)) {
+      initializeDateFormattingCustom(
+        locale: key,
+        symbols: value,
+        patterns: patterns[key],
+      );
+    }
   }
-
-  return localeForFormatting(PlatformDispatcher.instance.locales);
+  _dateDataLoaded = true;
 }
+
+String get formatLocale =>
+    localeForFormatting(PlatformDispatcher.instance.locales);
 
 // English is the only language the app speaks, so the device supplies only
 // the regional conventions (day order, 12 or 24 hours, digit grouping): the
 // user's first English variant, else English in their region, else en.
-// Call through [formatLocale], which loads the data this checks against.
 String localeForFormatting(List<Locale> deviceLocales) {
+  _loadDateData();
+
   final Iterable<String> candidates = [
     for (final Locale locale in deviceLocales)
       if (locale.languageCode == 'en' && locale.countryCode != null)
