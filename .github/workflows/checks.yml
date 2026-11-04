@@ -19,13 +19,11 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-flutter
       - name: Format
-        # Two files are skipped until their date-entry rework lands and is formatted; then check the directories whole.
-        run: >
-          find lib test integration_test -name '*.dart'
-          ! -path lib/widgets/record_new_activity_dialog.dart
-          ! -path lib/vice_activity_editor_page.dart
-          | xargs dart format --output=none --set-exit-if-changed
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
       - name: Analyze
         run: dart analyze --fatal-infos --fatal-warnings
       - name: Test
+        # A zone with daylight saving, so the day-arithmetic tests can fail.
+        env:
+          TZ: Europe/London
         run: flutter test

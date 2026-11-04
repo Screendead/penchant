@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -11,14 +8,15 @@ import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
-
   const RecordNewActivityDialog({super.key});
 
   static const Duration undoDuration = Duration(seconds: 8);
@@ -55,31 +53,14 @@ class _RecordNewActivityDialogState
   final TextEditingController dateController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   String unit = Unit.item.nameFor(0);
-  bool manualDate = false;
   bool loading = false;
 
-  late Timer dateUpdaterTimer;
   // One id per dialog, so a second press writes the same document rather
   // than a duplicate. Lazy, so building the dialog needs no Firebase.
   late final String activityID = ref
       .read(trackerWritesProvider)
       .newActivityID();
   String? error;
-
-  String get dateTime =>
-      RecordNewActivityDialog.dateFormat.format(DateTime.now());
-
-  @override
-  void initState() {
-    super.initState();
-
-    dateController.text = dateTime;
-    dateUpdaterTimer = Timer.periodic(Duration(seconds: 1), (Timer timer) {
-      if (mounted && manualDate == false) {
-        dateController.text = dateTime;
-      }
-    });
-  }
 
   Future<void> _record() async {
     if (!formKey.currentState!.validate()) {
@@ -98,14 +79,22 @@ class _RecordNewActivityDialogState
 
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final TrackerWrites writes = ref.read(trackerWritesProvider);
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
 
     setState(() {
       loading = true;
       error = null;
     });
 
-    final DateTime date = RecordNewActivityDialog.dateFormat.parse(
-      dateController.text,
+    final DateTime date = ActivityDateField.format.parse(dateController.text);
+    final Vice vice = selectedVice!;
+    final int quantity = int.parse(quantityController.text);
+    final String entry = describeActivity(
+      vice.name,
+      vice.unit,
+      quantity,
+      date,
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
 
     final bool synced;
@@ -115,9 +104,13 @@ class _RecordNewActivityDialogState
         writes.recordActivity(
           activityID,
           ownerID: user.uid,
-          viceID: selectedVice!.id,
-          quantity: int.parse(quantityController.text),
+          viceID: vice.id,
+          quantity: quantity,
           createdAt: date,
+        ),
+        onRejectedLater: rejected.reporter(
+          'Not saved: $entry',
+          creates: activityID,
         ),
       );
     } on FirebaseException catch (e, stack) {
@@ -149,7 +142,7 @@ class _RecordNewActivityDialogState
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      onUndo: () => _undo(messenger, writes, written),
+      onUndo: () => _undo(messenger, writes, rejected, written, entry),
     );
   }
 
@@ -158,20 +151,32 @@ class _RecordNewActivityDialogState
   static Future<void> _undo(
     ScaffoldMessengerState messenger,
     TrackerWrites writes,
+    RejectedWrites rejected,
     String activityID,
+    String entry,
   ) async {
-    String message;
+    String? message;
 
     try {
-      message = await settleWrite(writes.deleteActivity(activityID))
+      message =
+          await settleWrite(
+            writes.deleteActivity(activityID),
+            onRejectedLater: rejected.reporter(
+              'Not deleted: $entry',
+              changes: activityID,
+            ),
+          )
           ? 'Activity removed'
           : queuedDeleteMessage;
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while undoing a recorded activity');
-      message = 'Could not undo. ${firestoreErrorMessage(e)}';
+      // The banner already says the entry was not saved.
+      message = rejected.createRefused(activityID)
+          ? null
+          : 'Could not undo. ${firestoreErrorMessage(e)}';
     }
 
-    if (messenger.mounted) {
+    if (message != null && messenger.mounted) {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -199,7 +204,7 @@ class _RecordNewActivityDialogState
           message: loadErrorMessage('your vices', loadError),
           isError: true,
           onRetry: () =>
-              ref.invalidate(unarchivedViceListForUserProvider, asReload: true),
+              ref.invalidate(viceListForUserProvider, asReload: true),
         ),
         actions: <Widget>[
           TextButton(
@@ -246,8 +251,9 @@ class _RecordNewActivityDialogState
                             int.tryParse(quantityController.text) ?? 0;
 
                         setState(() {
-                          selectedVice =
-                              vices.firstWhere((Vice v) => v.id == id);
+                          selectedVice = vices.firstWhere(
+                            (Vice v) => v.id == id,
+                          );
                           updateUnit(parsedQuantity);
                         });
                       },
@@ -269,77 +275,9 @@ class _RecordNewActivityDialogState
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ActivityDateField(
                       controller: dateController,
-                      readOnly: !manualDate,
-                      focusNode: FocusNode(),
-                      decoration: InputDecoration(
-                        labelText: 'Date and Time',
-                        suffixIcon: IconButton(
-                          tooltip: manualDate
-                              ? 'Use current date and time'
-                              : 'Manually enter date and time',
-                          icon: manualDate
-                              ? Icon(Icons.lock_open)
-                              : Icon(Icons.lock_clock),
-                          onPressed: () {
-                            setState(() {
-                              manualDate = !manualDate;
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a date and time';
-                        }
-
-                        try {
-                          RecordNewActivityDialog.dateFormat.parse(value);
-                        } on FormatException {
-                          return 'Please enter a valid date and time';
-                        }
-
-                        return null;
-                      },
-                      onTap: () async {
-                        if (!manualDate) {
-                          return;
-                        }
-
-                        FocusScope.of(context).requestFocus(FocusNode());
-
-                        final DateTime? date = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-
-                        if (date == null || !context.mounted) {
-                          return;
-                        }
-
-                        final TimeOfDay? time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.fromDateTime(date),
-                        );
-
-                        if (time == null) {
-                          return;
-                        }
-
-                        final DateTime dateTime = DateTime(
-                          date.year,
-                          date.month,
-                          date.day,
-                          time.hour,
-                          time.minute,
-                        );
-
-                        dateController.text = RecordNewActivityDialog.dateFormat
-                            .format(dateTime);
-                      },
+                      startLive: true,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -396,7 +334,8 @@ class _RecordNewActivityDialogState
 
   @override
   void dispose() {
-    dateUpdaterTimer.cancel();
+    dateController.dispose();
+    quantityController.dispose();
     super.dispose();
   }
 }

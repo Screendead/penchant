@@ -1,3 +1,5 @@
+import 'package:tracker/formats.dart';
+
 enum Unit {
   item('items'),
   time('times'),
@@ -12,8 +14,8 @@ enum Unit {
 
   String get singular => name;
 
-  String nameFor(int count) => count == 1 ? singular : plural;
-  String label(int count) => '$count ${nameFor(count)}';
+  String nameFor(int count) => pluralWord(count, one: singular, other: plural);
+  String label(int count) => '${formatCount(count)} ${nameFor(count)}';
 
   static const Unit fallback = Unit.item;
 

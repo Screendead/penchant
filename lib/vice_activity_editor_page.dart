@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +10,9 @@ import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityEditorPage extends ConsumerStatefulWidget {
@@ -25,8 +25,6 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
   final String viceID;
   final String activityID;
 
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
-
   @override
   ConsumerState<ViceActivityEditorPage> createState() =>
       _ViceActivityEditorPageState();
@@ -34,54 +32,84 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
 
 class _ViceActivityEditorPageState
     extends ConsumerState<ViceActivityEditorPage> {
-  static final DateFormat dateFormat = ViceActivityEditorPage.dateFormat;
+  static DateFormat get dateFormat => ActivityDateField.format;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
-  bool manualDate = true;
   bool loading = false;
   String? error;
-  Timer? dateUpdaterTimer;
-  bool initialized = false;
-  String initialDateText = '';
-  String initialQuantityText = '';
+  // The stored values as the fields last showed them. A field still showing
+  // its stored value follows the activity as it changes; once the user edits
+  // it, it keeps their value.
+  String storedDateText = '';
+  String storedQuantityText = '';
   ViceActivity? shown;
-
-  String get nowText => dateFormat.format(DateTime.now());
-
-  void initializeFromActivity(ViceActivity activity) {
-    if (initialized) {
-      return;
-    }
-
-    initialDateText = dateFormat.format(activity.createdAt.toDate());
-    initialQuantityText = activity.quantity.toString();
-    dateController.text = initialDateText;
-    quantityController.text = initialQuantityText;
-    initialized = true;
-  }
 
   @override
   void initState() {
     super.initState();
+    ref.listenManual<AsyncValue<ViceActivity?>>(
+      viceActivityProvider(widget.activityID),
+      (_, AsyncValue<ViceActivity?> next) {
+        // While this page's own write is in flight, a snapshot carries its
+        // latency-compensated value, not what the server holds; following it
+        // would mark a refused edit as stored.
+        if (!loading) {
+          _followValue(next);
+        }
+      },
+      fireImmediately: true,
+    );
+  }
 
-    dateUpdaterTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted && manualDate == false) {
-        dateController.text = nowText;
-      }
-    });
+  void _followValue(AsyncValue<ViceActivity?> value) {
+    if (value.value case final ViceActivity activity
+        when activity.viceID == widget.viceID) {
+      _follow(activity);
+    }
+  }
+
+  // A refused write's rollback may not have reached the snapshot yet; until it
+  // does, the snapshot is pending and the listener picks the rollback up.
+  void _followRolledBack() {
+    final AsyncValue<ViceActivity?> current = ref.read(
+      viceActivityProvider(widget.activityID),
+    );
+    if (current.value?.pending == false) {
+      _followValue(current);
+    }
+  }
+
+  void _follow(ViceActivity activity) {
+    final String dateText = dateFormat.format(activity.createdAt.toDate());
+    final String quantityText = activity.quantity.toString();
+    if (dateController.text == storedDateText) {
+      dateController.text = dateText;
+    }
+    if (quantityController.text == storedQuantityText) {
+      quantityController.text = quantityText;
+    }
+    storedDateText = dateText;
+    storedQuantityText = quantityText;
   }
 
   @override
   void dispose() {
-    dateUpdaterTimer?.cancel();
     dateController.dispose();
     quantityController.dispose();
     super.dispose();
   }
 
-  Future<void> _deleteActivity() async {
+  String _describe(Vice vice, ViceActivity activity) => describeActivity(
+    vice.name,
+    vice.unit,
+    activity.quantity,
+    activity.createdAt.toDate(),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+
+  Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
     setState(() {
@@ -89,9 +117,14 @@ class _ViceActivityEditorPageState
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
       final bool synced = await settleWrite(
         ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
+        onRejectedLater: rejected.reporter(
+          'Not deleted: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
       if (!synced) {
         messenger.showSnackBar(
@@ -103,16 +136,23 @@ class _ViceActivityEditorPageState
       }
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while deleting an activity');
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
-        });
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
+      });
+      _followRolledBack();
     }
   }
 
-  Future<void> _saveActivity() async {
+  Future<void> _saveActivity(Vice vice, ViceActivity activity) async {
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -120,9 +160,9 @@ class _ViceActivityEditorPageState
     // A field the user left alone may show a parser default for a legacy value
     // the rules would still accept, so only edited fields are written.
     final Map<String, Object> changes = <String, Object>{
-      if (dateController.text != initialDateText)
+      if (dateController.text != storedDateText)
         'createdAt': dateFormat.parse(dateController.text),
-      if (quantityController.text != initialQuantityText)
+      if (quantityController.text != storedQuantityText)
         'quantity': int.parse(quantityController.text),
     };
 
@@ -138,6 +178,7 @@ class _ViceActivityEditorPageState
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
       final bool synced = await settleWrite(
         ref
@@ -147,6 +188,10 @@ class _ViceActivityEditorPageState
               quantity: changes['quantity'] as int?,
               createdAt: changes['createdAt'] as DateTime?,
             ),
+        onRejectedLater: rejected.reporter(
+          'Change not saved: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
@@ -156,12 +201,19 @@ class _ViceActivityEditorPageState
       }
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while updating an activity');
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
-        });
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
+      });
+      _followRolledBack();
     }
   }
 
@@ -200,10 +252,9 @@ class _ViceActivityEditorPageState
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final Vice? vice =
-        viceList.where((Vice item) => item.id == widget.viceID).isEmpty
-        ? null
-        : viceList.firstWhere((Vice item) => item.id == widget.viceID);
+    final Vice? vice = viceList
+        .where((Vice item) => item.id == widget.viceID)
+        .firstOrNull;
     final ViceActivity? found = activityValue.hasError
         ? null
         : activityValue.value;
@@ -219,8 +270,6 @@ class _ViceActivityEditorPageState
       return const Scaffold(body: Center(child: Text('Activity not found')));
     }
 
-    initializeFromActivity(activity);
-
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -234,10 +283,14 @@ class _ViceActivityEditorPageState
                 IconButton(
                   tooltip: 'Delete',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: loading ? null : _deleteActivity,
+                  onPressed: loading
+                      ? null
+                      : () => _deleteActivity(vice, activity),
                 ),
                 TextButton(
-                  onPressed: loading ? null : _saveActivity,
+                  onPressed: loading
+                      ? null
+                      : () => _saveActivity(vice, activity),
                   child: const Text('Save'),
                 ),
               ],
@@ -256,91 +309,10 @@ class _ViceActivityEditorPageState
                       decoration: const InputDecoration(labelText: 'Vice'),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ActivityDateField(
                       controller: dateController,
-                      readOnly: !manualDate,
-                      decoration: InputDecoration(
-                        labelText: 'Date and Time',
-                        suffixIcon: IconButton(
-                          tooltip: manualDate
-                              ? 'Use current date and time'
-                              : 'Manually enter date and time',
-                          icon: manualDate
-                              ? const Icon(Icons.lock_open)
-                              : const Icon(Icons.lock_clock),
-                          onPressed: () {
-                            setState(() {
-                              manualDate = !manualDate;
-                              if (manualDate) {
-                                dateController.text = dateFormat.format(
-                                  activity.createdAt.toDate(),
-                                );
-                              } else {
-                                dateController.text = nowText;
-                              }
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a date and time';
-                        }
-
-                        try {
-                          dateFormat.parse(value);
-                        } on FormatException {
-                          return 'Please enter a valid date and time';
-                        }
-
-                        return null;
-                      },
-                      onTap: () async {
-                        if (!manualDate) {
-                          return;
-                        }
-
-                        FocusScope.of(context).requestFocus(FocusNode());
-
-                        final DateTime firstDate = DateTime(2000);
-                        final DateTime lastDate = DateTime(2100);
-                        final DateTime stored = activity.createdAt.toDate();
-                        // The picker asserts its initial date is in range; an
-                        // unreadable legacy date reads as the epoch.
-                        final DateTime? date = await showDatePicker(
-                          context: context,
-                          initialDate: stored.isBefore(firstDate)
-                              ? firstDate
-                              : stored.isAfter(lastDate)
-                              ? lastDate
-                              : stored,
-                          firstDate: firstDate,
-                          lastDate: lastDate,
-                        );
-
-                        if (date == null || !context.mounted) {
-                          return;
-                        }
-
-                        final TimeOfDay? time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.fromDateTime(date),
-                        );
-
-                        if (time == null) {
-                          return;
-                        }
-
-                        final DateTime dateTime = DateTime(
-                          date.year,
-                          date.month,
-                          date.day,
-                          time.hour,
-                          time.minute,
-                        );
-
-                        dateController.text = dateFormat.format(dateTime);
-                      },
+                      startLive: false,
+                      manualSeed: () => activity.createdAt.toDate(),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

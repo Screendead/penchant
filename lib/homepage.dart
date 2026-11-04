@@ -13,6 +13,9 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   int selectedTabIndex = 0;
+  // Only the visible tab is built, so each tab keeps its selections here
+  // across a switch. It lives and dies with the signed-in session.
+  final PageStorageBucket tabState = PageStorageBucket();
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +66,11 @@ class _HomepageState extends State<Homepage> {
         children: [
           const OfflineBanner(),
           Expanded(
-            child: IndexedStack(
-              index: selectedTabIndex,
-              children: const [ViceTracker(), UsageGraphView()],
+            child: PageStorage(
+              bucket: tabState,
+              child: selectedTabIndex == 0
+                  ? const ViceTracker()
+                  : const UsageGraphView(),
             ),
           ),
         ],

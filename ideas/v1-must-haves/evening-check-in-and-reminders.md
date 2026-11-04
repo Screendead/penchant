@@ -39,6 +39,6 @@ yes.
 
 **Revenue impact:** Medium to high, through retention and insight quality.
 
-**Depends on:** [quick logging](one-tap-quick-logging.md); [`day-windows-use-device-local-midnight`](../../tech-debt/firebase-data-layer/day-windows-use-device-local-midnight.md).
+**Depends on:** [quick logging](one-tap-quick-logging.md); the day rule (`CLAUDE.md`, **Days**).
 
 **Needs Jack:** yes — May "nothing logged today" be a new `days` collection?

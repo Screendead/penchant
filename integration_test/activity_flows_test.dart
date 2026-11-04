@@ -7,8 +7,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
+import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/clean_day.dart';
 
 import 'support.dart';
@@ -40,7 +42,7 @@ Future<void> _pickDay(WidgetTester tester, DateTime day) async {
   await tap(tester, _dayMenu);
   // The menu fades in; taps during the animation miss.
   await pumpFor(tester, const Duration(milliseconds: 500));
-  await tap(tester, find.text(dayMenuFormat.format(day)).last);
+  await tap(tester, find.text(formatDay(day)).last);
   await pumpFor(tester, const Duration(milliseconds: 500));
 }
 
@@ -247,6 +249,7 @@ void main() {
     final Finder rows = find.byType(Card);
     await pumpUntil(tester, rows);
     expect(rows, findsNWidgets(3));
+    expect(find.byTooltip('Edit'), findsNothing);
     await screenshot(tester, 'history-page');
 
     final Finder threeDrinksRow = find.ancestor(
@@ -351,7 +354,7 @@ void main() {
           )
           .controller!
           .text,
-      ViceActivityEditorPage.dateFormat.format(epoch.toDate()),
+      ActivityDateField.format.format(epoch.toDate()),
     );
     await enterText(tester, 'Quantity', '5');
     await saveEditor();
@@ -370,11 +373,19 @@ void main() {
     await enterText(
       tester,
       'Date and Time',
-      ViceActivityEditorPage.dateFormat.format(moved),
+      ActivityDateField.format.format(moved),
     );
     await saveEditor();
     final Map<String, dynamic> requantified = await stored('legacy-quantity');
     expect(requantified['quantity'], 2.5);
     expect((requantified['createdAt'] as Timestamp).toDate(), moved);
+    await pumpUntil(
+      tester,
+      find
+          .textContaining(
+            'on ${formatDayAndTime(moved, alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat)}',
+          )
+          .hitTestable(),
+    );
   });
 }

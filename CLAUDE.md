@@ -25,7 +25,10 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   2026-11-03), so merging a rules PR deploys it; until Jack enables that job (the `DEPLOY_FIRESTORE_RULES`
   repository variable), he deploys them by hand.
 - **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
-  `demo-` project has no cloud counterpart, so nothing can leak to production.
+  `demo-` project has no cloud counterpart, so nothing can leak to production. `.firebaserc`'s `default` alias is
+  `demo-tracker`, so a `firebase` command without `--project` lands there; the deploy workflow names production with
+  `--project`. A `firebase use` in a directory overrides `.firebaserc` there (the CLI keeps it in
+  `~/.config/configstore/firebase-tools.json`), so never run `firebase use screendead-vice-tracker`.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
   emulators, read the current Firebase documentation for it (firebase.google.com/docs) and cite the page in the PR.
 - **End-to-end before merge.** A change that touches app behaviour merges only after it has run end to end on an iOS
@@ -138,12 +141,15 @@ hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a 
 `userProfileProvider` one over `userChanges()`. Each
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
-`count()` aggregation), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
+`count()` aggregation, which falls back to counting the cached documents while
+`offlineProvider` says offline or the server cannot answer, says which, and retries
+after a server failure), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
 of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
 (below), and `packageInfoProvider` is a `FutureProvider` over
-`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style.
+`PackageInfo.fromPlatform()`, for the version under Settings > About. `todayProvider` is a
+`NotifierProvider` holding the start of the current local day. Match that style.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
@@ -151,7 +157,14 @@ provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which 
 screens make to a single document. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
 `updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
-error messages and Undo stay in the widgets. The record dialog takes one id from
+error messages and Undo stay in the widgets. Each widget hands the future to `settleWrite`
+(`lib/writes/settle_write.dart`), which waits ten seconds and then calls the write queued.
+It keeps listening, and a refusal after that goes to `onRejectedLater`: widgets pass
+`ref.read(rejectedWritesProvider.notifier).reporter('<what, named at write time>')`. That
+`NotifierProvider` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
+signed-in user, cleared when the uid changes, and `MaterialApp.builder`
+(`lib/widgets/rejected_writes_banner.dart`) shows them above every screen until dismissed.
+A write queued by an earlier launch has no future to listen to, so its refusal is not seen. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
 document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
 (`lib/account/account.dart`): sign-in, register (which also sends the verification email),
@@ -171,8 +184,10 @@ message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 **Provider chain.** Each Firestore query is a `...ForUserProvider` family keyed on the
 uid (and its other parameters), wrapped by a plain provider of `AsyncValue` that selects
 the uid from `userProvider` through `watchForSignedInUser`
-(`lib/providers/signed_in_user.dart`): `viceListProvider`, `unarchivedViceListProvider`,
-and the activity day, history, graph, single-activity and count providers. The wrapper is
+(`lib/providers/signed_in_user.dart`): `viceListProvider` and the activity day, history,
+graph, single-activity and count providers. `unarchivedViceListProvider` filters
+`viceListProvider`'s list on the device rather than querying on `archived`: a filter on a
+field matches only documents that hold it, and vices written before 2024-08-14 lack it. The wrapper is
 loading with no value while nobody is signed in, and each user's query is a separate
 provider, so a value never belongs to a previous user: riverpod carries a provider's last
 value into the loading state of a rebuild, which is how a single provider rebuilt on a user
@@ -217,13 +232,25 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
-from the today chart but keeps its history.
+from the today chart but keeps its history, which stays reachable: Manage Data still opens
+it and the Graph lists archived vices last, marked "(archived)", never as the default.
+
+**Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
+stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
+(never `Duration(days:)`, which drifts an hour across a DST change). The zone an entry was logged in is not
+stored, so an entry near midnight can move a day when viewed in another zone; storing it would be a new activity
+field (the open `r2-data-model` call). `createdAt` is the device's clock at the moment of logging (or the time the
+user picked), not a server timestamp: a pending `FieldValue.serverTimestamp()` matches no `createdAt` range query
+until the server acknowledges it, so an entry logged offline would vanish from Today, and the server would stamp it
+with the time it synced. Whether to trade that for server time is open (register,
+`activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed.
 
-**Navigation.** `main.dart` gates on `userProvider`: null user → `Authenticate`, otherwise
-`Homepage`. `generateRoute` maps a route's path segments to a page through `routePage`, a
+**Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error →
+`AuthStateFailure`, no event yet → `AuthStateLoading` (so a restored session never shows
+sign-in first), and a null user → `Authenticate`. `generateRoute` maps a route's path segments to a page through `routePage`, a
 pattern `switch` (`/vices/:viceID/edit`, `/vices/:viceID/activities[/:activityID]`, ...);
 anything else is `NotFound`. Only the forms (add or edit a vice, edit an activity) open as
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
@@ -231,12 +258,18 @@ swapping `home` alone would leave the old session's pages on the stack.
 
 **Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
 (`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
-date range as a line chart, bucketing activities by day or week and overlaying a moving
-average. Below three vices Today draws bars instead (fl_chart's radar needs three axes). The radar carries
+date range as a line chart, bucketing activities by day or by week (counted back from today, so the newest week is
+whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic and both charts' axis scales and label spacing are pure functions in
+`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Below three vices Today draws bars instead (fl_chart's
+radar needs three axes). The radar carries
 a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
 centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
 text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
-outside the widget tree, so tests read them from the chart's data.
+outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible tab;
+each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
+`todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the
+user picked another day. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one
+format, lock toggle, live clock and picker for the record dialog and the editor.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked

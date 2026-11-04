@@ -4,14 +4,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ManageData extends ConsumerStatefulWidget {
   const ManageData({super.key});
+
+  static const String archivedLabel = 'Archived';
+  static const String countUnavailable = 'Count unavailable';
+
+  static String countText(ActivityCount count) {
+    final String activities =
+        '${formatCount(count.count)} '
+        '${pluralWord(count.count, one: 'activity', other: 'activities')}';
+    return switch (count.source) {
+      CountSource.server => activities,
+      CountSource.deviceOffline => '$activities on this device (offline)',
+      CountSource.deviceServerFailed =>
+        '$activities on this device (server count unavailable)',
+    };
+  }
 
   @override
   ConsumerState<ManageData> createState() => _ManageDataState();
@@ -32,6 +50,11 @@ class _ManageDataState extends ConsumerState<ManageData> {
         ref
             .read(trackerWritesProvider)
             .setViceArchived(vice.id, archived: archived),
+        onRejectedLater: ref
+            .read(rejectedWritesProvider.notifier)
+            .reporter(
+              '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
+            ),
       )) {
         message = queuedMessage;
       }
@@ -69,7 +92,12 @@ class _ManageDataState extends ConsumerState<ManageData> {
           ),
         ],
       ),
-      body: _buildBody(viceListValue: viceListValue),
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: _buildBody(viceListValue: viceListValue)),
+        ],
+      ),
     );
   }
 
@@ -97,16 +125,26 @@ class _ManageDataState extends ConsumerState<ManageData> {
       itemBuilder: (BuildContext context, int index) {
         final Vice vice = viceList[index];
 
+        // An archived vice keeps its history, so its row still opens it.
         return ListTile(
-          enabled: !vice.archived,
           contentPadding: EdgeInsets.zero,
           title: Text(vice.name),
           subtitle: Consumer(
             builder: (BuildContext context, WidgetRef ref, Widget? child) {
-              final int? count = ref
-                  .watch(viceActivityCountProvider(vice.id))
-                  .value;
-              return Text(count == null ? ' ' : '$count activities');
+              final AsyncValue<ActivityCount> count = ref.watch(
+                viceActivityCountProvider(vice.id),
+              );
+              // A re-run keeps the last count until the new one arrives.
+              final String text = <String>[
+                if (vice.archived) ManageData.archivedLabel,
+                switch (count.value) {
+                  final ActivityCount value => ManageData.countText(value),
+                  null when count.hasError => ManageData.countUnavailable,
+                  null => '',
+                },
+              ].where((String part) => part.isNotEmpty).join(', ');
+              // A blank line holds the row's height until the count loads.
+              return Text(text.isEmpty ? ' ' : text);
             },
           ),
           trailing: Row(

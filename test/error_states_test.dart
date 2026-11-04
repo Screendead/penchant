@@ -19,7 +19,6 @@ import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/firestore_retry.dart';
 import 'package:tracker/providers/offline_provider.dart';
-import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -206,9 +205,7 @@ void main() {
         coffee,
       ]);
       await _pump(tester, [
-        unarchivedViceListForUserProvider.overrideWith(
-          (ref, uid) => vices.listen(),
-        ),
+        viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
         viceActivityDayForUserProvider.overrideWith(
           (ref, key) => Stream.value(<ViceActivity>[]),
         ),
@@ -233,7 +230,7 @@ void main() {
         <ViceActivity>[],
       );
       await _pump(tester, [
-        unarchivedViceListForUserProvider.overrideWith(
+        viceListForUserProvider.overrideWith(
           (ref, uid) => Stream.value([coffee]),
         ),
         viceActivityDayForUserProvider.overrideWith((ref, key) => day.listen()),
@@ -446,9 +443,7 @@ void main() {
         coffee,
       ]);
       await _pump(tester, [
-        unarchivedViceListForUserProvider.overrideWith(
-          (ref, uid) => vices.listen(),
-        ),
+        viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
       ], const Scaffold(body: RecordNewActivityDialog()));
 
       expect(

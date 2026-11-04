@@ -36,6 +36,11 @@ void main() {
     createdAt: Timestamp.fromDate(now),
   );
 
+  test('the pending note groups digits and picks the English plural', () {
+    expect(PendingDayNote.text(1), '1 entry not yet synced');
+    expect(PendingDayNote.text(1500), '1,500 entries not yet synced');
+  });
+
   testWidgets('Today counts the day\'s entries the server has not '
       'acknowledged', (WidgetTester tester) async {
     final StreamController<List<ViceActivity>> day =

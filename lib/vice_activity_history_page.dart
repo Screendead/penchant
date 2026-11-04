@@ -1,17 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityHistoryPage extends ConsumerStatefulWidget {
@@ -38,23 +39,32 @@ class _ViceActivityHistoryPageState
 
   // The messenger is taken from this State, not the row: a delete drops the
   // row from the local snapshot before the server answers.
-  Future<void> _delete(String activityID) async {
+  Future<void> _delete(Vice vice, ViceActivity activity) async {
+    final String activityID = activity.id;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     setState(() {
       deleting.add(activityID);
     });
 
-    String message;
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    String? message;
     try {
       message =
           await settleWrite(
             ref.read(trackerWritesProvider).deleteActivity(activityID),
+            onRejectedLater: rejected.reporter(
+              'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate(), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
+              changes: activityID,
+            ),
           )
           ? 'Activity deleted'
           : queuedDeleteMessage;
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while deleting an activity');
-      message = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
+      // The banner already says the entry was not saved.
+      message = rejected.createRefused(activityID)
+          ? null
+          : 'Could not delete this activity. ${firestoreErrorMessage(e)}';
     }
 
     if (mounted) {
@@ -62,7 +72,7 @@ class _ViceActivityHistoryPageState
         deleting.remove(activityID);
       });
     }
-    if (messenger.mounted) {
+    if (message != null && messenger.mounted) {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -156,13 +166,13 @@ class _ViceActivityHistoryPageState
               return Card(
                 child: ListTile(
                   title: Text(
-                    '${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',
+                    '${vice.unit.label(activity.quantity)} on ${formatDayAndTime(createdAt, alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
                   ),
                   subtitle: Wrap(
                     spacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text('Quantity: ${activity.quantity}'),
+                      Text('Quantity: ${formatCount(activity.quantity)}'),
                       if (activity.pending) const NotSyncedMarker(),
                     ],
                   ),
@@ -179,7 +189,7 @@ class _ViceActivityHistoryPageState
                         icon: const Icon(Icons.delete_outline),
                         onPressed: deleting.contains(activity.id)
                             ? null
-                            : () => _delete(activity.id),
+                            : () => _delete(vice, activity),
                       ),
                     ],
                   ),
