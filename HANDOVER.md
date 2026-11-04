@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-03. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-04. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -26,13 +26,15 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Jack's round-1 calls C1–C19 | Picked 2026-11-03; built in wave 3 | below |
 | Wave 3: Today and recording C2–C5 (#36), rules details C12–C14 (#33), platform and repo cleanup C1 C6–C11 (#34), ideas rework C15–C19 (#35) | Merged 2026-11-03. The rules from #33 are **not yet in production**: they deploy through CI once Jack enables it (below) | `lib/`, `firestore.rules`, `.github/workflows/deploy-firestore.yml`, `ideas/` |
 | Wave A of the finish-and-pitch run: Dependabot #37 #38, seed script emulator-only (#44), parsers default every field (#45), shared write layer `TrackerWrites` (#46), versioning 0.1.0 + changelog + release workflow (#43) | Merged 2026-11-03 | `lib/`, `admin/`, `CHANGELOG.md`, `.github/workflows/release.yml` |
+| Security patch: cloud_firestore 6.10.2, Firebase iOS SDK 12.19.3, for Firebase's eMudhra CA notice (#56) | Merged 2026-11-03; Jack's iPhone runs release 0.1.0 (244) built from it | `pubspec.yaml`, `ios/Podfile.lock` |
+| Wave B: rules-test deps (#49), accessibility (#51), navigation (#52), offline logging (#53), backend hardening with App Check client wiring (#55), account export, deletion, password reset and verification behind `accountProvider` (#54); register additions (#57); round-3 calls on the pitch page (#58) | Merged 2026-11-03/04. The new activities index is deployed to production (by Claude, with Jack's leave, 2026-11-03). App Check is wired but not registered or enforced (Jack's list) | `lib/`, `integration_test/`, `firestore.indexes.json` |
 | macOS target (#47) | Green, held: its macOS e2e needs Jack's Mac development profile (below) | `macos/`, `.github/workflows/macos-build.yml` |
-| Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 104 issues, 0 critical (from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 33 ideas for the journal positioning (versioning shipped; end-to-end encryption added), roadmap in its README | `ideas/README.md` |
+| Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) and round 3 (`r3-*`, 4 calls) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
+| Tech-debt register | 70 issues: 0 critical, 8 high (from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 30 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
-Baseline on master, measured 2026-11-03 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 32/32, rules
-tests 72/72, `tools/e2e.sh` 10/10 (after #43). `flutter build macos` fails on master (deployment target); #47 fixes it. `dart run custom_lint`
+Baseline on master, measured 2026-11-04 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 151/151,
+`tools/e2e.sh` 23/23 (on #54's branch just before it merged); rules tests run in CI. `flutter build macos` fails on master (deployment target); #47 fixes it. `dart run custom_lint`
 loads no rules (see the register). Re-measure; don't trust this.
 
 ## The queue (DECIDED work, in order)
@@ -47,18 +49,18 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    on Jack** (the Mac development profile, below): Firebase Auth on macOS needs Keychain Sharing, which needs a real
    profile, so the macOS e2e can't run yet. Once it exists: run the macOS e2e on #47, record it in the PR, merge.
 2. **What the reworked roadmap marks as needing no call** (`ideas/README.md`, step 2), in its order: parsers that
-   default every missing field (done, #45), backend hardening, account deletion, versioning (done, #43), offline
-   logging, export, and the layout-neutral half of one-tap logging. One-tap's tiles are a Today layout, which waits
+   default every missing field (done, #45), backend hardening (done, #55), account deletion (done, #54), versioning
+   (done, #43), offline logging (done, #53), export (done, #54), and the layout-neutral half of one-tap logging. One-tap's tiles are a Today layout, which waits
    on Jack's Today call; only a shared "log one at the default quantity, now" action with the 8-second Undo is
    decided. Parallel where the files don't overlap.
-3. **Wave 2: the remaining high tech debt** that touches the app, one class per worktree:
-   - `error-handling-and-observability/`: bootstrap failure, AsyncValue error states, sign-up errors;
-   - `widget-state-and-view-logic/`: the previous user's data showing after sign-out (the write layer is done, #46);
-   - `offline-and-write-reliability/`: persistence and pending states on deletes;
-   - `navigation-and-unreachable-ui/`: the routes that dead-end on 404 (Manage Data's Edit is one);
-   - `auth-and-account-lifecycle/`: password reset, re-authentication;
-   - `accessibility-and-localization/`: chart semantics, the record dialog at large text sizes. Register first (not
-     yet in it): the radar plots 0 away from the centre, with a "0.0" tick on the middle ring.
+3. **The remaining high tech debt** (8 issues; wave B fixed navigation, auth lifecycle, accessibility highs, the
+   sign-out data leak and offline persistence):
+   - `error-handling-and-observability/`: bootstrap failure, AsyncValue error states;
+   - `offline-and-write-reliability/`: a queued write the server later refuses vanishes silently;
+   - `dependency-and-tooling-drift/`: the riverpod lint plugin that never loads, and the unused lint tooling capping
+     the analyzer;
+   - `ci-and-quality-gates/` and `repo-docs-and-release-hygiene/`: verify-and-delete where the issue no longer holds;
+   - `platform-and-delivery-config/` macOS lockfile: rides with #47.
    Classes that touch the same files go in sequence, not in parallel.
 4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
@@ -71,11 +73,13 @@ parallel worktrees, and `tools/e2e.sh` runs one at a time.
 
 - **Wave A (merged, except #47 as above):** macOS target (queue 1); parsers that default missing fields; a shared write layer (register,
   `writes-bypass-providers`); versioning and changelog; Dependabot #37 and #38 once green; deleting merged branches (C9).
-- **Wave B:** account export and deletion, with re-authentication, password reset and auth calls behind a provider
+- **Wave B (merged 2026-11-04):** account export and deletion, with re-authentication, password reset and auth calls behind a provider
   (`auth-and-account-lifecycle/`); backend hardening (bounded queries, App Check client wiring, the sign-out data
   leak); offline logging; `navigation-and-unreachable-ui/`; `accessibility-and-localization/` with the radar's 0
   off-centre; the rules-test dependency alerts.
-- **Wave C:** `error-handling-and-observability/`; the "log one" action; anything wave B left.
+- **Wave C:** `error-handling-and-observability/`; the rejected-queued-write high; the lint-tooling highs; the "log
+  one" action; wave B leftovers: Manage Data's `count()` is blank offline (server-only), and the register's evidence
+  line numbers have drifted after wave B's merges.
 - **Wave D:** the register's medium and low items, one class per PR.
 - **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
   trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
@@ -140,6 +144,11 @@ Built as mock-ups on branches and pitched with screenshots: the Today layout (`m
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
 icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
+Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
+`lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
+on-device cache for offline logging, which Firebase says is not securely wiped), `r3-attest` (App Attest with
+DeviceCheck fallback, as built, or DeviceCheck only).
+
 Not yet on the pitch page: **`vice-cap`** (from backend hardening, PR #55): cap the number of vices per user, with a
 guard in Add Vice and the rules, or leave the vice lists unbounded. Claude's recommendation: **leave them unbounded
 for 1.0**: vices are created by hand, and since the day query dropped its `in` filter the number of vices limits no
@@ -160,12 +169,10 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
   Development profile for `com.screendead.tracker.tracker`. Claude's attempt was refused by the permission classifier.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
   Claude (`gh pr close 22 42`).
-- **Deploy the new activities index before installing a build with backend hardening** (`feat/backend-hardening`,
-  PR #55): Today's day query now needs the `activities (ownerID ASC, createdAt DESC)` index in
-  `firestore.indexes.json`. The emulators don't check indexes, so the e2e run can't catch its absence; on a phone
-  without it, Today reads "Unable to load this day: failed-precondition". Merging deploys it only once CI deploys
-  are on (above); until then `firebase deploy --only firestore:indexes --project screendead-vice-tracker`. Install
-  only after the console (Firestore > Indexes) shows it **Enabled**; building takes minutes.
+- **The activities index is deployed** (Claude, 2026-11-03, with Jack's leave to deploy indexes only, never
+  `--force`). Before installing a build from #55 on, confirm Firestore > Indexes shows `activities (ownerID ASC,
+  createdAt DESC)` **Enabled**. Production also holds 4 indexes that `firestore.indexes.json` doesn't list; they were
+  left in place (the register's index-drift item).
 - **App Attest needs a paid Apple Developer Program team.** Adding the App Attest entitlement to Runner broke
   `flutter build ios --release`: Xcode said "Personal development teams, including "Jack Lusher", do not support the
   App Attest capability" for team 8N575942RT, so the backend-hardening PR ships App Check without it, and App Attest
@@ -210,7 +217,7 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
 ## Thoughts
 
 - The app is a small Flutter + Firestore codebase (about 3,000 lines in `lib/`). Tests now exist at three levels
-  (72 rules tests, 47 unit and widget tests, 8 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
+  (rules tests, 151 unit and widget tests, 23 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
 - Firestore writes go through `TrackerWrites` (`trackerWritesProvider`), so widget tests cover every write path with
   a fake; Auth calls go through `Account` (`accountProvider`) the same way.
 
