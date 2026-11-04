@@ -19,7 +19,9 @@ Size chartLabelSize(BuildContext context, String text, TextStyle style) {
 
 // fl_chart lays a radar title out on one line with no width limit, so the
 // string itself must fit: [name] is cut short with an ellipsis until
-// [name] + [suffix] fits in [maxWidth]. The suffix is kept whole.
+// [name] + [suffix] fits in [maxWidth]. The suffix is kept whole; when even
+// an ellipsis and the suffix are too wide, as on a radar with dozens of axes,
+// the label is left whole, since cutting it would not make it fit.
 String fitChartLabel(
   BuildContext context, {
   required String name,
@@ -30,7 +32,7 @@ String fitChartLabel(
   bool fits(String text) =>
       chartLabelSize(context, text, style).width <= maxWidth;
 
-  if (fits('$name$suffix')) {
+  if (fits('$name$suffix') || !fits('…$suffix')) {
     return '$name$suffix';
   }
 

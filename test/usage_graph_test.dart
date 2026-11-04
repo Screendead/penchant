@@ -321,6 +321,22 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('radar titles too many to fit any name are left whole', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester);
+      final List<Vice> vices = [
+        for (int i = 1; i <= 31; i++) fakeVice('v$i', name: 'Vice $i'),
+      ];
+      await pumpToday(tester, vices);
+
+      final RadarChartData data = tester
+          .widget<RadarChart>(find.byType(RadarChart))
+          .data;
+      expect(data.getTitle!(0, 0).text, 'Vice 1 (2 items)');
+      expect(data.getTitle!(30, 0).text, 'Vice 31 (2 items)');
+    });
+
     testWidgets('a radar title is cut to the space between its neighbours', (
       WidgetTester tester,
     ) async {

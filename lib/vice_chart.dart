@@ -243,6 +243,16 @@ class ViceChart extends ConsumerWidget {
                 radarTitleOffset,
               ) -
               titleGap;
+          final List<String> titles = [
+            for (int i = 0; i < vices.length; i++)
+              fitChartLabel(
+                context,
+                name: vices[i].name,
+                suffix: ' (${vices[i].unit.label(quantities[i])})',
+                style: titleStyle,
+                maxWidth: titleWidth,
+              ),
+          ];
 
           return RadarChart(
             RadarChartData(
@@ -256,20 +266,12 @@ class ViceChart extends ConsumerWidget {
               titlePositionPercentageOffset: radarTitleOffset,
               titleTextStyle: titleStyle,
               getTitle: (int index, double angle) {
-                final Vice vice = vices[index];
-                final int quantity = quantities[index];
                 final double correctionFactor = angle > 90 && angle < 270
                     ? 180
                     : 0;
 
                 return RadarChartTitle(
-                  text: fitChartLabel(
-                    context,
-                    name: vice.name,
-                    suffix: ' (${vice.unit.label(quantity)})',
-                    style: titleStyle,
-                    maxWidth: titleWidth,
-                  ),
+                  text: titles[index],
                   angle: angle + correctionFactor,
                 );
               },
