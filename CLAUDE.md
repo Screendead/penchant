@@ -46,7 +46,7 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 ```bash
 flutter pub get
 flutter run                      # device picker; -d macos for the desktop build
-flutter analyze
+dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # the macOS target still builds (CI builds no app)
@@ -114,7 +114,7 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
-CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
+CI (`.github/workflows/`): `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings`
 and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
 every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
@@ -122,10 +122,11 @@ every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only i
 `DEPLOY_FIRESTORE_RULES` is `true`, and deploys queue in one concurrency group so the newest commit lands
 last. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. riverpod_lint is not installed: on Dart 3.12 the analyzer plugin it now ships as either
-fails to start (the SDK resolves a newer `analysis_server_plugin` whose protocol the 3.12 server does not speak,
-and `dart analyze` hangs) or, pinned to a matching version, reports after `dart analyze` and `flutter analyze` have
-already exited, so it would gate nothing. Retry once the Flutter pin ships Dart 3.13 or later.
+changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
+`pubspec.yaml` dependency), pinned to 3.1.4: 3.1.6 to 3.1.8 resolve an `analysis_server_plugin` whose protocol the
+Dart 3.12 server does not speak, so the plugin never starts and `dart analyze` hangs. Move it forward when the
+Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` and show in the IDE; on this pin
+`flutter analyze` prints none of them, so CI analyzes with `dart analyze`.
 
 ## Architecture
 

@@ -14,6 +14,12 @@ analyzer:
   exclude:
     - "**/node_modules/**"
 
+plugins:
+  # Exact: 3.1.6 and later need analyzer 13, which resolves analysis_server_plugin 0.3.16 or later, whose
+  # protocol the Dart 3.12 analysis server does not speak (the plugin never starts and `dart analyze` hangs).
+  # Its diagnostics show in `dart analyze` and the IDE, not in `flutter analyze`.
+  riverpod_lint: 3.1.4
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
