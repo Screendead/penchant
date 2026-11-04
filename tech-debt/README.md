@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**70 issues: 0 critical, 8 high, 36 medium, 26 low.**
+**66 issues: 0 critical, 6 high, 35 medium, 25 low.**
 
 ## Firebase Data Layer (7)
 
@@ -45,15 +45,11 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
 - **medium** — [Chart axis titles are not width-bounded, so long vice names can run into their neighbours](widget-state-and-view-logic/chart-axis-titles-are-not-width-bounded.md)
 
-## Error Handling and Observability (5)
+## Error Handling and Observability (1)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
-- **high** — [A failed Firebase startup leaves the splash screen up forever](error-handling-and-observability/firebase-bootstrap-has-no-error-handling.md)
-- **high** — [Data errors look exactly like loading, so screens spin forever silently](error-handling-and-observability/no-screen-inspects-asyncvalue-error-state.md)
-- **medium** — [Every caught error is shown once on screen and then lost for good](error-handling-and-observability/catch-sites-render-the-error-once-and-discard-it.md)
-- **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
-- **low** — [The same save error reads four different ways depending on the screen](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
+- **medium** — [Errors reach only the device log; no crash report or usage data leaves the device](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
 ## Offline and Write Reliability (2)
 
