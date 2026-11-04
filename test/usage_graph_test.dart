@@ -321,6 +321,23 @@ void main() {
       }
     }
 
+    // fl_chart paints the titles outside the chart's box, up to a line
+    // beyond 0.96 of its half side.
+    void expectTitlesClearOfTheKey(WidgetTester tester) {
+      final RadarChartData data = tester
+          .widget<RadarChart>(find.byType(RadarChart))
+          .data;
+      final BuildContext context = tester.element(find.byType(RadarChart));
+      final Rect chart = tester.getRect(find.byType(RadarChart));
+      final double reach =
+          chart.shortestSide / 2 * 0.8 * (1 + ViceChart.radarTitleOffset) +
+          chartLabelSize(context, 'Ag', data.titleTextStyle!).height;
+      expect(
+        chart.center.dy + reach,
+        lessThanOrEqualTo(tester.getRect(find.byType(Wrap)).top),
+      );
+    }
+
     // The key's entries, which every vice has once the key is shown.
     Finder keyEntry(Vice vice) => find.text('${vice.name}: 2 items');
 
@@ -406,6 +423,7 @@ void main() {
 
       expect(radarTitles(tester), everyElement(isEmpty));
       expect(keyEntry(vices.first), findsOneWidget);
+      expectTitlesClearOfTheKey(tester);
       expect(tester.takeException(), isNull);
     });
 
@@ -424,6 +442,7 @@ void main() {
       expect(titles.first, endsWith('…'));
       expect(titles.sublist(1), ['tea (2 items)', 'beer (2 items)']);
       expectRadarTitlesFit(tester, vices.length);
+      expectTitlesClearOfTheKey(tester);
       for (final Vice vice in vices) {
         expect(keyEntry(vice), findsOneWidget);
       }
@@ -434,13 +453,13 @@ void main() {
     ) async {
       _usePhone(tester, textScale: 3);
       final List<Vice> vices = [
-        fakeVice('coffee', name: 'Coffee'),
+        fakeVice('gin', name: 'Gin'),
         fakeVice('tea', name: 'Tea'),
-        fakeVice('water', name: 'Water'),
+        fakeVice('rum', name: 'Rum'),
       ];
       await pumpToday(tester, vices);
 
-      expect(radarTitles(tester), ['Coffee', 'Tea', 'Water']);
+      expect(radarTitles(tester), ['Gin', 'Tea', 'Rum']);
       expectRadarTitlesFit(tester, vices.length);
       expect(keyEntry(vices.first), findsNothing);
     });

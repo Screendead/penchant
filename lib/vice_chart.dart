@@ -79,6 +79,11 @@ class ViceChart extends ConsumerWidget {
     ];
   }
 
+  // fl_chart draws each radar title up to a full line beyond its rings
+  // (0.96 of the half side plus the title's height), outside the chart's box.
+  static EdgeInsets _radarInset(BuildContext context, TextStyle style) =>
+      EdgeInsets.all(chartLabelSize(context, 'Ag', style).height);
+
   static List<({String text, bool nameWhole})> _radarTitles(
     BuildContext context,
     TextStyle style,
@@ -288,7 +293,10 @@ class ViceChart extends ConsumerWidget {
                         _radarTitles(
                           context,
                           titleStyle,
-                          constraints.biggest,
+                          _radarInset(
+                            context,
+                            titleStyle,
+                          ).deflateSize(constraints.biggest),
                           vices,
                           quantities,
                         ))
@@ -343,55 +351,58 @@ class ViceChart extends ConsumerWidget {
 
     final TextStyle titleStyle = _titleStyle(theme);
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final List<({String text, bool nameWhole})> titles = _radarTitles(
-          context,
-          titleStyle,
-          constraints.biggest,
-          vices,
-          quantities,
-        );
+    return Padding(
+      padding: _radarInset(context, titleStyle),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final List<({String text, bool nameWhole})> titles = _radarTitles(
+            context,
+            titleStyle,
+            constraints.biggest,
+            vices,
+            quantities,
+          );
 
-        return RadarChart(
-          RadarChartData(
-            dataSets: [dataSet, scaleSet],
-            isMinValueAtCenter: true,
-            borderData: FlBorderData(show: false),
-            radarBorderData: BorderSide(
-              color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-            ),
-            radarShape: RadarShape.polygon,
-            titlePositionPercentageOffset: radarTitleOffset,
-            titleTextStyle: titleStyle,
-            getTitle: (int index, double angle) {
-              final double correctionFactor = angle > 90 && angle < 270
-                  ? 180
-                  : 0;
+          return RadarChart(
+            RadarChartData(
+              dataSets: [dataSet, scaleSet],
+              isMinValueAtCenter: true,
+              borderData: FlBorderData(show: false),
+              radarBorderData: BorderSide(
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
+              ),
+              radarShape: RadarShape.polygon,
+              titlePositionPercentageOffset: radarTitleOffset,
+              titleTextStyle: titleStyle,
+              getTitle: (int index, double angle) {
+                final double correctionFactor = angle > 90 && angle < 270
+                    ? 180
+                    : 0;
 
-              return RadarChartTitle(
-                text: titles[index].text,
-                angle: angle + correctionFactor,
-              );
-            },
-            tickCount: scale.top ~/ scale.step,
-            // fl_chart scales the titles by the device text size, not the ticks.
-            ticksTextStyle: TextStyle(
-              color: theme.colorScheme.secondary,
-              fontSize: MediaQuery.textScalerOf(context).scale(10),
+                return RadarChartTitle(
+                  text: titles[index].text,
+                  angle: angle + correctionFactor,
+                );
+              },
+              tickCount: scale.top ~/ scale.step,
+              // fl_chart scales the titles by the device text size, not the ticks.
+              ticksTextStyle: TextStyle(
+                color: theme.colorScheme.secondary,
+                fontSize: MediaQuery.textScalerOf(context).scale(10),
+              ),
+              tickBorderData: BorderSide(
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
+              ),
+              gridBorderData: BorderSide(
+                color: theme.colorScheme.tertiary,
+                width: 1,
+              ),
             ),
-            tickBorderData: BorderSide(
-              color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-            ),
-            gridBorderData: BorderSide(
-              color: theme.colorScheme.tertiary,
-              width: 1,
-            ),
-          ),
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.fastOutSlowIn,
-        );
-      },
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.fastOutSlowIn,
+          );
+        },
+      ),
     );
   }
 }

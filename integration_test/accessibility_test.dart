@@ -130,24 +130,22 @@ void main() {
         'Coffee: 0 drinks',
       ),
     );
+    // The Undo snackbar covers the bottom of the chart until it times out.
+    await pumpUntil(tester, find.byType(SnackBar), present: false);
     await pumpFor(tester, const Duration(seconds: 1));
     await screenshot(tester, 'a11y-today-text-3x');
 
-    // Each name is drawn whole, as a chart title or in the key below it.
+    // Each name is drawn whole, as a chart title or in the key below it,
+    // where hitTestable() rules out an entry scrolled away or covered.
     final Set<String> titles = chartTitles(tester)!;
-    final Rect screen =
-        Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
     for (final String name in names) {
       if (titles.any((String t) => t == name || t.startsWith('$name ('))) {
         continue;
       }
-      final Finder entry = find.textContaining(RegExp('^$name: '));
-      expect(entry, findsOneWidget, reason: '$name is not shown whole');
-      final Rect rect = tester.getRect(entry);
       expect(
-        screen.contains(rect.topLeft) && screen.contains(rect.bottomRight),
-        isTrue,
-        reason: '$name is off screen at $rect',
+        find.textContaining(RegExp('^$name: ')).hitTestable(),
+        findsOneWidget,
+        reason: '$name is not shown whole',
       );
     }
     semantics.dispose();

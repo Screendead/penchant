@@ -274,7 +274,6 @@ void main() {
         expect(tester.takeException(), isNull);
 
         final RadarChartData data = _radar(tester);
-        final Rect screen = Offset.zero & tester.view.physicalSize / 2;
         for (int i = 0; i < _longNamed.length; i++) {
           final Vice vice = _longNamed[i];
           final String title = data.getTitle!(i, 0).text;
@@ -287,11 +286,10 @@ void main() {
           // chart's space and scrolls.
           await tester.ensureVisible(entry);
           await tester.pumpAndSettle();
-          final Rect rect = tester.getRect(entry);
           expect(
-            screen.contains(rect.topLeft) && screen.contains(rect.bottomRight),
-            isTrue,
-            reason: '${vice.name} is off screen at $rect',
+            entry.hitTestable(),
+            findsOneWidget,
+            reason: '${vice.name} is hidden',
           );
         }
       });
