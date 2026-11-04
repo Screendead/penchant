@@ -273,23 +273,29 @@ void main() {
         await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
         expect(tester.takeException(), isNull);
 
-        final RadarChartData data = _radar(tester);
+        // At this size the key may take the chart's whole space.
+        final Finder radar = find.byType(RadarChart);
+        final RadarChartData? data = radar.evaluate().isEmpty
+            ? null
+            : _radar(tester);
         for (int i = 0; i < _longNamed.length; i++) {
           final Vice vice = _longNamed[i];
-          final String title = data.getTitle!(i, 0).text;
+          final String title = data?.getTitle!(i, 0).text ?? '';
           if (title == vice.name || title.startsWith('${vice.name} (')) {
             continue;
           }
           final Finder entry = find.textContaining(RegExp('^${vice.name}: '));
-          expect(entry, findsOneWidget, reason: '${vice.name} is not shown');
-          // At text scale 3 on this screen the key outgrows its half of the
-          // chart's space and scrolls.
-          await tester.ensureVisible(entry);
-          await tester.pumpAndSettle();
+          // The test font is about twice as wide as the system's, so at text
+          // scale 3 this key outgrows the screen and scrolls; the e2e test
+          // checks the key unscrolled on a real device.
+          if (textScale == 3) {
+            await tester.ensureVisible(entry);
+            await tester.pumpAndSettle();
+          }
           expect(
             entry.hitTestable(),
             findsOneWidget,
-            reason: '${vice.name} is hidden',
+            reason: '${vice.name} is not shown whole',
           );
         }
       });

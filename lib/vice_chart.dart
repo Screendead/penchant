@@ -305,10 +305,22 @@ class ViceChart extends ConsumerWidget {
               return chart;
             }
 
+            // The key is what makes the day readable at this size, so it
+            // takes the height it needs and the chart gets the rest, or is
+            // left out when the rest is too small to read.
+            final double minimumChart =
+                4 * chartLabelSize(context, 'Ag', titleStyle).height;
             return Column(
               children: [
-                Expanded(child: chart),
-                _key(titleStyle, constraints.maxHeight / 2, vices, quantities),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints space) =>
+                        space.maxHeight < minimumChart
+                        ? const SizedBox.shrink()
+                        : chart,
+                  ),
+                ),
+                _key(titleStyle, constraints.maxHeight, vices, quantities),
               ],
             );
           },

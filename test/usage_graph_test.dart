@@ -400,19 +400,20 @@ void main() {
         'lists every vice in the key', (WidgetTester tester) async {
       _usePhone(tester);
       final List<Vice> vices = [
-        for (int i = 1; i <= 31; i++) fakeVice('v$i', name: 'Vice $i'),
+        for (int i = 1; i <= 12; i++) fakeVice('v$i', name: 'Vice $i'),
       ];
       await pumpToday(tester, vices);
 
-      expect(radarTitles(tester).first, endsWith('…'));
+      expect(radarTitles(tester), everyElement(endsWith('…')));
       expectRadarTitlesFit(tester, vices.length);
+      expectTitlesClearOfTheKey(tester);
       for (final Vice vice in vices) {
-        expect(keyEntry(vice), findsOneWidget);
+        expect(keyEntry(vice).hitTestable(), findsOneWidget);
       }
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a radar too crowded for an ellipsis draws no titles', (
+    testWidgets('a key with no room left for the radar takes its place', (
       WidgetTester tester,
     ) async {
       _usePhone(tester, textScale: 3);
@@ -421,9 +422,9 @@ void main() {
       ];
       await pumpToday(tester, vices);
 
-      expect(radarTitles(tester), everyElement(isEmpty));
-      expect(keyEntry(vices.first), findsOneWidget);
-      expectTitlesClearOfTheKey(tester);
+      expect(find.byType(RadarChart), findsNothing);
+      expect(keyEntry(vices.first).hitTestable(), findsOneWidget);
+      expect(keyEntry(vices.last), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -463,5 +464,34 @@ void main() {
       expectRadarTitlesFit(tester, vices.length);
       expect(keyEntry(vices.first), findsNothing);
     });
+  });
+
+  testWidgets('a chart label drops its suffix, then cuts its name, then is '
+      'left empty', (WidgetTester tester) async {
+    late BuildContext context;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext c) {
+            context = c;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    // The test font draws every character 14 wide at this size.
+    const TextStyle style = TextStyle(fontSize: 14);
+    ({String text, bool nameWhole}) fit(double width) => fitChartLabel(
+      context,
+      name: 'Coffee',
+      suffix: ' (2 items)',
+      style: style,
+      maxWidth: width,
+    );
+
+    expect(fit(16 * 14), (text: 'Coffee (2 items)', nameWhole: true));
+    expect(fit(6 * 14), (text: 'Coffee', nameWhole: true));
+    expect(fit(4 * 14), (text: 'Cof…', nameWhole: false));
+    expect(fit(13), (text: '', nameWhole: false));
   });
 }
