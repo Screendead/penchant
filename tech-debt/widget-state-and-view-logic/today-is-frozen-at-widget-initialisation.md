@@ -8,8 +8,8 @@ The Today tab shows `selectedDay`, which `_ViceTrackerState` sets once, when the
 
 ## Evidence
 
-- `lib/usage_graph_view.dart:68` — `void initState() {\n    super.initState();\n    final DateTime now = DateTime.now();\n    today = DateTime(now.year, now.month, now.day);\n  }`
-- `lib/usage_graph_view.dart:61` — `late final DateTime today;`
+- `lib/usage_graph_view.dart:79` — `today = startOfDay(DateTime.now());` (in `initState`)
+- `lib/usage_graph_view.dart:62` — `late final DateTime today;`
 - `lib/vice_tracker.dart:20` — `DateTime selectedDay = startOfDay(DateTime.now());`
 - `lib/vice_tracker.dart:37` — `final DateTime day = selectedDay.isAfter(today)\n        ? today\n        : selectedDay.isBefore(oldestDay)\n        ? oldestDay\n        : selectedDay;` (inside `build`; only clamps)
 - `lib/homepage.dart:66` — `child: IndexedStack(\n              index: selectedTabIndex,`

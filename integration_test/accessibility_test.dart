@@ -79,6 +79,7 @@ void main() {
   testWidgets('an activity can be recorded at the largest text size', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-a11y-text@example.com');
     await addVicesThroughManageData(tester);
@@ -114,10 +115,19 @@ void main() {
     expect(tester.takeException(), isNull);
     final List<Object> stored = await storedActivities('Water');
     expect(stored, hasLength(1));
-    await expectChart(tester, const <String>{
-      'Coffee (0 drinks)',
-      'Tea (0 drinks)',
-      'Water (4 drinks)',
-    });
+    // At this size the radar cuts its titles short to fit; screen readers
+    // still hear the whole names.
+    await pumpUntil(
+      tester,
+      find.bySemanticsLabel(
+        'Totals for ${formatDay(startOfDay(DateTime.now()))}. '
+        'Water: 4 drinks; Tea: 0 drinks; Coffee: 0 drinks',
+      ),
+    );
+    final List<String> titles = chartTitles(tester)!.toList();
+    expect(titles, hasLength(3));
+    expect(titles.where((String t) => t.endsWith(' (4 drinks)')), hasLength(1));
+    expect(titles.where((String t) => t.endsWith(' (0 drinks)')), hasLength(2));
+    semantics.dispose();
   });
 }

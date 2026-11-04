@@ -1,16 +1,38 @@
-# tracker
+# Tracker
 
-A new Flutter project.
+A journal for logging what you do, seeing the trends and learning about yourself. You define a "vice" (a name
+and a unit), log activities against it, and read the trends: a per-day radar chart across your vices and a line chart
+of one vice over a date range.
 
-## Getting Started
+A Flutter app for iOS and macOS over Firebase Auth and Cloud Firestore. There is no server-side code. The product
+name is not settled; "Tracker" is the working name.
 
-This project is a starting point for a Flutter application.
+## Run it
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+flutter pub get
+tools/run-emulated.sh      # flutter run against local Firebase emulators (project demo-tracker)
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+`tools/run-emulated.sh` needs the Firebase CLI and Java. Always run emulators as
+`firebase emulators:start --project demo-tracker`; a plain `flutter run` talks to the production project, which
+development must never touch.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze skips riverpod_lint
+flutter test
+tools/e2e.sh               # integration tests on an iOS Simulator against the emulators
+```
+
+Commands for seeding data, the Firestore rules tests, versioning and releases are in `CLAUDE.md`.
+
+## Where things are
+
+- `CLAUDE.md`: how the code works, the hard rules, and every command.
+- `HANDOVER.md`: the current task queue and the calls waiting on the owner.
+- `tech-debt/`: the debt register, one short report per issue; a fixed issue's file is deleted.
+- `ideas/`: the product backlog; a shipped or rejected idea's file is deleted.
+- `CHANGELOG.md`: user-visible changes per release.
+- `firestore.rules`, `firestore.indexes.json`: backend rules and indexes. CI deploys them on merge to `master` only once the `DEPLOY_FIRESTORE_RULES` repository variable is `true`; until then the deploy job is skipped and they are deployed by hand.
+
+The app is proprietary; all rights reserved.

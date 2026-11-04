@@ -35,6 +35,13 @@ pull request titles (`gh pr list --state merged`).
 - Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
 - The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.
 
+### Fixed
+
+- The usage graph: weekly view counts weeks back from today, so the newest point is a whole week rather than a
+  short remainder that looked like a drop; the smoothing control, its caption and the average always agree; the
+  lines no longer dip below zero; and axis labels no longer repeat or overlap, at any text size. Long vice names on
+  the Today chart are cut short instead of running into their neighbours.
+
 ## [0.1.0] - Unreleased
 
 ### Added
