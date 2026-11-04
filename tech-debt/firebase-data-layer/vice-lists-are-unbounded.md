@@ -6,5 +6,5 @@ Every activity query is bounded by a date window, a page size, a single document
 
 ## Evidence
 
-- `lib/providers/vice_list_provider.dart:9` — `.collection('vices').where('ownerID', isEqualTo: uid).orderBy('createdAt', descending: true)`, no `.limit(`
+- `lib/providers/vice_list_provider.dart:9` — `.collection('vices')` through `.orderBy('createdAt', descending: true)` at line 11, no `.limit(`
 - `lib/providers/unarchived_vice_list_provider.dart:9` — the same, with the `archived` filter, no `.limit(`

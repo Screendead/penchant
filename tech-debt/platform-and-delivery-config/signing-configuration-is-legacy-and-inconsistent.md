@@ -8,6 +8,6 @@ The macOS project has no development team setting anywhere and mixes automatic p
 
 ## Evidence
 
-- `ios/Runner.xcodeproj/project.pbxproj:448` — `"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";`
-- `ios/Runner.xcodeproj/project.pbxproj:478` — `DEVELOPMENT_TEAM = 8N575942RT;`
+- `ios/Runner.xcodeproj/project.pbxproj:464` — `"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";`
+- `ios/Runner.xcodeproj/project.pbxproj:494` — `DEVELOPMENT_TEAM = 8N575942RT;`
 - `macos/Runner.xcodeproj/project.pbxproj:285` — `ProvisioningStyle = Manual;`

@@ -11,11 +11,10 @@ exposure. **high** — actively costs correctness or velocity, or breaks the nex
 routine action. **medium** — drift, friction, or risk that compounds. **low** —
 clutter.
 
-Evidence line numbers refer to the working tree on 2026-08-11, which included roughly
-1,400 uncommitted lines across twelve paths; citations into those files will drift as
-that work lands.
+Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
+citations drift as code moves.
 
-**61 issues: 0 critical, 3 high, 34 medium, 24 low.**
+**56 issues: 0 critical, 1 high, 31 medium, 24 low.**
 
 ## Firebase Data Layer (7)
 
@@ -65,12 +64,12 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **medium** — [Date-entry field, timer, and lock toggle are copy-pasted across two files](duplication-and-dead-code/activity-date-entry-flow-duplicated.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
 - **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
-- **low** — [Formatting drift and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
+- **low** — [Long lines and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
 - **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
-- **low** — [Serialization helpers exist but every write site hand-builds its own map instead](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
-- **low** — [The same nullable-lookup pattern is typed out separately three times](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-three-times.md)
+- **low** — [Serialization helpers are used only by tests while every write site hand-builds its own map](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
+- **low** — [The same nullable-lookup pattern is typed out separately twice](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-twice.md)
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
-- **low** — [An auth widget carries a dead field and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
+- **low** — [An auth widget carries a dead field](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
 ## Accessibility and Localization (7)
 
@@ -113,23 +112,18 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 - **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
 - **medium** — [`flutter build macos --release` fails because the pods target macOS versions Xcode no longer supports](platform-and-delivery-config/macos-release-build-fails-on-pod-deployment-targets.md)
 
-## CI and Quality Gates (3)
+## CI and Quality Gates (1)
 
-Test depth and unverified build state.
+Test depth and what CI runs.
 
-- **medium** — [Auth, archiving and the usage graph are untested, and CI skips the end-to-end suite](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
-- **high** — [A logged compile failure was never re-verified after the code changed](ci-and-quality-gates/the-upgrade-left-a-failing-build-and-unverified-tree.md)
-- **medium** — [The end-to-end run's Add Vice save intermittently never completes](ci-and-quality-gates/e2e-add-vice-save-sometimes-never-returns.md)
+- **medium** — [The usage graph's weekly bucketing and smoothing are untested, and CI skips the end-to-end suite](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 
-## Repo, Docs and Release Hygiene (7)
+## Repo, Docs and Release Hygiene (4)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
-- **high** — [The onboarding doc describes code that was never committed anywhere](repo-docs-and-release-hygiene/claude-md-documents-uncommitted-state.md)
 - **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
-- **medium** — [The only records of failing quality gates are gitignored, unseen](repo-docs-and-release-hygiene/gitignored-logs-hid-the-failing-gates.md)
-- **medium** — [Local master is three commits behind what CI actually deploys](repo-docs-and-release-hygiene/local-master-is-three-commits-behind.md)
 - **medium** — [The README is still the default flutter create scaffold text](repo-docs-and-release-hygiene/readme-is-the-unmodified-flutter-template.md)
-- **low** — [Six gigabytes of ignored build and IDE clutter sit at the repo root](repo-docs-and-release-hygiene/stray-local-build-and-ide-artifacts.md)
+- **low** — [Over a gigabyte of ignored build and IDE clutter sits at the repo root](repo-docs-and-release-hygiene/stray-local-build-and-ide-artifacts.md)
 - **low** — [A commented-out ignore line left the .vscode folder tracked by accident](repo-docs-and-release-hygiene/vscode-launch-json-tracked-by-template-default.md)
 

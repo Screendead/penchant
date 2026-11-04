@@ -8,5 +8,5 @@ The rightmost point of the line, the one showing current behaviour, is depressed
 
 ## Evidence
 
-- `lib/usage_graph_view.dart:104` — `final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;`
-- `lib/usage_graph_view.dart:112` — `final int bucketIndex = deltaDays ~/ stepDays;\n        if (bucketIndex >= 0 && bucketIndex < totals.length) {\n          totals[bucketIndex] += activity.quantity.toDouble();`
+- `lib/usage_graph_view.dart:138` — `final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;`
+- `lib/usage_graph_view.dart:148` — `final int bucketIndex = deltaDays ~/ stepDays;\n        if (bucketIndex >= 0 && bucketIndex < totals.length) {\n          totals[bucketIndex] += activity.quantity.toDouble();`

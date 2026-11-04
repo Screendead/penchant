@@ -8,6 +8,6 @@ Contrast reads acceptably today only because the app hardcodes a single dark the
 
 ## Evidence
 
-- `lib/vice_tracker.dart:85` — `color: Colors.white,`
-- `lib/vice_tracker.dart:94` — `color: Colors.white,`
-- `lib/vice_tracker.dart:99` — `backgroundColor: Colors.white,`
+- `lib/vice_tracker.dart:54` — `const Icon(Icons.calendar_month, color: Colors.white),`
+- `lib/vice_tracker.dart:63` — `style: const TextStyle(color: Colors.white, fontSize: 16),`
+- `lib/vice_tracker.dart:66` — `const CircleAvatar(backgroundColor: Colors.white, radius: 3),`

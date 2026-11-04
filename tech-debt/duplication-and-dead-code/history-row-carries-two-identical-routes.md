@@ -8,5 +8,5 @@ The pencil icon therefore adds no capability the row tap does not already provid
 
 ## Evidence
 
-- `lib/vice_activity_history_page.dart:63` — `onTap: () {\n                      Navigator.of(context).pushNamed(\n                        '/vices/$viceID/activities/${activity.id}',\n                      );\n                    },`
-- `lib/vice_activity_history_page.dart:74` — `onPressed: () {\n                            Navigator.of(context).pushNamed(\n                              '/vices/$viceID/activities/${activity.id}',\n                            );\n                          },`
+- `lib/vice_activity_history_page.dart:149` — `onTap: () {\n                      Navigator.of(context).pushNamed(\n                        '/vices/$viceID/activities/${activity.id}',\n                      );\n                    },`
+- `lib/vice_activity_history_page.dart:160` — `onPressed: () {\n                            Navigator.of(context).pushNamed(\n                              '/vices/$viceID/activities/${activity.id}',\n                            );\n                          },`

@@ -6,6 +6,6 @@
 
 ## Evidence
 
-- `lib/providers/unarchived_vice_list_provider.dart:17` — `.where('archived', isEqualTo: false)`
+- `lib/providers/unarchived_vice_list_provider.dart:11` — `.where('archived', isEqualTo: false)`
 - `lib/data/vice.dart:33` — `archived: readBool(json['archived'], fallback: false),`
 - **`git log --format="%h %ad %s" --date=short --follow -- lib/data/vice.dart`** → `4489c50 2024-08-14 Add archived field to Vice class`
