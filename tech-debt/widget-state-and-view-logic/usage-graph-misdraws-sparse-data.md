@@ -12,10 +12,10 @@ The graph is the screen meant for seeing trends, and each fault misstates the da
 
 ## Evidence
 
-- `lib/usage_graph_view.dart:281` — `maxY: maxY == 0 ? 1 : maxY * 1.15,`
-- `lib/usage_graph_view.dart:295` — `interval: max(1, (maxY / 4).ceil()).toDouble(),`
-- `lib/usage_graph_view.dart:299` — `value.toInt().toString(),`
-- `lib/usage_graph_view.dart:309` — `interval: max(1, rawSpots.length ~/ 4).toDouble(),`
-- `lib/usage_graph_view.dart:333` — `isCurved: true,` (no `preventCurveOverShooting`, which defaults to `false`)
+- `lib/usage_graph_view.dart:164` — `final double chartMaxY = maxY == 0 ? 1 : maxY * 1.15;`
+- `lib/usage_graph_view.dart:380` — `interval: max(\n 1,\n (maxY / 4).ceil(),\n ).toDouble(),`
+- `lib/usage_graph_view.dart:387` — `value.toInt().toString(),`
+- `lib/usage_graph_view.dart:397` — `interval: max(\n 1,\n rawSpots.length ~/ 4,\n ).toDouble(),`
+- `lib/usage_graph_view.dart:431` — `isCurved: true,` (no `preventCurveOverShooting`, which defaults to `false`)
 - fl_chart 1.2.0 `lib/src/chart/base/axis_chart/axis_chart_helper.dart:56` — `if (maxIncluded && !lastPositionOverlapsWithMax) {\n      yield max;\n    }` (`maxIncluded` defaults to `true`)
 - fl_chart 1.2.0 `lib/src/chart/line_chart/line_chart_data.dart:59` — `super.clipData = const FlClipData.none(),`

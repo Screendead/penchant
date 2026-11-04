@@ -8,9 +8,9 @@ Each copy both formats for display and parses the typed text for validation and 
 
 ## Evidence
 
-- `lib/vice_activity_editor_page.dart:28` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
-- `lib/widgets/record_new_activity_dialog.dart:13` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
-- `lib/vice_activity_editor_page.dart:55` — `dateUpdaterTimer = Timer.periodic(const Duration(seconds: 1), (timer) {`
-- `lib/widgets/record_new_activity_dialog.dart:48` — `dateUpdaterTimer = Timer.periodic(Duration(seconds: 1), (Timer timer) {`
-- `lib/vice_activity_editor_page.dart:99` — `final DateTime parsedDate = dateFormat.parse(dateController.text);`
-- `lib/widgets/record_new_activity_dialog.dart:244` — `final DateTime date = RecordNewActivityDialog.dateFormat.parse(dateController.text);`
+- `lib/vice_activity_editor_page.dart:25` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
+- `lib/widgets/record_new_activity_dialog.dart:17` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
+- `lib/vice_activity_editor_page.dart:66` — `dateUpdaterTimer = Timer.periodic(const Duration(seconds: 1), (timer) {`
+- `lib/widgets/record_new_activity_dialog.dart:74` — `dateUpdaterTimer = Timer.periodic(Duration(seconds: 1), (Timer timer) {`
+- `lib/vice_activity_editor_page.dart:120` — `'createdAt': dateFormat.parse(dateController.text),`
+- `lib/widgets/record_new_activity_dialog.dart:104` — `final DateTime date = RecordNewActivityDialog.dateFormat.parse(`

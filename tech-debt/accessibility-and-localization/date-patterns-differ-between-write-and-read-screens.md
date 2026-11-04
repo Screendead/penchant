@@ -8,7 +8,7 @@ The same stored moment appears one way when edited and three other ways when dis
 
 ## Evidence
 
-- `lib/vice_activity_editor_page.dart:28` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
-- `lib/vice_tracker.dart:114` — `DateFormat('EEEE, MMMM d, yyyy').format(date);`
-- `lib/usage_graph_view.dart:125` — `final DateFormat labelFormat = DateFormat('MMM d');`
-- `lib/vice_activity_history_page.dart:60` — `'${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',`
+- `lib/vice_activity_editor_page.dart:25` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
+- `lib/vice_chart.dart:25` — `static final DateFormat dayFormat = DateFormat('EEEE, MMMM d, yyyy');` (the Today tab's date menu reads it)
+- `lib/usage_graph_view.dart:17` — `final DateFormat labelFormat = DateFormat('MMM d');`
+- `lib/vice_activity_history_page.dart:139` — `'${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',`

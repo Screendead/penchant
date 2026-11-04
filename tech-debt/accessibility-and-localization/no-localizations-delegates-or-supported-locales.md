@@ -8,8 +8,8 @@ The default delegate serves English only, so the resolved locale is pinned to `e
 
 ## Evidence
 
-- `lib/main.dart:39` — `child: MaterialApp(`
-- `lib/main.dart:63` — `home: user == null ? const Authenticate() : const Homepage(),`
-- `pubspec.yaml:42` — `intl: ^0.20.3`
-- `lib/vice_activity_editor_page.dart:241` — `final DateTime? date = await showDatePicker(`
+- `lib/main.dart:52` — `child: MaterialApp(`
+- `lib/main.dart:70` — `home: user == null ? const Authenticate() : const Homepage(),`
+- `pubspec.yaml:40` — `intl: ^0.20.3`
+- `lib/vice_activity_editor_page.dart:282` — `final DateTime? date = await showDatePicker(`
 - **`grep -rn "localeOf\|platformDispatcher\|Platform.localeName\|defaultLocale" lib/`** → (no output — zero matches)

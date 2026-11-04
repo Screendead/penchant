@@ -8,7 +8,7 @@ The rules deploy workflow hardcodes the same project id rather than reading an a
 
 ## Evidence
 
-- `.firebaserc:2` — `"projects": { "default": "screendead-vice-tracker" }`
-- `lib/firebase_options.dart:50` — `projectId: 'screendead-vice-tracker',`
-- `.github/workflows/deploy-firestore.yml:43` — `--project screendead-vice-tracker --non-interactive`
+- `.firebaserc:3` — `"default": "screendead-vice-tracker"`
+- `lib/firebase_options.dart:44` — `projectId: 'screendead-vice-tracker',`
+- `.github/workflows/deploy-firestore.yml:45` — `--project screendead-vice-tracker --non-interactive`
 - `tools/emulator-env.sh:5` — `E2E_PROJECT=demo-tracker`

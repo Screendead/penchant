@@ -7,5 +7,5 @@
 ## Evidence
 
 - `lib/providers/vice_activity_day_provider.dart:17` — `.where('ownerID', isEqualTo: key.uid)`
-- `lib/vice_chart.dart` — `if (quantity != null) {`
-- `lib/vice_activity_editor_page.dart:172` — `if (vice == null || activity == null || activity.viceID != widget.viceID) {`
+- `lib/vice_chart.dart:158` — `if (quantity != null) {`
+- `lib/vice_activity_editor_page.dart:185` — `(found != null && found.viceID == widget.viceID)`

@@ -1,14 +1,15 @@
-# Both date-driven views capture today once and never recompute it
+# The Graph tab captures today once and never recomputes it
 
 **Severity:** medium
 
-`_ViceTrackerState` computes `now` as a field initializer and derives `today` in `initState`, and `_UsageGraphViewState` does the same; neither recomputes, and both live in an `IndexedStack` that keeps them mounted for the whole session. A session left open across midnight keeps showing the previous day's Today label, its 30-entry date dropdown and the graph's range end, and newly recorded activities fall outside the day window on screen.
+`_UsageGraphViewState` derives `today` in `initState` as a `late final` field, and the graph's `IndexedStack` keeps it mounted for the whole session. A session left open across midnight keeps the graph's range ending on the previous day, so a newly recorded activity falls outside the window on screen.
 
-Nothing recomputes either value on resume, which is the normal case for a mobile tracker brought back from the background.
+The Today tab recomputes its `today` inside `build`, so it moves on at the next rebuild, but nothing triggers a rebuild at midnight and nothing listens for the app resuming, which is the normal case for a mobile tracker brought back from the background. Until something else rebuilds it, the Today tab keeps showing the previous day too.
 
 ## Evidence
 
-- `lib/vice_tracker.dart:15` — `final DateTime now = DateTime.now();`
-- `lib/vice_tracker.dart:31` — `today = DateTime(now.year, now.month, now.day);`
-- `lib/usage_graph_view.dart:28` — `void initState() {\n    super.initState();\n    final DateTime now = DateTime.now();\n    today = DateTime(now.year, now.month, now.day);\n  }`
-- `lib/homepage.dart:63` — `body: IndexedStack(\n        index: selectedTabIndex,\n        children: const [\n          ViceTracker(),\n          UsageGraphView(),\n        ],\n      ),`
+- `lib/usage_graph_view.dart:68` — `void initState() {\n    super.initState();\n    final DateTime now = DateTime.now();\n    today = DateTime(now.year, now.month, now.day);\n  }`
+- `lib/usage_graph_view.dart:61` — `late final DateTime today;`
+- `lib/vice_tracker.dart:30` — `final DateTime today = startOfDay(DateTime.now());` (inside `build`)
+- `lib/homepage.dart:66` — `child: IndexedStack(\n              index: selectedTabIndex,`
+- **`grep -rn "WidgetsBindingObserver\|AppLifecycle" lib/`** → only `lib/account_settings.dart`, for a profile reload

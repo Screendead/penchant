@@ -8,9 +8,9 @@ Every rendered date and time is therefore fixed to the `en_US` fallback regardle
 
 ## Evidence
 
-- `lib/vice_chart.dart:24` — `static final DateFormat dayFormat = DateFormat('EEEE, MMMM d, yyyy');` (the Today date menu and the chart's screen-reader summary)
+- `lib/vice_chart.dart:25` — `static final DateFormat dayFormat = DateFormat('EEEE, MMMM d, yyyy');` (the Today date menu and the chart's screen-reader summary)
 - `lib/usage_graph_view.dart:17` — `static final DateFormat labelFormat = DateFormat('MMM d');` (axis labels and the graph's screen-reader summary)
-- `lib/vice_activity_history_page.dart:60` — `'${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',`
-- `lib/vice_activity_editor_page.dart:28` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
-- `lib/widgets/record_new_activity_dialog.dart:13` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
+- `lib/vice_activity_history_page.dart:139` — `'${vice.unit.label(activity.quantity)} on ${DateFormat('EEE, MMM d, yyyy • HH:mm').format(createdAt)}',`
+- `lib/vice_activity_editor_page.dart:25` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
+- `lib/widgets/record_new_activity_dialog.dart:17` — `static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');`
 - **`grep -rn "initializeDateFormatting" lib/`** → (no output — zero matches)
