@@ -104,6 +104,31 @@ void main() {
     expect(find.text('Please enter at least 1'), findsOneWidget);
   });
 
+  testWidgets('the record dialog keeps its vice when the list re-emits', (
+    tester,
+  ) async {
+    Future<void> pumpWith(List<Vice> vices) => _pump(tester, [
+      userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
+    ], const RecordNewActivityDialog());
+
+    await pumpWith([fakeVice('coffee'), fakeVice('tea')]);
+    await tester.tap(find.text('Select Vice'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('coffee').last);
+    await tester.pumpAndSettle();
+
+    // Fresh instances with the same ids, as a new snapshot brings.
+    await pumpWith([fakeVice('coffee'), fakeVice('tea')]);
+    expect(tester.takeException(), isNull);
+    expect(find.text('coffee'), findsOneWidget);
+
+    // The selected vice is archived: the selection clears instead of asserting.
+    await pumpWith([fakeVice('tea')]);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Select Vice'), findsOneWidget);
+  });
+
   group('the activity editor', () {
     final Vice vice = fakeVice('coffee');
 
