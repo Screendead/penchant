@@ -155,6 +155,14 @@ for 1.0**: vices are created by hand, and since the day query dropped its `in` f
 query. A bare `limit` is not an option: it would hide the oldest vices without saying so. Register:
 `tech-debt/firebase-data-layer/vice-lists-are-unbounded.md`; idea: `ideas/release-blockers/backend-hardening.md`.
 
+Not yet on the pitch page: **`server-time`** (from the data-layer PR, #68): stamp "now" entries with
+`FieldValue.serverTimestamp()`, or keep the device clock. The queued item asked for server time; #68 kept the device
+clock. A pending server timestamp matches no `createdAt` range query, so an entry logged offline is missing from Today
+until it syncs, and the server stamps the sync time, so it can land on another day. Claude's recommendation: **keep
+the device clock**, since offline logging (#53) is shipped; the cost is that a skewed or hand-set clock places an
+entry anywhere, which the rules don't bound. Register:
+`tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md`; rule: `CLAUDE.md` **Days**.
+
 ## For Jack to do (not decisions)
 
 - **Let CI deploy rules (C1):** grant the service account behind `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER`
@@ -192,6 +200,11 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
   `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
   itself still answers "no such user" differently from "wrong password". Also check the password-reset and
   verification email templates read sensibly now that the app sends both.
+- **Clear the main checkout's active Firebase project** (from #68): in `/Users/jacklusher/development/tracker`, run
+  `firebase use --clear`. The CLI's configstore maps that directory to `screendead-vice-tracker`, and that entry wins
+  over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
+  edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
+  `demo-tracker`. Register: `tech-debt/firebase-data-layer/every-firebase-command-targets-production.md`.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 
