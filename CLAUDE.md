@@ -141,7 +141,9 @@ hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a 
 `userProfileProvider` one over `userChanges()`. Each
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
-`count()` aggregation), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
+`count()` aggregation, which falls back to counting the cached documents while
+`offlineProvider` says offline or the server cannot answer, says which, and retries
+after a server failure), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
 of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
@@ -154,7 +156,14 @@ provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which 
 screens make to a single document. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
 `updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
-error messages and Undo stay in the widgets. The record dialog takes one id from
+error messages and Undo stay in the widgets. Each widget hands the future to `settleWrite`
+(`lib/writes/settle_write.dart`), which waits ten seconds and then calls the write queued.
+It keeps listening, and a refusal after that goes to `onRejectedLater`: widgets pass
+`ref.read(rejectedWritesProvider.notifier).reporter('<what, named at write time>')`. That
+`NotifierProvider` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
+signed-in user, cleared when the uid changes, and `MaterialApp.builder`
+(`lib/widgets/rejected_writes_banner.dart`) shows them above every screen until dismissed.
+A write queued by an earlier launch has no future to listen to, so its refusal is not seen. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
 document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
 (`lib/account/account.dart`): sign-in, register (which also sends the verification email),

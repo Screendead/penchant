@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/firestore_retry.dart';
+import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/signed_in_user.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 typedef ViceActivityHistoryQuery = ({String viceID, int limit});
 
@@ -109,24 +114,65 @@ final viceActivityProvider = Provider.autoDispose
       );
     });
 
-// Counted on the server, so it is not live, ignores writes still queued on the
-// device, and fails offline.
+enum CountSource { server, deviceOffline, deviceServerFailed }
+
+typedef ActivityCount = ({int count, CountSource source});
+
+// Long enough that a lasting refusal (a missing index, say) does not repeat a
+// billed aggregation every few seconds while the page is open.
+const Duration countRetryDelay = Duration(seconds: 30);
+
+// Counted on the server, so it is not live and ignores writes still queued on
+// the device. Aggregations skip the cache and fail offline, so offline, or if
+// the server cannot answer, it counts what this device holds instead, which
+// may be only part of the history. Coming back online re-runs it through
+// offlineProvider; a server failure while online sets no flag, so it retries.
 final viceActivityCountForUserProvider = FutureProvider.autoDispose
-    .family<int, ({String uid, String viceID})>(retry: firestoreRetry, (
-      ref,
-      key,
-    ) async {
-      final AggregateQuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('activities')
-          .where('viceID', isEqualTo: key.viceID)
-          .where('ownerID', isEqualTo: key.uid)
-          .count()
-          .get();
-      return snapshot.count ?? 0;
-    });
+    .family<ActivityCount, ({String uid, String viceID})>(
+      retry: firestoreRetry,
+      (ref, key) async {
+        final bool offline = ref.watch(
+          offlineProvider.select(
+            (AsyncValue<bool> value) => value.value == true,
+          ),
+        );
+        final Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+            .collection('activities')
+            .where('viceID', isEqualTo: key.viceID)
+            .where('ownerID', isEqualTo: key.uid);
+
+        if (!offline) {
+          try {
+            final AggregateQuerySnapshot snapshot = await query
+                .count()
+                .get()
+                .timeout(writeTimeout);
+            return (count: snapshot.count ?? 0, source: CountSource.server);
+          } on FirebaseException catch (e, stack) {
+            reportError(e, stack, context: 'while counting activities');
+          } on TimeoutException {
+            // Counted from the cache below.
+          }
+          if (ref.mounted) {
+            final Timer retry = Timer(countRetryDelay, ref.invalidateSelf);
+            ref.onDispose(retry.cancel);
+          }
+        }
+
+        final QuerySnapshot<Map<String, dynamic>> cached = await query.get(
+          const GetOptions(source: Source.cache),
+        );
+        return (
+          count: cached.size,
+          source: offline
+              ? CountSource.deviceOffline
+              : CountSource.deviceServerFailed,
+        );
+      },
+    );
 
 final viceActivityCountProvider = Provider.autoDispose
-    .family<AsyncValue<int>, String>((ref, viceID) {
+    .family<AsyncValue<ActivityCount>, String>((ref, viceID) {
       return watchForSignedInUser(
         ref,
         (String uid) =>

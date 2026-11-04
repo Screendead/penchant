@@ -143,7 +143,7 @@ void main() {
     await recordActivity(tester, 'Coffee', 2);
 
     await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('1 activities'));
+    await pumpUntil(tester, find.text('1 activity'));
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, find.text('Coffee history'));
     await tap(tester, find.text('Quantity: 2'));

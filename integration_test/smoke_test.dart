@@ -29,7 +29,7 @@ void main() {
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntil(tester, find.text('Your Vices'));
     // Each row's count is its own server request, so the rows fill in any order.
-    await pumpUntil(tester, find.text('1 activities'));
+    await pumpUntil(tester, find.text('1 activity'));
     await pumpUntilTrue(
       tester,
       () => find.text('0 activities').evaluate().length == 2,
