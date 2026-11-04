@@ -167,6 +167,7 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.text('Smoothing: 1 bucket for coffee'), findsOneWidget);
       semantics.dispose();
     });
   });

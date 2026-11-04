@@ -291,7 +291,9 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Smoothing: ${formatCount(smoothingWindow)} buckets for ${selectedVice.name}',
+            'Smoothing: ${formatCount(smoothingWindow)} '
+            '${pluralWord(smoothingWindow, one: 'bucket', other: 'buckets')} '
+            'for ${selectedVice.name}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
