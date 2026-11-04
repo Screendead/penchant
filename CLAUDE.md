@@ -22,8 +22,8 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   `--project screendead-vice-tracker`). The documented data shape must stay compatible with existing documents:
   new optional fields are fine; a new mandatory field ships only with a migrator that adds it to existing records on
   first launch (Jack, 2026-11-03). Rules and indexes reach production only through CI on merge to `master` (Jack,
-  2026-11-03), so merging a rules PR deploys it; until Jack enables that job (the `DEPLOY_FIRESTORE_RULES`
-  repository variable), he deploys them by hand.
+  2026-11-03), so merging to `master` deploys the rules and indexes (the job is on since 2026-11-04). It never passes
+  `--force`; the 4 production indexes the file doesn't list stay.
 - **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
   `demo-` project has no cloud counterpart, so nothing can leak to production. `.firebaserc`'s `default` alias is
   `demo-tracker`, so a `firebase` command without `--project` lands there; the deploy workflow names production with
@@ -121,9 +121,9 @@ CI (`.github/workflows/`): `checks.yml` runs `dart analyze --fatal-infos --fatal
 and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
 every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
-`tests/firestore-rules/package-lock.json`. Its deploy job is skipped unless the repository variable
-`DEPLOY_FIRESTORE_RULES` is `true`, and deploys queue in one concurrency group so the newest commit lands
-last. Nothing builds or deploys the app. Flutter is pinned in
+`tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
+`DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
+group so the newest commit lands last. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
 `pubspec.yaml` dependency), pinned to 3.1.4: 3.1.6 to 3.1.8 resolve an `analysis_server_plugin` whose protocol the
