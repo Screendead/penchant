@@ -30,14 +30,17 @@ pull request titles (`gh pr list --state merged`).
   24-Hour Time setting. The app is in English.
 - Manage Data's activity counts work offline: each row counts what this device holds and says so, rather than going
   blank. Your Vices also shows the offline banner.
+- An archived vice's history stays reachable: its Manage Data row opens it, marked "Archived", and the Graph lists it
+  last as "(archived)" instead of opening on it.
+- A signed-in launch no longer flashes the sign-in screen while the saved session loads.
+- Today and the Graph move on at midnight, and on returning to the app the next day, instead of staying on yesterday.
+- The activity editor shows changes made elsewhere while it is open, until you edit that field.
+- The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
 
 ### Fixed
 
 - Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
 - The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.
-
-### Fixed
-
 - The usage graph: weekly view counts weeks back from today, so the newest point is a whole week rather than a
   short remainder that looked like a drop; the smoothing control, its caption and the average always agree; the
   lines no longer dip below zero; and axis labels no longer repeat or overlap, at any text size. Long vice names on

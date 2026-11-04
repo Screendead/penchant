@@ -16,6 +16,7 @@ import 'package:tracker/writes/settle_write.dart';
 class ManageData extends ConsumerStatefulWidget {
   const ManageData({super.key});
 
+  static const String archivedLabel = 'Archived';
   static const String countUnavailable = 'Count unavailable';
 
   static String countText(ActivityCount count) {
@@ -124,8 +125,8 @@ class _ManageDataState extends ConsumerState<ManageData> {
       itemBuilder: (BuildContext context, int index) {
         final Vice vice = viceList[index];
 
+        // An archived vice keeps its history, so its row still opens it.
         return ListTile(
-          enabled: !vice.archived,
           contentPadding: EdgeInsets.zero,
           title: Text(vice.name),
           subtitle: Consumer(
@@ -134,11 +135,16 @@ class _ManageDataState extends ConsumerState<ManageData> {
                 viceActivityCountProvider(vice.id),
               );
               // A re-run keeps the last count until the new one arrives.
-              return Text(switch (count.value) {
-                final ActivityCount value => ManageData.countText(value),
-                null when count.hasError => ManageData.countUnavailable,
-                null => ' ',
-              });
+              final String text = <String>[
+                if (vice.archived) ManageData.archivedLabel,
+                switch (count.value) {
+                  final ActivityCount value => ManageData.countText(value),
+                  null when count.hasError => ManageData.countUnavailable,
+                  null => '',
+                },
+              ].where((String part) => part.isNotEmpty).join(', ');
+              // A blank line holds the row's height until the count loads.
+              return Text(text.isEmpty ? ' ' : text);
             },
           ),
           trailing: Row(

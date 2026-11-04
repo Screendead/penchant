@@ -31,7 +31,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Wave C: register additions refreshed (#60), refused offline writes surface in a banner and Manage Data counts offline (#61), startup and load errors show a message with Retry (#62), dead lint and codegen tooling removed with riverpod_lint running in CI through `dart analyze` (#63), the record dialog's vice dropdown keyed on the id (#65, an e2e flake) | Merged 2026-11-04 | `lib/`, `.github/workflows/checks.yml` |
 | macOS target (#47) | Merged with master and re-locked 2026-11-04; analyze, tests and the unsigned build pass. Held: the Mac App Development profile still does not exist, so no signed macOS build or macOS e2e can run (below) | `macos/`, `.github/workflows/macos-build.yml` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) and round 3 (`r3-*`, 4 calls) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 43 issues on master: 0 critical, 1 high, the macOS lockfile; #47 deletes it (40, 0 high, on its branch) (from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Tech-debt register | 35 issues on master: 0 critical, 1 high, the macOS lockfile; #47 deletes it (32, 0 high, on its branch) (from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 30 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline on master, measured 2026-11-04 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 151/151,

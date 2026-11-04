@@ -42,8 +42,7 @@ void main() {
       'Tea (0 drinks)',
       'Water (2 drinks)',
     });
-    // The graph tab stays mounted, so its providers hold the first account's
-    // vices too.
+    // Visiting the graph loads the first account's range too.
     await tap(tester, _graphTab);
     await pumpUntil(tester, find.byType(LineChart));
     await tap(tester, _todayTab);
