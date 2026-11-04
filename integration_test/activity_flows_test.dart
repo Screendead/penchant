@@ -249,6 +249,10 @@ void main() {
     final Finder rows = find.byType(Card);
     await pumpUntil(tester, rows);
     expect(rows, findsNWidgets(3));
+    expect(
+      find.descendant(of: rows, matching: find.byTooltip('Edit')),
+      findsNothing,
+    );
     await screenshot(tester, 'history-page');
 
     final Finder threeDrinksRow = find.ancestor(

@@ -252,10 +252,9 @@ class _ViceActivityEditorPageState
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final Vice? vice =
-        viceList.where((Vice item) => item.id == widget.viceID).isEmpty
-        ? null
-        : viceList.firstWhere((Vice item) => item.id == widget.viceID);
+    final Vice? vice = viceList
+        .where((Vice item) => item.id == widget.viceID)
+        .firstOrNull;
     final ViceActivity? found = activityValue.hasError
         ? null
         : activityValue.value;

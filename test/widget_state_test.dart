@@ -357,13 +357,15 @@ void main() {
       return activity;
     }
 
-    ViceActivity changed(int quantity, DateTime at) => ViceActivity(
-      id: stored.id,
-      viceID: coffee.id,
-      quantity: quantity,
-      ownerID: ownerID,
-      createdAt: Timestamp.fromDate(at),
-    );
+    ViceActivity changed(int quantity, DateTime at, {bool pending = false}) =>
+        ViceActivity(
+          id: stored.id,
+          viceID: coffee.id,
+          quantity: quantity,
+          ownerID: ownerID,
+          createdAt: Timestamp.fromDate(at),
+          pending: pending,
+        );
 
     testWidgets('shows a change made elsewhere until the user edits a field, '
         'then keeps theirs', (WidgetTester tester) async {
@@ -414,9 +416,7 @@ void main() {
         );
         await tester.tap(find.text('Save'));
         await tester.pump();
-        activity.add(
-          changed(7, stored.createdAt.toDate()).copyWith(pending: true),
-        );
+        activity.add(changed(7, stored.createdAt.toDate(), pending: true));
         await tester.pump();
 
         Future<void> rollBack() async {
