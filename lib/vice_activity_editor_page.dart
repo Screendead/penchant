@@ -51,13 +51,33 @@ class _ViceActivityEditorPageState
     ref.listenManual<AsyncValue<ViceActivity?>>(
       viceActivityProvider(widget.activityID),
       (_, AsyncValue<ViceActivity?> next) {
-        if (next.value case final ViceActivity activity
-            when activity.viceID == widget.viceID) {
-          _follow(activity);
+        // While this page's own write is in flight, a snapshot carries its
+        // latency-compensated value, not what the server holds; following it
+        // would mark a refused edit as stored.
+        if (!loading) {
+          _followValue(next);
         }
       },
       fireImmediately: true,
     );
+  }
+
+  void _followValue(AsyncValue<ViceActivity?> value) {
+    if (value.value case final ViceActivity activity
+        when activity.viceID == widget.viceID) {
+      _follow(activity);
+    }
+  }
+
+  // A refused write's rollback may not have reached the snapshot yet; until it
+  // does, the snapshot is pending and the listener picks the rollback up.
+  void _followRolledBack() {
+    final AsyncValue<ViceActivity?> current = ref.read(
+      viceActivityProvider(widget.activityID),
+    );
+    if (current.value?.pending == false) {
+      _followValue(current);
+    }
   }
 
   void _follow(ViceActivity activity) {
@@ -107,6 +127,7 @@ class _ViceActivityEditorPageState
           loading = false;
           error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
         });
+        _followRolledBack();
       }
     }
   }
@@ -160,6 +181,7 @@ class _ViceActivityEditorPageState
           loading = false;
           error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
         });
+        _followRolledBack();
       }
     }
   }

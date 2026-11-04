@@ -18,6 +18,7 @@ import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -32,6 +33,7 @@ import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fake_account.dart';
+import 'fake_writes.dart';
 import 'fakes.dart';
 
 class _FakeToday extends Today {
@@ -318,14 +320,16 @@ void main() {
     );
 
     Future<StreamController<ViceActivity?>> pumpEditor(
-      WidgetTester tester,
-    ) async {
+      WidgetTester tester, {
+      FakeTrackerWrites? writes,
+    }) async {
       final StreamController<ViceActivity?> activity =
           StreamController<ViceActivity?>.broadcast();
       addTearDown(activity.close);
       await _pump(tester, [
         viceListProvider.overrideWithValue(AsyncData([coffee])),
         viceActivityForUserProvider.overrideWith((ref, key) => activity.stream),
+        if (writes != null) trackerWritesProvider.overrideWithValue(writes),
       ], ViceActivityEditorPage(viceID: coffee.id, activityID: stored.id));
       activity.add(stored);
       await tester.pump();
@@ -370,6 +374,63 @@ void main() {
         ActivityDateField.format.format(DateTime(2026, 11, 2, 11)),
       );
     });
+
+    for (final bool rollbackFirst in <bool>[true, false]) {
+      testWidgets('keeps a refused edit as unsaved against the stored value '
+          '(rollback ${rollbackFirst ? 'before' : 'after'} the refusal)', (
+        WidgetTester tester,
+      ) async {
+        final Completer<void> refusal = Completer<void>();
+        final FakeTrackerWrites writes = FakeTrackerWrites()
+          ..respond = (_) => refusal.future;
+        final StreamController<ViceActivity?> activity = await pumpEditor(
+          tester,
+          writes: writes,
+        );
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Quantity'),
+          '7',
+        );
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        activity.add(
+          changed(7, stored.createdAt.toDate()).copyWith(pending: true),
+        );
+        await tester.pump();
+
+        Future<void> rollBack() async {
+          activity.add(stored);
+          await tester.pump();
+        }
+
+        if (rollbackFirst) {
+          await rollBack();
+        }
+        refusal.completeError(
+          FirebaseException(
+            plugin: 'cloud_firestore',
+            code: 'permission-denied',
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        if (!rollbackFirst) {
+          await rollBack();
+        }
+
+        expect(find.textContaining('Could not save'), findsOneWidget);
+        expect(_fieldText(tester, 'Quantity'), '7');
+
+        writes.respond = null;
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        expect(writes.writes, <Write>[
+          Write('updateActivity', stored.id, <String, Object?>{'quantity': 7}),
+          Write('updateActivity', stored.id, <String, Object?>{'quantity': 7}),
+        ]);
+      });
+    }
 
     testWidgets('leaves the date alone until asked for the current time, and '
         'returns to the stored one', (WidgetTester tester) async {
