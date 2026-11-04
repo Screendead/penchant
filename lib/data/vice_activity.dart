@@ -19,24 +19,6 @@ class ViceActivity {
   // A local write the server has not acknowledged yet.
   final bool pending;
 
-  ViceActivity copyWith({
-    String? id,
-    String? viceID,
-    int? quantity,
-    String? ownerID,
-    Timestamp? createdAt,
-    bool? pending,
-  }) {
-    return ViceActivity(
-      id: id ?? this.id,
-      viceID: viceID ?? this.viceID,
-      quantity: quantity ?? this.quantity,
-      ownerID: ownerID ?? this.ownerID,
-      createdAt: createdAt ?? this.createdAt,
-      pending: pending ?? this.pending,
-    );
-  }
-
   factory ViceActivity.fromJson({
     required String id,
     required Map<String, dynamic> json,
@@ -61,11 +43,4 @@ class ViceActivity {
       );
     }).toList();
   }
-
-  Map<String, dynamic> toJson() => {
-    'viceID': viceID,
-    'quantity': quantity,
-    'ownerID': ownerID,
-    'createdAt': createdAt,
-  };
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,11 +20,21 @@ import 'fakes.dart';
 void main() {
   final DateTime now = DateTime.now();
   final ViceActivity synced = fakeActivity('coffee', 1, now);
-  final ViceActivity pending = fakeActivity(
-    'coffee',
-    2,
-    now,
-  ).copyWith(id: 'pending', pending: true);
+  final ViceActivity pending = ViceActivity(
+    id: 'pending',
+    viceID: 'coffee',
+    quantity: 2,
+    ownerID: ownerID,
+    createdAt: Timestamp.fromDate(now),
+    pending: true,
+  );
+  final ViceActivity acknowledged = ViceActivity(
+    id: 'pending',
+    viceID: 'coffee',
+    quantity: 2,
+    ownerID: ownerID,
+    createdAt: Timestamp.fromDate(now),
+  );
 
   test('the pending note groups digits and picks the English plural', () {
     expect(PendingDayNote.text(1), '1 entry not yet synced');
@@ -55,7 +66,7 @@ void main() {
     await tester.pump();
     expect(find.text(PendingDayNote.text(1)), findsOneWidget);
 
-    day.add([synced, pending.copyWith(pending: false)]);
+    day.add([synced, acknowledged]);
     await tester.pump();
     expect(find.textContaining('not yet synced'), findsNothing);
   });

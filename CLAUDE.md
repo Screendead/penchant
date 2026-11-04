@@ -148,7 +148,8 @@ of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
 (below), and `packageInfoProvider` is a `FutureProvider` over
-`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style.
+`PackageInfo.fromPlatform()`, for the version under Settings > About. `todayProvider` is a
+`NotifierProvider` holding the start of the current local day. Match that style.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
@@ -231,7 +232,8 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
-from the today chart but keeps its history.
+from the today chart but keeps its history, which stays reachable: Manage Data still opens
+it and the Graph lists archived vices last, marked "(archived)", never as the default.
 
 **Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
 stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
@@ -246,8 +248,9 @@ with the time it synced. Whether to trade that for server time is open (register
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed.
 
-**Navigation.** `main.dart` gates on `userProvider`: null user → `Authenticate`, otherwise
-`Homepage`. `generateRoute` maps a route's path segments to a page through `routePage`, a
+**Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error →
+`AuthStateFailure`, no event yet → `AuthStateLoading` (so a restored session never shows
+sign-in first), and a null user → `Authenticate`. `generateRoute` maps a route's path segments to a page through `routePage`, a
 pattern `switch` (`/vices/:viceID/edit`, `/vices/:viceID/activities[/:activityID]`, ...);
 anything else is `NotFound`. Only the forms (add or edit a vice, edit an activity) open as
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
@@ -262,7 +265,11 @@ radar needs three axes). The radar carries
 a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
 centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
 text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
-outside the widget tree, so tests read them from the chart's data.
+outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible tab;
+each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
+`todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the
+user picked another day. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one
+format, lock toggle, live clock and picker for the record dialog and the editor.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked

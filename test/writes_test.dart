@@ -474,7 +474,9 @@ void main() {
 
       expect(find.text('1 activity'), findsOneWidget);
       expect(
-        find.text('3 activities on this device (offline)'),
+        find.text(
+          '${ManageData.archivedLabel}, 3 activities on this device (offline)',
+        ),
         findsOneWidget,
       );
       expect(
