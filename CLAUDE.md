@@ -46,8 +46,7 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 ```bash
 flutter pub get
 flutter run                      # device picker; -d macos for the desktop build
-flutter analyze
-dart run custom_lint             # loads no rules: riverpod_lint 3.1 left custom_lint (see tech-debt)
+dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # the macOS target still builds (CI builds no app)
@@ -115,7 +114,7 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
-CI (`.github/workflows/`): `checks.yml` runs `flutter analyze --fatal-infos --fatal-warnings`
+CI (`.github/workflows/`): `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings`
 and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
 every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
@@ -123,19 +122,19 @@ every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only i
 `DEPLOY_FIRESTORE_RULES` is `true`, and deploys queue in one concurrency group so the newest commit lands
 last. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. No riverpod_lint rule runs anywhere, locally or in
-CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
-is fixed.
+changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
+`pubspec.yaml` dependency), pinned to 3.1.4: 3.1.6 to 3.1.8 resolve an `analysis_server_plugin` whose protocol the
+Dart 3.12 server does not speak, so the plugin never starts and `dart analyze` hangs. Move it forward when the
+Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` and show in the IDE; on this pin
+`flutter analyze` prints none of them, so CI analyzes with `dart analyze`.
 
 ## Architecture
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS and macOS only; `firebase_options.dart` throws on any other platform.
 
-**Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
-`build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
-annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
-hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
+**Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
+hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
 `userProfileProvider` one over `userChanges()`. Each
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
@@ -144,7 +143,7 @@ of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
 (below), and `packageInfoProvider` is a `FutureProvider` over
-`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style; running `build_runner` generates nothing.
+`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
