@@ -3,11 +3,11 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -23,8 +23,6 @@ class ViceChart extends ConsumerWidget {
   static const int minimumRadarAxes = 3;
   static const int maximumRadarRings = 5;
 
-  static final DateFormat dayFormat = DateFormat('EEEE, MMMM d, yyyy');
-
   static String title(Vice vice, int quantity) =>
       '${vice.name} (${vice.unit.label(quantity)})';
 
@@ -34,7 +32,7 @@ class ViceChart extends ConsumerWidget {
         '${vices[i].name}: ${vices[i].unit.label(quantities[i])}',
     ].join('; ');
 
-    return 'Totals for ${dayFormat.format(day)}. $totals';
+    return 'Totals for ${formatDay(day)}. $totals';
   }
 
   // The outermost ring's value and the spacing between rings: at most

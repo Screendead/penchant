@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -106,7 +107,11 @@ class _ManageDataState extends ConsumerState<ManageData> {
               final int? count = ref
                   .watch(viceActivityCountProvider(vice.id))
                   .value;
-              return Text(count == null ? ' ' : '$count activities');
+              return Text(
+                count == null
+                    ? ' '
+                    : '${formatCount(count)} ${pluralWord(count, one: 'activity', other: 'activities')}',
+              );
             },
           ),
           trailing: Row(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/theme.dart';
 import 'package:tracker/widgets/info_box.dart';
 
@@ -58,6 +60,8 @@ class _BootstrapState extends State<Bootstrap> {
     return MaterialApp(
       title: 'Vice Tracker',
       theme: appTheme(),
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: appLocales,
       home: Scaffold(
         body: SafeArea(
           child: _startup == _Startup.failed

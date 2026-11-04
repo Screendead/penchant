@@ -3,10 +3,10 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/chart_text.dart';
@@ -15,13 +15,11 @@ import 'package:tracker/widgets/info_box.dart';
 class UsageGraphView extends ConsumerStatefulWidget {
   const UsageGraphView({super.key});
 
-  static final DateFormat labelFormat = DateFormat('MMM d');
-
   static String seriesName(int stepDays) =>
       stepDays == 1 ? 'Daily total' : 'Weekly total';
 
   static String averageName(int stepDays, int window) =>
-      '$window-${stepDays == 1 ? 'day' : 'week'} average';
+      '${formatCount(window)}-${stepDays == 1 ? 'day' : 'week'} average';
 
   static String summary({
     required Vice vice,
@@ -41,7 +39,7 @@ class UsageGraphView extends ConsumerStatefulWidget {
     final int total = totals
         .fold<double>(0, (double a, double b) => a + b)
         .round();
-    final String peakDate = labelFormat.format(
+    final String peakDate = formatShortDay(
       rangeStart.add(Duration(days: peakIndex * stepDays)),
     );
     final String average = smoothingWindow > 1
@@ -49,7 +47,7 @@ class UsageGraphView extends ConsumerStatefulWidget {
         : '';
 
     return '${seriesName(stepDays)}s of ${vice.name} over the last '
-        '$rangeDays days: ${vice.unit.label(total)} in all. The most was '
+        '${formatCount(rangeDays)} days: ${vice.unit.label(total)} in all. The most was '
         '${vice.unit.label(totals[peakIndex].round())} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average';
   }
@@ -170,7 +168,6 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       smoothed.fold<double>(0, (double a, double b) => a > b ? a : b),
     );
     final int smoothingMaxBuckets = max(1, min(7, bucketCount));
-    final DateFormat labelFormat = UsageGraphView.labelFormat;
     final ColorScheme scheme = Theme.of(context).colorScheme;
     const TextStyle axisStyle = TextStyle(fontSize: 10);
     final double chartMaxY = maxY == 0 ? 1 : maxY * 1.15;
@@ -231,7 +228,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
                     .map(
                       (int value) => DropdownMenuItem<int>(
                         value: value,
-                        child: Text('$value days'),
+                        child: Text('${formatCount(value)} days'),
                       ),
                     )
                     .toList(),
@@ -294,7 +291,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Smoothing: $smoothingWindow buckets for ${selectedVice.name}',
+            'Smoothing: ${formatCount(smoothingWindow)} buckets for ${selectedVice.name}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -306,7 +303,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
               max: smoothingMaxBuckets.toDouble(),
               divisions: smoothingMaxBuckets - 1,
               value: smoothingWindow.clamp(1, smoothingMaxBuckets).toDouble(),
-              label: smoothingWindow.toString(),
+              label: formatCount(smoothingWindow),
               onChanged: (double value) {
                 setState(() {
                   smoothingWindow = value.round();
@@ -408,7 +405,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
                                         getTitlesWidget:
                                             (double value, TitleMeta meta) {
                                               return Text(
-                                                value.toInt().toString(),
+                                                formatCount(value.toInt()),
                                                 style: axisStyle,
                                               );
                                             },
@@ -441,7 +438,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
                                                   top: 8,
                                                 ),
                                                 child: Text(
-                                                  labelFormat.format(labelDate),
+                                                  formatShortDay(labelDate),
                                                   style: axisStyle,
                                                 ),
                                               );

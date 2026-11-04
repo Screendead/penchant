@@ -9,6 +9,7 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -17,7 +18,7 @@ import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+  static DateFormat get dateFormat => entryDateFormat;
 
   const RecordNewActivityDialog({super.key});
 
@@ -246,8 +247,9 @@ class _RecordNewActivityDialogState
                             int.tryParse(quantityController.text) ?? 0;
 
                         setState(() {
-                          selectedVice =
-                              vices.firstWhere((Vice v) => v.id == id);
+                          selectedVice = vices.firstWhere(
+                            (Vice v) => v.id == id,
+                          );
                           updateUnit(parsedQuantity);
                         });
                       },
