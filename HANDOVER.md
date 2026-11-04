@@ -168,7 +168,9 @@ not decisions:
 - **`r5-radar-inset`**: radar inset by one title line on every side at all text sizes (recommended, as built) vs only
   when the key shows.
 - **`r5-key-height`**: the key takes the height it needs and the chart is left out below four title lines of room
-  (recommended, as built) vs a half-height cap with scrolling.
+  (recommended, as built) vs a half-height cap with scrolling vs bars instead of the radar at large text sizes, with
+  the key when bar names still don't fit (bars also need a name per bar, so the largest size still falls back to the
+  key; a day's work).
 - **`r5-key-always`**: also show the key whenever amounts are dropped from titles (**yes**, recommended) vs only when
   a name is cut.
 
