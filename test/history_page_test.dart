@@ -34,6 +34,7 @@ void main() {
     WidgetTester tester,
     int count, {
     Stream<User?>? users,
+    bool alwaysUse24HourFormat = false,
   }) async {
     final List<ViceActivity> all = stored(count);
     await tester.pumpWidget(
@@ -54,7 +55,12 @@ void main() {
             return AsyncData(all.take(query.limit).toList());
           }),
         ],
-        child: MaterialApp(home: ViceActivityHistoryPage(viceID: coffee.id)),
+        child: MediaQuery(
+          data: MediaQueryData.fromView(
+            tester.view,
+          ).copyWith(alwaysUse24HourFormat: alwaysUse24HourFormat),
+          child: MaterialApp(home: ViceActivityHistoryPage(viceID: coffee.id)),
+        ),
       ),
     );
     await tester.pump();
@@ -112,5 +118,14 @@ void main() {
     await tester.pump();
 
     expect(quantity(1), findsNothing);
+  });
+
+  testWidgets('times follow the device 24-hour setting', (tester) async {
+    await pumpHistory(tester, 2, alwaysUse24HourFormat: true);
+    expect(find.textContaining('Nov 2, 2026 11:00'), findsOneWidget);
+    expect(find.textContaining('AM'), findsNothing);
+
+    await pumpHistory(tester, 2);
+    expect(find.textContaining('Nov 2, 2026 11:00\u202fAM'), findsOneWidget);
   });
 }

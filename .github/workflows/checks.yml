@@ -21,4 +21,7 @@ jobs:
       - name: Analyze
         run: dart analyze --fatal-infos --fatal-warnings
       - name: Test
+        # A zone with daylight saving, so the day-arithmetic tests can fail.
+        env:
+          TZ: Europe/London
         run: flutter test

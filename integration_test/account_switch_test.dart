@@ -47,7 +47,7 @@ void main() {
     await pumpUntil(tester, find.byType(LineChart));
     await tap(tester, _todayTab);
     await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('1 activities'));
+    await pumpUntil(tester, find.text('1 activity'));
     await closeDrawerPage(tester);
 
     await signOutThroughSettings(tester);

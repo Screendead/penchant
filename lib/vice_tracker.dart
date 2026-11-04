@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/vice_chart.dart';
 import 'package:tracker/widgets/sync_status.dart';
@@ -16,7 +16,6 @@ class ViceTracker extends ConsumerStatefulWidget {
 }
 
 class _ViceTrackerState extends ConsumerState<ViceTracker> {
-  static final DateFormat _dateFormat = ViceChart.dayFormat;
   static const String _storageID = 'ViceTracker.pinnedDay';
 
   // Null follows today, so the tab moves on at midnight.
@@ -56,6 +55,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         ? oldestDay
         : selectedDay;
     final int daysAgo = daysBetween(day, today);
+    final Color headerColor = Theme.of(context).colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -67,19 +67,15 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  const Icon(Icons.calendar_month, color: Colors.white),
+                  Icon(Icons.calendar_month, color: headerColor),
                   Flexible(
                     child: Text(
-                      daysAgo == 0
-                          ? 'Today'
-                          : daysAgo == 1
-                          ? 'Yesterday'
-                          : '$daysAgo days ago',
+                      relativeDay(daysAgo),
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: headerColor, fontSize: 16),
                     ),
                   ),
-                  const CircleAvatar(backgroundColor: Colors.white, radius: 3),
+                  CircleAvatar(backgroundColor: headerColor, radius: 3),
                   Flexible(
                     child: DropdownButton<DateTime>(
                       isExpanded: true,
@@ -95,7 +91,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                         return DropdownMenuItem(
                           value: item,
                           child: Text(
-                            _dateFormat.format(item),
+                            formatDay(item),
                             overflow: TextOverflow.ellipsis,
                           ),
                         );

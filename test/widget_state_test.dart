@@ -12,6 +12,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
@@ -209,7 +210,7 @@ void main() {
 
         expect(queries.last.start, addDays(next, -29));
         expect(queries.last.end, addDays(next, 1));
-        final String dayLabel = UsageGraphView.labelFormat.format(day);
+        final String dayLabel = formatShortDay(day);
         expect(
           find.bySemanticsLabel(RegExp('The most was 5 items on $dayLabel\\.')),
           findsOneWidget,
@@ -257,7 +258,8 @@ void main() {
       await _pump(tester, [
         viceListProvider.overrideWithValue(AsyncData([coffee, tea])),
         viceActivityCountProvider.overrideWith(
-          (ref, String viceID) => const AsyncData(2),
+          (ref, String viceID) =>
+              const AsyncData((count: 2, source: CountSource.server)),
         ),
         viceActivityHistoryProvider.overrideWith(
           (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
@@ -326,7 +328,7 @@ void main() {
       await tester.tap(find.text('Graph'));
       await tester.pumpAndSettle();
       expect(graphed.last, beer.id);
-      expect(find.text('Smoothing: 1 buckets for beer'), findsOneWidget);
+      expect(find.text('Smoothing: 1 bucket for beer'), findsOneWidget);
     });
   });
 

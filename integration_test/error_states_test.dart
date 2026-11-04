@@ -7,6 +7,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
 import 'support.dart';
@@ -54,7 +55,14 @@ void main() {
     await screenshot(tester, 'denied-vice-list');
 
     askAs = null;
-    await tap(tester, find.widgetWithText(TextButton, 'Retry'));
+    // Today, under the Manage Data route, reads the same denied list.
+    await tap(
+      tester,
+      find.descendant(
+        of: find.byType(ManageData),
+        matching: find.widgetWithText(TextButton, 'Retry'),
+      ),
+    );
     await pumpUntil(tester, find.text('No vices yet. Tap + to add one.'));
     expect(find.text(denied), findsNothing);
   });

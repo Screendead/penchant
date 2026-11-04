@@ -53,7 +53,7 @@ void main() {
     );
     await pumpUntil(
       tester,
-      find.text('${ManageData.archivedLabel}, 1 activities'),
+      find.text('${ManageData.archivedLabel}, 1 activity'),
     );
 
     await tap(tester, find.text('Juice'));
@@ -94,7 +94,7 @@ void main() {
     // Vices list newest first, so Juice would be the default if archived
     // vices were not listed after the rest.
     await tap(tester, _graphTab);
-    await pumpUntil(tester, find.text('Smoothing: 1 buckets for Water'));
+    await pumpUntil(tester, find.text('Smoothing: 1 bucket for Water'));
     await tap(
       tester,
       find.descendant(
@@ -104,7 +104,7 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
     await tap(tester, find.text('Juice (archived)').last);
-    await pumpUntil(tester, find.text('Smoothing: 1 buckets for Juice'));
+    await pumpUntil(tester, find.text('Smoothing: 1 bucket for Juice'));
     await pumpUntil(tester, find.byType(LineChart));
   });
 }

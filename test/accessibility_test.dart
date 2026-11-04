@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -23,7 +23,7 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'fakes.dart';
 
 final DateTime _today = startOfDay(DateTime.now());
-final String _todayLabel = DateFormat('EEEE, MMMM d, yyyy').format(_today);
+final String _todayLabel = formatDay(_today);
 
 Future<void> _pump(
   WidgetTester tester,
@@ -163,10 +163,11 @@ void main() {
       expect(
         find.bySemanticsLabel(
           'Daily totals of coffee over the last 30 days: 5 items in all. '
-          'The most was 4 items on ${DateFormat('MMM d').format(peakDay)}.',
+          'The most was 4 items on ${formatShortDay(peakDay)}.',
         ),
         findsOneWidget,
       );
+      expect(find.text('Smoothing: 1 bucket for coffee'), findsOneWidget);
       semantics.dispose();
     });
   });

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
@@ -7,6 +8,7 @@ import 'package:tracker/bootstrap.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -16,6 +18,7 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/rejected_writes_banner.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +68,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         navigatorKey: navigatorKey,
         title: 'Vice Tracker',
         theme: appTheme(),
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        supportedLocales: appLocales,
+        localeListResolutionCallback: resolveAppLocale,
         // Until Auth reports the persisted session, a signed-in user would
         // otherwise see the sign-in screen; a signed-out one is AsyncData(null).
         home: user != null
@@ -75,6 +81,7 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
+        builder: rejectedWritesBuilder,
       ),
     );
   }

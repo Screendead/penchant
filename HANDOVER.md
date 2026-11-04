@@ -28,9 +28,10 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Wave A of the finish-and-pitch run: Dependabot #37 #38, seed script emulator-only (#44), parsers default every field (#45), shared write layer `TrackerWrites` (#46), versioning 0.1.0 + changelog + release workflow (#43) | Merged 2026-11-03 | `lib/`, `admin/`, `CHANGELOG.md`, `.github/workflows/release.yml` |
 | Security patch: cloud_firestore 6.10.2, Firebase iOS SDK 12.19.3, for Firebase's eMudhra CA notice (#56) | Merged 2026-11-03; Jack's iPhone runs release 0.1.0 (244) built from it | `pubspec.yaml`, `ios/Podfile.lock` |
 | Wave B: rules-test deps (#49), accessibility (#51), navigation (#52), offline logging (#53), backend hardening with App Check client wiring (#55), account export, deletion, password reset and verification behind `accountProvider` (#54); register additions (#57); round-3 calls on the pitch page (#58) | Merged 2026-11-03/04. The new activities index is deployed to production (by Claude, with Jack's leave, 2026-11-03). App Check is wired but not registered or enforced (Jack's list) | `lib/`, `integration_test/`, `firestore.indexes.json` |
+| Wave C: register additions refreshed (#60), refused offline writes surface in a banner and Manage Data counts offline (#61), startup and load errors show a message with Retry (#62), dead lint and codegen tooling removed with riverpod_lint running in CI through `dart analyze` (#63), the record dialog's vice dropdown keyed on the id (#65, an e2e flake) | Merged 2026-11-04 | `lib/`, `.github/workflows/checks.yml` |
 | macOS target (#47) | Green, held: its macOS e2e needs Jack's Mac development profile (below) | `macos/`, `.github/workflows/macos-build.yml` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) and round 3 (`r3-*`, 4 calls) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 70 issues: 0 critical, 8 high (from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Tech-debt register | 47 issues: 0 critical, 1 high, the macOS lockfile that #47 fixes (from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 30 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline on master, measured 2026-11-04 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 151/151,
@@ -53,7 +54,7 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    (done, #43), offline logging (done, #53), export (done, #54), and the layout-neutral half of one-tap logging. One-tap's tiles are a Today layout, which waits
    on Jack's Today call; only a shared "log one at the default quantity, now" action with the 8-second Undo is
    decided. Parallel where the files don't overlap.
-3. **The remaining high tech debt** (8 issues; wave B fixed navigation, auth lifecycle, accessibility highs, the
+3. **Done 2026-11-04 (wave C) except the macOS lockfile high, which rides with #47.** Was: the remaining high tech debt (8 issues; wave B fixed navigation, auth lifecycle, accessibility highs, the
    sign-out data leak and offline persistence):
    - `error-handling-and-observability/`: bootstrap failure, AsyncValue error states;
    - `offline-and-write-reliability/`: a queued write the server later refuses vanishes silently;
@@ -77,10 +78,14 @@ parallel worktrees, and `tools/e2e.sh` runs one at a time.
   (`auth-and-account-lifecycle/`); backend hardening (bounded queries, App Check client wiring, the sign-out data
   leak); offline logging; `navigation-and-unreachable-ui/`; `accessibility-and-localization/` with the radar's 0
   off-centre; the rules-test dependency alerts.
-- **Wave C:** `error-handling-and-observability/`; the rejected-queued-write high; the lint-tooling highs; the "log
+- **Wave C (merged 2026-11-04):** `error-handling-and-observability/`; the rejected-queued-write high; the lint-tooling highs; the "log
   one" action; wave B leftovers: Manage Data's `count()` is blank offline (server-only), and the register's evidence
   line numbers have drifted after wave B's merges.
-- **Wave D:** the register's medium and low items, one class per PR.
+- **Wave D (building 2026-11-04):** usage graph correctness and tests; widget state (archive consistency, cold-start
+  login flash, midnight rollover, the shared date field); dead code and `dart format` in CI; locale-aware dates with
+  English-only localization scaffolding; README and iOS repo hygiene; the data layer (no production default for bare
+  `firebase` commands, legacy vices without `archived`, server timestamps for "now"). Left for Jack's calls: brand
+  strings, telemetry, verified email, vice cap, other languages. The "log one" action still waits on `r2-today`.
 - **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
   trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
 
@@ -127,7 +132,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 ## Jack's calls, round 2
 
 - **`r2-web-site`** (2026-11-03, in chat): **take the live web site down now.** Claude can't: it is Firebase Hosting
-  on the production project, which the hard rules put out of Claude's reach, so it is on Jack's list below.
+  on the production project, which the hard rules put out of Claude's reach, so Jack did it; the site returns 404
+  (checked 2026-11-04).
 
 ## Calls waiting on Jack (UNDECIDED)
 
@@ -149,11 +155,32 @@ Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and expor
 on-device cache for offline logging, which Firebase says is not securely wiped), `r3-attest` (App Attest with
 DeviceCheck fallback, as built, or DeviceCheck only).
 
-Not yet on the pitch page: **`vice-cap`** (from backend hardening, PR #55): cap the number of vices per user, with a
+On the pitch page as `r4-vice-cap`: **`vice-cap`** (from backend hardening, PR #55): cap the number of vices per user, with a
 guard in Add Vice and the rules, or leave the vice lists unbounded. Claude's recommendation: **leave them unbounded
 for 1.0**: vices are created by hand, and since the day query dropped its `in` filter the number of vices limits no
 query. A bare `limit` is not an option: it would hide the oldest vices without saying so. Register:
 `tech-debt/firebase-data-layer/vice-lists-are-unbounded.md`; idea: `ideas/release-blockers/backend-hardening.md`.
+
+On the pitch page as `r4-weekly`: **`weekly-remainder`** (from the usage graph fix, PR #69): Weekly view covers every day
+the Range menu names, counted back from today, so the newest point is a whole week and, when the range is not a
+whole number of weeks, the oldest point sums only the days left over (2 at 30 days, 6 at 90, 5 at 180, 1 at 365)
+and reads low. On master the short bucket was the newest one. Options:
+- **A** keep the partial oldest bucket, labelled as partial on the axis and in the summary;
+- **B** round the range down to whole weeks (drops up to 6 days of the named range);
+- **C** round it up to whole weeks (shows up to 6 days more than the menu says);
+- **D** scale the partial bucket to a weekly rate (marked as estimated).
+
+PR #69 ships the unlabelled form of A. Claude's recommendation: **A** (keep the short oldest week, labelled as
+partial). Register:
+`tech-debt/widget-state-and-view-logic/oldest-weekly-bucket-holds-the-remainder.md`.
+
+On the pitch page as `r4-server-time`: **`server-time`** (from the data-layer PR, #68): stamp "now" entries with
+`FieldValue.serverTimestamp()`, or keep the device clock. The queued item asked for server time; #68 kept the device
+clock. A pending server timestamp matches no `createdAt` range query, so an entry logged offline is missing from Today
+until it syncs, and the server stamps the sync time, so it can land on another day. Claude's recommendation: **keep
+the device clock**, since offline logging (#53) is shipped; the cost is that a skewed or hand-set clock places an
+entry anywhere, which the rules don't bound. Register:
+`tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md`; rule: `CLAUDE.md` **Days**.
 
 ## For Jack to do (not decisions)
 
@@ -162,8 +189,8 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
   add Firebase Viewer) for `firebase.projects.get`; then
   `gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker`. Until then the deploy job is skipped
   and #33's rules stay undeployed. The next merge after that deploys them. Jack's iPhone runs master as of 2026-11-03.
-- **Take the web site down** (`r2-web-site`): `firebase hosting:disable --project screendead-vice-tracker`, then
-  confirm the site URL returns "Site Not Found". The deployed releases stay in the console, so this can be undone.
+- **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
+  releases stay in the console, so this can be undone.
 - **Mac development profile** (unblocks #47): open `macos/Runner.xcworkspace` in Xcode, select Runner > Signing &
   Capabilities with team 8N575942RT, and build once (Cmd-B), so Xcode registers this Mac and creates the Mac App
   Development profile for `com.screendead.tracker.tracker`. Claude's attempt was refused by the permission classifier.
@@ -192,6 +219,11 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
   `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
   itself still answers "no such user" differently from "wrong password". Also check the password-reset and
   verification email templates read sensibly now that the app sends both.
+- **Clear the main checkout's active Firebase project** (from #68): in `/Users/jacklusher/development/tracker`, run
+  `firebase use --clear`. The CLI's configstore maps that directory to `screendead-vice-tracker`, and that entry wins
+  over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
+  edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
+  `demo-tracker`. Register: `tech-debt/firebase-data-layer/every-firebase-command-targets-production.md`.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 

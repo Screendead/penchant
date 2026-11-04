@@ -12,6 +12,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityEditorPage extends ConsumerStatefulWidget {
@@ -31,7 +32,7 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
 
 class _ViceActivityEditorPageState
     extends ConsumerState<ViceActivityEditorPage> {
-  static final DateFormat dateFormat = ActivityDateField.format;
+  static DateFormat get dateFormat => ActivityDateField.format;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
@@ -100,7 +101,15 @@ class _ViceActivityEditorPageState
     super.dispose();
   }
 
-  Future<void> _deleteActivity() async {
+  String _describe(Vice vice, ViceActivity activity) => describeActivity(
+    vice.name,
+    vice.unit,
+    activity.quantity,
+    activity.createdAt.toDate(),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+
+  Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
     setState(() {
@@ -108,9 +117,14 @@ class _ViceActivityEditorPageState
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
       final bool synced = await settleWrite(
         ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
+        onRejectedLater: rejected.reporter(
+          'Not deleted: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
       if (!synced) {
         messenger.showSnackBar(
@@ -122,17 +136,23 @@ class _ViceActivityEditorPageState
       }
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while deleting an activity');
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
-        });
-        _followRolledBack();
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
+      });
+      _followRolledBack();
     }
   }
 
-  Future<void> _saveActivity() async {
+  Future<void> _saveActivity(Vice vice, ViceActivity activity) async {
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -158,6 +178,7 @@ class _ViceActivityEditorPageState
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
       final bool synced = await settleWrite(
         ref
@@ -167,6 +188,10 @@ class _ViceActivityEditorPageState
               quantity: changes['quantity'] as int?,
               createdAt: changes['createdAt'] as DateTime?,
             ),
+        onRejectedLater: rejected.reporter(
+          'Change not saved: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
@@ -176,13 +201,19 @@ class _ViceActivityEditorPageState
       }
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while updating an activity');
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
-        });
-        _followRolledBack();
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
+      });
+      _followRolledBack();
     }
   }
 
@@ -253,10 +284,14 @@ class _ViceActivityEditorPageState
                 IconButton(
                   tooltip: 'Delete',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: loading ? null : _deleteActivity,
+                  onPressed: loading
+                      ? null
+                      : () => _deleteActivity(vice, activity),
                 ),
                 TextButton(
-                  onPressed: loading ? null : _saveActivity,
+                  onPressed: loading
+                      ? null
+                      : () => _saveActivity(vice, activity),
                   child: const Text('Save'),
                 ),
               ],

@@ -38,6 +38,5 @@ locale, stored as an ISO code on the vice.
 
 **Depends on:**
 - [granular logging](../insights/granular-logging-and-data-model.md)
-- [`value-rendering-is-english-and-locale-insensitive`](../../tech-debt/accessibility-and-localization/value-rendering-is-english-and-locale-insensitive.md)
 
 **Needs Jack:** no

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/formats.dart';
 
 // An activity's date and time. Live, it shows the current time and ticks;
 // unlocked, the user types it or picks it.
@@ -16,7 +17,7 @@ class ActivityDateField extends StatefulWidget {
 
   // Displays createdAt and parses it back for the write, so every screen
   // that edits an activity's date uses this one pattern.
-  static final DateFormat format = DateFormat('dd/MM/yyyy, HH:mm:ss');
+  static DateFormat get format => entryDateFormat;
 
   static const String label = 'Date and Time';
 

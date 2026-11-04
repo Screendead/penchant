@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -148,11 +148,7 @@ void main() {
 
       await tester.tap(find.byType(DropdownButton<DateTime>));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find
-            .text(DateFormat('EEEE, MMMM d, yyyy').format(addDays(today, -1)))
-            .last,
-      );
+      await tester.tap(find.text(formatDay(addDays(today, -1))).last);
       await tester.pumpAndSettle();
 
       expect(find.text('Yesterday'), findsOneWidget);
@@ -414,5 +410,40 @@ void main() {
       expect(find.textContaining('No vices yet'), findsOneWidget);
       expect(find.byTooltip('Add vice'), findsOneWidget);
     });
+  });
+
+  testWidgets('the day header takes its colour from the theme', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData light = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          unarchivedViceListProvider.overrideWithValue(
+            AsyncData([fakeVice('coffee')]),
+          ),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+        ],
+        child: MaterialApp(
+          theme: light,
+          home: const Scaffold(body: ViceTracker()),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final Color onSurface = light.colorScheme.onSurface;
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.calendar_month)).color,
+      onSurface,
+    );
+    expect(
+      tester.widget<Text>(find.text('Today').first).style?.color,
+      onSurface,
+    );
   });
 }
