@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/vice_chart.dart';
+import 'package:tracker/widgets/sync_status.dart';
 
 class ViceTracker extends ConsumerStatefulWidget {
   const ViceTracker({super.key});
@@ -14,8 +15,6 @@ class ViceTracker extends ConsumerStatefulWidget {
 }
 
 class _ViceTrackerState extends ConsumerState<ViceTracker> {
-  static final DateFormat _dateFormat = DateFormat('EEEE, MMMM d, yyyy');
-
   DateTime selectedDay = startOfDay(DateTime.now());
 
   void _selectDay(DateTime day) {
@@ -39,6 +38,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         ? oldestDay
         : selectedDay;
     final int daysAgo = daysBetween(day, today);
+    final Color headerColor = Theme.of(context).colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -50,16 +50,15 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  const Icon(Icons.calendar_month, color: Colors.white),
-                  Text(
-                    daysAgo == 0
-                        ? 'Today'
-                        : daysAgo == 1
-                        ? 'Yesterday'
-                        : '$daysAgo days ago',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  Icon(Icons.calendar_month, color: headerColor),
+                  Flexible(
+                    child: Text(
+                      relativeDay(daysAgo),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: headerColor, fontSize: 16),
+                    ),
                   ),
-                  const CircleAvatar(backgroundColor: Colors.white, radius: 3),
+                  CircleAvatar(backgroundColor: headerColor, radius: 3),
                   Flexible(
                     child: DropdownButton<DateTime>(
                       isExpanded: true,
@@ -75,7 +74,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                         return DropdownMenuItem(
                           value: item,
                           child: Text(
-                            _dateFormat.format(item),
+                            formatDay(item),
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
@@ -94,10 +93,15 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                         ? null
                         : () => _selectDay(addDays(day, -1)),
                   ),
-                  TextButton.icon(
-                    onPressed: daysAgo == 0 ? null : () => _selectDay(today),
-                    icon: const Icon(Icons.today),
-                    label: const Text('Jump to Today'),
+                  Flexible(
+                    child: TextButton.icon(
+                      onPressed: daysAgo == 0 ? null : () => _selectDay(today),
+                      icon: const Icon(Icons.today),
+                      label: const Text(
+                        'Jump to Today',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Next day',
@@ -109,6 +113,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 ],
               ),
               Expanded(child: ViceChart(selectedDate: day)),
+              PendingDayNote(selectedDate: day),
             ],
           ),
         ),

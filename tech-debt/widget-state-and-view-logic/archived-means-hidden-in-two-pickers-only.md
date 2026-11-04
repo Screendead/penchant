@@ -8,7 +8,7 @@ The Graph tab also defaults its selection to the first entry of that list, which
 
 ## Evidence
 
-- `lib/usage_graph_view.dart:71` — `final List<Vice>? viceList = ref.watch(viceListProvider).value;`
-- `lib/usage_graph_view.dart:66` — `return viceList.first.id;`
-- `lib/vice_chart.dart:20` — `final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;`
-- `lib/widgets/record_new_activity_dialog.dart:65` — `final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;`
+- `lib/usage_graph_view.dart:111` — `final List<Vice>? viceList = ref.watch(viceListProvider).value;`
+- `lib/usage_graph_view.dart:106` — `return viceList.first.id;`
+- `lib/vice_chart.dart:127` — `unarchivedViceListProvider,`
+- `lib/widgets/record_new_activity_dialog.dart:184` — `final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;`

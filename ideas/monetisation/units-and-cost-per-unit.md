@@ -15,9 +15,9 @@ Decimal quantities go through the separate `amount` field in
 ## Why
 
 - SOURCED (C18): new fields on vices are allowed, so the label and the cost need no further call.
-- SOURCED (code): `Unit.fromString` calls `firstWhere` with no `orElse` (`lib/data/unit.dart`), so an unknown unit
-  string throws in every older build. A custom label must therefore be a new field (`unitLabel`) beside `unit`, never
-  a new value in it.
+- SOURCED (code): before the parser change, `Unit.fromString` called `firstWhere` with no `orElse`
+  (`lib/data/unit.dart`), so an unknown unit string throws in every older build; the current build reads it as
+  `Unit.item`. A custom label must therefore be a new field (`unitLabel`) beside `unit`, never a new value in it.
 - INFERENCE: spend is a neutral, non-medical fact that fits C16; "money saved" assumes cutting down and does not.
 
 ## Options
@@ -38,7 +38,5 @@ locale, stored as an ISO code on the vice.
 
 **Depends on:**
 - [granular logging](../insights/granular-logging-and-data-model.md)
-- [`model-parsers-cast-unconditionally`](../../tech-debt/firebase-data-layer/model-parsers-cast-unconditionally.md)
-- [`value-rendering-is-english-and-locale-insensitive`](../../tech-debt/accessibility-and-localization/value-rendering-is-english-and-locale-insensitive.md)
 
 **Needs Jack:** no

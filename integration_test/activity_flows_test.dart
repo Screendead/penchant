@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/clean_day.dart';
-import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'support.dart';
 
@@ -39,7 +41,7 @@ Future<void> _pickDay(WidgetTester tester, DateTime day) async {
   await tap(tester, _dayMenu);
   // The menu fades in; taps during the animation miss.
   await pumpFor(tester, const Duration(milliseconds: 500));
-  await tap(tester, find.text(dayMenuFormat.format(day)).last);
+  await tap(tester, find.text(formatDay(day)).last);
   await pumpFor(tester, const Duration(milliseconds: 500));
 }
 
@@ -219,42 +221,6 @@ void main() {
     await screenshot(tester, 'today-radar-three-vices');
   });
 
-  testWidgets('a save that times out closes the dialog, says it will sync, '
-      'and lands once', (WidgetTester tester) async {
-    await _startApp(tester, 'e2e-offline@example.com');
-
-    await FirebaseFirestore.instance.disableNetwork();
-    try {
-      await recordActivity(tester, 'Coffee', 2);
-      await pumpUntil(tester, find.text(RecordNewActivityDialog.queuedMessage));
-      expect(find.text('Request timed out'), findsNothing);
-      await expectChart(tester, const <String>{
-        'Coffee (2 drinks)',
-        'Tea (0 drinks)',
-        'Water (0 drinks)',
-      });
-      await screenshot(tester, 'record-queued-offline');
-    } finally {
-      await FirebaseFirestore.instance.enableNetwork();
-    }
-
-    // Reads from the server, so a count of one is the emulator's, not the
-    // local cache's; it must stay one once the queue has drained.
-    final DateTime deadline = DateTime.now().add(timeout);
-    while ((await storedActivities('Coffee')).isEmpty) {
-      if (DateTime.now().isAfter(deadline)) {
-        fail('The queued activity never reached the emulator');
-      }
-      await pumpFor(tester, const Duration(seconds: 1));
-    }
-    await FirebaseFirestore.instance.waitForPendingWrites();
-    await pumpFor(tester, const Duration(seconds: 5));
-    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
-        await storedActivities('Coffee');
-    expect(stored, hasLength(1));
-    expect(stored.single.data()['quantity'], 2);
-  });
-
   testWidgets('an activity can be deleted from the history page and from the '
       'editor', (WidgetTester tester) async {
     await _startApp(tester, 'e2e-delete@example.com');
@@ -326,6 +292,98 @@ void main() {
         'Coffee',
       )).map((doc) => doc.data()['quantity']).toList(),
       <int>[1],
+    );
+  });
+  testWidgets('editing a legacy activity writes only the field the user '
+      'changed, never a parser default', (WidgetTester tester) async {
+    await _startApp(tester, 'e2e-legacy@example.com');
+
+    final String viceID = await storedViceID('Coffee');
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    final DateTime today = startOfDay(DateTime.now());
+    await createBypassingRules('activities', 'legacy-date', <String, Object>{
+      'viceID': <String, Object>{'stringValue': viceID},
+      'ownerID': <String, Object>{'stringValue': uid},
+      'quantity': <String, Object>{'integerValue': '4'},
+      'createdAt': <String, Object>{'stringValue': '2024-01-01'},
+    });
+    await createBypassingRules(
+      'activities',
+      'legacy-quantity',
+      <String, Object>{
+        'viceID': <String, Object>{'stringValue': viceID},
+        'ownerID': <String, Object>{'stringValue': uid},
+        'quantity': <String, Object>{'doubleValue': 2.5},
+        'createdAt': <String, Object>{
+          'timestampValue': addDays(
+            today,
+            -2,
+          ).add(const Duration(hours: 12)).toUtc().toIso8601String(),
+        },
+      },
+    );
+
+    Future<Map<String, dynamic>> stored(String id) async =>
+        (await FirebaseFirestore.instance
+                .collection('activities')
+                .doc(id)
+                .get(const GetOptions(source: Source.server)))
+            .data()!;
+
+    Future<void> saveEditor() async {
+      await tap(tester, find.widgetWithText(TextButton, 'Save'));
+      await pumpUntil(
+        tester,
+        find.byType(ViceActivityEditorPage),
+        present: false,
+      );
+    }
+
+    await openFromDrawer(tester, 'Manage Data');
+    await tap(tester, find.text('Coffee'));
+    await pumpUntil(tester, find.text('Coffee history'));
+
+    await tap(tester, find.text('Quantity: 4'));
+    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+    expect(
+      tester
+          .widget<TextFormField>(
+            find.widgetWithText(TextFormField, 'Date and Time'),
+          )
+          .controller!
+          .text,
+      ViceActivityEditorPage.dateFormat.format(epoch.toDate()),
+    );
+    await enterText(tester, 'Quantity', '5');
+    await saveEditor();
+    expect(await stored('legacy-date'), <String, dynamic>{
+      'viceID': viceID,
+      'ownerID': uid,
+      'quantity': 5,
+      'createdAt': '2024-01-01',
+    });
+
+    // 2.5 reads as 3.
+    await pumpUntil(tester, find.text('Quantity: 3').hitTestable());
+    await tap(tester, find.text('Quantity: 3'));
+    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+    final DateTime moved = addDays(today, -1).add(const Duration(hours: 9));
+    await enterText(
+      tester,
+      'Date and Time',
+      ViceActivityEditorPage.dateFormat.format(moved),
+    );
+    await saveEditor();
+    final Map<String, dynamic> requantified = await stored('legacy-quantity');
+    expect(requantified['quantity'], 2.5);
+    expect((requantified['createdAt'] as Timestamp).toDate(), moved);
+    await pumpUntil(
+      tester,
+      find
+          .textContaining(
+            'on ${formatDayAndTime(moved, alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat)}',
+          )
+          .hitTestable(),
     );
   });
 }

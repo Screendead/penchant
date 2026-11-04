@@ -6,8 +6,18 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 
 class FakeUser extends Mock implements User {
-  FakeUser(String uid) {
+  FakeUser(
+    String uid, {
+    String? email = 'someone@example.com',
+    String? displayName,
+    String? photoURL,
+    bool emailVerified = false,
+  }) {
     when(() => this.uid).thenReturn(uid);
+    when(() => this.email).thenReturn(email);
+    when(() => this.displayName).thenReturn(displayName);
+    when(() => this.photoURL).thenReturn(photoURL);
+    when(() => this.emailVerified).thenReturn(emailVerified);
   }
 }
 

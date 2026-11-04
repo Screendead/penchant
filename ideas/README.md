@@ -24,36 +24,33 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**33 ideas: 11 release blockers, 9 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 17 need a call from
+**30 ideas: 10 release blockers, 7 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 19 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
 Each list is in the recommended build order.
 
-## Release blockers (11)
+## Release blockers (10)
 
 - [Position the app as a neutral journal for learning about yourself](release-blockers/positioning-and-target-user.md). S. Decided (C15)
 - [Pick the brand: Penchant, with a descriptive subtitle](release-blockers/brand-name.md). S, Needs Jack
 - [Apply the brand everywhere and lock the bundle ID before the first upload](release-blockers/name-and-bundle-id.md). S. Decided pattern (C19)
 - [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
-- [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M
-- [Offer in-app account deletion that removes the data and the Auth user](release-blockers/in-app-account-deletion.md). M
-- [Give every build a unique version, a tag and a changelog entry](release-blockers/versioning-and-changelog.md). S
+- [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, Needs Jack (`vice-cap`); bounded activity queries and App Check wiring built in #55
+- [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, Needs Jack
 - [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M, Needs Jack
 - [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S, Needs Jack
 - [Make a final icon and generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M, Needs Jack
 - [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6), Needs Jack
 
-## v1 must-haves (9)
+## v1 must-haves (7)
 
 - [Add crash reporting before TestFlight, and only content-free analytics](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
 - [Let people start without an account, and finish the basic sign-in flows](v1-must-haves/guest-mode-and-sign-in.md). M, Needs Jack
-- [Make logging work with no signal, and say so in the listing](v1-must-haves/offline-first.md). M
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
 - [Make Today a journal of the day: a timeline, per-vice tiles and the chart](v1-must-haves/today-screen-rework.md). L. Chart and clean day decided (C2, C5), Needs Jack
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
 - [Get a new user from install to a first log in under a minute](v1-must-haves/first-run-onboarding.md). M, Needs Jack
-- [Let every user export their data as CSV and JSON](v1-must-haves/data-export.md). S
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6), Needs Jack
 
 ## Insights (7)
@@ -82,27 +79,35 @@ Each list is in the recommended build order.
 
 Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Needs Jack" item in it is still open.
 
-1. **Jack makes the four calls 1.0 hangs on:** the brand (and so the bundle ID), extending C18 to activity fields and
-   the `days` and `triggerNodes` collections, 18+ in place of the retired 17+, and Mac in 1.0 or 1.0.x.
+1. **Jack makes the five calls 1.0 hangs on:** the brand (and so the bundle ID), extending C18 to activity fields and
+   the `days` and `triggerNodes` collections, 18+ in place of the retired 17+, Mac in 1.0 or 1.0.x, and whether 1.0
+   seals what each entry says (end-to-end encryption).
 2. **Meanwhile agents build what needs no call,** beside the wave-2 debt: parsers that default every missing field
-   (before any new field is written), backend hardening, account deletion, versioning, offline logging, export and
-   one-tap logging.
-3. **1.0 captures everything that cannot be backfilled:** the granular fields, trigger tagging, the check-in, the
+   (before any new field is written), backend hardening (built in #55; the rest waits on `vice-cap` and the paid Apple team) and
+   one-tap logging. Account deletion and export are built (Account Settings, `lib/account/`).
+3. **End-to-end encryption, if Jack picks it,** lands next: after the parser defaults, the shared write layer,
+   bounded queries, the bundle-ID lock and the macOS target at 11 or later, and before any granular field is written,
+   so those fields are sealed from their first write. Its rules (R1) and fourth index reach production before the
+   build that migrates.
+4. **1.0 captures everything that cannot be backfilled:** the granular fields, trigger tagging, the check-in, the
    timeline Today and the free trend views. Health and Calendar history can be read later, so they wait for 1.1.
-4. **Store material:** the brand applied, privacy policy, support pages, neutral copy and disclaimer, 18+, icon and
+5. **Store material:** the brand applied, privacy policy, support pages, neutral copy and disclaimer, 18+, icon and
    automated screenshots; then internal and external TestFlight on a separate beta Firebase project, as a review
    rehearsal.
-5. **1.0 ships free on iOS,** with the Mac on the same record if its e2e run is green, otherwise in 1.0.x. No in-app
+6. **1.0 ships free on iOS,** with the Mac on the same record if its e2e run is green, otherwise in 1.0.x. No in-app
    purchase in the first review; Crashlytics only.
-6. **1.1 adds Pro as one purchase through StoreKit:** the on-device insights engine, Apple Health with its history,
+7. **1.1 adds Pro as one purchase through StoreKit:** the on-device insights engine, Apple Health with its history,
    Calendar, the weekly review and trend overlays, plus content-free funnel events and a legally reviewed privacy
    policy. Everything free in 1.0 stays free, so no grandfathering is needed.
-7. **After 1.1:** self-experiments (randomised n-of-1 tests of a found association), widgets, App Intents and the Mac
+8. **After 1.1:** self-experiments (randomised n-of-1 tests of a found association), widgets, App Intents and the Mac
    menu bar, the app lock and discreet mode, optional goals, and import from other journals.
 
 ## Needs Jack
 
 - **Brand:** Penchant (recommended), Kenning or Sounding; which subtitle; pay for a trademark search first?
+- **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
+  recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
+  the visible "when"?
 - **Data model:** extend C18 to fields on `activities`, the `days` and `triggerNodes` collections, and decimals through a separate `amount` field?
 - **Age rating:** confirm 18+, since Apple retired 17+ in 2025.
 - **Mac:** ship in 1.0 or 1.0.x, and confirm Health results never sync to the Mac?

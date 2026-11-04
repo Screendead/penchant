@@ -19,6 +19,9 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-flutter
       - name: Analyze
-        run: flutter analyze --fatal-infos --fatal-warnings
+        run: dart analyze --fatal-infos --fatal-warnings
       - name: Test
+        # A zone with daylight saving, so the day-arithmetic tests can fail.
+        env:
+          TZ: Europe/London
         run: flutter test

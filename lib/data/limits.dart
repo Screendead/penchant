@@ -3,7 +3,13 @@
 // Counted in UTF-16 code units (String.length), as the rules' size() is.
 const int maxViceNameLength = 60;
 
-String? viceNameError(String? value) {
+// The rules check the name only when an update changes it, so a legacy vice's
+// out-of-range name can be saved back as it is.
+String? viceNameError(String? value, {String? unchanged}) {
+  if (value != null && value == unchanged) {
+    return null;
+  }
+
   if (value == null || value.isEmpty) {
     return 'Please enter a name';
   }

@@ -4,20 +4,40 @@
 
 ## What
 
-The rules rewrite (PR #27) is live in production since 2026-11-03, with 55 emulator tests in CI, and queue item 1b
-adds the quantity, name-length and vice-ownership checks. What is left before strangers install:
+The rules rewrite (PR #27) is live in production since 2026-11-03, and queue item 1b added the quantity, name-length
+and vice-ownership checks. Option B below was built in PR #55.
 
-- bound or paginate every list query;
-- turn on Firebase App Check (App Attest on iOS and macOS), monitor mode first, enforcement after;
-- budget alerts on the production project.
+Done (PR #55):
+
+- every activity query is bounded: the day and graph queries by their date window, history by 50-entry pages, the
+  editor by its one document, Manage Data by a server-side `count()`; the day query's new index is in
+  `firestore.indexes.json`;
+- every query is keyed on the signed-in uid, so the previous user's data no longer shows after a sign-out;
+- the client activates App Check (App Attest with the DeviceCheck fallback; the debug provider on the emulators),
+  enforced nowhere.
+
+Left before strangers install:
+
+- **The vice lists are unbounded.** Whether to cap the number of vices per user is the open call `vice-cap`
+  (`HANDOVER.md`, "Calls waiting on Jack").
+- **App Check yields no accepted token on a device yet.** The App Attest entitlement can't be signed by the personal
+  team, so App Attest has nothing to attest with. The DeviceCheck fallback does not cover this: in
+  `firebase_app_check` 0.4.9 (`FirebaseAppCheckPlugin.swift`, `appAttestWithDeviceCheckFallback`) the plugin picks
+  App Attest whenever `DCAppAttestService.shared.isSupported`, without regard to the entitlement, so DeviceCheck
+  runs only on a device that cannot attest. Fixing it needs the paid Apple Developer Program team, then the entitlement, the App Check
+  registration in the console, and enforcement once nearly all requests verify.
+- **Budget alerts** on the production project.
+
+The last two are console and Apple tasks for Jack, listed under "For Jack to do" in `HANDOVER.md`; the entitlement
+itself is Claude's once the paid team exists.
 
 Health and calendar data never reach Firestore (see the [insights engine](../insights/insights-engine.md)), so the
 backend holds only the user's own logs.
 
 ## Why
 
-- SOURCED (register): every list query streams unbounded data, which grows the read bill and the cold-start time
-  with every year of history a journal user builds.
+- SOURCED (register, before PR #55): every list query streamed unbounded data, which grows the read bill and the
+  cold-start time with every year of history a journal user builds.
 - INFERENCE: a privacy-positioned journal survives a bug, not a breach or a runaway bill.
 
 ## Options
@@ -28,17 +48,15 @@ backend holds only the user's own logs.
 
 ## Recommendation
 
-Claude's recommendation: **B**, plus budget alerts, which cost nothing. Agents write the queries and the client App
-Check wiring and test them on the emulators. Turning on enforcement and setting budgets are production console actions
-for Jack: tasks, not decisions.
+Claude's recommendation: **B**, plus budget alerts, which cost nothing. Built in PR #55 apart from what is listed as
+left above. On `vice-cap`, Claude recommends leaving the vice lists unbounded for 1.0.
 
-**Effort:** M
+**Effort:** M (S left: the entitlement, once the paid team exists)
 
 **Revenue impact:** Avoids risk.
 
 **Depends on:**
-- [`no-query-is-bounded-or-paginated`](../../tech-debt/firebase-data-layer/no-query-is-bounded-or-paginated.md)
-- [`wherein-filter-is-unbounded-and-includes-archived`](../../tech-debt/firebase-data-layer/wherein-filter-is-unbounded-and-includes-archived.md)
-- [`vice-activity-relationship-is-unenforced`](../../tech-debt/firebase-data-layer/vice-activity-relationship-is-unenforced.md) (queue 1b)
+- [`vice-lists-are-unbounded`](../../tech-debt/firebase-data-layer/vice-lists-are-unbounded.md)
+- The paid Apple Developer Program team (also needed by the [iOS release pipeline](ios-release-pipeline-and-testflight.md))
 
-**Needs Jack:** no
+**Needs Jack:** yes — `vice-cap`; the paid team; the App Check console steps and budget alerts.

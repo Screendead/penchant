@@ -1,15 +1,14 @@
-# MaterialApp declares no localization delegates and the app never inspects the device locale
+# English is the only language, and every UI string is a literal in its widget
 
-**Severity:** medium
+**Severity:** low
 
-`main.dart`'s `MaterialApp` sets `theme`, `home` and `onGenerateRoute` and never sets `localizationsDelegates` or `supportedLocales`, and `pubspec.yaml` has no `flutter_localizations` dependency; intl alone does not substitute.
+The localization delegates are in place but the app supports one locale, `en`, so `Localizations` resolves to English on every device and the framework's own strings (date and time pickers, tooltips) are English everywhere.
 
-The default delegate serves English only, so the resolved locale is pinned to `en`, `Directionality` is always left-to-right, and the framework's own strings inside `showDatePicker` and `showTimePicker`, both used by the editor and the record dialog, render in English on every device. A grep for `localeOf`, `platformDispatcher`, `Platform.localeName` and `defaultLocale` returns nothing, and there is no `l10n.yaml`, no arb file and no `generate: true` under the `flutter:` section of `pubspec.yaml` (the two `generate: true` entries that do exist, at lines 71 and 76, sit under `flutter_launcher_icons:` and control icon generation, not l10n).
+The app's own copy is hard-coded string literals in the widgets: there is no `l10n.yaml`, no arb file and no `generate: true` under `flutter:` in `pubspec.yaml`, so adding a language means extracting every string first. Dates and numbers already follow the device's region through `lib/formats.dart`; words and their plural rules are English by design there.
 
 ## Evidence
 
-- `lib/main.dart:39` — `child: MaterialApp(`
-- `lib/main.dart:63` — `home: user == null ? const Authenticate() : const Homepage(),`
-- `pubspec.yaml:42` — `intl: ^0.20.3`
-- `lib/vice_activity_editor_page.dart:241` — `final DateTime? date = await showDatePicker(`
-- **`grep -rn "localeOf\|platformDispatcher\|Platform.localeName\|defaultLocale" lib/`** → (no output — zero matches)
+- `lib/formats.dart:6` — `const List<Locale> appLocales = [Locale('en')];`
+- `lib/main.dart:71` — `supportedLocales: appLocales,`
+- `lib/bootstrap.dart:64` — `supportedLocales: appLocales,`
+- **`grep -rn "Text('" lib/ | wc -l`** → 42 literal `Text` widgets, besides labels, tooltips and messages built from string literals

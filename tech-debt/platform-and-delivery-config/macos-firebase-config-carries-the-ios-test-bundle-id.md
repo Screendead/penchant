@@ -13,4 +13,4 @@ The plist is wired into that target's Resources build phase, so it ships in the 
 - `macos/Runner.xcodeproj/project.pbxproj:323` — `7B97340733F85F87E42265E2 /* GoogleService-Info.plist in Resources */,`
 - `macos/Runner/GoogleService-Info.plist:28` — `<string>1:573818595550:ios:c170a56c255f4b002cba4f</string>`
 - `macos/firebase_app_id_file.json:4` — `"GOOGLE_APP_ID": "1:573818595550:ios:c170a56c255f4b002cba4f",`
-- `lib/firebase_options.dart:78` — `iosBundleId: 'com.screendead.tracker.tracker.RunnerTests',`
+- `lib/firebase_options.dart:46` — `iosBundleId: 'com.screendead.tracker.tracker.RunnerTests',`

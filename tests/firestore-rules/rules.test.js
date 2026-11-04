@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
@@ -12,13 +13,19 @@ import {
   collection,
   deleteDoc,
   doc,
+  documentId,
+  getCountFromServer,
   getDoc,
   getDocs,
+  limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
+  startAfter,
   updateDoc,
+  waitForPendingWrites,
   where,
   writeBatch,
 } from 'firebase/firestore';
@@ -420,29 +427,98 @@ describe('activities', () => {
       await assertSucceeds(getDoc(doc(asAlice(), 'activities/aliceForeignViceActivity')));
     });
 
-    it('allows the activity list query', async () => {
+    it('allows the day-window query, across every vice', async () => {
+      const day = await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'activities'),
+            where('ownerID', '==', ALICE),
+            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'))),
+            where('createdAt', '<', Timestamp.fromDate(new Date('2026-01-02T00:00:00Z'))),
+            orderBy('createdAt', 'desc'),
+          ),
+        ),
+      );
+      assert.ok(day.docs.length > 0);
+      assert.ok(day.docs.every((d) => d.get('ownerID') === ALICE));
+    });
+
+    it('allows a page of the history query', async () => {
       await assertSucceeds(
         getDocs(
           query(
             collection(asAlice(), 'activities'),
-            where('viceID', 'in', ['aliceVice', 'aliceLegacyVice']),
+            where('viceID', '==', 'aliceVice'),
             where('ownerID', '==', ALICE),
             orderBy('createdAt', 'desc'),
+            limit(51),
           ),
         ),
       );
     });
 
-    it('allows the day-window query', async () => {
-      await assertSucceeds(
+    it("allows counting a vice's activities on the server", async () => {
+      const counted = await assertSucceeds(
+        getCountFromServer(
+          query(
+            collection(asAlice(), 'activities'),
+            where('viceID', '==', 'aliceVice'),
+            where('ownerID', '==', ALICE),
+          ),
+        ),
+      );
+      assert.ok(counted.data().count > 0);
+    });
+
+    it("denies counting someone else's activities", async () => {
+      await assertFails(
+        getCountFromServer(
+          query(collection(asAlice(), 'activities'), where('viceID', '==', 'bobVice')),
+        ),
+      );
+    });
+
+    it("fails the editor's listener once its activity is deleted", async () => {
+      const db = asAlice();
+      const seen = [];
+      const errors = [];
+      let first;
+      const firstSnapshot = new Promise((resolve) => {
+        first = resolve;
+      });
+      const unsubscribe = onSnapshot(
+        doc(db, 'activities/aliceActivity'),
+        { includeMetadataChanges: true },
+        (snapshot) => {
+          seen.push({ exists: snapshot.exists(), fromCache: snapshot.metadata.fromCache });
+          first();
+        },
+        (error) => errors.push(error.code),
+      );
+      try {
+        await firstSnapshot;
+        // Resolves on the server's acknowledgement, not the local write.
+        await deleteDoc(doc(db, 'activities/aliceActivity'));
+        await waitForPendingWrites(db);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      } finally {
+        unsubscribe();
+      }
+      // The local delete reports the document gone; the server then re-runs the
+      // get rule against a missing document and denies it.
+      assert.equal(seen[0].exists, true);
+      assert.equal(seen.at(-1).exists, false);
+      assert.deepEqual(errors, ['permission-denied']);
+    });
+
+    it('denies getting a missing activity, even to a signed-in user', async () => {
+      await assertFails(getDoc(doc(asAlice(), 'activities/missing')));
+      await assertFails(
         getDocs(
           query(
             collection(asAlice(), 'activities'),
-            where('viceID', 'in', ['aliceVice']),
             where('ownerID', '==', ALICE),
-            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'))),
-            where('createdAt', '<', Timestamp.fromDate(new Date('2026-01-02T00:00:00Z'))),
-            orderBy('createdAt', 'desc'),
+            where(documentId(), '==', 'missing'),
           ),
         ),
       );
@@ -577,5 +653,58 @@ describe('activities', () => {
       await assertSucceeds(deleteDoc(ref));
       await assertFails(deleteDoc(ref));
     });
+  });
+});
+
+// The query shapes lib/account/account.dart uses for export and deletion.
+describe('account export and deletion', () => {
+  const owned = (db, collectionName) =>
+    query(collection(db, collectionName), where('ownerID', '==', ALICE));
+
+  it('allows the export query, one page after another, and returns only the owner\'s documents', async () => {
+    const ids = [];
+    let page = query(owned(asAlice(), 'activities'), orderBy(documentId()), limit(2));
+    for (;;) {
+      const snapshot = await assertSucceeds(getDocs(page));
+      ids.push(...snapshot.docs.map((d) => d.id));
+      if (snapshot.docs.length < 2) break;
+      page = query(
+        owned(asAlice(), 'activities'),
+        orderBy(documentId()),
+        startAfter(snapshot.docs.at(-1)),
+        limit(2),
+      );
+    }
+    assert.deepEqual(ids, [
+      'aliceActivity',
+      'aliceForeignViceActivity',
+      'aliceLegacyActivity',
+      'aliceOrphanActivity',
+      'aliceZeroActivity',
+    ]);
+  });
+
+  it('allows a batch deleting every document the owner holds, legacy ones included', async () => {
+    const db = asAlice();
+    for (const collectionName of ['activities', 'vices']) {
+      const snapshot = await assertSucceeds(getDocs(query(owned(db, collectionName), limit(500))));
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await assertSucceeds(batch.commit());
+      assert.equal((await getDocs(owned(db, collectionName))).size, 0);
+    }
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const admin = context.firestore();
+      assert.ok((await getDoc(doc(admin, 'vices/bobVice'))).exists());
+      assert.ok((await getDoc(doc(admin, 'activities/bobActivity'))).exists());
+    });
+  });
+
+  it('denies a deletion batch that reaches another owner\'s document', async () => {
+    const db = asAlice();
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'vices/aliceVice'));
+    batch.delete(doc(db, 'vices/bobVice'));
+    await assertFails(batch.commit());
   });
 });

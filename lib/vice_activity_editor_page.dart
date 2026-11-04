@@ -7,8 +7,15 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/writes/rejected_writes.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityEditorPage extends ConsumerStatefulWidget {
   const ViceActivityEditorPage({
@@ -20,13 +27,16 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
   final String viceID;
   final String activityID;
 
+  static DateFormat get dateFormat => entryDateFormat;
+
   @override
   ConsumerState<ViceActivityEditorPage> createState() =>
       _ViceActivityEditorPageState();
 }
 
-class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage> {
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+class _ViceActivityEditorPageState
+    extends ConsumerState<ViceActivityEditorPage> {
+  static DateFormat get dateFormat => ViceActivityEditorPage.dateFormat;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
@@ -36,6 +46,9 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
   String? error;
   Timer? dateUpdaterTimer;
   bool initialized = false;
+  String initialDateText = '';
+  String initialQuantityText = '';
+  ViceActivity? shown;
 
   String get nowText => dateFormat.format(DateTime.now());
 
@@ -44,8 +57,10 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
       return;
     }
 
-    dateController.text = dateFormat.format(activity.createdAt.toDate());
-    quantityController.text = activity.quantity.toString();
+    initialDateText = dateFormat.format(activity.createdAt.toDate());
+    initialQuantityText = activity.quantity.toString();
+    dateController.text = initialDateText;
+    quantityController.text = initialQuantityText;
     initialized = true;
   }
 
@@ -68,94 +83,172 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
     super.dispose();
   }
 
-  Future<void> _deleteActivity() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(widget.activityID)
-          .delete();
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    } on FirebaseException catch (e) {
-      if (mounted) {
-        setState(() {
-          error = e.message ?? 'Unable to delete activity';
-        });
-      }
-    }
-  }
+  String _describe(Vice vice, ViceActivity activity) => describeActivity(
+    vice.name,
+    vice.unit,
+    activity.quantity,
+    activity.createdAt.toDate(),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
 
-  Future<void> _saveActivity() async {
-    if (!formKey.currentState!.validate()) {
-      return;
-    }
+  Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
     setState(() {
       loading = true;
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
-      final DateTime parsedDate = dateFormat.parse(dateController.text);
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(widget.activityID)
-          .update({
-        'createdAt': parsedDate,
-        'quantity': int.parse(quantityController.text),
-      }).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => Future.error(TimeoutException(null)),
+      final bool synced = await settleWrite(
+        ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
+        onRejectedLater: rejected.reporter(
+          'Not deleted: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
-
+      if (!synced) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text(queuedDeleteMessage)),
+        );
+      }
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } on FirebaseException catch (e) {
-      setState(() {
-        error = 'Error updating activity: ${e.message}';
-      });
-    } on TimeoutException {
-      setState(() {
-        error = 'Request timed out';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while deleting an activity');
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
+      });
+    }
+  }
+
+  Future<void> _saveActivity(Vice vice, ViceActivity activity) async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
+    // A field the user left alone may show a parser default for a legacy value
+    // the rules would still accept, so only edited fields are written.
+    final Map<String, Object> changes = <String, Object>{
+      if (dateController.text != initialDateText)
+        'createdAt': dateFormat.parse(dateController.text),
+      if (quantityController.text != initialQuantityText)
+        'quantity': int.parse(quantityController.text),
+    };
+
+    if (changes.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    setState(() {
+      loading = true;
+      error = null;
+    });
+
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    try {
+      final bool synced = await settleWrite(
+        ref
+            .read(trackerWritesProvider)
+            .updateActivity(
+              widget.activityID,
+              quantity: changes['quantity'] as int?,
+              createdAt: changes['createdAt'] as DateTime?,
+            ),
+        onRejectedLater: rejected.reporter(
+          'Change not saved: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
+      );
+      if (!synced) {
+        messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while updating an activity');
+      if (!mounted) {
+        return;
+      }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Vice>? viceList = ref.watch(viceListProvider).value;
-    final List<ViceActivity>? activityList =
-        ref.watch(viceActivityHistoryProvider(widget.viceID)).value;
+    final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
+    final AsyncValue<ViceActivity?> activityValue = ref.watch(
+      viceActivityProvider(widget.activityID),
+    );
+    // The rules deny reading a missing document, so a denial reads as not
+    // found below.
+    final Object? loadError =
+        viceListValue.error ??
+        switch (activityValue.error) {
+          FirebaseException(code: 'permission-denied') => null,
+          final Object? other => other,
+        };
 
-    if (viceList == null || activityList == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+    if (loadError != null && !loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit activity')),
+        body: ErrorView(
+          message: loadErrorMessage('this activity', loadError),
+          onRetry: () {
+            ref.invalidate(viceListForUserProvider, asReload: true);
+            ref.invalidate(viceActivityForUserProvider, asReload: true);
+          },
         ),
       );
     }
 
-    final Vice? vice = viceList.where((Vice item) => item.id == widget.viceID).isEmpty
+    final List<Vice>? viceList = viceListValue.value;
+
+    if (viceList == null ||
+        (activityValue.isLoading && !activityValue.hasError)) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final Vice? vice =
+        viceList.where((Vice item) => item.id == widget.viceID).isEmpty
         ? null
         : viceList.firstWhere((Vice item) => item.id == widget.viceID);
-    final ViceActivity? activity = activityList.where((ViceActivity item) => item.id == widget.activityID).isEmpty
+    final ViceActivity? found = activityValue.hasError
         ? null
-        : activityList.firstWhere((ViceActivity item) => item.id == widget.activityID);
+        : activityValue.value;
+    // A delete leaves the local snapshot at once, long before the server
+    // acknowledges it; keep the form up until this page pops.
+    final ViceActivity? activity =
+        (found != null && found.viceID == widget.viceID)
+        ? found
+        : (loading ? shown : null);
+    shown = activity;
 
     if (vice == null || activity == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Activity not found'),
-        ),
-      );
+      return const Scaffold(body: Center(child: Text('Activity not found')));
     }
 
     initializeFromActivity(activity);
@@ -163,141 +256,157 @@ class _ViceActivityEditorPageState extends ConsumerState<ViceActivityEditorPage>
     return Stack(
       alignment: Alignment.center,
       children: [
-        Scaffold(
-          appBar: AppBar(
-            title: Text('Edit ${vice.name} activity'),
-            actions: [
-              IconButton(
-                tooltip: 'Delete',
-                icon: const Icon(Icons.delete_outline),
-                onPressed: loading ? null : _deleteActivity,
-              ),
-              TextButton(
-                onPressed: loading ? null : _saveActivity,
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    initialValue: vice.name,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Vice',
+        // The scrim below stops pointers but not a screen reader.
+        ExcludeSemantics(
+          excluding: loading,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text('Edit ${vice.name} activity'),
+              actions: [
+                IconButton(
+                  tooltip: 'Delete',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: loading
+                      ? null
+                      : () => _deleteActivity(vice, activity),
+                ),
+                TextButton(
+                  onPressed: loading
+                      ? null
+                      : () => _saveActivity(vice, activity),
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: vice.name,
+                      readOnly: true,
+                      decoration: const InputDecoration(labelText: 'Vice'),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: dateController,
-                    readOnly: !manualDate,
-                    decoration: InputDecoration(
-                      labelText: 'Date and Time',
-                      suffixIcon: IconButton(
-                        tooltip: manualDate
-                            ? 'Use current date and time'
-                            : 'Manually enter date and time',
-                        icon: manualDate
-                            ? const Icon(Icons.lock_open)
-                            : const Icon(Icons.lock_clock),
-                        onPressed: () {
-                          setState(() {
-                            manualDate = !manualDate;
-                            if (manualDate) {
-                              dateController.text = dateFormat
-                                  .format(activity.createdAt.toDate());
-                            } else {
-                              dateController.text = nowText;
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a date and time';
-                      }
-
-                      try {
-                        dateFormat.parse(value);
-                      } on FormatException {
-                        return 'Please enter a valid date and time';
-                      }
-
-                      return null;
-                    },
-                    onTap: () async {
-                      if (!manualDate) {
-                        return;
-                      }
-
-                      FocusScope.of(context).requestFocus(FocusNode());
-
-                      final DateTime? date = await showDatePicker(
-                        context: context,
-                        initialDate: activity.createdAt.toDate(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-
-                      if (date == null || !context.mounted) {
-                        return;
-                      }
-
-                      final TimeOfDay? time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(date),
-                      );
-
-                      if (time == null) {
-                        return;
-                      }
-
-                      final DateTime dateTime = DateTime(
-                        date.year,
-                        date.month,
-                        date.day,
-                        time.hour,
-                        time.minute,
-                      );
-
-                      dateController.text = dateFormat.format(dateTime);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: quantityController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Quantity',
-                      suffixText: vice.unit.nameFor(1),
-                    ),
-                    validator: (String? value) =>
-                        quantityError(value, unchanged: activity.quantity),
-                  ),
-                  if (error != null) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      error!,
-                      style: const TextStyle(color: Colors.red),
+                    TextFormField(
+                      controller: dateController,
+                      readOnly: !manualDate,
+                      decoration: InputDecoration(
+                        labelText: 'Date and Time',
+                        suffixIcon: IconButton(
+                          tooltip: manualDate
+                              ? 'Use current date and time'
+                              : 'Manually enter date and time',
+                          icon: manualDate
+                              ? const Icon(Icons.lock_open)
+                              : const Icon(Icons.lock_clock),
+                          onPressed: () {
+                            setState(() {
+                              manualDate = !manualDate;
+                              if (manualDate) {
+                                dateController.text = dateFormat.format(
+                                  activity.createdAt.toDate(),
+                                );
+                              } else {
+                                dateController.text = nowText;
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (String? value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a date and time';
+                        }
+
+                        try {
+                          dateFormat.parse(value);
+                        } on FormatException {
+                          return 'Please enter a valid date and time';
+                        }
+
+                        return null;
+                      },
+                      onTap: () async {
+                        if (!manualDate) {
+                          return;
+                        }
+
+                        FocusScope.of(context).requestFocus(FocusNode());
+
+                        final DateTime firstDate = DateTime(2000);
+                        final DateTime lastDate = DateTime(2100);
+                        final DateTime stored = activity.createdAt.toDate();
+                        // The picker asserts its initial date is in range; an
+                        // unreadable legacy date reads as the epoch.
+                        final DateTime? date = await showDatePicker(
+                          context: context,
+                          initialDate: stored.isBefore(firstDate)
+                              ? firstDate
+                              : stored.isAfter(lastDate)
+                              ? lastDate
+                              : stored,
+                          firstDate: firstDate,
+                          lastDate: lastDate,
+                        );
+
+                        if (date == null || !context.mounted) {
+                          return;
+                        }
+
+                        final TimeOfDay? time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(date),
+                        );
+
+                        if (time == null) {
+                          return;
+                        }
+
+                        final DateTime dateTime = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+
+                        dateController.text = dateFormat.format(dateTime);
+                      },
                     ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: quantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Quantity',
+                        suffixText: vice.unit.nameFor(1),
+                      ),
+                      validator: (String? value) =>
+                          quantityError(value, unchanged: activity.quantity),
+                    ),
+                    if (error != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
         ),
         if (loading) ...[
           Positioned.fill(
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.5),
-            ),
+            child: Container(color: Colors.black.withValues(alpha: 0.5)),
           ),
           const CircularProgressIndicator(),
         ],

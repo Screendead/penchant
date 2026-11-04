@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,9 +7,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
-import 'package:tracker/data/vice.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
@@ -186,14 +185,14 @@ Future<void> addVicesThroughManageData(
   await closeDrawerPage(tester);
 }
 
-// The drawer stays open under a page pushed from it; dismiss both, as a user
-// would, by closing the page and tapping the scrim beside the drawer.
+// Closes a page opened from the drawer with its back button. The drawer was
+// told to close when the page opened, but its animation is paused while the
+// page covers it, so it may still be finishing.
 Future<void> closeDrawerPage(WidgetTester tester) async {
-  await tap(tester, find.byTooltip('Close'));
-  await pumpUntil(tester, find.byType(Drawer).hitTestable());
-  final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-  await tester.tapAt(Offset(screen.width - 16, screen.height / 2));
+  await tap(tester, find.byType(BackButton));
+  await pumpUntil(tester, find.byType(BackButton), present: false);
   await pumpUntil(tester, find.byType(Drawer), present: false);
+  await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
 }
 
 // Records through the app's dialog. With [at], unlocks the date field and
@@ -207,7 +206,13 @@ Future<void> recordActivity(
   await tap(tester, find.widgetWithText(TextButton, 'Record'));
   final Finder dialog = find.byType(AlertDialog);
   await pumpUntil(tester, dialog);
-  await tap(tester, find.byType(DropdownButtonFormField<Vice>));
+  await tap(
+    tester,
+    find.descendant(
+      of: find.byType(RecordNewActivityDialog),
+      matching: find.byType(DropdownButtonFormField<String>),
+    ),
+  );
   await tap(tester, find.text(viceName).last);
   if (at != null) {
     await tap(tester, find.byTooltip('Manually enter date and time'));
@@ -222,25 +227,81 @@ Future<void> recordActivity(
   await pumpUntil(tester, dialog, present: false);
 }
 
+Future<String> storedViceID(String viceName) async {
+  final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
+      .instance
+      .collection('vices')
+      .where('ownerID', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+      .where('name', isEqualTo: viceName)
+      .get();
+  expect(vices.docs, hasLength(1), reason: 'vice $viceName');
+  return vices.docs.single.id;
+}
+
 // What the signed-in user's account holds in Firestore for one vice.
 Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> storedActivities(
   String viceName,
 ) async {
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
-  final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
-      .instance
-      .collection('vices')
-      .where('ownerID', isEqualTo: uid)
-      .where('name', isEqualTo: viceName)
-      .get();
-  expect(vices.docs, hasLength(1), reason: 'vice $viceName');
+  final String viceID = await storedViceID(viceName);
   final QuerySnapshot<Map<String, dynamic>> activities = await FirebaseFirestore
       .instance
       .collection('activities')
-      .where('ownerID', isEqualTo: uid)
-      .where('viceID', isEqualTo: vices.docs.single.id)
+      .where('ownerID', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+      .where('viceID', isEqualTo: viceID)
       .get();
   return activities.docs;
+}
+
+// Writes a document the rules would refuse, as a legacy client could have
+// before they existed. The emulators treat the "owner" bearer token as an
+// admin that skips Security Rules; [fields] are Firestore REST Values.
+Future<void> createBypassingRules(
+  String collection,
+  String documentID,
+  Map<String, Object> fields,
+) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection'
+      '?documentId=$documentID',
+    );
+    final HttpClientRequest request = await client.postUrl(uri);
+    request.headers
+      ..set(HttpHeaders.authorizationHeader, 'Bearer owner')
+      ..contentType = ContentType.json;
+    request.write(jsonEncode(<String, Object>{'fields': fields}));
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    if (response.statusCode != HttpStatus.ok) {
+      throw StateError('POST $uri returned ${response.statusCode}: $body');
+    }
+  } finally {
+    client.close();
+  }
+}
+
+// Deletes a document as another client would, with the emulators' admin
+// "owner" token so the signed-in user's rules do not apply.
+Future<void> deleteBypassingRules(String collection, String documentID) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection/'
+      '$documentID',
+    );
+    final HttpClientRequest request = await client.deleteUrl(uri);
+    request.headers.set(HttpHeaders.authorizationHeader, 'Bearer owner');
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    if (response.statusCode != HttpStatus.ok) {
+      throw StateError('DELETE $uri returned ${response.statusCode}: $body');
+    }
+  } finally {
+    client.close();
+  }
 }
 
 // The radar chart paints its labels, so they are not Text widgets; read them
@@ -282,4 +343,50 @@ Future<void> expectRadar(WidgetTester tester, Set<String> titles) async {
   expect(find.byType(BarChart), findsNothing);
 }
 
-final DateFormat dayMenuFormat = DateFormat('EEEE, MMMM d, yyyy');
+Future<void> signOutThroughSettings(WidgetTester tester) async {
+  await openFromDrawer(tester, 'Settings');
+  // Sign out pops Settings; popping while its push is still animating trips
+  // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
+  await pumpFor(tester, const Duration(seconds: 1));
+  await tap(tester, find.text('Sign out'));
+  await pumpUntil(tester, find.byType(Homepage), present: false);
+}
+
+Future<void> signIn(WidgetTester tester, String email) async {
+  await pumpUntil(tester, find.text('Sign In to Your Account'));
+  await enterText(tester, 'Email', email);
+  await enterText(tester, 'Password', 'Passw0rdE2E');
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
+}
+
+// Every string the app shows, offstage tabs and painted chart labels included.
+Set<String> shownStrings(WidgetTester tester) => <String>{
+  for (final Element e in find.byType(Text, skipOffstage: false).evaluate())
+    ?((e.widget as Text).data ?? (e.widget as Text).textSpan?.toPlainText()),
+  ...?chartTitles(tester),
+};
+
+// Pumps frame by frame until [until] appears, failing on the first frame that
+// shows any of [forbidden]: one look after the screen settles would miss a
+// flash of stale data.
+Future<void> pumpUntilNeverShowing(
+  WidgetTester tester,
+  Finder until,
+  Iterable<String> forbidden,
+) async {
+  void check() {
+    final Set<String> shown = shownStrings(tester);
+    for (final String text in forbidden) {
+      final Iterable<String> hits = shown.where((s) => s.contains(text));
+      if (hits.isNotEmpty) {
+        throw TestFailure('"$text" was on screen: $hits');
+      }
+    }
+  }
+
+  check();
+  await pumpUntilTrue(tester, () {
+    check();
+    return until.evaluate().isNotEmpty;
+  }, () => '$until to appear');
+}

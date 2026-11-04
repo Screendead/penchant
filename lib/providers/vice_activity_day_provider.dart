@@ -1,48 +1,40 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
-import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
-import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/providers/firestore_retry.dart';
+import 'package:tracker/providers/signed_in_user.dart';
 
-final viceActivityDayProvider =
-    StreamProvider.family<List<ViceActivity>?, DateTime>((ref, selectedDate) {
-      final User? user = ref.watch(userProvider).value;
-      final AsyncValue<List<Vice>?> viceListValue = ref.watch(viceListProvider);
+// Every vice's activities for the day, archived vices' included: filtering by
+// vice would need an `in` filter, which takes at most 30 values. The chart
+// drops what it does not draw.
+final viceActivityDayForUserProvider = StreamProvider.autoDispose
+    .family<List<ViceActivity>, ({String uid, DateTime day})>(
+      retry: firestoreRetry,
+      (ref, key) {
+        final DateTime startOfSelectedDay = startOfDay(key.day);
+        final DateTime startOfNextDay = addDays(startOfSelectedDay, 1);
 
-      if (viceListValue case AsyncError(:final error, :final stackTrace)) {
-        return Stream.error(error, stackTrace);
-      }
+        return FirebaseFirestore.instance
+            .collection('activities')
+            .where('ownerID', isEqualTo: key.uid)
+            .where(
+              'createdAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfSelectedDay),
+            )
+            .where('createdAt', isLessThan: Timestamp.fromDate(startOfNextDay))
+            .orderBy('createdAt', descending: true)
+            // The server's acknowledgement of a local write changes only
+            // metadata, and clears an entry's not-yet-synced mark.
+            .snapshots(includeMetadataChanges: true)
+            .map(ViceActivity.fromQuerySnapshot);
+      },
+    );
 
-      final List<Vice>? viceList = viceListValue.value;
-
-      if (user == null || viceList == null) {
-        return const Stream<List<ViceActivity>?>.empty();
-      }
-
-      // Firestore rejects an `in` filter with an empty value list.
-      if (viceList.isEmpty) {
-        return Stream.value(const <ViceActivity>[]);
-      }
-
-      final DateTime startOfSelectedDay = startOfDay(selectedDate);
-      final DateTime startOfNextDay = addDays(startOfSelectedDay, 1);
-      final List<String> viceIDs = viceList
-          .map((Vice vice) => vice.id)
-          .toList();
-
-      return FirebaseFirestore.instance
-          .collection('activities')
-          .where('viceID', whereIn: viceIDs)
-          .where('ownerID', isEqualTo: user.uid)
-          .where(
-            'createdAt',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfSelectedDay),
-          )
-          .where('createdAt', isLessThan: Timestamp.fromDate(startOfNextDay))
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map(ViceActivity.fromQuerySnapshot);
+final viceActivityDayProvider = Provider.autoDispose
+    .family<AsyncValue<List<ViceActivity>>, DateTime>((ref, day) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) => viceActivityDayForUserProvider((uid: uid, day: day)),
+      );
     });

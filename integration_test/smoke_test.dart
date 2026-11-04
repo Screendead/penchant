@@ -17,7 +17,9 @@ void main() {
   testWidgets('register, add a vice, record an activity, see it listed', (
     WidgetTester tester,
   ) async {
-    await app.main();
+    app.startApp();
+    // MyApp is built only once Bootstrap has started Firebase.
+    await pumpUntil(tester, find.byType(app.MyApp));
     await register(tester, 'e2e@example.com');
     await addVicesThroughManageData(tester);
 
@@ -26,10 +28,15 @@ void main() {
 
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntil(tester, find.text('Your Vices'));
-    await pumpUntil(tester, find.text('1 activities'));
+    // Each row's count is its own server request, so the rows fill in any order.
+    await pumpUntil(tester, find.text('1 activity'));
+    await pumpUntilTrue(
+      tester,
+      () => find.text('0 activities').evaluate().length == 2,
+      () => "two '0 activities' rows",
+    );
     expect(find.text('Coffee'), findsOneWidget);
     expect(find.text('Tea'), findsOneWidget);
     expect(find.text('Water'), findsOneWidget);
-    expect(find.text('0 activities'), findsNWidgets(2));
   });
 }

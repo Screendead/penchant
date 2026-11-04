@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -6,11 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -19,6 +19,7 @@ import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 import 'fakes.dart';
 
@@ -39,7 +40,7 @@ double _chartedQuantity(WidgetTester tester) => tester
     .widget<RadarChart>(find.byType(RadarChart))
     .data
     .dataSets
-    .single
+    .first
     .dataEntries
     .first
     .value;
@@ -70,31 +71,23 @@ void main() {
     final DateTime today = startOfDay(DateTime.now());
     final Vice vice = fakeVice('coffee');
     final List<Vice> vices = [vice, fakeVice('beer'), fakeVice('cigarettes')];
-    late StreamController<List<ViceActivity>?> neverEmits;
     late List<DateTime> requestedDays;
 
     setUp(() {
-      neverEmits = StreamController<List<ViceActivity>?>();
       requestedDays = <DateTime>[];
     });
 
-    // close() completes only once a listener receives done, and most tests
-    // never subscribe to this stream.
-    tearDown(() {
-      neverEmits.close();
-    });
-
     List<Override> overrides() => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         requestedDays.add(day);
         final int daysAgo = daysBetween(day, today);
 
         if (daysAgo == 2) {
-          return neverEmits.stream;
+          return const AsyncLoading();
         }
 
-        return Stream.value([fakeActivity(vice.id, daysAgo + 1, day)]);
+        return AsyncData([fakeActivity(vice.id, daysAgo + 1, day)]);
       }),
     ];
 
@@ -121,7 +114,9 @@ void main() {
 
       expect(find.text('Today'), findsOneWidget);
       expect(_chartedQuantity(tester), 1);
-      expect(requestedDays, [today, addDays(today, -1)]);
+      // An auto-dispose day may be re-requested on return; how soon it is
+      // disposed is Riverpod's scheduling, not this widget's.
+      expect(requestedDays.toSet(), {today, addDays(today, -1)});
     });
 
     testWidgets('a day whose data never arrives does not freeze controls', (
@@ -153,11 +148,7 @@ void main() {
 
       await tester.tap(find.byType(DropdownButton<DateTime>));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find
-            .text(DateFormat('EEEE, MMMM d, yyyy').format(addDays(today, -1)))
-            .last,
-      );
+      await tester.tap(find.text(formatDay(addDays(today, -1))).last);
       await tester.pumpAndSettle();
 
       expect(find.text('Yesterday'), findsOneWidget);
@@ -189,11 +180,11 @@ void main() {
     final Vice beer = fakeVice('beer');
 
     List<Override> overrides(List<Vice> vices) => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         final int daysAgo = daysBetween(day, today);
 
-        return Stream.value([
+        return AsyncData([
           fakeActivity(coffee.id, daysAgo + 2, day),
           fakeActivity(beer.id, daysAgo + 1, day),
         ]);
@@ -257,9 +248,9 @@ void main() {
     final List<Vice> vices = [fakeVice('coffee')];
 
     List<Override> overrides() => [
-      unarchivedViceListProvider.overrideWith((ref) => Stream.value(vices)),
+      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
       viceActivityDayProvider.overrideWith(
-        (ref, DateTime day) => Stream.value(const <ViceActivity>[]),
+        (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
       ),
     ];
 
@@ -279,6 +270,19 @@ void main() {
 
       expect(find.text('A clear day'), findsOneWidget);
       expect(find.text('Nothing recorded on this day.'), findsOneWidget);
+    });
+
+    testWidgets('offline, says the device may not have the day rather than '
+        'calling it clear', (WidgetTester tester) async {
+      await _pumpApp(tester, [
+        ...overrides(),
+        offlineProvider.overrideWith((ref) => Stream.value(true)),
+      ], const ViceTracker());
+      await tester.pump();
+
+      expect(find.byType(CleanDay), findsOneWidget);
+      expect(find.text(CleanDay.offlineHeadline), findsOneWidget);
+      expect(find.text('A clear day so far'), findsNothing);
     });
 
     for (final Brightness brightness in Brightness.values) {
@@ -353,7 +357,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(RecordNewActivityDialog.recordedMessage), findsNothing);
-    expect(find.text(RecordNewActivityDialog.queuedMessage), findsOneWidget);
+    expect(find.text(queuedMessage), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 7));
     expect(find.text('Undo'), findsOneWidget);
@@ -376,10 +380,8 @@ void main() {
   group('an account with no vices', () {
     List<Override> overrides() => [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-      viceListProvider.overrideWith((ref) => Stream.value(const <Vice>[])),
-      unarchivedViceListProvider.overrideWith(
-        (ref) => Stream.value(const <Vice>[]),
-      ),
+      viceListProvider.overrideWithValue(AsyncData(const <Vice>[])),
+      unarchivedViceListProvider.overrideWithValue(const AsyncData(<Vice>[])),
     ];
 
     testWidgets('sees an empty state on the Today tab, not a spinner', (
@@ -408,5 +410,40 @@ void main() {
       expect(find.textContaining('No vices yet'), findsOneWidget);
       expect(find.byTooltip('Add vice'), findsOneWidget);
     });
+  });
+
+  testWidgets('the day header takes its colour from the theme', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData light = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          unarchivedViceListProvider.overrideWithValue(
+            AsyncData([fakeVice('coffee')]),
+          ),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+        ],
+        child: MaterialApp(
+          theme: light,
+          home: const Scaffold(body: ViceTracker()),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final Color onSurface = light.colorScheme.onSurface;
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.calendar_month)).color,
+      onSurface,
+    );
+    expect(
+      tester.widget<Text>(find.text('Today').first).style?.color,
+      onSurface,
+    );
   });
 }

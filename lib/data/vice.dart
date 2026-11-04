@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/unit.dart';
 
 class Vice {
@@ -21,14 +22,15 @@ class Vice {
   factory Vice.fromJson({
     required String id,
     required Map<String, dynamic> json,
+    bool pending = false,
   }) {
     return Vice(
       id: id,
-      name: json['name'] as String,
-      unit: Unit.fromString(json['unit'] as String),
-      ownerID: json['ownerID'] as String,
-      createdAt: json['createdAt'] as Timestamp,
-      archived: json['archived'] as bool,
+      name: readString(json['name']),
+      unit: Unit.fromString(json['unit']),
+      ownerID: readString(json['ownerID']),
+      createdAt: readTimestamp(json['createdAt'], pending: pending),
+      archived: readBool(json['archived'], fallback: false),
     );
   }
 
@@ -36,7 +38,11 @@ class Vice {
     QuerySnapshot<Map<String, dynamic>> snapshot,
   ) {
     return snapshot.docs.map((doc) {
-      return Vice.fromJson(id: doc.id, json: doc.data());
+      return Vice.fromJson(
+        id: doc.id,
+        json: doc.data(),
+        pending: doc.metadata.hasPendingWrites,
+      );
     }).toList();
   }
 
