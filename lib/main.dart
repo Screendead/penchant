@@ -69,6 +69,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         theme: appTheme(),
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: appLocales,
+        localeListResolutionCallback: resolveAppLocale,
         home: user != null
             ? const Homepage()
             : userValue.hasError

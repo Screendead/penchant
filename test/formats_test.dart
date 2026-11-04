@@ -30,6 +30,30 @@ void main() {
     });
   });
 
+  group('resolveAppLocale', () {
+    test('gives Flutter the locale the formats use', () {
+      expect(
+        resolveAppLocale(const [
+          Locale('en', 'US'),
+          Locale('en', 'GB'),
+        ], appLocales),
+        const Locale('en'),
+      );
+      expect(
+        resolveAppLocale(const [Locale('de', 'IE')], appLocales),
+        const Locale('en', 'IE'),
+      );
+    });
+
+    test('falls back to en where Flutter has no such region', () {
+      expect(
+        resolveAppLocale(const [Locale('en', 'MY')], appLocales),
+        const Locale('en'),
+      );
+      expect(resolveAppLocale(null, appLocales), const Locale('en'));
+    });
+  });
+
   test('the region sets the day order, words stay English', () {
     expect(DateFormat.yMd('en_US').format(moment), '11/4/2026');
     expect(DateFormat.yMd('en_GB').format(moment), '04/11/2026');

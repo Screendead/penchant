@@ -62,6 +62,7 @@ class _BootstrapState extends State<Bootstrap> {
       theme: appTheme(),
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: appLocales,
+      localeListResolutionCallback: resolveAppLocale,
       home: Scaffold(
         body: SafeArea(
           child: _startup == _Startup.failed

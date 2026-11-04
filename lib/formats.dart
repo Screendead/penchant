@@ -6,7 +6,19 @@ import 'package:intl/date_symbols.dart';
 import 'package:intl/date_time_patterns.dart';
 import 'package:intl/intl.dart';
 
-const List<Locale> appLocales = [Locale('en')];
+// Every English region Flutter's Material localizations carry, so its date and
+// time pickers can use the same conventions as the rest of the app.
+const List<Locale> appLocales = [
+  Locale('en'),
+  Locale('en', 'AU'),
+  Locale('en', 'CA'),
+  Locale('en', 'GB'),
+  Locale('en', 'IE'),
+  Locale('en', 'IN'),
+  Locale('en', 'NZ'),
+  Locale('en', 'SG'),
+  Locale('en', 'ZA'),
+];
 
 bool _dateDataLoaded = false;
 
@@ -48,6 +60,20 @@ String localeForFormatting(List<Locale> deviceLocales) {
   ];
 
   return candidates.firstWhere(DateFormat.localeExists, orElse: () => 'en');
+}
+
+// Flutter's own resolution would take en_GB from [en_US, en_GB], where the
+// formats take en_US, so the Material locale comes from the same choice.
+Locale resolveAppLocale(
+  List<Locale>? deviceLocales,
+  Iterable<Locale> supportedLocales,
+) {
+  final String chosen = localeForFormatting(deviceLocales ?? const []);
+
+  return supportedLocales.firstWhere(
+    (Locale locale) => locale.toString() == chosen,
+    orElse: () => const Locale('en'),
+  );
 }
 
 String formatDay(DateTime day) =>
