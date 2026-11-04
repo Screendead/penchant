@@ -64,7 +64,7 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **medium** — [Date-entry field, timer, and lock toggle are copy-pasted across two files](duplication-and-dead-code/activity-date-entry-flow-duplicated.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
 - **low** — [Two files sit outside the dart format check](duplication-and-dead-code/formatting-and-const-drift.md)
-- **low** — [The same nullable-lookup pattern is typed out separately twice](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-twice.md)
+- **low** — [The editor page spells the nullable id-lookup differently from the rest](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-twice.md)
 
 ## Accessibility and Localization (7)
 

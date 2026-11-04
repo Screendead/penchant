@@ -7,4 +7,4 @@ CI runs `dart format --set-exit-if-changed` over `lib`, `test` and `integration_
 ## Evidence
 
 - `.github/workflows/checks.yml` — the `Format` step's `! -path` exclusions
-- `lib/widgets/record_new_activity_dialog.dart:74` — `dateUpdaterTimer = Timer.periodic(Duration(seconds: 1), (Timer timer) {`
+- `lib/widgets/record_new_activity_dialog.dart:77` — `dateUpdaterTimer = Timer.periodic(Duration(seconds: 1), (Timer timer) {`
