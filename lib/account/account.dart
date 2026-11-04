@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/errors/report_error.dart';
 
 typedef StoredDocument = ({String id, Map<String, dynamic> data});
 
@@ -228,13 +229,6 @@ class Account {
   }
 
   void _report(Object error, StackTrace stack, String context) {
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stack,
-        library: 'account',
-        context: ErrorDescription(context),
-      ),
-    );
+    reportError(error, stack, context: 'while $context');
   }
 }

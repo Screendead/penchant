@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/providers/firestore_retry.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/signed_in_user.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -12,6 +14,7 @@ typedef ViceActivityHistoryQuery = ({String viceID, int limit});
 // The newest [limit] activities of one vice.
 final viceActivityHistoryForUserProvider = StreamProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, ViceActivityHistoryQuery query})>(
+      retry: firestoreRetry,
       (ref, key) {
         return FirebaseFirestore.instance
             .collection('activities')
@@ -45,23 +48,23 @@ typedef ViceActivityGraphQuery = ({
 });
 
 final viceActivityGraphForUserProvider = StreamProvider.autoDispose
-    .family<List<ViceActivity>, ({String uid, ViceActivityGraphQuery query})>((
-      ref,
-      key,
-    ) {
-      return FirebaseFirestore.instance
-          .collection('activities')
-          .where('viceID', isEqualTo: key.query.viceID)
-          .where('ownerID', isEqualTo: key.uid)
-          .where(
-            'createdAt',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(key.query.start),
-          )
-          .where('createdAt', isLessThan: Timestamp.fromDate(key.query.end))
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map(ViceActivity.fromQuerySnapshot);
-    });
+    .family<List<ViceActivity>, ({String uid, ViceActivityGraphQuery query})>(
+      retry: firestoreRetry,
+      (ref, key) {
+        return FirebaseFirestore.instance
+            .collection('activities')
+            .where('viceID', isEqualTo: key.query.viceID)
+            .where('ownerID', isEqualTo: key.uid)
+            .where(
+              'createdAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(key.query.start),
+            )
+            .where('createdAt', isLessThan: Timestamp.fromDate(key.query.end))
+            .orderBy('createdAt', descending: true)
+            .snapshots()
+            .map(ViceActivity.fromQuerySnapshot);
+      },
+    );
 
 final viceActivityGraphProvider = Provider.autoDispose
     .family<AsyncValue<List<ViceActivity>>, ViceActivityGraphQuery>((
@@ -125,43 +128,48 @@ const Duration countRetryDelay = Duration(seconds: 30);
 // may be only part of the history. Coming back online re-runs it through
 // offlineProvider; a server failure while online sets no flag, so it retries.
 final viceActivityCountForUserProvider = FutureProvider.autoDispose
-    .family<ActivityCount, ({String uid, String viceID})>((ref, key) async {
-      final bool offline = ref.watch(
-        offlineProvider.select((AsyncValue<bool> value) => value.value == true),
-      );
-      final Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-          .collection('activities')
-          .where('viceID', isEqualTo: key.viceID)
-          .where('ownerID', isEqualTo: key.uid);
+    .family<ActivityCount, ({String uid, String viceID})>(
+      retry: firestoreRetry,
+      (ref, key) async {
+        final bool offline = ref.watch(
+          offlineProvider.select(
+            (AsyncValue<bool> value) => value.value == true,
+          ),
+        );
+        final Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+            .collection('activities')
+            .where('viceID', isEqualTo: key.viceID)
+            .where('ownerID', isEqualTo: key.uid);
 
-      if (!offline) {
-        try {
-          final AggregateQuerySnapshot snapshot = await query
-              .count()
-              .get()
-              .timeout(writeTimeout);
-          return (count: snapshot.count ?? 0, source: CountSource.server);
-        } on FirebaseException {
-          // Counted from the cache below.
-        } on TimeoutException {
-          // Counted from the cache below.
+        if (!offline) {
+          try {
+            final AggregateQuerySnapshot snapshot = await query
+                .count()
+                .get()
+                .timeout(writeTimeout);
+            return (count: snapshot.count ?? 0, source: CountSource.server);
+          } on FirebaseException catch (e, stack) {
+            reportError(e, stack, context: 'while counting activities');
+          } on TimeoutException {
+            // Counted from the cache below.
+          }
+          if (ref.mounted) {
+            final Timer retry = Timer(countRetryDelay, ref.invalidateSelf);
+            ref.onDispose(retry.cancel);
+          }
         }
-        if (ref.mounted) {
-          final Timer retry = Timer(countRetryDelay, ref.invalidateSelf);
-          ref.onDispose(retry.cancel);
-        }
-      }
 
-      final QuerySnapshot<Map<String, dynamic>> cached = await query.get(
-        const GetOptions(source: Source.cache),
-      );
-      return (
-        count: cached.size,
-        source: offline
-            ? CountSource.deviceOffline
-            : CountSource.deviceServerFailed,
-      );
-    });
+        final QuerySnapshot<Map<String, dynamic>> cached = await query.get(
+          const GetOptions(source: Source.cache),
+        );
+        return (
+          count: cached.size,
+          source: offline
+              ? CountSource.deviceOffline
+              : CountSource.deviceServerFailed,
+        );
+      },
+    );
 
 final viceActivityCountProvider = Provider.autoDispose
     .family<AsyncValue<ActivityCount>, String>((ref, viceID) {

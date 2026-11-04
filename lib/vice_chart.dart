@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -140,7 +141,14 @@ class ViceChart extends ConsumerWidget {
     }
 
     if (vicesValue.error ?? activitiesValue.error case final Object error) {
-      return InfoBox(message: 'Unable to load this day: $error', isError: true);
+      return InfoBox(
+        message: loadErrorMessage('this day', error),
+        isError: true,
+        onRetry: () {
+          ref.invalidate(unarchivedViceListForUserProvider, asReload: true);
+          ref.invalidate(viceActivityDayForUserProvider, asReload: true);
+        },
+      );
     }
 
     final List<ViceActivity>? activityList = activitiesValue.value;

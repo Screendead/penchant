@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/errors/report_error.dart';
 
 const Duration writeTimeout = Duration(seconds: 10);
 
@@ -14,7 +15,8 @@ const String queuedDeleteMessage =
 /// true once it has, and false when it has not yet: the write stays queued in
 /// the SDK and commits once the device reconnects, so a timeout is not a
 /// failure. A [FirebaseException] before the timeout throws; one after it,
-/// when the server refuses the queued write, goes to [onRejectedLater].
+/// when the server refuses the queued write, is logged and goes to
+/// [onRejectedLater].
 Future<bool> settleWrite(
   Future<void> write, {
   required void Function(FirebaseException error) onRejectedLater,
@@ -29,8 +31,13 @@ Future<bool> settleWrite(
   unawaited(
     settled.then<void>(
       (_) {},
-      onError: (Object error) {
+      onError: (Object error, StackTrace stack) {
         if (timedOut && error is FirebaseException) {
+          reportError(
+            error,
+            stack,
+            context: 'when the server refused a write queued on this device',
+          );
           onRejectedLater(error);
         }
       },

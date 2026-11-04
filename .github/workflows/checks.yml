@@ -19,6 +19,6 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-flutter
       - name: Analyze
-        run: flutter analyze --fatal-infos --fatal-warnings
+        run: dart analyze --fatal-infos --fatal-warnings
       - name: Test
         run: flutter test

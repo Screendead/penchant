@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -86,12 +89,15 @@ class _ViceFormState extends ConsumerState<ViceForm> {
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while saving a vice');
       if (mounted) {
         setState(() {
           saving = false;
         });
-        messenger.showSnackBar(SnackBar(content: Text(e.message ?? e.code)));
+        messenger.showSnackBar(
+          SnackBar(content: Text('Not saved. ${firestoreErrorMessage(e)}')),
+        );
       }
     }
   }
@@ -183,11 +189,14 @@ class EditVice extends ConsumerWidget {
     if (viceList == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Edit Vice')),
-        body: Center(
-          child: viceListValue.hasError
-              ? Text('Unable to load your vices: ${viceListValue.error}')
-              : const CircularProgressIndicator(),
-        ),
+        body: switch (viceListValue.error) {
+          final Object error => ErrorView(
+            message: loadErrorMessage('your vices', error),
+            onRetry: () =>
+                ref.invalidate(viceListForUserProvider, asReload: true),
+          ),
+          null => const Center(child: CircularProgressIndicator()),
+        },
       );
     }
 

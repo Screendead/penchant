@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 
@@ -53,7 +54,8 @@ class _SettingsState extends ConsumerState<Settings> {
         await _whileSigningOut(() => account.signOut(discardUnsynced: true));
       }
       navigator.popUntil((Route<dynamic> route) => route.isFirst);
-    } catch (e) {
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while signing out');
       messenger.showSnackBar(
         SnackBar(content: Text(AccountCopy.signOutFailed(authErrorMessage(e)))),
       );

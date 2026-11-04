@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**70 issues: 0 critical, 7 high, 37 medium, 26 low.**
+**61 issues: 0 critical, 3 high, 34 medium, 24 low.**
 
 ## Firebase Data Layer (7)
 
@@ -45,15 +45,11 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
 - **medium** — [Chart axis titles are not width-bounded, so long vice names can run into their neighbours](widget-state-and-view-logic/chart-axis-titles-are-not-width-bounded.md)
 
-## Error Handling and Observability (5)
+## Error Handling and Observability (1)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
-- **high** — [A failed Firebase startup leaves the splash screen up forever](error-handling-and-observability/firebase-bootstrap-has-no-error-handling.md)
-- **high** — [Data errors look exactly like loading, so screens spin forever silently](error-handling-and-observability/no-screen-inspects-asyncvalue-error-state.md)
-- **medium** — [Every caught error is shown once on screen and then lost for good](error-handling-and-observability/catch-sites-render-the-error-once-and-discard-it.md)
-- **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
-- **low** — [The same save error reads four different ways depending on the screen](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
+- **medium** — [Errors reach only the device log; no crash report or usage data leaves the device](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
 ## Offline and Write Reliability (2)
 
@@ -94,16 +90,11 @@ Password reset, email verification, re-authentication, account deletion and expo
 
 - **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
 
-## Dependency and Tooling Drift (7)
+## Dependency and Tooling Drift (2)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
-- **high** — [The riverpod lint plugin can never load, so it silently never runs](dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md)
 - **medium** — [The minimatch 11 override breaks the firebase-tools paths that call minimatch as a function](dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md)
-- **high** — [Unused lint tooling holds the resolved analyzer package six majors back](dependency-and-tooling-drift/unused-lint-tooling-caps-the-analyzer-package.md)
-- **medium** — [Code-generation packages are installed but nothing in the app uses them](dependency-and-tooling-drift/riverpod-codegen-toolchain-declared-but-unused.md)
-- **medium** — [A plain dependency upgrade can never move the Riverpod packages forward](dependency-and-tooling-drift/riverpod-family-exact-pins-block-upgrades.md)
-- **low** — [Firebase plugins lag freely while test and build_runner sit stuck](dependency-and-tooling-drift/dart-dependencies-trail-pub-dev.md)
 - **medium** — [Firebase stops publishing to CocoaPods in October 2026, and both Apple builds depend on it](dependency-and-tooling-drift/cocoapods-sunset-ends-firebase-ios-publishing.md)
 
 ## Platform and Delivery Config (11)

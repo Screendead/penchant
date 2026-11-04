@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/chart_text.dart';
@@ -108,7 +109,16 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Vice>? viceList = ref.watch(viceListProvider).value;
+    final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
+
+    if (viceListValue.error case final Object error) {
+      return ErrorView(
+        message: loadErrorMessage('your vices', error),
+        onRetry: () => ref.invalidate(viceListForUserProvider, asReload: true),
+      );
+    }
+
+    final List<Vice>? viceList = viceListValue.value;
 
     if (viceList == null) {
       return const Center(child: CircularProgressIndicator());
@@ -125,15 +135,17 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
 
     final DateTime rangeStart = today.subtract(Duration(days: rangeDays - 1));
     final DateTime rangeEnd = today.add(const Duration(days: 1));
-    final List<ViceActivity>? activityList = ref
-        .watch(
-          viceActivityGraphProvider((
-            viceID: selectedVice.id,
-            start: rangeStart,
-            end: rangeEnd,
-          )),
-        )
-        .value;
+    final AsyncValue<List<ViceActivity>> activityValue = ref.watch(
+      viceActivityGraphProvider((
+        viceID: selectedVice.id,
+        start: rangeStart,
+        end: rangeEnd,
+      )),
+    );
+    final Object? activityError = activityValue.error;
+    final List<ViceActivity>? activityList = activityError == null
+        ? activityValue.value
+        : null;
 
     final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;
     final List<double> totals = List<double>.filled(bucketCount, 0);
@@ -305,7 +317,19 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: activityList == null
+                child: activityError != null
+                    ? InfoBox(
+                        message: loadErrorMessage(
+                          '${selectedVice.name} for this range',
+                          activityError,
+                        ),
+                        isError: true,
+                        onRetry: () => ref.invalidate(
+                          viceActivityGraphForUserProvider,
+                          asReload: true,
+                        ),
+                      )
+                    : activityList == null
                     ? const Center(child: CircularProgressIndicator())
                     : totals.every((double value) => value == 0)
                     ? Center(

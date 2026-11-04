@@ -17,7 +17,9 @@ void main() {
   testWidgets('Settings shows the version the binary was built with', (
     WidgetTester tester,
   ) async {
-    await app.main();
+    app.startApp();
+    // MyApp is built only once Bootstrap has started Firebase.
+    await pumpUntil(tester, find.byType(app.MyApp));
     await register(tester, 'about@example.com');
 
     await openFromDrawer(tester, 'Settings');

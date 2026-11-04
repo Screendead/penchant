@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 
 class SignIn extends ConsumerStatefulWidget {
@@ -48,7 +49,8 @@ class _SignInState extends ConsumerState<SignIn> {
             email: emailController.text.trim(),
             password: passwordController.text,
           );
-    } catch (e) {
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while signing in');
       if (mounted) {
         setState(() => error = authErrorMessage(e));
       }
@@ -72,13 +74,12 @@ class _SignInState extends ConsumerState<SignIn> {
     String message = AccountCopy.resetSent(email);
     try {
       await ref.read(accountProvider).sendPasswordResetEmail(email);
-    } on FirebaseAuthException catch (e) {
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while sending a password reset email');
       // Whether the address has an account is not the screen's to say.
-      if (e.code != 'user-not-found') {
+      if (!(e is FirebaseAuthException && e.code == 'user-not-found')) {
         message = authErrorMessage(e);
       }
-    } catch (e) {
-      message = authErrorMessage(e);
     }
     messenger.showSnackBar(SnackBar(content: Text(message)));
   }

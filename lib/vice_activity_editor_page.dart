@@ -7,9 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -111,7 +114,8 @@ class _ViceActivityEditorPageState
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while deleting an activity');
       if (!mounted) {
         return;
       }
@@ -122,7 +126,7 @@ class _ViceActivityEditorPageState
       }
       setState(() {
         loading = false;
-        error = e.message ?? 'Unable to delete activity';
+        error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
       });
     }
   }
@@ -174,7 +178,8 @@ class _ViceActivityEditorPageState
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while updating an activity');
       if (!mounted) {
         return;
       }
@@ -185,17 +190,40 @@ class _ViceActivityEditorPageState
       }
       setState(() {
         loading = false;
-        error = 'Error updating activity: ${e.message}';
+        error = 'Could not save this activity. ${firestoreErrorMessage(e)}';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Vice>? viceList = ref.watch(viceListProvider).value;
+    final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
     final AsyncValue<ViceActivity?> activityValue = ref.watch(
       viceActivityProvider(widget.activityID),
     );
+    // The rules deny reading a missing document, so a denial reads as not
+    // found below.
+    final Object? loadError =
+        viceListValue.error ??
+        switch (activityValue.error) {
+          FirebaseException(code: 'permission-denied') => null,
+          final Object? other => other,
+        };
+
+    if (loadError != null && !loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit activity')),
+        body: ErrorView(
+          message: loadErrorMessage('this activity', loadError),
+          onRetry: () {
+            ref.invalidate(viceListForUserProvider, asReload: true);
+            ref.invalidate(viceActivityForUserProvider, asReload: true);
+          },
+        ),
+      );
+    }
+
+    final List<Vice>? viceList = viceListValue.value;
 
     if (viceList == null ||
         (activityValue.isLoading && !activityValue.hasError)) {

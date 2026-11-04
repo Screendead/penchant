@@ -10,6 +10,7 @@ import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -30,6 +31,8 @@ const String _open = 'Open';
 
 FirebaseException _firebaseError(String code) =>
     FirebaseException(plugin: 'cloud_firestore', code: code, message: code);
+
+final String _offline = firestoreErrorMessage(_firebaseError('unavailable'));
 
 Future<void> _never(Write write) => Completer<void>().future;
 
@@ -189,7 +192,7 @@ void main() {
       await fillAndSave(tester);
 
       expect(find.byType(ViceForm), findsOneWidget);
-      expect(find.text('unavailable'), findsOneWidget);
+      expect(find.text('Not saved. $_offline'), findsOneWidget);
     });
   });
 
@@ -358,7 +361,7 @@ void main() {
       await save(tester);
 
       expect(find.byType(EditVice), findsOneWidget);
-      expect(find.text('unavailable'), findsOneWidget);
+      expect(find.text('Not saved. $_offline'), findsOneWidget);
     });
 
     testWidgets('says so when the vice is gone', (WidgetTester tester) async {
@@ -490,7 +493,14 @@ void main() {
       await tester.tap(find.byTooltip('Archive'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('permission-denied'), findsOneWidget);
+      expect(
+        find.text(
+          'Could not archive coffee. '
+          '${firestoreErrorMessage(_firebaseError('permission-denied'))}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('permission-denied'), findsNothing);
     });
   });
 
@@ -515,7 +525,7 @@ void main() {
         const RecordNewActivityDialog(),
         dialog: true,
       );
-      await tester.tap(find.byType(DropdownButtonFormField<Vice>));
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('coffee').last);
       await tester.pumpAndSettle();
@@ -564,10 +574,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dialog, findsOneWidget);
-      expect(
-        find.text('Error recording activity: unavailable'),
-        findsOneWidget,
-      );
+      expect(find.text('Not recorded. $_offline'), findsOneWidget);
 
       writes.respond = null;
       await tester.tap(record);
@@ -752,7 +759,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(editor, findsOneWidget);
-      expect(find.text('unavailable'), findsOneWidget);
+      expect(
+        find.text('Could not delete this activity. $_offline'),
+        findsOneWidget,
+      );
     });
   });
 
@@ -827,7 +837,10 @@ void main() {
       await tester.tap(find.byTooltip('Delete'));
       await tester.pumpAndSettle();
 
-      expect(find.text('unavailable'), findsOneWidget);
+      expect(
+        find.text('Could not delete this activity. $_offline'),
+        findsOneWidget,
+      );
       expect(find.text('Activity deleted'), findsNothing);
     });
   });
@@ -927,7 +940,7 @@ void main() {
         const RecordNewActivityDialog(),
         dialog: true,
       );
-      await tester.tap(find.byType(DropdownButtonFormField<Vice>));
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('coffee').last);
       await tester.pumpAndSettle();
