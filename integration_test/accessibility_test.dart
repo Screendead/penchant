@@ -137,7 +137,8 @@ void main() {
 
     // Each name is drawn whole, as a chart title or in the key below it,
     // where hitTestable() rules out an entry scrolled away or covered.
-    final Set<String> titles = chartTitles(tester)!;
+    // The key can leave no room for the chart, which is then not drawn.
+    final Set<String> titles = chartTitles(tester) ?? const <String>{};
     for (final String name in names) {
       if (titles.any((String t) => t == name || t.startsWith('$name ('))) {
         continue;
