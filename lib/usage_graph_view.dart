@@ -3,13 +3,13 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/chart_text.dart';
@@ -18,13 +18,11 @@ import 'package:tracker/widgets/info_box.dart';
 class UsageGraphView extends ConsumerStatefulWidget {
   const UsageGraphView({super.key});
 
-  static final DateFormat labelFormat = DateFormat('MMM d');
-
   static String seriesName(int stepDays) =>
       stepDays == 1 ? 'Daily total' : 'Weekly total';
 
   static String averageName(int stepDays, int window) =>
-      '$window-${stepDays == 1 ? 'day' : 'week'} average';
+      '${formatCount(window)}-${stepDays == 1 ? 'day' : 'week'} average';
 
   static String summary({
     required Vice vice,
@@ -43,13 +41,13 @@ class UsageGraphView extends ConsumerStatefulWidget {
     final int total = totals
         .fold<double>(0, (double a, double b) => a + b)
         .round();
-    final String peakDate = labelFormat.format(range.bucketStart(peakIndex));
+    final String peakDate = formatShortDay(range.bucketStart(peakIndex));
     final String average = smoothingWindow > 1
         ? ' Shown with a ${averageName(stepDays, smoothingWindow)}.'
         : '';
 
     return '${seriesName(stepDays)}s of ${vice.name} over the last '
-        '${range.days} days: ${vice.unit.label(total)} in all. The most was '
+        '${formatCount(range.days)} days: ${vice.unit.label(total)} in all. The most was '
         '${vice.unit.label(totals[peakIndex].round())} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average';
   }
@@ -183,7 +181,8 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
           _controls(viceList, effectiveViceID),
           const SizedBox(height: 16),
           Text(
-            'Smoothing: $window ${window == 1 ? 'bucket' : 'buckets'} for '
+            'Smoothing: ${formatCount(window)} '
+            '${pluralWord(window, one: 'bucket', other: 'buckets')} for '
             '${selectedVice.name}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -196,7 +195,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
               max: windowLimit.toDouble(),
               divisions: windowLimit - 1,
               value: window.toDouble(),
-              label: '$window',
+              label: formatCount(window),
               onChanged: (double value) {
                 setState(() {
                   pickedWindow = value.round();
@@ -242,8 +241,10 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       decoration: const InputDecoration(labelText: 'Range'),
       items: const [7, 14, 30, 90, 180, 365]
           .map(
-            (int value) =>
-                DropdownMenuItem<int>(value: value, child: Text('$value days')),
+            (int value) => DropdownMenuItem<int>(
+              value: value,
+              child: Text('${formatCount(value)} days'),
+            ),
           )
           .toList(),
       onChanged: (int? value) {
@@ -382,7 +383,11 @@ class _UsageChart extends StatelessWidget {
   }
 
   LineChartData _data(BuildContext context, ColorScheme scheme, Size size) {
-    final Size dateLabel = chartLabelSize(context, 'May 30', axisStyle);
+    final Size dateLabel = chartLabelSize(
+      context,
+      formatShortDay(DateTime(2000, 5, 30)),
+      axisStyle,
+    );
     final double bottomTitlesHeight = max(40, dateLabel.height + 16);
     final double numberHeight = chartLabelSize(context, '0', axisStyle).height;
 
@@ -396,7 +401,8 @@ class _UsageChart extends StatelessWidget {
     );
     final double leftTitlesWidth = max(
       40,
-      chartLabelSize(context, '${yScale.top}', axisStyle).width + labelGap,
+      chartLabelSize(context, formatCount(yScale.top), axisStyle).width +
+          labelGap,
     );
 
     final Set<int> labelled = labelIndices(
@@ -439,7 +445,7 @@ class _UsageChart extends StatelessWidget {
             reservedSize: leftTitlesWidth,
             interval: yScale.step.toDouble(),
             getTitlesWidget: (double value, TitleMeta meta) =>
-                Text('${value.round()}', style: axisStyle),
+                Text(formatCount(value.round()), style: axisStyle),
           ),
         ),
         bottomTitles: AxisTitles(
@@ -460,7 +466,7 @@ class _UsageChart extends StatelessWidget {
                   distanceFromEdge: 0,
                 ),
                 child: Text(
-                  UsageGraphView.labelFormat.format(range.bucketStart(index)),
+                  formatShortDay(range.bucketStart(index)),
                   style: axisStyle,
                   maxLines: 1,
                   softWrap: false,

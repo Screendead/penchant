@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -18,13 +19,14 @@ class ManageData extends ConsumerStatefulWidget {
   static const String countUnavailable = 'Count unavailable';
 
   static String countText(ActivityCount count) {
-    final String activities = count.count == 1 ? 'activity' : 'activities';
+    final String activities =
+        '${formatCount(count.count)} '
+        '${pluralWord(count.count, one: 'activity', other: 'activities')}';
     return switch (count.source) {
-      CountSource.server => '${count.count} $activities',
-      CountSource.deviceOffline =>
-        '${count.count} $activities on this device (offline)',
+      CountSource.server => activities,
+      CountSource.deviceOffline => '$activities on this device (offline)',
       CountSource.deviceServerFailed =>
-        '${count.count} $activities on this device (server count unavailable)',
+        '$activities on this device (server count unavailable)',
     };
   }
 

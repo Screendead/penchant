@@ -24,6 +24,9 @@ pull request titles (`gh pr list --state merged`).
   device log.
 - Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
   after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+- Dates, times and numbers follow your device's region: day order and digit grouping, with one format for each
+  across the Today menu, the graph, the history list and the date fields. The history list follows the device's
+  24-Hour Time setting. The app is in English.
 - Manage Data's activity counts work offline: each row counts what this device holds and says so, rather than going
   blank. Your Vices also shows the offline banner.
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 
@@ -34,7 +35,7 @@ class PendingDayNote extends ConsumerWidget {
   final DateTime selectedDate;
 
   static String text(int count) =>
-      count == 1 ? '1 entry not yet synced' : '$count entries not yet synced';
+      '${formatCount(count)} ${pluralWord(count, one: 'entry', other: 'entries')} not yet synced';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -7,6 +7,7 @@ import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -130,10 +131,7 @@ void main() {
 
       final List<Element> dates = _axisLabels(tester, dates: true);
       expect(dates.length, greaterThanOrEqualTo(2));
-      expect(
-        dates.map(_label),
-        contains(UsageGraphView.labelFormat.format(_today)),
-      );
+      expect(dates.map(_label), contains(formatShortDay(_today)));
       expect(dates.map(_label).toSet(), hasLength(dates.length));
       _expectApart(dates);
       final Rect chart = tester.getRect(find.byType(LineChart));
@@ -204,9 +202,7 @@ void main() {
         4,
         5,
       ]);
-      final String newestWeek = UsageGraphView.labelFormat.format(
-        addDays(_today, -6),
-      );
+      final String newestWeek = formatShortDay(addDays(_today, -6));
       expect(
         find.bySemanticsLabel(
           'Weekly totals of coffee over the last 30 days: 10 items in all. '

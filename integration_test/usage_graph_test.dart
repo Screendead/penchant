@@ -8,8 +8,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/main.dart';
-import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 import 'support.dart';
@@ -77,7 +77,7 @@ void main() {
       find.bySemanticsLabel(
         'Daily totals of Coffee over the last 30 days: 10 drinks in all. '
         'The most was 4 drinks on '
-        '${UsageGraphView.labelFormat.format(addDays(today, -10))}.',
+        '${formatShortDay(addDays(today, -10))}.',
       ),
     );
     final List<double> daily = _totals(tester);
@@ -96,7 +96,7 @@ void main() {
       find.bySemanticsLabel(
         'Weekly totals of Coffee over the last 30 days: 10 drinks in all. '
         'The most was 5 drinks in the week of '
-        '${UsageGraphView.labelFormat.format(addDays(today, -6))}. '
+        '${formatShortDay(addDays(today, -6))}. '
         'Shown with a 5-week average.',
       ),
     );

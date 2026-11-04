@@ -9,6 +9,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -26,7 +27,7 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
   final String viceID;
   final String activityID;
 
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+  static DateFormat get dateFormat => entryDateFormat;
 
   @override
   ConsumerState<ViceActivityEditorPage> createState() =>
@@ -35,7 +36,7 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
 
 class _ViceActivityEditorPageState
     extends ConsumerState<ViceActivityEditorPage> {
-  static final DateFormat dateFormat = ViceActivityEditorPage.dateFormat;
+  static DateFormat get dateFormat => ViceActivityEditorPage.dateFormat;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
@@ -87,6 +88,7 @@ class _ViceActivityEditorPageState
     vice.unit,
     activity.quantity,
     activity.createdAt.toDate(),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
 
   Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
