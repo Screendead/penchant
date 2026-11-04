@@ -283,6 +283,28 @@ Future<void> createBypassingRules(
   }
 }
 
+// Deletes a document as another client would, with the emulators' admin
+// "owner" token so the signed-in user's rules do not apply.
+Future<void> deleteBypassingRules(String collection, String documentID) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection/'
+      '$documentID',
+    );
+    final HttpClientRequest request = await client.deleteUrl(uri);
+    request.headers.set(HttpHeaders.authorizationHeader, 'Bearer owner');
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    if (response.statusCode != HttpStatus.ok) {
+      throw StateError('DELETE $uri returned ${response.statusCode}: $body');
+    }
+  } finally {
+    client.close();
+  }
+}
+
 // The radar chart paints its labels, so they are not Text widgets; read them
 // from the chart's data instead. The bar chart's labels are Text widgets.
 Set<String>? chartTitles(WidgetTester tester) {

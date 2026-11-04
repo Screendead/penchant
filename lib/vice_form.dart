@@ -10,6 +10,7 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 // Adds a vice, or with [vice] edits that one.
@@ -72,7 +73,17 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     });
 
     try {
-      if (write != null && !await settleWrite(write)) {
+      if (write != null &&
+          !await settleWrite(
+            write,
+            onRejectedLater: ref
+                .read(rejectedWritesProvider.notifier)
+                .reporter(
+                  vice == null
+                      ? 'Not saved: the vice $name'
+                      : 'Change not saved: the vice ${vice.name}',
+                ),
+          )) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
       if (mounted) {
