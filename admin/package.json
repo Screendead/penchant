@@ -14,5 +14,8 @@
   },
   "dependencies": {
     "firebase-admin": "^14.5.0"
+  },
+  "overrides": {
+    "glob": "14.0.3"
   }
 }
