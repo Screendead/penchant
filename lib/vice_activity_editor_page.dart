@@ -10,6 +10,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityEditorPage extends ConsumerStatefulWidget {
@@ -78,7 +79,14 @@ class _ViceActivityEditorPageState
     super.dispose();
   }
 
-  Future<void> _deleteActivity() async {
+  String _describe(Vice vice, ViceActivity activity) => describeActivity(
+    vice.name,
+    vice.unit,
+    activity.quantity,
+    activity.createdAt.toDate(),
+  );
+
+  Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
     setState(() {
@@ -89,6 +97,9 @@ class _ViceActivityEditorPageState
     try {
       final bool synced = await settleWrite(
         ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
+        onRejectedLater: ref
+            .read(rejectedWritesProvider.notifier)
+            .reporter('Not deleted: ${_describe(vice, activity)}'),
       );
       if (!synced) {
         messenger.showSnackBar(
@@ -108,7 +119,7 @@ class _ViceActivityEditorPageState
     }
   }
 
-  Future<void> _saveActivity() async {
+  Future<void> _saveActivity(Vice vice, ViceActivity activity) async {
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -143,6 +154,9 @@ class _ViceActivityEditorPageState
               quantity: changes['quantity'] as int?,
               createdAt: changes['createdAt'] as DateTime?,
             ),
+        onRejectedLater: ref
+            .read(rejectedWritesProvider.notifier)
+            .reporter('Change not saved: ${_describe(vice, activity)}'),
       );
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
@@ -206,10 +220,14 @@ class _ViceActivityEditorPageState
                 IconButton(
                   tooltip: 'Delete',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: loading ? null : _deleteActivity,
+                  onPressed: loading
+                      ? null
+                      : () => _deleteActivity(vice, activity),
                 ),
                 TextButton(
-                  onPressed: loading ? null : _saveActivity,
+                  onPressed: loading
+                      ? null
+                      : () => _saveActivity(vice, activity),
                   child: const Text('Save'),
                 ),
               ],

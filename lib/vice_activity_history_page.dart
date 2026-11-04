@@ -9,6 +9,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityHistoryPage extends ConsumerStatefulWidget {
@@ -35,7 +36,8 @@ class _ViceActivityHistoryPageState
 
   // The messenger is taken from this State, not the row: a delete drops the
   // row from the local snapshot before the server answers.
-  Future<void> _delete(String activityID) async {
+  Future<void> _delete(Vice vice, ViceActivity activity) async {
+    final String activityID = activity.id;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     setState(() {
       deleting.add(activityID);
@@ -46,6 +48,11 @@ class _ViceActivityHistoryPageState
       message =
           await settleWrite(
             ref.read(trackerWritesProvider).deleteActivity(activityID),
+            onRejectedLater: ref
+                .read(rejectedWritesProvider.notifier)
+                .reporter(
+                  'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate())}',
+                ),
           )
           ? 'Activity deleted'
           : queuedDeleteMessage;
@@ -168,7 +175,7 @@ class _ViceActivityHistoryPageState
                         icon: const Icon(Icons.delete_outline),
                         onPressed: deleting.contains(activity.id)
                             ? null
-                            : () => _delete(activity.id),
+                            : () => _delete(vice, activity),
                       ),
                     ],
                   ),

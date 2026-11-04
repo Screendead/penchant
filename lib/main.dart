@@ -12,6 +12,7 @@ import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/rejected_writes_banner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +70,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         ),
         home: user == null ? const Authenticate() : const Homepage(),
         onGenerateRoute: generateRoute,
+        builder: rejectedWritesBuilder,
       ),
     );
   }

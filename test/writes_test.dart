@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -18,6 +19,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 import 'fake_writes.dart';
@@ -30,6 +32,26 @@ FirebaseException _firebaseError(String code) =>
 
 Future<void> _never(Write write) => Completer<void>().future;
 
+// Holds every write past the timeout, then lets the test refuse it.
+class _LateRefusal {
+  final Completer<void> _write = Completer<void>();
+
+  Future<void> respond(Write write) => _write.future;
+
+  Future<void> refuse(
+    WidgetTester tester, [
+    String code = 'permission-denied',
+  ]) async {
+    _write.completeError(_firebaseError(code));
+    await tester.pumpAndSettle();
+  }
+}
+
+Finder _rejected(String what) => find.descendant(
+  of: find.byType(RejectedWritesBanner),
+  matching: find.textContaining(what),
+);
+
 // Opens [page] from a host screen, so a page that pops on success can be seen
 // to have closed.
 Future<void> _pumpOpened(
@@ -38,15 +60,19 @@ Future<void> _pumpOpened(
   List<Override> overrides,
   Widget page, {
   bool dialog = false,
+  Stream<User?>? users,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         trackerWritesProvider.overrideWithValue(writes),
-        userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+        userProvider.overrideWith(
+          (ref) => users ?? Stream.value(FakeUser(ownerID)),
+        ),
         ...overrides,
       ],
       child: MaterialApp(
+        builder: rejectedWritesBuilder,
         home: Scaffold(
           // Watches the user as main.dart does; a provider read with no
           // listener never resolves.
@@ -344,7 +370,7 @@ void main() {
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([active, archived])),
       viceActivityCountProvider.overrideWith(
-        (ref, String viceID) => const AsyncData(0),
+        (ref, String viceID) => const AsyncData((count: 0, onDevice: false)),
       ),
     ];
 
@@ -396,6 +422,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(queuedMessage), findsOneWidget);
+    });
+
+    testWidgets('counts from the server online, says when a count comes '
+        'from this device, and says when there is none', (
+      WidgetTester tester,
+    ) async {
+      final Vice water = fakeVice('water');
+      final Map<String, AsyncValue<ActivityCount>> counts =
+          <String, AsyncValue<ActivityCount>>{
+            active.id: const AsyncData((count: 1, onDevice: false)),
+            archived.id: const AsyncData((count: 3, onDevice: true)),
+            water.id: AsyncError<ActivityCount>(
+              _firebaseError('unavailable'),
+              StackTrace.empty,
+            ),
+          };
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(
+          AsyncData([active, archived, water]),
+        ),
+        viceActivityCountProvider.overrideWith(
+          (ref, String viceID) => counts[viceID]!,
+        ),
+      ], const ManageData());
+
+      expect(find.text('1 activity'), findsOneWidget);
+      expect(
+        find.text('3 activities on this device (offline)'),
+        findsOneWidget,
+      );
+      expect(find.text(ManageData.countUnavailable), findsOneWidget);
     });
 
     testWidgets('shows the error when archiving fails', (
@@ -746,6 +803,246 @@ void main() {
 
       expect(find.text('unavailable'), findsOneWidget);
       expect(find.text('Activity deleted'), findsNothing);
+    });
+  });
+
+  group('settleWrite', () {
+    test('a write acknowledged in time settles true', () async {
+      final List<FirebaseException> late = <FirebaseException>[];
+      expect(
+        await settleWrite(Future<void>.value(), onRejectedLater: late.add),
+        isTrue,
+      );
+      expect(late, isEmpty);
+    });
+
+    test(
+      'a refusal before the timeout throws and is not reported later',
+      () async {
+        final List<FirebaseException> late = <FirebaseException>[];
+        await expectLater(
+          settleWrite(
+            Future<void>.error(_firebaseError('permission-denied')),
+            onRejectedLater: late.add,
+          ),
+          throwsA(isA<FirebaseException>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(late, isEmpty);
+      },
+    );
+
+    testWidgets('a refusal after the timeout settles false, then is reported', (
+      WidgetTester tester,
+    ) async {
+      final List<FirebaseException> late = <FirebaseException>[];
+      final Completer<void> write = Completer<void>();
+      bool? settled;
+      unawaited(
+        settleWrite(
+          write.future,
+          onRejectedLater: late.add,
+        ).then((bool value) => settled = value),
+      );
+
+      await tester.pump(writeTimeout);
+      expect(settled, isFalse);
+      expect(late, isEmpty);
+
+      write.completeError(_firebaseError('permission-denied'));
+      await tester.pump();
+      expect(late.single.code, 'permission-denied');
+    });
+  });
+
+  group('a change the server refuses after the timeout', () {
+    // Called inside each test: a Completer made in setUp lives outside the
+    // test's fake-async zone, so the test's pumps never deliver its error.
+    _LateRefusal holdWrites() {
+      final _LateRefusal refusal = _LateRefusal();
+      writes.respond = refusal.respond;
+      return refusal;
+    }
+
+    Future<void> waitOutTimeout(WidgetTester tester) async {
+      await tester.pump(writeTimeout);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a recorded activity is named in a banner until dismissed', (
+      WidgetTester tester,
+    ) async {
+      final _LateRefusal refusal = holdWrites();
+      await _pumpOpened(
+        tester,
+        writes,
+        [
+          unarchivedViceListProvider.overrideWithValue(
+            AsyncData([fakeVice('coffee')]),
+          ),
+        ],
+        const RecordNewActivityDialog(),
+        dialog: true,
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<Vice>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('coffee').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '2',
+      );
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Record'),
+        ),
+      );
+      await tester.pump();
+      await waitOutTimeout(tester);
+
+      expect(find.text(queuedMessage), findsOneWidget);
+      expect(find.byType(RejectedWritesBanner), findsOneWidget);
+      expect(_rejected('Not saved'), findsNothing);
+
+      await refusal.refuse(tester);
+
+      expect(_rejected('Not saved: coffee, 2 items, '), findsOneWidget);
+      expect(_rejected('The server refused this change.'), findsOneWidget);
+
+      await tester.tap(find.text(RejectedWritesBanner.dismissLabel));
+      await tester.pumpAndSettle();
+
+      expect(_rejected('Not saved'), findsNothing);
+    });
+
+    testWidgets('an edit names the entry it was made to', (
+      WidgetTester tester,
+    ) async {
+      final _LateRefusal refusal = holdWrites();
+      final Vice coffee = fakeVice('coffee');
+      final ViceActivity activity = fakeActivity(
+        coffee.id,
+        3,
+        DateTime(2026, 11, 2, 9, 30),
+      );
+      await _pumpOpened(
+        tester,
+        writes,
+        [
+          viceListProvider.overrideWithValue(AsyncData([coffee])),
+          viceActivityProvider.overrideWith(
+            (ref, String activityID) => AsyncData(activity),
+          ),
+        ],
+        ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '5',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pump();
+      await waitOutTimeout(tester);
+      await refusal.refuse(tester, 'unavailable');
+
+      expect(
+        _rejected('Change not saved: coffee, 3 items, Mon 2 Nov, 09:30'),
+        findsOneWidget,
+      );
+      expect(
+        _rejected('The server refused this change: unavailable'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a delete from the history page is named', (
+      WidgetTester tester,
+    ) async {
+      final _LateRefusal refusal = holdWrites();
+      final Vice coffee = fakeVice('coffee');
+      final ViceActivity activity = fakeActivity(
+        coffee.id,
+        1,
+        DateTime(2026, 11, 2, 9, 30),
+      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData([activity]),
+        ),
+      ], ViceActivityHistoryPage(viceID: coffee.id));
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await waitOutTimeout(tester);
+      await refusal.refuse(tester);
+
+      expect(
+        _rejected('Not deleted: coffee, 1 item, Mon 2 Nov, 09:30'),
+        findsOneWidget,
+      );
+      // Showing the banner must not remount the navigator under it.
+      expect(find.byType(ViceActivityHistoryPage), findsOneWidget);
+    });
+
+    testWidgets('a new vice is named', (WidgetTester tester) async {
+      final _LateRefusal refusal = holdWrites();
+      await _pumpOpened(tester, writes, const [], const ViceForm());
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Vice Name'),
+        'Coffee',
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Unit.drink.plural).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pump();
+      await waitOutTimeout(tester);
+      await refusal.refuse(tester);
+
+      expect(_rejected('Not saved: the vice Coffee'), findsOneWidget);
+    });
+
+    testWidgets('archiving is named', (WidgetTester tester) async {
+      final _LateRefusal refusal = holdWrites();
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+        viceActivityCountProvider.overrideWith(
+          (ref, String viceID) => const AsyncData((count: 0, onDevice: false)),
+        ),
+      ], const ManageData());
+      await tester.tap(find.byTooltip('Archive'));
+      await tester.pump();
+      await waitOutTimeout(tester);
+      await refusal.refuse(tester);
+
+      expect(_rejected('Not archived: coffee'), findsOneWidget);
+    });
+
+    testWidgets('a refusal that arrives after sign-out is not shown', (
+      WidgetTester tester,
+    ) async {
+      final _LateRefusal refusal = holdWrites();
+      final StreamController<User?> users = StreamController<User?>();
+      addTearDown(() => unawaited(users.close()));
+      users.add(FakeUser(ownerID));
+      await _pumpOpened(tester, writes, users: users.stream, [
+        viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+        viceActivityCountProvider.overrideWith(
+          (ref, String viceID) => const AsyncData((count: 0, onDevice: false)),
+        ),
+      ], const ManageData());
+      await tester.tap(find.byTooltip('Archive'));
+      await tester.pump();
+      await waitOutTimeout(tester);
+
+      users.add(null);
+      await tester.pump();
+      await refusal.refuse(tester);
+
+      expect(find.byType(RejectedWritesBanner), findsOneWidget);
+      expect(_rejected('Not archived'), findsNothing);
     });
   });
 }

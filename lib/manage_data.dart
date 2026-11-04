@@ -5,10 +5,21 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ManageData extends ConsumerStatefulWidget {
   const ManageData({super.key});
+
+  static const String countUnavailable = 'Count unavailable';
+
+  static String countText(ActivityCount count) {
+    final String activities = count.count == 1 ? 'activity' : 'activities';
+    return count.onDevice
+        ? '${count.count} $activities on this device (offline)'
+        : '${count.count} $activities';
+  }
 
   @override
   ConsumerState<ManageData> createState() => _ManageDataState();
@@ -29,6 +40,11 @@ class _ManageDataState extends ConsumerState<ManageData> {
         ref
             .read(trackerWritesProvider)
             .setViceArchived(vice.id, archived: archived),
+        onRejectedLater: ref
+            .read(rejectedWritesProvider.notifier)
+            .reporter(
+              '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
+            ),
       )) {
         message = queuedMessage;
       }
@@ -63,7 +79,12 @@ class _ManageDataState extends ConsumerState<ManageData> {
           ),
         ],
       ),
-      body: _buildBody(viceListValue: viceListValue),
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: _buildBody(viceListValue: viceListValue)),
+        ],
+      ),
     );
   }
 
@@ -94,10 +115,16 @@ class _ManageDataState extends ConsumerState<ManageData> {
           title: Text(vice.name),
           subtitle: Consumer(
             builder: (BuildContext context, WidgetRef ref, Widget? child) {
-              final int? count = ref
-                  .watch(viceActivityCountProvider(vice.id))
-                  .value;
-              return Text(count == null ? ' ' : '$count activities');
+              final AsyncValue<ActivityCount> count = ref.watch(
+                viceActivityCountProvider(vice.id),
+              );
+              return Text(switch (count) {
+                AsyncData(:final ActivityCount value) => ManageData.countText(
+                  value,
+                ),
+                AsyncError() => ManageData.countUnavailable,
+                _ => ' ',
+              });
             },
           ),
           trailing: Row(

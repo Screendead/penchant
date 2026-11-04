@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/sync_status.dart';
@@ -56,6 +57,16 @@ void main() {
       await pumpUntil(tester, find.text(PendingDayNote.text(3)));
 
       await openFromDrawer(tester, 'Manage Data');
+      // count() runs only on the server; offline the row counts what this
+      // device holds.
+      await pumpUntil(
+        tester,
+        find.text(ManageData.countText((count: 3, onDevice: true))),
+      );
+      expect(
+        find.text(ManageData.countText((count: 0, onDevice: true))),
+        findsNWidgets(2),
+      );
       await tap(tester, find.text('Coffee'));
       await pumpUntil(tester, find.text('Coffee history'));
       await pumpUntil(tester, notSynced);

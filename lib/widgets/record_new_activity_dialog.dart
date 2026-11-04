@@ -10,6 +10,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -95,6 +96,7 @@ class _RecordNewActivityDialogState
 
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final TrackerWrites writes = ref.read(trackerWritesProvider);
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
 
     setState(() {
       loading = true;
@@ -104,6 +106,9 @@ class _RecordNewActivityDialogState
     final DateTime date = RecordNewActivityDialog.dateFormat.parse(
       dateController.text,
     );
+    final Vice vice = selectedVice!;
+    final int quantity = int.parse(quantityController.text);
+    final String entry = describeActivity(vice.name, vice.unit, quantity, date);
 
     final bool synced;
 
@@ -112,10 +117,11 @@ class _RecordNewActivityDialogState
         writes.recordActivity(
           activityID,
           ownerID: user.uid,
-          viceID: selectedVice!.id,
-          quantity: int.parse(quantityController.text),
+          viceID: vice.id,
+          quantity: quantity,
           createdAt: date,
         ),
+        onRejectedLater: rejected.reporter('Not saved: $entry'),
       );
     } on FirebaseException catch (e) {
       if (mounted) {
@@ -145,7 +151,7 @@ class _RecordNewActivityDialogState
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      onUndo: () => _undo(messenger, writes, written),
+      onUndo: () => _undo(messenger, writes, rejected, written, entry),
     );
   }
 
@@ -154,12 +160,18 @@ class _RecordNewActivityDialogState
   static Future<void> _undo(
     ScaffoldMessengerState messenger,
     TrackerWrites writes,
+    RejectedWrites rejected,
     String activityID,
+    String entry,
   ) async {
     String message;
 
     try {
-      message = await settleWrite(writes.deleteActivity(activityID))
+      message =
+          await settleWrite(
+            writes.deleteActivity(activityID),
+            onRejectedLater: rejected.reporter('Not deleted: $entry'),
+          )
           ? 'Activity removed'
           : queuedDeleteMessage;
     } on FirebaseException catch (e) {
