@@ -227,10 +227,12 @@ from the today chart but keeps its history.
 **Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
 stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
 (never `Duration(days:)`, which drifts an hour across a DST change). The zone an entry was logged in is not
-stored, so an entry near midnight can move a day when viewed in another zone; that is accepted. `createdAt` is the
-device's clock at the moment of logging (or the time the user picked), not a server timestamp: a pending
-`FieldValue.serverTimestamp()` matches no `createdAt` range query until the server acknowledges it, so an entry
-logged offline would vanish from Today, and the server would stamp it with the time it synced.
+stored, so an entry near midnight can move a day when viewed in another zone; storing it would be a new activity
+field (the open `r2-data-model` call). `createdAt` is the device's clock at the moment of logging (or the time the
+user picked), not a server timestamp: a pending `FieldValue.serverTimestamp()` matches no `createdAt` range query
+until the server acknowledges it, so an entry logged offline would vanish from Today, and the server would stamp it
+with the time it synced. Whether to trade that for server time is open (register,
+`activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed.
