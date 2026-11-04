@@ -18,6 +18,8 @@ void main() {
     WidgetTester tester,
   ) async {
     app.startApp();
+    // MyApp is built only once Bootstrap has started Firebase.
+    await pumpUntil(tester, find.byType(app.MyApp));
     await register(tester, 'about@example.com');
 
     await openFromDrawer(tester, 'Settings');
