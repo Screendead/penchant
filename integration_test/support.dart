@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 const Duration timeout = Duration(seconds: 30);
@@ -220,7 +221,7 @@ Future<void> recordActivity(
     await enterText(
       tester,
       'Date and Time',
-      RecordNewActivityDialog.dateFormat.format(at),
+      ActivityDateField.format.format(at),
     );
   }
   await enterText(tester, 'Quantity', '$quantity');

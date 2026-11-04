@@ -22,6 +22,12 @@ pull request titles (`gh pr list --state merged`).
   device log.
 - Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
   after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+- An archived vice's history stays reachable: its Manage Data row opens it, marked "Archived", and the Graph lists it
+  last as "(archived)" instead of opening on it.
+- A signed-in launch no longer flashes the sign-in screen while the saved session loads.
+- Today and the Graph move on at midnight, and on returning to the app the next day, instead of staying on yesterday.
+- The activity editor shows changes made elsewhere while it is open, until you edit that field.
+- The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
 
 ## [0.1.0] - Unreleased
 

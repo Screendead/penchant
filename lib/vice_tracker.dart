@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/vice_chart.dart';
 import 'package:tracker/widgets/sync_status.dart';
 
@@ -16,18 +17,33 @@ class ViceTracker extends ConsumerStatefulWidget {
 
 class _ViceTrackerState extends ConsumerState<ViceTracker> {
   static final DateFormat _dateFormat = ViceChart.dayFormat;
+  static const String _storageID = 'ViceTracker.pinnedDay';
 
-  DateTime selectedDay = startOfDay(DateTime.now());
+  // Null follows today, so the tab moves on at midnight.
+  DateTime? pinnedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    pinnedDay =
+        PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
+            as DateTime?;
+  }
 
   void _selectDay(DateTime day) {
+    final DateTime? pinned = day == ref.read(todayProvider) ? null : day;
     setState(() {
-      selectedDay = day;
+      pinnedDay = pinned;
     });
+    PageStorage.maybeOf(
+      context,
+    )?.writeState(context, pinned, identifier: _storageID);
   }
 
   @override
   Widget build(BuildContext context) {
-    final DateTime today = startOfDay(DateTime.now());
+    final DateTime today = ref.watch(todayProvider);
+    final DateTime selectedDay = pinnedDay ?? today;
     final DateTime oldestDay = addDays(
       today,
       -(ViceTracker.selectableDays - 1),
