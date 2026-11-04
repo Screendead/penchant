@@ -167,7 +167,7 @@ class _RecordNewActivityDialogState
     String activityID,
     String entry,
   ) async {
-    String message;
+    String? message;
 
     try {
       message =
@@ -181,10 +181,13 @@ class _RecordNewActivityDialogState
           ? 'Activity removed'
           : queuedDeleteMessage;
     } on FirebaseException catch (e) {
-      message = 'Unable to undo: ${e.message ?? e.code}';
+      // The banner already says the entry was not saved.
+      message = rejected.createRefused(activityID)
+          ? null
+          : 'Unable to undo: ${e.message ?? e.code}';
     }
 
-    if (messenger.mounted) {
+    if (message != null && messenger.mounted) {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }

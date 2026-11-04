@@ -16,9 +16,13 @@ class ManageData extends ConsumerStatefulWidget {
 
   static String countText(ActivityCount count) {
     final String activities = count.count == 1 ? 'activity' : 'activities';
-    return count.onDevice
-        ? '${count.count} $activities on this device (offline)'
-        : '${count.count} $activities';
+    return switch (count.source) {
+      CountSource.server => '${count.count} $activities',
+      CountSource.deviceOffline =>
+        '${count.count} $activities on this device (offline)',
+      CountSource.deviceServerFailed =>
+        '${count.count} $activities on this device (server count unavailable)',
+    };
   }
 
   @override
@@ -118,12 +122,11 @@ class _ManageDataState extends ConsumerState<ManageData> {
               final AsyncValue<ActivityCount> count = ref.watch(
                 viceActivityCountProvider(vice.id),
               );
-              return Text(switch (count) {
-                AsyncData(:final ActivityCount value) => ManageData.countText(
-                  value,
-                ),
-                AsyncError() => ManageData.countUnavailable,
-                _ => ' ',
+              // A re-run keeps the last count until the new one arrives.
+              return Text(switch (count.value) {
+                final ActivityCount value => ManageData.countText(value),
+                null when count.hasError => ManageData.countUnavailable,
+                null => ' ',
               });
             },
           ),

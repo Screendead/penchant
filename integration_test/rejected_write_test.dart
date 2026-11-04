@@ -98,4 +98,43 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 1));
     expect(inBanner('Not deleted'), findsNothing);
   });
+
+  testWidgets('an Undo refused before its own timeout, because the entry it '
+      'undoes was refused, is not called a failed Undo', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-rejected-undo-early@example.com');
+    await addVicesThroughManageData(tester);
+    final String coffeeID = await storedViceID('Coffee');
+    final Finder banner = find.byType(RejectedWritesBanner);
+    Finder inBanner(String text) =>
+        find.descendant(of: banner, matching: find.textContaining(text));
+
+    await FirebaseFirestore.instance.disableNetwork();
+    try {
+      await pumpUntil(tester, find.text(OfflineBanner.message));
+      await recordActivity(tester, 'Coffee', 2);
+      await pumpUntil(tester, find.text(queuedMessage));
+      await tap(tester, find.text('Undo'));
+      await deleteBypassingRules('vices', coffeeID);
+    } finally {
+      // Well inside the Undo's own timeout, so its refusal reaches the Undo.
+      await FirebaseFirestore.instance.enableNetwork();
+    }
+
+    const List<String> forbidden = <String>['Unable to undo', 'Not deleted'];
+    await pumpUntilNeverShowing(
+      tester,
+      inBanner('Not saved: Coffee, 2 drinks, '),
+      forbidden,
+    );
+    // Settles once the server has answered the delete as well; a snackbar
+    // would still be showing a second later.
+    await FirebaseFirestore.instance.waitForPendingWrites();
+    await pumpFor(tester, const Duration(seconds: 1));
+    for (final String text in forbidden) {
+      expect(find.textContaining(text), findsNothing);
+    }
+  });
 }

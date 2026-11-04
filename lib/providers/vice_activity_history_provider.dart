@@ -111,12 +111,19 @@ final viceActivityProvider = Provider.autoDispose
       );
     });
 
-typedef ActivityCount = ({int count, bool onDevice});
+enum CountSource { server, deviceOffline, deviceServerFailed }
+
+typedef ActivityCount = ({int count, CountSource source});
+
+// Long enough that a lasting refusal (a missing index, say) does not repeat a
+// billed aggregation every few seconds while the page is open.
+const Duration countRetryDelay = Duration(seconds: 30);
 
 // Counted on the server, so it is not live and ignores writes still queued on
 // the device. Aggregations skip the cache and fail offline, so offline, or if
 // the server cannot answer, it counts what this device holds instead, which
-// may be only part of the history.
+// may be only part of the history. Coming back online re-runs it through
+// offlineProvider; a server failure while online sets no flag, so it retries.
 final viceActivityCountForUserProvider = FutureProvider.autoDispose
     .family<ActivityCount, ({String uid, String viceID})>((ref, key) async {
       final bool offline = ref.watch(
@@ -133,18 +140,27 @@ final viceActivityCountForUserProvider = FutureProvider.autoDispose
               .count()
               .get()
               .timeout(writeTimeout);
-          return (count: snapshot.count ?? 0, onDevice: false);
+          return (count: snapshot.count ?? 0, source: CountSource.server);
         } on FirebaseException {
           // Counted from the cache below.
         } on TimeoutException {
           // Counted from the cache below.
+        }
+        if (ref.mounted) {
+          final Timer retry = Timer(countRetryDelay, ref.invalidateSelf);
+          ref.onDispose(retry.cancel);
         }
       }
 
       final QuerySnapshot<Map<String, dynamic>> cached = await query.get(
         const GetOptions(source: Source.cache),
       );
-      return (count: cached.size, onDevice: true);
+      return (
+        count: cached.size,
+        source: offline
+            ? CountSource.deviceOffline
+            : CountSource.deviceServerFailed,
+      );
     });
 
 final viceActivityCountProvider = Provider.autoDispose

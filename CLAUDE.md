@@ -140,7 +140,8 @@ hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges(
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
 `count()` aggregation, which falls back to counting the cached documents while
-`offlineProvider` says offline or the server cannot answer, and says so), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
+`offlineProvider` says offline or the server cannot answer, says which, and retries
+after a server failure), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
 of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer

@@ -43,22 +43,24 @@ class _ViceActivityHistoryPageState
       deleting.add(activityID);
     });
 
-    String message;
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    String? message;
     try {
       message =
           await settleWrite(
             ref.read(trackerWritesProvider).deleteActivity(activityID),
-            onRejectedLater: ref
-                .read(rejectedWritesProvider.notifier)
-                .reporter(
-                  'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate())}',
-                  changes: activityID,
-                ),
+            onRejectedLater: rejected.reporter(
+              'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate())}',
+              changes: activityID,
+            ),
           )
           ? 'Activity deleted'
           : queuedDeleteMessage;
     } on FirebaseException catch (e) {
-      message = e.message ?? 'Unable to delete activity';
+      // The banner already says the entry was not saved.
+      message = rejected.createRefused(activityID)
+          ? null
+          : e.message ?? 'Unable to delete activity';
     }
 
     if (mounted) {
@@ -66,7 +68,7 @@ class _ViceActivityHistoryPageState
         deleting.remove(activityID);
       });
     }
-    if (messenger.mounted) {
+    if (message != null && messenger.mounted) {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }

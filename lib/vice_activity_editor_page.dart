@@ -94,15 +94,14 @@ class _ViceActivityEditorPageState
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
       final bool synced = await settleWrite(
         ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
-        onRejectedLater: ref
-            .read(rejectedWritesProvider.notifier)
-            .reporter(
-              'Not deleted: ${_describe(vice, activity)}',
-              changes: widget.activityID,
-            ),
+        onRejectedLater: rejected.reporter(
+          'Not deleted: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
       if (!synced) {
         messenger.showSnackBar(
@@ -113,12 +112,18 @@ class _ViceActivityEditorPageState
         Navigator.of(context).pop();
       }
     } on FirebaseException catch (e) {
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = e.message ?? 'Unable to delete activity';
-        });
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = e.message ?? 'Unable to delete activity';
+      });
     }
   }
 
@@ -148,6 +153,7 @@ class _ViceActivityEditorPageState
       error = null;
     });
 
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
       final bool synced = await settleWrite(
         ref
@@ -157,12 +163,10 @@ class _ViceActivityEditorPageState
               quantity: changes['quantity'] as int?,
               createdAt: changes['createdAt'] as DateTime?,
             ),
-        onRejectedLater: ref
-            .read(rejectedWritesProvider.notifier)
-            .reporter(
-              'Change not saved: ${_describe(vice, activity)}',
-              changes: widget.activityID,
-            ),
+        onRejectedLater: rejected.reporter(
+          'Change not saved: ${_describe(vice, activity)}',
+          changes: widget.activityID,
+        ),
       );
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
@@ -171,12 +175,18 @@ class _ViceActivityEditorPageState
         Navigator.of(context).pop();
       }
     } on FirebaseException catch (e) {
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = 'Error updating activity: ${e.message}';
-        });
+      if (!mounted) {
+        return;
       }
+      // The banner already says the entry was not saved.
+      if (rejected.createRefused(widget.activityID)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {
+        loading = false;
+        error = 'Error updating activity: ${e.message}';
+      });
     }
   }
 

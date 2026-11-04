@@ -48,6 +48,19 @@ class _LateRefusal {
   }
 }
 
+// Holds each write until the test refuses that one, by its op.
+class _RefuseEach {
+  final Map<String, Completer<void>> _writes = <String, Completer<void>>{};
+
+  Future<void> respond(Write write) =>
+      _writes.putIfAbsent(write.op, Completer<void>.new).future;
+
+  Future<void> refuse(WidgetTester tester, String op) async {
+    _writes[op]!.completeError(_firebaseError('permission-denied'));
+    await tester.pumpAndSettle();
+  }
+}
+
 Finder _rejected(String what) => find.descendant(
   of: find.byType(RejectedWritesBanner),
   matching: find.textContaining(what),
@@ -371,7 +384,8 @@ void main() {
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([active, archived])),
       viceActivityCountProvider.overrideWith(
-        (ref, String viceID) => const AsyncData((count: 0, onDevice: false)),
+        (ref, String viceID) =>
+            const AsyncData((count: 0, source: CountSource.server)),
       ),
     ];
 
@@ -426,14 +440,21 @@ void main() {
     });
 
     testWidgets('counts from the server online, says when a count comes '
-        'from this device, and says when there is none', (
-      WidgetTester tester,
-    ) async {
+        'from this device offline or because the server did not count, and '
+        'says when there is none', (WidgetTester tester) async {
       final Vice water = fakeVice('water');
+      final Vice beer = fakeVice('beer');
       final Map<String, AsyncValue<ActivityCount>> counts =
           <String, AsyncValue<ActivityCount>>{
-            active.id: const AsyncData((count: 1, onDevice: false)),
-            archived.id: const AsyncData((count: 3, onDevice: true)),
+            active.id: const AsyncData((count: 1, source: CountSource.server)),
+            archived.id: const AsyncData((
+              count: 3,
+              source: CountSource.deviceOffline,
+            )),
+            beer.id: const AsyncData((
+              count: 2,
+              source: CountSource.deviceServerFailed,
+            )),
             water.id: AsyncError<ActivityCount>(
               _firebaseError('unavailable'),
               StackTrace.empty,
@@ -441,7 +462,7 @@ void main() {
           };
       await _pumpOpened(tester, writes, [
         viceListProvider.overrideWithValue(
-          AsyncData([active, archived, water]),
+          AsyncData([active, archived, beer, water]),
         ),
         viceActivityCountProvider.overrideWith(
           (ref, String viceID) => counts[viceID]!,
@@ -451,6 +472,10 @@ void main() {
       expect(find.text('1 activity'), findsOneWidget);
       expect(
         find.text('3 activities on this device (offline)'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('2 activities on this device (server count unavailable)'),
         findsOneWidget,
       );
       expect(find.text(ManageData.countUnavailable), findsOneWidget);
@@ -940,6 +965,103 @@ void main() {
       expect(_rejected('Not deleted'), findsNothing);
     });
 
+    testWidgets('an Undo refused before its own timeout, after the recording '
+        'was refused, does not say the Undo failed', (
+      WidgetTester tester,
+    ) async {
+      final _RefuseEach refusals = _RefuseEach();
+      writes.respond = refusals.respond;
+      await recordQueued(tester);
+      await tester.tap(find.text('Undo'));
+      await tester.pump();
+
+      await refusals.refuse(tester, 'recordActivity');
+      await refusals.refuse(tester, 'deleteActivity');
+
+      expect(_rejected('Not saved: coffee, 2 items, '), findsOneWidget);
+      expect(_rejected('Not deleted'), findsNothing);
+      expect(find.textContaining('Unable to undo'), findsNothing);
+    });
+
+    testWidgets('a history delete refused before its own timeout, after the '
+        'entry\'s create was refused, shows no error', (
+      WidgetTester tester,
+    ) async {
+      final _RefuseEach refusals = _RefuseEach();
+      writes.respond = refusals.respond;
+      final Vice coffee = fakeVice('coffee');
+      final ViceActivity activity = fakeActivity(
+        coffee.id,
+        1,
+        DateTime(2026, 11, 2, 9, 30),
+      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData([activity]),
+        ),
+      ], ViceActivityHistoryPage(viceID: coffee.id));
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+
+      ProviderScope.containerOf(
+            tester.element(find.byType(ViceActivityHistoryPage)),
+          )
+          .read(rejectedWritesProvider.notifier)
+          .reporter('Not saved: coffee', creates: activity.id)(
+        _firebaseError('permission-denied'),
+      );
+      await refusals.refuse(tester, 'deleteActivity');
+
+      expect(_rejected('Not saved: coffee'), findsOneWidget);
+      expect(_rejected('Not deleted'), findsNothing);
+      expect(find.text('permission-denied'), findsNothing);
+    });
+
+    testWidgets('an edit refused before its own timeout, after the entry\'s '
+        'create was refused, closes without an error', (
+      WidgetTester tester,
+    ) async {
+      final _RefuseEach refusals = _RefuseEach();
+      writes.respond = refusals.respond;
+      final Vice coffee = fakeVice('coffee');
+      final ViceActivity activity = fakeActivity(
+        coffee.id,
+        3,
+        DateTime(2026, 11, 2, 9, 30),
+      );
+      await _pumpOpened(
+        tester,
+        writes,
+        [
+          viceListProvider.overrideWithValue(AsyncData([coffee])),
+          viceActivityProvider.overrideWith(
+            (ref, String activityID) => AsyncData(activity),
+          ),
+        ],
+        ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '5',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pump();
+
+      ProviderScope.containerOf(
+            tester.element(find.byType(ViceActivityEditorPage)),
+          )
+          .read(rejectedWritesProvider.notifier)
+          .reporter('Not saved: coffee', creates: activity.id)(
+        _firebaseError('permission-denied'),
+      );
+      await refusals.refuse(tester, 'updateActivity');
+
+      expect(find.byType(ViceActivityEditorPage), findsNothing);
+      expect(_rejected('Not saved: coffee'), findsOneWidget);
+      expect(_rejected('Change not saved'), findsNothing);
+    });
+
     testWidgets('an edit names the entry it was made to', (
       WidgetTester tester,
     ) async {
@@ -1038,7 +1160,8 @@ void main() {
       await _pumpOpened(tester, writes, [
         viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
         viceActivityCountProvider.overrideWith(
-          (ref, String viceID) => const AsyncData((count: 0, onDevice: false)),
+          (ref, String viceID) =>
+              const AsyncData((count: 0, source: CountSource.server)),
         ),
       ], const ManageData());
       await tester.tap(find.byTooltip('Archive'));
@@ -1059,7 +1182,8 @@ void main() {
       await _pumpOpened(tester, writes, users: users.stream, [
         viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
         viceActivityCountProvider.overrideWith(
-          (ref, String viceID) => const AsyncData((count: 0, onDevice: false)),
+          (ref, String viceID) =>
+              const AsyncData((count: 0, source: CountSource.server)),
         ),
       ], const ManageData());
       await tester.tap(find.byTooltip('Archive'));

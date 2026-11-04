@@ -81,6 +81,12 @@ class RejectedWrites extends Notifier<List<RejectedWrite>> {
     };
   }
 
+  /// Whether the server refused the queued create of [documentID]. A change
+  /// queued after it is refused too, and can be refused before its own
+  /// timeout; the SDK refuses queued writes in order, so the create's refusal
+  /// has been reported by the time the change's arrives.
+  bool createRefused(String documentID) => _refusedCreates.contains(documentID);
+
   void dismiss(RejectedWrite rejected) {
     state = <RejectedWrite>[
       for (final RejectedWrite item in state)
