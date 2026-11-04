@@ -34,8 +34,11 @@ void main() {
       'Juice',
     ]);
     await recordActivity(tester, 'Juice', 2);
+    // Without an entry for a vice still in use, the day would read as clean
+    // once Juice is archived, and show no radar.
+    await recordActivity(tester, 'Coffee', 1);
     await expectRadar(tester, <String>{
-      'Coffee (0 drinks)',
+      'Coffee (1 drink)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
       'Juice (2 drinks)',
@@ -65,7 +68,7 @@ void main() {
     await closeDrawerPage(tester);
 
     await expectRadar(tester, <String>{
-      'Coffee (0 drinks)',
+      'Coffee (1 drink)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
     });
