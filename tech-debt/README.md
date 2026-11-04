@@ -105,10 +105,10 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 - **medium** — [macOS sandbox entitlements omit outbound network access that Firebase needs](platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
 - **medium** — [App name and description are still flutter-create scaffold text outside Dart code](platform-and-delivery-config/placeholder-app-identity-strings.md)
 - **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
-- **low** — [The iOS launch image is a 1x1 placeholder](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
+- **low** — [Legacy iOS icons the generator recreates, and a 1x1 launch image placeholder](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
 - **low** — [iOS Podfile relaxes modular includes on every pod, and forces the deployment target](platform-and-delivery-config/ios-podfile-applies-blanket-pod-wide-overrides.md)
 - **low** — [macOS still targets a years-unsupported OS version while iOS was upgraded](platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
-- **low** — [iOS and macOS code-signing settings are outdated and inconsistent with each other](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
+- **low** — [iOS hardcodes a development team, and macOS has none and mixes provisioning styles](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
 - **medium** — [`flutter build macos --release` fails because the pods target macOS versions Xcode no longer supports](platform-and-delivery-config/macos-release-build-fails-on-pod-deployment-targets.md)
 
 ## CI and Quality Gates (1)

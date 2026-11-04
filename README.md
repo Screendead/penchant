@@ -33,6 +33,6 @@ Commands for seeding data, the Firestore rules tests, versioning and releases ar
 - `tech-debt/`: the debt register, one short report per issue; a fixed issue's file is deleted.
 - `ideas/`: the product backlog; a shipped or rejected idea's file is deleted.
 - `CHANGELOG.md`: user-visible changes per release.
-- `firestore.rules`, `firestore.indexes.json`: backend rules and indexes, deployed by CI on merge to `master`.
+- `firestore.rules`, `firestore.indexes.json`: backend rules and indexes. CI deploys them on merge to `master` only once the `DEPLOY_FIRESTORE_RULES` repository variable is `true`; until then the deploy job is skipped and they are deployed by hand.
 
 The app is proprietary; all rights reserved.

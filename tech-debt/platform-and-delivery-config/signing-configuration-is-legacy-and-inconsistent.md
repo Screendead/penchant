@@ -1,4 +1,4 @@
-# iOS uses the deprecated identity string with a hardcoded team while macOS has no team at all
+# iOS hardcodes a personal development team while macOS has no team at all
 
 **Severity:** low
 
