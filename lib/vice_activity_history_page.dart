@@ -12,6 +12,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityHistoryPage extends ConsumerStatefulWidget {
@@ -38,23 +39,32 @@ class _ViceActivityHistoryPageState
 
   // The messenger is taken from this State, not the row: a delete drops the
   // row from the local snapshot before the server answers.
-  Future<void> _delete(String activityID) async {
+  Future<void> _delete(Vice vice, ViceActivity activity) async {
+    final String activityID = activity.id;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     setState(() {
       deleting.add(activityID);
     });
 
-    String message;
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    String? message;
     try {
       message =
           await settleWrite(
             ref.read(trackerWritesProvider).deleteActivity(activityID),
+            onRejectedLater: rejected.reporter(
+              'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate())}',
+              changes: activityID,
+            ),
           )
           ? 'Activity deleted'
           : queuedDeleteMessage;
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while deleting an activity');
-      message = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
+      // The banner already says the entry was not saved.
+      message = rejected.createRefused(activityID)
+          ? null
+          : 'Could not delete this activity. ${firestoreErrorMessage(e)}';
     }
 
     if (mounted) {
@@ -62,7 +72,7 @@ class _ViceActivityHistoryPageState
         deleting.remove(activityID);
       });
     }
-    if (messenger.mounted) {
+    if (message != null && messenger.mounted) {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -188,7 +198,7 @@ class _ViceActivityHistoryPageState
                         icon: const Icon(Icons.delete_outline),
                         onPressed: deleting.contains(activity.id)
                             ? null
-                            : () => _delete(activity.id),
+                            : () => _delete(vice, activity),
                       ),
                     ],
                   ),

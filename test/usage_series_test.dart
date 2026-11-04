@@ -151,6 +151,53 @@ void main() {
         [0, 0, 0, 0, 0],
       );
     });
+
+    test('buckets by calendar day, to the minute before midnight', () {
+      expect(
+        bucketTotals(usageRange(DateTime(2026, 4, 3), 7, 1), [
+          fakeActivity('v', 1, DateTime(2026, 3, 28)),
+          fakeActivity('v', 2, DateTime(2026, 3, 30, 23, 59)),
+          fakeActivity('v', 4, DateTime(2026, 4, 3, 23, 59)),
+          fakeActivity('v', 8, DateTime(2026, 4, 4)),
+          fakeActivity('v', 16, DateTime(2026, 3, 27, 23, 59)),
+        ]),
+        [1, 0, 2, 0, 0, 0, 4],
+      );
+      expect(
+        bucketTotals(usageRange(DateTime(2026, 4, 10), 14, 7), [
+          fakeActivity('v', 1, DateTime(2026, 4, 3, 23, 59)),
+          fakeActivity('v', 2, DateTime(2026, 4, 4)),
+        ]),
+        [1, 2],
+      );
+    });
+
+    final DateTime? transition = firstDstTransitionDay(2026);
+
+    test(
+      'puts an entry just after midnight on its own day across a DST change',
+      () {
+        final DateTime day = transition!;
+        final DateTime next = addDays(day, 1);
+
+        expect(
+          bucketTotals(usageRange(next, 3, 1), [
+            fakeActivity(
+              'v',
+              1,
+              DateTime(day.year, day.month, day.day, 23, 30),
+            ),
+            fakeActivity(
+              'v',
+              2,
+              DateTime(next.year, next.month, next.day, 0, 30),
+            ),
+          ]),
+          [0, 1, 2],
+        );
+      },
+      skip: transition == null ? noDstSkipReason : false,
+    );
   });
 
   group('smoothing window', () {

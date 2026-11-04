@@ -11,6 +11,8 @@ pull request titles (`gh pr list --state merged`).
 
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
   and an empty day offline says the device may not have it rather than calling it clear.
+- A change saved offline that the server later refuses (for example, an entry for a vice deleted on another device)
+  is named in a banner at the top of the screen until you dismiss it, instead of disappearing without a word.
 - Account Settings exports your data as CSV and JSON, deletes the account with everything in it, resends the
   verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
   device's copy of your data, and asks first if entries have not synced (#54).
@@ -22,6 +24,13 @@ pull request titles (`gh pr list --state merged`).
   device log.
 - Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
   after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+- Manage Data's activity counts work offline: each row counts what this device holds and says so, rather than going
+  blank. Your Vices also shows the offline banner.
+
+### Fixed
+
+- Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
+- The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.
 
 ### Fixed
 
