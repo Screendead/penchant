@@ -79,7 +79,7 @@ void main() {
         matching: find.byType(DropdownButtonFormField<String>),
       ),
     );
-    await pumpUntil(tester, find.text('Coffee').last);
+    await pumpUntil(tester, find.text('Coffee'));
     // The menu fades in; read it once it is up.
     await pumpFor(tester, const Duration(milliseconds: 500));
     expect(find.text('Water'), findsWidgets);
