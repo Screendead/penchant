@@ -82,7 +82,13 @@ void main() {
     final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-a11y-text@example.com');
-    await addVicesThroughManageData(tester);
+    const List<String> names = <String>[
+      'Coffee',
+      'Tea',
+      'Water',
+      'Sparkling water',
+    ];
+    await addVicesThroughManageData(tester, names);
 
     tester.platformDispatcher.textScaleFactorTestValue = 3;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -115,19 +121,35 @@ void main() {
     expect(tester.takeException(), isNull);
     final List<Object> stored = await storedActivities('Water');
     expect(stored, hasLength(1));
-    // At this size the radar cuts its titles short to fit; screen readers
-    // still hear the whole names.
+    // Vices list newest first.
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
         'Totals for ${formatDay(startOfDay(DateTime.now()))}. '
-        'Water: 4 drinks; Tea: 0 drinks; Coffee: 0 drinks',
+        'Sparkling water: 0 drinks; Water: 4 drinks; Tea: 0 drinks; '
+        'Coffee: 0 drinks',
       ),
     );
-    final List<String> titles = chartTitles(tester)!.toList();
-    expect(titles, hasLength(3));
-    expect(titles.where((String t) => t.endsWith(' (4 drinks)')), hasLength(1));
-    expect(titles.where((String t) => t.endsWith(' (0 drinks)')), hasLength(2));
+    await pumpFor(tester, const Duration(seconds: 1));
+    await screenshot(tester, 'a11y-today-text-3x');
+
+    // Each name is drawn whole, as a chart title or in the key below it.
+    final Set<String> titles = chartTitles(tester)!;
+    final Rect screen =
+        Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+    for (final String name in names) {
+      if (titles.any((String t) => t == name || t.startsWith('$name ('))) {
+        continue;
+      }
+      final Finder entry = find.textContaining(RegExp('^$name: '));
+      expect(entry, findsOneWidget, reason: '$name is not shown whole');
+      final Rect rect = tester.getRect(entry);
+      expect(
+        screen.contains(rect.topLeft) && screen.contains(rect.bottomRight),
+        isTrue,
+        reason: '$name is off screen at $rect',
+      );
+    }
     semantics.dispose();
   });
 }

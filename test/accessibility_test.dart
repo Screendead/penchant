@@ -67,6 +67,12 @@ final List<Vice> _three = [
 RadarChartData _radar(WidgetTester tester) =>
     tester.widget<RadarChart>(find.byType(RadarChart)).data;
 
+final List<Vice> _longNamed = [
+  fakeVice('elderflower', name: 'Sparkling elderflower water'),
+  fakeVice('coffee'),
+  fakeVice('tea'),
+];
+
 void main() {
   group('the radar', () {
     testWidgets('puts a zero at the centre', (WidgetTester tester) async {
@@ -142,6 +148,25 @@ void main() {
         findsOneWidget,
       );
       expect(find.bySemanticsLabel('coffee (2 items)'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('hear the radar once when it shows a key', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      _usePhone(tester, textScale: 3);
+      await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+
+      expect(find.text('coffee: 0 items'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Totals for $_todayLabel. Sparkling elderflower water: 4 items; '
+          'coffee: 0 items; tea: 0 items',
+        ),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp('^coffee: 0 items')), findsNothing);
       semantics.dispose();
     });
 
@@ -239,6 +264,36 @@ void main() {
         await tester.tap(find.text('Graph'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('Today shows every name whole, on the chart or in its key', (
+        WidgetTester tester,
+      ) async {
+        _usePhone(tester, textScale: textScale);
+        await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+        expect(tester.takeException(), isNull);
+
+        final RadarChartData data = _radar(tester);
+        final Rect screen = Offset.zero & tester.view.physicalSize / 2;
+        for (int i = 0; i < _longNamed.length; i++) {
+          final Vice vice = _longNamed[i];
+          final String title = data.getTitle!(i, 0).text;
+          if (title == vice.name || title.startsWith('${vice.name} (')) {
+            continue;
+          }
+          final Finder entry = find.textContaining(RegExp('^${vice.name}: '));
+          expect(entry, findsOneWidget, reason: '${vice.name} is not shown');
+          // At text scale 3 on this screen the key outgrows its half of the
+          // chart's space and scrolls.
+          await tester.ensureVisible(entry);
+          await tester.pumpAndSettle();
+          final Rect rect = tester.getRect(entry);
+          expect(
+            screen.contains(rect.topLeft) && screen.contains(rect.bottomRight),
+            isTrue,
+            reason: '${vice.name} is off screen at $rect',
+          );
+        }
       });
 
       testWidgets('Today lays out without overflowing', (

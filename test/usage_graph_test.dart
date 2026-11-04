@@ -294,14 +294,45 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('two bars, one with a 60-character name', (
+    List<String> radarTitles(WidgetTester tester) {
+      final RadarChartData data = tester
+          .widget<RadarChart>(find.byType(RadarChart))
+          .data;
+      return [
+        for (int i = 0; i < data.dataSets.first.dataEntries.length; i++)
+          data.getTitle!(i, 0).text,
+      ];
+    }
+
+    void expectRadarTitlesFit(WidgetTester tester, int axes) {
+      final RadarChartData data = tester
+          .widget<RadarChart>(find.byType(RadarChart))
+          .data;
+      final BuildContext context = tester.element(find.byType(RadarChart));
+      final Size size = tester.getSize(find.byType(RadarChart));
+      for (final String title in radarTitles(tester)) {
+        expect(
+          chartLabelSize(context, title, data.titleTextStyle!).width,
+          lessThanOrEqualTo(
+            radarTitleWidth(size, axes, ViceChart.radarTitleOffset),
+          ),
+          reason: '"$title" is wider than its space',
+        );
+      }
+    }
+
+    // The key's entries, which every vice has once the key is shown.
+    Finder keyEntry(Vice vice) => find.text('${vice.name}: 2 items');
+
+    testWidgets('two bars, one with a 60-character name, and a key', (
       WidgetTester tester,
     ) async {
       _usePhone(tester);
-      await pumpToday(tester, [
+      final List<Vice> vices = [
         fakeVice('long', name: longName),
         fakeVice('tea'),
-      ]);
+      ];
+      await pumpToday(tester, vices);
 
       final Finder titles = find.descendant(
         of: find.byType(BarChart),
@@ -314,28 +345,72 @@ void main() {
         expect(chart.left, lessThanOrEqualTo(_rect(title).left));
         expect(chart.right, greaterThanOrEqualTo(_rect(title).right));
       }
+      expect(titles.evaluate().map((Element e) => (e.widget as Text).data), [
+        longName,
+        'tea (2 items)',
+      ]);
+      for (final Vice vice in vices) {
+        expect(keyEntry(vice), findsOneWidget);
+      }
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('radar titles too many to fit any name are left whole', (
+    testWidgets('bars whose titles fit have no key', (
       WidgetTester tester,
     ) async {
+      _usePhone(tester);
+      final List<Vice> vices = [fakeVice('tea'), fakeVice('gin')];
+      await pumpToday(tester, vices);
+
+      expect(find.text('tea (2 items)'), findsOneWidget);
+      expect(keyEntry(vices.first), findsNothing);
+    });
+
+    testWidgets(
+      'a bar drops the quantity at large text before cutting a name',
+      (WidgetTester tester) async {
+        _usePhone(tester, textScale: 3);
+        final List<Vice> vices = [fakeVice('coffee', name: 'Coffee')];
+        await pumpToday(tester, vices);
+
+        expect(find.text('Coffee'), findsOneWidget);
+        expect(keyEntry(vices.first), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('a radar with too many axes for its names cuts them and '
+        'lists every vice in the key', (WidgetTester tester) async {
       _usePhone(tester);
       final List<Vice> vices = [
         for (int i = 1; i <= 31; i++) fakeVice('v$i', name: 'Vice $i'),
       ];
       await pumpToday(tester, vices);
 
-      final RadarChartData data = tester
-          .widget<RadarChart>(find.byType(RadarChart))
-          .data;
-      expect(data.getTitle!(0, 0).text, 'Vice 1 (2 items)');
-      expect(data.getTitle!(30, 0).text, 'Vice 31 (2 items)');
+      expect(radarTitles(tester).first, endsWith('…'));
+      expectRadarTitlesFit(tester, vices.length);
+      for (final Vice vice in vices) {
+        expect(keyEntry(vice), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a radar title is cut to the space between its neighbours', (
+    testWidgets('a radar too crowded for an ellipsis draws no titles', (
       WidgetTester tester,
     ) async {
+      _usePhone(tester, textScale: 3);
+      final List<Vice> vices = [
+        for (int i = 1; i <= 31; i++) fakeVice('v$i', name: 'Vice $i'),
+      ];
+      await pumpToday(tester, vices);
+
+      expect(radarTitles(tester), everyElement(isEmpty));
+      expect(keyEntry(vices.first), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a radar title drops its quantity, then is cut, to fit the '
+        'space between its neighbours', (WidgetTester tester) async {
       _usePhone(tester);
       final List<Vice> vices = [
         fakeVice('long', name: longName),
@@ -344,22 +419,30 @@ void main() {
       ];
       await pumpToday(tester, vices);
 
-      final RadarChartData data = tester
-          .widget<RadarChart>(find.byType(RadarChart))
-          .data;
-      final String longTitle = data.getTitle!(0, 0).text;
-      expect(longTitle, endsWith('… (2 items)'));
-      expect(longTitle, startsWith('aaa'));
-      expect(data.getTitle!(1, 0).text, 'tea (2 items)');
+      final List<String> titles = radarTitles(tester);
+      expect(titles.first, startsWith('aaa'));
+      expect(titles.first, endsWith('…'));
+      expect(titles.sublist(1), ['tea (2 items)', 'beer (2 items)']);
+      expectRadarTitlesFit(tester, vices.length);
+      for (final Vice vice in vices) {
+        expect(keyEntry(vice), findsOneWidget);
+      }
+    });
 
-      final BuildContext context = tester.element(find.byType(RadarChart));
-      final Size size = tester.getSize(find.byType(RadarChart));
-      expect(
-        chartLabelSize(context, longTitle, data.titleTextStyle!).width,
-        lessThanOrEqualTo(
-          radarTitleWidth(size, vices.length, ViceChart.radarTitleOffset),
-        ),
-      );
+    testWidgets('radar names that fit without their quantities need no key', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester, textScale: 3);
+      final List<Vice> vices = [
+        fakeVice('coffee', name: 'Coffee'),
+        fakeVice('tea', name: 'Tea'),
+        fakeVice('water', name: 'Water'),
+      ];
+      await pumpToday(tester, vices);
+
+      expect(radarTitles(tester), ['Coffee', 'Tea', 'Water']);
+      expectRadarTitlesFit(tester, vices.length);
+      expect(keyEntry(vices.first), findsNothing);
     });
   });
 }
