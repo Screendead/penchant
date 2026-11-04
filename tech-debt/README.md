@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**51 issues: 0 critical, 2 high, 24 medium, 25 low.**
+**53 issues: 0 critical, 2 high, 24 medium, 27 low.**
 
 ## Firebase Data Layer (7)
 
@@ -28,7 +28,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **low** — [Legacy activities of a missing vice are fetched but unreachable](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 - **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
-## Widget State and View Logic (6)
+## Widget State and View Logic (8)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
@@ -38,6 +38,8 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **medium** — [Editing form ignores live database changes after it first loads](widget-state-and-view-logic/editor-seeds-its-controllers-during-build.md)
 - **medium** — [App left open past midnight keeps showing yesterday as today](widget-state-and-view-logic/today-is-frozen-at-widget-initialisation.md)
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
+- **low** — [Radar titles are left uncut, and can overlap, when too crowded for an ellipsis](widget-state-and-view-logic/radar-titles-are-not-width-bounded-when-crowded.md)
+- **low** — [The oldest weekly bucket is a short remainder, summed like a full week](widget-state-and-view-logic/oldest-weekly-bucket-holds-the-remainder.md)
 
 ## Error Handling and Observability (1)
 

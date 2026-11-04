@@ -13,7 +13,7 @@ A Trends tab that grows the existing usage graph:
 
 ## Why
 
-- SOURCED (code): `UsageGraphView` already buckets by day or by whole week and overlays a moving average, with the
+- SOURCED (code): `UsageGraphView` already buckets by day or by week and overlays a moving average, with the
   arithmetic in tested pure functions (`lib/data/usage_series.dart`).
 - INFERENCE: descriptive views need no statistics gate and give a new user something on day three, long before the
   [insights engine](insights-engine.md) has 21 days.

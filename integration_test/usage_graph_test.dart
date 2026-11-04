@@ -43,7 +43,7 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('the graph buckets stored activities by day and by whole week, '
+  testWidgets('the graph buckets stored activities by day and by week, '
       'and keeps its smoothing within the weeks shown', (
     WidgetTester tester,
   ) async {
@@ -88,20 +88,21 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 500));
     expect(find.text('Smoothing: 7 buckets for Coffee'), findsOneWidget);
 
-    // Four whole weeks: the activity 29 days ago falls outside them.
+    // Four whole weeks back from today, then the two days left over, which
+    // hold the activity 29 days ago.
     await _pickTimestep(tester, 'Weekly');
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
-        'Weekly totals of Coffee over the last 28 days: 9 drinks in all. '
+        'Weekly totals of Coffee over the last 30 days: 10 drinks in all. '
         'The most was 5 drinks in the week of '
         '${UsageGraphView.labelFormat.format(addDays(today, -6))}. '
-        'Shown with a 4-week average.',
+        'Shown with a 5-week average.',
       ),
     );
-    expect(_totals(tester), [0, 0, 4, 5]);
-    expect(find.text('Smoothing: 4 buckets for Coffee'), findsOneWidget);
-    expect(tester.widget<Slider>(find.byType(Slider)).value, 4);
+    expect(_totals(tester), [1, 0, 0, 4, 5]);
+    expect(find.text('Smoothing: 5 buckets for Coffee'), findsOneWidget);
+    expect(tester.widget<Slider>(find.byType(Slider)).value, 5);
     await screenshot(tester, 'usage-graph-weekly');
 
     await _pickTimestep(tester, 'Daily');

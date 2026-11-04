@@ -25,10 +25,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
-- The usage graph: weekly view shows whole weeks, the newest ending today, rather than a short last week that
-  looked like a drop; the smoothing control, its caption and the average always agree; the lines no longer dip
-  below zero; and axis labels no longer repeat or overlap, at any text size. Long vice names on the Today chart
-  are cut short instead of running into their neighbours.
+- The usage graph: weekly view counts weeks back from today, so the newest point is a whole week rather than a
+  short remainder that looked like a drop; the smoothing control, its caption and the average always agree; the
+  lines no longer dip below zero; and axis labels no longer repeat or overlap, at any text size. Long vice names on
+  the Today chart are cut short instead of running into their neighbours.
 
 ## [0.1.0] - Unreleased
 

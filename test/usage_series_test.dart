@@ -26,21 +26,35 @@ void main() {
       }
     });
 
-    test('weekly ranges are whole weeks, the last ending today', () {
-      const Map<int, int> weeks = {
-        7: 1,
-        14: 2,
-        30: 4,
-        90: 12,
-        180: 25,
-        365: 52,
+    test('weekly ranges cover every day picked, the newest week ending today '
+        'and the oldest bucket holding the remainder', () {
+      const Map<int, (int, int)> weeks = {
+        7: (1, 7),
+        14: (2, 7),
+        30: (5, 2),
+        90: (13, 6),
+        180: (26, 5),
+        365: (53, 1),
       };
-      weeks.forEach((int days, int count) {
+      weeks.forEach((int days, (int, int) expected) {
+        final (int count, int oldestDays) = expected;
         final UsageRange range = usageRange(_today, days, 7);
         expect(range.bucketCount, count, reason: '$days days');
-        expect(range.days, 7 * count);
+        expect(range.days, days);
+        expect(range.start, addDays(_today, 1 - days));
         expect(range.end, addDays(_today, 1));
+        expect(range.bucketStart(0), range.start);
         expect(range.bucketStart(count - 1), addDays(_today, -6));
+        final DateTime oldestEnd = count == 1
+            ? range.end
+            : range.bucketStart(1);
+        expect(daysBetween(range.start, oldestEnd), oldestDays);
+        for (int i = 1; i < count; i++) {
+          final DateTime next = i + 1 < count
+              ? range.bucketStart(i + 1)
+              : range.end;
+          expect(daysBetween(range.bucketStart(i), next), 7);
+        }
       });
     });
 
@@ -52,8 +66,16 @@ void main() {
     });
 
     test('keeps calendar days across a daylight-saving change', () {
-      // 2026-10-25 and 2026-03-29 are DST changes in Europe; in any zone,
-      // every bucket must start at local midnight.
+      // Dart builds DateTimes only in the process time zone, so this checks
+      // anything only where that zone changed its offset in 2026; CI runs
+      // with TZ=Europe/London for it.
+      expect(
+        DateTime(2026, 3, 28).timeZoneOffset,
+        isNot(DateTime(2026, 3, 30).timeZoneOffset),
+        reason:
+            'run with TZ set to a zone with daylight saving, such as '
+            'TZ=Europe/London flutter test',
+      );
       for (final DateTime today in [
         DateTime(2026, 11, 4),
         DateTime(2026, 4, 2),
@@ -91,15 +113,15 @@ void main() {
     });
 
     test('the newest weekly bucket is a full week, not a remainder', () {
-      // 30 days used to give four weeks and a two-day fifth bucket.
+      // The two-day remainder of 30 days used to be the newest bucket.
       final UsageRange range = usageRange(_today, 30, 7);
-      expect(range.bucketCount, 4);
-      expect(daysBetween(range.bucketStart(3), range.end), 7);
+      expect(range.bucketCount, 5);
+      expect(daysBetween(range.bucketStart(4), range.end), 7);
 
       final List<double> totals = bucketTotals(range, [
-        for (int day = 0; day < 28; day++) _at(day, 1),
+        for (int day = 0; day < 30; day++) _at(day, 1),
       ]);
-      expect(totals, [7, 7, 7, 7]);
+      expect(totals, [2, 7, 7, 7, 7]);
     });
 
     test('sparse: a single day in a long range', () {
@@ -112,7 +134,13 @@ void main() {
     });
 
     test('empty: every bucket is zero', () {
-      expect(bucketTotals(usageRange(_today, 30, 7), const []), [0, 0, 0, 0]);
+      expect(bucketTotals(usageRange(_today, 30, 7), const []), [
+        0,
+        0,
+        0,
+        0,
+        0,
+      ]);
     });
 
     test('drops activities before and after the range', () {
@@ -121,6 +149,10 @@ void main() {
       expect(
         bucketTotals(range, [_at(14, 1), _at(15, 1), _at(20, 1), _at(-1, 1)]),
         [0, 0],
+      );
+      expect(
+        bucketTotals(usageRange(_today, 30, 7), [_at(30, 1), _at(34, 1)]),
+        [0, 0, 0, 0, 0],
       );
     });
   });
@@ -135,7 +167,7 @@ void main() {
 
     test('a window picked for daily shrinks to fit weekly', () {
       final int weeks = usageRange(_today, 30, 7).bucketCount;
-      expect(effectiveWindow(7, weeks), 4);
+      expect(effectiveWindow(7, weeks), 5);
       expect(effectiveWindow(3, weeks), 3);
       expect(effectiveWindow(0, weeks), 1);
     });

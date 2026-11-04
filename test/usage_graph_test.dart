@@ -184,21 +184,21 @@ void main() {
   }
 
   group('weekly', () {
-    testWidgets('shows whole weeks, the newest ending today', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('counts weeks back from today and keeps every day of the '
+        'range', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       _usePhone(tester);
       await _pumpGraph(tester, [
         _daysAgo(0, 2),
         _daysAgo(6, 3),
         _daysAgo(7, 4),
-        // Inside the 30-day range, but not in its four whole weeks.
-        _daysAgo(29, 9),
+        // In the two days left over before the four whole weeks.
+        _daysAgo(29, 1),
       ]);
       await _pickTimestep(tester, 'Weekly');
 
       expect(_chart(tester).lineBarsData.first.spots.map((FlSpot s) => s.y), [
+        1,
         0,
         0,
         4,
@@ -209,7 +209,7 @@ void main() {
       );
       expect(
         find.bySemanticsLabel(
-          'Weekly totals of coffee over the last 28 days: 9 items in all. '
+          'Weekly totals of coffee over the last 30 days: 10 items in all. '
           'The most was 5 items in the week of $newestWeek.',
         ),
         findsOneWidget,
@@ -232,20 +232,20 @@ void main() {
       expect(find.text('7-day average'), findsOneWidget);
 
       await _pickTimestep(tester, 'Weekly');
-      expect(_smoothingCaption(tester), 'Smoothing: 4 buckets for coffee');
+      expect(_smoothingCaption(tester), 'Smoothing: 5 buckets for coffee');
       final Slider slider = tester.widget<Slider>(find.byType(Slider));
-      expect(slider.value, 4);
-      expect(slider.max, 4);
-      expect(find.text('4-week average'), findsOneWidget);
+      expect(slider.value, 5);
+      expect(slider.max, 5);
+      expect(find.text('5-week average'), findsOneWidget);
       expect(
-        find.bySemanticsLabel(RegExp(r'Shown with a 4-week average\.$')),
+        find.bySemanticsLabel(RegExp(r'Shown with a 5-week average\.$')),
         findsOneWidget,
       );
-      // The average is over the 4 weeks, not a 7-wide window.
+      // The average is over the 5 buckets, not a 7-wide window.
       final List<double> smoothed = _chart(
         tester,
       ).lineBarsData.last.spots.map((FlSpot s) => s.y).toList();
-      expect(smoothed.last, (0 + 4 + 0 + 2) / 4);
+      expect(smoothed.last, (0 + 0 + 0 + 4 + 2) / 5);
 
       await _pickTimestep(tester, 'Daily');
       expect(_smoothingCaption(tester), 'Smoothing: 7 buckets for coffee');
