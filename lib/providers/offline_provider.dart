@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/providers/firestore_retry.dart';
 import 'package:tracker/providers/user_provider.dart';
 
 // Every launch with a warm cache answers from it first, for about as long as
@@ -71,4 +72,4 @@ final offlineProvider = StreamProvider.autoDispose<bool>((ref) {
         ),
     offlineDelay,
   );
-});
+}, retry: firestoreRetry);

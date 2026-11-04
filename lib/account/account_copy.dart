@@ -3,6 +3,9 @@
 abstract final class AccountCopy {
   static const String dataSection = 'Your data';
 
+  static const String profileLoadFailed =
+      'Could not load your account. Try again.';
+
   static const String exportTitle = 'Export my data';
   static const String exportSubtitle =
       'A spreadsheet of every entry and a full copy of your account, '

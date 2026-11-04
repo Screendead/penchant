@@ -3,21 +3,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
+import 'package:tracker/bootstrap.dart';
 import 'package:tracker/errors/not_found.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
+import 'package:tracker/theme.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/info_box.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeFirebase();
+  installErrorHandlers();
+  startApp();
+}
 
-  runApp(const ProviderScope(child: MyApp()));
+// main() without the global error handlers, which flutter_test owns.
+void startApp() {
+  runApp(
+    const Bootstrap(
+      initialize: initializeFirebase,
+      // Every provider reaches Firebase when first read, so the scope starts
+      // only once Firebase has.
+      child: ProviderScope(observers: [ReportProviderErrors()], child: MyApp()),
+    ),
+  );
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -32,11 +47,8 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final User? user = ref.watch(userProvider).value;
-    final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.pink,
-      brightness: Brightness.dark,
-    );
+    final AsyncValue<User?> userValue = ref.watch(userProvider);
+    final User? user = userValue.value;
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen.
@@ -52,23 +64,32 @@ class _MyAppState extends ConsumerState<MyApp> {
       child: MaterialApp(
         navigatorKey: navigatorKey,
         title: 'Vice Tracker',
-        theme: ThemeData(
-          colorScheme: colorScheme,
-          useMaterial3: true,
-          inputDecorationTheme: InputDecorationTheme(
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-            floatingLabelAlignment: FloatingLabelAlignment.center,
-            border: OutlineInputBorder(),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.pink),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: colorScheme.error),
-            ),
-          ),
-        ),
-        home: user == null ? const Authenticate() : const Homepage(),
+        theme: appTheme(),
+        home: user != null
+            ? const Homepage()
+            : userValue.hasError
+            ? const AuthStateFailure()
+            : const Authenticate(),
         onGenerateRoute: generateRoute,
+      ),
+    );
+  }
+}
+
+class AuthStateFailure extends ConsumerWidget {
+  const AuthStateFailure({super.key});
+
+  static const String message =
+      'Could not check whether you are signed in. Try again.';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: SafeArea(
+        child: ErrorView(
+          message: message,
+          onRetry: () => ref.invalidate(userProvider, asReload: true),
+        ),
       ),
     );
   }

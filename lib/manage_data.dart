@@ -2,9 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 class ManageData extends ConsumerStatefulWidget {
@@ -32,8 +35,11 @@ class _ManageDataState extends ConsumerState<ManageData> {
       )) {
         message = queuedMessage;
       }
-    } on FirebaseException catch (e) {
-      message = e.toString();
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while archiving or unarchiving a vice');
+      message =
+          '${archived ? 'Could not archive' : 'Could not unarchive'} '
+          '${vice.name}. ${firestoreErrorMessage(e)}';
     }
 
     if (mounted) {
@@ -69,7 +75,10 @@ class _ManageDataState extends ConsumerState<ManageData> {
 
   Widget _buildBody({required AsyncValue<List<Vice>> viceListValue}) {
     if (viceListValue.error case final Object error) {
-      return Center(child: Text('Unable to load your vices: $error'));
+      return ErrorView(
+        message: loadErrorMessage('your vices', error),
+        onRetry: () => ref.invalidate(viceListForUserProvider, asReload: true),
+      );
     }
 
     final List<Vice>? viceList = viceListValue.value;

@@ -17,7 +17,7 @@ void main() {
   testWidgets('register, add a vice, record an activity, see it listed', (
     WidgetTester tester,
   ) async {
-    await app.main();
+    app.startApp();
     await register(tester, 'e2e@example.com');
     await addVicesThroughManageData(tester);
 
