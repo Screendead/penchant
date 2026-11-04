@@ -73,7 +73,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 <div class="wrap">
   <header>
     <h1>Tracker: calls for Jack</h1>
-    <p class="lede">Round 1 is decided and built. Round 2 holds the calls that 1.0 hangs on; the first group has screenshots of options built on branches. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
+    <p class="lede">Round 1 is decided and built. Round 4 is new today; Round 2 holds the calls that 1.0 hangs on; the first group has screenshots of options built on branches. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
     <div class="tally" id="tally"></div>
     <p class="banner" id="banner">Connecting to saved picks…</p>
   </header>
@@ -92,6 +92,8 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
         <li><b>Firebase console checks:</b> turn on Email Enumeration Protection (Authentication › Settings › User actions), and read the password-reset and verification email templates (Authentication › Templates); the app now sends both. Set a budget alert (Google Cloud console › Billing › Budgets &amp; alerts); alerts email you, they don’t stop Firestore.</li>
         <li><b>App Check, once you have the paid Apple Developer Program:</b> register the iOS app under Firebase › Security › App Check (App Attest and DeviceCheck need your Team ID and a DeviceCheck key). Enforce on Firestore only after every installed copy runs a build from PR #55 or later.</li>
         <li><b>Nothing to do for the new index:</b> Claude deployed it (activities by owner, newest first). Production also holds 4 indexes the repo doesn’t list; they were left in place.</li>
+        <li><b>Stop bare firebase commands reaching production</b> from the main checkout (local CLI setting only):
+          <div class="cmd"><pre id="c4">cd ~/development/tracker && firebase use --clear</pre><button class="copy" data-copy="c4">Copy</button></div></li>
         <li><b>Send Claude in chat, when you have them:</b> the legal entity, contact address and data-controller details for the privacy policy; the support email address; and the TestFlight beta testers. They stay out of the repo.</li>
       </ol>
     </div>
@@ -156,6 +158,28 @@ const GROUPS = [
         { k: "A", t: "Reuse the iOS app's registration", c: "No console step: Claude copies the committed iOS config. Delete the RunnerTests app afterwards." },
         { k: "B", t: "Register a separate Apple app", c: "Needs a different bundle ID, which breaks one purchase covering both." } ],
       rec: "A", why: "Same bundle ID, same App Store record, one Pro purchase for both devices." } ] },
+
+  { title: "Round 4 (4 November): raised by the wave D fixes", sub: "Each is built one way now; a pick changes a few lines.", calls: [
+    { id: "r4-weekly", q: "How should Weekly view handle days that don't make a whole week?", link: "lib/data/usage_series.dart",
+      ctx: "Weekly view counts back from today, so the newest point is a full week. 30 days is 4 weeks and 2 days, so the oldest point sums only 2 days and reads low (6 days at 90, 5 at 180, 1 at 365). PR #69 ships this, unlabelled. On master the short week was the newest point instead.",
+      opts: [
+        { k: "A", t: "Keep the short oldest week, labelled", c: "Axis and summary say “2 days”. Shows exactly the range the menu names. About an hour." },
+        { k: "B", t: "Round down to whole weeks", c: "30 days shows 28. Every point compares, but up to 6 named days are dropped." },
+        { k: "C", t: "Round up to whole weeks", c: "30 days shows 35. Every point compares, but it shows more than the menu says." },
+        { k: "D", t: "Scale the short week to a weekly rate", c: "Marked as estimated. Smooth line, but one point is not a real count." } ],
+      rec: "A", why: "It is honest about what was logged and matches the menu; a label costs little. The moving average already smooths the low point." },
+    { id: "r4-server-time", q: "Stamp “now” entries with the server's clock or the phone's?",
+      ctx: "The queued fix asked for server time. A Firestore server timestamp is unknown until the entry syncs, so an entry logged offline is missing from Today until then, and it is stamped with the sync time, which can be another day. PR #68 kept the phone's clock.",
+      opts: [
+        { k: "A", t: "Phone's clock (as built)", c: "Offline logging works as shipped. A wrong or hand-set phone clock puts an entry at that time." },
+        { k: "B", t: "Server's clock", c: "Times can't be faked. Offline entries vanish from Today until sync and can land on the wrong day." } ],
+      rec: "A", why: "Offline logging is a 1.0 feature and a journal is personal; nothing gains from faking your own times." },
+    { id: "r4-vice-cap", q: "Cap how many vices one account can create?",
+      ctx: "Nothing limits the number of vices. Since the day query stopped filtering by vice, no query depends on the count; the lists load every vice.",
+      opts: [
+        { k: "A", t: "No cap for 1.0", c: "No work. A user with hundreds of vices gets slow lists." },
+        { k: "B", t: "Cap at a fixed number (e.g. 50)", c: "A guard in Add Vice and a count in the rules (one billed read per create). Half a day." } ],
+      rec: "A", why: "Vices are created by hand, and the lists stay fast far past any real use. Revisit if abuse appears." } ] },
 
   { title: "Round 3 (3 November): raised by account, offline and hardening work", sub: "Built and merging now. Each pick only changes copy or a default.", calls: [
     { id: "r3-delete-copy", q: "Ship this wording for account deletion?", link: "lib/account/account_copy.dart",
