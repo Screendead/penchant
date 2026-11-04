@@ -53,7 +53,7 @@ class _ViceActivityHistoryPageState
           await settleWrite(
             ref.read(trackerWritesProvider).deleteActivity(activityID),
             onRejectedLater: rejected.reporter(
-              'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate())}',
+              'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate(), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
               changes: activityID,
             ),
           )

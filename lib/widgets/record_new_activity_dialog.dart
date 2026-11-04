@@ -113,7 +113,13 @@ class _RecordNewActivityDialogState
     );
     final Vice vice = selectedVice!;
     final int quantity = int.parse(quantityController.text);
-    final String entry = describeActivity(vice.name, vice.unit, quantity, date);
+    final String entry = describeActivity(
+      vice.name,
+      vice.unit,
+      quantity,
+      date,
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
 
     final bool synced;
 

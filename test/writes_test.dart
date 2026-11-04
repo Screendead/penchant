@@ -1124,7 +1124,9 @@ void main() {
       await refusal.refuse(tester, 'unavailable');
 
       expect(
-        _rejected('Change not saved: coffee, 3 items, Mon 2 Nov, 09:30'),
+        _rejected(
+          'Change not saved: coffee, 3 items, Mon, Nov 2, 2026 9:30\u202fAM',
+        ),
         findsOneWidget,
       );
       expect(
@@ -1160,7 +1162,7 @@ void main() {
       await refusal.refuse(tester);
 
       expect(
-        _rejected('Not deleted: coffee, 1 item, Mon 2 Nov, 09:30'),
+        _rejected('Not deleted: coffee, 1 item, Mon, Nov 2, 2026 9:30\u202fAM'),
         findsOneWidget,
       );
       expect(find.byType(ViceActivityHistoryPage), findsOneWidget);

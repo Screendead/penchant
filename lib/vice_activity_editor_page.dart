@@ -88,6 +88,7 @@ class _ViceActivityEditorPageState
     vice.unit,
     activity.quantity,
     activity.createdAt.toDate(),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
 
   Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
