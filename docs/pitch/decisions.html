@@ -170,7 +170,7 @@ const GROUPS = [
         { k: "C", t: "Bars instead of the radar at large text", c: "Bars, with the key when bar names still don't fit. Bars also need a name per bar, so at the largest size it still falls back to the key. About a day's work." } ],
       rec: "A", why: "A chart squeezed to a sliver says nothing, and a nested scroller is awkward with VoiceOver and large text." },
     { id: "r5-key-always", q: "Show the key whenever amounts are dropped from titles, not only when a name is cut?",
-      ctx: "At large text the chart titles drop the amounts to fit. Today the key shows when a name is cut; the amounts are then lost with nothing to read them from.",
+      ctx: "When titles are tight, the chart drops the amounts first and keeps the names. If every name then fits, no key shows, so the day's amounts appear only as the radar's shape.",
       opts: [
         { k: "A", t: "Yes: also when amounts are dropped", c: "The key carries the amounts, so nothing is lost." },
         { k: "B", t: "Only when a name is cut", c: "Fewer cases show the key; amounts can vanish with no other place to read them." } ],

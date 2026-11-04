@@ -34,7 +34,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Merged with master, iOS e2e 31/31, macOS CI build green; waits only on Jack's Mac development profile and then the macOS e2e (below) | `macos/`, `.github/workflows/macos-build.yml` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 27 issues: 0 critical, 1 high, 14 medium, 12 low (`tools/tech-debt-recount.py`, 2026-11-04; from 162 on 2026-08-11). The high is the macOS lockfile that #47 fixes | `tech-debt/README.md` |
+| Tech-debt register | 27 issues: 0 critical, 1 high, 13 medium, 13 low (`tools/tech-debt-recount.py`, 2026-11-04; from 162 on 2026-08-11). The high is the macOS lockfile that #47 fixes | `tech-debt/README.md` |
 | Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
