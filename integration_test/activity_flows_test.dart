@@ -377,7 +377,6 @@ void main() {
     final Map<String, dynamic> requantified = await stored('legacy-quantity');
     expect(requantified['quantity'], 2.5);
     expect((requantified['createdAt'] as Timestamp).toDate(), moved);
-    // The history list shows the moved time in the shared display format.
     await pumpUntil(
       tester,
       find.textContaining('on ${formatDayAndTime(moved)}').hitTestable(),

@@ -22,6 +22,8 @@ pull request titles (`gh pr list --state merged`).
   device log.
 - Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
   after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
+- Dates, times and numbers follow your device's region: day order, 12- or 24-hour time and digit grouping, with
+  one format for each across the Today menu, the graph, the history list and the date fields. The app is in English.
 
 ## [0.1.0] - Unreleased
 

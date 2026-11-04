@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**56 issues: 0 critical, 2 high, 30 medium, 24 low.**
+**50 issues: 0 critical, 2 high, 28 medium, 20 low.**
 
 ## Firebase Data Layer (7)
 
@@ -71,17 +71,11 @@ Copy-pasted logic, unused providers, methods and fields, commented-out code, and
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
 - **low** — [An auth widget carries a dead field](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
-## Accessibility and Localization (7)
+## Accessibility and Localization (1)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
-- **medium** — [Dates always render in English regardless of device locale](accessibility-and-localization/dateformat-constructed-without-a-locale.md)
-- **medium** — [App has no localization setup at all, English only](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
-- **low** — [Same date shown in four different formats across screens](accessibility-and-localization/date-patterns-differ-between-write-and-read-screens.md)
-- **low** — [Day header colours are hardcoded white, not theme-derived](accessibility-and-localization/day-header-hardcodes-colors-white.md)
-- **low** — [No declared app language on iOS or macOS](accessibility-and-localization/platform-shells-declare-no-language-metadata.md)
-- **low** — [Relative date labels are hand-rolled English with no localization](accessibility-and-localization/relative-date-labels-are-hardcoded-english.md)
-- **low** — [Pluralisation and number formatting assume English rules](accessibility-and-localization/value-rendering-is-english-and-locale-insensitive.md)
+- **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 
 ## Auth and Account Lifecycle (1)
 
