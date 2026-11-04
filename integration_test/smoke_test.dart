@@ -17,7 +17,9 @@ void main() {
   testWidgets('register, add a vice, record an activity, see it listed', (
     WidgetTester tester,
   ) async {
-    await app.main();
+    app.startApp();
+    // MyApp is built only once Bootstrap has started Firebase.
+    await pumpUntil(tester, find.byType(app.MyApp));
     await register(tester, 'e2e@example.com');
     await addVicesThroughManageData(tester);
 

@@ -17,6 +17,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- A screen that cannot load its data says why and offers Retry, instead of spinning forever; so does the app when it
+  cannot start. Save and delete errors read the same plain wording on every screen, and every error is written to the
+  device log.
 - Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
   after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
 

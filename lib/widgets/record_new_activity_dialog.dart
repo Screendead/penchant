@@ -7,9 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -117,13 +120,14 @@ class _RecordNewActivityDialogState
           createdAt: date,
         ),
       );
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while recording an activity');
       if (mounted) {
         setState(() {
           // The rules deny a vice that was deleted after this list loaded.
           error = e.code == 'permission-denied'
               ? 'That vice no longer exists'
-              : 'Error recording activity: ${e.message}';
+              : 'Not recorded. ${firestoreErrorMessage(e)}';
         });
       }
 
@@ -162,8 +166,9 @@ class _RecordNewActivityDialogState
       message = await settleWrite(writes.deleteActivity(activityID))
           ? 'Activity removed'
           : queuedDeleteMessage;
-    } on FirebaseException catch (e) {
-      message = 'Unable to undo: ${e.message ?? e.code}';
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while undoing a recorded activity');
+      message = 'Could not undo. ${firestoreErrorMessage(e)}';
     }
 
     if (messenger.mounted) {
@@ -181,7 +186,29 @@ class _RecordNewActivityDialogState
 
   @override
   Widget build(BuildContext context) {
-    final List<Vice>? vices = ref.watch(unarchivedViceListProvider).value;
+    final AsyncValue<List<Vice>> vicesValue = ref.watch(
+      unarchivedViceListProvider,
+    );
+    final List<Vice>? vices = vicesValue.value;
+
+    if (vicesValue.error case final Object loadError when vices == null) {
+      return AlertDialog(
+        title: const Text('Record New Vice Activity'),
+        icon: const Icon(Icons.addchart),
+        content: InfoBox(
+          message: loadErrorMessage('your vices', loadError),
+          isError: true,
+          onRetry: () =>
+              ref.invalidate(unarchivedViceListForUserProvider, asReload: true),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      );
+    }
 
     if (vices == null) {
       return const Center(child: CircularProgressIndicator());

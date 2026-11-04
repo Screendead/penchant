@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -49,8 +52,9 @@ class _ViceActivityHistoryPageState
           )
           ? 'Activity deleted'
           : queuedDeleteMessage;
-    } on FirebaseException catch (e) {
-      message = e.message ?? 'Unable to delete activity';
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while deleting an activity');
+      message = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
     }
 
     if (mounted) {
@@ -66,11 +70,27 @@ class _ViceActivityHistoryPageState
   @override
   Widget build(BuildContext context) {
     final String? uid = ref.watch(userProvider).value?.uid;
-    final List<Vice>? viceList = ref.watch(viceListProvider).value;
+    final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
     // One more than is shown, to learn whether there are older entries.
-    final List<ViceActivity>? loaded = ref
-        .watch(viceActivityHistoryProvider((viceID: viceID, limit: shown + 1)))
-        .value;
+    final AsyncValue<List<ViceActivity>> loadedValue = ref.watch(
+      viceActivityHistoryProvider((viceID: viceID, limit: shown + 1)),
+    );
+
+    if (viceListValue.error ?? loadedValue.error case final Object error) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('History')),
+        body: ErrorView(
+          message: loadErrorMessage('this history', error),
+          onRetry: () {
+            ref.invalidate(viceListForUserProvider, asReload: true);
+            ref.invalidate(viceActivityHistoryForUserProvider, asReload: true);
+          },
+        ),
+      );
+    }
+
+    final List<Vice>? viceList = viceListValue.value;
+    final List<ViceActivity>? loaded = loadedValue.value;
     if (uid != null && loaded != null) {
       previous = (uid: uid, activities: loaded);
     }
