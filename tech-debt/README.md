@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**64 issues: 0 critical, 6 high, 33 medium, 25 low.**
+**65 issues: 0 critical, 6 high, 33 medium, 26 low.**
 
 ## Firebase Data Layer (7)
 
@@ -127,11 +127,12 @@ Test depth and what CI runs.
 
 - **medium** — [The usage graph's weekly bucketing and smoothing are untested, and CI skips the end-to-end suite](ci-and-quality-gates/the-test-suite-is-a-single-boilerplate-smoke-test.md)
 
-## Repo, Docs and Release Hygiene (3)
+## Repo, Docs and Release Hygiene (4)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
 - **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 - **medium** — [The README is still the default flutter create scaffold text](repo-docs-and-release-hygiene/readme-is-the-unmodified-flutter-template.md)
+- **low** — [Over a gigabyte of ignored build and IDE clutter sits at the repo root](repo-docs-and-release-hygiene/stray-local-build-and-ide-artifacts.md)
 - **low** — [A commented-out ignore line left the .vscode folder tracked by accident](repo-docs-and-release-hygiene/vscode-launch-json-tracked-by-template-default.md)
 
