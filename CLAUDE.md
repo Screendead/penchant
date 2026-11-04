@@ -231,8 +231,10 @@ swapping `home` alone would leave the old session's pages on the stack.
 
 **Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
 (`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
-date range as a line chart, bucketing activities by day or week and overlaying a moving
-average. Below three vices Today draws bars instead (fl_chart's radar needs three axes). The radar carries
+date range as a line chart, bucketing activities by day or by whole week (the newest ending today) and overlaying
+a moving average; that arithmetic and both charts' axis scales and label spacing are pure functions in
+`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Below three vices Today draws bars instead (fl_chart's
+radar needs three axes). The radar carries
 a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
 centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
 text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles

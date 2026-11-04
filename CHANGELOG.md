@@ -23,6 +23,13 @@ pull request titles (`gh pr list --state merged`).
 - Saving, editing, deleting, adding or editing a vice and archiving no longer report a slow connection as a failure:
   after ten seconds the screen closes and says the change will sync. Buttons stay disabled while their change is in flight.
 
+### Fixed
+
+- The usage graph: weekly view shows whole weeks, the newest ending today, rather than a short last week that
+  looked like a drop; the smoothing control, its caption and the average always agree; the lines no longer dip
+  below zero; and axis labels no longer repeat or overlap, at any text size. Long vice names on the Today chart
+  are cut short instead of running into their neighbours.
+
 ## [0.1.0] - Unreleased
 
 ### Added

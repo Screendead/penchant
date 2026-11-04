@@ -10,5 +10,5 @@ An activity recorded in one zone and viewed in another falls into a different da
 
 - `lib/data/day.dart:5` — `DateTime startOfDay(DateTime time) => DateTime(time.year, time.month, time.day);`
 - `lib/providers/vice_activity_day_provider.dart:20` — `isGreaterThanOrEqualTo: Timestamp.fromDate(startOfSelectedDay),`
-- `lib/usage_graph_view.dart:126` — `final DateTime rangeStart = today.subtract(Duration(days: rangeDays - 1));`
+- `lib/data/usage_series.dart:19` — `start: addDays(startOfDay(today), 1 - bucketCount * stepDays),`
 - `lib/widgets/record_new_activity_dialog.dart:104` — `final DateTime date = RecordNewActivityDialog.dateFormat`
