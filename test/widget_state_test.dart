@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -395,10 +396,14 @@ void main() {
       unarchivedViceListProvider.overrideWithValue(AsyncData([coffee])),
     ], const Scaffold(body: RecordNewActivityDialog()));
 
-    final DateTime shown = ActivityDateField.format.parse(
+    DateTime shown() => ActivityDateField.format.parse(
       _fieldText(tester, ActivityDateField.label),
     );
-    expect(DateTime.now().difference(shown).inSeconds, lessThan(2));
+    expect(clock.now().difference(shown()).inSeconds, lessThan(2));
+
+    final DateTime before = shown();
+    await tester.pump(const Duration(seconds: 3));
+    expect(shown().difference(before).inSeconds, 3);
 
     await tester.tap(find.byTooltip('Manually enter date and time'));
     await tester.pump();

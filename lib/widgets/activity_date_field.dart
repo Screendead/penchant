@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -52,7 +53,7 @@ class _ActivityDateFieldState extends State<ActivityDateField> {
   }
 
   void _showNow() {
-    widget.controller.text = ActivityDateField.format.format(DateTime.now());
+    widget.controller.text = ActivityDateField.format.format(clock.now());
   }
 
   void _startClock() {
@@ -80,7 +81,7 @@ class _ActivityDateFieldState extends State<ActivityDateField> {
   DateTime _pickerStart() {
     final DateTime shown =
         ActivityDateField.format.tryParse(widget.controller.text) ??
-        DateTime.now();
+        clock.now();
     return shown.isBefore(_firstDate)
         ? _firstDate
         : shown.isAfter(_lastDate)
