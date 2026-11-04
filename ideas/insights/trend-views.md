@@ -13,9 +13,8 @@ A Trends tab that grows the existing usage graph:
 
 ## Why
 
-- SOURCED (code): `UsageGraphView` already buckets by day or week and overlays a moving average.
-- SOURCED (register): its curve dips below zero around a single spike, the smoothing window escapes its bounds, the
-  last weekly bucket is short, and the build method recomputes everything (queue 1a registers the first).
+- SOURCED (code): `UsageGraphView` already buckets by day or by week and overlays a moving average, with the
+  arithmetic in tested pure functions (`lib/data/usage_series.dart`).
 - INFERENCE: descriptive views need no statistics gate and give a new user something on day three, long before the
   [insights engine](insights-engine.md) has 21 days.
 
@@ -35,9 +34,6 @@ expectation), but overlays with Health are the visual teaser for the engine's ca
 **Revenue impact:** Medium: the free views drive retention; the overlays sell Pro.
 
 **Depends on:**
-- [`smoothing-window-escapes-its-own-bounds`](../../tech-debt/widget-state-and-view-logic/smoothing-window-escapes-its-own-bounds.md)
-- [`weekly-bucketing-leaves-a-short-trailing-bucket`](../../tech-debt/widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md)
-- [`graph-build-method-recomputes-everything`](../../tech-debt/widget-state-and-view-logic/graph-build-method-recomputes-everything.md)
 - [business model](../monetisation/business-model-and-paywall.md)
 
 **Needs Jack:** no

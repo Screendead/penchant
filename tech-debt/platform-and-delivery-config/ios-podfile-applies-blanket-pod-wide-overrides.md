@@ -1,10 +1,8 @@
-# post_install forces one deployment target and relaxes modular includes for every pod target
+# post_install relaxes modular includes for every pod target, and forces the deployment target on all of them
 
 **Severity:** low
 
-ios/Podfile's post_install hook unconditionally sets the iOS deployment target to 15.0 on every pod target regardless of what each podspec declares, and separately allows non-modular includes in framework modules for every target.
-
-The forced target arrived with the 2026 switch to static framework linkage, and the modular-includes relaxation predates it and was carried through unchanged. Both apply to the entire pod graph rather than the specific pods that needed them, so a future pod requiring a genuinely higher minimum is silently downgraded rather than flagged.
+ios/Podfile's post_install hook sets the iOS deployment target to 15.0 on every pod target and allows non-modular includes in framework modules for every target. The deployment target override is needed: without it several pods build at 9.0 to 12.0 and Xcode refuses them (tried 2026-11-04). It does hide a pod that genuinely needs a higher minimum. The modular-includes relaxation is unverified: `flutter build ios --simulator --debug` fails at the Flutter.framework unpack step on this machine with or without it, so removal could not be tested.
 
 ## Evidence
 

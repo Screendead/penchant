@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
@@ -7,6 +8,7 @@ import 'package:tracker/bootstrap.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -66,6 +68,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         navigatorKey: navigatorKey,
         title: 'Vice Tracker',
         theme: appTheme(),
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        supportedLocales: appLocales,
+        localeListResolutionCallback: resolveAppLocale,
         home: user != null
             ? const Homepage()
             : userValue.hasError

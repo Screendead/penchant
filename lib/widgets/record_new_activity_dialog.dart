@@ -9,8 +9,10 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/rejected_writes.dart';
@@ -18,7 +20,7 @@ import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
-  static final DateFormat dateFormat = DateFormat('dd/MM/yyyy, HH:mm:ss');
+  static DateFormat get dateFormat => entryDateFormat;
 
   const RecordNewActivityDialog({super.key});
 
@@ -111,7 +113,13 @@ class _RecordNewActivityDialogState
     );
     final Vice vice = selectedVice!;
     final int quantity = int.parse(quantityController.text);
-    final String entry = describeActivity(vice.name, vice.unit, quantity, date);
+    final String entry = describeActivity(
+      vice.name,
+      vice.unit,
+      quantity,
+      date,
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
 
     final bool synced;
 
@@ -220,7 +228,7 @@ class _RecordNewActivityDialogState
           message: loadErrorMessage('your vices', loadError),
           isError: true,
           onRetry: () =>
-              ref.invalidate(unarchivedViceListForUserProvider, asReload: true),
+              ref.invalidate(viceListForUserProvider, asReload: true),
         ),
         actions: <Widget>[
           TextButton(

@@ -7,7 +7,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -343,8 +342,6 @@ Future<void> expectRadar(WidgetTester tester, Set<String> titles) async {
   await expectChart(tester, titles);
   expect(find.byType(BarChart), findsNothing);
 }
-
-final DateFormat dayMenuFormat = DateFormat('EEEE, MMMM d, yyyy');
 
 Future<void> signOutThroughSettings(WidgetTester tester) async {
   await openFromDrawer(tester, 'Settings');

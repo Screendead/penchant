@@ -1,18 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/user_provider.dart';
-
-final DateFormat _activityTime = DateFormat('EEE d MMM, HH:mm');
 
 String describeActivity(
   String viceName,
   Unit unit,
   int quantity,
-  DateTime at,
-) => '$viceName, ${unit.label(quantity)}, ${_activityTime.format(at)}';
+  DateTime at, {
+  required bool alwaysUse24HourFormat,
+}) =>
+    '$viceName, ${unit.label(quantity)}, '
+    '${formatDayAndTime(at, alwaysUse24HourFormat: alwaysUse24HourFormat)}';
 
 // A change the device had queued and the server later refused. [what] names
 // the entry as it was when written: by the time the refusal arrives the vice

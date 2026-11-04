@@ -1,17 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 
-DateTime? firstDstTransitionDay(int year) {
-  for (int i = 0; i < 365; i++) {
-    final DateTime day = DateTime(year, 1, 1 + i);
-
-    if (day.timeZoneOffset != DateTime(year, 1, 2 + i).timeZoneOffset) {
-      return day;
-    }
-  }
-
-  return null;
-}
+import 'dst.dart';
 
 void main() {
   test('day arithmetic stays on calendar days', () {
@@ -25,8 +15,6 @@ void main() {
     expect(daysBetween(day, day), 0);
   });
 
-  // Dart cannot change the process timezone, so this only discriminates when
-  // the runner's local zone observes DST (e.g. TZ=Europe/London flutter test).
   final DateTime? transition = firstDstTransitionDay(2026);
 
   test(
@@ -41,9 +29,6 @@ void main() {
       expect(addDays(next, -1), day);
       expect(daysBetween(day, next), 1);
     },
-    skip: transition == null
-        ? 'local timezone has no DST transition in 2026; '
-              'run with TZ=Europe/London to exercise it'
-        : false,
+    skip: transition == null ? noDstSkipReason : false,
   );
 }

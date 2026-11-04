@@ -90,6 +90,50 @@ void main() {
     await expectRadar(tester, withJuice);
   });
 
+  testWidgets('a vice stored without the archived field shows on Today, '
+      'takes a recording, and can be archived', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-legacy-vice@example.com');
+    await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
+    await recordActivity(tester, 'Coffee', 2);
+    await expectBars(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+    });
+
+    await createBypassingRules('vices', 'legacy-vice', <String, Object>{
+      'name': <String, Object>{'stringValue': 'Kombucha'},
+      'unit': <String, Object>{'stringValue': 'drink'},
+      'ownerID': <String, Object>{
+        'stringValue': FirebaseAuth.instance.currentUser!.uid,
+      },
+      'createdAt': <String, Object>{
+        'timestampValue': DateTime.now().toUtc().toIso8601String(),
+      },
+    });
+    expect((await _storedVice('Kombucha')).containsKey('archived'), isFalse);
+    await expectRadar(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+      'Kombucha (0 drinks)',
+    });
+
+    await recordActivity(tester, 'Kombucha', 3);
+    await expectRadar(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+      'Kombucha (3 drinks)',
+    });
+    await _waitForEmulator();
+    expect((await storedActivities('Kombucha')).single.data()['quantity'], 3);
+
+    await _setArchived(tester, 'Kombucha', archived: true);
+    await expectBars(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+    });
+  });
+
   testWidgets('the editor saves a changed quantity', (
     WidgetTester tester,
   ) async {

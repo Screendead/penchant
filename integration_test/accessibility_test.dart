@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:intl/intl.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
-import 'package:tracker/vice_chart.dart';
 
 import 'support.dart';
 
@@ -56,7 +55,7 @@ void main() {
     final DateTime today = startOfDay(DateTime.now());
     expect(
       find.bySemanticsLabel(
-        'Totals for ${ViceChart.dayFormat.format(today)}. Water: 0 drinks; '
+        'Totals for ${formatDay(today)}. Water: 0 drinks; '
         'Tea: 1 drink; Coffee: 2 drinks',
       ),
       findsOneWidget,
@@ -70,7 +69,7 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Daily totals of Coffee over the last 30 days: 2 drinks in all. '
-        'The most was 2 drinks on ${DateFormat('MMM d').format(today)}.',
+        'The most was 2 drinks on ${formatShortDay(today)}.',
       ),
       findsOneWidget,
     );
@@ -80,6 +79,7 @@ void main() {
   testWidgets('an activity can be recorded at the largest text size', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-a11y-text@example.com');
     await addVicesThroughManageData(tester);
@@ -115,10 +115,19 @@ void main() {
     expect(tester.takeException(), isNull);
     final List<Object> stored = await storedActivities('Water');
     expect(stored, hasLength(1));
-    await expectChart(tester, const <String>{
-      'Coffee (0 drinks)',
-      'Tea (0 drinks)',
-      'Water (4 drinks)',
-    });
+    // At this size the radar cuts its titles short to fit; screen readers
+    // still hear the whole names.
+    await pumpUntil(
+      tester,
+      find.bySemanticsLabel(
+        'Totals for ${formatDay(startOfDay(DateTime.now()))}. '
+        'Water: 4 drinks; Tea: 0 drinks; Coffee: 0 drinks',
+      ),
+    );
+    final List<String> titles = chartTitles(tester)!.toList();
+    expect(titles, hasLength(3));
+    expect(titles.where((String t) => t.endsWith(' (4 drinks)')), hasLength(1));
+    expect(titles.where((String t) => t.endsWith(' (0 drinks)')), hasLength(2));
+    semantics.dispose();
   });
 }
