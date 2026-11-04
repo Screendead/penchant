@@ -26,11 +26,11 @@ void main() {
 // main() without the global error handlers, which flutter_test owns.
 void startApp() {
   runApp(
-    const Bootstrap(
-      initialize: initializeFirebase,
-      // Every provider reaches Firebase when first read, so the scope starts
-      // only once Firebase has.
-      child: ProviderScope(observers: [ReportProviderErrors()], child: MyApp()),
+    const ProviderScope(
+      observers: [ReportProviderErrors()],
+      // Every provider reaches Firebase when first read, and nothing reads one
+      // until MyApp builds, after Firebase has started.
+      child: Bootstrap(initialize: initializeFirebase, child: MyApp()),
     ),
   );
 }

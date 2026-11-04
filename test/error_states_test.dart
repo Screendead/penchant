@@ -459,7 +459,7 @@ void main() {
 
       await _tapRetry(tester);
 
-      expect(find.byType(DropdownButtonFormField<Vice>), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
     });
   });
 
