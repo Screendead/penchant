@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -37,20 +38,9 @@ class ViceChart extends ConsumerWidget {
     return 'Totals for ${dayFormat.format(day)}. $totals';
   }
 
-  // The outermost ring's value and the spacing between rings: at most
-  // [maximumRadarRings] rings, each a round number of units.
-  static ({int top, int step}) radarScale(int largest) {
-    for (int magnitude = 1; ; magnitude *= 10) {
-      for (final int multiple in const [1, 2, 5]) {
-        final int step = multiple * magnitude;
-        final int rings = (largest + step - 1) ~/ step;
-
-        if (rings <= maximumRadarRings) {
-          return (top: max(rings, 1) * step, step: step);
-        }
-      }
-    }
-  }
+  // The outermost ring's value and the spacing between rings.
+  static ({int top, int step}) radarScale(int largest) =>
+      roundScale(largest, maximumRadarRings);
 
   Widget _bars(
     BuildContext context,
