@@ -93,7 +93,7 @@ void main() {
     final Finder dialog = find.byType(AlertDialog);
     await pumpUntil(tester, dialog);
     await screenshot(tester, 'a11y-record-dialog-text-3x');
-    await _tapInDialog(tester, find.byType(DropdownButtonFormField<Vice>));
+    await _tapInDialog(tester, find.byType(DropdownButtonFormField<String>));
     await tap(tester, find.text('Water').last);
     final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
     await pumpUntil(tester, quantity);

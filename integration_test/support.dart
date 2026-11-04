@@ -208,7 +208,7 @@ Future<void> recordActivity(
   await tap(tester, find.widgetWithText(TextButton, 'Record'));
   final Finder dialog = find.byType(AlertDialog);
   await pumpUntil(tester, dialog);
-  await tap(tester, find.byType(DropdownButtonFormField<Vice>));
+  await tap(tester, find.byType(DropdownButtonFormField<String>));
   await tap(tester, find.text(viceName).last);
   if (at != null) {
     await tap(tester, find.byTooltip('Manually enter date and time'));
