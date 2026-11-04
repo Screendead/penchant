@@ -99,7 +99,10 @@ class _ViceActivityEditorPageState
         ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
         onRejectedLater: ref
             .read(rejectedWritesProvider.notifier)
-            .reporter('Not deleted: ${_describe(vice, activity)}'),
+            .reporter(
+              'Not deleted: ${_describe(vice, activity)}',
+              changes: widget.activityID,
+            ),
       );
       if (!synced) {
         messenger.showSnackBar(
@@ -156,7 +159,10 @@ class _ViceActivityEditorPageState
             ),
         onRejectedLater: ref
             .read(rejectedWritesProvider.notifier)
-            .reporter('Change not saved: ${_describe(vice, activity)}'),
+            .reporter(
+              'Change not saved: ${_describe(vice, activity)}',
+              changes: widget.activityID,
+            ),
       );
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));

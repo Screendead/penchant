@@ -67,4 +67,35 @@ void main() {
     );
     await pumpUntil(tester, rejected, present: false);
   });
+
+  testWidgets('an Undo of an entry the server refuses is not called not '
+      'deleted', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-rejected-undo@example.com');
+    await addVicesThroughManageData(tester);
+    final String coffeeID = await storedViceID('Coffee');
+    final Finder banner = find.byType(RejectedWritesBanner);
+    Finder inBanner(String text) =>
+        find.descendant(of: banner, matching: find.textContaining(text));
+
+    await FirebaseFirestore.instance.disableNetwork();
+    try {
+      await pumpUntil(tester, find.text(OfflineBanner.message));
+      await recordActivity(tester, 'Coffee', 2);
+      await pumpUntil(tester, find.text(queuedMessage));
+      await tap(tester, find.text('Undo'));
+      // The Undo has given up waiting too, so its refusal goes to the banner
+      // rather than to a snackbar.
+      await pumpUntil(tester, find.text(queuedDeleteMessage));
+      await deleteBypassingRules('vices', coffeeID);
+    } finally {
+      await FirebaseFirestore.instance.enableNetwork();
+    }
+
+    await pumpUntil(tester, inBanner('Not saved: Coffee, 2 drinks, '));
+    // Settles once the server has answered the delete as well.
+    await FirebaseFirestore.instance.waitForPendingWrites();
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(inBanner('Not deleted'), findsNothing);
+  });
 }

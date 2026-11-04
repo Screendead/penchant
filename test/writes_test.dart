@@ -20,6 +20,7 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
 import 'fake_writes.dart';
@@ -869,10 +870,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('a recorded activity is named in a banner until dismissed', (
-      WidgetTester tester,
-    ) async {
-      final _LateRefusal refusal = holdWrites();
+    // Records 2 coffee through the dialog and waits until it calls the entry
+    // queued.
+    Future<void> recordQueued(WidgetTester tester) async {
       await _pumpOpened(
         tester,
         writes,
@@ -900,6 +900,13 @@ void main() {
       );
       await tester.pump();
       await waitOutTimeout(tester);
+    }
+
+    testWidgets('a recorded activity is named in a banner until dismissed', (
+      WidgetTester tester,
+    ) async {
+      final _LateRefusal refusal = holdWrites();
+      await recordQueued(tester);
 
       expect(find.text(queuedMessage), findsOneWidget);
       expect(find.byType(RejectedWritesBanner), findsOneWidget);
@@ -914,6 +921,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_rejected('Not saved'), findsNothing);
+    });
+
+    testWidgets('an Undo of a recording the server refuses is not called '
+        'not deleted', (WidgetTester tester) async {
+      final _LateRefusal refusal = holdWrites();
+      await recordQueued(tester);
+      await tester.tap(find.text('Undo'));
+      await waitOutTimeout(tester);
+      expect(find.text(queuedDeleteMessage), findsOneWidget);
+
+      // Both queued writes are refused, the create first, as the SDK sends
+      // them: the delete finds no document.
+      await refusal.refuse(tester);
+
+      expect(writes.writes.last, const Write('deleteActivity', 'activity-1'));
+      expect(_rejected('Not saved: coffee, 2 items, '), findsOneWidget);
+      expect(_rejected('Not deleted'), findsNothing);
     });
 
     testWidgets('an edit names the entry it was made to', (
@@ -972,6 +996,11 @@ void main() {
           (ref, ViceActivityHistoryQuery query) => AsyncData([activity]),
         ),
       ], ViceActivityHistoryPage(viceID: coffee.id));
+      final Finder navigatorScope = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is FocusScope && widget.debugLabel == 'Navigator Scope',
+      );
+      final State scope = tester.state(navigatorScope);
       await tester.tap(find.byTooltip('Delete'));
       await tester.pump();
       await waitOutTimeout(tester);
@@ -981,8 +1010,8 @@ void main() {
         _rejected('Not deleted: coffee, 1 item, Mon 2 Nov, 09:30'),
         findsOneWidget,
       );
-      // Showing the banner must not remount the navigator under it.
       expect(find.byType(ViceActivityHistoryPage), findsOneWidget);
+      expect(tester.state(navigatorScope), same(scope));
     });
 
     testWidgets('a new vice is named', (WidgetTester tester) async {
@@ -1043,6 +1072,54 @@ void main() {
 
       expect(find.byType(RejectedWritesBanner), findsOneWidget);
       expect(_rejected('Not archived'), findsNothing);
+    });
+  });
+
+  group('rejectedWritesProvider', () {
+    Future<ProviderContainer> signedIn() async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(userProvider, (_, _) {});
+      await container.read(userProvider.future);
+      return container;
+    }
+
+    List<String> shown(ProviderContainer container) => [
+      for (final RejectedWrite item in container.read(rejectedWritesProvider))
+        item.what,
+    ];
+
+    final FirebaseException denied = _firebaseError('permission-denied');
+
+    test('drops a change to a document whose create was refused, even once '
+        'that line is dismissed', () async {
+      final ProviderContainer container = await signedIn();
+      final RejectedWrites rejected = container.read(
+        rejectedWritesProvider.notifier,
+      );
+      rejected.reporter('Not saved: a', creates: 'a')(denied);
+      rejected.dismiss(container.read(rejectedWritesProvider).single);
+      rejected.reporter('Change not saved: a', changes: 'a')(denied);
+      rejected.reporter('Not deleted: a', changes: 'a')(denied);
+
+      expect(shown(container), isEmpty);
+    });
+
+    test('a refused create removes a refusal already shown for a change to '
+        'that document', () async {
+      final ProviderContainer container = await signedIn();
+      final RejectedWrites rejected = container.read(
+        rejectedWritesProvider.notifier,
+      );
+      rejected.reporter('Not deleted: a', changes: 'a')(denied);
+      rejected.reporter('Not deleted: b', changes: 'b')(denied);
+      rejected.reporter('Not saved: a', creates: 'a')(denied);
+
+      expect(shown(container), ['Not deleted: b', 'Not saved: a']);
     });
   });
 }

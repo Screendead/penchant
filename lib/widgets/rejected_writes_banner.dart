@@ -17,8 +17,9 @@ class _RejectedWritesFrame extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final List<RejectedWrite> rejected = ref.watch(rejectedWritesProvider);
 
-    // The same tree whether or not the banner shows, so showing it does not
-    // remount the navigator and lose its routes.
+    // The same tree whether or not the banner shows. WidgetsApp keys the
+    // navigator, so a different tree would move it, but the FocusScope it
+    // wraps the navigator in has no key and would be rebuilt.
     return Column(
       children: [
         RejectedWritesBanner(rejected: rejected),

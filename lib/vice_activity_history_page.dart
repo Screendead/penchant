@@ -52,6 +52,7 @@ class _ViceActivityHistoryPageState
                 .read(rejectedWritesProvider.notifier)
                 .reporter(
                   'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate())}',
+                  changes: activityID,
                 ),
           )
           ? 'Activity deleted'

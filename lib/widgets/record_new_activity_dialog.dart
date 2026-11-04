@@ -121,7 +121,10 @@ class _RecordNewActivityDialogState
           quantity: quantity,
           createdAt: date,
         ),
-        onRejectedLater: rejected.reporter('Not saved: $entry'),
+        onRejectedLater: rejected.reporter(
+          'Not saved: $entry',
+          creates: activityID,
+        ),
       );
     } on FirebaseException catch (e) {
       if (mounted) {
@@ -170,7 +173,10 @@ class _RecordNewActivityDialogState
       message =
           await settleWrite(
             writes.deleteActivity(activityID),
-            onRejectedLater: rejected.reporter('Not deleted: $entry'),
+            onRejectedLater: rejected.reporter(
+              'Not deleted: $entry',
+              changes: activityID,
+            ),
           )
           ? 'Activity removed'
           : queuedDeleteMessage;
