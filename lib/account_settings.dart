@@ -7,20 +7,31 @@ import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/password_prompt.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/info_box.dart';
 
 class AccountSettings extends ConsumerWidget {
   const AccountSettings({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final User? user = ref.watch(userProfileProvider).value;
+    final AsyncValue<User?> userValue = ref.watch(userProfileProvider);
+    final User? user = userValue.value;
     return Scaffold(
       appBar: AppBar(title: const Text('Account Settings')),
-      body: user == null
-          ? const Center(child: CircularProgressIndicator())
-          : _AccountSettingsBody(key: ValueKey<String>(user.uid), user: user),
+      body: switch ((user, userValue.error)) {
+        (final User user, _) => _AccountSettingsBody(
+          key: ValueKey<String>(user.uid),
+          user: user,
+        ),
+        (null, final Object _) => ErrorView(
+          message: AccountCopy.profileLoadFailed,
+          onRetry: () => ref.invalidate(userProfileProvider, asReload: true),
+        ),
+        (null, null) => const Center(child: CircularProgressIndicator()),
+      },
     );
   }
 }
@@ -137,7 +148,8 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
           done.add(AccountCopy.emailChangeSent(email));
         }
         _show(done.isEmpty ? 'Nothing to save.' : done.join(' '));
-      } catch (e) {
+      } catch (e, stack) {
+        reportError(e, stack, context: 'while saving the profile');
         _show(<String>[...done, 'Not saved: ${authErrorMessage(e)}'].join(' '));
       }
     });
@@ -147,7 +159,8 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     try {
       await _account.sendEmailVerification();
       _show(AccountCopy.verificationSent(widget.user.email ?? ''));
-    } catch (e) {
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while sending a verification email');
       _show(authErrorMessage(e));
     }
   });
@@ -170,7 +183,8 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
         await ref
             .read(exportShareProvider)
             .share(exportFiles(data, DateTime.now()), origin: origin);
-      } catch (e) {
+      } catch (e, stack) {
+        reportError(e, stack, context: 'while exporting account data');
         _show(AccountCopy.exportFailed(authErrorMessage(e)));
       }
     });
@@ -204,10 +218,12 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     await _run(AccountCopy.deleting, () async {
       try {
         await _account.deleteAccount(password: password);
-      } on DeletionIncompleteException catch (e) {
+      } on DeletionIncompleteException catch (e, stack) {
+        reportError(e.cause, stack, context: 'while deleting the account');
         _show(AccountCopy.deleteIncomplete(authErrorMessage(e.cause)));
         return;
-      } catch (e) {
+      } catch (e, stack) {
+        reportError(e, stack, context: 'while deleting the account');
         _show(AccountCopy.deleteFailed(authErrorMessage(e)));
         return;
       }

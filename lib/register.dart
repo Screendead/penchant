@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 
 class Register extends ConsumerStatefulWidget {
@@ -53,7 +54,8 @@ class _RegisterState extends ConsumerState<Register> {
             email: emailController.text.trim(),
             password: passwordController.text,
           );
-    } catch (e) {
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while registering');
       if (mounted) {
         setState(() => error = authErrorMessage(e));
       }

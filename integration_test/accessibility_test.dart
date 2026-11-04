@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/data/day.dart';
-import 'package:tracker/data/vice.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_chart.dart';
@@ -93,7 +93,13 @@ void main() {
     final Finder dialog = find.byType(AlertDialog);
     await pumpUntil(tester, dialog);
     await screenshot(tester, 'a11y-record-dialog-text-3x');
-    await _tapInDialog(tester, find.byType(DropdownButtonFormField<Vice>));
+    await _tapInDialog(
+      tester,
+      find.descendant(
+        of: find.byType(RecordNewActivityDialog),
+        matching: find.byType(DropdownButtonFormField<String>),
+      ),
+    );
     await tap(tester, find.text('Water').last);
     final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
     await pumpUntil(tester, quantity);
