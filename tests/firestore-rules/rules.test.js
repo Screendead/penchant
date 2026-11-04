@@ -23,6 +23,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  startAfter,
   updateDoc,
   waitForPendingWrites,
   where,
@@ -652,5 +653,58 @@ describe('activities', () => {
       await assertSucceeds(deleteDoc(ref));
       await assertFails(deleteDoc(ref));
     });
+  });
+});
+
+// The query shapes lib/account/account.dart uses for export and deletion.
+describe('account export and deletion', () => {
+  const owned = (db, collectionName) =>
+    query(collection(db, collectionName), where('ownerID', '==', ALICE));
+
+  it('allows the export query, one page after another, and returns only the owner\'s documents', async () => {
+    const ids = [];
+    let page = query(owned(asAlice(), 'activities'), orderBy(documentId()), limit(2));
+    for (;;) {
+      const snapshot = await assertSucceeds(getDocs(page));
+      ids.push(...snapshot.docs.map((d) => d.id));
+      if (snapshot.docs.length < 2) break;
+      page = query(
+        owned(asAlice(), 'activities'),
+        orderBy(documentId()),
+        startAfter(snapshot.docs.at(-1)),
+        limit(2),
+      );
+    }
+    assert.deepEqual(ids, [
+      'aliceActivity',
+      'aliceForeignViceActivity',
+      'aliceLegacyActivity',
+      'aliceOrphanActivity',
+      'aliceZeroActivity',
+    ]);
+  });
+
+  it('allows a batch deleting every document the owner holds, legacy ones included', async () => {
+    const db = asAlice();
+    for (const collectionName of ['activities', 'vices']) {
+      const snapshot = await assertSucceeds(getDocs(query(owned(db, collectionName), limit(500))));
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await assertSucceeds(batch.commit());
+      assert.equal((await getDocs(owned(db, collectionName))).size, 0);
+    }
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const admin = context.firestore();
+      assert.ok((await getDoc(doc(admin, 'vices/bobVice'))).exists());
+      assert.ok((await getDoc(doc(admin, 'activities/bobActivity'))).exists());
+    });
+  });
+
+  it('denies a deletion batch that reaches another owner\'s document', async () => {
+    const db = asAlice();
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'vices/aliceVice'));
+    batch.delete(doc(db, 'vices/bobVice'));
+    await assertFails(batch.commit());
   });
 });

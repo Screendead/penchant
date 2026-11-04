@@ -135,10 +135,11 @@ It targets iOS and macOS only; `firebase_options.dart` throws on any other platf
 **Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
 `build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
 annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
-hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges()`. Each
+hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
+`userProfileProvider` one over `userChanges()`. Each
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
-`count()` aggregation), read through a plain `Provider` (or `Provider.autoDispose.family`)
+`count()` aggregation), read through a `Provider.autoDispose` (or `Provider.autoDispose.family`)
 of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't add a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
@@ -147,14 +148,26 @@ data. `trackerWritesProvider` is a plain `Provider` that hands out the write lay
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
-`TrackerWrites` (`lib/writes/tracker_writes.dart`), the only code in `lib/` that writes
-Firestore documents. It has one method
+`TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every write the
+screens make to a single document. It has one method
 per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
 `updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
 error messages and Undo stay in the widgets. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
-document. Auth mutations (sign-in, register, sign-out, account settings) still call
-`FirebaseAuth.instance` inline.
+document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
+(`lib/account/account.dart`): sign-in, register (which also sends the verification email),
+password reset, re-authentication, profile and email changes, sign-out, and the
+account-wide Firestore work: `fetchData` pages through the user's vices and activities for
+export, from the server so that offline it fails instead of returning a partial cache (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
+to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
+batches of 500, then the Auth user; a failure after the first batch is a
+`DeletionIncompleteException`, and any other failure removed nothing. Sign-out and deletion then `terminate()` Firestore and
+`clearPersistence()`; the Dart instance keeps the settings `firebase_init.dart` gave it (the
+cache, or the emulator host), and the plugin builds a fresh native instance from them on the
+next call. Sign-out first waits up to 5 s for pending writes and throws
+`UnsyncedEntriesException` rather than discard them silently. Auth error text shown to the
+user comes from `authErrorMessage` (`lib/account/auth_errors.dart`), never Firebase's own
+message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 
 **Provider chain.** Each Firestore query is a `...ForUserProvider` family keyed on the
 uid (and its other parameters), wrapped by a plain provider of `AsyncValue` that selects
@@ -166,13 +179,20 @@ provider, so a value never belongs to a previous user: riverpod carries a provid
 value into the loading state of a rebuild, which is how a single provider rebuilt on a user
 change leaked the previous account's data. Widgets watch the wrapper; tests override it
 with an `AsyncValue`, or override the family to test the wrapper. The query families are
-`autoDispose`, so leaving a day, range or page closes its listener. No activity provider
+`autoDispose`, so leaving a day, range or page closes its listener, and so are the wrappers:
+a wrapper nothing watches would keep its family's listener open, and once sign-out has
+terminated Firestore that listener hears nothing, so the same user signing back in would
+see a frozen list. No activity provider
 depends on the vice list: the day query filters on `ownerID` and `createdAt` alone (an `in`
 filter on vice IDs takes at most 30) and the chart drops activities of vices it does not
 draw. A `null` value means loading; an empty list means no data. Never gate UI on
 `ref.read(provider.future)`: in riverpod 3 a read with no other listener pauses the
 provider's stream, so the future never resolves. Render loading and error from the watched
-`AsyncValue` instead.
+`AsyncValue` instead. A `User` is a snapshot that profile updates and `reload()` never
+change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
+So Account Settings alone watches `userProfileProvider`, and calls `Account.reloadUser()` on
+opening and on app resume to pick up a verification made elsewhere; the chain stays on
+`userProvider`.
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
 page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether
@@ -222,7 +242,8 @@ outside the widget tree, so tests read them from the chart's data.
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
 `User`; `test/fake_writes.dart` is a `TrackerWrites` that records each write, for
-`trackerWritesProvider.overrideWithValue`). Anything that calls `FirebaseFirestore.instance`
+`trackerWritesProvider.overrideWithValue`; `test/fake_account.dart` does the same for
+`accountProvider` and `exportShareProvider`). Anything that calls `FirebaseFirestore.instance`
 or `FirebaseAuth.instance` directly is untestable that way;
 `integration_test/` drives the real app on an iOS Simulator against the emulators instead. Both
 that and the rules suite are described under Commands.

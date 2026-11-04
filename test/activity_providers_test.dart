@@ -143,6 +143,24 @@ void main() {
         expect(cancelled, contains('a'));
         expect(cancelled, isNot(contains('b')));
       });
+
+      // Sign-out terminates Firestore, which silences every open listener; a
+      // query kept open while no screen shows it would serve the same user
+      // nothing after they signed back in.
+      test('closes its query once nothing watches it', () async {
+        final ProviderContainer c = container();
+        final ProviderSubscription<AsyncValue<List<Object>>> watching = c
+            .listen(provider, (_, _) {});
+
+        users.add(FakeUser('a'));
+        await _settle();
+        emitFor('a', 'from-a');
+        await _settle();
+        watching.close();
+        await _settle();
+
+        expect(cancelled, contains('a'));
+      });
     });
   }
 }

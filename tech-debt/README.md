@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**80 issues: 0 critical, 11 high, 42 medium, 27 low.**
+**70 issues: 0 critical, 8 high, 36 medium, 26 low.**
 
 ## Firebase Data Layer (7)
 
@@ -29,11 +29,10 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **low** — [Legacy activities of a missing vice are fetched but unreachable](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 - **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
-## Widget State and View Logic (12)
+## Widget State and View Logic (11)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
-- **medium** — [Sign-in, sign-up, sign-out and profile edits can't be tested with a fake](widget-state-and-view-logic/auth-calls-bypass-providers.md)
 - **medium** — [Archiving a vice hides it in some screens but not others](widget-state-and-view-logic/archived-means-hidden-in-two-pickers-only.md)
 - **medium** — [Signed-in users briefly see the login screen on every cold start](widget-state-and-view-logic/auth-loading-is-treated-as-signed-out.md)
 - **medium** — [Form fields leak controllers and focus nodes instead of cleaning up](widget-state-and-view-logic/controllers-and-focus-nodes-are-never-disposed.md)
@@ -46,14 +45,12 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 - **low** — [Both home tabs stay active and subscribed even when hidden](widget-state-and-view-logic/both-home-tabs-stay-mounted-and-subscribed.md)
 - **medium** — [Chart axis titles are not width-bounded, so long vice names can run into their neighbours](widget-state-and-view-logic/chart-axis-titles-are-not-width-bounded.md)
 
-## Error Handling and Observability (7)
+## Error Handling and Observability (5)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 - **high** — [A failed Firebase startup leaves the splash screen up forever](error-handling-and-observability/firebase-bootstrap-has-no-error-handling.md)
 - **high** — [Data errors look exactly like loading, so screens spin forever silently](error-handling-and-observability/no-screen-inspects-asyncvalue-error-state.md)
-- **high** — [Sign-up errors like taken emails never reach the user at all](error-handling-and-observability/registration-failures-are-unhandled.md)
-- **medium** — [One screen silences a safety lint instead of checking the widget is still alive](error-handling-and-observability/async-buildcontext-lint-suppressed-instead-of-guarded.md)
 - **medium** — [Every caught error is shown once on screen and then lost for good](error-handling-and-observability/catch-sites-render-the-error-once-and-discard-it.md)
 - **medium** — [No crashes, errors, or usage are ever recorded on any platform](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 - **low** — [The same save error reads four different ways depending on the screen](error-handling-and-observability/firebaseexception-is-rendered-four-different-ways.md)
@@ -65,20 +62,19 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **high** — [A change made offline that the server later refuses vanishes without a word](offline-and-write-reliability/rejected-queued-write-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
-## Duplication and Dead Code (10)
+## Duplication and Dead Code (9)
 
 Copy-pasted logic, unused providers, methods and fields, commented-out code, and lint and formatting drift.
 
 - **medium** — [Date-entry field, timer, and lock toggle are copy-pasted across two files](duplication-and-dead-code/activity-date-entry-flow-duplicated.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
-- **low** — [Email validation is defined three separate times, two identically, one different](duplication-and-dead-code/email-validation-regex-declared-three-times.md)
 - **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
 - **low** — [Formatting drift and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
 - **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
 - **low** — [Serialization helpers exist but every write site hand-builds its own map instead](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
 - **low** — [The same nullable-lookup pattern is typed out separately three times](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-three-times.md)
 - **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
-- **low** — [Auth widgets carry dead fields and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
+- **low** — [An auth widget carries a dead field and a chart file keeps a stale commented-out line](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
 ## Accessibility and Localization (7)
 
@@ -92,17 +88,11 @@ Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, 
 - **low** — [Relative date labels are hand-rolled English with no localization](accessibility-and-localization/relative-date-labels-are-hardcoded-english.md)
 - **low** — [Pluralisation and number formatting assume English rules](accessibility-and-localization/value-rendering-is-english-and-locale-insensitive.md)
 
-## Auth and Account Lifecycle (7)
+## Auth and Account Lifecycle (1)
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
-- **high** — [No forgot-password link or recovery path anywhere in the app](auth-and-account-lifecycle/no-password-reset-path.md)
-- **high** — [Profile save can fail on stale login yet still change display name silently](auth-and-account-lifecycle/profile-update-never-reauthenticates.md)
-- **medium** — [Raw Firebase error text shown to users can reveal registered emails](auth-and-account-lifecycle/auth-errors-are-surfaced-verbatim.md)
-- **medium** — [No account deletion or data export; deleted accounts leave orphaned data forever](auth-and-account-lifecycle/no-account-deletion-or-data-export.md)
-- **medium** — [New accounts work immediately with an unverified, unconfirmed email](auth-and-account-lifecycle/no-email-verification.md)
-- **medium** — [Sign-out failures go unhandled while navigation proceeds immediately regardless](auth-and-account-lifecycle/sign-out-is-neither-awaited-nor-guarded.md)
-- **medium** — [Signed-out user's synced data stays cached on the device](auth-and-account-lifecycle/sign-out-leaves-firestore-cache-on-device.md)
+- **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
 
 ## Dependency and Tooling Drift (7)
 

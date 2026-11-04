@@ -1,19 +1,16 @@
-# Registration never sends a verification email and no rule checks emailVerified
+# Nothing depends on a verified address
 
 **Severity:** medium
 
-`createUserWithEmailAndPassword` in `register.dart` is not followed by
-`sendEmailVerification`, so accounts are created and immediately usable with
-an unverified address. `firestore.rules` tests only the auth uid and never
-the token's `email_verified` claim, so nothing in the read or write gate
-depends on the address having been proven to belong to the registrant.
+Registration sends a verification email and Account Settings shows whether the address is verified, but an
+unverified account is fully usable: no screen waits for verification, and `firestore.rules` tests only the auth uid,
+never the token's `email_verified` claim. An address nobody has proven to own can hold an account, and the password
+reset link for it goes to whoever does own it. Every account created before verification was sent is unverified, so
+gating on the claim would lock all of them out until they verify.
 
 ## Evidence
 
-- **`grep -rn "sendEmailVerification\|emailVerified" lib/`** → `(no matches)`
-- `lib/register.dart:170` — `await FirebaseAuth.instance
-                              .createUserWithEmailAndPassword(
-                            email: emailController.text,
-                            password: passwordController.text,
-                          );`
+- **`grep -n "email_verified" firestore.rules`** → `(no matches)`
+- `lib/account/account.dart` — `register` sends the email and returns; nothing reads `emailVerified` except the
+  status row in `lib/account_settings.dart`.
 - `firestore.rules:5-7` — `function signedIn() {\n      return request.auth != null;\n    }`

@@ -181,6 +181,10 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
   Enforce; enforcement takes up to 15 minutes, and turning it off undoes it.
 - **Set budget alerts** on `screendead-vice-tracker` (Google Cloud console > Billing > Budgets & alerts, or the
   prompt when upgrading to Blaze). Alerts only email; they don't pause Firestore.
+- **Check Email Enumeration Protection is on** (Firebase console > Authentication > Settings > User actions, for
+  `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
+  itself still answers "no such user" differently from "wrong password". Also check the password-reset and
+  verification email templates read sensibly now that the app sends both.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 
@@ -208,7 +212,7 @@ query. A bare `limit` is not an option: it would hide the oldest vices without s
 - The app is a small Flutter + Firestore codebase (about 3,000 lines in `lib/`). Tests now exist at three levels
   (72 rules tests, 47 unit and widget tests, 8 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
 - Firestore writes go through `TrackerWrites` (`trackerWritesProvider`), so widget tests cover every write path with
-  a fake. Auth calls are still inline `FirebaseAuth.instance`; that remainder is in the register.
+  a fake; Auth calls go through `Account` (`accountProvider`) the same way.
 
 ## Set aside, with reasons
 

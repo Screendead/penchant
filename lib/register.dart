@@ -1,36 +1,73 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/auth_errors.dart';
+import 'package:tracker/account/email.dart';
+import 'package:tracker/providers/account_provider.dart';
 
-final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-
-class Register extends StatefulWidget {
+class Register extends ConsumerStatefulWidget {
   const Register({super.key});
 
   @override
-  State<Register> createState() => _RegisterState();
+  ConsumerState<Register> createState() => _RegisterState();
 }
 
-class _RegisterState extends State<Register> {
-  GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-  TextEditingController confirmPasswordController = TextEditingController();
+class _RegisterState extends ConsumerState<Register> {
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   bool? emailIsValid;
   bool? passwordIsValid;
   bool? passwordsMatch;
+  bool busy = false;
   String? error;
 
   bool get isValid =>
       (emailIsValid ?? false) &&
       (passwordIsValid ?? false) &&
-      (passwordsMatch ?? false);
+      (passwordsMatch ?? false) &&
+      !busy;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (!formKey.currentState!.validate()) {
+      setState(() => error = null);
+      return;
+    }
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      await ref
+          .read(accountProvider)
+          .register(
+            email: emailController.text.trim(),
+            password: passwordController.text,
+          );
+    } catch (e) {
+      if (mounted) {
+        setState(() => error = authErrorMessage(e));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => busy = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register a New Account'),
-      ),
+      appBar: AppBar(title: const Text('Register a New Account')),
       body: Form(
         key: formKey,
         child: Padding(
@@ -40,6 +77,8 @@ class _RegisterState extends State<Register> {
             children: [
               TextFormField(
                 controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   hintText: 'john.doe@example.com',
@@ -59,25 +98,13 @@ class _RegisterState extends State<Register> {
                         ),
                 ),
                 onChanged: (String value) {
-                  if (value == '') {
-                    setState(() {
-                      emailIsValid = null;
-                    });
-                  } else {
-                    setState(() {
-                      emailIsValid = emailRegex.hasMatch(value);
-                    });
-                  }
+                  setState(() {
+                    emailIsValid = value.isEmpty
+                        ? null
+                        : emailPattern.hasMatch(value.trim());
+                  });
                 },
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter an email address';
-                  }
-                  if (!emailRegex.hasMatch(value)) {
-                    return 'Please enter a valid email address';
-                  }
-                  return null;
-                },
+                validator: (String? value) => emailError(value?.trim()),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -92,8 +119,8 @@ class _RegisterState extends State<Register> {
                           message: passwordIsValid!
                               ? 'Password is valid'
                               : 'Password must be at least 8 characters long '
-                                  'and contain at least one uppercase letter, '
-                                  'one lowercase letter, and one number',
+                                    'and contain at least one uppercase letter, '
+                                    'one lowercase letter, and one number',
                           child: Icon(
                             passwordIsValid!
                                 ? Icons.check_circle
@@ -106,7 +133,8 @@ class _RegisterState extends State<Register> {
                 ),
                 onChanged: (String value) {
                   setState(() {
-                    passwordIsValid = value.length >= 8 &&
+                    passwordIsValid =
+                        value.length >= 8 &&
                         value.contains(RegExp(r'[A-Z]')) &&
                         value.contains(RegExp(r'[a-z]')) &&
                         value.contains(RegExp(r'[0-9]'));
@@ -170,21 +198,7 @@ class _RegisterState extends State<Register> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: isValid
-                    ? () async {
-                        if (formKey.currentState!.validate()) {
-                          await FirebaseAuth.instance
-                              .createUserWithEmailAndPassword(
-                            email: emailController.text,
-                            password: passwordController.text,
-                          );
-                        } else {
-                          setState(() {
-                            error = null;
-                          });
-                        }
-                      }
-                    : null,
+                onPressed: isValid ? _register : null,
                 child: const Text('Register'),
               ),
               if (error != null) Text(error!),

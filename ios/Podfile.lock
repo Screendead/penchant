@@ -1405,6 +1405,8 @@ PODS:
   - PromisesSwift (2.4.1):
     - PromisesObjC (= 2.4.1)
   - RecaptchaInterop (101.0.0)
+  - share_plus (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
@@ -1414,6 +1416,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
 
 SPEC REPOS:
   trunk:
@@ -1456,6 +1459,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
 
 SPEC CHECKSUMS:
   abseil: a05cc83bf02079535e17169a73c5be5ba47f714b
@@ -1488,6 +1493,7 @@ SPEC CHECKSUMS:
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
+  share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
 
 PODFILE CHECKSUM: b5033ed09c6d2b212bfa6bbd6343590050d272fe
 

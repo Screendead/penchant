@@ -41,6 +41,7 @@ dependencies:
   flutter_riverpod: ^3.1.0
   riverpod_annotation: ^4.0.0
   package_info_plus: ^9.0.0
+  share_plus: ^12.0.2
   # 0.5 needs firebase_core 5, which means a major bump of every Firebase plugin.
   firebase_app_check: ^0.4.9
 
