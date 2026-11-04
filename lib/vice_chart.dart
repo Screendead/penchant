@@ -305,9 +305,7 @@ class ViceChart extends ConsumerWidget {
               return chart;
             }
 
-            // The key is what makes the day readable at this size, so it
-            // takes the height it needs and the chart gets the rest, or is
-            // left out when the rest is too small to read.
+            // A chart under four title lines tall cannot be read.
             final double minimumChart =
                 4 * chartLabelSize(context, 'Ag', titleStyle).height;
             return Column(

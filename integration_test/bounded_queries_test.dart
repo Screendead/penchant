@@ -26,7 +26,7 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('Today charts an account with more vices than an `in` filter '
+  testWidgets('Today totals an account with more vices than an `in` filter '
       'takes', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-many-vices@example.com');

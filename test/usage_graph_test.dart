@@ -372,6 +372,23 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('two bars at large text with a 60-character name have a '
+        'key that names both', (WidgetTester tester) async {
+      _usePhone(tester, textScale: 3);
+      final List<Vice> vices = [
+        fakeVice('long', name: longName),
+        fakeVice('tea'),
+      ];
+      await pumpToday(tester, vices);
+
+      for (final Vice vice in vices) {
+        await tester.ensureVisible(keyEntry(vice));
+        await tester.pumpAndSettle();
+        expect(keyEntry(vice).hitTestable(), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('bars whose titles fit have no key', (
       WidgetTester tester,
     ) async {
