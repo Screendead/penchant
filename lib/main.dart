@@ -71,15 +71,28 @@ class _MyAppState extends ConsumerState<MyApp> {
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: appLocales,
         localeListResolutionCallback: resolveAppLocale,
+        // Until Auth reports the persisted session, a signed-in user would
+        // otherwise see the sign-in screen; a signed-out one is AsyncData(null).
         home: user != null
             ? const Homepage()
             : userValue.hasError
             ? const AuthStateFailure()
+            : !userValue.hasValue
+            ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
         builder: rejectedWritesBuilder,
       ),
     );
+  }
+}
+
+class AuthStateLoading extends StatelessWidget {
+  const AuthStateLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 

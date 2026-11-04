@@ -40,7 +40,6 @@ the Auth emulator.
 
 **Depends on:**
 - [`no-email-verification`](../../tech-debt/auth-and-account-lifecycle/no-email-verification.md)
-- [`auth-loading-is-treated-as-signed-out`](../../tech-debt/widget-state-and-view-logic/auth-loading-is-treated-as-signed-out.md)
 
 **Needs Jack:** yes — Allow guests in 1.0, and accept that a guest who deletes the app without linking loses their
 data (behind a clear warning)?
