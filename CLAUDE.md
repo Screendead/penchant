@@ -47,7 +47,6 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 flutter pub get
 flutter run                      # device picker; -d macos for the desktop build
 flutter analyze
-dart run custom_lint             # loads no rules: riverpod_lint 3.1 left custom_lint (see tech-debt)
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # the macOS target still builds (CI builds no app)
@@ -123,19 +122,18 @@ every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only i
 `DEPLOY_FIRESTORE_RULES` is `true`, and deploys queue in one concurrency group so the newest commit lands
 last. Nothing builds or deploys the app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
-changes. No riverpod_lint rule runs anywhere, locally or in
-CI, until `tech-debt/dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md`
-is fixed.
+changes. riverpod_lint is not installed: on Dart 3.12 the analyzer plugin it now ships as either
+fails to start (the SDK resolves a newer `analysis_server_plugin` whose protocol the 3.12 server does not speak,
+and `dart analyze` hangs) or, pinned to a matching version, reports after `dart analyze` and `flutter analyze` have
+already exited, so it would gate nothing. Retry once the Flutter pin ships Dart 3.13 or later.
 
 ## Architecture
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS and macOS only; `firebase_options.dart` throws on any other platform.
 
-**Riverpod without codegen.** `riverpod_generator`, `riverpod_annotation`, and
-`build_runner` are declared in `pubspec.yaml` but unused — there is no `@riverpod`
-annotation and no `.g.dart` file anywhere. Every provider in `lib/providers/` is
-hand-written. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
+**Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
+hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
 `userProfileProvider` one over `userChanges()`. Each
 Firestore query is a `...ForUserProvider`, a `StreamProvider.autoDispose.family` over a
 snapshot stream (the Manage Data count is a `FutureProvider.autoDispose.family` over a
@@ -144,7 +142,7 @@ of `AsyncValue` that supplies the signed-in uid (Provider chain, below). Don't a
 query provider that watches `userProvider` itself: that shape leaked the previous user's
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
 (below), and `packageInfoProvider` is a `FutureProvider` over
-`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style; running `build_runner` generates nothing.
+`PackageInfo.fromPlatform()`, for the version under Settings > About. Match that style.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one

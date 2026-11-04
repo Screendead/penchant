@@ -114,7 +114,9 @@ void main() {
 
       expect(find.text('Today'), findsOneWidget);
       expect(_chartedQuantity(tester), 1);
-      expect(requestedDays, [today, addDays(today, -1)]);
+      // An auto-dispose day may be re-requested on return; how soon it is
+      // disposed is Riverpod's scheduling, not this widget's.
+      expect(requestedDays.toSet(), {today, addDays(today, -1)});
     });
 
     testWidgets('a day whose data never arrives does not freeze controls', (

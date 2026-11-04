@@ -15,7 +15,7 @@ Evidence line numbers refer to the working tree on 2026-08-11, which included ro
 1,400 uncommitted lines across twelve paths; citations into those files will drift as
 that work lands.
 
-**70 issues: 0 critical, 8 high, 36 medium, 26 low.**
+**65 issues: 0 critical, 6 high, 34 medium, 25 low.**
 
 ## Firebase Data Layer (7)
 
@@ -94,16 +94,11 @@ Password reset, email verification, re-authentication, account deletion and expo
 
 - **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
 
-## Dependency and Tooling Drift (7)
+## Dependency and Tooling Drift (2)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
-- **high** — [The riverpod lint plugin can never load, so it silently never runs](dependency-and-tooling-drift/custom-lint-plugin-cannot-load-riverpod-lint.md)
 - **medium** — [The minimatch 11 override breaks the firebase-tools paths that call minimatch as a function](dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md)
-- **high** — [Unused lint tooling holds the resolved analyzer package six majors back](dependency-and-tooling-drift/unused-lint-tooling-caps-the-analyzer-package.md)
-- **medium** — [Code-generation packages are installed but nothing in the app uses them](dependency-and-tooling-drift/riverpod-codegen-toolchain-declared-but-unused.md)
-- **medium** — [A plain dependency upgrade can never move the Riverpod packages forward](dependency-and-tooling-drift/riverpod-family-exact-pins-block-upgrades.md)
-- **low** — [Firebase plugins lag freely while test and build_runner sit stuck](dependency-and-tooling-drift/dart-dependencies-trail-pub-dev.md)
 - **medium** — [Firebase stops publishing to CocoaPods in October 2026, and both Apple builds depend on it](dependency-and-tooling-drift/cocoapods-sunset-ends-firebase-ios-publishing.md)
 
 ## Platform and Delivery Config (11)
