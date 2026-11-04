@@ -155,6 +155,18 @@ for 1.0**: vices are created by hand, and since the day query dropped its `in` f
 query. A bare `limit` is not an option: it would hide the oldest vices without saying so. Register:
 `tech-debt/firebase-data-layer/vice-lists-are-unbounded.md`; idea: `ideas/release-blockers/backend-hardening.md`.
 
+Not yet on the pitch page: **`weekly-remainder`** (from the usage graph fix, PR #69): Weekly view covers every day
+the Range menu names, counted back from today, so the newest point is a whole week and, when the range is not a
+whole number of weeks, the oldest point sums only the days left over (2 at 30 days, 6 at 90, 5 at 180, 1 at 365)
+and reads low. On master the short bucket was the newest one. Options:
+- **A** keep the partial oldest bucket, labelled as partial on the axis and in the summary;
+- **B** round the range down to whole weeks (drops up to 6 days of the named range);
+- **C** round it up to whole weeks (shows up to 6 days more than the menu says);
+- **D** scale the partial bucket to a weekly rate (marked as estimated).
+
+PR #69 ships the unlabelled form of A. Recommendation: pending pitch. Register:
+`tech-debt/widget-state-and-view-logic/oldest-weekly-bucket-holds-the-remainder.md`.
+
 ## For Jack to do (not decisions)
 
 - **Let CI deploy rules (C1):** grant the service account behind `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER`
