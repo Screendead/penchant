@@ -18,6 +18,7 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/rejected_writes_banner.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,7 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateFailure()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
+        builder: rejectedWritesBuilder,
       ),
     );
   }

@@ -71,7 +71,7 @@ everything optional in the rules until the web site is down and no pre-1.0 build
 
 **Depends on:**
 - [`activity-timestamps-come-from-the-device-clock`](../../tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
-- [`day-windows-use-device-local-midnight`](../../tech-debt/firebase-data-layer/day-windows-use-device-local-midnight.md)
+- the day rule (`CLAUDE.md`, **Days**): an entry counts on the viewing device's local day, and its zone is not stored
 
 **Needs Jack:** yes — Extend C18 to fields on `activities` and to the new `days` and `triggerNodes` collections, and
 allow decimals through a separate `amount` field?

@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/usage_graph_view.dart';
+
+import 'fakes.dart';
 
 DateTime? firstDstTransitionDay(int year) {
   for (int i = 0; i < 365; i++) {
@@ -40,6 +43,72 @@ void main() {
       expect(next.hour, 0);
       expect(addDays(next, -1), day);
       expect(daysBetween(day, next), 1);
+    },
+    skip: transition == null
+        ? 'local timezone has no DST transition in 2026; '
+              'run with TZ=Europe/London to exercise it'
+        : false,
+  );
+
+  test('the usage graph buckets entries by calendar day and by week', () {
+    final DateTime start = DateTime(2026, 3, 28);
+
+    expect(
+      UsageGraphView.bucketTotals(
+        activities: [
+          fakeActivity('v', 1, start),
+          fakeActivity('v', 2, DateTime(2026, 3, 30, 23, 59)),
+          fakeActivity('v', 4, DateTime(2026, 4, 3, 23, 59)),
+          fakeActivity('v', 8, DateTime(2026, 4, 4)),
+          fakeActivity('v', 16, DateTime(2026, 3, 27, 23, 59)),
+        ],
+        rangeStart: start,
+        rangeDays: 7,
+        stepDays: 1,
+      ),
+      [1, 0, 2, 0, 0, 0, 4],
+    );
+    expect(
+      UsageGraphView.bucketTotals(
+        activities: [
+          fakeActivity('v', 1, DateTime(2026, 4, 3, 23, 59)),
+          fakeActivity('v', 2, DateTime(2026, 4, 4)),
+        ],
+        rangeStart: start,
+        rangeDays: 14,
+        stepDays: 7,
+      ),
+      [1, 2],
+    );
+  });
+
+  test(
+    'the usage graph puts an entry just after midnight on its own day across '
+    'a DST transition',
+    () {
+      final DateTime day = transition!;
+      final DateTime next = addDays(day, 1);
+
+      expect(
+        UsageGraphView.bucketTotals(
+          activities: [
+            fakeActivity(
+              'v',
+              1,
+              DateTime(day.year, day.month, day.day, 23, 30),
+            ),
+            fakeActivity(
+              'v',
+              2,
+              DateTime(next.year, next.month, next.day, 0, 30),
+            ),
+          ],
+          rangeStart: addDays(day, -1),
+          rangeDays: 3,
+          stepDays: 1,
+        ),
+        [0, 1, 2],
+      );
     },
     skip: transition == null
         ? 'local timezone has no DST transition in 2026; '
