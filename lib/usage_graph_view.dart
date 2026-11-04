@@ -417,7 +417,9 @@ class _UsageChart extends StatelessWidget {
       maxX: max(0, totals.length - 1).toDouble(),
       minY: 0,
       maxY: yScale.top.toDouble(),
-      // A curve between a spike and zero days can still swing below the axis.
+      // preventCurveOverShooting keeps the tangent of a point that falls steeply
+      // on both sides, so a steep fall through a small value to zero can still
+      // swing below the axis.
       clipData: const FlClipData(
         top: false,
         bottom: true,
