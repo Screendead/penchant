@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -53,6 +54,7 @@ void main() {
 
   final Map<String, ProviderListenable<AsyncValue<List<Object>>>> providers = {
     'vice list': viceListProvider,
+    'unarchived vice list': unarchivedViceListProvider,
     'day activities': viceActivityDayProvider(day),
   };
 
@@ -66,6 +68,31 @@ void main() {
     ViceActivity(:final String viceID) => viceID,
     _ => null,
   };
+
+  test('the unarchived vice list keeps a vice stored without the archived '
+      'field and drops an archived one', () async {
+    final ProviderContainer c = container();
+    c.listen(unarchivedViceListProvider, (_, _) {});
+    users.add(FakeUser('a'));
+    await _settle();
+    vicesByUser['a']!.add([
+      Vice.fromJson(
+        id: 'legacy',
+        json: <String, dynamic>{'name': 'Legacy', 'unit': 'item'},
+      ),
+      Vice.fromJson(
+        id: 'archived',
+        json: <String, dynamic>{'name': 'Old', 'archived': true},
+      ),
+      fakeVice('current'),
+    ]);
+    await _settle();
+
+    expect(c.read(unarchivedViceListProvider).value?.map(shownID), [
+      'legacy',
+      'current',
+    ]);
+  });
 
   for (final MapEntry(key: String name, value: provider) in providers.entries) {
     group('the $name provider', () {

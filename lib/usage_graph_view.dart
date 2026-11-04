@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
@@ -42,7 +43,7 @@ class UsageGraphView extends ConsumerStatefulWidget {
         .fold<double>(0, (double a, double b) => a + b)
         .round();
     final String peakDate = labelFormat.format(
-      rangeStart.add(Duration(days: peakIndex * stepDays)),
+      addDays(rangeStart, peakIndex * stepDays),
     );
     final String average = smoothingWindow > 1
         ? ' Shown with a ${averageName(stepDays, smoothingWindow)}.'
@@ -52,6 +53,28 @@ class UsageGraphView extends ConsumerStatefulWidget {
         '$rangeDays days: ${vice.unit.label(total)} in all. The most was '
         '${vice.unit.label(totals[peakIndex].round())} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average';
+  }
+
+  // Buckets by local calendar day, so an entry lands on the day the device
+  // shows for it even when a DST change makes a day 23 or 25 hours long.
+  static List<double> bucketTotals({
+    required List<ViceActivity> activities,
+    required DateTime rangeStart,
+    required int rangeDays,
+    required int stepDays,
+  }) {
+    final List<double> totals = List<double>.filled(
+      ((rangeDays - 1) ~/ stepDays) + 1,
+      0,
+    );
+    for (final ViceActivity activity in activities) {
+      final int bucketIndex =
+          daysBetween(rangeStart, activity.createdAt.toDate()) ~/ stepDays;
+      if (bucketIndex >= 0 && bucketIndex < totals.length) {
+        totals[bucketIndex] += activity.quantity.toDouble();
+      }
+    }
+    return totals;
   }
 
   @override
@@ -68,8 +91,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
   @override
   void initState() {
     super.initState();
-    final DateTime now = DateTime.now();
-    today = DateTime(now.year, now.month, now.day);
+    today = startOfDay(DateTime.now());
   }
 
   void _applyRange(int newRangeDays) {
@@ -133,8 +155,8 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       (Vice vice) => vice.id == effectiveViceID,
     );
 
-    final DateTime rangeStart = today.subtract(Duration(days: rangeDays - 1));
-    final DateTime rangeEnd = today.add(const Duration(days: 1));
+    final DateTime rangeStart = addDays(today, -(rangeDays - 1));
+    final DateTime rangeEnd = addDays(today, 1);
     final AsyncValue<List<ViceActivity>> activityValue = ref.watch(
       viceActivityGraphProvider((
         viceID: selectedVice.id,
@@ -147,22 +169,13 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
         ? activityValue.value
         : null;
 
-    final int bucketCount = ((rangeDays - 1) ~/ stepDays) + 1;
-    final List<double> totals = List<double>.filled(bucketCount, 0);
-
-    if (activityList != null) {
-      for (final ViceActivity activity in activityList) {
-        final int deltaDays = activity.createdAt
-            .toDate()
-            .difference(rangeStart)
-            .inDays;
-
-        final int bucketIndex = deltaDays ~/ stepDays;
-        if (bucketIndex >= 0 && bucketIndex < totals.length) {
-          totals[bucketIndex] += activity.quantity.toDouble();
-        }
-      }
-    }
+    final List<double> totals = UsageGraphView.bucketTotals(
+      activities: activityList ?? const <ViceActivity>[],
+      rangeStart: rangeStart,
+      rangeDays: rangeDays,
+      stepDays: stepDays,
+    );
+    final int bucketCount = totals.length;
 
     final List<double> smoothed = _movingAverage(totals, smoothingWindow);
     final double maxY = max(
@@ -431,10 +444,9 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
                                               }
 
                                               final DateTime labelDate =
-                                                  rangeStart.add(
-                                                    Duration(
-                                                      days: index * stepDays,
-                                                    ),
+                                                  addDays(
+                                                    rangeStart,
+                                                    index * stepDays,
                                                   );
                                               return Padding(
                                                 padding: const EdgeInsets.only(

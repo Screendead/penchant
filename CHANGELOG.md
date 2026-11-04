@@ -27,6 +27,11 @@ pull request titles (`gh pr list --state merged`).
 - Manage Data's activity counts work offline: each row counts what this device holds and says so, rather than going
   blank. Your Vices also shows the offline banner.
 
+### Fixed
+
+- Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
+- The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.
+
 ## [0.1.0] - Unreleased
 
 ### Added

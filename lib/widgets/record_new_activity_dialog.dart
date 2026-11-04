@@ -11,6 +11,7 @@ import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/rejected_writes.dart';
@@ -220,7 +221,7 @@ class _RecordNewActivityDialogState
           message: loadErrorMessage('your vices', loadError),
           isError: true,
           onRetry: () =>
-              ref.invalidate(unarchivedViceListForUserProvider, asReload: true),
+              ref.invalidate(viceListForUserProvider, asReload: true),
         ),
         actions: <Widget>[
           TextButton(

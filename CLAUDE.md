@@ -25,7 +25,10 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   2026-11-03), so merging a rules PR deploys it; until Jack enables that job (the `DEPLOY_FIRESTORE_RULES`
   repository variable), he deploys them by hand.
 - **Emulators use a `demo-` project.** Run every emulator as `firebase emulators:start --project demo-tracker`. A
-  `demo-` project has no cloud counterpart, so nothing can leak to production.
+  `demo-` project has no cloud counterpart, so nothing can leak to production. `.firebaserc`'s `default` alias is
+  `demo-tracker`, so a `firebase` command without `--project` lands there; the deploy workflow names production with
+  `--project`. A `firebase use` in a directory overrides `.firebaserc` there (the CLI keeps it in
+  `~/.config/configstore/firebase-tools.json`), so never run `firebase use screendead-vice-tracker`.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
   emulators, read the current Firebase documentation for it (firebase.google.com/docs) and cite the page in the PR.
 - **End-to-end before merge.** A change that touches app behaviour merges only after it has run end to end on an iOS
@@ -180,8 +183,10 @@ message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 **Provider chain.** Each Firestore query is a `...ForUserProvider` family keyed on the
 uid (and its other parameters), wrapped by a plain provider of `AsyncValue` that selects
 the uid from `userProvider` through `watchForSignedInUser`
-(`lib/providers/signed_in_user.dart`): `viceListProvider`, `unarchivedViceListProvider`,
-and the activity day, history, graph, single-activity and count providers. The wrapper is
+(`lib/providers/signed_in_user.dart`): `viceListProvider` and the activity day, history,
+graph, single-activity and count providers. `unarchivedViceListProvider` filters
+`viceListProvider`'s list on the device rather than querying on `archived`: a filter on a
+field matches only documents that hold it, and vices written before 2024-08-14 lack it. The wrapper is
 loading with no value while nobody is signed in, and each user's query is a separate
 provider, so a value never belongs to a previous user: riverpod carries a provider's last
 value into the loading state of a rebuild, which is how a single provider rebuilt on a user
@@ -227,6 +232,16 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from the today chart but keeps its history.
+
+**Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
+stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
+(never `Duration(days:)`, which drifts an hour across a DST change). The zone an entry was logged in is not
+stored, so an entry near midnight can move a day when viewed in another zone; storing it would be a new activity
+field (the open `r2-data-model` call). `createdAt` is the device's clock at the moment of logging (or the time the
+user picked), not a server timestamp: a pending `FieldValue.serverTimestamp()` matches no `createdAt` range query
+until the server acknowledges it, so an entry logged offline would vanish from Today, and the server would stamp it
+with the time it synced. Whether to trade that for server time is open (register,
+`activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed.
