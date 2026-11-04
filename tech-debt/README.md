@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**56 issues: 0 critical, 2 high, 30 medium, 24 low.**
+**56 issues: 0 critical, 1 high, 31 medium, 24 low.**
 
 ## Firebase Data Layer (7)
 
@@ -54,7 +54,7 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **high** — [A change made offline that the server later refuses vanishes without a word](offline-and-write-reliability/rejected-queued-write-is-dropped-silently.md)
+- **medium** — [A queued change the server refuses after the app restarts vanishes without a word](offline-and-write-reliability/rejected-write-from-an-earlier-launch-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
 ## Duplication and Dead Code (9)

@@ -13,6 +13,7 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -98,6 +99,7 @@ class _RecordNewActivityDialogState
 
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final TrackerWrites writes = ref.read(trackerWritesProvider);
+    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
 
     setState(() {
       loading = true;
@@ -107,6 +109,9 @@ class _RecordNewActivityDialogState
     final DateTime date = RecordNewActivityDialog.dateFormat.parse(
       dateController.text,
     );
+    final Vice vice = selectedVice!;
+    final int quantity = int.parse(quantityController.text);
+    final String entry = describeActivity(vice.name, vice.unit, quantity, date);
 
     final bool synced;
 
@@ -115,9 +120,13 @@ class _RecordNewActivityDialogState
         writes.recordActivity(
           activityID,
           ownerID: user.uid,
-          viceID: selectedVice!.id,
-          quantity: int.parse(quantityController.text),
+          viceID: vice.id,
+          quantity: quantity,
           createdAt: date,
+        ),
+        onRejectedLater: rejected.reporter(
+          'Not saved: $entry',
+          creates: activityID,
         ),
       );
     } on FirebaseException catch (e, stack) {
@@ -149,7 +158,7 @@ class _RecordNewActivityDialogState
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      onUndo: () => _undo(messenger, writes, written),
+      onUndo: () => _undo(messenger, writes, rejected, written, entry),
     );
   }
 
@@ -158,20 +167,32 @@ class _RecordNewActivityDialogState
   static Future<void> _undo(
     ScaffoldMessengerState messenger,
     TrackerWrites writes,
+    RejectedWrites rejected,
     String activityID,
+    String entry,
   ) async {
-    String message;
+    String? message;
 
     try {
-      message = await settleWrite(writes.deleteActivity(activityID))
+      message =
+          await settleWrite(
+            writes.deleteActivity(activityID),
+            onRejectedLater: rejected.reporter(
+              'Not deleted: $entry',
+              changes: activityID,
+            ),
+          )
           ? 'Activity removed'
           : queuedDeleteMessage;
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while undoing a recorded activity');
-      message = 'Could not undo. ${firestoreErrorMessage(e)}';
+      // The banner already says the entry was not saved.
+      message = rejected.createRefused(activityID)
+          ? null
+          : 'Could not undo. ${firestoreErrorMessage(e)}';
     }
 
-    if (messenger.mounted) {
+    if (message != null && messenger.mounted) {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -246,8 +267,9 @@ class _RecordNewActivityDialogState
                             int.tryParse(quantityController.text) ?? 0;
 
                         setState(() {
-                          selectedVice =
-                              vices.firstWhere((Vice v) => v.id == id);
+                          selectedVice = vices.firstWhere(
+                            (Vice v) => v.id == id,
+                          );
                           updateUnit(parsedQuantity);
                         });
                       },
