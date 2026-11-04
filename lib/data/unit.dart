@@ -15,11 +15,6 @@ enum Unit {
   String nameFor(int count) => count == 1 ? singular : plural;
   String label(int count) => '$count ${nameFor(count)}';
 
-  @override
-  String toString() {
-    return super.toString().split('.').last;
-  }
-
   static const Unit fallback = Unit.item;
 
   static Unit fromString(Object? unit) {

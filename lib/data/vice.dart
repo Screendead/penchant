@@ -45,14 +45,4 @@ class Vice {
       );
     }).toList();
   }
-
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'name': name,
-      'unit': unit.name,
-      'ownerID': ownerID,
-      'createdAt': createdAt,
-      'archived': archived,
-    };
-  }
 }

@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**56 issues: 0 critical, 2 high, 30 medium, 24 low.**
+**51 issues: 0 critical, 2 high, 30 medium, 19 low.**
 
 ## Firebase Data Layer (7)
 
@@ -57,19 +57,14 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **high** — [A change made offline that the server later refuses vanishes without a word](offline-and-write-reliability/rejected-queued-write-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
-## Duplication and Dead Code (9)
+## Duplication and Dead Code (4)
 
 Copy-pasted logic, unused providers, methods and fields, commented-out code, and lint and formatting drift.
 
 - **medium** — [Date-entry field, timer, and lock toggle are copy-pasted across two files](duplication-and-dead-code/activity-date-entry-flow-duplicated.md)
 - **low** — [A copied timer runs uselessly because the editor starts in the opposite mode](duplication-and-dead-code/editor-timer-runs-for-a-mode-that-starts-disabled.md)
-- **low** — [Firebase config files still carry empty CLI scaffolding](duplication-and-dead-code/firebase-config-scaffold-leftovers.md)
-- **low** — [Long lines and missing const modifiers go uncaught since nothing runs dart format](duplication-and-dead-code/formatting-and-const-drift.md)
-- **low** — [A row's tap and its edit button do the exact same thing, redundantly](duplication-and-dead-code/history-row-carries-two-identical-routes.md)
-- **low** — [Serialization helpers are used only by tests while every write site hand-builds its own map](duplication-and-dead-code/model-tojson-and-copywith-are-never-called.md)
+- **low** — [Two files sit outside the dart format check](duplication-and-dead-code/formatting-and-const-drift.md)
 - **low** — [The same nullable-lookup pattern is typed out separately twice](duplication-and-dead-code/null-safe-firstwhere-idiom-copied-twice.md)
-- **low** — [A custom toString reimplements the enum's built-in name getter by hand](duplication-and-dead-code/unit-tostring-reimplements-the-enum-name-getter.md)
-- **low** — [An auth widget carries a dead field](duplication-and-dead-code/unused-fields-and-commented-out-code.md)
 
 ## Accessibility and Localization (7)
 

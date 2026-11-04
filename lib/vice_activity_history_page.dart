@@ -101,9 +101,9 @@ class _ViceActivityHistoryPageState
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final Vice? vice = viceList.where((Vice item) => item.id == viceID).isEmpty
-        ? null
-        : viceList.firstWhere((Vice item) => item.id == viceID);
+    final Vice? vice = viceList
+        .where((Vice item) => item.id == viceID)
+        .firstOrNull;
 
     if (vice == null) {
       return const Scaffold(body: Center(child: Text('Vice not found')));
@@ -174,15 +174,6 @@ class _ViceActivityHistoryPageState
                   trailing: Wrap(
                     spacing: 8,
                     children: [
-                      IconButton(
-                        tooltip: 'Edit',
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          Navigator.of(context).pushNamed(
-                            '/vices/$viceID/activities/${activity.id}',
-                          );
-                        },
-                      ),
                       IconButton(
                         tooltip: 'Delete',
                         icon: const Icon(Icons.delete_outline),
