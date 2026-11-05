@@ -71,6 +71,11 @@ tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each scr
 Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set; `E2E_DEVICE=macos` skips the
 simulator and runs on this Mac), refuse to start if an emulator port (8080, 9099, 9150, 4000, 4400, 4500) is taken,
 and start the emulators under `demo-tracker` from `tools/emulator-env.sh`. `e2e-screenshots.sh` needs a simulator.
+Flutter's macOS runner cannot relaunch the app for a second file in one `flutter test`, so on macOS `e2e.sh` hands
+`tools/e2e-macos-each-file.sh` the targets, which runs each file on its own in the one emulator session, prints
+PASS or FAIL per file and fails if any did. Every test file starts with `ensureE2EBinding()` (`integration_test/support.dart`)
+rather than the stock binding call: it forces frames while macOS reports the app hidden (its window covered or on
+another Space), when the framework schedules none and every pump would wait forever.
 
 A signed macOS build (`flutter build macos`, `-d macos`, `E2E_DEVICE=macos`) needs a Mac App Development
 provisioning profile for `com.screendead.tracker.tracker` on team `8N575942RT`. Firebase Auth on macOS keeps the

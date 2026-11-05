@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
@@ -42,6 +41,17 @@ Future<void> _pickDay(WidgetTester tester, DateTime day) async {
   await tap(tester, _dayMenu);
   // The menu fades in; taps during the animation miss.
   await pumpFor(tester, const Duration(milliseconds: 500));
+  // The menu scrolls to line the selected day up with the button. In macOS's
+  // window the button sits too close to the top for the newer days above it,
+  // which stay scrolled out of view until the user scrolls back.
+  await tester.ensureVisible(
+    find.descendant(
+      of: find.byType(ListView),
+      matching: find.text(formatDay(day)),
+      skipOffstage: false,
+    ),
+  );
+  await pumpFor(tester, const Duration(milliseconds: 500));
   await tap(tester, find.text(formatDay(day)).last);
   await pumpFor(tester, const Duration(milliseconds: 500));
 }
@@ -53,8 +63,7 @@ Future<void> _startApp(WidgetTester tester, String email) async {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
