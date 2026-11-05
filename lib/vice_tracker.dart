@@ -80,7 +80,10 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void _record(Vice? vice) {
     showDialog<void>(
       context: context,
-      builder: (_) => RecordNewActivityDialog(initialViceID: vice?.id),
+      builder: (_) => RecordNewActivityDialog(
+        initialViceID: vice?.id,
+        bottomClearance: ViceTracker.logClearance,
+      ),
     );
   }
 

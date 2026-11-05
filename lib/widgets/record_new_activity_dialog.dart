@@ -20,10 +20,16 @@ import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
-  const RecordNewActivityDialog({super.key, this.initialViceID});
+  const RecordNewActivityDialog({
+    super.key,
+    this.initialViceID,
+    this.bottomClearance = 0,
+  });
 
   // The habit chosen when the dialog opens, as from a held Log-fan wedge.
   final String? initialViceID;
+  // Lifts the bar it shows over a floating button, as Today's Log button.
+  final double bottomClearance;
 
   static const Duration undoDuration = undo_bar.undoDuration;
   static const String recordedMessage = 'Activity recorded';
@@ -32,10 +38,12 @@ class RecordNewActivityDialog extends ConsumerStatefulWidget {
     ScaffoldMessengerState messenger, {
     required bool synced,
     required VoidCallback onUndo,
+    double bottomClearance = 0,
   }) => undo_bar.showUndoBar(
     messenger,
     TextSpan(text: synced ? recordedMessage : queuedMessage),
     onUndo: onUndo,
+    bottomClearance: bottomClearance,
   );
 
   @override
@@ -136,11 +144,20 @@ class _RecordNewActivityDialogState
     }
 
     final String written = activityID;
+    final double clearance = widget.bottomClearance;
     Navigator.of(context).pop();
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      onUndo: () => undoLog(messenger, writes, rejected, written, entry),
+      bottomClearance: clearance,
+      onUndo: () => undoLog(
+        messenger,
+        writes,
+        rejected,
+        written,
+        entry,
+        bottomClearance: clearance,
+      ),
     );
   }
 

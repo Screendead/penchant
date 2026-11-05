@@ -39,7 +39,10 @@ void main() {
       // An empty day offline may be one this device never fetched.
       await tap(tester, find.byTooltip('Previous day'));
       await pumpUntil(tester, find.text(ClearDay.offlineHeadline));
-      expect(find.text(ClearDay.offlineBody), findsOneWidget);
+      expect(
+        find.text(ClearDay.offlineBody, skipOffstage: false),
+        findsOneWidget,
+      );
       await tap(tester, find.byTooltip('Next day'));
 
       await recordActivity(tester, 'Coffee', 2);
@@ -50,11 +53,17 @@ void main() {
         'Tea (0 drinks)',
         'Water (0 drinks)',
       });
-      await pumpUntil(tester, find.text(PendingDayNote.text(1)));
+      await pumpUntil(
+        tester,
+        find.text(PendingDayNote.text(1), skipOffstage: false),
+      );
       await screenshot(tester, 'record-queued-offline');
       await recordActivity(tester, 'Coffee', 5);
       await recordActivity(tester, 'Coffee', 7);
-      await pumpUntil(tester, find.text(PendingDayNote.text(3)));
+      await pumpUntil(
+        tester,
+        find.text(PendingDayNote.text(3), skipOffstage: false),
+      );
 
       await openFromDrawer(tester, 'Manage Data');
       // count() runs only on the server; offline the row counts what this

@@ -310,23 +310,25 @@ Future<void> recordActivity(
 
 // Logs one of [viceName] now with its tally's +.
 Future<void> logOne(WidgetTester tester, String viceName) async {
-  final Finder plus = find.byTooltip(
-    find
-        .byType(TallyRow)
-        .evaluate()
-        .map((Element e) => e.widget as TallyRow)
-        .where((TallyRow row) => row.vice.name == viceName)
-        .map((TallyRow row) => 'Log ${row.vice.unit.label(1)} of $viceName')
-        .first,
+  final Finder row = find.byWidgetPredicate(
+    (Widget w) => w is TallyRow && w.vice.name == viceName,
+    skipOffstage: false,
   );
-  await scrollIntoView(tester, plus);
-  await tap(tester, plus);
+  await pumpUntil(tester, row);
+  final TallyRow tally = tester.widget<TallyRow>(row);
+  final String label = 'Log ${tally.vice.unit.label(1)} of $viceName';
+  await scrollIntoView(tester, find.byTooltip(label, skipOffstage: false));
+  await tap(tester, find.byTooltip(label));
 }
 
 // Scrolls Today until [finder] is in the middle of the screen, clear of the
 // Log button.
 Future<void> scrollIntoView(WidgetTester tester, Finder finder) async {
-  await pumpUntil(tester, finder.first);
+  await pumpUntilTrue(
+    tester,
+    () => finder.evaluate().isNotEmpty,
+    () => '$finder to be built',
+  );
   await Scrollable.ensureVisible(tester.element(finder.first), alignment: 0.5);
   await tester.pump();
 }
@@ -422,30 +424,38 @@ Set<String>? todayTallies(WidgetTester tester) {
   };
 }
 
-// Waits for Today's tallies to read exactly [tallies], and the dial to say
-// the same totals.
-Future<void> expectTallies(
-  WidgetTester tester,
-  Set<String> tallies,
-) => pumpUntilTrue(
-  tester,
-  () {
-    if (!setEquals(todayTallies(tester), tallies)) {
+// Waits for Today to show exactly [tallies]: the dial's summary, which names
+// every habit's total, and every tally row built so far (the list builds rows
+// only as they near the screen).
+Future<void> expectTallies(WidgetTester tester, Set<String> tallies) {
+  bool matches() {
+    final String? summary = dialSummary(tester);
+    final Set<String>? built = todayTallies(tester);
+    if (summary == null || built == null || !tallies.containsAll(built)) {
       return false;
     }
-    final String? summary = dialSummary(tester);
-    return summary != null &&
-        tallies.every((String t) {
-          final int open = t.lastIndexOf(' (');
-          return summary.contains(
-            '${t.substring(0, open)} ${t.substring(open + 2, t.length - 1)}',
-          );
-        });
-  },
-  () =>
-      'Today to show $tallies (showing ${todayTallies(tester)}; '
-      'dial: ${dialSummary(tester)})',
-);
+    final String totals = summary.substring(
+      summary.indexOf('. ') + 2,
+      summary.contains(' First entry ') || summary.contains(' One entry')
+          ? summary.lastIndexOf(RegExp(r'\. (First|One) entry'))
+          : summary.lastIndexOf('. Nothing recorded.'),
+    );
+    final Set<String> spoken = <String>{
+      for (final String t in tallies)
+        '${t.substring(0, t.lastIndexOf(' ('))} '
+            '${t.substring(t.lastIndexOf(' (') + 2, t.length - 1)}',
+    };
+    return setEquals(totals.split(', ').toSet(), spoken);
+  }
+
+  return pumpUntilTrue(
+    tester,
+    matches,
+    () =>
+        'Today to show $tallies (rows: ${todayTallies(tester)}; '
+        'dial: ${dialSummary(tester)})',
+  );
+}
 
 String? dialSummary(WidgetTester tester) {
   final Finder dial = find.byType(DayDial, skipOffstage: false);

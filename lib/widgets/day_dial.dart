@@ -213,6 +213,7 @@ class _DayDialState extends ConsumerState<DayDial>
       flight.remove();
       flight.dispose();
     }
+    _flights.clear();
     _ticker.dispose();
     super.dispose();
   }
@@ -368,8 +369,11 @@ class _DayDialState extends ConsumerState<DayDial>
         mark: entry.mark,
         colors: colors,
         onLanded: () {
+          // The dial removes what is still flying when it goes.
+          if (!_flights.remove(flight)) {
+            return;
+          }
           flight.remove();
-          _flights.remove(flight);
           flight.dispose();
           if (!mounted) {
             return;
@@ -1122,7 +1126,7 @@ class _BeadFlightState extends State<_BeadFlight>
   late final AnimationController _travel = AnimationController(
     vsync: this,
     duration: DialMotion.beadTravel,
-  )..forward().whenCompleteOrCancel(widget.onLanded);
+  )..forward().then((_) => widget.onLanded());
 
   @override
   void dispose() {

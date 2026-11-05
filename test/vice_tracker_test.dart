@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -595,6 +597,98 @@ void main() {
         startOfDay(writes.writes.single.fields['createdAt']! as DateTime),
         today,
       );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a logged bead flies in from the + and lands on the dial, and '
+        'leaving mid-flight leaves nothing behind', (
+      WidgetTester tester,
+    ) async {
+      final StreamController<List<ViceActivity>> day =
+          StreamController<List<ViceActivity>>.broadcast();
+      addTearDown(day.close);
+      // A live day, so the logged entry arrives as it would from Firestore.
+      final ValueNotifier<bool> shown = ValueNotifier<bool>(true);
+      addTearDown(shown.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...habitOverrides([coffee, tea]),
+            userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+            offlineProvider.overrideWith((ref) => Stream.value(false)),
+            trackerWritesProvider.overrideWithValue(writes),
+            viceActivityDayForUserProvider.overrideWith(
+              (ref, key) => day.stream,
+            ),
+          ],
+          child: MaterialApp(
+            home: Consumer(
+              builder: (BuildContext context, WidgetRef ref, _) {
+                ref.watch(userProvider);
+                return Scaffold(
+                  body: ValueListenableBuilder<bool>(
+                    valueListenable: shown,
+                    builder: (_, bool on, _) =>
+                        on ? const ViceTracker() : const SizedBox(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      day.add(const <ViceActivity>[]);
+      await tester.pumpAndSettle();
+
+      final List<ViceActivity> logged = <ViceActivity>[];
+      Future<String> logAndArrive() async {
+        // The last log's bar would cover the row.
+        tester
+            .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
+            .removeCurrentSnackBar();
+        await tester.pump();
+        await tester.tap(_button(logOneLabel(tea)));
+        await tester.pump();
+        final Write write = writes.writes.last;
+        logged.add(
+          ViceActivity(
+            id: write.id,
+            viceID: tea.id,
+            quantity: 1,
+            ownerID: ownerID,
+            createdAt: Timestamp.fromDate(
+              write.fields['createdAt']! as DateTime,
+            ),
+          ),
+        );
+        day.add([...logged]);
+        await tester.pump();
+        await tester.pump();
+        return write.id;
+      }
+
+      final Finder flight = find.byWidgetPredicate(
+        (Widget w) => w.runtimeType.toString() == '_BeadFlight',
+      );
+      await logAndArrive();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(flight, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(flight, findsNothing);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('1 entry'), findsOneWidget);
+
+      // Gone within the flight: the dial takes its flight with it.
+      await logAndArrive();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(flight, findsOneWidget);
+      shown.value = false;
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(flight, findsNothing);
+      expect(tester.takeException(), isNull);
       await tester.pumpAndSettle();
     });
 
