@@ -306,7 +306,7 @@ class _ViceActivityEditorPageState
                     TextFormField(
                       initialValue: vice.name,
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: 'Vice'),
+                      decoration: const InputDecoration(labelText: 'Habit'),
                     ),
                     const SizedBox(height: 16),
                     ActivityDateField(

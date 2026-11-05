@@ -25,7 +25,7 @@ void main() {
     await pumpUntil(tester, find.byType(RadarChart));
 
     await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('Your Vices'));
+    await pumpUntil(tester, find.text('Your Habits'));
     // Each row's count is its own server request, so the rows fill in any order.
     await pumpUntil(tester, find.text('1 activity'));
     await pumpUntilTrue(

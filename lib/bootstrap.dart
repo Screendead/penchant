@@ -13,7 +13,7 @@ class Bootstrap extends StatefulWidget {
   const Bootstrap({super.key, required this.initialize, required this.child});
 
   static const String failedMessage =
-      'Vice Tracker could not start. Try again, and if it keeps failing, '
+      'Penchant could not start. Try again, and if it keeps failing, '
       'close the app and reopen it.';
 
   final Future<void> Function() initialize;
@@ -58,7 +58,7 @@ class _BootstrapState extends State<Bootstrap> {
     }
 
     return MaterialApp(
-      title: 'Vice Tracker',
+      title: 'Penchant',
       theme: appTheme(),
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: appLocales,

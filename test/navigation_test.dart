@@ -102,7 +102,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Manage Data'));
       await tester.pumpAndSettle();
-      expect(find.text('Your Vices'), findsOneWidget);
+      expect(find.text('Your Habits'), findsOneWidget);
 
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();

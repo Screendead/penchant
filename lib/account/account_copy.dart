@@ -10,7 +10,7 @@ abstract final class AccountCopy {
   static const String exportSubtitle =
       'A spreadsheet of every entry and a full copy of your account, '
       'through the share sheet.';
-  static const String exportSubject = 'Tracker data export';
+  static const String exportSubject = 'Penchant data export';
   static String exportFailed(String reason) =>
       "Couldn't export your data. $reason";
 
@@ -20,7 +20,7 @@ abstract final class AccountCopy {
 
   static const String deleteConfirmTitle = 'Delete your account?';
   static const String deleteConfirmBody =
-      'This permanently deletes your account and everything in it: every vice '
+      'This permanently deletes your account and everything in it: every habit '
       'and every entry you have logged, from our servers and from this '
       'device.\n\n'
       'It cannot be undone, and we cannot recover anything afterwards. If you '

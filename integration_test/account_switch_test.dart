@@ -53,20 +53,20 @@ void main() {
 
     await pumpUntilNeverShowing(
       tester,
-      find.textContaining('No vices yet. Add one'),
+      find.textContaining('No habits yet. Add one'),
       firstVices,
     );
     await tap(tester, _graphTab);
     await pumpUntilNeverShowing(
       tester,
-      find.text('No vices available to graph'),
+      find.text('No habits available to graph'),
       firstVices,
     );
     await tap(tester, _todayTab);
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntilNeverShowing(
       tester,
-      find.text('No vices yet. Tap + to add one.'),
+      find.text('No habits yet. Tap + to add one.'),
       firstVices,
     );
     expect(find.byType(Homepage, skipOffstage: false), findsOneWidget);

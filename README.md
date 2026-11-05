@@ -1,11 +1,11 @@
-# Tracker
+# Penchant
 
-A journal for logging what you do, seeing the trends and learning about yourself. You define a "vice" (a name
-and a unit), log activities against it, and read the trends: a per-day radar chart across your vices and a line chart
-of one vice over a date range.
+Habit journal & sleep insights: a journal for logging what you do, seeing the trends and learning about yourself. You
+define a habit (a name and a unit), log activities against it, and read the trends: a per-day radar chart across your
+habits and a line chart of one habit over a date range.
 
-A Flutter app for iOS and macOS over Firebase Auth and Cloud Firestore. There is no server-side code. The product
-name is not settled; "Tracker" is the working name.
+A Flutter app for iOS and macOS over Firebase Auth and Cloud Firestore. There is no server-side code. The code and the
+stored data still call a habit a "vice" (`vices`, `viceID`); only the app's wording changed.
 
 ## Run it
 

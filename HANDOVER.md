@@ -34,8 +34,9 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Ready to merge 2026-11-05: Jack made the Mac development profile, and `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 24 issues on #47's branch: 0 critical, 0 high, 12 medium, 12 low (`tools/tech-debt-recount.py`, 2026-11-05; 27 with 1 high, the macOS lockfile, on master; from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
+| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings on `feat/brand-penchant` (2026-11-05); the bundle IDs wait on Jack's Firebase registrations (queue item 2) | `lib/`, `ios/Runner/Info.plist`, `macos/Runner/Configs/AppInfo.xcconfig` |
+| Tech-debt register | 22 issues: 0 critical, 0 high, 11 medium, 11 low (`tools/tech-debt-recount.py` on `feat/brand-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 29 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
 `dart format` check, `flutter test` and the rules tests. `flutter build macos` fails on master (deployment target);
@@ -58,19 +59,22 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    600 pt window leaves the newest days scrolled out (the test scrolls to them); and at text scale 3, which macOS
    never reports outside a test, #74's key scrolls in that window (on macOS only, the test scrolls to each name). One full macOS run also timed out once in `bounded_queries_test.dart`'s
    `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
-2. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
+2. **Bundle IDs to `com.screendead.penchant`**, iOS and macOS, with the two new Firebase config files and
+   `firebase_options.dart`, in one PR before any TestFlight upload. **Blocked on Jack** registering the two apps (For
+   Jack to do). The rest of the brand is applied (`r2-brand`, below); `ideas/release-blockers/name-and-bundle-id.md`.
+3. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
    tiles are a Today layout, which waits on Jack's Today call (`r2-today`); only a shared "log one at the default
-   quantity, now" action with the 8-second Undo is decided. Unblocked. Parallel with item 4 where the files don't
+   quantity, now" action with the 8-second Undo is decided. Unblocked. Parallel with item 5 where the files don't
    overlap.
-3. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
+4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
-4. **The rest of the register**, medium then low, one class per PR.
+5. **The rest of the register**, medium then low, one class per PR.
 
 ### This run (`/finish-and-pitch`, started 2026-11-03)
 
 Waves A to D are merged (the table above has each). No round-2 call is picked, so nothing rests on one. Left over:
 
-- Left for Jack's calls: brand strings, telemetry, verified email, vice cap, other languages. The "log one" action
+- Left for Jack's calls: telemetry, verified email, vice cap, other languages. The "log one" action
   waits on `r2-today`.
 - **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
   trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
@@ -112,8 +116,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 - **C17. Business model** (`business`): **free 1.0, then a one-time Pro unlock in 1.1.**
 - **C18. New fields on vices** (`goals-fields`): **yes.** Optional fields are fine. Mandatory fields are allowed too,
   but only with a migrator that runs on first launch and adds them to existing records.
-- **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand itself is open on the pitch page (`r2-brand`;
-  candidates in `ideas/release-blockers/brand-name.md`).
+- **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand is Penchant (`r2-brand`, round
+  2 below).
 
 ## Jack's calls, round 2
 
@@ -125,6 +129,13 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on `mockup/icon-sheet`). Shipped as the iOS and macOS
   icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
   brand. Done.
+- **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
+  **Penchant**, with the recommended App Store subtitle **"Habit journal & sleep insights"**. Applied to every
+  identity string by `feat/brand-penchant`; the bundle IDs are queue item 2. Backups if the trademark search fails:
+  Kenning, then Sounding.
+- **Wording** (2026-11-05, Jack): the app says **"habits"**, not "vices", in its UI. Code, routes, Firestore
+  collections and fields, and the export's column names keep `vice`, so the data shape is unchanged
+  (`feat/brand-penchant`).
 
 ## Calls waiting on Jack (UNDECIDED)
 
@@ -132,14 +143,14 @@ Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs,
 recommendation. Ids: `r2-e2ee` (end-to-end encryption of what each entry says; `ideas/release-blockers/end-to-end-encryption.md`,
 prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and quantities, dates may stay plaintext),
 `r2-mac-config` (the macOS Firebase config: reuse the iOS app's registration, recommended, or register a separate
-app), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
+app), `r2-trademark` (pay for a professional trademark search on Penchant), `r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
 Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
 
 Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, for `r2-brand`; its icon half is superseded by `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
+icon (`mockup/brand-and-icon`, superseded by `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
 Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
 `lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
@@ -221,6 +232,19 @@ not decisions:
   over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
   edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
   `demo-tracker`. Register: `tech-debt/firebase-data-layer/every-firebase-command-targets-production.md`.
+- **Register Penchant's apps in Firebase** (before any TestFlight upload): in Firebase project
+  `screendead-vice-tracker` (console > Project settings > Your apps > Add app), register an iOS app and an Apple
+  (macOS) app, each with bundle ID `com.screendead.penchant`, and download the two `GoogleService-Info.plist` files.
+  If the console refuses a second Apple app with the same bundle ID (not checked), the iOS app's file serves the Mac
+  too, which is the recommended side of `r2-mac-config`. Put the files where Claude can read them (for example
+  `~/Downloads`) and say so. Claude then
+  switches both bundle IDs and both config files in one PR (queue item 2). The phone will then see Penchant as a new
+  app: the installed "Tracker" build stays beside it until you delete it, and the new one starts signed out.
+- **Trademark search on "Penchant"** in classes 9, 42 and 44 (USPTO, UKIPO, EUIPO), before the first upload. Whether
+  to pay for a professional one is `r2-trademark`.
+- **Choose the domain variant** before the first upload: `penchant.com` is held (MarkMonitor, owner unknown) and
+  `penchant.app` is parked, so a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. It sets the
+  support and legal-page addresses.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 

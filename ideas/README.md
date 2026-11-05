@@ -24,17 +24,16 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**30 ideas: 10 release blockers, 7 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 19 need a call from
+**29 ideas: 9 release blockers, 7 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 18 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
 Each list is in the recommended build order.
 
-## Release blockers (10)
+## Release blockers (9)
 
 - [Position the app as a neutral journal for learning about yourself](release-blockers/positioning-and-target-user.md). S. Decided (C15)
-- [Pick the brand: Penchant, with a descriptive subtitle](release-blockers/brand-name.md). S, Needs Jack
-- [Apply the brand everywhere and lock the bundle ID before the first upload](release-blockers/name-and-bundle-id.md). S. Decided pattern (C19)
+- [Lock the bundle ID and clear the Penchant name before the first upload](release-blockers/name-and-bundle-id.md). S. Decided (C19, `r2-brand`: Penchant), Needs Jack (Firebase registrations, trademark, domain)
 - [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, Needs Jack (`vice-cap`); bounded activity queries and App Check wiring built in #55
 - [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, Needs Jack
@@ -79,7 +78,7 @@ Each list is in the recommended build order.
 
 Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Needs Jack" item in it is still open.
 
-1. **Jack makes the five calls 1.0 hangs on:** the brand (and so the bundle ID), extending C18 to activity fields and
+1. **Jack makes the four calls 1.0 hangs on** (the brand is Penchant, `r2-brand`): extending C18 to activity fields and
    the `days` and `triggerNodes` collections, 18+ in place of the retired 17+, Mac in 1.0 or 1.0.x, and whether 1.0
    seals what each entry says (end-to-end encryption).
 2. **Meanwhile agents build what needs no call,** beside the wave-2 debt: parsers that default every missing field
@@ -104,7 +103,7 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 
 ## Needs Jack
 
-- **Brand:** Penchant (recommended), Kenning or Sounding; which subtitle; pay for a trademark search first?
+- **Trademark:** pay for a professional trademark search on Penchant before the first upload (`r2-trademark`)?
 - **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
   recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
   the visible "when"?

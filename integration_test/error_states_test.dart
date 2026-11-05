@@ -45,7 +45,7 @@ void main() {
 
     await openFromDrawer(tester, 'Manage Data');
     final String denied = loadErrorMessage(
-      'your vices',
+      'your habits',
       FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied'),
     );
     await pumpUntil(tester, find.text(denied));
@@ -61,7 +61,7 @@ void main() {
         matching: find.widgetWithText(TextButton, 'Retry'),
       ),
     );
-    await pumpUntil(tester, find.text('No vices yet. Tap + to add one.'));
+    await pumpUntil(tester, find.text('No habits yet. Tap + to add one.'));
     expect(find.text(denied), findsNothing);
   });
 }

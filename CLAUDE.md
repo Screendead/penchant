@@ -233,7 +233,9 @@ writes still queued on the device, and fails offline. The vice lists have no lim
 nothing caps how many vices a user creates; whether to add a cap is undecided (register,
 `vice-lists-are-unbounded`).
 
-**Data model.** Two flat top-level collections joined by `viceID`: `vices`
+**Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
+collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
+flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
 `quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming

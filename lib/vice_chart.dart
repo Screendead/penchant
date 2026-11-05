@@ -218,7 +218,7 @@ class ViceChart extends ConsumerWidget {
     // With no vices there is nothing to chart, whatever the day's query did.
     if (!vicesValue.hasError && vices != null && vices.isEmpty) {
       return const InfoBox(
-        message: 'No vices yet. Add one from Manage Data in the menu.',
+        message: 'No habits yet. Add one from Manage Data in the menu.',
       );
     }
 

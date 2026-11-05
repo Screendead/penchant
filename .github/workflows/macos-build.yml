@@ -46,7 +46,7 @@ jobs:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: |
           flutter build macos --debug --dart-define=USE_FIREBASE_EMULATORS=true
-          plist=build/macos/Build/Products/Debug/tracker.app/Contents/Resources/GoogleService-Info.plist
+          plist=build/macos/Build/Products/Debug/Penchant.app/Contents/Resources/GoogleService-Info.plist
           if [ -e "$plist" ]; then
             echo "The emulator build still bundles GoogleService-Info.plist." >&2
             exit 1

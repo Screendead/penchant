@@ -66,7 +66,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       excludeFromSemantics: true,
       child: MaterialApp(
         navigatorKey: navigatorKey,
-        title: 'Vice Tracker',
+        title: 'Penchant',
         theme: appTheme(),
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: appLocales,

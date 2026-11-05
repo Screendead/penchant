@@ -258,13 +258,13 @@ void main() {
       ], const Scaffold(body: UsageGraphView()));
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
 
       await _tapRetry(tester);
 
-      expect(find.text('No vices available to graph'), findsOneWidget);
+      expect(find.text('No habits available to graph'), findsOneWidget);
     });
 
     testWidgets("a failed range query shows the error in the chart's place", (
@@ -312,18 +312,18 @@ void main() {
       ], const ManageData());
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
       await _expectNoAutomaticRetry(tester, vices);
 
       await _tapRetry(tester);
 
-      expect(find.text('No vices yet. Tap + to add one.'), findsOneWidget);
+      expect(find.text('No habits yet. Tap + to add one.'), findsOneWidget);
     });
   });
 
-  group('Edit Vice', () {
+  group('Edit Habit', () {
     testWidgets('a failed vice list shows the error and Retry opens the form', (
       WidgetTester tester,
     ) async {
@@ -335,7 +335,7 @@ void main() {
       ], EditVice(viceID: coffee.id));
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
 
@@ -369,7 +369,7 @@ void main() {
       await _tapRetry(tester);
 
       expect(history.listens, 2);
-      expect(find.text('No activities found for this vice'), findsOneWidget);
+      expect(find.text('No activities found for this habit'), findsOneWidget);
     });
 
     testWidgets('a list still loading is a spinner, not an error', (
@@ -447,7 +447,7 @@ void main() {
       ], const Scaffold(body: RecordNewActivityDialog()));
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
       expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
