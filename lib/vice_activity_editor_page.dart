@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -342,7 +343,7 @@ class _ViceActivityEditorPageState
         ),
         if (loading) ...[
           Positioned.fill(
-            child: Container(color: Colors.black.withValues(alpha: 0.5)),
+            child: ColoredBox(color: DialColors.of(context).scrim),
           ),
           const CircularProgressIndicator(),
         ],
