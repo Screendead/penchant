@@ -128,7 +128,7 @@ void main() {
         final List<String> fg = sub(pair['fg']), bg = sub(pair['bg']);
         final double min = (pair['min'] as num).toDouble();
         test('$theme: ${fg.join(' over ')} on ${bg.join(' over ')} '
-            'meets $min:1', () {
+            'meets $min:1 (${pair['purpose']})', () {
           double worst = double.infinity;
           for (final bool rounded in <bool>[false, true]) {
             worst = math.min(
