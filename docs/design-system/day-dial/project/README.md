@@ -13,7 +13,7 @@ Day Dial draws a day as a 24-hour dial. Every entry is a coloured bead at the ti
 - Copy for sync and refusal says where the entry is, not that something failed: "Saved on this device. It will sync when you're back online." / "Offline. New entries save on this device." / "1 change was not saved", then "Not saved: 2 drinks of Alcohol on Thu 5 Nov at 19:30. The habit was removed on another device."
 - Empty states are calm facts: "A clear day so far" (today), "A clear day" over "nothing logged" (a past day), "Nothing in this range", "No average line".
 - Hints say the gesture, then what it does: "**Tap** to log now · **hold** for amount and time", "Drag across the chart to read a day. Tap a day to open its dial.", "Swipe an entry left to delete it. Tap it to edit.", "Now · drag the hand to change the time".
-- The wordmark and the sign-in title show the app's product name exactly as the app sets it today. This system does not choose the name. "Tracker" in the previews is a placeholder.
+- The wordmark and the sign-in title read "Penchant" (brand set by Jack, 2026-11-05).
 - Example habits in any mock-up, doc or test are made up. Use the set the previews use: Coffee, Takeaway, Alcohol, Late nights, Doomscrolling, and Sugar (archived).
 
 ## Visual foundations
@@ -121,7 +121,7 @@ Motion follows the dial: things travel along arcs, sweep clockwise and land on a
 - Use the set in `assets/Icons/`, copied from the mock-up: left, right, down, plus, minus, x, cloudok, cloudoff, cloudup, grid, gear, trash, pencil, eye, mail, lock, check, alert, sync, shield, user, share, info. Each file is drawn in light-theme ink (`#1d1c1a`). Inline the path and set `stroke` to the token you need. An `<img>` cannot recolour it.
 - The SyncBadge's cloud glyphs say the state: cloudok synced, cloudoff offline, cloudup not yet synced.
 - No emoji, no filled icons and no icon-only habit marks. A habit is shown by its pip or bead and its name, never a pictogram.
-- The app icon (the five-wedge pentagon in the mock-up) belongs to the open brand call and is not an asset of this system.
+- The app icon (the five-wedge pentagon in the mock-up) is not an asset of this system.
 
 ## The Day Dial
 

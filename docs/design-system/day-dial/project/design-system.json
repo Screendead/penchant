@@ -5,7 +5,7 @@
     "v": 1,
     "at": "2026-11-05T19:38:59Z"
   },
-  "title": "Tracker Day Dial",
+  "title": "Penchant Day Dial",
   "namespace": "DayDial",
   "libraries": [],
   "sections": {},
@@ -17,8 +17,8 @@
   },
   "lastChange": {
     "by": "Jack",
-    "at": "2026-11-05T19:38:59Z",
+    "at": "2026-11-05T21:02:59Z",
     "via": "Claude Code",
-    "note": "Day Dial system from the chosen mock-up"
+    "note": "Brand set to Penchant"
   }
 }
