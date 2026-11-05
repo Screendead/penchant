@@ -202,6 +202,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .log{border-top:1px solid var(--rule)}
 .line{position:relative;height:44px;border-bottom:1px solid var(--rule);overflow:hidden;touch-action:pan-y}
 .line .ldel{position:absolute;inset:0;background:var(--error);color:var(--bg);display:flex;align-items:center;justify-content:flex-end;padding-right:16px;font-weight:600}
+.line .ldel{visibility:hidden}
+.line.sw .ldel{visibility:visible}
 .line .lfg{position:absolute;inset:0;background:var(--bg);display:grid;grid-template-columns:52px 3px minmax(0,1fr) auto 14px;column-gap:10px;align-items:center;padding:0 16px;cursor:pointer;user-select:none;-webkit-user-select:none}
 .rows.clean ~ .log .line .lfg{background:var(--bg)}
 .l-time{font:400 13px/18px var(--font-mono);color:var(--muted)}
@@ -631,10 +633,10 @@ function lineEl(app,e,opt={}){
   save.onclick=()=>{closeEd();app.editEntry(e,q)};
   let x0=null,dx=0,drag=false;
   fg.addEventListener('pointerdown',ev=>{x0=ev.clientX;dx=0;drag=false});
-  fg.addEventListener('pointermove',ev=>{if(x0==null)return;dx=(ev.clientX-x0)/getS();if(!drag&&Math.abs(dx)>8){drag=true;fg.setPointerCapture(ev.pointerId)}
+  fg.addEventListener('pointermove',ev=>{if(x0==null)return;dx=(ev.clientX-x0)/getS();if(!drag&&Math.abs(dx)>8){drag=true;line.classList.add('sw');fg.setPointerCapture(ev.pointerId)}
     if(drag)fg.style.transform=`translateX(${Math.min(0,dx)}px)`});
   const end=()=>{if(x0==null)return;x0=null;
-    if(drag){if(dx<-80){haptic('light');app.deleteEntry(e,wrap,true)}else{fg.style.transition='transform 180ms var(--ease-move)';fg.style.transform='';setTimeout(()=>fg.style.transition='',200)}}
+    if(drag){if(dx<-80){haptic('light');app.deleteEntry(e,wrap,true)}else{fg.style.transition='transform 180ms var(--ease-move)';fg.style.transform='';setTimeout(()=>{fg.style.transition='';line.classList.remove('sw')},200)}}
   };
   fg.addEventListener('pointerup',end);fg.addEventListener('pointercancel',end);
   fg.addEventListener('click',()=>{if(drag)return;haptic('selection');const o=!ed.classList.contains('open');
