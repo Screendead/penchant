@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -323,7 +324,7 @@ class _RecordNewActivityDialogState
           ),
           if (loading) ...[
             Positioned.fill(
-              child: Container(color: Colors.black.withValues(alpha: 0.5)),
+              child: ColoredBox(color: DialColors.of(context).scrim),
             ),
             const Center(child: CircularProgressIndicator()),
           ],

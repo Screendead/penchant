@@ -322,3 +322,30 @@ macOS, firebase_core configures the native default app from the bundled
 `GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
 Firebase plist for emulators" build phase (`tools/strip-firebase-plist.sh`) that moves it out
 of the bundle for flagged builds.
+
+## Design
+
+The UI follows the Day Dial direction (`r6-ui-direction`; the mock-up and its Flutter notes are on
+`origin/design/ui-overhaul-day-dial`, `docs/pitch/mockups/ui-overhaul/day-dial/`). Its tokens live in `lib/design/`:
+`tokens.json` is the mock-up's export and `tokens.dart` mirrors it (colours for light and dark, the type scale,
+spacing, radii, sizes, motion durations and curves); `test/design_tokens_test.dart` fails when the two drift.
+`appTheme(Brightness)` (`lib/design/app_theme.dart`) builds both `ThemeData`s from them, and `MaterialApp` follows the
+system with `themeMode: ThemeMode.system`. Chrome is ink on paper (paper on ink in dark): `primary` and the selection
+roles are ink, and no `ColorScheme` role takes one of the five habit colours. What `ColorScheme` has no role for comes
+from two `ThemeExtension`s read with `DialColors.of(context)` and `DialType.of(context)`: the habit colours `data` and
+their text colours `dataInk`, `spoke`, `clear`/`clearInk` (the clear day), `scrim`, `wedgeInk` and the bead
+treatment; and the display and Mono styles. Both fall back to the tokens for the ambient brightness when a test's bare
+`ThemeData` lacks them. Screens take colours from the theme, never literals (`test/theme_test.dart` checks `lib/`
+outside `lib/design/`).
+
+Fonts are Red Hat Display (titles), Text (everything else) and Mono (changing numbers), bundled as variable fonts in
+`assets/fonts/` with their OFL, so nothing is fetched at runtime; `FontWeight` drives their `wght` axis. `main()`
+registers the OFL (`registerFontLicence`, `lib/design/font_licence.dart`) so the licence page behind Settings > About
+lists it beside the packages' licences. Every theme style sets tabular figures. Widget tests render in the test font
+unless they load the assets (`theme_test.dart` does).
+
+A habit's colour is its creation order, oldest first and archived habits included: `habitMarks(vices)`
+(`lib/design/habit_mark.dart`) maps each vice id to a `HabitMark`, whose `slot` picks one of `data1`-`data5` and
+whose `style` is filled for habits 1-5, a ring for 6-10 and a dotted ring for 11-15, repeating after that. Pass it
+`viceListProvider`'s full list, not the unarchived one, or archiving a habit recolours the ones after it. Equal
+`createdAt`s are ordered by id. It is computed on the device and stores nothing.
