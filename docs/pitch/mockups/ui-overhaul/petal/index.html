@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker: Petal</title>
+<meta name="description" content="Petal: a design system and UI overhaul for Tracker, where each day draws its own version of the app icon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Gabarito:wght@700;800&family=Spline+Sans+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F4EF; --surface: #FFFFFF; --sheet: #FFFFFF; --fill: #ECE9E2;
+  --text: #1D1C1A; --muted: #6B675F; --accent: #1D1C1A; --on-accent: #F6F4EF;
+  --divider: rgba(29,28,26,.10); --spoke: rgba(29,28,26,.45);
+  --d1: #FFB347; --d2: #FF7A59; --d3: #E8505B; --d4: #9B5DE5; --d5: #4D96FF;
+  --i1: #9A5B00; --i2: #B4401F; --i3: #B42A37; --i4: #6E36B8; --i5: #1F5FC4;
+  --clear: #E3F0E4; --clear-ink: #276B43;
+  --danger: #FBE6E4; --danger-ink: #A1262F;
+  --snack-action: #FFB347;
+  --shadow: 0 4px 16px rgba(29,28,26,.06);
+  --sheet-shadow: 0 -4px 16px rgba(29,28,26,.06);
+  --scrim: rgba(29,28,26,.28);
+  --bar: rgba(246,244,239,.74);
+  --page: #E7E3DA; --page-2: #DCD7CC; --device: #1D1C1A;
+  --spring: cubic-bezier(.3,1.3,.5,1);
+  --out: cubic-bezier(.33,1,.68,1);
+  --inout: cubic-bezier(.65,0,.35,1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171614; --surface: #22201D; --sheet: #262421; --fill: #2D2B27;
+    --text: #F3F1EC; --muted: #A39E94; --accent: #F6F4EF; --on-accent: #1D1C1A;
+    --divider: rgba(246,244,239,.10); --spoke: rgba(246,244,239,.45);
+    --d1: #FFBE5C; --d2: #FF8A6B; --d3: #F2646E; --d4: #AE7BF0; --d5: #68A8FF;
+    --i1: #FFBE5C; --i2: #FF8A6B; --i3: #F2646E; --i4: #AE7BF0; --i5: #68A8FF;
+    --clear: #1A2A20; --clear-ink: #A8DDB8; --danger: #3A1E1E; --danger-ink: #F5B3AC;
+    --snack-action: #9A5B00;
+    --shadow: 0 4px 16px rgba(0,0,0,.35); --sheet-shadow: 0 -4px 24px rgba(0,0,0,.45);
+    --scrim: rgba(0,0,0,.5); --bar: rgba(23,22,20,.74);
+    --page: #0D0C0B; --page-2: #1A1917; --device: #000;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171614; --surface: #22201D; --sheet: #262421; --fill: #2D2B27;
+  --text: #F3F1EC; --muted: #A39E94; --accent: #F6F4EF; --on-accent: #1D1C1A;
+  --divider: rgba(246,244,239,.10); --spoke: rgba(246,244,239,.45);
+  --d1: #FFBE5C; --d2: #FF8A6B; --d3: #F2646E; --d4: #AE7BF0; --d5: #68A8FF;
+  --i1: #FFBE5C; --i2: #FF8A6B; --i3: #F2646E; --i4: #AE7BF0; --i5: #68A8FF;
+  --clear: #1A2A20; --clear-ink: #A8DDB8; --danger: #3A1E1E; --danger-ink: #F5B3AC;
+  --snack-action: #9A5B00;
+  --shadow: 0 4px 16px rgba(0,0,0,.35); --sheet-shadow: 0 -4px 24px rgba(0,0,0,.45);
+  --scrim: rgba(0,0,0,.5); --bar: rgba(23,22,20,.74);
+  --page: #0D0C0B; --page-2: #1A1917; --device: #000;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page); color: var(--text);
+  font: 400 16px/1.4 Figtree, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: "Spline Sans Mono", ui-monospace, monospace; font-weight: 500; font-feature-settings: "tnum"; }
+.disp { font-family: Gabarito, Figtree, sans-serif; letter-spacing: -0.01em; }
+
+/* ---------- page chrome ---------- */
+.page-head {
+  max-width: 1720px; margin: 0 auto; padding: 36px 32px 8px;
+  display: flex; gap: 24px 40px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap;
+}
+.brand { display: flex; gap: 16px; align-items: center; }
+.brand svg { width: 52px; height: 52px; border-radius: 13px; box-shadow: var(--shadow); flex: none; }
+.brand h1 { margin: 0; font: 800 34px/1 Gabarito, sans-serif; letter-spacing: -0.015em; }
+.brand h1 span { color: var(--muted); font-weight: 700; }
+.thesis { margin: 6px 0 0; color: var(--muted); max-width: 68ch; font-size: 15px; }
+.page-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.page-controls label { font: 500 13px/1 Figtree; color: var(--muted); }
+.frames {
+  max-width: 1720px; margin: 0 auto; padding: 24px 32px 40px;
+  display: flex; flex-wrap: wrap; gap: 44px 36px; justify-content: center;
+}
+.frame { width: 414px; display: flex; flex-direction: column; gap: 16px; }
+.cap h2 { margin: 0 0 4px; font: 700 19px/1.2 Gabarito, sans-serif; letter-spacing: -0.005em; }
+.cap p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; max-width: 52ch; }
+.cap .acts { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.pbtn {
+  height: 32px; padding: 0 14px; border-radius: 999px; background: var(--page-2);
+  font: 600 13px/32px Figtree; color: var(--text);
+}
+.pbtn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+/* ---------- device ---------- */
+.device {
+  width: 414px; height: 868px; padding: 12px; border-radius: 66px; background: var(--device);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset, 0 30px 60px -30px rgba(29,28,26,.35);
+  position: relative;
+}
+.screen {
+  width: 390px; height: 844px; border-radius: 54px; overflow: hidden; position: relative;
+  background: var(--bg); isolation: isolate;
+}
+.island { position: absolute; top: 11px; left: 50%; width: 122px; height: 35px; margin-left: -61px; border-radius: 20px; background: #000; z-index: 60; }
+.status {
+  position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center; padding: 6px 30px 0 44px;
+  font: 600 16px/1 Figtree; letter-spacing: -0.01em; pointer-events: none; color: var(--text);
+}
+.status .glyphs { display: flex; gap: 6px; align-items: center; }
+.homebar { position: absolute; bottom: 8px; left: 50%; width: 136px; height: 5px; margin-left: -68px; border-radius: 3px; background: var(--text); opacity: .9; z-index: 70; pointer-events: none; }
+
+/* ---------- app layers ---------- */
+.layer { position: absolute; inset: 0; }
+.views { position: absolute; inset: 0; }
+.view { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding-top: 54px; padding-bottom: 130px; }
+.view::-webkit-scrollbar { display: none; }
+.view[hidden] { display: block; visibility: hidden; pointer-events: none; }
+.ft-out { animation: ftOut 105ms var(--out) forwards; }
+.ft-in { animation: ftIn 195ms 105ms var(--out) both; }
+@keyframes ftOut { to { opacity: 0; } }
+@keyframes ftIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+
+.gutter { padding-left: 20px; padding-right: 20px; }
+.head { display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 20px 0; }
+.title-wrap { position: relative; min-height: 62px; }
+.day-title { font: 800 34px/38px Gabarito, sans-serif; letter-spacing: -0.01em; margin: 0; }
+.day-sub { font: 500 14px/20px Figtree; color: var(--muted); margin: 2px 0 0; }
+.title-wrap .t { transition: opacity 220ms var(--out), transform 220ms var(--out); }
+.title-wrap .t.leaving { position: absolute; top: 0; left: 0; opacity: 0; transform: translateY(-6px); }
+.title-wrap .t.entering { opacity: 0; transform: translateY(6px); }
+.screen-title { font: 800 30px/34px Gabarito, sans-serif; letter-spacing: -0.01em; margin: 0; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; margin-top: 2px; color: var(--text); }
+.avatar span { font: 700 15px/1 Gabarito; }
+
+/* day strip */
+.strip { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding: 14px 20px 4px; scroll-behavior: smooth;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 100%); mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 100%); }
+.strip::-webkit-scrollbar { display: none; }
+.dayb { flex: none; width: 46px; height: 74px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 7px 0 8px; transition: background-color 200ms var(--out); }
+.dayb .wd { font: 600 11px/1 Figtree; color: var(--muted); }
+.dayb .dn { font: 500 12px/1 "Spline Sans Mono"; color: var(--muted); }
+.dayb svg { width: 28px; height: 28px; overflow: visible; }
+.dayb[aria-current="date"] .dn { color: var(--text); }
+.dayb.sel { background: var(--surface); }
+.dayb.sel .wd, .dayb.sel .dn { color: var(--text); }
+.dayb.today .wd::after { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--text); margin-left: 3px; vertical-align: 2px; }
+
+/* rose */
+.rose { position: relative; width: 390px; height: 292px; margin-top: 6px; touch-action: pan-y; user-select: none; }
+.rose svg { position: absolute; inset: 0; overflow: visible; }
+.rose .lab { position: absolute; white-space: nowrap; font: 600 13.5px/17px Figtree; transition: opacity 240ms var(--out); pointer-events: auto; cursor: pointer; }
+.rose .lab .amt { display: block; font: 500 12.5px/16px "Spline Sans Mono"; }
+.rose .lab.zero .amt { color: var(--muted) !important; }
+.rose .lab.dim, .rose .pet.dim { opacity: .28; }
+.rose .pet { transition: opacity 240ms var(--out); cursor: pointer; }
+.rose .breath { transform-origin: 195px 140px; transform-box: view-box; }
+.rose .breath.go { animation: breath 1200ms cubic-bezier(.37,0,.63,1) 1; }
+@keyframes breath { 50% { transform: scale(1.02); } }
+.rose .wash { transition: opacity 400ms var(--out); }
+.rose-cap { text-align: center; font: 500 12.5px/16px Figtree; color: var(--muted); margin: -2px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.clearmsg { text-align: center; margin: 4px 20px 0; transition: opacity 400ms var(--out), transform 400ms var(--out); }
+.clearmsg h3 { margin: 0; font: 700 22px/26px Gabarito; color: var(--clear-ink); letter-spacing: -0.01em; }
+.clearmsg p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.clearmsg.pre { opacity: 0; transform: translateY(8px); }
+
+/* chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 20px 0; }
+.chip { height: 40px; border-radius: 999px; background: var(--surface); display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 11px; font: 600 14px/1 Figtree; transition: transform 380ms var(--spring), background-color 200ms var(--out), color 200ms var(--out); user-select: none; touch-action: manipulation; }
+.chip.press { transform: scale(.94); transition-duration: 90ms; transition-timing-function: var(--out); }
+.chip .cnt { color: var(--muted); font-size: 14px; }
+.chip.on { background: var(--accent); color: var(--on-accent); }
+.chip.on .cnt { color: inherit; opacity: .7; }
+.chip .sw { width: 14px; height: 14px; flex: none; overflow: visible; }
+.hint { padding: 8px 20px 0; font: 500 12.5px/16px Figtree; color: var(--muted); }
+
+/* odometer */
+.odo { display: inline-flex; height: 1.15em; line-height: 1.15em; overflow: hidden; vertical-align: -0.2em; }
+.odo .col { display: flex; flex-direction: column; transition: transform 220ms var(--out); }
+.odo .col span { height: 1.15em; text-align: center; }
+
+/* list cards */
+.sec { display: flex; justify-content: space-between; align-items: baseline; padding: 24px 20px 8px; }
+.sec h3 { margin: 0; font: 700 18px/22px Gabarito; letter-spacing: -0.005em; }
+.sec .meta { font: 500 13px/1 Figtree; color: var(--muted); }
+.card { background: var(--surface); border-radius: 20px; margin: 0 20px; overflow: hidden; }
+.row { position: relative; overflow: hidden; }
+.row + .row .row-in::before, .row + .row .row-in::after { content: none; }
+.row + .row { box-shadow: 0 -1px 0 0 var(--divider) inset; }
+.row-in { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 16px; background: var(--surface); transition: transform 300ms var(--spring); }
+.row:not(:first-child) .row-in { border-top: 1px solid var(--divider); }
+.row .act { position: absolute; inset: 0; display: flex; justify-content: flex-end; align-items: stretch; }
+.row .act button { width: 92px; font: 600 14px/1 Figtree; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.row .act .del { background: var(--danger); color: var(--danger-ink); }
+.row .act .arc { background: var(--fill); color: var(--text); }
+.row.collapse { transition: height 260ms var(--out), opacity 200ms var(--out); opacity: 0; }
+.row.fresh .row-in { animation: fresh 900ms var(--out); }
+@keyframes fresh { from { background: var(--fill); } }
+.time { font: 500 13px/1 "Spline Sans Mono"; color: var(--muted); width: 44px; flex: none; }
+.rname { flex: 1; font: 500 15px/20px Figtree; min-width: 0; }
+.rname small { display: block; color: var(--muted); font-size: 13px; line-height: 17px; font-weight: 500; }
+.qty { font: 500 14px/1 Figtree; color: var(--text); white-space: nowrap; }
+.qty b { font: 500 14px/1 "Spline Sans Mono"; }
+.pend { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font: 500 12px/1 Figtree; transition: opacity 260ms var(--out); }
+.chev { color: var(--muted); flex: none; }
+.filter { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px 0 10px; border-radius: 999px; background: var(--fill); font: 600 13px/1 Figtree; color: var(--text); }
+.filter svg.x { width: 16px; height: 16px; }
+
+/* banner */
+.banner-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 240ms var(--out); position: relative; z-index: 5; }
+.banner-wrap.show { grid-template-rows: 1fr; }
+.banner-wrap > div { overflow: hidden; min-height: 0; }
+.banner { margin: 8px 20px 0; padding: 12px 14px; border-radius: 16px; background: var(--fill); display: flex; gap: 10px; align-items: flex-start; font: 500 13.5px/18px Figtree; transform: translateY(-8px); opacity: 0; transition: transform 240ms var(--out), opacity 240ms var(--out); }
+.banner-wrap.show .banner { transform: none; opacity: 1; }
+.banner svg { flex: none; margin-top: -1px; }
+
+/* bottom bar */
+.bar { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; z-index: 30; background: var(--bar);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); border-top: 1px solid var(--divider);
+  display: flex; align-items: flex-start; padding: 6px 12px 0 12px; }
+.tab { width: 76px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font: 600 11px/1 Figtree; transition: color 200ms var(--out); }
+.tab[aria-selected="true"] { color: var(--text); }
+.tab svg { transition: transform 380ms var(--spring); }
+.tab[aria-selected="true"] svg { transform: translateY(-1px) scale(1.06); }
+.logb { position: absolute; right: 18px; top: -20px; width: 66px; height: 66px; border-radius: 50%;
+  background: conic-gradient(from -90deg, #FFB347 0 20%, #FF7A59 0 40%, #E8505B 0 60%, #9B5DE5 0 80%, #4D96FF 0);
+  padding: 3px; box-shadow: var(--shadow); transition: transform 380ms var(--spring); }
+.logb::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--bg); }
+.logb .core { position: relative; width: 100%; height: 100%; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; transform: scale(.88); }
+.logb:active { transform: scale(.94); transition-duration: 90ms; }
+
+/* snackbar */
+.snack { position: absolute; left: 14px; right: 14px; bottom: 112px; z-index: 40; border-radius: 18px; background: var(--accent); color: var(--on-accent);
+  display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 16px; font: 500 14.5px/19px Figtree;
+  transform: translateY(24px) scale(.98); opacity: 0; transition: transform 380ms var(--spring), opacity 200ms var(--out); pointer-events: none; box-shadow: var(--shadow); }
+.snack.show { transform: none; opacity: 1; pointer-events: auto; }
+.snack .msg { flex: 1; }
+.snack .undo { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 999px; font: 700 14.5px/1 Figtree; color: var(--snack-action); }
+.snack .ring { width: 18px; height: 18px; transform: rotate(-90deg); }
+
+/* pushed pages */
+.page { position: absolute; inset: 0; background: var(--bg); z-index: 20; overflow-y: auto; scrollbar-width: none; padding: 54px 0 60px; transform: translateX(100%); transition: transform 420ms var(--spring); box-shadow: -10px 0 30px rgba(0,0,0,.08); }
+.page::-webkit-scrollbar { display: none; }
+.page.in { transform: none; }
+.views.pushed { transform: translateX(-28%); filter: brightness(.96); }
+.views { transition: transform 420ms var(--spring), filter 420ms var(--out); }
+.navrow { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 12px 0 8px; }
+.back { display: inline-flex; align-items: center; gap: 2px; height: 44px; padding: 0 8px 0 2px; font: 600 16px/1 Figtree; color: var(--text); }
+.ptitle { padding: 6px 20px 0; }
+
+/* sheet */
+.scrim { position: absolute; inset: 0; background: var(--scrim); opacity: 0; transition: opacity 260ms var(--out); z-index: 80; pointer-events: none; }
+.scrim.show { opacity: 1; pointer-events: auto; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 81; background: var(--sheet); border-radius: 28px 28px 0 0; padding: 8px 20px 40px;
+  transform: translateY(105%); transition: transform 420ms var(--spring); box-shadow: var(--sheet-shadow); }
+.sheet.show { transform: none; }
+.sheet.closing { transition: transform 280ms cubic-bezier(.4,0,1,1); }
+.handle { width: 38px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .35; margin: 0 auto 12px; }
+.sh-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.sh-head h3 { margin: 0; font: 700 22px/26px Gabarito; letter-spacing: -0.01em; }
+.iconbtn { width: 36px; height: 36px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; color: var(--text); }
+.hpick { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px 2px; }
+.hpick::-webkit-scrollbar { display: none; }
+.hpick .chip { background: var(--fill); flex: none; }
+.hpick .chip.on { background: var(--accent); }
+.stepper { display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; margin: 26px 0 22px; }
+.stepb { width: 60px; height: 60px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; transition: transform 380ms var(--spring), opacity 200ms; }
+.stepb:active { transform: scale(.9); transition-duration: 90ms; }
+.stepb:disabled { opacity: .35; cursor: default; }
+.num { text-align: center; cursor: ew-resize; touch-action: none; user-select: none; }
+.num .big { font: 500 76px/80px "Spline Sans Mono"; letter-spacing: -0.04em; display: inline-flex; }
+.num .unit { display: block; font: 500 15px/18px Figtree; color: var(--muted); margin-top: 2px; }
+.num .scrub { display: block; font: 500 11.5px/14px Figtree; color: var(--muted); opacity: .8; margin-top: 4px; }
+.seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--fill); border-radius: 999px; padding: 3px; height: 40px; }
+.seg .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; border-radius: 999px; background: var(--surface); box-shadow: 0 1px 3px rgba(29,28,26,.10); transition: transform 380ms var(--spring); }
+:root[data-theme="dark"] .seg .thumb { background: #3A3733; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg .thumb { background: #3A3733; } }
+.seg button { position: relative; z-index: 1; font: 600 14px/34px Figtree; color: var(--muted); transition: color 200ms; }
+.seg button[aria-pressed="true"] { color: var(--text); }
+.seg.sm { height: 34px; }
+.seg.sm button { font-size: 13px; line-height: 28px; }
+.when { font: 500 13px/18px Figtree; color: var(--muted); margin: 8px 2px 0; }
+.when b { font: 500 13px/1 "Spline Sans Mono"; color: var(--text); }
+.wheelwrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 380ms var(--spring); }
+.wheelwrap.show { grid-template-rows: 1fr; }
+.wheelwrap > div { overflow: hidden; min-height: 0; }
+.wheel { position: relative; display: grid; grid-template-columns: 1.6fr 1fr 1fr; height: 170px; margin-top: 12px; }
+.wheel::before { content: ""; position: absolute; left: 0; right: 0; top: 68px; height: 34px; border-radius: 10px; background: var(--fill); }
+.wcol { position: relative; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; padding: 68px 0; -webkit-mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent); mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent); }
+.wcol::-webkit-scrollbar { display: none; }
+.wcol div { height: 34px; line-height: 34px; text-align: center; scroll-snap-align: center; font: 500 17px/34px "Spline Sans Mono"; color: var(--text); }
+.wcol.days div { font: 500 16px/34px Figtree; }
+.cta { position: relative; display: block; width: 100%; height: 56px; margin: 22px auto 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 600 17px/56px Figtree; transition: width 320ms var(--spring), transform 380ms var(--spring), opacity 200ms; overflow: hidden; }
+.cta:active { transform: scale(.97); transition-duration: 90ms; }
+.cta:disabled { opacity: .35; cursor: default; }
+.cta .lbl { transition: opacity 120ms var(--out); }
+.cta .lbl b { font: 500 17px/1 "Spline Sans Mono"; }
+.cta.busy { width: 56px; }
+.cta.busy .lbl { opacity: 0; }
+.cta .spin { position: absolute; inset: 0; margin: auto; width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; opacity: 0; transition: opacity 120ms 120ms; }
+.cta.busy .spin { opacity: 1; animation: spin 700ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.textbtn { display: block; margin: 12px auto 0; height: 40px; padding: 0 16px; font: 600 15px/40px Figtree; border-radius: 999px; }
+.textbtn.danger { color: var(--danger-ink); }
+
+/* fields */
+.field { display: block; margin-top: 14px; }
+.field > span { display: block; font: 600 13px/16px Figtree; color: var(--muted); margin: 0 2px 6px; }
+.input { display: flex; align-items: center; height: 52px; border-radius: 14px; background: var(--fill); padding: 0 6px 0 14px; box-shadow: 0 0 0 0 var(--accent); transition: box-shadow 160ms var(--out); }
+.input:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+.input input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: 400 16px/1 Figtree; color: var(--text); height: 100%; }
+.input input::placeholder { color: var(--muted); opacity: .8; }
+.input .iconbtn { background: none; }
+.units { display: flex; flex-wrap: wrap; gap: 8px; }
+.units .chip { background: var(--fill); height: 36px; padding: 0 14px; }
+.units .chip.on { background: var(--accent); }
+.checks { list-style: none; padding: 0; margin: 12px 2px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.checks li { display: flex; align-items: center; gap: 7px; font: 500 13px/17px Figtree; color: var(--muted); transition: color 200ms; }
+.checks li .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; transition: background-color 200ms var(--out), transform 380ms var(--spring); flex: none; }
+.checks li .dot svg { opacity: 0; transform: scale(.5); transition: opacity 160ms, transform 380ms var(--spring); color: var(--clear-ink); }
+.checks li.ok { color: var(--text); }
+.checks li.ok .dot { background: var(--clear); }
+.checks li.ok .dot svg { opacity: 1; transform: none; }
+.errcard { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 240ms var(--out); }
+.errcard.show { grid-template-rows: 1fr; }
+.errcard > div { overflow: hidden; min-height: 0; }
+.errcard .in { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--danger); color: var(--danger-ink); display: flex; gap: 10px; font: 500 14px/19px Figtree; }
+.auth { position: absolute; inset: 0; padding: 92px 24px 40px; overflow-y: auto; scrollbar-width: none; background: var(--bg); }
+.auth .mark { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.auth .mark svg { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 0 0 1px var(--divider), var(--shadow); }
+.auth h1 { margin: 18px 0 0; font: 800 40px/44px Gabarito; letter-spacing: -0.015em; }
+.auth .tag { margin: 6px 0 26px; color: var(--muted); font-size: 15px; line-height: 21px; max-width: 30ch; }
+.auth .link { display: block; margin: 16px auto 0; font: 600 14.5px/1 Figtree; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--divider); }
+.auth .foot { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 28px; font: 500 12.5px/16px Figtree; color: var(--muted); }
+
+/* trends */
+.hrow { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 14px 20px 2px; }
+.hrow::-webkit-scrollbar { display: none; }
+.hrow .chip { flex: none; height: 36px; }
+.hrow .chip.arch { color: var(--muted); }
+.hrow .chip.arch.on { color: var(--on-accent); }
+.tctl { display: grid; grid-template-columns: 1.55fr 1fr; gap: 8px; padding: 12px 20px 0; }
+.chartcard { margin: 14px 20px 0; background: var(--surface); border-radius: 20px; padding: 16px 12px 12px 8px; position: relative; }
+.chartcard svg { display: block; overflow: visible; }
+.chartcard .gl { stroke: var(--divider); }
+.chartcard .tick { font: 500 10.5px "Spline Sans Mono"; fill: var(--muted); }
+.legend { display: flex; gap: 14px; padding: 2px 8px 0 14px; font: 500 12.5px/16px Figtree; color: var(--muted); }
+.legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.avgrow { display: flex; align-items: center; justify-content: space-between; margin: 12px 20px 0; padding: 6px 6px 6px 16px; border-radius: 999px; background: var(--surface); }
+.avgrow .l { font: 500 14px/1 Figtree; }
+.avgrow .l b { font: 500 14px/1 "Spline Sans Mono"; }
+.mini { display: flex; gap: 4px; }
+.mini button { width: 36px; height: 36px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; }
+.mini button:disabled { opacity: .35; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 20px 0; }
+.stat { background: var(--surface); border-radius: 20px; padding: 12px 14px 14px; }
+.stat .k { font: 500 12.5px/16px Figtree; color: var(--muted); }
+.stat .v { font: 500 22px/26px "Spline Sans Mono"; letter-spacing: -0.02em; margin-top: 6px; }
+.stat .u { font: 500 12.5px/16px Figtree; color: var(--muted); }
+.readout { position: absolute; top: 8px; pointer-events: none; background: var(--accent); color: var(--on-accent); border-radius: 12px; padding: 7px 10px; font: 500 12px/16px Figtree; opacity: 0; transform: translateY(4px); transition: opacity 120ms, transform 200ms var(--out); white-space: nowrap; z-index: 2; }
+.readout.show { opacity: 1; transform: none; }
+.readout b { display: block; font: 500 13px/17px "Spline Sans Mono"; }
+.line { transition: stroke-dashoffset 500ms var(--inout); }
+
+/* habits */
+.sw-lg { width: 22px; height: 22px; flex: none; overflow: visible; }
+.addb { height: 36px; padding: 0 14px 0 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: inline-flex; align-items: center; gap: 4px; font: 600 14px/1 Figtree; margin-top: 2px; }
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; margin: 14px 20px 0; }
+.spark i { flex: 1; border-radius: 3px 3px 1px 1px; min-height: 2px; transform-origin: bottom; animation: grow 420ms var(--spring) both; }
+@keyframes grow { from { transform: scaleY(0); } }
+.grp { padding: 20px 22px 8px; font: 600 13px/16px Figtree; color: var(--muted); }
+.morebtn { display: block; margin: 16px auto 0; height: 40px; padding: 0 18px; border-radius: 999px; background: var(--surface); font: 600 14px/40px Figtree; }
+.setrow { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px; }
+.setrow + .setrow { border-top: 1px solid var(--divider); }
+.setrow .rname { font-weight: 600; }
+
+/* system section */
+.system { max-width: 1720px; margin: 0 auto; padding: 8px 32px 64px; }
+.system h2 { font: 800 26px/1.1 Gabarito; letter-spacing: -0.01em; margin: 0 0 6px; }
+.system > p { margin: 0 0 20px; color: var(--muted); max-width: 70ch; font-size: 15px; }
+.sysgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.syscard { background: var(--bg); border-radius: 20px; padding: 18px 20px 20px; }
+.syscard h3 { margin: 0 0 12px; font: 700 17px/1.2 Gabarito; }
+.swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.swatch { border-radius: 12px; height: 64px; position: relative; }
+.swatch + .sl { margin-top: 4px; }
+.swl { font: 500 11px/14px "Spline Sans Mono"; color: var(--muted); margin-top: 5px; }
+.swl b { display: block; font: 600 12px/15px Figtree; color: var(--text); }
+.spec { display: grid; gap: 10px; }
+.spec div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-top: 1px solid var(--divider); padding-top: 10px; }
+.spec small { font: 500 11px/1.3 "Spline Sans Mono"; color: var(--muted); text-align: right; }
+
+@media (max-width: 480px) {
+  .page-head, .frames, .system { padding-left: 16px; padding-right: 16px; }
+  .frame { width: 100%; max-width: 414px; }
+  .device { transform-origin: top left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+:root.rm *, :root.rm *::before, :root.rm *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 150ms !important; transition-delay: 0ms !important; }
+:root.rm .cta.busy .spin { animation: spin 700ms linear infinite !important; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs id="gdefs"></defs>
+</svg>
+
+<header class="page-head">
+  <div class="brand">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#F6F4EF"/><polygon points="50,50 50,14 80.8,40" fill="#FFB347"/><polygon points="50,50 80.8,40 65.5,71.4" fill="#FF7A59"/><polygon points="50,50 65.5,71.4 31.7,75.2" fill="#E8505B"/><polygon points="50,50 31.7,75.2 29.5,43.3" fill="#9B5DE5"/><polygon points="50,50 29.5,43.3 50,14" fill="#4D96FF"/><path d="M50,50 L50,10 M50,50 L88,37.6 M50,50 L73.5,82.4 M50,50 L26.5,82.4 M50,50 L12,37.6" stroke="#1D1C1A" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div>
+      <h1>Petal <span>for Tracker</span></h1>
+      <p class="thesis">The icon becomes the chart. Each habit owns a coloured petal on the icon's paper, so every day draws its own version of the app icon, and a quiet day reads as a small flower rather than a collapsed one. Every screen below is live: tap, hold, swipe and drag.</p>
+    </div>
+  </div>
+  <div class="page-controls">
+    <label id="themeLbl">Theme</label>
+    <div class="seg sm" id="themeSeg" style="width:220px" role="group" aria-labelledby="themeLbl"></div>
+    <button class="pbtn" id="rmBtn" aria-pressed="false">Reduce motion</button>
+  </div>
+</header>
+
+<main class="frames" id="frames"></main>
+
+<section class="system" aria-labelledby="sysH">
+  <h2 id="sysH">The system</h2>
+  <p>Paper, ink and the icon's five hues. Fills carry identity; text stays in ink, or in a habit's darker ink variant on paper. Numbers are always monospaced so they can roll without shifting.</p>
+  <div class="sysgrid" id="sysgrid"></div>
+</section>
+
+<script>
+"use strict";
+/* ================= tokens (same values as tokens.json) ================= */
+const DATA_FILL = ["var(--d1)", "var(--d2)", "var(--d3)", "var(--d4)", "var(--d5)"];
+const DATA_INK = ["var(--i1)", "var(--i2)", "var(--i3)", "var(--i4)", "var(--i5)"];
+const params = new URLSearchParams(location.search);
+const root = document.documentElement;
+let RM = matchMedia("(prefers-reduced-motion: reduce)").matches || params.get("rm") === "1";
+if (RM) root.classList.add("rm");
+if (params.get("theme")) root.dataset.theme = params.get("theme");
+
+/* Spring: mass 1, stiffness 380, damping 26 (Flutter SpringDescription). Closed form, underdamped. */
+const SP = (() => { const k = 380, c = 26, m = 1; const w0 = Math.sqrt(k / m), z = c / (2 * Math.sqrt(k * m)), wd = w0 * Math.sqrt(1 - z * z); return { w0, z, wd }; })();
+function spring(t) { if (t <= 0) return 0; const { w0, z, wd } = SP; return 1 - Math.exp(-z * w0 * t) * (Math.cos(wd * t) + (z * w0 / wd) * Math.sin(wd * t)); }
+const SPRING_MS = 450;
+(function cssSpring() {
+  const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push(`${spring(t * SPRING_MS / 1000).toFixed(4)} ${(t * 100).toFixed(1)}%`); }
+  pts[40] = "1 100%";
+  root.style.setProperty("--spring", `linear(${pts.join(", ")})`);
+})();
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const easeInOutCubic = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+/* ================= helpers ================= */
+const NS = "http://www.w3.org/2000/svg";
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v; else if (k === "style") e.style.cssText = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else if (k === "html") e.innerHTML = v;
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+function s(tag, attrs) { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) if (v != null) e.setAttribute(k, v); return e; }
+const ICONS = {
+  plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', chevL: '<path d="M15 5l-7 7 7 7"/>', chevR: '<path d="M9 5l7 7-7 7"/>',
+  close: '<path d="M7 7l10 10M17 7L7 17"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  cloudOff: '<path d="M8.6 7.3A5.6 5.6 0 0 1 17.3 10a3.9 3.9 0 0 1 2.4 6.2M16 18.5H7.2A4.2 4.2 0 0 1 6.3 10.2"/><path d="M3.5 3.5l17 17"/>',
+  cloudUp: '<path d="M7.2 18.5A4.2 4.2 0 0 1 6.5 10.2a5.6 5.6 0 0 1 10.8-.2 4.2 4.2 0 0 1-.5 8.5"/><path d="M12 19.5v-6.5M9.5 15.3L12 12.8l2.5 2.5"/>',
+  trash: '<path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7M9.5 7V4.5h5V7"/>',
+  archive: '<path d="M4 5.5h16v4H4zM5.5 9.5V18a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V9.5M10 13h4"/>',
+  unarchive: '<path d="M4 5.5h16v4H4zM5.5 9.5V18a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V9.5M12 17v-5M9.8 14.2L12 12l2.2 2.2"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  alert: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.8v4.9M12 15.9v.2"/>',
+  trends: '<path d="M3.5 17.5l5-5.5 4 3 8-8.5"/><path d="M15.5 6.5h5v5"/>',
+  person: '<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+  export: '<path d="M12 3.5v11M8 7.5l4-4 4 4M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"/>',
+  signout: '<path d="M14.5 4.5h3a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-3M10 8l-4 4 4 4M6 12h10"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.2M12 7.9v.2"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+};
+function icon(name, size = 22, sw = 1.8) {
+  const e = s("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": sw, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+  e.innerHTML = ICONS[name]; return e;
+}
+function tabIcon(kind, on) {
+  const e = s("svg", { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 1.8, "stroke-linejoin": "round", "stroke-linecap": "round", "aria-hidden": "true" });
+  if (kind === "today") {
+    const p = [0, 1, 2, 3, 4].map(i => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return [12 + 9 * Math.cos(a), 12.6 + 9 * Math.sin(a)]; });
+    e.innerHTML = `<polygon points="${p.map(q => q.map(v => v.toFixed(2)).join(",")).join(" ")}" ${on ? 'fill="currentColor"' : ""}/>` +
+      p.map(q => `<path d="M12 12.6L${q[0].toFixed(2)} ${q[1].toFixed(2)}" ${on ? 'stroke="var(--bar-solid, var(--bg))" stroke-width="1.4"' : ""}/>`).join("");
+  } else if (kind === "trends") {
+    e.innerHTML = on ? '<path d="M3.5 18.5l5-6 4 3 8-9" stroke-width="2.4"/><path d="M3.5 20.5h17" opacity=".5"/>' : '<path d="M3.5 18.5l5-6 4 3 8-9"/><path d="M3.5 20.5h17" opacity=".5"/>';
+  } else {
+    e.innerHTML = [6.5, 12, 17.5].map(y => `<path d="M3.6 ${y - 2.2}h4.8L6 ${y + 2.2}z" ${on ? 'fill="currentColor"' : ""}/><path d="M11.5 ${y}h9"/>`).join("");
+  }
+  return e;
+}
+/* the habit swatch: a small rounded wedge */
+function habitFill(order) { const hue = order % 5, tier = Math.floor(order / 5); return tier === 0 ? DATA_FILL[hue] : `url(#${tier === 1 ? "hatch" : "dots"}${hue})`; }
+function habitInk(order) { return DATA_INK[order % 5]; }
+function swatch(order, cls = "sw") {
+  const e = s("svg", { class: cls, viewBox: "0 0 14 14", "aria-hidden": "true" });
+  e.append(s("path", { d: "M7 12.4 L1.6 3.2 Q7 0.6 12.4 3.2 Z", fill: habitFill(order), stroke: habitFill(order), "stroke-width": 1.6, "stroke-linejoin": "round" }));
+  return e;
+}
+(function buildPatterns() {
+  const d = document.getElementById("gdefs");
+  for (let i = 0; i < 5; i++) {
+    const hp = s("pattern", { id: "hatch" + i, width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" });
+    hp.append(s("rect", { width: 6, height: 6, fill: DATA_FILL[i], style: `fill:${DATA_FILL[i]}` }), s("rect", { width: 2.2, height: 6, style: "fill:var(--bg);opacity:.7" }));
+    const dp = s("pattern", { id: "dots" + i, width: 5, height: 5, patternUnits: "userSpaceOnUse" });
+    dp.append(s("rect", { width: 5, height: 5, style: `fill:${DATA_FILL[i]}` }), s("circle", { cx: 2.5, cy: 2.5, r: 1.1, style: "fill:var(--bg);opacity:.75" }));
+    d.append(hp, dp);
+  }
+})();
+
+/* ================= dates ================= */
+const TODAY = new Date(2026, 10, 5);
+const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MO = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function dayDate(off) { const d = new Date(TODAY); d.setDate(d.getDate() - off); return d; }
+const short = d => `${d.getDate()} ${MO[d.getMonth()].slice(0, 3)}`;
+const pad = n => String(n).padStart(2, "0");
+const hm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+function relDay(off) { const d = dayDate(off); return off === 0 ? "Today" : off === 1 ? "Yesterday" : WD[d.getDay()]; }
+function longDay(off) { const d = dayDate(off); return `${d.getDate()} ${MO[d.getMonth()]}`; }
+const UNIT1 = { drinks: "drink", times: "time", minutes: "minute", items: "item", puffs: "puff", hours: "hour" };
+const unitFor = (u, n) => n === 1 ? UNIT1[u] : u;
+
+/* ================= data ================= */
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const BASE_HABITS = [
+  { id: "coffee", name: "Coffee", unit: "drinks" },
+  { id: "late", name: "Late nights", unit: "times" },
+  { id: "doom", name: "Doomscrolling", unit: "minutes" },
+  { id: "sugar", name: "Sugar", unit: "items" },
+  { id: "takeaway", name: "Takeaway", unit: "items" },
+  { id: "alcohol", name: "Alcohol", unit: "drinks", archived: true },
+];
+let EID = 1;
+function makeData(seed, todayEntries) {
+  const r = rng(seed); const habits = BASE_HABITS.map((x, i) => ({ ...x, order: i, archived: !!x.archived })); const entries = [];
+  const add = (h, d, t, q) => entries.push({ id: EID++, h, d, t, q, pending: false });
+  for (let d = 1; d < 400; d++) {
+    const wkend = [0, 6].includes(dayDate(d).getDay());
+    let n = Math.round(1.6 + r() * 2.6 - (wkend ? .8 : 0)); for (let i = 0; i < n; i++) add("coffee", d, 450 + Math.floor(r() * 520), 1);
+    if (r() < (wkend ? .5 : .22)) add("late", d, 20 + Math.floor(r() * 90), 1);
+    const ds = Math.floor(r() * 4); for (let i = 0; i < ds; i++) add("doom", d, 690 + Math.floor(r() * 700), [10, 15, 15, 20, 25, 30, 40][Math.floor(r() * 7)]);
+    const sg = Math.floor(r() * r() * 5.5); for (let i = 0; i < sg; i++) add("sugar", d, 600 + Math.floor(r() * 640), 1);
+    if (r() < (wkend ? .55 : .18)) add("takeaway", d, 1140 + Math.floor(r() * 90), 1);
+    if (d > 140 && r() < .35) add("alcohol", d, 1140 + Math.floor(r() * 220), 1 + Math.floor(r() * 2));
+  }
+  for (const [h, t, q] of todayEntries) add(h, 0, t, q);
+  return { habits, entries };
+}
+const DATASETS = {
+  busy: [["late", 38, 1], ["coffee", 462, 1], ["coffee", 598, 1], ["sugar", 655, 1], ["doom", 760, 15], ["coffee", 845, 1], ["sugar", 902, 2], ["doom", 1050, 20], ["takeaway", 1162, 1], ["sugar", 1185, 1], ["doom", 1255, 10]],
+  sparse: [["coffee", 488, 1], ["sugar", 575, 1]],
+  record: [["coffee", 470, 1], ["coffee", 610, 1], ["doom", 795, 20], ["takeaway", 1090, 1]],
+  clear: [],
+};
+
+/* ================= odometer ================= */
+function odo(value) { const e = h("span", { class: "odo mono", "aria-label": String(value) }); setOdo(e, value, true); return e; }
+function setOdo(e, value, instant) {
+  const str = String(value); e.setAttribute("aria-label", str);
+  if (e.children.length !== str.length || RM) {
+    e.textContent = "";
+    for (const ch of str) { const col = h("span", { class: "col", "aria-hidden": "true" }); for (let i = 0; i < 10; i++) col.append(h("span", {}, String(i))); e.append(col); col.style.transform = `translateY(-${(+ch) * 1.15}em)`; }
+    return;
+  }
+  [...str].forEach((ch, i) => { e.children[i].style.transform = `translateY(-${(+ch) * 1.15}em)`; });
+}
+
+/* ================= rose ================= */
+const RW = 390, RH = 292, CX = 195, CY = 140, R = 88, FLOOR = .22, GAP = 3;
+function wedgePts(cx, cy, r, a0, a1, g) {
+  const half = (a1 - a0) / 2, bis = (a0 + a1) / 2, apex = g / Math.sin(half);
+  const rr = Math.max(r, apex + 0.6);
+  const A = [cx + Math.cos(bis) * apex, cy + Math.sin(bis) * apex];
+  const P0 = [cx + rr * Math.cos(a0) - g * Math.sin(a0), cy + rr * Math.sin(a0) + g * Math.cos(a0)];
+  const P1 = [cx + rr * Math.cos(a1) + g * Math.sin(a1), cy + rr * Math.sin(a1) - g * Math.cos(a1)];
+  return [A, P0, P1];
+}
+const ptsStr = p => p.map(q => q[0].toFixed(2) + "," + q[1].toFixed(2)).join(" ");
+const radiusFor = (v, max) => v <= 0 ? FLOOR * R : R * (FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(1, v / Math.max(1, max))));
+
+class Rose {
+  constructor(app) {
+    this.app = app; this.el = h("div", { class: "rose" }); this.svg = s("svg", { width: RW, height: RH, viewBox: `0 0 ${RW} ${RH}`, role: "img" });
+    this.el.append(this.svg); this.petals = []; this.anims = new Map(); this.loop = this.loop.bind(this); this.running = false;
+    let sx = null;
+    this.el.addEventListener("pointerdown", e => { sx = e.clientX; });
+    this.el.addEventListener("pointerup", e => { if (sx == null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) { this.swiped = true; app.shiftDay(dx > 0 ? 1 : -1); setTimeout(() => this.swiped = false, 0); } });
+  }
+  build(habits) {
+    this.habits = habits; const n = habits.length; this.svg.textContent = ""; this.el.querySelectorAll(".lab").forEach(x => x.remove()); this.petals = [];
+    const defs = s("defs"); this.svg.append(defs);
+    this.wash = s("circle", { class: "wash", cx: CX, cy: CY, r: R + 30, style: "fill:var(--clear)", opacity: 0 }); this.svg.append(this.wash);
+    this.g = s("g", { class: "breath" }); this.svg.append(this.g);
+    const step = 2 * Math.PI / n; this.step = step;
+    // reference rim: the busiest day in the last 30
+    const rim = []; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i * step; rim.push([CX + R * Math.cos(a), CY + R * Math.sin(a)]); }
+    this.rim = s("polygon", { points: ptsStr(rim), fill: "none", style: "stroke:var(--muted)", "stroke-opacity": .35, "stroke-width": 1, "stroke-dasharray": "1.5 4", "stroke-linecap": "round" });
+    this.g.append(this.rim);
+    this.ghost = s("g", { opacity: 0 }); this.g.append(this.ghost);
+    habits.forEach((hb, i) => {
+      const a0 = -Math.PI / 2 + i * step, a1 = a0 + step, fill = habitFill(hb.order);
+      const grp = s("g", { class: "pet" }); grp.addEventListener("click", () => { if (!this.swiped) this.app.setFilter(hb.id); });
+      const hit = s("path", { d: `M${CX},${CY} L${CX + (R + 20) * Math.cos(a0)},${CY + (R + 20) * Math.sin(a0)} L${CX + (R + 20) * Math.cos(a1)},${CY + (R + 20) * Math.sin(a1)} Z`, fill: "transparent" });
+      const shape = s("polygon", { style: `fill:${fill};stroke:${fill}`, "stroke-width": 3, "stroke-linejoin": "round", opacity: 0 });
+      const dots = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", style: `stroke:${DATA_FILL[hb.order % 5]}`, "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0, mask: `url(#m-${this.app.id}-${i})` });
+      const mask = s("mask", { id: `m-${this.app.id}-${i}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: RW, height: RH });
+      const mp = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", stroke: "#fff", "stroke-width": 6, pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": 0 });
+      mask.append(mp); defs.append(mask);
+      const pend = s("line", { style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2, "stroke-linecap": "round", "stroke-dasharray": "3 3", opacity: 0 });
+      grp.append(hit, dots, shape, pend); this.g.append(grp);
+      const gh = s("polygon", { points: ptsStr(wedgePts(CX, CY, R * .6, a0, a1, GAP)), fill: "none", style: "stroke:var(--muted)", "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-opacity": .6 });
+      this.ghost.append(gh);
+      // label, horizontal, outside the rim
+      const bis = (a0 + a1) / 2, d = R + 16, lx = CX + d * Math.cos(bis), ly = CY + d * Math.sin(bis), c = Math.cos(bis), sn = Math.sin(bis);
+      const lab = h("div", { class: "lab", role: "button", tabindex: 0, onclick: () => this.app.setFilter(hb.id) }, h("span", { class: "nm" }, hb.name), h("span", { class: "amt", style: `color:${habitInk(hb.order)}` }));
+      const tx = c > .3 ? "0" : c < -.3 ? "-100%" : "-50%", ty = sn < -.3 ? "-100%" : sn > .3 ? "0" : "-50%";
+      lab.style.left = lx + "px"; lab.style.top = ly + "px"; lab.style.transform = `translate(${tx},${ty})`; lab.style.textAlign = c > .3 ? "left" : c < -.3 ? "right" : "center";
+      this.el.append(lab);
+      this.petals.push({ hb, a0, a1, grp, shape, dots, mp, pend, lab, r: 0, v: 0, shown: false });
+    });
+    // spokes, as in the icon: from the centre to 8 px past the rim
+    const sp = s("path", { d: Array.from({ length: n }, (_, i) => { const a = -Math.PI / 2 + i * step; return `M${CX},${CY} L${(CX + (R + 8) * Math.cos(a)).toFixed(2)},${(CY + (R + 8) * Math.sin(a)).toFixed(2)}`; }).join(" "), style: "stroke:var(--spoke)", "stroke-width": 1.5, "stroke-linecap": "round", fill: "none", "pointer-events": "none" });
+    this.g.append(sp);
+  }
+  draw(p) {
+    p.shape.setAttribute("points", ptsStr(wedgePts(CX, CY, p.r, p.a0, p.a1, GAP)));
+    const w = wedgePts(CX, CY, p.r + 1.5, p.a0, p.a1, GAP);
+    p.pend.setAttribute("x1", w[1][0]); p.pend.setAttribute("y1", w[1][1]); p.pend.setAttribute("x2", w[2][0]); p.pend.setAttribute("y2", w[2][1]);
+  }
+  ghostOn(on) { this.ghost.style.transition = "opacity 200ms"; this.ghost.setAttribute("opacity", on ? 1 : 0); }
+  /* vals: {id: value}; mode: bloom | morph | spring | instant */
+  set(vals, maxes, mode, opts = {}) {
+    const now = performance.now(); let allZero = true; let order = 0;
+    this.petals.forEach((p, i) => {
+      const v = vals[p.hb.id] || 0; if (v > 0) allZero = false;
+      const target = v > 0 ? radiusFor(v, maxes[p.hb.id]) : FLOOR * R;
+      const nonzero = v > 0;
+      const amt = p.lab.querySelector(".amt"); amt.textContent = `${v} ${unitFor(p.hb.unit, v)}`; p.lab.classList.toggle("zero", !nonzero);
+      p.lab.setAttribute("aria-label", `${p.hb.name}, ${v} ${unitFor(p.hb.unit, v)}`);
+      let from = p.r;
+      if (mode === "bloom") from = 0;
+      if (!p.shown && nonzero && mode !== "bloom") from = FLOOR * R * 0.8;
+      p.shape.style.transition = "opacity 180ms";
+      p.dots.style.transition = "opacity 220ms";
+      const delay = mode === "bloom" ? i * 40 : mode === "morph" ? i * 35 : (opts.delay || 0);
+      if (RM || mode === "instant") { p.r = target; this.draw(p); p.shape.setAttribute("opacity", nonzero ? 1 : 0); p.dots.setAttribute("opacity", nonzero ? 0 : 1); p.shown = nonzero; return; }
+      if (nonzero) { setTimeout(() => p.shape.setAttribute("opacity", 1), delay); }
+      else { setTimeout(() => p.shape.setAttribute("opacity", 0), delay + 120); }
+      setTimeout(() => p.dots.setAttribute("opacity", nonzero ? 0 : 1), delay + (nonzero ? 0 : 160));
+      p.shown = nonzero;
+      if (Math.abs(from - target) > .1 || mode === "bloom") this.anims.set(p, { from, to: target, t0: now + delay });
+      else { p.r = target; this.draw(p); }
+    });
+    this.allZero = allZero;
+    if (!this.running && this.anims.size) { this.running = true; requestAnimationFrame(this.loop); }
+    return allZero;
+  }
+  loop(t) {
+    for (const [p, a] of this.anims) {
+      const el = (t - a.t0) / 1000; if (el < 0) continue;
+      if (el * 1000 >= SPRING_MS) { p.r = a.to; this.anims.delete(p); } else p.r = a.from + (a.to - a.from) * spring(el);
+      this.draw(p);
+    }
+    if (this.anims.size) requestAnimationFrame(this.loop); else this.running = false;
+  }
+  clean(on, animate) {
+    this.wash.style.transition = RM || !animate ? "none" : "opacity 400ms cubic-bezier(.33,1,.68,1)";
+    this.wash.setAttribute("opacity", on ? 1 : 0);
+    this.rim.style.transition = "stroke 300ms";
+    this.rim.style.stroke = on ? "var(--clear-ink)" : "var(--muted)";
+    this.petals.forEach(p => {
+      p.dots.style.stroke = on ? "var(--clear-ink)" : DATA_FILL[p.hb.order % 5];
+      if (on && animate && !RM) { p.mp.style.transition = "none"; p.mp.setAttribute("stroke-dashoffset", 1); p.mp.getBoundingClientRect(); p.mp.style.transition = "stroke-dashoffset 500ms cubic-bezier(.65,0,.35,1)"; requestAnimationFrame(() => p.mp.setAttribute("stroke-dashoffset", 0)); }
+    });
+    if (on && animate && !RM) { this.g.classList.remove("go"); void this.g.getBoundingClientRect(); setTimeout(() => this.g.classList.add("go"), 380); }
+  }
+  pending(ids) { this.petals.forEach(p => { const on = ids.has(p.hb.id); if (on) { p.pend.style.transition = "none"; p.pend.setAttribute("stroke-dasharray", "3 3"); p.pend.setAttribute("opacity", 1); p.wasPending = true; } else if (p.wasPending) { p.wasPending = false; this.closeRim(p); } }); }
+  closeRim(p) {
+    const t0 = performance.now(), dur = RM ? 1 : 260;
+    const step = t => { const k = Math.min(1, (t - t0) / dur), e = easeOutCubic(k); p.pend.setAttribute("stroke-dasharray", `${3 + 3 * e} ${3 * (1 - e)}`); if (k < 1) requestAnimationFrame(step); else { p.pend.style.transition = "opacity 300ms 300ms"; p.pend.setAttribute("opacity", 0); } };
+    requestAnimationFrame(step);
+  }
+  filter(id) { this.petals.forEach(p => { const dim = id && p.hb.id !== id; p.grp.classList.toggle("dim", !!dim); p.lab.classList.toggle("dim", !!dim); }); }
+  summary(day, vals) { return `${relDay(day)}: ` + this.habits.map(hb => `${hb.name} ${vals[hb.id] || 0} ${unitFor(hb.unit, vals[hb.id] || 0)}`).join(", "); }
+}
+function miniRose(habits, vals, maxes) {
+  const e = s("svg", { viewBox: "0 0 28 28", "aria-hidden": "true" }); const n = habits.length; const st = 2 * Math.PI / n; const r = 12;
+  const any = habits.some(hb => (vals[hb.id] || 0) > 0);
+  const rim = []; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i * st; rim.push([14 + r * Math.cos(a), 14 + r * Math.sin(a)]); }
+  e.append(s("polygon", { points: ptsStr(rim), fill: any ? "none" : "var(--clear)", style: `stroke:${any ? "var(--muted)" : "var(--clear-ink)"}`, "stroke-opacity": any ? .3 : .7, "stroke-width": 1, "stroke-dasharray": any ? "1 2" : "1 2" }));
+  habits.forEach((hb, i) => { const v = vals[hb.id] || 0; if (!v) return; const a0 = -Math.PI / 2 + i * st; const rr = r * (FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(1, v / Math.max(1, maxes[hb.id])))); e.append(s("polygon", { points: ptsStr(wedgePts(14, 14, rr, a0, a0 + st, .7)), style: `fill:${habitFill(hb.order)}` })); });
+  return e;
+}
+
+/* ================= app ================= */
+let APPN = 0;
+class App {
+  constructor(host, opt) {
+    this.id = "a" + (APPN++); this.opt = opt; this.host = host; this.reset();
+  }
+  reset() {
+    clearTimeout(this.snackT); EID = 1;
+    const d = makeData(this.opt.seed || 7, DATASETS[this.opt.data] || []); this.habits = d.habits; this.entries = d.entries;
+    this.day = 0; this.tab = this.opt.tab || "today"; this.filterId = null; this.offline = false; this.lastHabit = this.opt.lastHabit || "coffee";
+    this.trend = { habit: "coffee", range: 30, step: "day", win: 7 };
+    this.host.textContent = "";
+    const scr = h("div", { class: "screen" });
+    scr.append(h("div", { class: "island" }), this.statusBar(), h("div", { class: "homebar" }));
+    this.scr = scr; this.host.append(scr);
+    if (this.opt.auth) this.buildAuth(); else this.buildMain(true);
+  }
+  statusBar() {
+    const g = h("span", { class: "glyphs", html: `<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.4c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .6 10.4 10.4 0 0 0 .8 3.5L2 4.8a8.6 8.6 0 0 1 6-2.4zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.6 6.6 0 0 0 8 4.2c-1.8 0-3.4.7-4.6 1.8l1.2 1.3C5.5 6.5 6.7 6 8 6zm0 3.4 1.9-2a2.8 2.8 0 0 0-3.8 0z"/></svg><svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"/></svg>` });
+    return h("div", { class: "status" }, h("span", {}, this.opt.clock || "9:41"), g);
+  }
+  /* ---- derived data ---- */
+  live() { return this.habits.filter(x => !x.archived); }
+  dayVals(d) { const v = {}; for (const e of this.entries) if (e.d === d) v[e.h] = (v[e.h] || 0) + e.q; return v; }
+  maxes() { const m = {}; for (let d = 0; d < 30; d++) { const v = this.dayVals(d); for (const k in v) m[k] = Math.max(m[k] || 0, v[k]); } return m; }
+  habit(id) { return this.habits.find(x => x.id === id); }
+  /* ---- main shell ---- */
+  buildMain(first) {
+    const scr = this.scr; scr.querySelectorAll(".layer").forEach(x => x.remove());
+    const L = h("div", { class: "layer" }); this.L = L;
+    this.views = h("div", { class: "views" });
+    this.v = { today: h("div", { class: "view" }), trends: h("div", { class: "view" }), habits: h("div", { class: "view" }) };
+    for (const k in this.v) { this.views.append(this.v[k]); if (k !== this.tab) this.v[k].hidden = true; }
+    this.bannerW = h("div", { class: "banner-wrap", "aria-live": "polite" }, h("div", {}, h("div", { class: "banner" }, icon("cloudOff", 20), h("span", {}, "Offline. Showing what this device has saved. New entries sync when you are back online."))));
+    this.snack = h("div", { class: "snack", role: "status", "aria-live": "polite" });
+    this.scrim = h("div", { class: "scrim", onclick: () => this.closeSheet() });
+    this.sheet = h("div", { class: "sheet", role: "dialog", "aria-modal": "true" });
+    L.append(this.views, this.buildBar(), this.snack, this.scrim, this.sheet);
+    scr.insertBefore(L, scr.querySelector(".homebar"));
+    this.buildToday(first); this.renderTrends(); this.renderHabits();
+  }
+  buildBar() {
+    const bar = h("nav", { class: "bar", "aria-label": "Main" }); this.tabs = {};
+    for (const [k, label] of [["today", "Today"], ["trends", "Trends"], ["habits", "Habits"]]) {
+      const b = h("button", { class: "tab", role: "tab", "aria-selected": String(k === this.tab), onclick: () => this.go(k) }, tabIcon(k, k === this.tab), label);
+      this.tabs[k] = b; bar.append(b);
+    }
+    this.logBtn = h("button", { class: "logb", "aria-label": "Log an entry", onclick: () => this.openRecord({ habit: this.lastHabit }) }, h("span", { class: "core" }, icon("plus", 28, 2.4)));
+    bar.append(this.logBtn); return bar;
+  }
+  go(tab) {
+    if (tab === this.tab) { this.v[tab].scrollTo({ top: 0, behavior: "smooth" }); return; }
+    const out = this.v[this.tab], inn = this.v[tab];
+    for (const k in this.tabs) { const on = k === tab; this.tabs[k].setAttribute("aria-selected", on); this.tabs[k].firstChild.replaceWith(tabIcon(k, on)); }
+    this.tab = tab;
+    if (tab === "trends") this.renderTrends(true);
+    if (tab === "habits") this.renderHabits();
+    if (RM) { out.hidden = true; inn.hidden = false; return; }
+    out.classList.add("ft-out"); inn.hidden = false; inn.classList.add("ft-in");
+    setTimeout(() => { out.hidden = true; out.classList.remove("ft-out"); inn.classList.remove("ft-in"); }, 320);
+  }
+  /* ---- today ---- */
+  buildToday(first) {
+    const v = this.v.today; v.textContent = "";
+    this.titleW = h("div", { class: "title-wrap" }, this.titleBlock());
+    const av = h("button", { class: "avatar", "aria-label": "Settings", onclick: () => this.pushSettings() }, icon("person", 20));
+    v.append(h("div", { class: "head" }, this.titleW, av), this.bannerW);
+    this.strip = h("div", { class: "strip", role: "listbox", "aria-label": "Days" }); v.append(this.strip); this.renderStrip();
+    this.rose = new Rose(this); this.rose.build(this.live()); v.append(this.rose.el);
+    this.roseCap = h("p", { class: "rose-cap" }, h("svg", { width: 18, height: 6, html: '<path d="M1 3h16" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 3" stroke-linecap="round"/>' }), "Outer ring: your busiest day in the last 30");
+    this.clearMsg = h("div", { class: "clearmsg pre", hidden: true }, h("h3", {}, ""), h("p", {}, ""));
+    v.append(this.roseCap, this.clearMsg);
+    this.chipsEl = h("div", { class: "chips" }); v.append(this.chipsEl, h("p", { class: "hint" }, "Tap a habit to log one. Hold it, or press +, for more."));
+    this.entriesSec = h("div"); v.append(this.entriesSec);
+    this.renderChips(); this.renderEntries();
+    const vals = this.dayVals(0), mx = this.maxes();
+    if (first && !RM) {
+      this.rose.ghostOn(true); this.rose.set(Object.fromEntries(this.live().map(x => [x.id, 0])), mx, "instant");
+      this.rose.petals.forEach(p => p.dots.setAttribute("opacity", 0));
+      setTimeout(() => { this.rose.ghostOn(false); this.applyDay("bloom"); }, this.opt.loadMs ?? 650);
+    } else this.applyDay("instant");
+    requestAnimationFrame(() => { this.strip.scrollLeft = this.strip.scrollWidth; });
+  }
+  titleBlock() {
+    const d = dayDate(this.day);
+    return h("div", { class: "t" }, h("h2", { class: "day-title" }, WD[d.getDay()]), h("p", { class: "day-sub" }, this.day < 2 ? `${relDay(this.day)}, ${longDay(this.day)}` : `${longDay(this.day)} ${d.getFullYear()}`));
+  }
+  applyDay(mode) {
+    const vals = this.dayVals(this.day), mx = this.maxes();
+    const wasClean = this.rose.allZero;
+    const zero = this.rose.set(vals, mx, mode);
+    this.rose.svg.setAttribute("aria-label", this.rose.summary(this.day, vals));
+    this.rose.pending(new Set(this.entries.filter(e => e.d === this.day && e.pending).map(e => e.h)));
+    const showClean = zero;
+    this.rose.clean(showClean, showClean && (mode !== "instant" ? wasClean !== true || mode === "bloom" : false) || (showClean && mode === "bloom"));
+    this.roseCap.hidden = showClean;
+    this.clearMsg.hidden = !showClean;
+    if (showClean) {
+      this.clearMsg.querySelector("h3").textContent = this.day === 0 ? "A clear day so far" : "A clear day";
+      this.clearMsg.querySelector("p").textContent = this.offline ? "Entries made elsewhere show once you are back online." : this.day === 0 ? "Nothing logged today." : "Nothing logged on this day.";
+      this.clearMsg.classList.add("pre"); setTimeout(() => this.clearMsg.classList.remove("pre"), RM ? 0 : 260);
+    }
+  }
+  renderStrip() {
+    const st = this.strip; st.textContent = ""; const live = this.live(), mx = this.maxes();
+    for (let d = 59; d >= 0; d--) {
+      const dt = dayDate(d);
+      const b = h("button", { class: "dayb" + (d === this.day ? " sel" : "") + (d === 0 ? " today" : ""), role: "option", "aria-selected": String(d === this.day), "aria-label": `${relDay(d)}, ${longDay(d)}`, onclick: () => this.setDay(d) },
+        h("span", { class: "wd" }, WD[dt.getDay()][0]), miniRose(live, this.dayVals(d), mx), h("span", { class: "dn" }, String(dt.getDate())));
+      if (d === 0) b.setAttribute("aria-current", "date");
+      b.dataset.d = d; st.append(b);
+    }
+  }
+  refreshStripDay(d) { const b = this.strip.querySelector(`[data-d="${d}"]`); if (b) b.querySelector("svg").replaceWith(miniRose(this.live(), this.dayVals(d), this.maxes())); }
+  setDay(d) {
+    if (d === this.day || d < 0 || d > 59) return;
+    const old = this.titleW.querySelector(".t"); this.day = d; this.filterId = null; this.rose.filter(null);
+    this.strip.querySelectorAll(".dayb").forEach(b => { const on = +b.dataset.d === d; b.classList.toggle("sel", on); b.setAttribute("aria-selected", on); });
+    const sel = this.strip.querySelector(".dayb.sel"); if (sel) { const r = sel.offsetLeft - this.strip.clientWidth / 2 + 23; this.strip.scrollTo({ left: r, behavior: RM ? "auto" : "smooth" }); }
+    const nt = this.titleBlock();
+    if (RM) { old.replaceWith(nt); } else { nt.classList.add("entering"); this.titleW.append(nt); old.classList.add("leaving"); requestAnimationFrame(() => requestAnimationFrame(() => nt.classList.remove("entering"))); setTimeout(() => old.remove(), 240); }
+    this.applyDay("morph"); this.renderChips(); this.renderEntries();
+  }
+  shiftDay(dir) { this.setDay(this.day + dir); }
+  renderChips() {
+    const vals = this.dayVals(this.day); this.chipsEl.textContent = ""; this.chipMap = {};
+    for (const hb of this.live()) {
+      const cnt = odo(vals[hb.id] || 0);
+      const c = h("button", { class: "chip", "aria-label": `Log one ${UNIT1[hb.unit]} of ${hb.name}` }, swatch(hb.order), hb.name, h("span", { class: "cnt" }, cnt));
+      let t = null, held = false;
+      c.addEventListener("pointerdown", () => { c.classList.add("press"); held = false; t = setTimeout(() => { held = true; c.classList.remove("press"); this.openRecord({ habit: hb.id }); }, 450); });
+      const up = () => { clearTimeout(t); c.classList.remove("press"); };
+      c.addEventListener("pointerup", up); c.addEventListener("pointerleave", up); c.addEventListener("pointercancel", up);
+      c.addEventListener("click", () => { if (held) return; this.quickLog(hb.id); });
+      c.addEventListener("contextmenu", e => e.preventDefault());
+      this.chipsEl.append(c); this.chipMap[hb.id] = cnt;
+    }
+  }
+  updateCounts() { const vals = this.dayVals(this.day); for (const id in this.chipMap) setOdo(this.chipMap[id], vals[id] || 0); }
+  renderEntries(freshId) {
+    const sec = this.entriesSec; sec.textContent = "";
+    let list = this.entries.filter(e => e.d === this.day).sort((a, b) => b.t - a.t);
+    if (!list.length) return;
+    const fl = this.filterId ? this.habit(this.filterId) : null;
+    if (fl) list = list.filter(e => e.h === fl.id);
+    const meta = fl ? h("button", { class: "filter", onclick: () => this.setFilter(null), "aria-label": `Show all habits` }, swatch(fl.order), `Only ${fl.name}`, icon("close", 16, 2)) : h("span", { class: "meta" }, `${list.length} ${list.length === 1 ? "entry" : "entries"}`);
+    sec.append(h("div", { class: "sec" }, h("h3", {}, "Entries"), meta));
+    const card = h("div", { class: "card" });
+    for (const e of list) card.append(this.entryRow(e, e.id === freshId));
+    sec.append(card);
+  }
+  entryRow(e, fresh, withName = true) {
+    const hb = this.habit(e.h);
+    const inner = h("div", { class: "row-in", role: "button", tabindex: 0 },
+      h("span", { class: "time" }, hm(e.t)),
+      withName ? swatch(hb.order) : null,
+      h("span", { class: "rname" }, withName ? hb.name : "", e.pending ? h("small", { class: "pend" }, icon("cloudUp", 14), "Not yet synced") : null),
+      h("span", { class: "qty" }, h("b", {}, String(e.q)), " " + unitFor(hb.unit, e.q)));
+    return this.swipeRow(inner, "del", () => this.deleteEntry(e), () => this.openRecord({ entry: e }), fresh);
+  }
+  swipeRow(inner, kind, action, tap, fresh) {
+    const act = h("div", { class: "act" }, h("button", { class: kind, onclick: ev => { ev.stopPropagation(); doIt(); }, tabindex: -1 }, icon(kind === "del" ? "trash" : kind === "unarc" ? "unarchive" : "archive", 20), kind === "del" ? "Delete" : kind === "unarc" ? "Restore" : "Archive"));
+    if (kind === "unarc") act.firstChild.className = "arc";
+    const row = h("div", { class: "row" + (fresh ? " fresh" : "") }, act, inner);
+    let x0 = null, dx = 0, open = false, moved = false;
+    const doIt = () => { row.style.height = row.offsetHeight + "px"; row.getBoundingClientRect(); row.classList.add("collapse"); row.style.height = "0px"; setTimeout(action, RM ? 0 : 240); };
+    inner.addEventListener("pointerdown", ev => { x0 = ev.clientX; dx = 0; moved = false; inner.style.transition = "none"; inner.setPointerCapture(ev.pointerId); });
+    inner.addEventListener("pointermove", ev => { if (x0 == null) return; dx = Math.min(0, ev.clientX - x0 + (open ? -92 : 0)); if (Math.abs(ev.clientX - x0) > 4) moved = true; inner.style.transform = `translateX(${dx}px)`; });
+    inner.addEventListener("pointerup", () => { if (x0 == null) return; x0 = null; inner.style.transition = ""; if (!moved) { if (open) { open = false; inner.style.transform = ""; } else tap(); return; } if (dx < -200) { inner.style.transform = "translateX(-100%)"; doIt(); } else if (dx < -46) { open = true; inner.style.transform = "translateX(-92px)"; } else { open = false; inner.style.transform = ""; } });
+    inner.addEventListener("keydown", ev => { if (ev.key === "Enter") tap(); if (ev.key === "Delete" || ev.key === "Backspace") doIt(); });
+    return row;
+  }
+  setFilter(id) {
+    this.filterId = this.filterId === id ? null : id; this.rose.filter(this.filterId); this.renderEntries();
+  }
+  /* ---- writes ---- */
+  addEntry(hId, q, d, t) {
+    const e = { id: EID++, h: hId, d, t, q, pending: this.offline }; this.entries.push(e); this.lastHabit = hId;
+    this.afterWrite(d, e.id, hId); return e;
+  }
+  afterWrite(d, freshId, hId, delay = 0) {
+    this.refreshStripDay(d);
+    if (d === this.day) {
+      setTimeout(() => {
+        this.applyDay("spring"); this.updateCounts(); this.renderEntries(freshId);
+      }, delay);
+    }
+    this.renderHabits();
+  }
+  quickLog(hId) {
+    const hb = this.habit(hId); const t = this.day === 0 ? this.nowMin() : 12 * 60;
+    const e = this.addEntry(hId, 1, this.day, t);
+    this.toast(`Logged 1 ${UNIT1[hb.unit]} of ${hb.name}${this.day ? " on " + relDay(this.day) : ""}${this.offline ? ". It will sync when you are back online" : ""}.`, () => this.removeEntry(e.id));
+  }
+  nowMin() { const [a, b] = (this.opt.clock || "9:41").split(":").map(Number); return a * 60 + b; }
+  removeEntry(id) { const e = this.entries.find(x => x.id === id); if (!e) return; this.entries = this.entries.filter(x => x.id !== id); this.afterWrite(e.d, null, e.h); }
+  deleteEntry(e) {
+    this.entries = this.entries.filter(x => x.id !== e.id); this.afterWrite(e.d, null, e.h); if (this.histPage) this.renderHistory();
+    const hb = this.habit(e.h);
+    this.toast(`Deleted ${e.q} ${unitFor(hb.unit, e.q)} of ${hb.name}.`, () => { this.entries.push(e); this.afterWrite(e.d, e.id, e.h); if (this.histPage) this.renderHistory(); });
+  }
+  setOffline(on) {
+    this.offline = on; this.bannerW.classList.toggle("show", on);
+    if (!on) setTimeout(() => { let any = false; this.entries.forEach(e => { if (e.pending) { e.pending = false; any = true; } }); if (any) { this.rose.pending(new Set()); this.renderEntries(); if (this.histPage) this.renderHistory(); } }, 700);
+  }
+  toast(msg, undo) {
+    clearTimeout(this.snackT); const sn = this.snack; sn.classList.remove("show");
+    const ring = s("svg", { class: "ring", viewBox: "0 0 20 20" }); const c = s("circle", { cx: 10, cy: 10, r: 8, fill: "none", stroke: "currentColor", "stroke-width": 2, pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": 0, opacity: .8 }); ring.append(c);
+    const show = () => {
+      sn.textContent = "";
+      sn.append(h("span", { class: "msg" }, msg));
+      if (undo) sn.append(h("button", { class: "undo", onclick: () => { clearTimeout(this.snackT); sn.classList.remove("show"); undo(); } }, "Undo", ring));
+      sn.classList.add("show");
+      c.style.transition = "none"; c.getBoundingClientRect(); c.style.transition = "stroke-dashoffset 8000ms linear"; requestAnimationFrame(() => c.setAttribute("stroke-dashoffset", 1));
+      this.snackT = setTimeout(() => sn.classList.remove("show"), 8000);
+    };
+    if (RM) show(); else setTimeout(show, 120);
+  }
+  /* ---- record sheet ---- */
+  openSheet(content) { this.sheet.textContent = ""; this.sheet.append(h("div", { class: "handle" }), ...content); this.sheet.classList.remove("closing"); this.scrim.classList.add("show"); requestAnimationFrame(() => this.sheet.classList.add("show")); }
+  closeSheet() { this.sheet.classList.add("closing"); this.sheet.classList.remove("show"); this.scrim.classList.remove("show"); }
+  openRecord({ habit, entry }) {
+    const st = entry ? { habit: entry.h, q: entry.q, when: "earlier", d: entry.d, t: entry.t } : { habit: habit || this.lastHabit, q: 1, when: "now", d: this.day, t: Math.max(0, this.nowMin() - 60) };
+    if (!entry && this.day !== 0) { st.when = "earlier"; st.t = 12 * 60; }
+    const hbNow = () => this.habit(st.habit);
+    const pick = h("div", { class: "hpick", role: "radiogroup", "aria-label": "Habit" });
+    const drawPick = () => { pick.textContent = ""; for (const hb of this.live()) pick.append(h("button", { class: "chip" + (hb.id === st.habit ? " on" : ""), role: "radio", "aria-checked": String(hb.id === st.habit), "data-h": hb.id, onclick: () => { st.habit = hb.id; drawPick(); drawNum(); } }, swatch(hb.order), hb.name)); };
+    const big = odo(st.q); big.classList.add("big"); big.classList.remove("odo"); big.classList.add("odo");
+    const unitL = h("span", { class: "unit" });
+    const minus = h("button", { class: "stepb", "aria-label": "One fewer", onclick: () => setQ(st.q - 1) }, icon("minus", 26, 2.2));
+    const plus = h("button", { class: "stepb", "aria-label": "One more", onclick: () => setQ(st.q + 1) }, icon("plus", 26, 2.2));
+    const num = h("div", { class: "num", role: "spinbutton", tabindex: 0, "aria-valuemin": 1, "aria-valuenow": st.q }, h("span", { class: "big mono" }, big), unitL, h("span", { class: "scrub" }, "Drag sideways to change"));
+    const cta = h("button", { class: "cta" }, h("span", { class: "lbl" }), h("span", { class: "spin", "aria-hidden": "true" }));
+    const drawNum = () => { setOdo(big, st.q); unitL.textContent = unitFor(hbNow().unit, st.q); minus.disabled = st.q <= 1; num.setAttribute("aria-valuenow", st.q);
+      cta.querySelector(".lbl").innerHTML = `${entry ? "Save" : "Log"} <b>${st.q}</b> ${unitFor(hbNow().unit, st.q)}`; };
+    const setQ = q => { q = Math.max(1, Math.min(999, q)); if (q === st.q) return; st.q = q; drawNum(); };
+    let sx = null, base = 1;
+    num.addEventListener("pointerdown", e => { sx = e.clientX; base = st.q; num.setPointerCapture(e.pointerId); });
+    num.addEventListener("pointermove", e => { if (sx == null) return; setQ(base + Math.round((e.clientX - sx) / 22)); });
+    num.addEventListener("pointerup", () => sx = null);
+    num.addEventListener("keydown", e => { if (e.key === "ArrowUp" || e.key === "ArrowRight") setQ(st.q + 1); if (e.key === "ArrowDown" || e.key === "ArrowLeft") setQ(st.q - 1); });
+    // time
+    const seg = makeSeg([["now", "Now"], ["earlier", "Earlier"]], st.when, v => { st.when = v; wheelW.classList.toggle("show", v === "earlier"); drawWhen(); });
+    const whenL = h("p", { class: "when" });
+    const drawWhen = () => { whenL.innerHTML = st.when === "now" ? `Logs at <b>${this.opt.clock || "9:41"}</b> today` : `${relDay(st.d)}, <b>${hm(st.t)}</b>`; };
+    const wheel = h("div", { class: "wheel" });
+    const mkCol = (cls, items, sel, on) => { const c = h("div", { class: "wcol " + cls }); items.forEach(x => c.append(h("div", {}, x))); let tm; c.addEventListener("scroll", () => { clearTimeout(tm); tm = setTimeout(() => { on(Math.round(c.scrollTop / 34)); drawWhen(); }, 80); }); requestAnimationFrame(() => c.scrollTop = sel * 34); return c; };
+    wheel.append(
+      mkCol("days", Array.from({ length: 14 }, (_, i) => i < 2 ? relDay(i) : `${WD[dayDate(i).getDay()].slice(0, 3)} ${short(dayDate(i))}`), st.d, i => st.d = i),
+      mkCol("", Array.from({ length: 24 }, (_, i) => pad(i)), Math.floor(st.t / 60), i => st.t = i * 60 + st.t % 60),
+      mkCol("", Array.from({ length: 60 }, (_, i) => pad(i)), st.t % 60, i => st.t = Math.floor(st.t / 60) * 60 + i));
+    const wheelW = h("div", { class: "wheelwrap" + (st.when === "earlier" ? " show" : "") }, h("div", {}, wheel));
+    cta.addEventListener("click", () => {
+      if (cta.classList.contains("busy")) return;
+      cta.classList.add("busy");
+      setTimeout(() => {
+        const d = st.when === "now" ? 0 : st.d, t = st.when === "now" ? this.nowMin() : st.t, hb = hbNow();
+        this.closeSheet();
+        if (entry) {
+          Object.assign(entry, { h: st.habit, q: st.q, d, t, pending: this.offline });
+          this.afterWrite(d, entry.id, st.habit, 160); if (entry.d !== d) this.afterWrite(entry.d); if (this.histPage) this.renderHistory();
+          this.toast(`Saved ${st.q} ${unitFor(hb.unit, st.q)} of ${hb.name}.`);
+        } else {
+          if (d !== this.day && this.tab === "today") this.setDay(d);
+          const e = { id: EID++, h: st.habit, d, t, q: st.q, pending: this.offline }; this.entries.push(e); this.lastHabit = st.habit;
+          this.afterWrite(d, e.id, st.habit, RM ? 0 : 160);
+          this.toast(`Logged ${st.q} ${unitFor(hb.unit, st.q)} of ${hb.name}${d ? " on " + relDay(d) : ""}.`, () => this.removeEntry(e.id));
+        }
+      }, RM ? 300 : 650);
+    });
+    drawPick(); drawNum(); drawWhen();
+    const extra = entry ? h("button", { class: "textbtn danger", onclick: () => { this.closeSheet(); setTimeout(() => this.deleteEntry(entry), 200); } }, "Delete entry") : null;
+    this.openSheet([h("div", { class: "sh-head" }, h("h3", {}, entry ? "Edit entry" : "Log an entry"), h("button", { class: "iconbtn", "aria-label": "Close", onclick: () => this.closeSheet() }, icon("close", 20, 2))),
+      pick, h("div", { class: "stepper" }, minus, num, plus), seg, whenL, wheelW, cta, extra]);
+    this.sheetState = st; this.sheetCta = cta;
+  }
+  /* ---- trends ---- */
+  renderTrends(animate) {
+    const v = this.v.trends; v.textContent = ""; const T = this.trend;
+    v.append(h("div", { class: "head" }, h("h2", { class: "screen-title" }, "Trends")));
+    const row = h("div", { class: "hrow", role: "radiogroup", "aria-label": "Habit" });
+    const all = [...this.live(), ...this.habits.filter(x => x.archived)];
+    for (const hb of all) row.append(h("button", { class: "chip" + (hb.id === T.habit ? " on" : "") + (hb.archived ? " arch" : ""), role: "radio", "aria-checked": String(hb.id === T.habit), onclick: () => { T.habit = hb.id; this.renderTrends(true); } }, swatch(hb.order), hb.archived ? `${hb.name} (archived)` : hb.name));
+    v.append(row);
+    v.append(h("div", { class: "tctl" },
+      makeSeg([[7, "7"], [30, "30"], [90, "90"], [365, "365"]], T.range, x => { T.range = +x; this.renderTrends(true); }, "sm", "Range in days"),
+      makeSeg([["day", "Day"], ["week", "Week"]], T.step, x => { T.step = x; T.win = x === "week" ? 3 : 7; this.renderTrends(true); }, "sm", "Bucket")));
+    const hb = this.habit(T.habit);
+    // buckets
+    const days = []; for (let d = T.range - 1; d >= 0; d--) days.push({ d, v: this.dayVals(d)[hb.id] || 0 });
+    let buckets;
+    if (T.step === "day") buckets = days.map(x => ({ v: x.v, label: dayDate(x.d), d0: x.d, d1: x.d }));
+    else { buckets = []; for (let end = 0; end < T.range; end += 7) { const st = Math.min(T.range - 1, end + 6); let sum = 0; for (let d = end; d <= st; d++) sum += this.dayVals(d)[hb.id] || 0; buckets.unshift({ v: sum, label: dayDate(st), d0: st, d1: end }); } }
+    const maxWin = Math.max(1, Math.min(buckets.length, T.step === "day" ? 30 : 12)); T.win = Math.min(T.win, maxWin);
+    const avg = buckets.map((b, i) => { const lo = Math.max(0, i - T.win + 1); let s2 = 0; for (let j = lo; j <= i; j++) s2 += buckets[j].v; return s2 / (i - lo + 1); });
+    const total = buckets.reduce((a, b) => a + b.v, 0);
+    // chart
+    const W = 330, H = 196, pl = 30, pr = 6, pt = 8, pb = 22, iw = W - pl - pr, ih = H - pt - pb;
+    const rawMax = Math.max(1, ...buckets.map(b => b.v));
+    const stepV = niceStep(rawMax); const yMax = Math.ceil(rawMax / stepV) * stepV;
+    const X = i => pl + (buckets.length === 1 ? iw / 2 : (i + .5) * iw / buckets.length), Y = val => pt + ih - val / yMax * ih;
+    const svg = s("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${hb.name}, last ${T.range} days: ${total} ${unitFor(hb.unit, total)} in total.` });
+    for (let y = 0; y <= yMax + 1e-9; y += stepV) { svg.append(s("line", { class: "gl", x1: pl, x2: W - pr, y1: Y(y), y2: Y(y), "stroke-width": 1 })); const t = s("text", { class: "tick", x: pl - 8, y: Y(y) + 3.5, "text-anchor": "end" }); t.textContent = fmtN(y); svg.append(t); }
+    const bw = Math.max(1, iw / buckets.length - (buckets.length > 60 ? 0.4 : 3));
+    const bars = s("g", { "aria-hidden": "true" });
+    buckets.forEach((b, i) => { if (!b.v) return; const y = Y(b.v); const r = s("rect", { x: X(i) - bw / 2, y, width: bw, height: Y(0) - y, rx: Math.min(3, bw / 2), style: `fill:${habitFill(hb.order)}`, opacity: .35 }); if (animate && !RM) { r.style.transformOrigin = `0 ${Y(0)}px`; r.style.animation = `grow 420ms ${Math.min(300, i * 6)}ms var(--spring) both`; } bars.append(r); });
+    svg.append(bars);
+    // x labels
+    const nL = 4; for (let k = 0; k < nL; k++) { const i = Math.round(k * (buckets.length - 1) / (nL - 1)); const t = s("text", { class: "tick", x: X(i), y: H - 5, "text-anchor": k === 0 ? "start" : k === nL - 1 ? "end" : "middle" }); t.textContent = short(buckets[i].label); if (k === 0) t.setAttribute("x", pl); if (k === nL - 1) t.setAttribute("x", W - pr); svg.append(t); }
+    // average line + area
+    const pts = avg.map((a, i) => [X(i), Y(a)]);
+    const dLine = smoothPath(pts);
+    const area = s("path", { d: `${dLine} L${X(buckets.length - 1)},${Y(0)} L${X(0)},${Y(0)} Z`, style: `fill:${DATA_FILL[hb.order % 5]}`, opacity: 0 });
+    area.style.transition = "opacity 400ms 200ms"; svg.append(area);
+    const line = s("path", { class: "line", d: dLine, fill: "none", style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round", pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": animate && !RM ? 1 : 0 });
+    svg.append(line);
+    const cross = s("line", { y1: pt, y2: Y(0), style: "stroke:var(--text)", "stroke-opacity": .35, "stroke-width": 1, opacity: 0 });
+    const dot = s("circle", { r: 5, style: `fill:${habitInk(hb.order)};stroke:var(--surface)`, "stroke-width": 2.5, opacity: 0 });
+    svg.append(cross, dot);
+    const card = h("div", { class: "chartcard" });
+    const ro = h("div", { class: "readout", "aria-hidden": "true" });
+    card.append(ro, svg, h("div", { class: "legend" },
+      h("span", {}, h("i", { style: `width:8px;height:12px;border-radius:2px;background:${DATA_FILL[hb.order % 5]};opacity:.5` }), T.step === "day" ? "Each day" : "Each week"),
+      h("span", {}, h("i", { style: `width:16px;height:2.5px;border-radius:2px;background:${habitInk(hb.order)}` }), T.win > 1 ? `Average over ${T.win} ${T.step === "day" ? "days" : "weeks"}` : "No averaging")));
+    v.append(card);
+    const hit = s("rect", { x: pl, y: 0, width: iw, height: H, fill: "transparent", style: "cursor:crosshair" }); svg.append(hit);
+    const move = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width; const i = Math.max(0, Math.min(buckets.length - 1, Math.floor((x - pl) / iw * buckets.length))); const b = buckets[i];
+      cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("opacity", 1); dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(avg[i])); dot.setAttribute("opacity", 1);
+      ro.innerHTML = `${T.step === "day" ? WD[b.label.getDay()].slice(0, 3) + " " + short(b.label) : "Week to " + short(dayDate(b.d1))}<b>${b.v} ${unitFor(hb.unit, b.v)}</b>${T.win > 1 ? `<span style="opacity:.75">Average ${fmtN(avg[i])}</span>` : ""}`;
+      ro.classList.add("show"); const left = 8 + X(i) * (r.width / W); ro.style.left = Math.max(10, Math.min(card.clientWidth - ro.offsetWidth - 10, left - ro.offsetWidth / 2)) + "px"; };
+    hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", () => { ro.classList.remove("show"); cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
+    this.trendProbe = i => move({ clientX: svg.getBoundingClientRect().left + X(i) * svg.getBoundingClientRect().width / W });
+    if (animate && !RM) requestAnimationFrame(() => requestAnimationFrame(() => { line.style.transitionDelay = "100ms"; line.setAttribute("stroke-dashoffset", 0); area.setAttribute("opacity", .12); })); else area.setAttribute("opacity", .12);
+    // average stepper
+    const unitW = T.step === "day" ? "days" : "weeks";
+    const avL = h("span", { class: "l" }, "Average over ", h("b", {}, String(T.win)), ` ${T.win === 1 ? unitW.slice(0, -1) : unitW}`);
+    v.append(h("div", { class: "avgrow" }, avL, h("div", { class: "mini" },
+      h("button", { "aria-label": "Shorter average", disabled: T.win <= 1, onclick: () => { T.win--; this.renderTrends(false); } }, icon("minus", 18, 2.2)),
+      h("button", { "aria-label": "Longer average", disabled: T.win >= maxWin, onclick: () => { T.win++; this.renderTrends(false); } }, icon("plus", 18, 2.2)))));
+    // stats
+    const peak = buckets.reduce((a, b) => b.v > a.v ? b : a, buckets[0]);
+    const per = T.step === "day" ? total / T.range : total / buckets.length;
+    v.append(h("div", { class: "stats" },
+      h("div", { class: "stat" }, h("div", { class: "k" }, "Total"), h("div", { class: "v" }, fmtN(total)), h("div", { class: "u" }, unitFor(hb.unit, total))),
+      h("div", { class: "stat" }, h("div", { class: "k" }, T.step === "day" ? "Daily average" : "Weekly average"), h("div", { class: "v" }, per.toFixed(1)), h("div", { class: "u" }, hb.unit)),
+      h("div", { class: "stat" }, h("div", { class: "k" }, T.step === "day" ? "Busiest day" : "Busiest week"), h("div", { class: "v" }, fmtN(peak.v)), h("div", { class: "u" }, peak.v ? (T.step === "day" ? short(peak.label) : "to " + short(dayDate(peak.d1))) : "None"))));
+  }
+  /* ---- habits ---- */
+  renderHabits() {
+    const v = this.v.habits; if (!v) return; const keep = v.scrollTop; v.textContent = "";
+    v.append(h("div", { class: "head" }, h("h2", { class: "screen-title" }, "Habits"), h("button", { class: "addb", onclick: () => this.openHabitForm() }, icon("plus", 18, 2.2), "New habit")));
+    const counts = {}; for (const e of this.entries) counts[e.h] = (counts[e.h] || 0) + 1;
+    const mk = hb => this.swipeRow(h("div", { class: "row-in", role: "button", tabindex: 0 }, swatch(hb.order, "sw-lg"), h("span", { class: "rname" }, hb.name, h("small", {}, `Counted in ${hb.unit}`)), h("span", { class: "qty", style: "color:var(--muted)" }, h("b", {}, fmtN(counts[hb.id] || 0)), " entries"), h("span", { class: "chev" }, icon("chevR", 18))),
+      hb.archived ? "unarc" : "arc", () => this.setArchived(hb, !hb.archived), () => this.pushHistory(hb));
+    v.append(h("div", { class: "sec" }, h("h3", {}, "In use"), h("span", { class: "meta" }, "Swipe left to archive")));
+    const c1 = h("div", { class: "card" }); this.live().forEach(hb => c1.append(mk(hb))); v.append(c1);
+    const arch = this.habits.filter(x => x.archived);
+    if (arch.length) { v.append(h("div", { class: "sec" }, h("h3", {}, "Archived"), h("span", { class: "meta" }, "History stays in Trends"))); const c2 = h("div", { class: "card" }); arch.forEach(hb => c2.append(mk(hb))); v.append(c2); }
+    v.scrollTop = keep;
+  }
+  setArchived(hb, on) {
+    hb.archived = on; this.rebuildToday(); this.renderHabits(); if (this.tab !== "trends") this.renderTrends();
+    this.toast(on ? `Archived ${hb.name}. Its history stays in Trends.` : `Restored ${hb.name}.`, () => { hb.archived = !on; this.rebuildToday(); this.renderHabits(); this.renderTrends(); });
+  }
+  rebuildToday() { this.rose.build(this.live()); this.rose.allZero = undefined; this.applyDay("bloom"); this.renderStrip(); this.renderChips(); this.renderEntries(); requestAnimationFrame(() => { const sel = this.strip.querySelector(".dayb.sel"); this.strip.scrollLeft = sel.offsetLeft - 200; }); }
+  openHabitForm() {
+    const st = { name: "", unit: "times" };
+    const inp = h("input", { type: "text", maxlength: 60, placeholder: "Reading, Walks, Tea…", "aria-label": "Name" });
+    const cnt = h("span", { class: "mono", style: "font-size:12px;color:var(--muted);padding-right:8px" }, "0/60");
+    const units = h("div", { class: "units", role: "radiogroup", "aria-label": "Counted in" });
+    const cta = h("button", { class: "cta", disabled: true }, h("span", { class: "lbl" }, "Add habit"), h("span", { class: "spin" }));
+    const next = this.habits.length;
+    const drawU = () => { units.textContent = ""; for (const u of ["times", "items", "drinks", "minutes", "hours", "puffs"]) units.append(h("button", { class: "chip" + (u === st.unit ? " on" : ""), role: "radio", "aria-checked": String(u === st.unit), onclick: () => { st.unit = u; drawU(); } }, u)); };
+    inp.addEventListener("input", () => { st.name = inp.value.trim(); cnt.textContent = `${inp.value.length}/60`; cta.disabled = !st.name; });
+    cta.addEventListener("click", () => { cta.classList.add("busy"); setTimeout(() => { this.closeSheet(); this.habits.push({ id: "h" + next, name: st.name, unit: st.unit, order: next, archived: false }); this.rebuildToday(); this.renderHabits(); this.renderTrends(); this.toast(`Added ${st.name}.`); }, RM ? 300 : 600); });
+    drawU();
+    this.openSheet([h("div", { class: "sh-head" }, h("h3", {}, "New habit"), h("button", { class: "iconbtn", "aria-label": "Close", onclick: () => this.closeSheet() }, icon("close", 20, 2))),
+      h("div", { style: "display:flex;align-items:center;gap:10px;margin:2px 0 6px;color:var(--muted);font:500 13px/18px Figtree" }, swatch(next, "sw-lg"), next >= 5 ? "Its colour comes from the order you add habits. Sixth to tenth habits are striped." : "Its colour comes from the order you add habits."),
+      h("label", { class: "field" }, h("span", {}, "Name"), h("div", { class: "input" }, inp, cnt)),
+      h("div", { class: "field" }, h("span", {}, "Counted in"), units), cta]);
+    setTimeout(() => inp.focus({ preventScroll: true }), 450);
+  }
+  /* ---- pushed pages ---- */
+  push(build) {
+    const pg = h("div", { class: "page" }); build(pg); this.L.insertBefore(pg, this.snack); this.views.classList.add("pushed");
+    requestAnimationFrame(() => requestAnimationFrame(() => pg.classList.add("in"))); return pg;
+  }
+  pop(pg) { pg.classList.remove("in"); this.views.classList.remove("pushed"); setTimeout(() => pg.remove(), 450); if (pg === this.histPage) this.histPage = null; }
+  pushHistory(hb) {
+    this.histHabit = hb; this.histShown = 12;
+    this.histPage = this.push(pg => { this.histEl = pg; this.renderHistory(); });
+  }
+  renderHistory() {
+    const pg = this.histEl, hb = this.histHabit; pg.textContent = "";
+    const all = this.entries.filter(e => e.h === hb.id).sort((a, b) => a.d - b.d || b.t - a.t);
+    pg.append(h("div", { class: "navrow" }, h("button", { class: "back", onclick: () => this.pop(pg) }, icon("chevL", 24, 2.2), "Habits")));
+    pg.append(h("div", { class: "ptitle", style: "display:flex;align-items:center;gap:12px" }, swatch(hb.order, "sw-lg"), h("h2", { class: "screen-title" }, hb.name)));
+    pg.append(h("p", { class: "day-sub", style: "padding:4px 20px 0" }, `Counted in ${hb.unit}. ${fmtN(all.length)} entries${hb.archived ? ", archived" : ""}.`));
+    const sp = h("div", { class: "spark", "aria-label": "Last 30 days", role: "img" }); const mx = Math.max(1, ...Array.from({ length: 30 }, (_, d) => this.dayVals(d)[hb.id] || 0));
+    for (let d = 29; d >= 0; d--) { const val = this.dayVals(d)[hb.id] || 0; sp.append(h("i", { style: `height:${Math.max(4, val / mx * 100)}%;background:${val ? habitFill(hb.order) : "var(--fill)"};animation-delay:${(29 - d) * 12}ms` })); }
+    pg.append(sp, h("p", { class: "rose-cap", style: "justify-content:space-between;padding:6px 20px 0" }, h("span", {}, short(dayDate(29))), h("span", {}, "Last 30 days"), h("span", {}, "Today")));
+    let shown = all.slice(0, this.histShown); let cur = null, card = null;
+    for (const e of shown) {
+      if (e.d !== cur) { cur = e.d; pg.append(h("div", { class: "grp" }, e.d < 2 ? relDay(e.d) : `${WD[dayDate(e.d).getDay()]} ${longDay(e.d)}`)); card = h("div", { class: "card" }); pg.append(card); }
+      card.append(this.entryRow(e, false, false));
+    }
+    if (all.length > shown.length) pg.append(h("button", { class: "morebtn", onclick: () => { this.histShown += 50; this.renderHistory(); } }, "Show older"));
+  }
+  pushSettings() {
+    this.push(pg => {
+      pg.append(h("div", { class: "navrow" }, h("button", { class: "back", onclick: () => this.pop(pg) }, icon("chevL", 24, 2.2), "Today")),
+        h("div", { class: "ptitle" }, h("h2", { class: "screen-title" }, "Settings")));
+      const row = (ic, t, sub, tail, on) => h("div", { class: "setrow", role: on ? "button" : null, tabindex: on ? 0 : null, onclick: on }, h("span", { style: "color:var(--muted)" }, icon(ic, 22)), h("span", { class: "rname" }, t, sub ? h("small", {}, sub) : null), tail);
+      pg.append(h("div", { class: "sec" }, h("h3", {}, "You")));
+      pg.append(h("div", { class: "card" }, row("person", "Account", "you@example.com, verified", h("span", { class: "chev" }, icon("chevR", 18))), row("export", "Export my data", "CSV and JSON, to the share sheet", h("span", { class: "chev" }, icon("chevR", 18)))));
+      pg.append(h("div", { class: "sec" }, h("h3", {}, "Appearance")));
+      const cur = root.dataset.theme || "system";
+      pg.append(h("div", { class: "gutter" }, makeSeg([["system", "System"], ["light", "Light"], ["dark", "Dark"]], cur, setTheme)));
+      pg.append(h("div", { class: "sec" }, h("h3", {}, "About")));
+      pg.append(h("div", { class: "card" }, row("info", "Tracker", h("span", { class: "mono" }, "0.1.0 (212)"), null), row("signout", "Sign out", "Waits for unsynced entries first", null, () => { this.pop(pg); })));
+    });
+  }
+  /* ---- auth ---- */
+  buildAuth() {
+    const A = h("div", { class: "auth layer" }); this.scr.insertBefore(A, this.scr.querySelector(".homebar"));
+    const st = { mode: "in" };
+    const email = h("input", { type: "email", value: "you@example.com", autocomplete: "email", "aria-label": "Email" });
+    const pw = h("input", { type: "password", placeholder: "Your password", autocomplete: "current-password", "aria-label": "Password" });
+    const pw2 = h("input", { type: "password", placeholder: "Type it again", "aria-label": "Confirm password" });
+    const eye = h("button", { class: "iconbtn", "aria-label": "Show password", type: "button", onclick: () => { pw.type = pw.type === "password" ? "text" : "password"; } }, icon("eye", 20));
+    const rules = [["8 or more characters", v => v.length >= 8], ["An upper-case letter", v => /[A-Z]/.test(v)], ["A lower-case letter", v => /[a-z]/.test(v)], ["A digit", v => /\d/.test(v)]];
+    const checks = h("ul", { class: "checks", "aria-live": "polite" }, rules.map(([t]) => h("li", {}, h("span", { class: "dot" }, icon("check", 13, 2.6)), t)));
+    const err = h("div", { class: "errcard", role: "alert" }, h("div", {}, h("div", { class: "in" }, icon("alert", 20), h("span", {}))));
+    const cta = h("button", { class: "cta" }, h("span", { class: "lbl" }, "Sign in"), h("span", { class: "spin" }));
+    const confirmF = h("label", { class: "field" }, h("span", {}, "Confirm password"), h("div", { class: "input" }, pw2));
+    const forgot = h("button", { class: "link" }, "Forgot password?");
+    const validate = () => {
+      const v = pw.value; [...checks.children].forEach((li, i) => li.classList.toggle("ok", rules[i][1](v)));
+      const ok = st.mode === "in" ? /.+@.+\..+/.test(email.value) && v.length > 0 : /.+@.+\..+/.test(email.value) && rules.every(r => r[1](v)) && pw2.value === v;
+      cta.disabled = !ok;
+    };
+    [email, pw, pw2].forEach(i => i.addEventListener("input", () => { validate(); err.classList.remove("show"); }));
+    const seg = makeSeg([["in", "Sign in"], ["up", "Create account"]], "in", m => { st.mode = m; checksW.classList.toggle("show", m === "up"); confW.classList.toggle("show", m === "up"); forgot.style.visibility = m === "up" ? "hidden" : ""; cta.querySelector(".lbl").textContent = m === "up" ? "Create account" : "Sign in"; pw.placeholder = m === "up" ? "Choose a password" : "Your password"; err.classList.remove("show"); validate(); });
+    const checksW = h("div", { class: "wheelwrap" }, h("div", {}, checks));
+    const confW = h("div", { class: "wheelwrap" }, h("div", {}, confirmF));
+    cta.addEventListener("click", () => {
+      if (cta.disabled || cta.classList.contains("busy")) return; cta.classList.add("busy"); err.classList.remove("show");
+      setTimeout(() => {
+        if (st.mode === "in" && pw.value.length < 8) { cta.classList.remove("busy"); err.querySelector("span").textContent = "That email and password don't match. Check both, or reset your password."; err.classList.add("show"); return; }
+        A.style.transition = RM ? "none" : "opacity 200ms"; A.style.opacity = 0;
+        setTimeout(() => { A.remove(); this.opt.auth = false; this.buildMain(true); const L = this.L; if (!RM) { L.classList.add("ft-in"); setTimeout(() => L.classList.remove("ft-in"), 320); } }, RM ? 0 : 200);
+      }, RM ? 300 : 800);
+    });
+    A.append(h("div", { class: "mark" }, document.querySelector(".brand svg").cloneNode(true), h("h1", {}, "Tracker"), h("p", { class: "tag" }, "A private record of what you do, and how it changes over time.")),
+      seg, h("label", { class: "field", style: "margin-top:20px" }, h("span", {}, "Email"), h("div", { class: "input" }, email)),
+      h("label", { class: "field" }, h("span", {}, "Password"), h("div", { class: "input" }, pw, eye)), checksW, confW, err, cta, forgot,
+      h("p", { class: "foot" }, icon("lock", 15), "Only you can see your entries."));
+    validate(); this.authEls = { pw, cta, seg };
+  }
+}
+function niceStep(max) { const raw = max / 4; const p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return Math.max(m * p, 1); return 10 * p; }
+const fmtN = n => Number.isInteger(n) ? n.toLocaleString("en-GB") : n.toFixed(1);
+function smoothPath(p) {
+  if (p.length === 1) return `M${p[0][0] - 10},${p[0][1]} L${p[0][0] + 10},${p[0][1]}`;
+  let d = `M${p[0][0].toFixed(2)},${p[0][1].toFixed(2)}`;
+  for (let i = 0; i < p.length - 1; i++) { const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2; const t = .18;
+    d += ` C${(p1[0] + (p2[0] - p0[0]) * t).toFixed(2)},${(p1[1] + (p2[1] - p0[1]) * t).toFixed(2)} ${(p2[0] - (p3[0] - p1[0]) * t).toFixed(2)},${(p2[1] - (p3[1] - p1[1]) * t).toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`; }
+  return d;
+}
+function makeSeg(opts, cur, on, cls = "", label) {
+  const seg = h("div", { class: "seg " + cls, role: "group", "aria-label": label || null }); const th = h("span", { class: "thumb" }); seg.append(th);
+  const n = opts.length; th.style.width = `calc((100% - 6px) / ${n})`;
+  const place = i => th.style.transform = `translateX(${i * 100}%)`;
+  opts.forEach(([v, t], i) => { const b = h("button", { "aria-pressed": String(v == cur), onclick: () => { [...seg.querySelectorAll("button")].forEach(x => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); place(i); on(v); } }, t); seg.append(b); if (v == cur) place(i); });
+  return seg;
+}
+function setTheme(t) { if (t === "system") delete root.dataset.theme; else root.dataset.theme = t; document.querySelectorAll("#themeSeg button").forEach((b, i) => b.setAttribute("aria-pressed", ["system", "light", "dark"][i] === t)); const ts = document.querySelector("#themeSeg .thumb"); if (ts) ts.style.transform = `translateX(${["system", "light", "dark"].indexOf(t) * 100}%)`; }
+
+/* ================= frames ================= */
+const FRAMES = [
+  { key: "today-busy", title: "Today, a busy day", text: "Five habits, each with its own petal, scaled to that habit's busiest day in the last 30. Tap a chip to log one: the petal springs out and the count rolls. Tap a petal to filter the entries. Swipe the flower or tap the strip to change day.", opt: { data: "busy", clock: "21:14", seed: 7 }, acts: ["offline", "replay"] },
+  { key: "today-sparse", title: "Today, a sparse day", text: "Two of five habits at 1. Each draws a clear petal; the other three keep a dotted slot at the floor and read \"0\", so nothing goes missing and the shape still says what happened.", opt: { data: "sparse", clock: "10:02", seed: 11 }, acts: ["replay"] },
+  { key: "record", title: "Logging an entry", text: "Press + or hold a chip. The habit is preselected; the stepper scrubs by dragging; Now or Earlier replaces the lock icons. While it saves the button becomes its own spinner, then the petal grows on the chart.", opt: { data: "record", clock: "18:30", seed: 5, lastHabit: "coffee" }, acts: ["play", "replay"] },
+  { key: "trends", title: "Trends", text: "One habit over time. Bars for each day, a line for the average, in the habit's colour. Touch the chart for a readout. Switch Day and Week, change the range, lengthen the average.", opt: { data: "busy", clock: "21:14", seed: 7, tab: "trends" }, acts: ["probe", "replay"] },
+  { key: "habits", title: "Habits and history", text: "Renamed from Manage Data. Swipe a row to archive (with Undo); archived habits sit last and keep their history. Tap a habit for its history; swipe an entry to delete it, with Undo.", opt: { data: "busy", clock: "21:14", seed: 7, tab: "habits" }, acts: ["history", "replay"] },
+  { key: "clear", title: "A clear day", text: "Nothing logged yet. The dotted flower draws itself in, a sage wash fades up behind it and the flower breathes once. Quietly positive, never looped.", opt: { data: "clear", clock: "08:05", seed: 3 }, acts: ["replay"] },
+  { key: "auth", title: "Sign in", text: "One screen with the icon and wordmark. Sign in and Create account share a segmented control; the password rule is a live checklist; errors sit in a tonal card. Try a short password, then a long one.", opt: { auth: true, data: "busy", clock: "9:41", seed: 7 }, acts: ["replay"] },
+];
+const only = params.get("frames") ? params.get("frames").split(",") : null;
+const apps = {};
+for (const f of FRAMES) {
+  if (only && !only.includes(f.key)) continue;
+  const dev = h("div", { class: "device" }); const app = new App(dev, f.opt); apps[f.key] = app;
+  const acts = h("div", { class: "acts" });
+  for (const a of f.acts) {
+    if (a === "replay") acts.append(h("button", { class: "pbtn", onclick: () => app.reset() }, "Replay"));
+    if (a === "offline") { const b = h("button", { class: "pbtn", "aria-pressed": "false", onclick: () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); app.setOffline(on); } }, "Offline"); acts.append(b); }
+    if (a === "play") acts.append(h("button", { class: "pbtn", onclick: () => playRecord(app) }, "Play the flow"));
+    if (a === "probe") acts.append(h("button", { class: "pbtn", onclick: () => app.trendProbe(22) }, "Show a readout"));
+    if (a === "history") acts.append(h("button", { class: "pbtn", onclick: () => app.pushHistory(app.habit("coffee")) }, "Open Coffee history"));
+  }
+  document.getElementById("frames").append(h("section", { class: "frame", "aria-label": f.title }, dev, h("div", { class: "cap" }, h("h2", {}, f.title), h("p", {}, f.text), acts)));
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function playRecord(app) {
+  app.closeSheet(); await wait(300);
+  app.openRecord({ habit: app.lastHabit }); await wait(700);
+  app.sheet.querySelector('[data-h="sugar"]').click(); await wait(450);
+  const plus = app.sheet.querySelectorAll(".stepb")[1]; plus.click(); await wait(300); plus.click(); await wait(600);
+  app.sheetCta.click();
+}
+/* theme seg */
+(function () { const cur = root.dataset.theme || "system"; const seg = makeSeg([["system", "System"], ["light", "Light"], ["dark", "Dark"]], cur, setTheme, "sm", "Theme"); seg.id = "themeSeg"; seg.style.width = "220px"; document.getElementById("themeSeg").replaceWith(seg); })();
+document.getElementById("rmBtn").setAttribute("aria-pressed", String(RM));
+document.getElementById("rmBtn").addEventListener("click", e => { RM = !RM; root.classList.toggle("rm", RM); e.currentTarget.setAttribute("aria-pressed", String(RM)); Object.values(apps).forEach(a => a.reset()); });
+/* system section */
+(function () {
+  const g = document.getElementById("sysgrid");
+  const sw = (bg, name, hex, ring) => h("div", {}, h("div", { class: "swatch", style: `background:${bg};${ring ? "box-shadow:0 0 0 1px var(--divider) inset" : ""}` }), h("div", { class: "swl" }, h("b", {}, name), hex));
+  g.append(h("div", { class: "syscard" }, h("h3", {}, "Habit colours, in creation order"),
+    h("div", { class: "swatches" }, ["Amber", "Coral", "Red", "Violet", "Blue"].map((n, i) => sw(DATA_FILL[i], n, getComputedStyle(root).getPropertyValue(`--d${i + 1}`).trim()))),
+    h("div", { class: "swatches", style: "margin-top:12px" }, [0, 1, 2, 3, 4].map(i => h("div", {}, h("svg", { viewBox: "0 0 40 24", style: "width:100%;height:40px;border-radius:10px;display:block", html: `<rect width="40" height="24" fill="url(#hatch${i})"/>` }), h("div", { class: "swl" }, h("b", { style: `color:${DATA_INK[i]}` }, `Ink ${i + 1}`), `Habit ${i + 6}`)))),
+    h("p", { class: "swl", style: "margin-top:12px;font-family:Figtree;font-size:12.5px;line-height:1.45" }, "Fills only on paper (1.6 to 3.8:1). Text in a habit's colour uses its ink, shown here. Habits 6 to 10 reuse the hues striped, 11 to 15 dotted. Archiving never recolours.")));
+  g.append(h("div", { class: "syscard" }, h("h3", {}, "Paper and ink"),
+    h("div", { class: "swatches" }, sw("var(--bg)", "Paper", "bg", true), sw("var(--surface)", "Surface", "cards", true), sw("var(--fill)", "Fill", "inputs"), sw("var(--text)", "Ink", "text, accent"), sw("var(--muted)", "Muted", "5.1:1")),
+    h("div", { class: "swatches", style: "margin-top:12px" }, sw("var(--clear)", "Clear", "clean day"), sw("var(--clear-ink)", "Clear ink", "5.5:1"), sw("var(--danger)", "Danger", "error card"), sw("var(--danger-ink)", "Danger ink", "text"), sw("var(--spoke)", "Spoke", "45% ink"))));
+  g.append(h("div", { class: "syscard" }, h("h3", {}, "Type"), h("div", { class: "spec" },
+    h("div", {}, h("span", { style: "font:800 34px/1 Gabarito;letter-spacing:-.01em" }, "Thursday"), h("small", {}, "Gabarito 800\n34/38")),
+    h("div", {}, h("span", { style: "font:600 16px/1.3 Figtree" }, "Log 3 drinks of Coffee"), h("small", {}, "Figtree 400 to 600\n16/22")),
+    h("div", {}, h("span", { style: "font:500 30px/1 'Spline Sans Mono';letter-spacing:-.03em" }, "0123456789"), h("small", {}, "Spline Sans Mono 500\nevery number")))));
+  // motion: the spring plotted
+  const W = 300, H = 120, pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60 * .6; pts.push(`${(i / 60 * W).toFixed(1)},${(H - 16 - spring(t) * (H - 36)).toFixed(1)}`); }
+  g.append(h("div", { class: "syscard" }, h("h3", {}, "Motion"), h("svg", { viewBox: `0 0 ${W} ${H}`, style: "width:100%;height:auto;display:block", html: `<line x1="0" x2="${W}" y1="${H - 16 - (H - 36)}" y2="${H - 16 - (H - 36)}" stroke="currentColor" stroke-opacity=".15" stroke-dasharray="2 3"/><line x1="0" x2="${W}" y1="${H - 16}" y2="${H - 16}" stroke="currentColor" stroke-opacity=".15"/><polyline points="${pts.join(" ")}" fill="none" stroke="var(--i2)" stroke-width="2.5" stroke-linejoin="round"/><text x="0" y="${H - 2}" font-family="Spline Sans Mono" font-size="10" fill="var(--muted)">0 ms</text><text x="${W}" y="${H - 2}" text-anchor="end" font-family="Spline Sans Mono" font-size="10" fill="var(--muted)">600 ms</text>` }),
+    h("p", { class: "swl", style: "font-family:Figtree;font-size:12.5px;line-height:1.45;margin-top:8px" }, `Spring: stiffness 380, damping 26, mass 1. Peaks at ${Math.round(Math.PI / SP.wd * 1000)} ms with ${Math.round(Math.exp(-SP.z * Math.PI / Math.sqrt(1 - SP.z * SP.z)) * 100)}% overshoot and settles by 420 ms. Opacity eases out cubic. Reduce motion turns every spring into a 150 ms crossfade.`)));
+})();
+/* stills: ?record=sheet opens the sheet in the record frame */
+if (params.get("record") && apps.record) setTimeout(() => { const a = apps.record; a.openRecord({ habit: "sugar" }); const p = a.sheet.querySelectorAll(".stepb")[1]; p.click(); p.click(); if (params.get("record") === "earlier") a.sheet.querySelectorAll(".seg button")[1].click(); }, 1200);
+if (params.get("probe") && apps.trends) setTimeout(() => apps.trends.trendProbe(+params.get("probe")), 1500);
+if (params.get("hist") && apps.habits) setTimeout(() => apps.habits.pushHistory(apps.habits.habit("coffee")), 800);
+if (params.get("signup") && apps.auth) setTimeout(() => { const a = apps.auth; a.authEls.seg.querySelectorAll("button")[1].click(); a.authEls.pw.value = "Morning7"; a.authEls.pw.dispatchEvent(new Event("input")); }, 600);
+</script>
+</body>
+</html>
