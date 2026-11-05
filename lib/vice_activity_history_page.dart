@@ -116,7 +116,7 @@ class _ViceActivityHistoryPageState
         .firstOrNull;
 
     if (vice == null) {
-      return const Scaffold(body: Center(child: Text('Vice not found')));
+      return const Scaffold(body: Center(child: Text('Habit not found')));
     }
 
     final bool hasOlder = fetched.length > shown;
@@ -141,7 +141,7 @@ class _ViceActivityHistoryPageState
     required bool hasOlder,
   }) {
     return activityList.isEmpty
-        ? const Center(child: Text('No activities found for this vice'))
+        ? const Center(child: Text('No activities found for this habit'))
         : ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: activityList.length + (hasOlder ? 1 : 0),

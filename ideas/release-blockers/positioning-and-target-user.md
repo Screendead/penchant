@@ -44,6 +44,6 @@ keyword field on terms the subtitle leaves out (journal, habits, triggers, sleep
 **Revenue impact:** Foundational. It sets the audience (self-trackers who pay for insight, not people in a recovery
 programme) and the price anchor.
 
-**Depends on:** [brand name](brand-name.md).
+**Depends on:** nothing.
 
 **Needs Jack:** no

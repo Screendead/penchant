@@ -4,7 +4,7 @@
 
 ## What
 
-Replace today's first run, where a new account lands on "No vices yet. Add one from Manage Data in the menu.", with three skippable steps:
+Replace today's first run, where a new account lands on "No habits yet. Add one from Manage Data in the menu.", with three skippable steps:
 
 1. One line on what the app is: a private journal that shows what goes with your habits.
 2. One-tap starter vices, each with the right unit, plus "custom".

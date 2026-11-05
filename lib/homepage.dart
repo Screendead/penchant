@@ -23,7 +23,7 @@ class _HomepageState extends State<Homepage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedTabIndex == 0 ? 'Vice Tracker' : 'Usage Graph'),
+        title: Text(selectedTabIndex == 0 ? 'Penchant' : 'Usage Graph'),
         actions: const <Widget>[RecordNewActivityButton()],
       ),
       drawer: Drawer(
@@ -33,7 +33,7 @@ class _HomepageState extends State<Homepage> {
               decoration: BoxDecoration(color: theme.colorScheme.primary),
               child: Center(
                 child: Text(
-                  'Vice Tracker',
+                  'Penchant',
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: 24,

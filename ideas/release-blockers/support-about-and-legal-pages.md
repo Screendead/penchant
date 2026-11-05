@@ -34,7 +34,7 @@ through CI on merge, never from an agent's machine.
 **Revenue impact:** A release prerequisite (the listing URLs); it also protects ratings.
 
 **Depends on:**
-- [brand name](brand-name.md), for the domain
+- [name and bundle ID](name-and-bundle-id.md), for the domain variant
 
 **Needs Jack:** yes — Which address is the support contact, and where do the pages live (Firebase Hosting or the brand
 domain)?

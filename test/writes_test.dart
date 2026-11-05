@@ -125,11 +125,11 @@ void main() {
     writes = FakeTrackerWrites();
   });
 
-  group('Add Vice', () {
+  group('Add Habit', () {
     Future<void> fillAndSave(WidgetTester tester) async {
       await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Coffee',
       );
       await tester.tap(find.byType(DropdownButtonFormField<Unit>));
@@ -160,7 +160,7 @@ void main() {
       writes.respond = _never;
       await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Coffee',
       );
       await tester.tap(find.byType(DropdownButtonFormField<Unit>));
@@ -196,7 +196,7 @@ void main() {
     });
   });
 
-  group('Edit Vice', () {
+  group('Edit Habit', () {
     final Vice legacy = Vice(
       id: 'coffee',
       name: 'x' * 61,
@@ -225,7 +225,7 @@ void main() {
     testWidgets('opens filled with the vice', (WidgetTester tester) async {
       await open(tester);
 
-      expect(find.text('Edit Vice'), findsOneWidget);
+      expect(find.text('Edit Habit'), findsOneWidget);
       expect(find.text('x' * 61), findsOneWidget);
       expect(find.text(Unit.drink.plural), findsOneWidget);
     });
@@ -248,7 +248,7 @@ void main() {
     testWidgets('writes only a changed name', (WidgetTester tester) async {
       await open(tester);
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Espresso',
       );
       await save(tester);
@@ -339,7 +339,7 @@ void main() {
       ) async {
         await openThenRename(tester);
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Vice Name'),
+          find.widgetWithText(TextFormField, 'Habit Name'),
           'Latte',
         );
         await save(tester);
@@ -369,7 +369,7 @@ void main() {
         viceListProvider.overrideWith((ref) => AsyncData(<Vice>[])),
       ], const EditVice(viceID: 'coffee'));
 
-      expect(find.text('Vice not found'), findsOneWidget);
+      expect(find.text('Habit not found'), findsOneWidget);
     });
   });
 
@@ -597,7 +597,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dialog, findsOneWidget);
-      expect(find.text('That vice no longer exists'), findsOneWidget);
+      expect(find.text('That habit no longer exists'), findsOneWidget);
     });
 
     testWidgets('a write that outlasts the timeout closes the dialog and says '
@@ -1175,7 +1175,7 @@ void main() {
       final _LateRefusal refusal = holdWrites();
       await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Coffee',
       );
       await tester.tap(find.byType(DropdownButtonFormField<Unit>));
@@ -1187,7 +1187,7 @@ void main() {
       await waitOutTimeout(tester);
       await refusal.refuse(tester);
 
-      expect(_rejected('Not saved: the vice Coffee'), findsOneWidget);
+      expect(_rejected('Not saved: the habit Coffee'), findsOneWidget);
     });
 
     testWidgets('archiving is named', (WidgetTester tester) async {

@@ -59,7 +59,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
         message = queuedMessage;
       }
     } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while archiving or unarchiving a vice');
+      reportError(e, stack, context: 'while archiving or unarchiving a habit');
       message =
           '${archived ? 'Could not archive' : 'Could not unarchive'} '
           '${vice.name}. ${firestoreErrorMessage(e)}';
@@ -81,10 +81,10 @@ class _ManageDataState extends ConsumerState<ManageData> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Vices'),
+        title: const Text('Your Habits'),
         actions: <Widget>[
           IconButton(
-            tooltip: 'Add vice',
+            tooltip: 'Add habit',
             icon: const Icon(Icons.add),
             onPressed: () {
               Navigator.of(context).pushNamed('/vices/add');
@@ -104,7 +104,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
   Widget _buildBody({required AsyncValue<List<Vice>> viceListValue}) {
     if (viceListValue.error case final Object error) {
       return ErrorView(
-        message: loadErrorMessage('your vices', error),
+        message: loadErrorMessage('your habits', error),
         onRetry: () => ref.invalidate(viceListForUserProvider, asReload: true),
       );
     }
@@ -116,7 +116,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
     }
 
     if (viceList.isEmpty) {
-      return const Center(child: Text('No vices yet. Tap + to add one.'));
+      return const Center(child: Text('No habits yet. Tap + to add one.'));
     }
 
     return ListView.builder(

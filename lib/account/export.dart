@@ -24,12 +24,12 @@ List<ExportFile> exportFiles(AccountData data, DateTime exportedAt) {
   final String stamp = exportedAt.toUtc().toIso8601String().substring(0, 10);
   return <ExportFile>[
     ExportFile(
-      name: 'tracker-entries-$stamp.csv',
+      name: 'penchant-entries-$stamp.csv',
       mimeType: 'text/csv',
       contents: exportCsv(data),
     ),
     ExportFile(
-      name: 'tracker-export-$stamp.json',
+      name: 'penchant-export-$stamp.json',
       mimeType: 'application/json',
       contents: exportJson(data, exportedAt),
     ),

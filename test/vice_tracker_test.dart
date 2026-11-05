@@ -398,7 +398,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(InfoBox),
-          matching: find.textContaining('No vices yet'),
+          matching: find.textContaining('No habits yet'),
         ),
         findsOneWidget,
       );
@@ -411,8 +411,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.textContaining('No vices yet'), findsOneWidget);
-      expect(find.byTooltip('Add vice'), findsOneWidget);
+      expect(find.textContaining('No habits yet'), findsOneWidget);
+      expect(find.byTooltip('Add habit'), findsOneWidget);
     });
   });
 

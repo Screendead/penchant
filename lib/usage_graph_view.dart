@@ -136,7 +136,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
 
     if (viceListValue.error case final Object error) {
       return ErrorView(
-        message: loadErrorMessage('your vices', error),
+        message: loadErrorMessage('your habits', error),
         onRetry: () => ref.invalidate(viceListForUserProvider, asReload: true),
       );
     }
@@ -155,7 +155,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
     ];
 
     if (viceList.isEmpty) {
-      return const InfoBox(message: 'No vices available to graph');
+      return const InfoBox(message: 'No habits available to graph');
     }
 
     final String? effectiveViceID = _effectiveViceID(viceList);
@@ -255,7 +255,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       key: ValueKey<String?>(effectiveViceID),
       isExpanded: true,
       initialValue: effectiveViceID,
-      decoration: const InputDecoration(labelText: 'Vice'),
+      decoration: const InputDecoration(labelText: 'Habit'),
       items: viceList
           .map(
             (Vice vice) => DropdownMenuItem<String>(
