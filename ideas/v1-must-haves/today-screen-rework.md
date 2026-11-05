@@ -18,8 +18,11 @@ Swiping changes the day. A goal's progress shows on a tile only if the user set 
 
 ## Decision
 
-Decided by Jack 2026-11-03 (C2): **bars below three vices, the radar from three up.** (C5): **a clean day is
-quietly positive**, a green tint and short encouraging copy, no streak pressure. Open below: the layout around them.
+Decided by Jack 2026-11-05 (`r6-ui-direction`): **the Day Dial**, a 24-hour dial with each entry a bead at its time,
+tally rows with a one-tap `+` each, and a Log button with a fan of habits. It supersedes C2 (bars below three vices,
+the radar from three up): the radar leaves Today. C5 stands: **a clean day is quietly positive**, now a sage ring and
+"A clear day so far". The mock-up and its Flutter notes are on `origin/design/ui-overhaul-day-dial`; the build is
+HANDOVER's queue item 1.
 
 ## Why
 
@@ -47,4 +50,4 @@ largest sizes, VoiceOver checks in the e2e run. Show Jack a mock-up first.
 - [`charts-carry-no-screen-reader-semantics`](../../tech-debt/accessibility-and-localization/charts-carry-no-screen-reader-semantics.md)
 - [`radar-chart-text-ignores-system-text-scale`](../../tech-debt/accessibility-and-localization/radar-chart-text-ignores-system-text-scale.md)
 
-**Needs Jack:** yes — Sign off the layout from a mock-up.
+**Needs Jack:** no — the layout is decided (`r6-ui-direction`).

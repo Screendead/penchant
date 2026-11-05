@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
+import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 
@@ -94,7 +95,7 @@ class _RegisterState extends ConsumerState<Register> {
                           child: Icon(
                             emailIsValid! ? Icons.check_circle : Icons.cancel,
                             color: emailIsValid!
-                                ? Colors.green
+                                ? DialColors.of(context).clearInk
                                 : Theme.of(context).colorScheme.error,
                           ),
                         ),
@@ -128,7 +129,7 @@ class _RegisterState extends ConsumerState<Register> {
                                 ? Icons.check_circle
                                 : Icons.cancel,
                             color: passwordIsValid!
-                                ? Colors.green
+                                ? DialColors.of(context).clearInk
                                 : Theme.of(context).colorScheme.error,
                           ),
                         ),
@@ -178,7 +179,7 @@ class _RegisterState extends ConsumerState<Register> {
                           child: Icon(
                             passwordsMatch! ? Icons.check_circle : Icons.cancel,
                             color: passwordsMatch!
-                                ? Colors.green
+                                ? DialColors.of(context).clearInk
                                 : Theme.of(context).colorScheme.error,
                           ),
                         ),

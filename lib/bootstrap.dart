@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/theme.dart';
+import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/widgets/info_box.dart';
 
 enum _Startup { running, failed, done }
@@ -59,7 +59,9 @@ class _BootstrapState extends State<Bootstrap> {
 
     return MaterialApp(
       title: 'Penchant',
-      theme: appTheme(),
+      theme: appTheme(Brightness.light),
+      darkTheme: appTheme(Brightness.dark),
+      themeMode: ThemeMode.system,
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: appLocales,
       localeListResolutionCallback: resolveAppLocale,

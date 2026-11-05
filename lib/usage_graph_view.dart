@@ -420,6 +420,12 @@ class _UsageChart extends StatelessWidget {
     );
   }
 
+  static FlLine _gridLine(ColorScheme scheme) => FlLine(
+    color: scheme.outlineVariant,
+    strokeWidth: 1,
+    dashArray: const [8, 4],
+  );
+
   LineChartData _data(BuildContext context, ColorScheme scheme, Size size) {
     final Size dateLabel = chartLabelSize(
       context,
@@ -470,7 +476,17 @@ class _UsageChart extends StatelessWidget {
         left: false,
         right: false,
       ),
-      gridData: const FlGridData(show: true),
+      // fl_chart draws the grid and the touch tooltip in its own blue-grey;
+      // the tooltip text is each line's colour, ink.
+      gridData: FlGridData(
+        getDrawingHorizontalLine: (double value) => _gridLine(scheme),
+        getDrawingVerticalLine: (double value) => _gridLine(scheme),
+      ),
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (LineBarSpot spot) => scheme.surfaceContainerHighest,
+        ),
+      ),
       borderData: FlBorderData(show: false),
       titlesData: FlTitlesData(
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),

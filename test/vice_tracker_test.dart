@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -286,50 +287,53 @@ void main() {
     });
 
     for (final Brightness brightness in Brightness.values) {
-      testWidgets('is green with readable text in the ${brightness.name} '
-          'theme', (WidgetTester tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: overrides(),
-            child: MaterialApp(
-              theme: ThemeData(brightness: brightness),
-              home: const Scaffold(body: ViceTracker()),
+      testWidgets(
+        'is the sage wash with readable text in the ${brightness.name} '
+        'theme',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: overrides(),
+              child: MaterialApp(
+                theme: appTheme(brightness),
+                home: const Scaffold(body: ViceTracker()),
+              ),
             ),
-          ),
-        );
-        await tester.pump();
-
-        final Color background =
-            (tester
-                        .widget<DecoratedBox>(
-                          find
-                              .descendant(
-                                of: find.byType(CleanDay),
-                                matching: find.byType(DecoratedBox),
-                              )
-                              .first,
-                        )
-                        .decoration
-                    as BoxDecoration)
-                .color!;
-        final HSLColor hsl = HSLColor.fromColor(background);
-        expect(hsl.hue, inInclusiveRange(80, 160), reason: 'green hue');
-
-        for (final String text in [
-          'A clear day so far',
-          'Nothing recorded today.',
-        ]) {
-          final Color foreground = tester
-              .widget<Text>(find.text(text))
-              .style!
-              .color!;
-          expect(
-            _contrast(foreground, background),
-            greaterThanOrEqualTo(4.5),
-            reason: text,
           );
-        }
-      });
+          await tester.pump();
+
+          final Color background =
+              (tester
+                          .widget<DecoratedBox>(
+                            find
+                                .descendant(
+                                  of: find.byType(CleanDay),
+                                  matching: find.byType(DecoratedBox),
+                                )
+                                .first,
+                          )
+                          .decoration
+                      as BoxDecoration)
+                  .color!;
+          final HSLColor hsl = HSLColor.fromColor(background);
+          expect(hsl.hue, inInclusiveRange(80, 160), reason: 'green hue');
+
+          for (final String text in [
+            'A clear day so far',
+            'Nothing recorded today.',
+          ]) {
+            final Color foreground = tester
+                .widget<Text>(find.text(text))
+                .style!
+                .color!;
+            expect(
+              _contrast(foreground, background),
+              greaterThanOrEqualTo(4.5),
+              reason: text,
+            );
+          }
+        },
+      );
     }
   });
 

@@ -13,7 +13,8 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
-import 'package:tracker/theme.dart';
+import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/design/font_licence.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
@@ -23,6 +24,7 @@ import 'package:tracker/widgets/rejected_writes_banner.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   installErrorHandlers();
+  registerFontLicence();
   startApp();
 }
 
@@ -67,7 +69,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       child: MaterialApp(
         navigatorKey: navigatorKey,
         title: 'Penchant',
-        theme: appTheme(),
+        theme: appTheme(Brightness.light),
+        darkTheme: appTheme(Brightness.dark),
+        themeMode: ThemeMode.system,
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: appLocales,
         localeListResolutionCallback: resolveAppLocale,

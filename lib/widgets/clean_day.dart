@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tracker/design/dial_theme.dart';
 
 class CleanDay extends StatelessWidget {
   const CleanDay({super.key, required this.isToday, this.offline = false});
@@ -17,15 +18,10 @@ class CleanDay extends StatelessWidget {
   static String body({required bool isToday}) =>
       isToday ? 'Nothing recorded today.' : 'Nothing recorded on this day.';
 
-  // A green tonal scheme in the ambient brightness: Material 3 pairs each
-  // container role with an on-container role at 4.5:1 or better.
-  static ColorScheme colors(Brightness brightness) =>
-      ColorScheme.fromSeed(seedColor: Colors.green, brightness: brightness);
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme green = colors(theme.brightness);
+    final DialColors dial = DialColors.of(context);
 
     // Scrolls when large text and the keyboard leave too little height.
     return Center(
@@ -33,7 +29,7 @@ class CleanDay extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: green.primaryContainer,
+            color: dial.clear,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
@@ -41,13 +37,13 @@ class CleanDay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.eco_outlined, color: green.onPrimaryContainer),
+                Icon(Icons.eco_outlined, color: dial.clearInk),
                 const SizedBox(height: 8),
                 Text(
                   offline ? offlineHeadline : headline(isToday: isToday),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: green.onPrimaryContainer,
+                    color: dial.clearInk,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -55,7 +51,7 @@ class CleanDay extends StatelessWidget {
                   offline ? offlineBody : body(isToday: isToday),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: green.onPrimaryContainer,
+                    color: dial.clearInk,
                   ),
                 ),
               ],
