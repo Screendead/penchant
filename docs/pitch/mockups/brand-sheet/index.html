@@ -453,6 +453,24 @@ document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click'
     statusEl.textContent = `Picked ${name}. Not saved: this page has no save hook.`;
   }
 }));
+
+/* Saved picks live in the artifact's shared db, so Claude can read them back. */
+if (window.claude && claude.use) {
+  claude.use('db').then(db => {
+    if (!db) return;
+    const doc = db.doc('picks/r2-brand');
+    window.saveBrandPick = (choice, note) => doc.set({ choice, note, at: new Date().toISOString() });
+    doc.onSnapshot(s => {
+      const d = s && s.exists ? s.data() : null;
+      if (!d || !d.choice) return;
+      state.choice = d.choice;
+      if (document.activeElement !== noteEl) noteEl.value = d.note || '';
+      render();
+      const c = C.find(c => c.name.toLowerCase() === d.choice);
+      if (c) { statusEl.textContent = `Saved: ${c.name}.`; statusEl.classList.add('done'); }
+    }, () => {});
+  });
+}
 </script>
 </body>
 </html>
