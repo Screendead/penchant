@@ -24,7 +24,10 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(selectedTabIndex == 0 ? 'Penchant' : 'Usage Graph'),
-        actions: const <Widget>[RecordNewActivityButton()],
+        // Today records through its Log button.
+        actions: <Widget>[
+          if (selectedTabIndex != 0) const RecordNewActivityButton(),
+        ],
       ),
       drawer: Drawer(
         child: ListView(

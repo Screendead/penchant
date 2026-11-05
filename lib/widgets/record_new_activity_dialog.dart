@@ -13,34 +13,30 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/undo_bar.dart' as undo_bar;
+import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
-  const RecordNewActivityDialog({super.key});
+  const RecordNewActivityDialog({super.key, this.initialViceID});
 
-  static const Duration undoDuration = Duration(seconds: 8);
+  // The habit chosen when the dialog opens, as from a held Log-fan wedge.
+  final String? initialViceID;
+
+  static const Duration undoDuration = undo_bar.undoDuration;
   static const String recordedMessage = 'Activity recorded';
 
   static void showRecorded(
     ScaffoldMessengerState messenger, {
     required bool synced,
     required VoidCallback onUndo,
-  }) {
-    // A snackbar with an action persists by default and queues every later
-    // snackbar behind it, so an earlier recording's Undo would stay on screen
-    // and delete the wrong activity.
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        persist: false,
-        duration: undoDuration,
-        content: Text(synced ? recordedMessage : queuedMessage),
-        action: SnackBarAction(label: 'Undo', onPressed: onUndo),
-      ),
-    );
-  }
+  }) => undo_bar.showUndoBar(
+    messenger,
+    TextSpan(text: synced ? recordedMessage : queuedMessage),
+    onUndo: onUndo,
+  );
 
   @override
   ConsumerState<RecordNewActivityDialog> createState() =>
@@ -55,6 +51,7 @@ class _RecordNewActivityDialogState
   final TextEditingController quantityController = TextEditingController();
   String unit = Unit.item.nameFor(0);
   bool loading = false;
+  bool _initialApplied = false;
 
   // One id per dialog, so a second press writes the same document rather
   // than a duplicate. Lazy, so building the dialog needs no Firebase.
@@ -143,43 +140,8 @@ class _RecordNewActivityDialogState
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      onUndo: () => _undo(messenger, writes, rejected, written, entry),
+      onUndo: () => undoLog(messenger, writes, rejected, written, entry),
     );
-  }
-
-  // Static so the snackbar's closure holds no reference to this State, which
-  // is disposed by the time Undo can be pressed.
-  static Future<void> _undo(
-    ScaffoldMessengerState messenger,
-    TrackerWrites writes,
-    RejectedWrites rejected,
-    String activityID,
-    String entry,
-  ) async {
-    String? message;
-
-    try {
-      message =
-          await settleWrite(
-            writes.deleteActivity(activityID),
-            onRejectedLater: rejected.reporter(
-              'Not deleted: $entry',
-              changes: activityID,
-            ),
-          )
-          ? 'Activity removed'
-          : queuedDeleteMessage;
-    } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while undoing a recorded activity');
-      // The banner already says the entry was not saved.
-      message = rejected.createRefused(activityID)
-          ? null
-          : 'Could not undo. ${firestoreErrorMessage(e)}';
-    }
-
-    if (message != null && messenger.mounted) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    }
   }
 
   void updateUnit(int quantity) {
@@ -221,6 +183,15 @@ class _RecordNewActivityDialogState
     }
     // Each emission brings new Vice instances, so the dropdown keys on the id;
     // a vice archived meanwhile drops out of the selection.
+    if (!_initialApplied) {
+      _initialApplied = true;
+      selectedVice = vices
+          .where((Vice v) => v.id == widget.initialViceID)
+          .firstOrNull;
+      if (selectedVice != null) {
+        unit = selectedVice!.unit.nameFor(0);
+      }
+    }
     selectedVice = vices
         .where((Vice v) => v.id == selectedVice?.id)
         .firstOrNull;
