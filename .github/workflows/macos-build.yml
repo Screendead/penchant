@@ -1,25 +1,8 @@
 name: macOS build
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "macos/**"
-      - "pubspec.*"
-      - "lib/firebase_init.dart"
-      - "tools/strip-firebase-plist.sh"
-      - ".github/actions/setup-flutter/**"
-      - ".github/workflows/macos-build.yml"
-  pull_request:
-    branches:
-      - master
-    paths:
-      - "macos/**"
-      - "pubspec.*"
-      - "lib/firebase_init.dart"
-      - "tools/strip-firebase-plist.sh"
-      - ".github/actions/setup-flutter/**"
-      - ".github/workflows/macos-build.yml"
+  # Run by hand only: macOS minutes bill at 10x Linux in a private repo, and the
+  # macOS end-to-end run before merge already builds the app.
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
