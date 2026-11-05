@@ -3,6 +3,12 @@ on:
   pull_request:
     branches:
       - master
+    # Prose-only changes run no Dart.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "ideas/**"
+      - "tech-debt/**"
   workflow_call:
 permissions:
   contents: read

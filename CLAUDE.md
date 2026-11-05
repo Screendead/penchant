@@ -130,15 +130,18 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
-CI (`.github/workflows/`): `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings`
-and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
-every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
+CI (`.github/workflows/`) spends Actions minutes from a capped private-repo allowance, so keep it lean.
+`checks.yml` runs `dart analyze --fatal-infos --fatal-warnings` and `flutter test` on every PR to `master`
+except prose-only ones (Markdown, `docs/`, `ideas/`, `tech-debt/`). `rules-tests.yml` runs the Firestore rules
+suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos-build.yml` runs only by hand
+(`gh workflow run macos-build.yml`): macOS minutes bill at 10x, and the macOS e2e run before merge builds the
+app anyway. A PR with no checks has nothing to wait for. On a push to `master` that touches the rules,
+indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
 group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
-define, on a `macos-26` runner, for PRs and pushes to `master` that touch `macos/`, `pubspec.*`,
-`lib/firebase_init.dart`, the strip script or the Flutter setup; macOS minutes bill at 10x in a private repo. Nothing
+define, on a `macos-26` runner, when run by hand. Nothing
 builds the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a

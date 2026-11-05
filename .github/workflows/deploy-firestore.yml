@@ -1,8 +1,17 @@
 name: Deploy Firestore rules and indexes
 on:
+  # Only a change that can alter what reaches production deploys.
   push:
     branches:
       - master
+    paths:
+      - "firestore.rules"
+      - "firestore.indexes.json"
+      - "firebase.json"
+      - "tests/firestore-rules/**"
+      - ".github/workflows/rules-tests.yml"
+      - ".github/workflows/deploy-firestore.yml"
+      - ".github/workflows/checks.yml"
 permissions:
   contents: read
 concurrency:
