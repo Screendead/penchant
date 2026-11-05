@@ -1,0 +1,1667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker Day Dial</title>
+<meta name="description" content="UI overhaul direction for Tracker: the day as a 24-hour dial. Live, animated phone mock-ups.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Tokens: mirrored from tokens.json */
+:root{
+  --bg:#EDF1F7; --surface:#FFFFFF; --surface2:#F3F6FA; --text:#141B2D; --muted:#5B6478; --line:#141B2D1A;
+  --accent:#1D5FC2; --on-accent:#FFFFFF; --danger:#B42A37; --danger-c:#FBE7E9;
+  --d1:#F2A23A; --d2:#F5714F; --d3:#DE4654; --d4:#8F55D9; --d5:#3F86F0;
+  --d1i:#8F5600; --d2i:#B03E1C; --d3i:#B42A37; --d4i:#6A31B5; --d5i:#1D5FC2;
+  --spoke:#141B2D73; --clear:#E3F0E8; --clear-ink:#276B43; --scrim:#0C122247;
+  --page:#DCE3EE; --page-2:#CFD8E5; --bezel:#0B0F19;
+  --card-shadow:0 2px 8px #141B2D14; --sheet-shadow:0 -6px 24px #141B2D1F; --pop-shadow:0 10px 30px #141B2D29;
+  --glow-r:0px; --glow-a:0%; --rim-a:.55;
+  --fd:'Red Hat Display',system-ui,sans-serif; --ft:'Red Hat Text',system-ui,sans-serif; --fm:'Red Hat Mono',ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1222; --surface:#151D31; --surface2:#1C2540; --text:#E9EDF5; --muted:#8E98AE; --line:#E9EDF51F;
+    --accent:#FFB347; --on-accent:#1A1405; --danger:#FF8A8F; --danger-c:#3A1A22;
+    --d1:#FFB347; --d2:#FF7A59; --d3:#E8505B; --d4:#9B5DE5; --d5:#4D96FF;
+    --d1i:#FFB347; --d2i:#FF7A59; --d3i:#F0737C; --d4i:#B48AF0; --d5i:#4D96FF;
+    --spoke:#E9EDF573; --clear:#12241E; --clear-ink:#9ED8B0; --scrim:#03060EA6;
+    --page:#060A14; --page-2:#0A1020; --bezel:#000;
+    --card-shadow:none; --sheet-shadow:none; --pop-shadow:0 10px 30px #00000066;
+    --glow-r:6px; --glow-a:35%; --rim-a:0; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1222; --surface:#151D31; --surface2:#1C2540; --text:#E9EDF5; --muted:#8E98AE; --line:#E9EDF51F;
+  --accent:#FFB347; --on-accent:#1A1405; --danger:#FF8A8F; --danger-c:#3A1A22;
+  --d1:#FFB347; --d2:#FF7A59; --d3:#E8505B; --d4:#9B5DE5; --d5:#4D96FF;
+  --d1i:#FFB347; --d2i:#FF7A59; --d3i:#F0737C; --d4i:#B48AF0; --d5i:#4D96FF;
+  --spoke:#E9EDF573; --clear:#12241E; --clear-ink:#9ED8B0; --scrim:#03060EA6;
+  --page:#060A14; --page-2:#0A1020; --bezel:#000;
+  --card-shadow:none; --sheet-shadow:none; --pop-shadow:0 10px 30px #00000066;
+  --glow-r:6px; --glow-a:35%; --rim-a:0; color-scheme:dark;
+}
+.c1{--c:var(--d1);--ci:var(--d1i)} .c2{--c:var(--d2);--ci:var(--d2i)} .c3{--c:var(--d3);--ci:var(--d3i)}
+.c4{--c:var(--d4);--ci:var(--d4i)} .c5{--c:var(--d5);--ci:var(--d5i)}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--text);font-family:var(--ft);-webkit-font-smoothing:antialiased;transition:background .3s}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--fm);font-variant-numeric:tabular-nums}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Page chrome ---------- */
+.page-head{max-width:1360px;margin:0 auto;padding:40px 24px 8px;display:flex;gap:32px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.ph-brand{display:flex;gap:18px;align-items:center}
+.ph-brand svg{width:56px;height:56px;border-radius:14px;box-shadow:var(--card-shadow);flex:none}
+.ph-kicker{font:600 13px/1 var(--ft);color:var(--muted);letter-spacing:.02em}
+.ph-title{font:900 40px/1.05 var(--fd);margin:6px 0 0;letter-spacing:-.5px}
+.ph-thesis{max-width:620px;margin:10px 0 0;font:400 16px/1.5 var(--ft);color:var(--muted)}
+.ph-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;background:var(--surface);border-radius:999px;padding:4px;box-shadow:var(--card-shadow);border:1px solid var(--line);position:relative}
+.seg button{position:relative;z-index:1;padding:8px 14px;border-radius:999px;font:600 13px/1 var(--ft);color:var(--muted);transition:color .2s}
+.seg button[aria-pressed="true"]{color:var(--on-accent)}
+.seg .thumb{position:absolute;top:4px;bottom:4px;border-radius:999px;background:var(--accent);z-index:0}
+.ph-note{max-width:1360px;margin:0 auto;padding:6px 24px 0;font:400 13px/1.5 var(--ft);color:var(--muted)}
+
+.frames{max-width:1400px;margin:0 auto;padding:28px 16px 40px;display:flex;flex-wrap:wrap;gap:44px 36px;justify-content:center}
+.frame{width:calc(410px * var(--s,1));display:flex;flex-direction:column;gap:12px}
+.cap h2{font:700 17px/1.2 var(--fd);margin:0;display:flex;gap:8px;align-items:baseline}
+.cap h2 .n{font:500 12px/1 var(--fm);color:var(--muted)}
+.cap p{margin:6px 0 0;font:400 13px/1.45 var(--ft);color:var(--muted);min-height:38px}
+.phone-wrap{width:calc(410px * var(--s,1));height:calc(864px * var(--s,1))}
+.phone{width:410px;height:864px;padding:10px;border-radius:60px;background:var(--bezel);box-shadow:0 0 0 1px #ffffff14 inset,0 30px 60px -20px #0c122266,0 0 0 1px var(--line);transform:scale(var(--s,1));transform-origin:top left}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px}
+.ctrl{padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--card-shadow);font:600 13px/1 var(--ft);display:inline-flex;gap:6px;align-items:center}
+.ctrl:hover{border-color:var(--accent)}
+.ctrl.primary{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.vo{font:400 12px/1.45 var(--ft);color:var(--muted);background:var(--page-2);border-radius:14px;padding:10px 12px}
+.vo b{font-weight:600;color:var(--text)}
+
+/* ---------- Screen ---------- */
+.screen{position:relative;width:390px;height:844px;border-radius:50px;overflow:hidden;background:var(--bg);color:var(--text);isolation:isolate;user-select:none;-webkit-user-select:none;touch-action:none;transition:background .3s}
+.island{position:absolute;top:11px;left:50%;width:124px;height:36px;margin-left:-62px;border-radius:20px;background:#000;z-index:90}
+.status{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:6px 30px 0 40px;font:600 16px/1 var(--ft);z-index:80;pointer-events:none}
+.status .si{display:flex;gap:6px;align-items:center}
+.homebar{position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);opacity:.85;z-index:95;pointer-events:none}
+.appbar{position:absolute;top:54px;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px 0 14px;z-index:5}
+.wordmark{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:999px;font:900 21px/1 var(--fd);letter-spacing:-.3px}
+.wordmark svg.ic{width:26px;height:26px;border-radius:7px}
+.wordmark .chev{width:16px;height:16px;color:var(--muted)}
+.syncdot{display:flex;align-items:center;gap:6px;font:500 12px/1 var(--ft);color:var(--muted);height:32px;padding:0 10px;border-radius:999px}
+.syncdot svg{width:18px;height:18px}
+.cbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--surface);box-shadow:var(--card-shadow);border:1px solid var(--line);flex:none;transition:opacity .2s,transform .15s}
+.cbtn svg{width:20px;height:20px}
+.cbtn:active{transform:scale(.92)}
+.cbtn[disabled]{opacity:.35;cursor:default}
+.daynav{position:absolute;top:104px;left:20px;right:20px;height:44px;display:flex;align-items:center;justify-content:space-between;z-index:5}
+.datepill{height:44px;padding:0 18px;border-radius:999px;background:var(--surface);box-shadow:var(--card-shadow);border:1px solid var(--line);display:flex;align-items:center;gap:8px;overflow:hidden}
+.datepill .dp-in{display:flex;align-items:baseline;gap:8px}
+.datepill .dp-day{font:700 17px/1 var(--fd)}
+.datepill .dp-date{font:500 14px/1 var(--ft);color:var(--muted)}
+.datepill svg{width:14px;height:14px;color:var(--muted)}
+.dialwrap{position:absolute;top:154px;left:35px;width:320px;height:320px;z-index:2;cursor:grab}
+.dialwrap:active{cursor:grabbing}
+svg.dial{width:100%;height:100%;overflow:visible;display:block}
+.dial .disc{fill:var(--surface);filter:drop-shadow(var(--card-shadow-svg,0 2px 6px #141B2D12))}
+:root[data-theme="dark"] .dial .disc{filter:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dial .disc{filter:none}}
+.dial .rim{fill:none;stroke:var(--line);stroke-width:1}
+.dial .spoke{stroke:var(--spoke);stroke-width:1;stroke-linecap:round;opacity:.45}
+.dial .spoke.maj{stroke-width:1.4;opacity:1}
+.dial .numeral{font:700 11px/1 var(--fd);fill:var(--muted);letter-spacing:.6px}
+.dial .hub{fill:var(--bg)}
+.dial .hub-t1{font:500 21px/1 var(--fm);fill:var(--text)}
+.dial .hub-t2{font:500 10.5px/1 var(--ft);fill:var(--muted)}
+.dial .hub-clear{font:600 11.5px/1 var(--ft);fill:var(--clear-ink)}
+.dial .elapsed{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;opacity:.5}
+.dial .hand line{stroke:var(--accent);stroke-width:2;stroke-linecap:round}
+.dial .hand circle{fill:var(--accent)}
+.dial .sweep line{stroke:var(--text);stroke-width:1.5;opacity:.5;stroke-linecap:round}
+.dial .sweep path{fill:var(--text);opacity:.05}
+.dial .clear-wash{fill:none;stroke:var(--clear);stroke-width:16}
+.dial .clear-ring{fill:none;stroke:var(--clear-ink);stroke-width:2;opacity:.6;stroke-linecap:round}
+.bead{cursor:pointer}
+.bead .bf{fill:var(--c);filter:drop-shadow(0 0 var(--glow-r) color-mix(in srgb,var(--c) var(--glow-a),transparent))}
+.bead .br{fill:none;stroke:var(--ci);stroke-width:1;opacity:var(--rim-a)}
+.bead.ring .bf{fill:none;stroke:var(--c);stroke-width:2.4}
+.bead.ring .br{display:none}
+.bead .bp{fill:none;stroke:var(--c);stroke-width:2;stroke-dasharray:3.2 2.6;transform-box:fill-box;transform-origin:center;animation:spin 2s linear infinite}
+.bead .hit{fill:transparent}
+.dial.ghost .bead{opacity:.4;pointer-events:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rm .bead .bp,.rm .spin{animation:none}
+.ripple{fill:none;stroke:var(--c);stroke-width:2}
+
+.tallies{position:absolute;top:484px;left:16px;right:16px;height:192px;overflow-y:auto;z-index:3;scrollbar-width:none}
+.tallies::-webkit-scrollbar{display:none}
+.trow{height:38px;display:flex;align-items:center;gap:10px;padding:0 4px 0 10px;border-radius:14px;transition:background .4s}
+.trow.flash{background:color-mix(in srgb,var(--c) 16%,transparent)}
+.pip{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.pip.ring{background:none;box-shadow:inset 0 0 0 2.2px var(--c)}
+.trow .tn{font:500 15.5px/1 var(--ft);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tt{font:500 15px/1 var(--fm);display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.roll{display:inline-block;position:relative;overflow:hidden;height:19px;line-height:19px;vertical-align:bottom;text-align:right}
+.roll span{display:block}
+.trow .tq{color:var(--ci);font-weight:500}
+.trow.zero .tq{color:var(--muted)}
+.trow .tu{color:var(--muted);font-size:13px;min-width:58px}
+.trow .plus{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--muted);background:var(--surface);border:1px solid var(--line)}
+.trow .plus svg{width:16px;height:16px}
+
+/* Trends sheet */
+.tsheet{position:absolute;left:0;right:0;top:717px;height:777px;background:var(--surface);border-radius:30px 30px 0 0;box-shadow:var(--sheet-shadow);border-top:1px solid var(--line);z-index:20;will-change:top}
+.tsheet .grab{position:absolute;top:8px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:var(--text);opacity:.18}
+.tdim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none;z-index:19}
+.peek{position:absolute;left:0;right:0;top:0;height:127px;padding:16px 22px 0;cursor:pointer}
+.peek-row{display:flex;justify-content:space-between;align-items:flex-start}
+.peek-t{font:700 15px/1 var(--fd)}
+.peek-s{font:400 12.5px/1 var(--ft);color:var(--muted);margin-top:5px}
+.peek-r{text-align:right}
+.peek-r .mono{font-size:17px;color:var(--ci)}
+.peek-r small{display:block;font:400 12px/1 var(--ft);color:var(--muted);margin-top:4px}
+.spark{position:absolute;left:22px;right:22px;top:58px;height:44px}
+.tfull{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;opacity:0;pointer-events:none;padding:22px 20px 40px}
+.tfull::-webkit-scrollbar{display:none}
+.tsheet.open .tfull{pointer-events:auto}
+.th{display:flex;justify-content:space-between;align-items:center;cursor:grab}
+.th h3{margin:0;font:900 26px/1 var(--fd);letter-spacing:-.3px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:16px -20px 0;padding:2px 20px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:34px;padding:0 14px 0 11px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;font:600 13px/1 var(--ft);background:var(--surface2);white-space:nowrap;flex:none;border:1.5px solid transparent;transition:background .25s,border-color .25s}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 18%,var(--surface));border-color:var(--c)}
+.chip .arch{color:var(--muted);font-weight:500}
+.trow2{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px}
+.seg.sm{box-shadow:none;background:var(--surface2);border:0;padding:3px}
+.seg.sm button{padding:8px 12px;font-size:12.5px}
+.seg.sm .thumb{top:3px;bottom:3px;background:var(--surface);box-shadow:0 1px 3px #141B2D24}
+.seg.sm button[aria-pressed="true"]{color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:var(--surface2);border-radius:18px;padding:11px 12px 12px}
+.stat .sl{font:500 11.5px/1 var(--ft);color:var(--muted)}
+.stat .sv{font:500 21px/1 var(--fm);margin-top:7px;display:flex;align-items:baseline;gap:4px}
+.stat .sv small{font:500 11px/1 var(--ft);color:var(--muted)}
+.stat .ss{font:400 11px/1 var(--ft);color:var(--muted);margin-top:5px;white-space:nowrap}
+.chart{position:relative;margin-top:12px;height:236px}
+.chart svg{width:100%;height:100%;overflow:visible;display:block}
+.chart .grid line{stroke:var(--line);stroke-width:1}
+.chart .ylab,.chart .xlab{font:500 10px/1 var(--fm);fill:var(--muted)}
+.chart .raw{fill:none;stroke:var(--c);stroke-width:1.5;opacity:.5;stroke-linejoin:round;transition:stroke .3s}
+.chart .avg{fill:none;stroke:var(--ci);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;transition:stroke .3s}
+.chart .area{fill:var(--c);opacity:.1;transition:fill .3s}
+.chart .dot{fill:var(--c);transition:fill .3s}
+.chart .cursor{stroke:var(--text);stroke-width:1;opacity:.25}
+.chart .sel-raw{fill:var(--c);stroke:var(--surface);stroke-width:2.5}
+.chart .sel-avg{fill:var(--surface);stroke:var(--ci);stroke-width:2.5}
+.readout{position:absolute;top:0;height:28px;padding:0 11px;border-radius:999px;background:var(--surface2);display:flex;align-items:center;gap:7px;font:400 12px/1 var(--ft);color:var(--muted);white-space:nowrap;pointer-events:none;transform:translateX(-50%)}
+.readout b{font:500 12.5px/1 var(--fm);color:var(--text)}
+.avgctl{display:flex;align-items:center;justify-content:space-between;margin-top:10px;background:var(--surface2);border-radius:999px;padding:5px 5px 5px 16px}
+.avgctl .al{font:500 14px/1 var(--ft)}
+.avgctl .al b{font:500 14px/1 var(--fm)}
+.avgctl .st{display:flex;gap:6px}
+.avgctl .st button{width:34px;height:34px;border-radius:50%;background:var(--surface);display:grid;place-items:center;box-shadow:0 1px 3px #141B2D1F}
+.avgctl .st button svg{width:16px;height:16px}
+.avgctl .st button[disabled]{opacity:.35}
+.when{display:flex;gap:14px;align-items:center;margin-top:12px;background:var(--surface2);border-radius:22px;padding:12px 14px}
+.when svg{width:96px;height:96px;flex:none}
+.when .wt{font:600 14px/1.3 var(--ft)}
+.when .ws{font:400 12.5px/1.4 var(--ft);color:var(--muted);margin-top:4px}
+.hint{font:400 12px/1.4 var(--ft);color:var(--muted);text-align:center;margin-top:12px}
+
+/* Log button + fan */
+.logbtn{position:absolute;left:163px;top:685px;width:64px;height:64px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;z-index:42;box-shadow:0 0 0 6px var(--bg),0 8px 20px -6px color-mix(in srgb,var(--accent) 60%,transparent);transition:background .2s,color .2s}
+.logbtn svg{width:28px;height:28px;transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
+.logbtn.open{background:var(--surface);color:var(--text)}
+.logbtn.open svg{transform:rotate(45deg)}
+.rm .logbtn svg{transition:none}
+.coach{position:absolute;left:50%;top:640px;transform:translateX(-50%);z-index:43;background:var(--text);color:var(--bg);font:600 13px/1 var(--ft);padding:9px 14px;border-radius:999px;white-space:nowrap;pointer-events:none;animation:bob 1.6s ease-in-out infinite}
+.coach:after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--text)}
+@keyframes bob{50%{transform:translate(-50%,-4px)}}
+.pulse{position:absolute;left:163px;top:685px;width:64px;height:64px;border-radius:50%;z-index:41;pointer-events:none;box-shadow:0 0 0 0 var(--accent);animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 22px transparent}}
+.rm .coach,.rm .pulse{animation:none}
+.fan{position:absolute;inset:0;z-index:40;pointer-events:none}
+.fan .scrim{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .2s}
+.fan.open{pointer-events:auto}
+.fan.open .scrim{opacity:1}
+.fan svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wedge path.wf{fill:var(--c);stroke:var(--bg);stroke-width:3;stroke-linejoin:round}
+.wedge{cursor:pointer}
+.wedge .wn{font:600 12.5px/1 var(--ft)}
+.wedge .wq{font:500 10.5px/1 var(--fm);opacity:.8}
+.wedge.hot path.wf{filter:brightness(1.08)}
+.fan .fspoke{stroke:var(--text);stroke-opacity:.45;stroke-width:2;stroke-linecap:round}
+.fanhint{position:absolute;left:50%;top:530px;transform:translateX(-50%);background:var(--surface);color:var(--text);font:500 13px/1 var(--ft);padding:10px 15px;border-radius:999px;white-space:nowrap;box-shadow:var(--pop-shadow);opacity:0;transition:opacity .2s}
+.fan.open .fanhint{opacity:1}
+.fanhint b{font-weight:600}
+.travel{position:absolute;inset:0;width:100%;height:100%;z-index:60;pointer-events:none;overflow:visible}
+
+/* Bottom sheets */
+.bscrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none;z-index:70;transition:opacity .25s}
+.bscrim.on{opacity:1;pointer-events:auto}
+.bsheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:32px 32px 0 0;z-index:71;padding:12px 22px 34px;transform:translateY(105%);box-shadow:var(--sheet-shadow);border-top:1px solid var(--line)}
+.bsheet .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.bs-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bs-h .ttl{display:flex;align-items:center;gap:10px;font:700 20px/1 var(--fd)}
+.bs-h .ttl .pip{width:12px;height:12px}
+.bs-h .cbtn{box-shadow:none;background:var(--surface2);border:0;width:36px;height:36px}
+.stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 6px 6px}
+.stepper button{width:56px;height:56px;border-radius:50%;background:var(--surface2);display:grid;place-items:center}
+.stepper button svg{width:22px;height:22px}
+.stepper button[disabled]{opacity:.35}
+.stepper .sv{text-align:center}
+.stepper .sv .roll{height:46px;line-height:46px}
+.stepper .sv .num{font:500 42px/46px var(--fm)}
+.stepper .sv .u{display:block;font:500 14px/1 var(--ft);color:var(--muted);margin-top:4px}
+.scrub{position:relative;width:216px;height:216px;margin:10px auto 0;touch-action:none;cursor:grab}
+.scrub .knob{fill:var(--accent);stroke:var(--surface);stroke-width:3;filter:drop-shadow(0 2px 4px #0003)}
+.scrub .shand{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+.scrubmeta{text-align:center;font:400 12.5px/1.4 var(--ft);color:var(--muted);margin-top:6px;min-height:18px}
+.scrubmeta button{color:var(--accent);font-weight:600}
+.pbtn{width:100%;height:54px;border-radius:999px;background:var(--accent);color:var(--on-accent);font:600 16px/1 var(--ft);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;transition:transform .15s,opacity .2s}
+.pbtn:active{transform:scale(.98)}
+.pbtn[disabled]{opacity:.4;cursor:default}
+.pbtn .mono{font-weight:500}
+.tbtn{height:46px;padding:0 18px;border-radius:999px;background:var(--surface2);font:600 15px/1 var(--ft);display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.tbtn svg{width:18px;height:18px}
+.tbtn.danger{color:var(--danger);background:var(--danger-c)}
+.entry-big{display:flex;align-items:baseline;gap:8px;margin:18px 0 4px}
+.entry-big .mono{font-size:40px;font-weight:500}
+.entry-big span:last-child{font:500 16px/1 var(--ft);color:var(--muted)}
+.entry-meta{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.entry-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0;margin-top:14px}
+.calgrid .wd{font:600 11px/1 var(--ft);color:var(--muted);text-align:center;padding-bottom:8px}
+.cday{height:50px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;padding-top:6px;border-radius:16px;position:relative}
+.cday .cn{font:500 15px/1 var(--fm);width:30px;height:26px;display:grid;place-items:center;border-radius:999px}
+.cday.today .cn{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent)}
+.cday.sel .cn{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.cday.fut{opacity:.3;pointer-events:none}
+.cday .dots{display:flex;gap:2px;height:4px}
+.cday .dots i{width:4px;height:4px;border-radius:50%;background:var(--c)}
+.calfoot{font:400 12px/1.4 var(--ft);color:var(--muted);text-align:center;margin-top:10px}
+
+/* Menu popover */
+.menu{position:absolute;top:100px;left:14px;width:244px;background:var(--surface);border-radius:24px;box-shadow:var(--pop-shadow);border:1px solid var(--line);z-index:72;padding:8px;transform-origin:20px 0;opacity:0;pointer-events:none}
+.menu.on{pointer-events:auto}
+.mi{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border-radius:16px;font:500 15.5px/1 var(--ft);text-align:left}
+.mi:hover{background:var(--surface2)}
+.mi svg{width:20px;height:20px;color:var(--muted)}
+.mdiv{height:1px;background:var(--line);margin:4px 12px}
+.mfoot{display:flex;gap:8px;align-items:center;padding:10px 12px 8px;font:400 12.5px/1.3 var(--ft);color:var(--muted)}
+.mfoot svg{width:16px;height:16px}
+
+/* Snackbar + pills */
+.snack{position:absolute;left:16px;right:16px;bottom:170px;min-height:52px;border-radius:999px;background:var(--text);color:var(--bg);display:flex;align-items:center;gap:10px;padding:6px 6px 6px 18px;z-index:65;font:500 14px/1.3 var(--ft);opacity:0;pointer-events:none;transform:translateY(20px)}
+.snack.on{pointer-events:auto}
+.snack .stx{flex:1}
+.snack .stx .mono{font-size:13px}
+.snack .undo{height:40px;padding:0 14px 0 10px;border-radius:999px;display:flex;align-items:center;gap:8px;font:600 14px/1 var(--ft);color:var(--bg);background:color-mix(in srgb,var(--bg) 14%,transparent)}
+.snack .undo svg{width:20px;height:20px}
+.snack .undo circle.track{stroke:color-mix(in srgb,var(--bg) 30%,transparent)}
+.pills{position:absolute;top:54px;left:16px;right:16px;z-index:66;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.pill{pointer-events:auto;max-width:100%;border-radius:22px;background:var(--surface);box-shadow:var(--pop-shadow);border:1px solid var(--line);font:500 13.5px/1.3 var(--ft);display:flex;flex-direction:column;overflow:hidden}
+.pill .ph{display:flex;align-items:center;gap:9px;padding:10px 16px 10px 12px;min-height:42px}
+.pill .ph svg{width:18px;height:18px;flex:none}
+.pill.rej{background:var(--danger-c);color:var(--text);border-color:color-mix(in srgb,var(--danger) 30%,transparent);cursor:pointer;width:100%}
+.pill.rej .ph svg{color:var(--danger)}
+.pill.rej .ph .chev{margin-left:auto;transition:transform .3s;color:var(--muted)}
+.pill.rej.ex .ph .chev{transform:rotate(180deg)}
+.pill .pl{height:0;overflow:hidden}
+.pill .plin{padding:0 16px 14px 39px;font:400 13px/1.4 var(--ft);color:var(--muted)}
+.pill .plin b{font-weight:600;color:var(--text)}
+.pill .plin button{margin-top:8px;font:600 13px/1 var(--ft);color:var(--danger)}
+
+/* Pages */
+.page{position:absolute;inset:0;background:var(--bg);z-index:50;overflow-y:auto;scrollbar-width:none;padding:100px 20px 50px}
+.page::-webkit-scrollbar{display:none}
+.pbar{position:absolute;top:54px;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:55}
+.page h1{font:900 34px/1.05 var(--fd);letter-spacing:-.5px;margin:6px 4px 0;display:flex;align-items:center;gap:12px}
+.page h1 .pip{width:16px;height:16px}
+.page .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:8px 4px 0}
+.card{background:var(--surface);border-radius:24px;box-shadow:var(--card-shadow);border:1px solid var(--line);overflow:hidden}
+.sect{font:600 13px/1 var(--ft);color:var(--muted);margin:24px 6px 10px}
+.hrow{display:flex;align-items:center;gap:14px;padding:0 14px 0 18px;height:66px;width:100%;text-align:left;position:relative}
+.hrow+.hrow:before{content:"";position:absolute;top:0;left:44px;right:0;height:1px;background:var(--line)}
+.hrow .pip{width:14px;height:14px}
+.hrow .hn{font:500 16px/1.2 var(--ft)}
+.hrow .hs{font:400 13px/1.3 var(--ft);color:var(--muted);margin-top:3px}
+.hrow .hb{flex:1;min-width:0}
+.hrow .chev{width:18px;height:18px;color:var(--muted)}
+.foot{font:400 12.5px/1.5 var(--ft);color:var(--muted);margin:14px 6px 0}
+.sumcard{display:flex;gap:16px;align-items:center;padding:14px 16px;margin-top:18px}
+.sumcard svg{width:92px;height:92px;flex:none}
+.sumcard .sl{font:500 12px/1 var(--ft);color:var(--muted)}
+.sumcard .sv{font:500 24px/1 var(--fm);margin-top:6px}
+.sumcard .sv small{font:500 13px/1 var(--ft);color:var(--muted)}
+.sumcard .ss{font:400 13px/1.35 var(--ft);color:var(--muted);margin-top:6px}
+.dayhead{display:flex;justify-content:space-between;font:600 13px/1 var(--ft);color:var(--muted);margin:22px 6px 10px}
+.dayhead .mono{font-weight:500}
+.erow-wrap{position:relative;overflow:hidden}
+.erow-wrap+.erow-wrap:before{content:"";position:absolute;top:0;left:56px;right:0;height:1px;background:var(--line);z-index:2}
+.erow-del{position:absolute;inset:0;background:var(--danger);display:flex;align-items:center;justify-content:flex-end;padding-right:22px;color:var(--surface)}
+.erow-del svg{width:22px;height:22px}
+.erow{position:relative;z-index:1;background:var(--surface);display:flex;align-items:center;gap:12px;height:56px;padding:0 18px 0 14px;touch-action:pan-y;cursor:grab}
+.erow .eb{width:30px;height:30px;flex:none}
+.erow .et{font:500 15px/1 var(--fm)}
+.erow .eq{margin-left:auto;font:500 15px/1 var(--ft);text-align:right}
+.erow .ep{font:400 12px/1 var(--ft);color:var(--muted);margin-top:4px;display:flex;gap:4px;align-items:center;justify-content:flex-end}
+.older{display:flex;margin:18px auto 0;height:44px;padding:0 20px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font:600 14px/1 var(--ft);align-items:center}
+.srow{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 18px;font:500 16px/1 var(--ft);position:relative;width:100%}
+.srow+.srow:before{content:"";position:absolute;top:0;left:18px;right:0;height:1px;background:var(--line)}
+.srow .sv2{font:400 14px/1 var(--ft);color:var(--muted);display:flex;align-items:center;gap:6px}
+.srow .sv2 svg{width:18px;height:18px}
+.srow.danger{color:var(--danger)}
+
+/* Day container (Trends -> day) */
+.oc{position:absolute;z-index:30;overflow:hidden;background:var(--surface)}
+.oc-in{position:absolute;left:0;top:0;width:390px;padding:22px 20px 0;opacity:0}
+.oc-h{display:flex;align-items:center;gap:12px}
+.oc-h h3{margin:0;font:900 24px/1 var(--fd)}
+.oc-h .os{font:400 13px/1 var(--ft);color:var(--muted);margin-top:5px}
+.oc-dial{width:300px;height:300px;margin:12px auto 0}
+.oc-tal .trow{height:34px}
+
+/* Auth */
+.auth{position:absolute;inset:0;padding:120px 26px 40px;display:flex;flex-direction:column;align-items:center}
+.auth .aicon{width:92px;height:92px;border-radius:24px;box-shadow:var(--pop-shadow)}
+.auth .aw{font:900 42px/1 var(--fd);letter-spacing:-.8px;margin-top:22px}
+.auth .at{font:400 15.5px/1.4 var(--ft);color:var(--muted);margin-top:8px}
+.auth .seg{margin-top:28px;width:100%;display:flex;box-shadow:none;background:var(--surface2);border:0;padding:4px}
+.auth .seg button{flex:1;padding:12px 0;font-size:14px}
+.auth .seg .thumb{background:var(--surface);box-shadow:0 1px 4px #141B2D24;top:4px;bottom:4px}
+.auth .seg button[aria-pressed="true"]{color:var(--text)}
+.fields{width:100%;margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.field{height:54px;border-radius:999px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 8px 0 18px;transition:box-shadow .2s,border-color .2s}
+.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.field svg{width:19px;height:19px;color:var(--muted);flex:none}
+.field input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;font:500 15.5px/1 var(--ft);color:var(--text)}
+.field input::placeholder{color:var(--muted);font-weight:400}
+.field .eye{width:38px;height:38px;border-radius:50%;display:grid;place-items:center}
+.checks{width:100%;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;padding:14px 16px;background:var(--surface);border-radius:22px;border:1px solid var(--line);overflow:hidden}
+.ck{display:flex;align-items:center;gap:8px;font:500 13px/1.2 var(--ft);color:var(--muted);transition:color .2s}
+.ck .cb{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;flex:none;transition:background .2s,box-shadow .2s}
+.ck .cb svg{width:12px;height:12px;color:var(--surface);transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.ck.ok{color:var(--text)}
+.ck.ok .cb{background:var(--clear-ink);box-shadow:none}
+.ck.ok .cb svg{transform:scale(1)}
+.aerr{width:100%;margin-top:12px;border-radius:999px;background:var(--danger-c);color:var(--text);font:500 13.5px/1.3 var(--ft);display:flex;gap:9px;align-items:center;padding:12px 16px;display:none}
+.aerr svg{width:18px;height:18px;color:var(--danger);flex:none}
+.forgot{margin-top:16px;font:600 14px/1 var(--ft);color:var(--accent)}
+.afoot{margin-top:auto;font:400 12.5px/1.4 var(--ft);color:var(--muted);text-align:center;display:flex;gap:6px;align-items:center}
+.afoot svg{width:14px;height:14px}
+.spinner{width:22px;height:22px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--on-accent) 30%,transparent);border-top-color:var(--on-accent);animation:spin .8s linear infinite}
+
+/* System section */
+.system{max-width:1360px;margin:0 auto;padding:10px 24px 80px}
+.system h2{font:900 26px/1 var(--fd);margin:0 0 18px;letter-spacing:-.3px}
+.sysgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.syscard{background:var(--surface);border-radius:24px;border:1px solid var(--line);box-shadow:var(--card-shadow);padding:20px}
+.syscard h3{font:700 15px/1 var(--fd);margin:0 0 14px}
+.swrow{display:flex;gap:6px;margin-bottom:8px;align-items:center}
+.swrow .lab{font:600 11px/1 var(--ft);color:var(--muted);width:38px}
+.sw{flex:1;height:44px;border-radius:12px;position:relative;box-shadow:inset 0 0 0 1px #0000000f}
+.sw span{position:absolute;left:6px;bottom:5px;font:500 9px/1 var(--fm)}
+.tyrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.tyrow:first-of-type{border-top:0}
+.tyrow small{font:500 11px/1 var(--fm);color:var(--muted);white-space:nowrap}
+.mrow{display:flex;justify-content:space-between;gap:10px;font:400 13px/1.35 var(--ft);padding:7px 0;border-top:1px solid var(--line)}
+.mrow:first-of-type{border-top:0}
+.mrow .mono{font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+
+@media (max-width:560px){
+  .page-head{padding:24px 16px 4px}
+  .ph-title{font-size:32px}
+  .frames{padding:20px 16px 32px}
+  .system{padding:10px 16px 60px}
+}
+</style>
+</head>
+<body>
+<header class="page-head">
+  <div>
+    <div class="ph-brand">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#F6F4EF"/><polygon points="50,50 50,14 80.8,40" fill="#FFB347"/><polygon points="50,50 80.8,40 65.5,71.4" fill="#FF7A59"/><polygon points="50,50 65.5,71.4 31.7,75.2" fill="#E8505B"/><polygon points="50,50 31.7,75.2 29.5,43.3" fill="#9B5DE5"/><polygon points="50,50 29.5,43.3 50,14" fill="#4D96FF"/><path d="M50,50 L50,10 M50,50 L88,37.6 M50,50 L73.5,82.4 M50,50 L26.5,82.4 M50,50 L12,37.6" stroke="#1D1C1A" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <div>
+        <div class="ph-kicker">Tracker · UI overhaul · direction</div>
+        <h1 class="ph-title">Day Dial</h1>
+      </div>
+    </div>
+    <p class="ph-thesis">The day is a 24-hour dial. Every entry lands as a coloured bead at the time it happened, so a sparse day is simply a quiet clock, and the journal starts showing <em>when</em> things happen, not only how much.</p>
+  </div>
+  <div class="ph-controls">
+    <div class="seg" id="themeSeg" role="group" aria-label="Theme"><span class="thumb"></span><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div>
+    <div class="seg" id="motionSeg" role="group" aria-label="Motion"><span class="thumb"></span><button data-v="full">Full motion</button><button data-v="reduced">Reduced</button></div>
+  </div>
+</header>
+<p class="ph-note">Every phone is live: tap, hold, drag and swipe inside it. The clock runs from 21:10 on Thursday 5 November 2026. All habits and entries are made up; units are the app's existing ones.</p>
+
+<main class="frames" id="frames"></main>
+
+<section class="system" id="system"></section>
+
+<script>
+"use strict";
+/* ============ Basics ============ */
+const NS = 'http://www.w3.org/2000/svg';
+const TAU = Math.PI * 2;
+const Q = new URLSearchParams(location.search);
+const mq = matchMedia('(prefers-reduced-motion: reduce)');
+let motionPref = Q.get('motion') === 'off' ? 'reduced' : (mq.matches ? 'reduced' : 'full');
+const RM = () => motionPref === 'reduced';
+
+function H(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v; else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v); else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null) el.append(k.nodeType ? k : document.createTextNode(k));
+  return el;
+}
+function S(tag, attrs, ...kids) {
+  const el = document.createElementNS(NS, tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) { if (v == null) continue; if (k === 'text') el.textContent = v; else el.setAttribute(k, v); }
+  for (const k of kids.flat()) if (k) el.append(k);
+  return el;
+}
+const ICON = {
+  left: '<path d="M15 18l-6-6 6-6"/>', right: '<path d="M9 18l6-6-6-6"/>', down: '<path d="M6 9l6 6 6-6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  cloudok: '<path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 9.5a4 4 0 01-1 8.5z"/><path d="M9.5 13.5l2 2 3.5-3.5"/>',
+  cloudoff: '<path d="M3 3l18 18"/><path d="M9.3 5.4A6 6 0 0118 9.5a4 4 0 012.3 7.2M17 18H7a4.5 4.5 0 01-1.7-8.66"/>',
+  cloudup: '<path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 9.5a4 4 0 01-1 8.5"/><path d="M12 12v7M9.5 14.5L12 12l2.5 2.5"/>',
+  grid: '<circle cx="12" cy="12" r="8"/><path d="M12 4v4M20 12h-4M12 20v-4M4 12h4"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/>',
+  pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7l8 6 8-6"/>',
+  lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.2v.3"/>',
+  sync: '<path d="M20 12a8 8 0 01-14.3 4.9M4 12a8 8 0 0114.3-4.9"/><path d="M18.5 3v4.2h-4.2M5.5 21v-4.2h4.2"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  share: '<path d="M12 3v12M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.3"/>',
+};
+const ic = (n, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
+const icEl = (n, cls) => { const t = document.createElement('template'); t.innerHTML = ic(n, cls); return t.content.firstChild; };
+const APPICON = (cls = '') => `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#F6F4EF"/><polygon points="50,50 50,14 80.8,40" fill="#FFB347"/><polygon points="50,50 80.8,40 65.5,71.4" fill="#FF7A59"/><polygon points="50,50 65.5,71.4 31.7,75.2" fill="#E8505B"/><polygon points="50,50 31.7,75.2 29.5,43.3" fill="#9B5DE5"/><polygon points="50,50 29.5,43.3 50,14" fill="#4D96FF"/><path d="M50,50 L50,10 M50,50 L88,37.6 M50,50 L73.5,82.4 M50,50 L26.5,82.4 M50,50 L12,37.6" stroke="#1D1C1A" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
+/* ============ Motion ============ */
+const E = {
+  inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  in: t => t * t * t, out: t => 1 - Math.pow(1 - t, 3), lin: t => t,
+};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function tween(dur, fn, ease = E.inOut, alive) {
+  return new Promise(res => {
+    if (dur <= 0) { fn(1, 1); return res(); }
+    const t0 = performance.now();
+    const f = now => {
+      if (alive && !alive()) return res();
+      const t = Math.min(1, (now - t0) / dur); fn(ease(t), t);
+      t < 1 ? requestAnimationFrame(f) : res();
+    };
+    requestAnimationFrame(f);
+  });
+}
+/* SpringDescription(mass: 1, stiffness: 220, damping: 22) unless overridden. */
+function springSim(from, to, o = {}) {
+  const k = o.k ?? 220, c = o.c ?? 22, m = o.m ?? 1, dt = 1 / 240;
+  let x = from, v = o.v ?? 0; const out = [x]; const span = Math.max(1e-3, Math.abs(to - from));
+  for (let i = 0; i < 240 * 3; i++) {
+    const a = (-k * (x - to) - c * v) / m; v += a * dt; x += v * dt;
+    if (i % 4 === 3) out.push(x);
+    if (Math.abs(x - to) < span * 0.002 && Math.abs(v) < span * 0.02) break;
+  }
+  out.push(to); return out; // samples every 1/60 s
+}
+function spring(from, to, fn, o = {}, alive) {
+  const xs = springSim(from, to, o);
+  return new Promise(res => {
+    const t0 = performance.now();
+    const f = now => {
+      if (alive && !alive()) return res();
+      const i = Math.min(xs.length - 1, Math.floor((now - t0) / (1000 / 60)));
+      fn(xs[i]); i < xs.length - 1 ? requestAnimationFrame(f) : res();
+    };
+    requestAnimationFrame(f);
+  });
+}
+function springKF(el, from, to, frame, o = {}) {
+  const xs = springSim(from, to, o);
+  return el.animate(xs.map(frame), { duration: xs.length * 1000 / 60, fill: 'forwards' });
+}
+
+/* ============ Data ============ */
+const HABITS = [
+  { id: 'coffee', name: 'Coffee', u: ['drink', 'drinks'], typ: 1, def: 1, c: 1 },
+  { id: 'takeaway', name: 'Takeaway', u: ['item', 'items'], typ: 2, def: 1, c: 2 },
+  { id: 'alcohol', name: 'Alcohol', u: ['drink', 'drinks'], typ: 1, def: 1, c: 3 },
+  { id: 'late', name: 'Late nights', u: ['time', 'times'], typ: 1, def: 1, c: 4 },
+  { id: 'scroll', name: 'Doomscrolling', u: ['minute', 'minutes'], typ: 20, def: 15, c: 5 },
+  { id: 'sugar', name: 'Sugar', u: ['item', 'items'], typ: 1, def: 1, c: 1, ring: true, archived: true },
+];
+const ACTIVE = HABITS.map((h, i) => i).filter(i => !HABITS[i].archived);
+const unitW = (h, q) => q === 1 ? HABITS[h].u[0] : HABITS[h].u[1];
+const qty = (h, q) => `${q} ${unitW(h, q)}`;
+const TODAY = new Date(2026, 10, 5);
+const NOW0 = 21 * 60 + 10;
+const T0 = performance.now();
+const nowMin = () => Math.min(1439.9, NOW0 + (performance.now() - T0) / 60000);
+const pad = n => String(n).padStart(2, '0');
+const hm = m => `${pad(Math.floor(m / 60) % 24)}:${pad(Math.floor(m % 60))}`;
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const sameDay = (a, b) => key(a) === key(b);
+const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MOL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const dShort = d => `${WD[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}`;
+const daysAgo = d => Math.round((TODAY - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+const relDay = d => { const n = daysAgo(d); return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : WDL[d.getDay()]; };
+function hash(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { let a = seed; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+let EID = 1;
+function gen(date, hi) {
+  const r = rng(hash(key(date) + ':' + HABITS[hi].id)); const dow = date.getDay(); const out = [];
+  const ago = daysAgo(date); const wkend = dow === 0 || dow === 6;
+  const push = (min, q) => { if (min >= 0 && min < 1440) out.push({ id: EID++, h: hi, min: Math.round(min), q }); };
+  switch (HABITS[hi].id) {
+    case 'coffee': { let n = wkend ? 1 + Math.floor(r() * 3) : 2 + Math.floor(r() * 4); if (ago < 21 && r() < .5) n = Math.max(1, n - 1); let t = 405 + r() * 80; for (let i = 0; i < n; i++) { push(t, r() < .1 ? 2 : 1); t += 70 + r() * 150; } break; }
+    case 'takeaway': if (r() < .32) push(725 + r() * 70, 1 + Math.floor(r() * 2)); if (r() < (dow === 5 || dow === 6 ? .7 : .25)) push(1100 + r() * 100, 1 + Math.floor(r() * 3)); break;
+    case 'alcohol': { const n = dow === 5 || dow === 6 ? 1 + Math.floor(r() * 3) : (r() < .28 ? 1 : 0); const ts = []; for (let i = 0; i < n; i++) ts.push(1080 + r() * 250); ts.sort((a, b) => a - b).forEach(t => push(t, r() < .25 ? 2 : 1)); break; }
+    case 'late': if (r() < (dow === 6 || dow === 0 ? .6 : .2)) push(15 + r() * 110, 1); break;
+    case 'scroll': { const slots = [430, 765, 1330]; const n = 1 + Math.floor(r() * 3); for (let i = 0; i < n; i++) push(slots[i] + r() * 50 - 15, 5 * (1 + Math.floor(r() * 7))); break; }
+    case 'sugar': if (ago > 46) { const n = Math.floor(r() * 3); for (let i = 0; i < n; i++) push(880 + r() * 320, 1); } break;
+  }
+  return out;
+}
+const SCENES = {
+  busy: [[3, 40, 1], [0, 425, 1], [4, 440, 15], [0, 580, 1], [0, 595, 1], [4, 750, 20], [1, 770, 2], [0, 795, 1], [0, 950, 1], [4, 1005, 10], [2, 1120, 1], [1, 1160, 3], [2, 1170, 2], [4, 1205, 35], [2, 1250, 1]],
+  sparse: [[0, 490, 1], [1, 1165, 1]],
+  record: [[3, 40, 1], [0, 425, 1], [4, 440, 15], [0, 580, 1], [1, 770, 2], [4, 1005, 10]],
+};
+class World {
+  constructor(scene, o = {}) {
+    this.cache = new Map(); this.over = new Map();
+    this.over.set(key(TODAY), SCENES[scene].map(([h, min, q]) => ({ id: EID++, h, min, q })));
+    if (o.clearDay) this.over.set(key(addDays(TODAY, -2)), []);
+    if (o.pending) { const t = this.day(TODAY); const e = t.filter(e => e.h === 0).pop(); if (e) e.pending = true; }
+  }
+  day(d) {
+    const k = key(d);
+    if (this.over.has(k)) return this.over.get(k);
+    if (!this.cache.has(k)) {
+      let es = [];
+      if (d <= TODAY) for (let i = 0; i < HABITS.length; i++) es = es.concat(gen(d, i));
+      this.cache.set(k, es.sort((a, b) => a.min - b.min));
+    }
+    return this.cache.get(k);
+  }
+  add(d, e) { this.day(d).push(e); this.day(d).sort((a, b) => a.min - b.min); }
+  remove(d, id) { const a = this.day(d); const i = a.findIndex(e => e.id === id); if (i >= 0) a.splice(i, 1); }
+  totals(d, list = ACTIVE) { const es = this.day(d); return list.map(h => es.filter(e => e.h === h).reduce((s, e) => s + e.q, 0)); }
+  sum(d, h) { return this.day(d).filter(e => e.h === h).reduce((s, e) => s + e.q, 0); }
+  count(h) { let n = 0; for (let i = 0; i < 420; i++) n += this.day(addDays(TODAY, -i)).filter(e => e.h === h).length; return n; }
+}
+function summary(world, d) {
+  const es = world.day(d); const t = world.totals(d);
+  const parts = ACTIVE.map((h, i) => `${HABITS[h].name} ${qty(h, t[i])}`).join(', ');
+  const span = es.length ? ` First entry ${hm(es[0].min)}, last ${hm(es[es.length - 1].min)}.` : ' Nothing recorded.';
+  return `${relDay(d)}, ${dShort(d)}. ${parts}.${span}`;
+}
+
+/* ============ Dial ============ */
+const ang = min => min / 1440 * TAU - Math.PI / 2;
+const beadR = e => Math.max(4.5, Math.min(13, 6.5 * Math.sqrt(e.q / HABITS[e.h].typ)));
+const TRACK = [98, 113, 83, 68];
+class Dial {
+  constructor(host, o = {}) {
+    this.o = Object.assign({ mini: false, onBead: null }, o);
+    this.svg = S('svg', { viewBox: '-160 -160 320 320', class: 'dial' + (this.o.mini ? ' mini' : '') + (this.o.ghost ? ' ghost' : ''), role: 'img' });
+    host.append(this.svg);
+    const g = c => S('g', c ? { class: c } : null);
+    this.gFace = g(); this.gClear = g(); this.gSpokes = g('spokes'); this.gArc = g(); this.gSweep = g('sweep');
+    this.gHand = g('hand'); this.gBeads = g(); this.gFx = g(); this.gHub = g(); this.gTop = g();
+    this.svg.append(this.gFace, this.gClear, this.gSpokes, this.gArc, this.gSweep, this.gHand, this.gBeads, this.gFx, this.gHub, this.gTop);
+    this.gFace.append(S('circle', { r: 124, class: 'disc' }), S('circle', { r: 124, class: 'rim' }));
+    const C = TAU * 116;
+    this.clearRing = S('circle', { r: 116, class: 'clear-ring', 'stroke-dasharray': `${C} ${C}`, 'stroke-dashoffset': C, transform: 'rotate(-90)' });
+    this.gClear.append(S('circle', { r: 116, class: 'clear-wash' }), this.clearRing); this.gClear.setAttribute('opacity', 0);
+    for (let i = 0; i < 24; i++) {
+      const maj = i % 3 === 0, a = ang(i * 60), r0 = maj ? 54 : 64, r1 = maj ? 140 : 132;
+      this.gSpokes.append(S('line', { class: 'spoke' + (maj ? ' maj' : ''), x1: r0 * Math.cos(a), y1: r0 * Math.sin(a), x2: r1 * Math.cos(a), y2: r1 * Math.sin(a) }));
+    }
+    for (const [t, h] of [['00', 0], ['06', 6], ['12', 12], ['18', 18]]) {
+      const a = ang(h * 60);
+      this.gFace.append(S('text', { class: 'numeral', x: 152 * Math.cos(a), y: 152 * Math.sin(a) + 0.5, 'text-anchor': 'middle', 'dominant-baseline': 'central', text: t }));
+    }
+    this.elapsed = S('path', { class: 'elapsed' }); this.gArc.append(this.elapsed);
+    this.handLine = S('line', { x1: 0, y1: 0, x2: 0, y2: -140 }); this.gHand.append(this.handLine, S('circle', { r: 3.2 }));
+    this.gHub.append(S('circle', { r: 44, class: 'hub' }));
+    this.t1 = S('text', { class: 'hub-t1', 'text-anchor': 'middle', y: -1 }); this.t2 = S('text', { class: 'hub-t2', 'text-anchor': 'middle', y: 17 });
+    this.gHub.append(this.t1, this.t2);
+    this.beads = new Map(); this.entries = []; this.isToday = false; this.clear = false; this.gen = 0;
+  }
+  layout(entries) {
+    const groups = new Map(), pos = new Map();
+    for (const e of [...entries].sort((a, b) => a.min - b.min)) {
+      const k = e.h + ':' + Math.floor(e.min / 60); const n = groups.get(k) || 0; groups.set(k, n + 1);
+      pos.set(e.id, { a: ang(e.min), R: TRACK[n % 4], r: beadR(e) });
+    }
+    const rings = new Map();
+    for (const [id, p] of pos) { if (!rings.has(p.R)) rings.set(p.R, []); rings.get(p.R).push(p); }
+    for (const [R, ps] of rings) {
+      ps.sort((a, b) => a.a - b.a);
+      for (let pass = 0; pass < 8; pass++) for (let i = 0; i + 1 < ps.length; i++) {
+        const p = ps[i], q = ps[i + 1], need = p.r + q.r + 1.5, d = (q.a - p.a) * R;
+        if (d < need) { const push = (need - d) / R / 2; p.a -= push; q.a += push; }
+      }
+    }
+    for (const p of pos.values()) { p.x = p.R * Math.cos(p.a); p.y = p.R * Math.sin(p.a); }
+    return pos;
+  }
+  makeBead(e, p) {
+    const h = HABITS[e.h];
+    const b = S('g', { class: `bead c${h.c}${h.ring ? ' ring' : ''}${e.pending ? ' pending' : ''}`, 'data-id': e.id });
+    const r = p.r;
+    if (e.pending) {
+      b.fill = S('circle', { r: h.ring ? r - 1.2 : r, class: 'bf', transform: 'scale(0)' });
+      b.append(S('circle', { r: r + 6, class: 'hit' }), b.fill, S('circle', { r: r - 1, class: 'bp' }));
+    } else b.append(S('circle', { r: r + 6, class: 'hit' }), S('circle', { r: h.ring ? r - 1.2 : r, class: 'bf' }), S('circle', { r: r - .5, class: 'br' }));
+    b.st = { x: p.x, y: p.y, s: 1 }; b.e = e;
+    if (this.o.onBead) b.addEventListener('click', ev => { ev.stopPropagation(); this.o.onBead(e, b); });
+    this.setB(b); return b;
+  }
+  setB(b, x = b.st.x, y = b.st.y, s = b.st.s) { b.st = { x, y, s }; b.setAttribute('transform', `translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${Math.max(0, s).toFixed(3)})`); }
+  setMeta({ isToday, hub1, hub2 }) { this.isToday = isToday; this.gHand.style.display = isToday ? '' : 'none'; this.gArc.style.display = isToday ? '' : 'none'; this.setHub(hub1, hub2); this.tick(); }
+  setHub(a, b, clear) { this.t1.textContent = a ?? ''; this.t2.textContent = b ?? ''; this.t1.setAttribute('class', clear ? 'hub-clear' : (this.o.hubSmall ? 'hub-t2' : 'hub-t1')); this.t2.setAttribute('class', clear ? 'hub-clear' : 'hub-t2'); this.t1.setAttribute('y', clear ? -4 : -1); this.t2.setAttribute('y', clear ? 12 : 17); }
+  tick(min = nowMin()) {
+    if (!this.isToday) return;
+    const a = min / 1440 * 360; this.handLine.parentNode.setAttribute('transform', `rotate(${a.toFixed(2)})`);
+    const A = ang(min), large = min > 720 ? 1 : 0;
+    this.elapsed.setAttribute('d', `M0,-124 A124,124 0 ${large} 1 ${(124 * Math.cos(A)).toFixed(2)},${(124 * Math.sin(A)).toFixed(2)}`);
+  }
+  render(entries) {
+    this.entries = entries; this.gBeads.textContent = ''; this.beads.clear();
+    const pos = this.layout(entries);
+    for (const e of entries) { const b = this.makeBead(e, pos.get(e.id)); this.beads.set(e.id, b); this.gBeads.append(b); }
+    this.svg.setAttribute('aria-label', this.label || '');
+  }
+  relayout(entries, dur = 320) {
+    this.entries = entries; const pos = this.layout(entries);
+    const moves = [];
+    for (const [id, b] of this.beads) {
+      const p = pos.get(id); if (!p) continue;
+      const fx = b.st.x, fy = b.st.y;
+      if (Math.hypot(p.x - fx, p.y - fy) > .3) moves.push(tween(RM() ? 0 : dur, k => this.setB(b, fx + (p.x - fx) * k, fy + (p.y - fy) * k), E.inOut));
+    }
+    return Promise.all(moves);
+  }
+  posFor(entries, id) { return this.layout(entries).get(id); }
+  setClear(on, today, animate = true) {
+    if (on === this.clear) return; this.clear = on;
+    const C = TAU * 116, d = RM() || !animate ? 0 : 600;
+    const s0 = on ? 1 : .25, s1 = on ? .25 : 1;
+    if (on) this.gClear.setAttribute('opacity', 1);
+    tween(d, k => {
+      this.gSpokes.setAttribute('opacity', s0 + (s1 - s0) * k);
+      this.clearRing.setAttribute('stroke-dashoffset', on ? C * (1 - k) : C * k);
+      this.gClear.setAttribute('opacity', on ? Math.min(1, k * 2) : 1 - k);
+    }, E.inOut);
+    if (on) this.setHub('A clear day', today ? 'so far' : '', true);
+  }
+  async contract() {
+    const bs = [...this.beads.values()];
+    if (RM()) { await tween(150, k => bs.forEach(b => b.setAttribute('opacity', 1 - k)), E.lin); return; }
+    await tween(200, k => bs.forEach(b => this.setB(b, b.st0x * (1 - k), b.st0y * (1 - k), 1 - k)), E.in, null, bs.forEach(b => { b.st0x = b.st.x; b.st0y = b.st.y; }));
+  }
+  async sweepIn(entries) {
+    const my = ++this.gen; this.render(entries);
+    const bs = [...this.beads.values()];
+    if (RM()) { bs.forEach(b => b.setAttribute('opacity', 0)); await tween(150, k => bs.forEach(b => b.setAttribute('opacity', k)), E.lin); return; }
+    bs.forEach(b => this.setB(b, b.st.x, b.st.y, 0));
+    const line = S('line', { x1: 0, y1: 0, x2: 0, y2: -142 }), sector = S('path');
+    this.gSweep.textContent = ''; this.gSweep.append(sector, line); this.gSweep.setAttribute('opacity', 1);
+    const popped = new Set();
+    await tween(600, k => {
+      if (my !== this.gen) return;
+      const A = k * TAU, a = A - Math.PI / 2;
+      line.setAttribute('transform', `rotate(${(k * 360).toFixed(2)})`);
+      const large = A > Math.PI ? 1 : 0, ex = 124 * Math.cos(a), ey = 124 * Math.sin(a);
+      sector.setAttribute('d', k > .999 ? 'M0,-124A124,124 0 1 1 -0.01,-124Z' : `M0,0L0,-124A124,124 0 ${large} 1 ${ex.toFixed(2)},${ey.toFixed(2)}Z`);
+      for (const b of bs) {
+        if (popped.has(b)) continue;
+        const ba = (Math.atan2(b.st.y, b.st.x) + Math.PI / 2 + TAU) % TAU;
+        if (ba <= A + .02) { popped.add(b); spring(0, 1, s => this.setB(b, b.st.x, b.st.y, s), {}, () => my === this.gen); }
+      }
+    }, E.inOut);
+    bs.forEach(b => { if (!popped.has(b)) spring(0, 1, s => this.setB(b, b.st.x, b.st.y, s)); });
+    tween(260, k => this.gSweep.setAttribute('opacity', 1 - k), E.out);
+  }
+  ripple(x, y, r, c) {
+    const ring = S('circle', { cx: x, cy: y, r, class: `ripple c${c}` }); this.gFx.append(ring);
+    tween(RM() ? 0 : 300, k => { ring.setAttribute('r', r + 16 * k); ring.setAttribute('opacity', .4 * (1 - k)); }, E.out).then(() => ring.remove());
+  }
+}
+
+/* ============ Tallies ============ */
+function rollTo(box, val, dir = 1) {
+  const cur = box.firstElementChild; if (cur && cur.textContent === String(val)) return;
+  const nu = H('span', null, String(val));
+  if (!cur || RM()) { box.textContent = ''; box.append(nu); if (cur && RM()) nu.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); return; }
+  box.style.width = Math.max(cur.offsetWidth, 0) + 'px';
+  box.append(nu); nu.style.position = 'absolute'; nu.style.right = 0; nu.style.top = 0;
+  const o = { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' };
+  cur.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${-100 * dir}%)`, opacity: 0 }], o);
+  nu.animate([{ transform: `translateY(${100 * dir}%)`, opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], o).finished.then(() => {
+    cur.remove(); nu.style.position = ''; box.style.width = '';
+  });
+}
+class Tallies {
+  constructor(host, onPlus) {
+    this.rows = new Map(); this.host = host;
+    for (const h of ACTIVE) {
+      const hb = HABITS[h];
+      const roll = H('span', { class: 'roll tq' });
+      const unit = H('span', { class: 'tu' });
+      const row = H('div', { class: `trow c${hb.c}` }, H('span', { class: 'pip' }), H('span', { class: 'tn' }, hb.name),
+        H('span', { class: 'tt' }, roll, unit),
+        onPlus ? H('button', { class: 'plus', 'aria-label': `Log ${qty(h, hb.def)} of ${hb.name}`, html: ic('plus'), onclick: ev => onPlus(h, ev.currentTarget) }) : null);
+      host.append(row); this.rows.set(h, { row, roll, unit });
+    }
+  }
+  set(totals, flash) {
+    ACTIVE.forEach((h, i) => {
+      const r = this.rows.get(h), v = totals[i]; const prev = +(r.roll.textContent || 0);
+      rollTo(r.roll, v, v >= prev ? 1 : -1); r.unit.textContent = unitW(h, v); r.row.classList.toggle('zero', v === 0);
+      if (flash === h) { r.row.classList.add('flash'); setTimeout(() => r.row.classList.remove('flash'), 700); }
+    });
+  }
+}
+
+/* ============ Helpers for screens ============ */
+function statusBar(scr) {
+  const t = H('span', { class: 'mono-ish' }, hm(nowMin()));
+  scr.append(H('div', { class: 'island' }), H('div', { class: 'status' }, t, H('span', { class: 'si', html: '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg><svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5l2.2-2.6a3.2 3.2 0 00-4.4 0zM3.4 6.6a6.8 6.8 0 019.2 0l1.4-1.6a9 9 0 00-12 0zM.6 3.4a11 11 0 0114.8 0L16.6 2a13 13 0 00-17.2 0z" fill="currentColor"/></svg><svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"/><path d="M25 4.5v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>' })), H('div', { class: 'homebar' }));
+  CLOCKS.push(() => t.textContent = hm(nowMin()));
+}
+const CLOCKS = [];
+function local(scr, el) {
+  const s = scr.getBoundingClientRect(), r = el.getBoundingClientRect(), k = s.width / 390;
+  return { x: (r.left - s.left) / k, y: (r.top - s.top) / k, w: r.width / k, h: r.height / k, cx: (r.left - s.left + r.width / 2) / k, cy: (r.top - s.top + r.height / 2) / k };
+}
+function localPt(scr, cx, cy) { const s = scr.getBoundingClientRect(), k = s.width / 390; return { x: (cx - s.left) / k, y: (cy - s.top) / k }; }
+function segThumb(seg, animate = true) {
+  const on = seg.querySelector('[aria-pressed="true"]'), th = seg.querySelector('.thumb'); if (!on || !th) return;
+  const to = { left: on.offsetLeft + 'px', width: on.offsetWidth + 'px' };
+  if (!animate || RM() || !th.style.width) { Object.assign(th.style, to); return; }
+  const from = { left: th.style.left, width: th.style.width };
+  const fl = parseFloat(from.left), fw = parseFloat(from.width), tl = on.offsetLeft, tw = on.offsetWidth;
+  const xs = springSim(0, 1); th.animate(xs.map(k => ({ left: fl + (tl - fl) * k + 'px', width: fw + (tw - fw) * k + 'px' })), { duration: xs.length * 1000 / 60, fill: 'forwards' }).finished.then(a => { Object.assign(th.style, to); a?.cancel?.(); });
+  Object.assign(th.style, to);
+}
+function makeSeg(cls, items, sel, onChange) {
+  const seg = H('div', { class: 'seg ' + cls, role: 'group' }, H('span', { class: 'thumb' }));
+  for (const [v, label] of items) seg.append(H('button', { 'data-v': v, 'aria-pressed': String(v === sel), onclick: () => { seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v))); segThumb(seg); onChange(v); } }, label));
+  requestAnimationFrame(() => segThumb(seg, false));
+  return seg;
+}
+function beadIcon(h, q, pending) {
+  const hb = HABITS[h], r = Math.max(4.5, Math.min(13, 6.5 * Math.sqrt(q / hb.typ)));
+  return `<svg class="eb" viewBox="-15 -15 30 30"><g class="bead c${hb.c}${hb.ring ? ' ring' : ''}">${pending ? `<circle class="bf" r="${r}" transform="scale(0)"/><circle class="bp spin" r="${r - 1}"/>` : `<circle class="bf" r="${hb.ring ? r - 1.2 : r}"/><circle class="br" r="${r - .5}"/>`}</g></svg>`;
+}
+function hourRing(world, h, days, svgCls = '') {
+  const bins = new Array(24).fill(0);
+  for (let i = 0; i < days; i++) for (const e of world.day(addDays(TODAY, -i))) if (e.h === h) bins[Math.floor(e.min / 60)] += e.q;
+  const mx = Math.max(1, ...bins); let p = '';
+  bins.forEach((v, i) => {
+    if (!v) return; const a0 = ang(i * 60 + 6), a1 = ang(i * 60 + 54), r0 = 26, r1 = 26 + 20 * v / mx;
+    p += `M${(r0 * Math.cos(a0)).toFixed(1)},${(r0 * Math.sin(a0)).toFixed(1)}L${(r1 * Math.cos(a0)).toFixed(1)},${(r1 * Math.sin(a0)).toFixed(1)}A${r1},${r1} 0 0 1 ${(r1 * Math.cos(a1)).toFixed(1)},${(r1 * Math.sin(a1)).toFixed(1)}L${(r0 * Math.cos(a1)).toFixed(1)},${(r0 * Math.sin(a1)).toFixed(1)}A${r0},${r0} 0 0 0 ${(r0 * Math.cos(a0)).toFixed(1)},${(r0 * Math.sin(a0)).toFixed(1)}Z`;
+  });
+  let best = 0, bi = 0; for (let i = 0; i < 24; i++) { const s = bins[i] + bins[(i + 1) % 24] + bins[(i + 2) % 24]; if (s > best) { best = s; bi = i; } }
+  const tot = bins.reduce((a, b) => a + b, 0), am = bins.slice(0, 12).reduce((a, b) => a + b, 0);
+  const svg = `<svg class="${svgCls}" viewBox="-50 -50 100 100"><circle r="47" fill="var(--surface)"/><circle r="26" fill="none" stroke="var(--line)"/>${[0, 6, 12, 18].map(i => { const a = ang(i * 60); return `<line x1="${(18 * Math.cos(a)).toFixed(1)}" y1="${(18 * Math.sin(a)).toFixed(1)}" x2="${(48 * Math.cos(a)).toFixed(1)}" y2="${(48 * Math.sin(a)).toFixed(1)}" stroke="var(--spoke)" stroke-width="1"/>`; }).join('')}<path class="c${HABITS[h].c}" d="${p}" style="fill:var(--c)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font:700 9px var(--fd);fill:var(--muted)">24 h</text></svg>`;
+  return { svg, peak: `Mostly ${hm(bi * 60)}–${hm(((bi + 3) % 24) * 60)}`, am: tot ? Math.round(am / tot * 100) : 0, tot };
+}
+
+/* ============ The app (one instance per phone) ============ */
+class App {
+  constructor(scr, world, o = {}) {
+    this.scr = scr; this.w = world; this.o = o; this.day = TODAY; this.offline = false; this.sheetTop = 717; this.busy = false;
+    statusBar(scr);
+    this.buildToday(); this.buildTrends(); this.buildLog(); this.buildOverlays();
+    this.showDay(TODAY, 'instant');
+    CLOCKS.push(() => this.tick());
+    if (o.trends === 'open') this.setSheet(67, true);
+    if (o.page === 'habits') this.openHabits(false);
+    if (o.coach) this.showCoach(true);
+  }
+  /* ----- Today ----- */
+  buildToday() {
+    const s = this.scr;
+    this.wordmark = H('button', { class: 'wordmark', 'aria-label': 'Tracker menu', html: `${APPICON('ic')}<span>Tracker</span>${ic('down', 'chev')}`, onclick: () => this.toggleMenu() });
+    this.sync = H('div', { class: 'syncdot', html: `${ic('cloudok')}<span>Synced</span>` });
+    s.append(H('div', { class: 'appbar' }, this.wordmark, this.sync));
+    this.prev = H('button', { class: 'cbtn', 'aria-label': 'Previous day', html: ic('left'), onclick: () => this.step(-1) });
+    this.next = H('button', { class: 'cbtn', 'aria-label': 'Next day', html: ic('right'), onclick: () => this.step(1) });
+    this.dp = H('div', { class: 'dp-in' });
+    this.pill = H('button', { class: 'datepill', 'aria-label': 'Choose a day', onclick: () => this.openCalendar() }, this.dp, icEl('down'));
+    s.append(H('div', { class: 'daynav' }, this.prev, this.pill, this.next));
+    this.dialWrap = H('div', { class: 'dialwrap' }); s.append(this.dialWrap);
+    this.dial = new Dial(this.dialWrap, { onBead: (e, b) => this.openEntry(e) });
+    this.swipe(this.dialWrap);
+    const t = H('div', { class: 'tallies' }); s.append(t);
+    this.tallies = new Tallies(t, (h, btn) => this.quickLog(h, local(this.scr, btn)));
+  }
+  swipe(el) {
+    let x0 = null, id;
+    el.addEventListener('pointerdown', e => { x0 = e.clientX; id = e.pointerId; });
+    el.addEventListener('pointermove', e => { if (x0 == null) return; const dx = (e.clientX - x0) / (this.scr.getBoundingClientRect().width / 390); if (Math.abs(dx) > 6) { el.style.transform = `translateX(${dx * .25}px)`; } });
+    const end = e => {
+      if (x0 == null) return; const dx = (e.clientX - x0) / (this.scr.getBoundingClientRect().width / 390); x0 = null;
+      if (el.style.transform) el.animate([{ transform: el.style.transform }, { transform: 'none' }], { duration: 220, easing: 'ease-out' }); el.style.transform = '';
+      if (dx > 50) this.step(-1); else if (dx < -50) this.step(1);
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('pointerleave', end);
+  }
+  step(n) { const d = addDays(this.day, n); if (d > TODAY) return; this.showDay(d, 'sweep', n); }
+  dayLabel(d) {
+    this.dp.innerHTML = `<span class="dp-day">${relDay(d)}</span><span class="dp-date">${daysAgo(d) < 2 ? dShort(d) : `${d.getDate()} ${MO[d.getMonth()]}`}</span>`;
+  }
+  hubFor(d) {
+    const es = this.w.day(d), n = es.length;
+    return sameDay(d, TODAY) ? { hub1: hm(nowMin()), hub2: `${n} ${n === 1 ? 'entry' : 'entries'}` } : { hub1: WD[d.getDay()], hub2: `${n} ${n === 1 ? 'entry' : 'entries'}` };
+  }
+  async showDay(d, mode, dir = 1) {
+    const my = this.dayGen = (this.dayGen || 0) + 1;
+    const isToday = sameDay(d, TODAY); this.day = d;
+    this.next.disabled = isToday;
+    const oldDp = this.dp.cloneNode(true);
+    this.dayLabel(d);
+    if (mode !== 'instant' && !RM()) this.dp.animate([{ transform: `translateX(${dir * 18}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    const es = this.w.day(d);
+    this.dial.label = summary(this.w, d);
+    if (this.o.onSummary) this.o.onSummary(this.dial.label);
+    if (mode === 'instant') {
+      this.dial.setMeta({ isToday, ...this.hubFor(d) }); this.dial.render(es); this.dial.setClear(es.length === 0, isToday, false);
+      this.tallies.set(this.w.totals(d)); this.updatePeek(); return;
+    }
+    await this.dial.contract(); if (my !== this.dayGen) return;
+    this.dial.setMeta({ isToday, ...this.hubFor(d) });
+    this.tallies.set(this.w.totals(d));
+    if (es.length === 0) { this.dial.render([]); this.dial.setClear(true, isToday); }
+    else { this.dial.setClear(false, isToday); this.dial.setHub(this.hubFor(d).hub1, this.hubFor(d).hub2); await this.dial.sweepIn(es); }
+  }
+  tick() {
+    if (sameDay(this.day, TODAY)) { this.dial.tick(); if (!this.dial.clear) this.dial.t1.textContent = hm(nowMin()); }
+  }
+  intro() { if (sameDay(this.day, TODAY) && this.w.day(TODAY).length) this.dial.sweepIn(this.w.day(TODAY)); }
+
+  /* ----- Log button + fan ----- */
+  buildLog() {
+    const s = this.scr;
+    this.logBtn = H('button', { class: 'logbtn', 'aria-label': 'Log an entry', html: ic('plus') });
+    s.append(this.logBtn);
+    this.fan = H('div', { class: 'fan' }, H('div', { class: 'scrim' }), H('div', { class: 'fanhint', html: '<b>Tap</b> to log now · <b>hold</b> for amount and time' }));
+    this.fanSvg = S('svg', { viewBox: '0 0 390 844' }); this.fan.append(this.fanSvg); s.append(this.fan);
+    this.fan.querySelector('.scrim').addEventListener('click', () => this.closeFan());
+    let drag = null;
+    this.logBtn.addEventListener('pointerdown', e => {
+      if (this.fanOpen) { this.closeFan(); return; }
+      this.openFan(); drag = { x: e.clientX, y: e.clientY, moved: false };
+      this.logBtn.setPointerCapture(e.pointerId);
+    });
+    this.logBtn.addEventListener('pointermove', e => {
+      if (!drag) return; if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 14) drag.moved = true;
+      const w = this.wedgeAt(e.clientX, e.clientY); this.wedges?.forEach(x => x.g.classList.toggle('hot', x === w));
+    });
+    this.logBtn.addEventListener('pointerup', e => {
+      if (!drag) return; const d = drag; drag = null;
+      if (d.moved) { const w = this.wedgeAt(e.clientX, e.clientY); this.wedges?.forEach(x => x.g.classList.remove('hot')); if (w) this.quickLog(w.h, w.pt); }
+    });
+  }
+  wedgeAt(cx, cy) {
+    if (!this.wedges) return null; const p = localPt(this.scr, cx, cy);
+    const dx = p.x - 195, dy = p.y - this.sheetTop, r = Math.hypot(dx, dy); if (r < 40 || r > 150) return null;
+    const a = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360; return this.wedges[Math.floor(a / 72) % this.wedges.length];
+  }
+  showCoach(on) {
+    this.coach?.remove(); this.pulse?.remove(); this.coach = this.pulse = null;
+    if (!on) return;
+    this.coach = H('div', { class: 'coach' }, 'Tap Log'); this.pulse = H('div', { class: 'pulse' });
+    this.scr.append(this.pulse, this.coach);
+  }
+  openFan() {
+    if (this.fanOpen) return; this.fanOpen = true; this.showCoach(false); this.closeMenu();
+    this.logBtn.classList.add('open'); this.fan.classList.add('open');
+    const cx = 195, cy = this.sheetTop, Ro = 142, Ri = 44, svg = this.fanSvg; svg.textContent = '';
+    const V = k => { const a = (-90 + 72 * k) * Math.PI / 180; return [Math.cos(a), Math.sin(a)]; };
+    const spokes = S('g', { transform: `translate(${cx},${cy})`, opacity: 0 });
+    this.wedges = ACTIVE.slice(0, 5).map((h, k) => {
+      const [ax, ay] = V(k), [bx, by] = V(k + 1), hb = HABITS[h];
+      const path = `M${Ri * ax},${Ri * ay}L${Ro * ax},${Ro * ay}L${Ro * bx},${Ro * by}L${Ri * bx},${Ri * by}A${Ri},${Ri} 0 0 0 ${Ri * ax},${Ri * ay}Z`;
+      const mid = (-54 + 72 * k) * Math.PI / 180, lr = 92, lx = lr * Math.cos(mid), ly = lr * Math.sin(mid);
+      const dark = [3, 4].includes(hb.c); const fill = dark ? '#fff' : '#141B2D';
+      const g = S('g', { class: `wedge c${hb.c}`, role: 'button', 'aria-label': `Log ${qty(h, hb.def)} of ${hb.name}. Hold to set amount and time.` },
+        S('path', { class: 'wf', d: path }),
+        S('text', { class: 'wn', x: lx, y: ly - 3, 'text-anchor': 'middle', fill, text: hb.name.length > 11 ? hb.name.slice(0, 5) + '…' : hb.name }),
+        S('text', { class: 'wq', x: lx, y: ly + 12, 'text-anchor': 'middle', fill, text: `+${qty(h, hb.def)}`.replace('minutes', 'min') }));
+      if (hb.name.length > 11) { g.querySelector('.wn').textContent = hb.name; g.querySelector('.wn').setAttribute('style', 'font-size:10.5px'); }
+      const w = { g, h, k, pt: { cx: cx + lx, cy: cy + ly } };
+      let timer = null, held = false;
+      g.addEventListener('pointerdown', e => { e.stopPropagation(); held = false; this.pressWedge(w, true); timer = setTimeout(() => { held = true; this.pressWedge(w, false); this.openAmount(h); }, 400); });
+      g.addEventListener('pointerup', () => { clearTimeout(timer); if (!held) { this.pressWedge(w, false); this.quickLog(h, w.pt); } });
+      g.addEventListener('pointerleave', () => { clearTimeout(timer); this.pressWedge(w, false); });
+      return w;
+    });
+    for (let k = 0; k < 5; k++) { const [x, y] = V(k); spokes.append(S('line', { class: 'fspoke', x1: 0, y1: 0, x2: x * (Ro + 16), y2: y * (Ro + 16) })); }
+    const wg = S('g'); this.wedges.forEach(w => wg.append(w.g)); svg.append(wg, spokes);
+    const place = (w, s, rot, op) => { w.g.setAttribute('transform', `translate(${cx},${cy}) rotate(${rot}) scale(${s})`); w.g.setAttribute('opacity', op); };
+    if (RM()) { this.wedges.forEach(w => place(w, 1, 0, 1)); spokes.setAttribute('opacity', 1); return; }
+    this.wedges.forEach((w, i) => { place(w, .3, -14, 0); setTimeout(() => spring(0, 1, v => place(w, .3 + .7 * v, -14 * (1 - v), Math.min(1, v * 1.6))), i * 30); });
+    setTimeout(() => tween(200, k => spokes.setAttribute('opacity', k)), 150);
+  }
+  pressWedge(w, on) { const p = w.g.querySelector('path'); p.style.transition = 'transform .4s'; p.style.transformOrigin = '0 0'; p.style.transform = on ? 'scale(.95)' : ''; }
+  closeFan(keep) {
+    if (!this.fanOpen) return; this.fanOpen = false;
+    this.logBtn.classList.remove('open'); this.fan.classList.remove('open');
+    const ws = this.wedges || []; this.wedges = null; const svg = this.fanSvg;
+    tween(RM() ? 0 : 160, k => ws.forEach(w => { if (w.h === keep) { w.g.setAttribute('opacity', 1 - k); return; } const t = w.g.getAttribute('transform').replace(/scale\([^)]*\)/, `scale(${1 - .4 * k})`); w.g.setAttribute('transform', t); w.g.setAttribute('opacity', 1 - k); }), E.in).then(() => { if (!this.fanOpen) svg.textContent = ''; });
+  }
+
+  /* ----- Logging ----- */
+  async quickLog(h, from) {
+    const e = { id: EID++, h, min: Math.min(Math.floor(nowMin()), 1439), q: HABITS[h].def, pending: this.offline };
+    this.closeFan(h);
+    await this.logEntry(e, from, TODAY);
+  }
+  async logEntry(e, from, d) {
+    if (!sameDay(this.day, d)) await this.showDay(d, 'sweep', 1);
+    this.closePages?.();
+    const entries = [...this.w.day(d), e];
+    const p = this.dial.posFor(entries, e.id);
+    const dr = local(this.scr, this.dialWrap), k = dr.w / 320;
+    const tx = dr.x + (p.x + 160) * k, ty = dr.y + (p.y + 160) * k, tr = p.r * k;
+    const hb = HABITS[e.h];
+    const fx = from.cx, fy = from.cy;
+    if (!RM()) {
+      const ov = S('svg', { class: 'travel', viewBox: '0 0 390 844' });
+      const g = S('g', { class: `bead c${hb.c}` }, S('circle', { class: 'bf', r: 1 }));
+      ov.append(g); this.scr.append(ov);
+      const mx = (fx + tx) / 2, my = (fy + ty) / 2, dx = tx - fx, dy = ty - fy, len = Math.hypot(dx, dy) || 1;
+      const side = tx < fx ? 1 : -1, cxp = mx + (-dy / len) * len * .32 * side, cyp = my + (dx / len) * len * .32 * side;
+      await tween(520, t => {
+        const u = 1 - t, x = u * u * fx + 2 * u * t * cxp + t * t * tx, y = u * u * fy + 2 * u * t * cyp + t * t * ty;
+        const r = 11 + (tr - 11) * t;
+        g.setAttribute('transform', `translate(${x},${y}) scale(${r})`);
+      }, E.inOut);
+      ov.remove();
+    }
+    this.w.add(d, e);
+    const b = this.dial.makeBead(e, p); this.dial.beads.set(e.id, b); this.dial.gBeads.append(b);
+    this.dial.relayout(this.w.day(d));
+    if (RM()) { b.setAttribute('opacity', 0); tween(150, k => b.setAttribute('opacity', k), E.lin); }
+    else { this.dial.setB(b, p.x, p.y, 1.25); spring(1.25, 1, s => this.dial.setB(b, p.x, p.y, s)); this.dial.ripple(p.x, p.y, p.r, hb.c); }
+    try { navigator.vibrate?.(8); } catch (_) {}
+    if (this.dial.clear) { this.dial.setClear(false, true); }
+    this.dial.setHub(...Object.values(this.hubFor(d)));
+    this.dial.label = summary(this.w, d); this.o.onSummary?.(this.dial.label);
+    this.tallies.set(this.w.totals(d), e.h); this.updatePeek();
+    this.snack(this.offline ? `Saved on this device. It will sync when you're back online.` : `Logged <span class="mono">${qty(e.h, e.q)}</span> of ${hb.name} at <span class="mono">${hm(e.min)}</span>`, () => this.removeEntry(e, d, true));
+  }
+  async removeEntry(e, d, undo) {
+    this.w.remove(d, e.id);
+    const b = this.dial.beads.get(e.id);
+    if (b && sameDay(this.day, d)) {
+      this.dial.beads.delete(e.id);
+      await tween(RM() ? 0 : 200, k => this.dial.setB(b, b.st.x, b.st.y, 1 - k), E.in); b.remove();
+      this.dial.relayout(this.w.day(d));
+      if (!this.w.day(d).length) this.dial.setClear(true, sameDay(d, TODAY)); else this.dial.setHub(...Object.values(this.hubFor(d)));
+      this.tallies.set(this.w.totals(d)); this.updatePeek();
+    }
+    this.hist?.refresh?.();
+    if (undo) this.snack('Entry removed');
+    else this.snack(`Deleted <span class="mono">${qty(e.h, e.q)}</span> of ${HABITS[e.h].name}`, () => this.restore(e, d));
+  }
+  restore(e, d) {
+    this.w.add(d, e); if (sameDay(this.day, d)) { this.dial.render(this.w.day(d)); this.dial.setClear(false); this.dial.setHub(...Object.values(this.hubFor(d))); const b = this.dial.beads.get(e.id); if (b && !RM()) spring(0, 1, s => this.dial.setB(b, b.st.x, b.st.y, s)); this.tallies.set(this.w.totals(d), e.h); }
+    this.hist?.refresh?.(); this.snack('Entry restored');
+  }
+
+  /* ----- Overlays: snackbar, sheets, menu, pills ----- */
+  buildOverlays() {
+    const s = this.scr;
+    this.snackEl = H('div', { class: 'snack', role: 'status', 'aria-live': 'polite' }); s.append(this.snackEl);
+    this.bscrim = H('div', { class: 'bscrim', onclick: () => this.closeSheet() }); s.append(this.bscrim);
+    this.menu = H('div', { class: 'menu', role: 'menu' },
+      H('button', { class: 'mi', html: `${ic('grid')}Habits`, onclick: () => { this.closeMenu(); this.openHabits(true); } }),
+      H('button', { class: 'mi', html: `${ic('gear')}Settings`, onclick: () => { this.closeMenu(); this.openSettings(); } }),
+      H('div', { class: 'mdiv' }), H('div', { class: 'mfoot', html: `${ic('cloudok')}<span>All entries synced · last at <span class="mono">21:08</span></span>` }));
+    s.append(this.menu);
+    this.menuScrim = H('div', { style: 'position:absolute;inset:0;z-index:71;display:none', onclick: () => this.closeMenu() }); s.append(this.menuScrim);
+    this.pills = H('div', { class: 'pills' }); s.append(this.pills);
+    this.travelLayer = null;
+  }
+  snack(html, undo) {
+    clearTimeout(this.snackT); const el = this.snackEl; el.innerHTML = '';
+    el.append(H('div', { class: 'stx', html }));
+    const dur = undo ? 8000 : 3000;
+    if (undo) {
+      const C = TAU * 8;
+      const btn = H('button', { class: 'undo', html: `<svg viewBox="0 0 20 20"><circle class="track" cx="10" cy="10" r="8" fill="none" stroke-width="2.2"/><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="${C}" stroke-dashoffset="0" transform="rotate(-90 10 10)" stroke-linecap="round"/></svg>Undo`, onclick: () => { this.hideSnack(); undo(); } });
+      el.append(btn); btn.querySelectorAll('circle')[1].animate([{ strokeDashoffset: 0 }, { strokeDashoffset: C }], { duration: 8000, fill: 'forwards' });
+    }
+    el.style.bottom = (844 - this.sheetTop + 46) + 'px';
+    el.classList.add('on');
+    if (!el.shown) { el.shown = true; if (RM()) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: 'forwards' }); else springKF(el, 0, 1, v => ({ opacity: Math.min(1, v * 1.5), transform: `translateY(${20 * (1 - v)}px)` })); }
+    this.snackT = setTimeout(() => this.hideSnack(), dur);
+  }
+  hideSnack() {
+    const el = this.snackEl; if (!el.shown) return; el.shown = false; el.classList.remove('on');
+    el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(12px)' }], { duration: RM() ? 100 : 200, fill: 'forwards' });
+  }
+  openSheet(el, h) {
+    this.closeSheet(true); this.sheetEl = el; this.scr.append(el); this.bscrim.classList.add('on');
+    const H0 = el.offsetHeight + 20;
+    if (RM()) { el.style.transform = 'none'; el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); return; }
+    springKF(el, H0, 0, v => ({ transform: `translateY(${v}px)` }));
+  }
+  closeSheet(instant) {
+    const el = this.sheetEl; if (!el) return; this.sheetEl = null; this.bscrim.classList.remove('on');
+    if (instant) { el.remove(); return; }
+    el.getAnimations().forEach(a => a.cancel());
+    el.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(105%)' }], { duration: RM() ? 120 : 240, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }).finished.then(() => el.remove());
+  }
+  toggleMenu() { this.menuOn ? this.closeMenu() : this.openMenu(); }
+  openMenu() {
+    this.menuOn = true; this.menu.classList.add('on'); this.menuScrim.style.display = 'block';
+    if (RM()) { this.menu.style.opacity = 1; this.menu.style.transform = 'none'; return; }
+    springKF(this.menu, 0, 1, v => ({ opacity: Math.min(1, v * 1.4), transform: `scale(${.86 + .14 * v})` }));
+  }
+  closeMenu() {
+    if (!this.menuOn) return; this.menuOn = false; this.menu.classList.remove('on'); this.menuScrim.style.display = 'none';
+    this.menu.getAnimations().forEach(a => a.cancel());
+    this.menu.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.94)' }], { duration: 140, fill: 'forwards' });
+  }
+  dropPill(el) {
+    this.pills.append(el);
+    if (RM()) { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); return; }
+    springKF(el, -70, 0, v => ({ transform: `translateY(${v}px)`, opacity: Math.min(1, 1 + v / 50) }));
+  }
+  liftPill(el) { if (!el) return; el.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-60px)', opacity: 0 }], { duration: RM() ? 100 : 220, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }).finished.then(() => el.remove()); }
+  setOffline(on) {
+    this.offline = on;
+    this.sync.innerHTML = on ? `${ic('cloudoff')}<span>Offline</span>` : `${ic('cloudok')}<span>Synced</span>`;
+    if (on) {
+      this.offPill = H('div', { class: 'pill', role: 'status', 'aria-live': 'polite' }, H('div', { class: 'ph', html: `${ic('cloudoff')}<span>Offline. New entries save on this device.</span>` }));
+      this.dropPill(this.offPill);
+    } else {
+      this.liftPill(this.offPill); this.offPill = null;
+      const pend = this.w.day(this.day).filter(e => e.pending);
+      pend.forEach((e, i) => setTimeout(() => this.ack(e), 300 + i * 90));
+    }
+  }
+  ack(e) {
+    e.pending = false; const b = this.dial.beads.get(e.id); if (!b) return;
+    const f = b.fill, dash = b.querySelector('.bp');
+    tween(RM() ? 0 : 240, k => { f.setAttribute('transform', `scale(${k})`); dash && dash.setAttribute('opacity', 1 - k); }, E.out).then(() => { dash?.remove(); b.classList.remove('pending'); b.append(S('circle', { r: +f.getAttribute('r') - .5, class: 'br' })); });
+  }
+  rejected() {
+    if (this.rejPill) return;
+    const list = H('div', { class: 'pl' }, H('div', { class: 'plin', html: `<b>Not saved: <span class="mono">2 drinks</span> of Alcohol on Thu 5 Nov at <span class="mono">19:30</span></b><br>The habit was removed on another device.<br><button>Dismiss</button>` }));
+    const el = H('div', { class: 'pill rej', role: 'alert' }, H('div', { class: 'ph', html: `${ic('alert')}<span>1 change was not saved</span>${ic('down', 'chev')}` }), list);
+    el.addEventListener('click', ev => {
+      if (ev.target.closest('.plin button')) { this.liftPill(el); this.rejPill = null; return; }
+      const ex = !el.classList.contains('ex'); el.classList.toggle('ex', ex);
+      const hh = list.firstChild.offsetHeight;
+      list.animate([{ height: (ex ? 0 : hh) + 'px' }, { height: (ex ? hh : 0) + 'px' }], { duration: RM() ? 0 : 300, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+    });
+    this.rejPill = el; this.dropPill(el);
+  }
+
+  /* ----- Entry card + amount sheet ----- */
+  openEntry(e) {
+    const hb = HABITS[e.h], d = this.day;
+    const el = H('div', { class: 'bsheet', role: 'dialog', 'aria-label': 'Entry' },
+      H('div', { class: 'grab' }),
+      H('div', { class: 'bs-h' }, H('div', { class: `ttl c${hb.c}` }, H('span', { class: 'pip' }), hb.name), H('button', { class: 'cbtn', 'aria-label': 'Close', html: ic('x'), onclick: () => this.closeSheet() })),
+      H('div', { class: 'entry-big' }, H('span', { class: 'mono' }, String(e.q)), H('span', null, unitW(e.h, e.q))),
+      H('div', { class: 'entry-meta', html: `at <span class="mono">${hm(e.min)}</span> · ${relDay(d)}, ${dShort(d)}${e.pending ? ' · not yet synced' : ''}` }),
+      H('div', { class: 'entry-acts' },
+        H('button', { class: 'tbtn', html: `${ic('pencil')}Edit`, onclick: () => this.openAmount(e.h, e) }),
+        H('button', { class: 'tbtn danger', html: `${ic('trash')}Delete`, onclick: () => { this.closeSheet(); this.removeEntry(e, d); } })));
+    this.openSheet(el);
+  }
+  openAmount(h, edit) {
+    this.closeFan(); const hb = HABITS[h], d = edit ? this.day : TODAY, isToday = sameDay(d, TODAY);
+    const st = { q: edit ? edit.q : hb.def, min: edit ? edit.min : Math.floor(nowMin() / 5) * 5, moved: !!edit };
+    if (!edit) st.min = Math.min(Math.floor(nowMin()), 1439);
+    const num = H('span', { class: 'roll num' }); rollTo(num, st.q);
+    const unit = H('span', { class: 'u' }, unitW(h, st.q));
+    const step = hb.typ >= 10 ? 5 : 1;
+    const minus = H('button', { 'aria-label': 'Less', html: ic('minus') }), plus = H('button', { 'aria-label': 'More', html: ic('plus') });
+    const scrubHost = H('div', { class: 'scrub' });
+    const meta = H('div', { class: 'scrubmeta' });
+    const go = H('button', { class: 'pbtn' });
+    const el = H('div', { class: 'bsheet', role: 'dialog', 'aria-label': edit ? 'Edit entry' : `Log ${hb.name}` },
+      H('div', { class: 'grab' }),
+      H('div', { class: 'bs-h' }, H('div', { class: `ttl c${hb.c}` }, H('span', { class: 'pip' }), edit ? `Edit ${hb.name}` : hb.name), H('button', { class: 'cbtn', 'aria-label': 'Close', html: ic('x'), onclick: () => this.closeSheet() })),
+      H('div', { class: 'stepper' }, minus, H('div', { class: 'sv' }, num, unit), plus), scrubHost, meta, go);
+    const mini = new Dial(scrubHost, { mini: true, ghost: true });
+    mini.setMeta({ isToday, hub1: '', hub2: '' }); mini.render(this.w.day(d).filter(x => !edit || x.id !== edit.id));
+    const knob = S('circle', { r: 11, class: 'knob' }), handL = S('line', { class: 'shand', x1: 0, y1: 0 });
+    mini.gTop.append(handL, knob);
+    const upd = () => {
+      const a = ang(st.min), x = 112 * Math.cos(a), y = 112 * Math.sin(a);
+      knob.setAttribute('cx', x); knob.setAttribute('cy', y); handL.setAttribute('x2', x * .9); handL.setAttribute('y2', y * .9);
+      mini.setHub(hm(st.min), '');
+      const ago = Math.round(nowMin() - st.min);
+      meta.innerHTML = !isToday ? `${relDay(d)}, ${dShort(d)}` : ago < 3 ? 'Now · drag the hand to change the time' : `${ago >= 60 ? Math.floor(ago / 60) + ' h ' : ''}${ago % 60} min ago · <button>Now</button>`;
+      meta.querySelector('button')?.addEventListener('click', () => { st.min = Math.min(Math.floor(nowMin()), 1439); upd(); });
+      go.innerHTML = `${edit ? 'Save' : 'Log'} <span class="mono">${qty(h, st.q)}</span> at <span class="mono">${hm(st.min)}</span>`;
+      minus.disabled = st.q <= step; unit.textContent = unitW(h, st.q);
+    };
+    const setQ = q => { const dir = q > st.q ? 1 : -1; st.q = Math.max(step, q); rollTo(num, st.q, dir); upd(); };
+    minus.onclick = () => setQ(st.q - step); plus.onclick = () => setQ(st.q + step);
+    const fromPtr = ev => {
+      const r = mini.svg.getBoundingClientRect(); const dx = ev.clientX - (r.left + r.width / 2), dy = ev.clientY - (r.top + r.height / 2);
+      let m = ((Math.atan2(dy, dx) + Math.PI / 2 + TAU) % TAU) / TAU * 1440; m = Math.round(m / 5) * 5 % 1440;
+      if (isToday && m > nowMin()) m = Math.floor(nowMin()); st.min = m; upd();
+    };
+    let dragging = false;
+    scrubHost.addEventListener('pointerdown', ev => { dragging = true; scrubHost.setPointerCapture(ev.pointerId); fromPtr(ev); });
+    scrubHost.addEventListener('pointermove', ev => dragging && fromPtr(ev));
+    scrubHost.addEventListener('pointerup', () => dragging = false);
+    go.onclick = async () => {
+      const from = local(this.scr, go); this.closeSheet();
+      if (edit) { await this.saveEdit(edit, st.q, st.min, d); return; }
+      await this.logEntry({ id: EID++, h, min: st.min, q: st.q, pending: this.offline }, { cx: from.cx, cy: from.cy - 40 }, TODAY);
+    };
+    upd(); this.openSheet(el);
+    this.amount = { st, setQ, upd, scrubTo: async (m, dur) => { const m0 = st.min; await tween(dur, k => { st.min = Math.round((m0 + (m - m0) * k) / 5) * 5; upd(); }, E.inOut); st.min = m; upd(); }, go };
+  }
+  async saveEdit(e, q, min, d) {
+    const b = this.dial.beads.get(e.id); const oldMin = e.min; const qChanged = q !== e.q;
+    e.q = q; e.min = min; this.w.day(d).sort((a, b) => a.min - b.min);
+    if (b) {
+      const p = this.dial.posFor(this.w.day(d), e.id), from = b.st, R0 = Math.hypot(from.x, from.y), a0 = Math.atan2(from.y, from.x);
+      let a1 = p.a; while (a1 - a0 > Math.PI) a1 -= TAU; while (a0 - a1 > Math.PI) a1 += TAU;
+      if (qChanged) { b.remove(); const nb = this.dial.makeBead(e, { ...p, x: from.x, y: from.y }); this.dial.beads.set(e.id, nb); this.dial.gBeads.append(nb); }
+      const bb = this.dial.beads.get(e.id);
+      await tween(RM() ? 0 : 520, k => { const a = a0 + (a1 - a0) * k, R = R0 + (p.R - R0) * k; this.dial.setB(bb, R * Math.cos(a), R * Math.sin(a), 1); }, E.inOut);
+      this.dial.relayout(this.w.day(d)); if (!RM()) this.dial.ripple(p.x, p.y, p.r, HABITS[e.h].c);
+    }
+    this.tallies.set(this.w.totals(d), e.h); this.hist?.refresh?.();
+    this.snack(`Entry updated: <span class="mono">${qty(e.h, q)}</span> at <span class="mono">${hm(min)}</span>`);
+  }
+
+  /* ----- Calendar ----- */
+  openCalendar(month) {
+    const m = month || new Date(this.day.getFullYear(), this.day.getMonth(), 1);
+    const grid = H('div', { class: 'calgrid' }, ...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(x => H('div', { class: 'wd' }, x)));
+    const lead = (m.getDay() + 6) % 7; for (let i = 0; i < lead; i++) grid.append(H('div'));
+    const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    for (let i = 1; i <= days; i++) {
+      const d = new Date(m.getFullYear(), m.getMonth(), i), fut = d > TODAY;
+      const dots = H('span', { class: 'dots' });
+      if (!fut) { const t = this.w.totals(d); ACTIVE.forEach((h, j) => { if (t[j]) dots.append(H('i', { class: `c${HABITS[h].c}` })); }); }
+      grid.append(H('button', { class: `cday${sameDay(d, TODAY) ? ' today' : ''}${sameDay(d, this.day) ? ' sel' : ''}${fut ? ' fut' : ''}`, 'aria-label': dShort(d), onclick: () => { this.closeSheet(); if (!sameDay(d, this.day)) this.showDay(d, 'sweep', d > this.day ? 1 : -1); } }, H('span', { class: 'cn' }, String(i)), dots));
+    }
+    const nextM = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+    const el = H('div', { class: 'bsheet', role: 'dialog', 'aria-label': 'Choose a day' }, H('div', { class: 'grab' }),
+      H('div', { class: 'bs-h' }, H('div', { class: 'ttl' }, `${MOL[m.getMonth()]} ${m.getFullYear()}`),
+        H('div', { style: 'display:flex;gap:8px' }, H('button', { class: 'cbtn', 'aria-label': 'Previous month', html: ic('left'), onclick: () => this.openCalendar(new Date(m.getFullYear(), m.getMonth() - 1, 1)) }),
+          H('button', { class: 'cbtn', 'aria-label': 'Next month', html: ic('right'), disabled: nextM > TODAY, onclick: () => this.openCalendar(nextM) }))),
+      grid, H('div', { class: 'calfoot' }, 'A dot for each habit logged that day. Tap a day to open its dial.'));
+    this.openSheet(el);
+  }
+
+  /* ----- Trends sheet ----- */
+  buildTrends() {
+    const s = this.scr; this.tdim = H('div', { class: 'tdim' }); s.append(this.tdim);
+    this.tr = { h: 0, range: 30, step: 'day', win: 7, sel: null };
+    this.peekEl = H('div', { class: 'peek', onclick: () => this.setSheet(67) });
+    this.sheet = H('div', { class: 'tsheet' }, H('div', { class: 'grab' }), this.peekEl);
+    this.tfull = H('div', { class: 'tfull' }); this.sheet.append(this.tfull); s.append(this.sheet);
+    this.buildTrendsFull();
+    // drag
+    let drag = null;
+    const start = (e) => { drag = { y: e.clientY, top: this.sheetTop, t: performance.now(), v: 0, ly: e.clientY, moved: false }; this.sheetAnim = (this.sheetAnim || 0) + 1; };
+    this.sheet.addEventListener('pointerdown', e => { if (e.target.closest('.chart,.chips,.seg,.avgctl,button') && this.sheetTop < 400) return; if (this.sheetTop < 400 && !e.target.closest('.th,.grab') && e.target.closest('.tfull') && this.tfull.scrollTop > 0) return; start(e); this.sheet.setPointerCapture(e.pointerId); });
+    this.sheet.addEventListener('pointermove', e => {
+      if (!drag) return; const k = this.scr.getBoundingClientRect().width / 390; const dy = (e.clientY - drag.y) / k;
+      if (Math.abs(dy) > 5) drag.moved = true; if (!drag.moved) return;
+      const now = performance.now(); drag.v = ((e.clientY - drag.ly) / k) / Math.max(1, now - drag.t) * 1000; drag.t = now; drag.ly = e.clientY;
+      let top = drag.top + dy; if (top < 67) top = 67 - (67 - top) * .3; if (top > 717) top = 717 + (top - 717) * .3; this.placeSheet(top);
+    });
+    const end = () => { if (!drag) return; const d = drag; drag = null; if (!d.moved) return; const proj = this.sheetTop + d.v * .18; this.setSheet(proj < 392 ? 67 : 717, false, d.v); };
+    this.sheet.addEventListener('pointerup', end); this.sheet.addEventListener('pointercancel', end);
+  }
+  placeSheet(top) {
+    this.sheetTop = top; const p = Math.max(0, Math.min(1, (717 - top) / 650));
+    this.sheet.style.top = top + 'px';
+    this.peekEl.style.opacity = Math.max(0, 1 - p * 3); this.peekEl.style.pointerEvents = p > .2 ? 'none' : '';
+    this.tfull.style.opacity = Math.max(0, Math.min(1, (p - .25) / .6));
+    this.sheet.classList.toggle('open', p > .9);
+    this.tdim.style.opacity = p * .9;
+    const lb = Math.max(0, 1 - p * 4);
+    this.logBtn.style.top = (top - 32) + 'px'; this.logBtn.style.transform = `scale(${.6 + .4 * lb})`; this.logBtn.style.opacity = lb; this.logBtn.style.pointerEvents = lb < .5 ? 'none' : '';
+    if (this.coach) { this.coach.style.top = (top - 77) + 'px'; this.pulse.style.top = (top - 32) + 'px'; }
+  }
+  setSheet(top, instant, v = 0) {
+    const my = this.sheetAnim = (this.sheetAnim || 0) + 1; this.closeFan();
+    if (instant || RM()) { this.placeSheet(top); return; }
+    spring(this.sheetTop, top, x => this.placeSheet(x), { v }, () => my === this.sheetAnim);
+  }
+  series() {
+    const { h, range, step } = this.tr, pts = [];
+    if (step === 'day') for (let i = range - 1; i >= 0; i--) { const d = addDays(TODAY, -i); pts.push({ d, v: this.w.sum(d, h), days: 1 }); }
+    else { const n = Math.ceil(range / 7); for (let j = n - 1; j >= 0; j--) { let v = 0, days = 0; for (let i = 0; i < 7; i++) { const ago = j * 7 + i; if (ago >= range) break; v += this.w.sum(addDays(TODAY, -ago), h); days++; } pts.push({ d: addDays(TODAY, -j * 7), d0: addDays(TODAY, -(j * 7 + days - 1)), v, days }); } }
+    const w = Math.min(this.tr.win, pts.length);
+    pts.forEach((p, i) => { const a = pts.slice(Math.max(0, i - w + 1), i + 1); p.avg = a.reduce((s, x) => s + x.v, 0) / a.length; });
+    return pts;
+  }
+  buildTrendsFull() {
+    const f = this.tfull;
+    const th = H('div', { class: 'th' }, H('h3', null, 'Trends'), H('button', { class: 'cbtn', 'aria-label': 'Close Trends', html: ic('down'), onclick: () => this.setSheet(717) }));
+    this.chipsEl = H('div', { class: 'chips' });
+    HABITS.forEach((hb, h) => this.chipsEl.append(H('button', { class: `chip c${hb.c}`, 'aria-pressed': String(h === this.tr.h), onclick: () => { this.tr.h = h; this.chipsEl.querySelectorAll('.chip').forEach((c, i) => c.setAttribute('aria-pressed', String(i === h))); this.tr.sel = null; this.drawChart(true); } }, H('span', { class: 'pip' + (hb.ring ? ' ring' : '') }), hb.name, hb.archived ? H('span', { class: 'arch' }, '· archived') : null)));
+    this.rangeSeg = makeSeg('sm', [['7', '7D'], ['30', '30D'], ['90', '90D'], ['365', '1Y']], '30', v => { this.tr.range = +v; this.tr.sel = null; this.clampWin(); this.drawChart(true); });
+    this.stepSeg = makeSeg('sm', [['day', 'Day'], ['week', 'Week']], 'day', v => { this.tr.step = v; this.tr.win = v === 'day' ? 7 : 4; this.tr.sel = null; this.clampWin(); this.drawChart(true); });
+    this.statsEl = H('div', { class: 'stats' });
+    this.chartEl = H('div', { class: 'chart' }); this.readout = H('div', { class: 'readout' });
+    this.avgEl = H('div', { class: 'avgctl' });
+    this.whenEl = H('div', { class: 'when' });
+    f.append(th, this.chipsEl, H('div', { class: 'trow2' }, this.rangeSeg, this.stepSeg), this.statsEl, this.chartEl, this.avgEl, this.whenEl, H('div', { class: 'hint' }, 'Drag across the chart to read a day. Tap a day to open its dial.'));
+    // chart svg
+    const svg = S('svg', { viewBox: '0 0 350 236' }); this.chartSvg = svg;
+    this.cg = { grid: S('g', { class: 'grid' }), area: S('path', { class: 'area' }), raw: S('path', { class: 'raw' }), avg: S('path', { class: 'avg' }), dots: S('g'), cur: S('line', { class: 'cursor' }), sr: S('circle', { r: 5, class: 'sel-raw' }), sa: S('circle', { r: 4.5, class: 'sel-avg' }), x: S('g') };
+    svg.append(this.cg.grid, this.cg.area, this.cg.raw, this.cg.avg, this.cg.dots, this.cg.cur, this.cg.sr, this.cg.sa, this.cg.x);
+    this.chartEl.append(svg, this.readout);
+    let down = null;
+    const pick = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) / r.width * 350; const n = this.pts.length; const i = Math.round((x - this.PL) / (350 - this.PL - this.PR) * (n - 1)); this.tr.sel = Math.max(0, Math.min(n - 1, i)); this.drawSel(); };
+    this.chartEl.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; this.chartEl.setPointerCapture(ev.pointerId); pick(ev); });
+    this.chartEl.addEventListener('pointermove', ev => { if (down) pick(ev); else if (ev.pointerType === 'mouse') pick(ev); });
+    this.chartEl.addEventListener('pointerup', ev => { if (down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) < 6 && this.tr.step === 'day') this.openDayFromChart(); down = null; });
+    this.drawChart(false);
+  }
+  clampWin() { const n = this.tr.step === 'day' ? this.tr.range : Math.ceil(this.tr.range / 7); this.tr.win = Math.max(1, Math.min(this.tr.win, n)); }
+  drawChart(animate) {
+    const pts = this.pts = this.series(), { h, step } = this.tr, hb = HABITS[h], n = pts.length;
+    this.chartEl.className = `chart c${hb.c}`;
+    const PL = this.PL = 26, PR = this.PR = 6, PT = 40, PB = 22, W = 350, Hh = 236;
+    const mx = Math.max(1, ...pts.map(p => p.v));
+    const nice = [1, 2, 2.5, 5, 10]; let stepY = 1; for (const m of [1, 10, 100, 1000]) for (const s of nice) { if (mx / (s * m) <= 4 && stepY === 1 && !(s * m < 1)) { stepY = s * m; break; } }
+    for (const m of [1, 10, 100, 1000]) { let found = false; for (const s of nice) if (mx / (s * m) <= 4) { stepY = s * m; found = true; break; } if (found) break; }
+    const yMax = Math.ceil(mx / stepY) * stepY;
+    const X = i => PL + (n === 1 ? .5 : i / (n - 1)) * (W - PL - PR), Y = v => PT + (1 - v / yMax) * (Hh - PT - PB);
+    this.X = X; this.Y = Y;
+    // grid + labels
+    this.cg.grid.textContent = '';
+    for (let v = 0; v <= yMax + 1e-9; v += stepY) { this.cg.grid.append(S('line', { x1: PL, x2: W - PR, y1: Y(v), y2: Y(v) }), S('text', { class: 'ylab', x: PL - 7, y: Y(v) + 3.5, 'text-anchor': 'end', text: String(+v.toFixed(1)) })); }
+    this.cg.x.textContent = '';
+    const labN = 4; for (let j = 0; j < labN; j++) { const i = Math.round(j / (labN - 1) * (n - 1)); const d = pts[i].d; this.cg.x.append(S('text', { class: 'xlab', x: X(i), y: Hh - 4, 'text-anchor': j === 0 ? 'start' : j === labN - 1 ? 'end' : 'middle', text: i === n - 1 ? 'Today' : `${d.getDate()} ${MO[d.getMonth()]}` })); }
+    if (animate && !RM()) { [this.cg.grid, this.cg.x].forEach(g => g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300 })); }
+    // resampled paths for morphing
+    const K = 220; const rawY = [], avgY = [];
+    const sample = (arr, t) => { const x = t * (arr.length - 1), i = Math.floor(x), f = x - i; return i >= arr.length - 1 ? arr[arr.length - 1] : arr[i] + (arr[i + 1] - arr[i]) * f; };
+    const mono = (arr, t) => { // cubic Hermite with Fritsch-Carlson tangents
+      const m = arr.length; if (m < 3) return sample(arr, t); const x = t * (m - 1), i = Math.min(m - 2, Math.floor(x)), f = x - i;
+      const d = []; for (let j = 0; j < m - 1; j++) d.push(arr[j + 1] - arr[j]);
+      const tg = j => { if (j === 0) return d[0]; if (j === m - 1) return d[m - 2]; if (d[j - 1] * d[j] <= 0) return 0; return (d[j - 1] + d[j]) / 2; };
+      const m0 = tg(i), m1 = tg(i + 1), y0 = arr[i], y1 = arr[i + 1], f2 = f * f, f3 = f2 * f;
+      return (2 * f3 - 3 * f2 + 1) * y0 + (f3 - 2 * f2 + f) * m0 + (-2 * f3 + 3 * f2) * y1 + (f3 - f2) * m1;
+    };
+    const rv = pts.map(p => Y(p.v)), av = pts.map(p => Y(p.avg));
+    for (let k = 0; k <= K; k++) { const t = k / K; rawY.push(n === 1 ? rv[0] : sample(rv, t)); avgY.push(n === 1 ? av[0] : mono(av, t)); }
+    const xs = Array.from({ length: K + 1 }, (_, k) => PL + k / K * (W - PL - PR));
+    const showAvg = this.tr.win > 1;
+    const draw = (R, A, aOp) => {
+      let dr = '', da = ''; for (let k = 0; k <= K; k++) { dr += (k ? 'L' : 'M') + xs[k].toFixed(1) + ',' + R[k].toFixed(1); da += (k ? 'L' : 'M') + xs[k].toFixed(1) + ',' + A[k].toFixed(1); }
+      this.cg.raw.setAttribute('d', dr); this.cg.avg.setAttribute('d', da); this.cg.avg.setAttribute('opacity', aOp);
+      this.cg.area.setAttribute('d', da + `L${W - PR},${Y(0)}L${PL},${Y(0)}Z`); this.cg.area.setAttribute('opacity', aOp * .1);
+    };
+    const prev = this.cur; this.cur = { R: rawY, A: avgY, op: showAvg ? 1 : 0 };
+    this.cg.dots.textContent = '';
+    const dotsIn = () => { if (n <= 31) { pts.forEach((p, i) => this.cg.dots.append(S('circle', { class: 'dot', cx: X(i), cy: Y(p.v), r: n <= 7 ? 3.5 : 2.4 }))); if (animate && !RM()) this.cg.dots.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 }); } };
+    if (animate && prev && !RM()) {
+      const my = this.chartGen = (this.chartGen || 0) + 1;
+      this.cg.sr.style.opacity = this.cg.sa.style.opacity = this.cg.cur.style.opacity = 0; this.readout.style.opacity = 0;
+      tween(450, k => { if (my !== this.chartGen) return; draw(prev.R.map((v, i) => v + (rawY[i] - v) * k), prev.A.map((v, i) => v + (avgY[i] - v) * k), prev.op + (this.cur.op - prev.op) * k); }, E.inOut)
+        .then(() => { if (my !== this.chartGen) return; dotsIn(); this.drawSel(true); });
+    } else { draw(rawY, avgY, this.cur.op); dotsIn(); this.drawSel(); }
+    this.drawStats(); this.drawAvgCtl(); this.drawWhen(); this.updatePeek();
+  }
+  drawSel(fade) {
+    const pts = this.pts, n = pts.length, i = this.tr.sel ?? n - 1, p = pts[i], { h, step } = this.tr;
+    const x = this.X(i), yr = this.Y(p.v), ya = this.Y(p.avg);
+    this.cg.cur.setAttribute('x1', x); this.cg.cur.setAttribute('x2', x); this.cg.cur.setAttribute('y1', 34); this.cg.cur.setAttribute('y2', this.Y(0));
+    this.cg.sr.setAttribute('cx', x); this.cg.sr.setAttribute('cy', yr); this.cg.sa.setAttribute('cx', x); this.cg.sa.setAttribute('cy', ya);
+    this.cg.sa.style.display = this.tr.win > 1 ? '' : 'none';
+    const lab = step === 'day' ? (i === n - 1 ? 'Today' : dShort(p.d)) : `${p.d0.getDate()} ${MO[p.d0.getMonth()]}–${p.d.getDate()} ${MO[p.d.getMonth()]}`;
+    this.readout.innerHTML = `${lab}<b>${qty(h, p.v)}</b>${this.tr.win > 1 ? `avg <b>${p.avg.toFixed(1)}</b>` : ''}`;
+    const wpx = this.chartEl.clientWidth || 350, rx = x / 350 * wpx;
+    const rw = this.readout.offsetWidth || 180; this.readout.style.left = Math.max(rw / 2, Math.min(wpx - rw / 2, rx)) + 'px';
+    [this.cg.sr, this.cg.sa, this.cg.cur, this.readout].forEach(el => { el.style.opacity = 1; if (fade) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 }); });
+  }
+  drawStats() {
+    const pts = this.pts, { h, range, step } = this.tr, tot = pts.reduce((s, p) => s + p.v, 0);
+    let pk = pts[0]; pts.forEach(p => { if (p.v > pk.v) pk = p; });
+    const per = step === 'day' ? 'day' : 'week', avg = step === 'day' ? tot / range : tot / pts.length;
+    this.statsEl.innerHTML = `<div class="stat"><div class="sl">Total</div><div class="sv">${tot}<small>${unitW(h, tot)}</small></div><div class="ss">last ${range} days</div></div><div class="stat"><div class="sl">Average</div><div class="sv">${avg.toFixed(1)}</div><div class="ss">per ${per}</div></div><div class="stat"><div class="sl">Peak</div><div class="sv">${pk.v}</div><div class="ss">${step === 'day' ? dShort(pk.d) : 'week to ' + pk.d.getDate() + ' ' + MO[pk.d.getMonth()]}</div></div>`;
+  }
+  drawAvgCtl() {
+    const { win, step } = this.tr, n = this.pts.length, u = step === 'day' ? ['day', 'days'] : ['week', 'weeks'];
+    this.avgEl.innerHTML = '';
+    const minus = H('button', { 'aria-label': 'Shorter average', html: ic('minus'), disabled: win <= 1, onclick: () => { this.tr.win--; this.drawChart(true); } });
+    const plus = H('button', { 'aria-label': 'Longer average', html: ic('plus'), disabled: win >= Math.min(n, 30), onclick: () => { this.tr.win++; this.drawChart(true); } });
+    this.avgEl.append(H('span', { class: 'al', html: win > 1 ? `Average over <b>${win}</b> ${u[1]}` : 'No average line' }), H('span', { class: 'st' }, minus, plus));
+  }
+  drawWhen() {
+    const { h, range } = this.tr, r = hourRing(this.w, h, Math.min(range, 90));
+    this.whenEl.innerHTML = r.tot ? `${r.svg}<div><div class="wt">${r.peak}</div><div class="ws">When ${HABITS[h].name.toLowerCase()} happens, over the last ${Math.min(range, 90)} days. ${r.am}% of it before noon.</div></div>` : `${r.svg}<div><div class="wt">Nothing in this range</div><div class="ws">Entries show here by hour of day.</div></div>`;
+  }
+  updatePeek() {
+    if (!this.peekEl) return; const h = 0, pts = []; for (let i = 29; i >= 0; i--) pts.push(this.w.sum(addDays(TODAY, -i), h));
+    const mx = Math.max(1, ...pts), W = 346, Hh = 44, X = i => i / 29 * W, Y = v => Hh - 3 - v / mx * (Hh - 8);
+    const av = pts.map((_, i) => { const a = pts.slice(Math.max(0, i - 6), i + 1); return a.reduce((s, x) => s + x, 0) / a.length; });
+    const tot = pts.reduce((a, b) => a + b, 0);
+    this.peekEl.innerHTML = `<div class="peek-row"><div><div class="peek-t">Trends</div><div class="peek-s">Coffee · last 30 days</div></div><div class="peek-r c1"><span class="mono">${(tot / 30).toFixed(1)}</span> <small>drinks a day</small></div></div><svg class="spark c1" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><path d="${pts.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join('')}" fill="none" style="stroke:var(--c)" stroke-width="1.5" opacity=".45" vector-effect="non-scaling-stroke"/><path d="${av.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join('')}" fill="none" style="stroke:var(--ci)" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+  openDayFromChart() {
+    const i = this.tr.sel ?? this.pts.length - 1, d = this.pts[i].d;
+    const sr = local(this.scr, this.cg.sr), sh = local(this.scr, this.sheet);
+    const oc = H('div', { class: 'oc' }), inner = H('div', { class: 'oc-in' });
+    const back = H('button', { class: 'cbtn', 'aria-label': 'Back to Trends', html: ic('left') });
+    const n = this.w.day(d).length;
+    inner.append(H('div', { class: 'oc-h' }, back, H('div', null, H('h3', null, sameDay(d, TODAY) ? 'Today' : dShort(d)), H('div', { class: 'os' }, `${n} ${n === 1 ? 'entry' : 'entries'} · ${relDay(d) === 'Today' ? 'so far' : WDL[d.getDay()]}`))));
+    const dh = H('div', { class: 'oc-dial' }); inner.append(dh);
+    const tl = H('div', { class: 'oc-tal' }); inner.append(tl);
+    oc.append(inner); this.sheet.append(oc);
+    const dial = new Dial(dh, {}); dial.setMeta({ isToday: sameDay(d, TODAY), ...this.hubFor(d) });
+    const tal = new Tallies(tl, null); tal.set(this.w.totals(d));
+    const r0 = { l: sr.cx - sh.x - 14, t: sr.cy - sh.y - 14, w: 28, h: 28, r: 14 }, r1 = { l: 0, t: 0, w: 390, h: 777, r: 30 };
+    const hb = HABITS[this.tr.h];
+    const set = k => { oc.style.left = r0.l + (r1.l - r0.l) * k + 'px'; oc.style.top = r0.t + (r1.t - r0.t) * k + 'px'; oc.style.width = r0.w + (r1.w - r0.w) * k + 'px'; oc.style.height = r0.h + (r1.h - r0.h) * k + 'px'; oc.style.borderRadius = r0.r + (r1.r - r0.r) * k + 'px'; inner.style.opacity = Math.max(0, (k - .35) / .65); oc.style.background = `color-mix(in srgb, var(--d${hb.c}) ${Math.round((1 - Math.min(1, k * 2.5)) * 100)}%, var(--surface))`; };
+    const D = RM() ? 0 : 450;
+    if (RM()) { set(1); dial.render(this.w.day(d)); oc.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); }
+    else { set(0); tween(D, set, E.inOut).then(() => dial.sweepIn(this.w.day(d))); }
+    back.onclick = () => { tween(D, k => set(1 - k), E.inOut).then(() => oc.remove()); };
+  }
+
+  /* ----- Pages (fade-through) ----- */
+  async push(page, animate = true) {
+    const under = this.pages?.length ? this.pages[this.pages.length - 1] : null;
+    this.pages = this.pages || []; this.pages.push(page); this.scr.append(page);
+    if (!animate) return;
+    if (RM()) { page.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); return; }
+    if (under) under.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, fill: 'forwards' });
+    page.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 0, transform: 'scale(.94)', offset: .28 }, { opacity: 1, transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.2,0,0,1)' });
+  }
+  pop() {
+    const page = this.pages.pop(); const under = this.pages[this.pages.length - 1];
+    if (under) { under.getAnimations().forEach(a => a.cancel()); }
+    if (RM()) { page.remove(); return; }
+    page.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, fill: 'forwards' }).finished.then(() => page.remove());
+    const tgt = under || this.dialWrap.parentNode;
+    (under ? [under] : [this.dialWrap, ...this.scr.querySelectorAll('.tallies,.daynav')]).forEach(el => el.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 0, transform: 'scale(.94)', offset: .28 }, { opacity: 1, transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.2,0,0,1)' }));
+    if (this.hist && page === this.hist.page) this.hist = null;
+  }
+  closePages() { while (this.pages?.length) { this.pages.pop().remove(); } this.hist = null; }
+  pageShell(title, opts = {}) {
+    const back = H('button', { class: 'cbtn', 'aria-label': 'Back', html: ic('left'), onclick: () => this.pop() });
+    const bar = H('div', { class: 'pbar' }, back, opts.action || H('span'));
+    const body = H('div', { class: 'page' });
+    const wrap = H('div', { style: 'position:absolute;inset:0;z-index:50;background:var(--bg)' }, body, bar);
+    return { wrap, body };
+  }
+  openHabits(animate) {
+    const { wrap, body } = this.pageShell('Habits', { action: H('button', { class: 'cbtn', 'aria-label': 'Add habit', html: ic('plus') }) });
+    const act = ACTIVE.length, arch = HABITS.length - act;
+    body.append(H('h1', null, 'Habits'), H('div', { class: 'sub' }, `${act} active · ${arch} archived`));
+    const row = h => { const hb = HABITS[h]; return H('button', { class: `hrow c${hb.c}`, onclick: () => this.openHistory(h) }, H('span', { class: 'pip' + (hb.ring ? ' ring' : '') }), H('div', { class: 'hb' }, H('div', { class: 'hn' }, hb.name), H('div', { class: 'hs' }, `${hb.u[1]} · ${this.w.count(h).toLocaleString('en-GB')} entries`)), icEl('right', 'chev')); };
+    body.append(H('div', { class: 'card', style: 'margin-top:20px' }, ...ACTIVE.map(row)));
+    body.append(H('div', { class: 'sect' }, 'Archived'), H('div', { class: 'card' }, ...HABITS.map((_, i) => i).filter(i => HABITS[i].archived).map(row)));
+    body.append(H('div', { class: 'foot' }, 'Colours follow the order habits were added, archived ones included. From the sixth habit on, the five colours repeat as rings.'));
+    this.push(wrap, animate);
+  }
+  openHistory(h) {
+    const hb = HABITS[h]; const { wrap, body } = this.pageShell(hb.name, { action: H('button', { class: 'cbtn', 'aria-label': 'Edit habit', html: ic('pencil') }) });
+    const ring = hourRing(this.w, h, 30); let tot30 = 0; for (let i = 0; i < 30; i++) tot30 += this.w.sum(addDays(TODAY, -i), h);
+    body.append(H('h1', { class: `c${hb.c}` }, H('span', { class: 'pip' + (hb.ring ? ' ring' : '') }), hb.name), H('div', { class: 'sub' }, `${hb.u[1]} · ${this.w.count(h).toLocaleString('en-GB')} entries${hb.archived ? ' · archived' : ''}`));
+    body.append(H('div', { class: 'card sumcard', html: `${ring.svg}<div><div class="sl">Last 30 days</div><div class="sv">${tot30} <small>${unitW(h, tot30)}</small></div><div class="ss">${ring.tot ? ring.peak : 'Nothing logged'}</div></div>` }));
+    const list = H('div'); body.append(list);
+    let shown = 0, ago = 0;
+    const more = H('button', { class: 'older', onclick: () => addDays_(8, true) }, 'Show older');
+    const addDays_ = (k, anim) => {
+      let added = 0;
+      while (added < k && ago < 400) {
+        const d = addDays(TODAY, -ago); ago++;
+        const es = this.w.day(d).filter(e => e.h === h); if (!es.length) continue; added++;
+        const tot = es.reduce((s, e) => s + e.q, 0);
+        const card = H('div', { class: 'card' });
+        es.slice().reverse().forEach(e => card.append(this.entryRow(e, d, card)));
+        const grp = H('div', null, H('div', { class: 'dayhead' }, H('span', null, daysAgo(d) < 2 ? relDay(d) : dShort(d)), H('span', { class: 'mono' }, qty(h, tot))), card);
+        list.append(grp); if (anim && !RM()) grp.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: added * 40, fill: 'backwards' });
+      }
+    };
+    addDays_(4); body.append(more, H('div', { class: 'foot', style: 'text-align:center' }, 'Swipe an entry left to delete it. Tap it to edit.'));
+    this.hist = { page: wrap, h, refresh: () => { list.textContent = ''; ago = 0; addDays_(4); } };
+    this.push(wrap, true);
+  }
+  entryRow(e, d, card) {
+    const inner = H('div', { class: 'erow', html: `${beadIcon(e.h, e.q, e.pending)}<span class="et">${hm(e.min)}</span><div class="eq">${qty(e.h, e.q)}${e.pending ? `<div class="ep">${ic('cloudup').replace('<svg', '<svg width="13" height="13"')}Not yet synced</div>` : ''}</div>` });
+    const wrap = H('div', { class: 'erow-wrap' }, H('div', { class: 'erow-del', html: ic('trash') }), inner);
+    wrap.entry = e;
+    let x0 = null, dx = 0;
+    inner.addEventListener('pointerdown', ev => { x0 = ev.clientX; dx = 0; inner.setPointerCapture(ev.pointerId); inner.style.transition = 'none'; });
+    inner.addEventListener('pointermove', ev => { if (x0 == null) return; dx = Math.min(0, (ev.clientX - x0) / (this.scr.getBoundingClientRect().width / 390)); inner.style.transform = `translateX(${dx}px)`; });
+    inner.addEventListener('pointerup', async () => {
+      if (x0 == null) return; x0 = null;
+      if (dx < -90) {
+        await inner.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(-390px)' }], { duration: RM() ? 0 : 180, fill: 'forwards' }).finished;
+        const hh = wrap.offsetHeight; await wrap.animate([{ height: hh + 'px' }, { height: '0px' }], { duration: RM() ? 0 : 240, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }).finished;
+        wrap.remove(); this.w.remove(d, e.id);
+        if (sameDay(d, this.day)) { const b = this.dial.beads.get(e.id); if (b) { b.remove(); this.dial.beads.delete(e.id); } this.dial.render(this.w.day(d)); this.tallies.set(this.w.totals(d)); }
+        this.snack(`Deleted <span class="mono">${qty(e.h, e.q)}</span> at <span class="mono">${hm(e.min)}</span>`, () => this.restore(e, d));
+      } else if (dx > -6) { inner.style.transform = ''; this.day = d; this.openEntryFromHistory(e, d); }
+      else inner.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], { duration: 260, easing: 'cubic-bezier(.3,1.4,.5,1)' }), inner.style.transform = '';
+    });
+    return wrap;
+  }
+  openEntryFromHistory(e, d) { this.openEntry(e); }
+  syncHistory() {
+    const p = this.scr.querySelector('.erow .bp.spin'); if (!p) return;
+    const svg = p.closest('svg'), fill = svg.querySelector('.bf'), row = svg.closest('.erow'), ep = row.querySelector('.ep');
+    tween(RM() ? 0 : 240, k => { fill.setAttribute('transform', `scale(${k})`); p.setAttribute('opacity', 1 - k); }, E.out).then(() => p.remove());
+    if (ep) ep.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }).finished.then(() => ep.remove());
+    this.w.day(TODAY).forEach(e => e.pending = false);
+    const b = [...this.dial.beads.values()].find(b => b.classList.contains('pending')); if (b) this.ack(b.e);
+  }
+  openSettings() {
+    const { wrap, body } = this.pageShell('Settings');
+    body.append(H('h1', null, 'Settings'));
+    const r = (label, val, icon, cls = '') => H('button', { class: 'srow ' + cls, html: `<span>${label}</span><span class="sv2">${val || ''}${icon ? ic(icon) : ''}</span>` });
+    body.append(H('div', { class: 'card', style: 'margin-top:20px' }, r('Account', 'sam@example.com', 'right'), r('Export my data', 'CSV, JSON', 'share')));
+    body.append(H('div', { class: 'sect' }, 'App'), H('div', { class: 'card' }, r('Appearance', 'Match system', 'right'), r('Reduce motion', 'Follows iOS', 'right'), r('About', '<span class="mono">0.2.0 (212)</span>')));
+    body.append(H('div', { class: 'card', style: 'margin-top:24px' }, r('Sign out', '', null, 'danger')));
+    body.append(H('div', { class: 'foot' }, 'Your journal is private to your account. Nothing is shared.'));
+    this.push(wrap, true);
+  }
+  /* ----- Scripted demo for the Record frame ----- */
+  async play() {
+    if (this.playing) return; this.playing = true;
+    const tap = async (el) => { el.animate([{ transform: el.style.transform || 'none' }, { transform: (el.style.transform || '') + ' scale(.9)' }, { transform: el.style.transform || 'none' }], { duration: 220 }); await wait(160); };
+    try {
+      this.closeSheet(true); this.closeFan();
+      await tap(this.logBtn); this.openFan(); await wait(1000);
+      const w = this.wedges[0]; this.pressWedge(w, true); await wait(450); this.pressWedge(w, false);
+      this.openAmount(0); await wait(800);
+      const plus = this.sheetEl.querySelector('.stepper button:last-child');
+      await tap(plus); this.amount.setQ(this.amount.st.q + 1); await wait(500);
+      await this.amount.scrubTo(18 * 60 + 30, RM() ? 0 : 1100); await wait(600);
+      await tap(this.amount.go); this.amount.go.click(); await wait(2200);
+      await tap(this.logBtn); this.openFan(); await wait(900);
+      const w2 = this.wedges[2]; this.pressWedge(w2, true); await wait(140); this.pressWedge(w2, false); this.quickLog(w2.h, w2.pt);
+    } finally { this.playing = false; }
+  }
+}
+
+/* ============ Auth ============ */
+class Auth {
+  constructor(scr, onDone) {
+    this.scr = scr; this.onDone = onDone; statusBar(scr); this.mode = 'in'; this.build();
+  }
+  build() {
+    const a = H('div', { class: 'auth' }); this.root = a;
+    a.append(H('div', { html: APPICON('aicon') }).firstChild, H('div', { class: 'aw' }, 'Tracker'), H('div', { class: 'at' }, 'A private journal of your days.'));
+    this.seg = makeSeg('', [['in', 'Sign in'], ['up', 'Create account']], 'in', v => this.setMode(v)); a.append(this.seg);
+    const field = (icon, type, ph, eye) => { const inp = H('input', { type, placeholder: ph, autocomplete: 'off', spellcheck: 'false' }); const f = H('label', { class: 'field', html: ic(icon) }, inp); if (eye) f.append(H('button', { class: 'eye', type: 'button', 'aria-label': 'Show password', html: ic('eye'), onclick: ev => { ev.preventDefault(); inp.type = inp.type === 'password' ? 'text' : 'password'; } })); return { f, inp }; };
+    this.email = field('mail', 'email', 'Email'); this.pw = field('lock', 'password', 'Password', true); this.pw2 = field('lock', 'password', 'Confirm password', true);
+    this.email.inp.value = 'sam@example.com';
+    this.fields = H('div', { class: 'fields' }, this.email.f, this.pw.f, this.pw2.f); a.append(this.fields);
+    this.pw2.f.style.display = 'none';
+    const ck = t => H('div', { class: 'ck', html: `<span class="cb">${ic('check')}</span>${t}` });
+    this.cks = [ck('8 or more characters'), ck('An upper-case letter'), ck('A lower-case letter'), ck('A number'), ck('Passwords match')];
+    this.checks = H('div', { class: 'checks' }, ...this.cks); this.checks.style.display = 'none'; a.append(this.checks);
+    this.err = H('div', { class: 'aerr', role: 'alert', html: `${ic('alert')}<span>That email and password don't match an account.</span>` }); a.append(this.err);
+    this.btn = H('button', { class: 'pbtn', onclick: () => this.submit() }, 'Sign in'); a.append(this.btn);
+    this.forgot = H('button', { class: 'forgot' }, 'Forgot password?'); a.append(this.forgot);
+    a.append(H('div', { class: 'afoot', html: `${ic('shield')}Your journal is private to your account.` }));
+    this.scr.append(a);
+    [this.pw.inp, this.pw2.inp, this.email.inp].forEach(i => i.addEventListener('input', () => this.validate()));
+    this.validate();
+  }
+  setMode(v) {
+    this.mode = v; const up = v === 'up';
+    this.err.style.display = 'none';
+    const show = (el, on, disp = 'flex') => { if (on && el.style.display === 'none') { el.style.display = disp; if (!RM()) el.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' }); } else if (!on) el.style.display = 'none'; };
+    show(this.pw2.f, up); show(this.checks, up, 'grid'); this.forgot.style.display = up ? 'none' : '';
+    this.btn.textContent = up ? 'Create account' : 'Sign in'; this.validate();
+  }
+  validate() {
+    const p = this.pw.inp.value, ok = [p.length >= 8, /[A-Z]/.test(p), /[a-z]/.test(p), /\d/.test(p), p.length > 0 && p === this.pw2.inp.value];
+    this.cks.forEach((c, i) => c.classList.toggle('ok', ok[i]));
+    const em = /.+@.+\..+/.test(this.email.inp.value);
+    this.btn.disabled = this.mode === 'up' ? !(em && ok.every(Boolean)) : !(em && p.length > 0);
+  }
+  async submit() {
+    this.btn.disabled = true; const label = this.btn.textContent; this.btn.innerHTML = '<span class="spinner"></span>';
+    await wait(900);
+    if (this.forceError) { this.btn.textContent = label; this.btn.disabled = false; this.showError(); return; }
+    this.onDone();
+  }
+  showError() { this.err.style.display = 'flex'; if (!RM()) { springKF(this.err, -12, 0, v => ({ transform: `translateY(${v}px)`, opacity: Math.min(1, 1 + v / 12) })); } }
+}
+
+/* ============ Page assembly ============ */
+const FRAMES = [
+  { n: '01', t: 'Today, busy day', p: '15 entries at their times. Tap a bead to edit it. Swipe the dial or tap ‹ › to change day; the date opens the calendar. Pull Trends up.', vo: true,
+    make: scr => new App(scr, new World('busy'), {}), ctrls: app => [['Go offline', b => { app.setOffline(!app.offline); b.textContent = app.offline ? 'Back online' : 'Go offline'; }], ['Refused write', () => app.rejected()], ['Open menu', () => app.openMenu()]] },
+  { n: '02', t: 'Today, sparse day', p: 'Two of five habits at 1: one coffee in the morning, one takeaway in the evening. A quiet clock, not a collapsed shape. Two days back is a clear day.', vo: true,
+    make: scr => new App(scr, new World('sparse', { clearDay: true }), {}), ctrls: app => [['Show the clear day', () => app.showDay(addDays(TODAY, -2), 'sweep', -1)], ['Back to today', () => app.showDay(TODAY, 'sweep', 1)]] },
+  { n: '03', t: 'Record', p: 'Tap Log, then a segment: 1 entry now, with Undo. Hold a segment for amount and time, or press, drag and release in one gesture. Each tally’s + is the list path.',
+    make: scr => new App(scr, new World('record'), { coach: true }), ctrls: app => [['▶ Play the flow', () => app.play(), 'primary'], ['Reset', () => resetFrame(2)]] },
+  { n: '04', t: 'Trends', p: 'A sheet over the dial (drag it down to peek). Habit chips, range, Day or Week, an average you can lengthen. Drag across the chart; tap a day to open its dial.',
+    make: scr => new App(scr, new World('busy'), { trends: 'open' }), ctrls: app => [['Peek', () => app.setSheet(717)], ['Open', () => app.setSheet(67)]] },
+  { n: '05', t: 'Habits and history', p: 'Colour by creation order: archived Sugar is habit 6, an amber ring. Tap a habit for its history; swipe an entry left to delete, with Undo.',
+    make: scr => new App(scr, new World('busy', { pending: true }), { page: 'habits' }), ctrls: app => [['Sync the pending entry', () => app.syncHistory()], ['Open Coffee', () => { app.closePages(); app.openHabits(false); app.openHistory(0); }]] },
+  { n: '06', t: 'Sign in', p: 'Day-sky ground, the icon and wordmark. One segmented control for sign in or create account; the password rule is a live checklist.',
+    make: scr => { const a = new Auth(scr, () => { scr.textContent = ''; const app = new App(scr, new World('sparse'), {}); app.dial.render([]); scr.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM() ? 150 : 320 }); app.intro(); }); return a; },
+    ctrls: a => [['Show error', () => { if (a.showError) a.showError(); }], ['Reset', () => resetFrame(5)]] },
+];
+const frameEls = [];
+function mountFrame(i) {
+  const F = FRAMES[i], slot = frameEls[i];
+  slot.scr.textContent = ''; slot.ctrls.textContent = '';
+  const inst = F.make(slot.scr); slot.inst = inst;
+  if (F.vo && inst.dial) { inst.o.onSummary = s => slot.vo.innerHTML = `<b>VoiceOver reads the dial as</b> “${s}”`; slot.vo.innerHTML = `<b>VoiceOver reads the dial as</b> “${inst.dial.label}”`; }
+  for (const [label, fn, cls] of F.ctrls(inst)) { const b = H('button', { class: 'ctrl ' + (cls || '') }, label); b.onclick = () => fn(b); slot.ctrls.append(b); }
+  return inst;
+}
+function resetFrame(i) { CLOCKS.length = 0; frameEls.forEach(f => f.inst && f.inst.scr && null); const inst = mountFrame(i); rebuildClocks(); inst.intro?.(); }
+function rebuildClocks() { CLOCKS.length = 0; frameEls.forEach(f => { const st = f.scr.querySelector('.status span'); if (st) CLOCKS.push(() => st.textContent = hm(nowMin())); if (f.inst && f.inst.tick) CLOCKS.push(() => f.inst.tick()); }); }
+const only = Q.get('only');
+const host = document.getElementById('frames');
+FRAMES.forEach((F, i) => {
+  if (only && !only.split(',').includes(String(i + 1))) { frameEls.push({ skip: true }); return; }
+  const scr = H('div', { class: 'screen' }), ctrls = H('div', { class: 'ctrls' }), vo = H('div', { class: 'vo' });
+  const fr = H('section', { class: 'frame', 'aria-label': F.t }, H('div', { class: 'cap' }, H('h2', null, H('span', { class: 'n' }, F.n), F.t), H('p', null, F.p)), H('div', { class: 'phone-wrap' }, H('div', { class: 'phone' }, scr)), ctrls, F.vo ? vo : null);
+  host.append(fr); frameEls.push({ scr, ctrls, vo });
+});
+frameEls.forEach((f, i) => { if (!f.skip) mountFrame(i); });
+rebuildClocks();
+let lastMin = -1;
+setInterval(() => { const m = Math.floor(nowMin()); if (RM() && m === lastMin) return; lastMin = m; CLOCKS.forEach(f => f()); }, 1000);
+
+/* ----- Page controls ----- */
+function applyTheme(v) {
+  if (v === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v);
+  try { localStorage.setItem('dd-theme', v); } catch (_) {}
+}
+function applyMotion(v) { motionPref = v; document.documentElement.classList.toggle('rm', v === 'reduced'); }
+let theme = Q.get('theme'); if (!theme) { try { theme = localStorage.getItem('dd-theme'); } catch (_) {} } theme = theme || 'auto';
+applyTheme(theme); applyMotion(motionPref);
+for (const [id, val, fn] of [['themeSeg', theme, applyTheme], ['motionSeg', motionPref, applyMotion]]) {
+  const seg = document.getElementById(id);
+  seg.querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.v === val)); b.onclick = () => { seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); segThumb(seg); fn(b.dataset.v); }; });
+  requestAnimationFrame(() => segThumb(seg, false));
+}
+mq.addEventListener?.('change', e => { if (Q.get('motion')) return; applyMotion(e.matches ? 'reduced' : 'full'); document.querySelectorAll('#motionSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === motionPref))); segThumb(document.getElementById('motionSeg')); });
+function fit() { const s = Math.min(1, (innerWidth - 32) / 410); document.documentElement.style.setProperty('--s', s.toFixed(4)); }
+fit(); addEventListener('resize', fit);
+
+/* ----- System section ----- */
+(function system() {
+  const L = { bg: '#EDF1F7', surface: '#FFFFFF', text: '#141B2D', muted: '#5B6478', accent: '#1D5FC2', clear: '#E3F0E8', d: ['#F2A23A', '#F5714F', '#DE4654', '#8F55D9', '#3F86F0'], di: ['#8F5600', '#B03E1C', '#B42A37', '#6A31B5', '#1D5FC2'] };
+  const D = { bg: '#0C1222', surface: '#151D31', text: '#E9EDF5', muted: '#8E98AE', accent: '#FFB347', clear: '#12241E', d: ['#FFB347', '#FF7A59', '#E8505B', '#9B5DE5', '#4D96FF'], di: ['#FFB347', '#FF7A59', '#F0737C', '#B48AF0', '#4D96FF'] };
+  const lum = hx => { const c = [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const ink = hx => lum(hx) > .3 ? '#141B2D' : '#FFFFFF';
+  const sw = (hx, label) => `<div class="sw" style="background:${hx}"><span style="color:${ink(hx)}">${label}</span></div>`;
+  const pal = (P, name) => `<div class="swrow"><span class="lab">${name}</span>${sw(P.bg, 'bg')}${sw(P.surface, 'surface')}${sw(P.text, 'text')}${sw(P.muted, 'muted')}${sw(P.accent, 'accent')}${sw(P.clear, 'clear')}</div><div class="swrow"><span class="lab"></span>${P.d.map((c, i) => sw(c, 'data' + (i + 1))).join('')}</div><div class="swrow" style="margin-bottom:16px"><span class="lab"></span>${P.di.map((c, i) => sw(c, 'ink' + (i + 1))).join('')}</div>`;
+  document.getElementById('system').innerHTML = `<h2>The system</h2><div class="sysgrid">
+  <div class="syscard"><h3>Colour: day sky and night</h3>${pal(L, 'Light')}${pal(D, 'Dark')}<div class="foot" style="margin:0">Light beads are fill-only with a 1 px ink rim; text about a habit uses its ink. Dark uses the icon's five colours exactly, with a soft glow. The accent turns from day blue to an amber lamp.</div></div>
+  <div class="syscard"><h3>Type: one superfamily, three cuts</h3>
+   <div class="tyrow"><span style="font:900 34px/1 var(--fd);letter-spacing:-.5px">Habits</span><small>Display 900 · 34</small></div>
+   <div class="tyrow"><span style="font:700 17px/1 var(--fd)">Today <span style="font:500 14px var(--ft);color:var(--muted)">Thu 5 Nov</span></span><small>Display 700 · 17</small></div>
+   <div class="tyrow"><span style="font:700 11px/1 var(--fd);letter-spacing:.6px;color:var(--muted)">00 · 06 · 12 · 18</span><small>Display 700 · 11</small></div>
+   <div class="tyrow"><span style="font:500 16px/1.2 var(--ft)">Late nights</span><small>Text 500 · 16</small></div>
+   <div class="tyrow"><span style="font:400 13px/1.3 var(--ft);color:var(--muted)">Saved on this device. It will sync when you're back online.</span><small>Text 400 · 13</small></div>
+   <div class="tyrow"><span style="font:500 22px/1 var(--fm)">21:10 · 80 min</span><small>Mono 500 · 22</small></div></div>
+  <div class="syscard"><h3>Motion: orbital, 350–700 ms</h3>
+   ${[['Bead travels from Log to its hour', 'easeInOutCubic 520'], ['Landing: overshoot and ripple', 'spring 220/22 · 300'], ['Tally number rolls', 'easeOut 300'], ['Day change: contract, then sweep', 'easeIn 200 · 600'], ['Clear day: spokes dim, sage rim', 'easeInOut 600'], ['Trends sheet snaps', 'spring + velocity'], ['Chart morphs between ranges', 'easeInOutCubic 450'], ['Chart day opens its dial', 'container 450'], ['Pages', 'fade-through 320'], ['Pending bead fills on sync', 'easeOut 240 · dash 2 s/turn'], ['Banner pills drop in', 'spring ≈ 260'], ['Reduce motion', 'fades 150, no travel']].map(([a, b]) => `<div class="mrow"><span>${a}</span><span class="mono">${b}</span></div>`).join('')}</div>
+  </div>`;
+})();
+
+/* ----- Deterministic states for stills (?state=...) ----- */
+document.fonts.ready.then(async () => {
+  frameEls.forEach(f => { if (!f.skip && f.inst?.intro) f.inst.intro(); });
+  const st = Q.get('state'); if (!st) return;
+  const rec = frameEls[2]?.inst, f1 = frameEls[0]?.inst;
+  await wait(900);
+  if (st.includes('fan') && rec) rec.openFan();
+  if (st.includes('amount') && rec) { rec.openAmount(0); rec.amount.setQ(2); rec.amount.st.min = 18 * 60 + 30; rec.amount.upd(); }
+  if (st.includes('entry') && f1) f1.openEntry(f1.w.day(TODAY)[9]);
+  if (st.includes('menu') && f1) f1.openMenu();
+  if (st.includes('offline') && f1) { f1.setOffline(true); f1.rejected(); }
+  if (st.includes('cal') && f1) f1.openCalendar();
+  if (st.includes('clear')) frameEls[1]?.inst?.showDay(addDays(TODAY, -2), 'sweep', -1);
+  if (st.includes('hist')) { const a = frameEls[4]?.inst; a?.openHistory(0); }
+  if (st.includes('signup')) { const a = frameEls[5]?.inst; a?.seg.querySelectorAll('button')[1].click(); a.pw.inp.value = 'Morning7'; a.pw2.inp.value = 'Morning'; a.validate(); }
+});
+</script>
+</body>
+</html>
