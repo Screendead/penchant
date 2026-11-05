@@ -9,8 +9,180 @@
   "namespace": "DayDial",
   "libraries": [],
   "sections": {},
-  "groups": [],
-  "assetGroups": {},
+  "groups": [
+    "Icons"
+  ],
+  "assetGroups": {
+    "Icons": {
+      "name": "Icons",
+      "tile": "s",
+      "order": [
+        "alert.svg",
+        "check.svg",
+        "cloudoff.svg",
+        "cloudok.svg",
+        "cloudup.svg",
+        "down.svg",
+        "eye.svg",
+        "gear.svg",
+        "grid.svg",
+        "info.svg",
+        "left.svg",
+        "lock.svg",
+        "mail.svg",
+        "minus.svg",
+        "pencil.svg",
+        "plus.svg",
+        "right.svg",
+        "share.svg",
+        "shield.svg",
+        "sync.svg",
+        "trash.svg",
+        "user.svg",
+        "x.svg"
+      ],
+      "files": {
+        "alert.svg": {
+          "name": "alert.svg",
+          "blob": "55f61541478d9eb3ed3bd71e6c0812f4",
+          "size": 246,
+          "type": "image/svg+xml"
+        },
+        "check.svg": {
+          "name": "check.svg",
+          "blob": "5c84d6d381942f8a70c116b86e2b25db",
+          "size": 217,
+          "type": "image/svg+xml"
+        },
+        "cloudoff.svg": {
+          "name": "cloudoff.svg",
+          "blob": "bca8b07e16f2ae1b8472d307d65111e8",
+          "size": 286,
+          "type": "image/svg+xml"
+        },
+        "cloudok.svg": {
+          "name": "cloudok.svg",
+          "blob": "d45ae99b78bd0dcce930f2b842749ef6",
+          "size": 285,
+          "type": "image/svg+xml"
+        },
+        "cloudup.svg": {
+          "name": "cloudup.svg",
+          "blob": "02c38532cb9a44872225dc261c91be9c",
+          "size": 294,
+          "type": "image/svg+xml"
+        },
+        "down.svg": {
+          "name": "down.svg",
+          "blob": "8a71d7e17c155ccc3c5b4e01f9fc4d68",
+          "size": 207,
+          "type": "image/svg+xml"
+        },
+        "eye.svg": {
+          "name": "eye.svg",
+          "blob": "f1207e53d373e197f0a60dd0f7f7010d",
+          "size": 274,
+          "type": "image/svg+xml"
+        },
+        "gear.svg": {
+          "name": "gear.svg",
+          "blob": "aa3734a12557b91afdc45730aba4d0f4",
+          "size": 732,
+          "type": "image/svg+xml"
+        },
+        "grid.svg": {
+          "name": "grid.svg",
+          "blob": "55edc08cc1e05a96e4e0fa907206b47e",
+          "size": 258,
+          "type": "image/svg+xml"
+        },
+        "info.svg": {
+          "name": "info.svg",
+          "blob": "71e3e68e7443dbdf23ce3064283bda40",
+          "size": 246,
+          "type": "image/svg+xml"
+        },
+        "left.svg": {
+          "name": "left.svg",
+          "blob": "eb47d881ba049506c56901e0e2994de9",
+          "size": 210,
+          "type": "image/svg+xml"
+        },
+        "lock.svg": {
+          "name": "lock.svg",
+          "blob": "d1aa91fa41b723f239907839eab6396c",
+          "size": 274,
+          "type": "image/svg+xml"
+        },
+        "mail.svg": {
+          "name": "mail.svg",
+          "blob": "9a775df9aabf4527d4a5a6a8201594f7",
+          "size": 256,
+          "type": "image/svg+xml"
+        },
+        "minus.svg": {
+          "name": "minus.svg",
+          "blob": "c813db13fc8d37bbe5a3810767639eb4",
+          "size": 203,
+          "type": "image/svg+xml"
+        },
+        "pencil.svg": {
+          "name": "pencil.svg",
+          "blob": "60a72c778e352d0cdcad0e6deea420c2",
+          "size": 243,
+          "type": "image/svg+xml"
+        },
+        "plus.svg": {
+          "name": "plus.svg",
+          "blob": "6c96740c8319bda3c602abf5450db969",
+          "size": 211,
+          "type": "image/svg+xml"
+        },
+        "right.svg": {
+          "name": "right.svg",
+          "blob": "f4fb278b96d7bd530f9f09aeb1b7df19",
+          "size": 208,
+          "type": "image/svg+xml"
+        },
+        "share.svg": {
+          "name": "share.svg",
+          "blob": "d6ecb863bd6b632d901e135b3bfad06e",
+          "size": 273,
+          "type": "image/svg+xml"
+        },
+        "shield.svg": {
+          "name": "shield.svg",
+          "blob": "22c98fc3cb96f204eaa9ba4d3ced79fa",
+          "size": 244,
+          "type": "image/svg+xml"
+        },
+        "sync.svg": {
+          "name": "sync.svg",
+          "blob": "b4e8af1f7919da6b793f60a7999b617d",
+          "size": 285,
+          "type": "image/svg+xml"
+        },
+        "trash.svg": {
+          "name": "trash.svg",
+          "blob": "6aaccd57eb17d7a8d7c830d5b7a7efd7",
+          "size": 268,
+          "type": "image/svg+xml"
+        },
+        "user.svg": {
+          "name": "user.svg",
+          "blob": "42ec093f6b38cf583057ac4d6b336781",
+          "size": 256,
+          "type": "image/svg+xml"
+        },
+        "x.svg": {
+          "name": "x.svg",
+          "blob": "b08d9a40ef706ab295ef3afac527e7c0",
+          "size": 215,
+          "type": "image/svg+xml"
+        }
+      }
+    }
+  },
   "blobs": {},
   "docs": {
     "sections": []
