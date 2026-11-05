@@ -137,7 +137,7 @@ class _DayDialState extends ConsumerState<DayDial>
   static const SpringDescription _spring = DialMotion.landing;
   static const Duration _springTail = Duration(milliseconds: 700);
 
-  late final Ticker _ticker = createTicker(_onTick);
+  late final Ticker _ticker;
   Duration _t = Duration.zero;
 
   // Beads of the day being left, drawn while they contract to the hub.
@@ -172,6 +172,7 @@ class _DayDialState extends ConsumerState<DayDial>
   @override
   void initState() {
     super.initState();
+    _ticker = createTicker(_onTick);
     _awaitingSweep = true;
   }
 
