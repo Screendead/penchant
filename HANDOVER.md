@@ -35,9 +35,9 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
 | UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05); the bundle IDs wait on Jack's Firebase registrations (queue item 3) | `lib/`, `ios/Runner/Info.plist`, `macos/Runner/Configs/AppInfo.xcconfig` |
-| Tech-debt register | 22 issues: 0 critical, 0 high, 11 medium, 11 low (`tools/tech-debt-recount.py` on `feat/brand-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 29 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
+| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), in `feat/bundle-id-penchant` (2026-11-05); both development profiles exist, and a signed `flutter build ios --release` carries the new ID | `lib/firebase_options.dart`, `ios/`, `macos/` |
+| Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
 `dart format` check, `flutter test` and the rules tests. `flutter build macos` fails on master (deployment target);
@@ -74,9 +74,10 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      on iOS and `E2E_DEVICE=macos`.
 2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. After 1c; the
    mock-up does not show it.
-3. **Bundle IDs to `com.screendead.penchant`**, iOS and macOS, with the two new Firebase config files and
-   `firebase_options.dart`, in one PR before any TestFlight upload. **Blocked on Jack** registering the two apps (For
-   Jack to do). The rest of the brand is applied (`r2-brand`, below); `ideas/release-blockers/name-and-bundle-id.md`.
+3. **Bundle IDs to `com.screendead.penchant`: done** (`feat/bundle-id-penchant`, 2026-11-05): iOS and macOS,
+   Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`, the
+   macOS keychain group. The idea file is deleted; what it had left (the domain variant, an App Store search on a
+   device) moved to the support-pages and TestFlight ideas and to For Jack to do.
 4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
 5. **The rest of the register**, medium then low, one class per PR.
@@ -144,7 +145,7 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   brand. Done.
 - **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
   **Penchant**, with the recommended App Store subtitle **"Habit journal & sleep insights"**. Applied to every
-  identity string by #81; the bundle IDs are queue item 3. Backups if the name proves unusable: Kenning, then Sounding.
+  identity string by #81; the bundle IDs followed in `feat/bundle-id-penchant`. Backups if the name proves unusable: Kenning, then Sounding.
 - **`r2-mac-config`** (2026-11-05): the Mac shares the iOS app's Firebase registration and config file (the
   recommended side); the console offered no separate macOS app.
 - **No trademark search** (2026-11-05, Jack): none will be done, professional or otherwise. Don't raise it again.
@@ -226,7 +227,8 @@ once it lands; they stay open until Jack says so:
 
 - **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
   releases stay in the console, so this can be undone.
-- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The main checkout may still
+- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The `com.screendead.penchant`
+  profiles (iOS and Mac) were made by Claude with `xcodebuild -allowProvisioningUpdates` (`CLAUDE.md`), no clicks. The main checkout may still
   hold an uncommitted `macos/Runner.xcodeproj/project.pbxproj` from the 2026-11-04 attempt; #47 carries the team, so
   `git checkout -- macos/Runner.xcodeproj/project.pbxproj` there discards it.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
@@ -262,12 +264,15 @@ once it lands; they stay open until Jack says so:
 - **Firebase registration: done** (2026-11-05). Jack registered the iOS app `com.screendead.penchant` in
   `screendead-vice-tracker` and supplied its `GoogleService-Info.plist` (copy in
   `~/development/tracker-tools/firebase-config/`). The console offers no separate macOS app, so the Mac shares that
-  registration and file, which settles `r2-mac-config` on its recommended side. Claude switches both bundle IDs and
-  configs in one PR (queue item 3). The phone will then see Penchant as a new app: the build installed under the old
-  ID (`com.screendead.tracker.tracker`) stays beside it until deleted, and the new one starts signed out.
+  registration and file, which settles `r2-mac-config` on its recommended side. Both bundle IDs and configs are
+  switched (queue item 3). The phone sees Penchant as a new app: the build installed under the old ID
+  (`com.screendead.tracker.tracker`) stays beside it until deleted, and the new one starts signed out. The two old
+  iOS registrations in the console (`com.screendead.tracker.tracker` and `…tracker.RunnerTests`) serve only that old
+  install; remove them once it is deleted, if wanted.
 - **Choose the domain variant** before the first upload: `penchant.com` is held (MarkMonitor, owner unknown) and
   `penchant.app` is parked, so a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. It sets the
-  support and legal-page addresses.
+  support and legal-page addresses (`ideas/release-blockers/support-about-and-legal-pages.md`). Also before the first
+  upload: search the App Store for Penchant on a device.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 

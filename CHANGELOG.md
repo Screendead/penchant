@@ -21,6 +21,8 @@ pull request titles (`gh pr list --state merged`).
 ### Changed
 
 - The app is called Penchant, and it says "habit" wherever it said "vice". Exports are named `penchant-…`.
+- Penchant installs as a new app (`com.screendead.penchant`) on iPhone and Mac: an earlier build stays beside it until
+  you delete it, and you sign in again in the new one. Your data is unchanged.
 - A new look: paper and ink colours from the app icon, the Red Hat typefaces built into the app, and light and
   dark themes that follow your device's appearance setting (the app was dark only).
 - A new app icon: the Today chart's shape, one colour per segment, on a light background.
