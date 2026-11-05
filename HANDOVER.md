@@ -52,10 +52,11 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Ready to
    merge** (2026-11-05): Jack created the Mac development profile, the signed build runs and Firebase Auth works on
    macOS. `E2E_DEVICE=macos tools/e2e.sh` now runs each file in its own `flutter test` (the macOS runner cannot
-   relaunch the app for a second file) and passes 31/31; iOS passes 31/31. Two macOS-only test failures were the
-   harness, not the app: a hidden or covered macOS window stops frames, so a pump waited forever (tests now call
-   `ensureE2EBinding()`, which forces frames meanwhile), and the day menu in the 600 pt window leaves the newest
-   days scrolled out (the test scrolls to them). One full macOS run also timed out once in `bounded_queries_test.dart`'s
+   relaunch the app for a second file) and passes 31/31; iOS passes 31/31 (both after merging master through #77).
+   Three macOS-only test failures were the harness, not the app: a hidden or covered macOS window stops frames, so a
+   pump waited forever (tests now call `ensureE2EBinding()`, which forces frames meanwhile); the day menu in the
+   600 pt window leaves the newest days scrolled out (the test scrolls to them); and at text scale 3, which macOS
+   never reports outside a test, #74's key scrolls in that window (on macOS only, the test scrolls to each name). One full macOS run also timed out once in `bounded_queries_test.dart`'s
    `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
 2. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
    tiles are a Today layout, which waits on Jack's Today call (`r2-today`); only a shared "log one at the default
