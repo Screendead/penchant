@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Name Sheet</title>
+<meta name="description" content="Seven clear-ish brand names for the journal, each shown as wordmark, home-screen label, App Store result and sign-in screen in the Day Dial style.">
+<script>
+  (function () {
+    var t = new URLSearchParams(location.search).get('theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Day Dial tokens (tokens.json on design/ui-overhaul-day-dial). The icon's five colours mean habits only, so no control here uses them. */
+:root{
+  --bg:#F6F4EF; --surface:#FFFFFF; --surface2:#EFECE5; --text:#1D1C1A; --muted:#635E56; --line:#1D1C1A1A;
+  --accent:#1D1C1A; --on-accent:#F6F4EF; --clear:#E3EFE4; --clear-ink:#276B43;
+  --page:#ECE8E0; --page-2:#E3DED4;
+  --card-shadow:0 2px 8px #1D1C1A12; --pop-shadow:0 10px 30px #1D1C1A26; --tiny-shadow:0 1px 3px #1D1C1A24;
+  --as-bg:#FFFFFF; --as-text:#000000; --as-muted:#8A8A8E; --as-get:#EEEEF0; --as-get-ink:#0A63E0; --as-sep:#3C3C4329;
+  --fd:'Red Hat Display',system-ui,sans-serif; --ft:'Red Hat Text',system-ui,sans-serif; --fm:'Red Hat Mono',ui-monospace,monospace;
+  --ios:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151412; --surface:#1F1D1B; --surface2:#2A2825; --text:#F3F0EA; --muted:#A39E94; --line:#F3F0EA1F;
+    --accent:#F3F0EA; --on-accent:#1D1C1A; --clear:#15241B; --clear-ink:#9ED8B0;
+    --page:#0D0C0B; --page-2:#1A1917;
+    --card-shadow:none; --pop-shadow:0 10px 30px #00000066; --tiny-shadow:none;
+    --as-bg:#1C1C1E; --as-text:#FFFFFF; --as-muted:#98989F; --as-get:#2C2C2E; --as-get-ink:#3B8CFF; --as-sep:#54545899;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151412; --surface:#1F1D1B; --surface2:#2A2825; --text:#F3F0EA; --muted:#A39E94; --line:#F3F0EA1F;
+  --accent:#F3F0EA; --on-accent:#1D1C1A; --clear:#15241B; --clear-ink:#9ED8B0;
+  --page:#0D0C0B; --page-2:#1A1917;
+  --card-shadow:none; --pop-shadow:0 10px 30px #00000066; --tiny-shadow:none;
+  --as-bg:#1C1C1E; --as-text:#FFFFFF; --as-muted:#98989F; --as-get:#2C2C2E; --as-get-ink:#3B8CFF; --as-sep:#54545899;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--text);font-family:var(--ft);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px;text-decoration-color:var(--muted)}
+.mono{font-family:var(--fm);font-variant-numeric:tabular-nums}
+.ic{display:block}
+
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+@media (max-width:560px){.wrap{padding:0 16px}}
+
+/* Head */
+.head{padding:44px 0 20px;display:flex;gap:28px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap}
+.hb{display:flex;gap:18px;align-items:center;min-width:0}
+.hb .ic{width:60px;height:60px;border-radius:15px;box-shadow:var(--pop-shadow);flex:none}
+.kicker{font:600 13px/1 var(--ft);color:var(--muted);letter-spacing:.02em}
+h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
+.thesis{max-width:660px;margin:14px 0 0;font:400 16px/1.5 var(--ft);color:var(--muted)}
+.thesis b{color:var(--text);font-weight:600}
+.seg{display:inline-flex;background:var(--surface);border-radius:999px;padding:4px;box-shadow:var(--card-shadow);border:1px solid var(--line)}
+.seg button{padding:9px 15px;border-radius:999px;font:600 13px/1 var(--ft);color:var(--muted);transition:background .2s,color .2s}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+@media (max-width:560px){h1{font-size:34px}.head{padding-top:28px}}
+
+.caveat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:6px 0 0}
+.cv{background:var(--page-2);border-radius:18px;padding:14px 16px;font:400 13px/1.5 var(--ft);color:var(--muted)}
+.cv b{display:block;font:700 13px/1.2 var(--fd);color:var(--text);margin-bottom:5px;letter-spacing:.01em}
+.cv code{font:500 12px/1 var(--fm);color:var(--text)}
+@media (max-width:900px){.caveat{grid-template-columns:minmax(0,1fr)}}
+
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+.jump a{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font:600 13px/1 var(--ft);text-decoration:none;box-shadow:var(--card-shadow)}
+.jump a .n{font:500 11px/1 var(--fm);color:var(--muted)}
+.jump a.picked{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.jump a.picked .n{color:inherit;opacity:.7}
+
+/* Candidate */
+.cands{display:flex;flex-direction:column;gap:28px;padding:30px 0 0}
+.cand{background:var(--surface);border:1px solid var(--line);border-radius:32px;box-shadow:var(--card-shadow);padding:26px;scroll-margin-top:16px;transition:box-shadow .25s,border-color .25s}
+.cand.rec{border:2px solid var(--accent);padding:25px}
+.cand.is-picked{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),var(--card-shadow)}
+@media (max-width:560px){.cand{padding:18px;border-radius:26px}.cand.rec{padding:17px}}
+
+.ch{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+.ct{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
+.ct .n{font:500 13px/1 var(--fm);color:var(--muted)}
+.ct h2{font:900 30px/1 var(--fd);letter-spacing:-.4px;margin:0}
+.badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;font:600 12.5px/1 var(--ft);white-space:nowrap}
+.badge.rec{background:var(--accent);color:var(--on-accent)}
+.badge.bak{background:var(--surface2);color:var(--text)}
+.badge.ver{background:var(--clear);color:var(--clear-ink)}
+.badge.ver.warn{background:var(--page-2);color:var(--muted)}
+.badge svg{width:14px;height:14px}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.pick{height:44px;padding:0 20px;border-radius:999px;background:var(--surface2);font:600 15px/1 var(--ft);display:inline-flex;align-items:center;gap:8px;transition:background .2s,color .2s,transform .15s}
+.pick:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.pick:active{transform:scale(.97)}
+.pick svg{width:18px;height:18px}
+.pick[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.rec .pick{background:var(--accent);color:var(--on-accent)}
+
+.panels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px}
+@media (max-width:1180px){.panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.panels{grid-template-columns:minmax(0,1fr)}}
+.pn{display:flex;flex-direction:column;gap:9px;min-width:0}
+.pl{font:600 12px/1 var(--ft);color:var(--muted);letter-spacing:.03em;display:flex;justify-content:space-between;gap:8px}
+.pl .mono{font-size:11px;letter-spacing:0}
+.stage{position:relative;height:268px;border-radius:24px;overflow:hidden;background:var(--bg);border:1px solid var(--line)}
+.meta{font:400 12.5px/1.4 var(--ft);color:var(--muted);min-height:18px}
+.meta b{font-weight:600;color:var(--text)}
+.meta .mono{font-size:12px}
+.ok{color:var(--clear-ink);font-weight:600}
+
+/* 1. Wordmark */
+.wm{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;height:100%}
+.lock{display:flex;align-items:center;gap:14px}
+.lock .ic{width:58px;height:58px;border-radius:15px;box-shadow:var(--pop-shadow)}
+.lock span{font:900 42px/1 var(--fd);letter-spacing:-.8px}
+.bar{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--tiny-shadow);font:900 21px/1 var(--fd);letter-spacing:-.3px}
+.bar .ic{width:26px;height:26px;border-radius:7px}
+.bar .chev{width:16px;height:16px;color:var(--muted)}
+
+/* 2. Home screen: SF, as iOS draws it */
+.home{background:radial-gradient(120% 90% at 20% 0%,#5B6C7E 0%,#2D3440 55%,#1B1E24 100%);border:0}
+.hgrid{position:absolute;left:50%;top:50%;transform:translate(-50%,-56%);display:grid;grid-template-columns:repeat(4,62px);column-gap:16px;row-gap:22px}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;width:62px}
+.app .tile{width:62px;height:62px;border-radius:14px;overflow:hidden;background:#ffffff26;display:grid;place-items:center}
+.app .tile .ic{width:62px;height:62px}
+.app .tile i{display:block;width:28px;height:28px;border-radius:8px;background:#ffffff33}
+.lbl{width:76px;font:400 12px/1.2 var(--ios);color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #0006;letter-spacing:-.05px}
+.app.dim .tile{background:#ffffff1f}
+.app.dim .lbl{opacity:.78}
+.dock{position:absolute;left:12px;right:12px;bottom:12px;height:72px;border-radius:26px;background:#ffffff26;backdrop-filter:blur(8px);display:flex;justify-content:space-around;align-items:center;padding:0 10px}
+.dock i{width:50px;height:50px;border-radius:12px;background:#ffffff26;display:block}
+.hl{outline:1.5px dashed #ffffff8c;outline-offset:3px;border-radius:2px}
+
+/* 3. App Store result: SF, the App Store's own colours */
+.store{background:var(--as-bg);font-family:var(--ios);color:var(--as-text);display:flex;flex-direction:column;justify-content:center;padding:0 16px}
+.search{height:36px;border-radius:10px;background:var(--as-get);display:flex;align-items:center;gap:6px;padding:0 9px;font:400 16px/1 var(--ios);color:var(--as-muted);margin-bottom:18px}
+.search svg{width:16px;height:16px}
+.search b{font-weight:400;color:var(--as-text)}
+.res{display:flex;gap:12px;align-items:center}
+.res .ic{width:62px;height:62px;border-radius:14px;flex:none;box-shadow:0 0 0 .5px var(--as-sep)}
+.rt{flex:1;min-width:0}
+.rn{font:600 16px/1.2 var(--ios);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs{font:400 13px/1.25 var(--ios);color:var(--as-muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.get{flex:none;height:28px;padding:0 18px;border-radius:999px;background:var(--as-get);color:var(--as-get-ink);font:700 14px/28px var(--ios);letter-spacing:.2px}
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.shots i{display:block;height:78px;border-radius:10px;background:var(--as-get)}
+.sep{height:.5px;background:var(--as-sep);margin:14px 0 0}
+
+/* 4. Sign-in top: Day Dial auth screen, cropped */
+.signin{display:flex;flex-direction:column;align-items:center;padding:52px 20px 0;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.island{position:absolute;top:9px;left:50%;width:92px;height:27px;margin-left:-46px;border-radius:16px;background:#000}
+.status{position:absolute;top:0;left:0;right:0;height:42px;display:flex;align-items:center;justify-content:space-between;padding:4px 22px 0 30px;font:600 13.5px/1 var(--ios)}
+.status svg{display:block}
+.status .si{display:flex;gap:5px;align-items:center}
+.signin .ic{width:72px;height:72px;border-radius:19px;box-shadow:var(--pop-shadow)}
+.signin .aw{font:900 34px/1 var(--fd);letter-spacing:-.6px;margin-top:16px}
+.signin .at{font:400 13.5px/1.4 var(--ft);color:var(--muted);margin-top:6px;text-align:center}
+.aseg{margin-top:18px;width:100%;display:flex;background:var(--surface2);border-radius:999px;padding:4px}
+.aseg span{flex:1;text-align:center;padding:10px 0;border-radius:999px;font:600 13px/1 var(--ft);color:var(--muted)}
+.aseg span:first-child{background:var(--surface);color:var(--text);box-shadow:var(--tiny-shadow)}
+.afield{margin-top:12px;width:100%;height:44px;border-radius:999px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:0 16px;font:500 13.5px/1 var(--ft);color:var(--text)}
+.afield svg{width:17px;height:17px;color:var(--muted);flex:none}
+
+/* Copy under each candidate */
+.facts{display:grid;grid-template-columns:1.1fr 1.6fr 1fr;gap:14px;margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
+@media (max-width:900px){.facts{grid-template-columns:minmax(0,1fr)}}
+.fact h3{margin:0 0 6px;font:700 12px/1 var(--ft);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.fact p{margin:0;font:400 14.5px/1.5 var(--ft)}
+.fact ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.fact li{font:400 14px/1.45 var(--ft);padding-left:16px;position:relative}
+.fact li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.fact code{font:500 12.5px/1 var(--fm)}
+.fact .rat{font:500 17px/1.4 var(--fd)}
+
+/* Decision */
+.decide{margin:36px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:32px;padding:26px;box-shadow:var(--card-shadow);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px;align-items:start}
+@media (max-width:900px){.decide{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.decide{padding:18px;border-radius:26px}}
+.decide h2{font:900 26px/1.1 var(--fd);letter-spacing:-.3px;margin:0}
+.decide .q{margin:10px 0 0;font:400 14.5px/1.5 var(--ft);color:var(--muted)}
+.choice{margin-top:18px;display:flex;align-items:center;gap:12px;min-height:58px}
+.choice .ic{width:52px;height:52px;border-radius:13px;box-shadow:var(--pop-shadow)}
+.choice .cw{font:900 32px/1 var(--fd);letter-spacing:-.5px}
+.choice .none{font:500 15px/1.4 var(--ft);color:var(--muted)}
+label.nl{display:block;font:600 13px/1 var(--ft);color:var(--muted);margin-bottom:8px}
+textarea{width:100%;min-height:118px;resize:vertical;border-radius:20px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:14px 16px;font:400 15px/1.5 var(--ft)}
+textarea::placeholder{color:var(--muted)}
+#status{margin-top:10px;font:500 13.5px/1.4 var(--ft);color:var(--muted);min-height:19px}
+#status.done{color:var(--clear-ink)}
+.foot{padding:28px 0 56px;font:400 12.5px/1.5 var(--ft);color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="hb">
+      <span data-icon></span>
+      <div>
+        <div class="kicker">Release blocker · Brand name · 2026-11-05</div>
+        <h1>Pick the brand</h1>
+      </div>
+    </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-theme-set="system">System</button>
+      <button type="button" data-theme-set="light">Light</button>
+      <button type="button" data-theme-set="dark">Dark</button>
+    </div>
+  </header>
+  <p class="thesis" style="margin-top:0">The seven names that came through the quick check clear-ish, each in Day Dial with icon 38: wordmark, home-screen label, App Store search result and the top of the sign-in screen. <b>Recommended: Penchant</b>, subtitle "Habit journal &amp; sleep insights". Backups: Kenning, then Sounding.</p>
+
+  <div class="caveat">
+    <div class="cv"><b>Quick check, not clearance</b>This is a quick check, not legal clearance: no USPTO, EUIPO or UKIPO search was run, and "no app found" means web search surfaced none. Quick checks run 2026-11-03 by web search of App Store listings, a web search for brand and trademark conflicts, and DNS, whois and registry lookups.</div>
+    <div class="cv"><b>Domains</b>Every exact <code>.com</code> and <code>.app</code> for every name below is registered (mostly parked or for sale), so plan on a variant (<code>get&lt;name&gt;.app</code>, <code>&lt;name&gt;journal.com</code>) or a purchase.</div>
+    <div class="cv"><b>Before committing</b>A direct App Store search on a device, a trademark search in classes 9, 42 and 44 (USPTO, UKIPO, EUIPO), and a decision on the domain variant. Subtitles are within App Store Connect's 30-character subtitle (from memory, to verify). The subtitles here are proposals; only Penchant's comes from the ideas file.</div>
+  </div>
+
+  <nav class="jump" aria-label="Candidates" id="jump"></nav>
+
+  <main class="cands" id="cands"></main>
+
+  <section class="decide" aria-labelledby="dh">
+    <div>
+      <h2 id="dh">Your call</h2>
+      <p class="q">Which brand? Pick it on its card. Should a trademark search be paid for before the first TestFlight upload? Say so in the note, with any subtitle change, before you pick.</p>
+      <div class="choice" id="choice"><span class="none">Nothing picked yet.</span></div>
+    </div>
+    <div>
+      <label class="nl" for="note">Note (optional)</label>
+      <textarea id="note" placeholder="e.g. Penchant, but subtitle 'Habit & trigger journal'. Pay for the trademark search first."></textarea>
+      <div id="status" role="status" aria-live="polite">No pick yet.</div>
+    </div>
+  </section>
+
+  <p class="foot">Not shown, from the same check: Tidemark, Proclivity and Bearing (verdict "Crowded"), and nine names dropped after it. Home-screen labels and the App Store card are set in the system font, as iOS sets them; the 76 px label box (about 12 characters) is an estimate, unchecked against a device. Source: <code>ideas/release-blockers/brand-name.md</code>.</p>
+</div>
+
+<script>
+const ICON = cls => `<svg class="ic ${cls || ''}" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#F6F4EF"/><polygon points="50,50 50,14 80.8,40" fill="#FFB347"/><polygon points="50,50 80.8,40 65.5,71.4" fill="#FF7A59"/><polygon points="50,50 65.5,71.4 31.7,75.2" fill="#E8505B"/><polygon points="50,50 31.7,75.2 29.5,43.3" fill="#9B5DE5"/><polygon points="50,50 29.5,43.3 50,14" fill="#4D96FF"/><path d="M50,50 L50,10 M50,50 L88,37.6 M50,50 L73.5,82.4 M50,50 L26.5,82.4 M50,50 L12,37.6" stroke="#1D1C1A" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const SV = {
+  chev: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7l8 6 8-6"/></svg>',
+  status: '<span>9:41</span><span class="si"><svg width="16" height="11" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg><svg width="15" height="11" viewBox="0 0 16 12"><path d="M8 11.5l2.2-2.6a3.2 3.2 0 00-4.4 0zM3.4 6.6a6.8 6.8 0 019.2 0l1.4-1.6a9 9 0 00-12 0zM.6 3.4a11 11 0 0114.8 0L16.6 2a13 13 0 00-17.2 0z" fill="currentColor"/></svg><svg width="24" height="12" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"/><path d="M25 4.5v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg></span>'
+};
+
+/* Rationale, quick check and verdict are verbatim from ideas/release-blockers/brand-name.md (2026-11-05).
+   Risks are verbatim fragments of the same row. Subtitles other than Penchant's are proposals. */
+const C = [
+  { name: 'Penchant', tag: 'rec', sub: 'Habit journal & sleep insights', subSrc: 'From the ideas file',
+    rat: 'A habitual liking: names the leaning without judging it.',
+    check: 'No app found; no software or wellness brand found. <code>.com</code> held through MarkMonitor since 1995 (a brand owner, unknown); <code>.app</code> parked.',
+    verdict: 'Clear-ish',
+    risks: ['<code>.com</code> held through MarkMonitor since 1995 (a brand owner, unknown)', '<code>.app</code> parked'] },
+  { name: 'Kenning', tag: 'Backup 1', sub: 'Know your habits and triggers', subSrc: 'Proposed',
+    rat: 'Old English "knowing": self-knowledge.',
+    check: 'No app or notable brand found. <code>.com</code> parked; <code>.app</code> has a live site, content unclear.',
+    verdict: 'Clear-ish',
+    risks: ['<code>.app</code> has a live site, content unclear', '<code>.com</code> parked'] },
+  { name: 'Sounding', tag: 'Backup 2', sub: 'Habit journal & pattern finder', subSrc: 'Proposed',
+    rat: 'A depth reading: measuring what lies beneath.',
+    check: 'No app or brand found. <code>.com</code> hosts a site titled "Sounding"; <code>.app</code> parked.',
+    verdict: 'Clear-ish',
+    risks: ['<code>.com</code> hosts a site titled "Sounding"', '<code>.app</code> parked'] },
+  { name: 'Tendency', sub: 'See the patterns in your days', subSrc: 'Proposed',
+    rat: 'Plain word for a pattern.',
+    check: 'No exact app; "Tend: Habit Tracker" and "Tenday" are close. <code>.com</code> live; <code>.app</code> parked.',
+    verdict: 'Clear-ish, bland',
+    risks: ['bland', '"Tend: Habit Tracker" and "Tenday" are close', '<code>.com</code> live'] },
+  { name: 'Plumb', sub: 'Get to the bottom of habits', subSrc: 'Proposed',
+    rat: 'To plumb: to get to the bottom of something.',
+    check: 'No app found, but "Plume - Journaling" sounds alike. <code>.com</code> resolves with no page; <code>.app</code> parked.',
+    verdict: 'Clear-ish, sound-alike risk',
+    risks: ['sound-alike risk', '"Plume - Journaling" sounds alike'] },
+  { name: 'Wont', sub: 'A private habit journal', subSrc: 'Proposed',
+    rat: '"As is my wont": habit, archaic and neutral.',
+    check: 'No exact app; "dont - break bad habits" is the same idea. <code>.com</code> live; <code>.app</code> 404.',
+    verdict: 'Clear-ish, reads as a typo of "won\'t"',
+    risks: ['reads as a typo of "won\'t"', '"dont - break bad habits" is the same idea', '<code>.com</code> live'] },
+  { name: 'Leaning', sub: 'Habit & trigger journal', subSrc: 'From the ideas file',
+    rat: 'What you lean towards.',
+    check: 'No app or brand found. <code>.com</code> 403; <code>.app</code> registered, no site.',
+    verdict: 'Clear-ish, weak and has a political sense',
+    risks: ['weak and has a political sense', '<code>.app</code> registered, no site'] }
+];
+
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const len = s => [...s].length;
+const SUB_MAX = 30;
+
+document.querySelector('[data-icon]').outerHTML = ICON();
+
+const cands = document.getElementById('cands');
+const jump = document.getElementById('jump');
+C.forEach((c, i) => {
+  const id = c.name.toLowerCase();
+  const n = String(i + 1).padStart(2, '0');
+  const badge = c.tag === 'rec'
+    ? `<span class="badge rec">${SV.star}Recommended</span>`
+    : c.tag ? `<span class="badge bak">${c.tag}</span>` : '';
+  const plain = c.verdict === 'Clear-ish';
+  const listing = `${c.name}: ${c.sub}`;
+  const el = document.createElement('article');
+  el.className = 'cand' + (c.tag === 'rec' ? ' rec' : '');
+  el.id = id;
+  el.innerHTML = `
+    <div class="ch">
+      <div class="ct"><span class="n">${n}</span><h2>${c.name}</h2>
+        <div class="badges">${badge}<span class="badge ver${plain ? '' : ' warn'}">${esc(c.verdict)}</span></div></div>
+      <button type="button" class="pick" data-pick="${id}" aria-pressed="false">${SV.check}<span>Pick ${c.name}</span></button>
+    </div>
+    <div class="panels">
+      <div class="pn">
+        <div class="pl"><span>Wordmark</span><span class="mono">Red Hat Display 900</span></div>
+        <div class="stage"><div class="wm">
+          <div class="lock">${ICON()}<span>${c.name}</span></div>
+          <div class="bar">${ICON()}<span>${c.name}</span>${SV.chev}</div>
+        </div></div>
+        <div class="meta">Lock-up at 42, app bar at 21, as Day Dial sets them.</div>
+      </div>
+      <div class="pn">
+        <div class="pl"><span>Home screen</span><span class="mono">SF 12, 76 px box</span></div>
+        <div class="stage home"><div class="hgrid">
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Calendar</div></div>
+          <div class="app"><div class="tile">${ICON()}</div><div class="lbl hl" data-label>${c.name}</div></div>
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Notes</div></div>
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Reminders</div></div>
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Weather</div></div>
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Health</div></div>
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Photos</div></div>
+          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Settings</div></div>
+        </div><div class="dock"><i></i><i></i><i></i><i></i></div></div>
+        <div class="meta" data-fit></div>
+      </div>
+      <div class="pn">
+        <div class="pl"><span>App Store search</span><span class="mono">${len(c.sub)}/${SUB_MAX}</span></div>
+        <div class="stage store">
+          <div class="search">${SV.search}<b>${c.name.toLowerCase()}</b></div>
+          <div class="res">${ICON()}<div class="rt"><div class="rn">${c.name}</div><div class="rs">${esc(c.sub)}</div></div><span class="get">Get</span></div>
+          <div class="shots"><i></i><i></i><i></i></div>
+          <div class="sep"></div>
+        </div>
+        <div class="meta"><b>${esc(listing)}</b><br>${c.subSrc} subtitle, <span class="mono">${len(c.sub)}</span> characters${len(c.sub) <= SUB_MAX ? '' : ' (over the limit)'}.</div>
+      </div>
+      <div class="pn">
+        <div class="pl"><span>Sign-in, top</span><span class="mono">Day Dial frame 06</span></div>
+        <div class="stage"><div class="signin">
+          <div class="island"></div><div class="status">${SV.status}</div>
+          ${ICON()}
+          <div class="aw">${c.name}</div>
+          <div class="at">A private journal of your days.</div>
+          <div class="aseg"><span>Sign in</span><span>Create account</span></div>
+          <div class="afield">${SV.mail}sam@example.com</div>
+        </div></div>
+        <div class="meta">Tagline as in the Day Dial mock-up.</div>
+      </div>
+    </div>
+    <div class="facts">
+      <div class="fact"><h3>Rationale</h3><p class="rat">${esc(c.rat)}</p></div>
+      <div class="fact"><h3>Quick check · ${esc(c.verdict)}</h3><p>${c.check}</p></div>
+      <div class="fact"><h3>Risks</h3><ul>${c.risks.map(r => `<li>${r}</li>`).join('')}</ul></div>
+    </div>`;
+  cands.append(el);
+  const a = document.createElement('a');
+  a.href = '#' + id; a.dataset.for = id;
+  a.innerHTML = `<span class="n">${n}</span>${c.name}`;
+  jump.append(a);
+});
+
+/* Truncation is measured in the label box, not assumed. */
+function measure() {
+  document.querySelectorAll('.cand').forEach(card => {
+    const l = card.querySelector('[data-label]');
+    const out = card.querySelector('[data-fit]');
+    const cut = l.scrollWidth > l.clientWidth + 0.5;
+    const w = Math.ceil(l.scrollWidth);
+    out.innerHTML = cut
+      ? `<b>Truncates</b>: needs <span class="mono">${w}</span> of <span class="mono">${l.clientWidth}</span> px.`
+      : `<span class="ok">Fits</span>, <span class="mono">${len(l.textContent)}</span> characters, <span class="mono">${w}</span> of <span class="mono">${l.clientWidth}</span> px.`;
+  });
+  document.documentElement.dataset.sh = document.documentElement.scrollHeight;
+  document.documentElement.dataset.sw = document.documentElement.scrollWidth;
+}
+measure();
+document.fonts.ready.then(measure);
+
+/* Theme: System follows prefers-color-scheme; Light and Dark override it. */
+const themeBtns = document.querySelectorAll('[data-theme-set]');
+function setTheme(t) {
+  if (t === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+  themeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
+}
+themeBtns.forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeSet)));
+setTheme(document.documentElement.dataset.theme || 'system');
+
+/* Pick: set state, then hand the choice and note to window.saveBrandPick when the host provides it. */
+const state = { choice: null };
+const statusEl = document.getElementById('status');
+const noteEl = document.getElementById('note');
+function render() {
+  document.querySelectorAll('[data-pick]').forEach(b => {
+    const on = b.dataset.pick === state.choice;
+    b.setAttribute('aria-pressed', String(on));
+    b.querySelector('span').textContent = on ? 'Picked' : 'Pick ' + C.find(c => c.name.toLowerCase() === b.dataset.pick).name;
+    b.closest('.cand').classList.toggle('is-picked', on);
+  });
+  jump.querySelectorAll('a').forEach(a => a.classList.toggle('picked', a.dataset.for === state.choice));
+  const c = C.find(c => c.name.toLowerCase() === state.choice);
+  document.getElementById('choice').innerHTML = c
+    ? `${ICON()}<span class="cw">${c.name}</span>`
+    : '<span class="none">Nothing picked yet.</span>';
+}
+document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', async () => {
+  state.choice = b.dataset.pick;
+  render();
+  const note = noteEl.value;
+  const name = C.find(c => c.name.toLowerCase() === state.choice).name;
+  statusEl.classList.remove('done');
+  if (typeof window.saveBrandPick === 'function') {
+    statusEl.textContent = `Saving ${name}…`;
+    try {
+      await window.saveBrandPick(state.choice, note);
+      statusEl.textContent = `Saved: ${name}${note.trim() ? ', with your note' : ''}.`;
+      statusEl.classList.add('done');
+    } catch (e) {
+      statusEl.textContent = `Picked ${name}, but saving failed: ${e && e.message ? e.message : e}. Pick again to retry.`;
+    }
+  } else {
+    statusEl.textContent = `Picked ${name}. Not saved: this page has no save hook.`;
+  }
+}));
+</script>
+</body>
+</html>
