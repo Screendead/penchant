@@ -70,7 +70,7 @@ class DialPalette {
     text: Color(0xFF1D1C1A),
     muted: Color(0xFF635E56),
     line: Color(0x1A1D1C1A),
-    outline: Color(0x801D1C1A),
+    outline: Color(0x8C1D1C1A),
     accent: Color(0xFF1D1C1A),
     onAccent: Color(0xFFF6F4EF),
     danger: Color(0xFFB42A37),

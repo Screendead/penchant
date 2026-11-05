@@ -337,7 +337,7 @@ class ViceChart extends ConsumerWidget {
     final int rings = scale.top ~/ scale.step;
 
     final RadarDataSet dataSet = RadarDataSet(
-      fillColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+      fillColor: theme.colorScheme.primary.withValues(alpha: 0.1),
       borderColor: theme.colorScheme.primary,
       entryRadius: 6,
       dataEntries: [

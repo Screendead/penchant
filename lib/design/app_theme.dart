@@ -94,6 +94,23 @@ ThemeData appTheme(Brightness brightness) {
         borderSide: BorderSide(color: color, width: width),
       );
 
+  // The system's focus ring: 2px of accent at a 2px offset. strokeAlign 3
+  // centres a 2px stroke 3px outside the shape, so it spans 2px to 4px.
+  const double focusWidth = 2;
+  final BorderSide focusRing = BorderSide(
+    color: p.accent,
+    width: focusWidth,
+    strokeAlign: 3,
+  );
+  // A button with no fill takes the ring on its own edge.
+  final BorderSide focusEdge = BorderSide(color: p.accent, width: focusWidth);
+  WidgetStateProperty<BorderSide?> sideWhenFocused(
+    BorderSide focused, [
+    BorderSide? rest,
+  ]) => WidgetStateProperty.resolveWith(
+    (Set<WidgetState> s) => s.contains(WidgetState.focused) ? focused : rest,
+  );
+
   final ButtonStyle primaryButton = ButtonStyle(
     backgroundColor: WidgetStateProperty.resolveWith(
       (Set<WidgetState> s) =>
@@ -115,7 +132,20 @@ ThemeData appTheme(Brightness brightness) {
       EdgeInsets.symmetric(horizontal: DialSpace.xl),
     ),
     shape: const WidgetStatePropertyAll<OutlinedBorder>(pill),
+    side: sideWhenFocused(focusRing),
   );
+
+  // Selection is ink: Material's time picker marks the selected hour or
+  // minute with primaryContainer, which here is the same surface2 as an
+  // unselected one. A focused input field keeps a surface fill so its accent
+  // cursor and border show.
+  bool selectedOnly(Set<WidgetState> s) =>
+      s.contains(WidgetState.selected) && !s.contains(WidgetState.focused);
+  OutlineInputBorder timeFieldBorder(Color color, [double width = 1]) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: color, width: width),
+      );
 
   return ThemeData(
     useMaterial3: true,
@@ -176,13 +206,15 @@ ThemeData appTheme(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(style: primaryButton),
     elevatedButtonTheme: ElevatedButtonThemeData(style: primaryButton),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: p.text,
-        textStyle: label,
-        minimumSize: const Size(64, DialSize.pillHeight),
-        side: BorderSide(color: p.outline),
-        shape: pill,
-      ),
+      style:
+          OutlinedButton.styleFrom(
+            foregroundColor: p.text,
+            textStyle: label,
+            minimumSize: const Size(64, DialSize.pillHeight),
+            shape: pill,
+          ).copyWith(
+            side: sideWhenFocused(focusEdge, BorderSide(color: p.outline)),
+          ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
@@ -190,10 +222,46 @@ ThemeData appTheme(Brightness brightness) {
         textStyle: label,
         minimumSize: const Size(DialSize.minTapTarget, DialSize.minTapTarget),
         shape: pill,
-      ),
+      ).copyWith(side: sideWhenFocused(focusEdge)),
     ),
     iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(foregroundColor: p.text),
+      style: IconButton.styleFrom(
+        foregroundColor: p.text,
+      ).copyWith(side: sideWhenFocused(focusEdge)),
+    ),
+    timePickerTheme: TimePickerThemeData(
+      hourMinuteColor: WidgetStateColor.resolveWith(
+        (Set<WidgetState> s) => selectedOnly(s) ? p.accent : p.surface,
+      ),
+      hourMinuteTextColor: WidgetStateColor.resolveWith(
+        (Set<WidgetState> s) => selectedOnly(s) ? p.onAccent : p.text,
+      ),
+      dayPeriodColor: WidgetStateColor.resolveWith(
+        (Set<WidgetState> s) =>
+            s.contains(WidgetState.selected) ? p.accent : Colors.transparent,
+      ),
+      dayPeriodTextColor: WidgetStateColor.resolveWith(
+        (Set<WidgetState> s) =>
+            s.contains(WidgetState.selected) ? p.onAccent : p.muted,
+      ),
+      dayPeriodBorderSide: BorderSide(color: p.outline),
+      dialBackgroundColor: p.surface,
+      // Replaces Material's, whose fields have no border at rest and whose
+      // hint (the current value, shown while a field is unfocused) is 36%.
+      inputDecorationTheme: InputDecorationThemeData(
+        contentPadding: EdgeInsets.zero,
+        filled: true,
+        enabledBorder: timeFieldBorder(p.outline),
+        focusedBorder: timeFieldBorder(p.accent, 2),
+        errorBorder: timeFieldBorder(p.danger, 2),
+        focusedErrorBorder: timeFieldBorder(p.danger, 2),
+        hintStyle: textTheme.displayMedium!.copyWith(color: p.muted),
+        errorStyle: const TextStyle(fontSize: 0),
+      ),
+    ),
+    datePickerTheme: DatePickerThemeData(
+      // Material's is onSurface at 60%: 4.2:1 on surface2 in light.
+      subHeaderForegroundColor: p.muted,
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: p.accent,
