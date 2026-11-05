@@ -31,12 +31,14 @@
   const TAU = Math.PI * 2, ang = m => m / 1440 * TAU - Math.PI / 2;
   function clearDial(now, line2) {
     let s = '<svg viewBox="-160 -160 320 320"><circle class="disc" r="124"/><circle class="rim" r="124"/>';
-    s += '<circle class="wash" r="116"/><circle class="ring" r="116"/><g opacity=".25">';
+    s += '<circle class="wash" r="116"/><circle class="ring" r="116"/>';
+    let minors = '', majors = '';
     for (let i = 0; i < 24; i++) {
       const maj = i % 3 === 0, a = ang(i * 60), r0 = maj ? 54 : 64, r1 = maj ? 140 : 132;
-      s += `<line class="spoke${maj ? ' maj' : ''}" x1="${r0 * Math.cos(a)}" y1="${r0 * Math.sin(a)}" x2="${r1 * Math.cos(a)}" y2="${r1 * Math.sin(a)}"/>`;
+      const l = `<line class="spoke${maj ? ' maj' : ''}" x1="${r0 * Math.cos(a)}" y1="${r0 * Math.sin(a)}" x2="${r1 * Math.cos(a)}" y2="${r1 * Math.sin(a)}"/>`;
+      if (maj) majors += l; else minors += l;
     }
-    s += '</g>';
+    s += `<g opacity=".25">${minors}</g>${majors}`;
     for (const h of [0, 6, 12, 18]) { const a = ang(h * 60); s += `<text class="numeral" x="${152 * Math.cos(a)}" y="${152 * Math.sin(a) + .5}" text-anchor="middle" dominant-baseline="central">${String(h).padStart(2, '0')}</text>`; }
     if (now != null) {
       const A = ang(now);

@@ -25,8 +25,8 @@
   .spoke { stroke: var(--spoke); stroke-width: 1; stroke-linecap: round; opacity: .45; } .spoke.maj { stroke-width: 1.4; opacity: 1; }
   .numeral { font: 700 12px/1 var(--font-display); letter-spacing: .6px; fill: var(--muted); }
   .hub { fill: var(--bg); } .hub-t1 { font: 500 21px/1 var(--font-mono); fill: var(--text); }
-  .c1 { --c: var(--data1); --cr: var(--data1Rim); } .c2 { --c: var(--data2); --cr: var(--data2Rim); } .c4 { --c: var(--data4); --cr: var(--data4Rim); } .c5 { --c: var(--data5); --cr: var(--data5Rim); }
-  .ghost { opacity: .4; } .bf { fill: var(--c); } .br { fill: none; stroke: var(--cr); stroke-width: 1.25; }
+  .c1 { --c: var(--data1); --ci: var(--data1Ink); } .c2 { --c: var(--data2); --ci: var(--data2Ink); } .c4 { --c: var(--data4); --ci: var(--data4Ink); } .c5 { --c: var(--data5); --ci: var(--data5Ink); }
+  .ghost .bf { fill: var(--c); fill-opacity: .4; } .ghost .br { fill: none; stroke: var(--ci); stroke-width: 1.25; }
   .knob { fill: var(--accent); stroke: var(--surface); stroke-width: 3; }
   .shand { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
   .meta { text-align: center; font: 400 12.5px/1.4 var(--font-text); color: var(--muted); margin-top: 6px; }

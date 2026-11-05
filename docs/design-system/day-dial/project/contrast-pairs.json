@@ -42,12 +42,17 @@
     { "fg": "outline", "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or outlined button's border against the ground; a slider's track; in the app's current charts, the raw series and the radar's rings", "was": { "fg": "line" } },
     { "fg": "outline", "bg": "surface", "min": 3, "kind": "boundary", "purpose": "A text field's border against its own fill; an outlined button on a card or sheet", "was": { "fg": "line" } },
     { "fg": "outline", "bg": "surface2", "min": 3, "kind": "boundary", "purpose": "The small segmented thumb's border against its track", "was": { "fg": "surface" } },
+    { "fg": ["outline", "surface"], "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or secondary button's border as painted, over its own surface fill, against the ground outside it" },
+    { "fg": ["outline", "surface"], "bg": "surface2", "min": 3, "kind": "boundary", "purpose": "The small segmented thumb's ring as painted, over the thumb's surface, against the track; a time field's border in a surface2 dialog" },
     { "fg": "outline", "bg": "surface", "min": 3, "kind": "boundary", "purpose": "A sheet's grab handle", "was": { "fg": "text@0.18" } },
     { "fg": "outline", "bg": ["mix(data{n},10)", "surface"], "per_habit": true, "min": 3, "kind": "graphic", "purpose": "The chart's cursor line across the average's area", "was": { "fg": "text@0.25" } },
     { "fg": "data{n}Ink", "bg": ["mix(data{n},18)", "surface"], "per_habit": true, "min": 3, "kind": "boundary", "purpose": "A selected chip's border against its own fill (it is data{n}Ink on surface outside)" },
 
     { "fg": "spoke", "bg": "surface", "min": 3, "kind": "graphic", "purpose": "The dial's major spokes (every 3 hours), the hour ring's ticks" },
     { "fg": "spoke", "bg": "surface2", "min": 3, "kind": "graphic", "purpose": "Major spokes on a day's dial opened from Trends (disc in surface2)" },
+    { "fg": "spoke", "bg": "bg", "min": 3, "kind": "graphic", "purpose": "A major spoke past the disc's rim, radius 124 to 140" },
+    { "fg": "spoke", "bg": "clear", "min": 3, "kind": "graphic", "purpose": "A major spoke crossing the clear-day band; the majors stay at full strength on a clear day", "was": { "fg": "spoke@0.25" } },
+    { "fg": "spoke", "bg": "surface", "min": 3, "kind": "graphic", "purpose": "A major spoke on a clear day's disc", "was": { "fg": "spoke@0.25" } },
     { "fg": "clearInk", "bg": "clear", "min": 3, "kind": "graphic", "purpose": "The clear-day ring on its wash", "was": { "fg": "clearInk@0.6" } },
     { "fg": "clearInk", "bg": "surface", "min": 3, "kind": "graphic", "purpose": "A met password rule's filled circle on the checklist card" },
     { "fg": "surface", "bg": "clearInk", "min": 3, "kind": "icon", "purpose": "The tick inside a met rule's circle" },
@@ -66,6 +71,10 @@
     { "fg": "data{n}Ink", "bg": "surface", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "Ring and dotted beads, a pending bead's dashes, ring pips, calendar dots, the chart's raw series, dots and average, the sparkline", "was": { "fg": "data{n}" } },
     { "fg": "data{n}Ink", "bg": "surface2", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "Ring, dotted and pending beads on a day's dial opened from Trends; a ring pip in a chip at rest", "was": { "fg": "data{n}" } },
     { "fg": "data{n}Ink", "bg": "bg", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ring pip in a tally row", "was": { "fg": "data{n}" } },
-    { "fg": "data{n}Ink", "bg": ["mix(data{n},10)", "surface"], "per_habit": true, "min": 3, "kind": "graphic", "purpose": "The chart's raw series and dots crossing the average's area", "was": { "fg": "data{n}@0.5" } }
+    { "fg": "data{n}Ink", "bg": ["mix(data{n},10)", "surface"], "per_habit": true, "min": 3, "kind": "graphic", "purpose": "The chart's raw series and dots crossing the average's area", "was": { "fg": "data{n}@0.5" } },
+    { "fg": ["data{n}Ink", "data{n}@0.4"], "bg": "surface", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ghost bead on the amount sheet's mini dial: fill at 40%, edge in data{n}Ink at full strength", "was": { "fg": ["data{n}Rim@0.4", "data{n}@0.4"] } },
+    { "fg": ["data{n}Ink", "data{n}@0.4"], "bg": "surface2", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ghost bead on a mini dial whose disc is surface2", "was": { "fg": ["data{n}Rim@0.4", "data{n}@0.4"] } },
+    { "fg": "outline", "bg": ["accent@0.1", "bg"], "min": 3, "kind": "graphic", "purpose": "The app's current radar chart (until the dial replaces it): a ring inside the data's 10% fill", "was": { "bg": ["accent@0.2", "bg"] } },
+    { "fg": "muted", "bg": ["accent@0.1", "bg"], "min": 4.5, "kind": "text", "purpose": "The app's current radar chart: a ring's value label and the spokes inside the data's 10% fill", "was": { "bg": ["accent@0.2", "bg"] } }
   ]
 }
