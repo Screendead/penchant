@@ -2,7 +2,8 @@
 
 `index.html` is the clickable mock-up and `tokens.json` holds the tokens. `stills-*.png` are renders of
 `index.html`, made by `node shoot.mjs <out.png> "<query>" <w> <h> [waitMs] [js] [scale]` (headless Chrome over
-CDP in real time; `--virtual-time-budget` skips requestAnimationFrame, so it shows springs frozen). Query flags:
+CDP in real time; `--virtual-time-budget` proved unreliable for requestAnimationFrame and froze the springs
+in one run). Query flags:
 `theme=light|dark`, `rm=1` (reduced motion), `frames=today-busy,record,...`, `record=sheet|earlier`,
 `probe=<bucket>`, `hist=1`, `signup=1`.
 
@@ -157,6 +158,13 @@ The mock-up honours `prefers-reduced-motion`, and its "Reduce motion" button sim
 - Spring check: stiffness 380 and damping 26 give a damping ratio of 0.67. That peaks at 216 ms with about 6%
   overshoot (the direction said about 4%) and stays within 0.5% of its target from 350 ms. The mock-up runs each
   spring for 450 ms.
+
+## Not in the mock-up
+
+- **9 or more habits**: in the direction, the rose shrinks to a summary and ranked habit rows become the main read.
+  This is not built or demoed. The mock-up shows 5 habits, and 6 once you add one under Habits (striped colour).
+- **Label overflow**: the fallback to numbered markers and a key list is specified above but not demoed.
+- **Rejected-write banner and the macOS rail**: described above but not drawn.
 
 ## What it costs
 
