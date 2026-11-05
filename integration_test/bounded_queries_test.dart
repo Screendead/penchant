@@ -37,13 +37,11 @@ void main() {
     }
 
     await recordActivity(tester, names.last, 2);
-    // Thirty-one titles cannot be drawn whole, so the key lists every total.
-    for (final String name in names) {
-      await pumpUntil(
-        tester,
-        find.text('$name: ${name == names.last ? '2 drinks' : '0 drinks'}'),
-      );
-    }
+    // The fan shows seven of them and More; every habit has a tally.
+    await expectTallies(tester, <String>{
+      for (final String name in names)
+        '$name (${name == names.last ? '2 drinks' : '0 drinks'})',
+    });
     await screenshot(tester, 'today-31-vices');
   });
 

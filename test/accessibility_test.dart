@@ -78,11 +78,11 @@ final List<Vice> _longNamed = [
 
 // Scrolls [finder] to the middle of the screen, clear of the Log button.
 Future<void> _centre(WidgetTester tester, Finder finder) async {
-  await tester.scrollUntilVisible(
-    finder,
-    100,
-    scrollable: find.byType(Scrollable).first,
-  );
+  // Today's list builds its rows only as they near the screen.
+  for (int i = 0; i < 20 && finder.evaluate().isEmpty; i++) {
+    await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+    await tester.pump();
+  }
   await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
 }
@@ -101,8 +101,8 @@ void main() {
       expect(
         summary,
         startsWith(
-          'Today, ${dayPillDate(_today, _today)}. coffee 2 items, '
-          'beer 0 items, tea 1 item. First entry ',
+          'Today, ${dayPillDate(_today, _today)}. beer 0 items, '
+          'coffee 2 items, tea 1 item. First entry ',
         ),
       );
       expect(find.bySemanticsLabel(summary), findsOneWidget);
@@ -246,16 +246,24 @@ void main() {
         await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
         expect(tester.takeException(), isNull);
 
-        for (final Vice vice in _longNamed) {
+        // Top to bottom: equal creation times list by id.
+        final List<Vice> shown = [..._longNamed]
+          ..sort((Vice a, Vice b) => a.id.compareTo(b.id));
+        for (final Vice vice in shown) {
           final Finder name = find.descendant(
-            of: find.byType(TallyRow),
-            matching: find.text(vice.name),
+            of: find.byType(TallyRow, skipOffstage: false),
+            matching: find.text(vice.name, skipOffstage: false),
+            skipOffstage: false,
           );
           await _centre(tester, name);
           final Text text = tester.widget<Text>(name);
           expect(text.maxLines, isNull, reason: vice.name);
           expect(text.overflow, isNot(TextOverflow.ellipsis));
-          expect(name.hitTestable(), findsOneWidget, reason: vice.name);
+          expect(
+            find.text(vice.name).hitTestable(),
+            findsOneWidget,
+            reason: vice.name,
+          );
         }
       });
 

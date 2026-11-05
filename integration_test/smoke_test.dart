@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/main.dart' as app;
 
@@ -22,7 +21,11 @@ void main() {
     await addVicesThroughManageData(tester);
 
     await recordActivity(tester, 'Coffee', 2);
-    await pumpUntil(tester, find.byType(RadarChart));
+    await expectTallies(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+      'Water (0 drinks)',
+    });
 
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntil(tester, find.text('Your Habits'));

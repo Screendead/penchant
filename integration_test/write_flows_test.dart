@@ -75,17 +75,17 @@ void main() {
       'Juice (0 drinks)',
     };
     await recordActivity(tester, 'Coffee', 2);
-    await expectRadar(tester, withJuice);
+    await expectTallies(tester, withJuice);
 
     await _setArchived(tester, 'Juice', archived: true);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
     });
 
     await _setArchived(tester, 'Juice', archived: false);
-    await expectRadar(tester, withJuice);
+    await expectTallies(tester, withJuice);
   });
 
   testWidgets('a vice stored without the archived field shows on Today, '
@@ -94,7 +94,7 @@ void main() {
     await register(tester, 'e2e-legacy-vice@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
     await recordActivity(tester, 'Coffee', 2);
-    await expectBars(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
     });
@@ -110,14 +110,14 @@ void main() {
       },
     });
     expect((await _storedVice('Kombucha')).containsKey('archived'), isFalse);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Kombucha (0 drinks)',
     });
 
     await recordActivity(tester, 'Kombucha', 3);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Kombucha (3 drinks)',
@@ -126,7 +126,7 @@ void main() {
     expect((await storedActivities('Kombucha')).single.data()['quantity'], 3);
 
     await _setArchived(tester, 'Kombucha', archived: true);
-    await expectBars(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
     });

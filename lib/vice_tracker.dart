@@ -103,10 +103,10 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     final AsyncValue<List<ViceActivity>> activitiesValue = ref.watch(
       viceActivityDayProvider(day),
     );
-    final List<Vice>? vices = vicesValue.value;
+    final List<Vice>? listed = vicesValue.value;
 
     // With no habits there is nothing to draw, whatever the day's query did.
-    if (!vicesValue.hasError && vices != null && vices.isEmpty) {
+    if (!vicesValue.hasError && listed != null && listed.isEmpty) {
       return const InfoBox(message: ViceTracker.noHabits);
     }
 
@@ -122,9 +122,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     }
 
     final Map<String, HabitMark> marks = habitMarks(
-      allVices ?? vices ?? const <Vice>[],
+      allVices ?? listed ?? const <Vice>[],
     );
     HabitMark markOf(Vice vice) => marks[vice.id] ?? const HabitMark(0);
+    // Oldest first, as their colours are given; the list comes newest first.
+    final List<Vice>? vices = listed == null
+        ? null
+        : ([...listed]..sort(
+            (Vice a, Vice b) =>
+                markOf(a).creationIndex.compareTo(markOf(b).creationIndex),
+          ));
     final List<ViceActivity>? activities = activitiesValue.value;
     final Map<String, Vice> byID = <String, Vice>{
       for (final Vice vice in vices ?? const <Vice>[]) vice.id: vice,
