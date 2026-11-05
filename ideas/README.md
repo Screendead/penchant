@@ -40,7 +40,7 @@ Each list is in the recommended build order.
 - [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, Needs Jack
 - [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M, Needs Jack
 - [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S, Needs Jack
-- [Make a final icon and generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M, Needs Jack
+- [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M
 - [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6), Needs Jack
 
 ## v1 must-haves (7)
@@ -91,8 +91,8 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
    build that migrates.
 4. **1.0 captures everything that cannot be backfilled:** the granular fields, trigger tagging, the check-in, the
    timeline Today and the free trend views. Health and Calendar history can be read later, so they wait for 1.1.
-5. **Store material:** the brand applied, privacy policy, support pages, neutral copy and disclaimer, 18+, icon and
-   automated screenshots; then internal and external TestFlight on a separate beta Firebase project, as a review
+5. **Store material:** the brand applied, privacy policy, support pages, neutral copy and disclaimer, 18+ and
+   automated screenshots (the icon is done); then internal and external TestFlight on a separate beta Firebase project, as a review
    rehearsal.
 6. **1.0 ships free on iOS,** with the Mac on the same record if its e2e run is green, otherwise in 1.0.x. No in-app
    purchase in the first review; Crashlytics only.

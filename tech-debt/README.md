@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**25 issues: 0 critical, 0 high, 13 medium, 12 low.**
+**24 issues: 0 critical, 0 high, 12 medium, 12 low.**
 
 ## Firebase Data Layer (5)
 
@@ -22,15 +22,13 @@ Firestore security rules, index and query shapes, the document schema contract, 
 
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
-- **medium** — [The rules deploy job is off, and index or console drift goes unchecked](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
+- **low** — [Nothing checks the index file against the queries or the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 - **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
-## Widget State and View Logic (2)
+## Widget State and View Logic (1)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
-
-- **low** — [Radar titles are left uncut, and can overlap, when too crowded for an ellipsis](widget-state-and-view-logic/radar-titles-are-not-width-bounded-when-crowded.md)
 - **low** — [The oldest weekly bucket is a short remainder, summed like a full week](widget-state-and-view-logic/oldest-weekly-bucket-holds-the-remainder.md)
 
 ## Error Handling and Observability (1)

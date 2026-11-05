@@ -24,7 +24,7 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('Today charts an account with more vices than an `in` filter '
+  testWidgets('Today totals an account with more vices than an `in` filter '
       'takes', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-many-vices@example.com');
@@ -37,10 +37,14 @@ void main() {
     }
 
     await recordActivity(tester, names.last, 2);
-    await expectRadar(tester, <String>{
-      for (final String name in names)
-        '$name (${name == names.last ? '2 drinks' : '0 drinks'})',
-    });
+    // Thirty-one titles cannot be drawn whole, so the key lists every total.
+    for (final String name in names) {
+      await pumpUntil(
+        tester,
+        find.text('$name: ${name == names.last ? '2 drinks' : '0 drinks'}'),
+      );
+    }
+    await screenshot(tester, 'today-31-vices');
   });
 
   testWidgets('the history page shows 50 entries at a time and the next 50 on '

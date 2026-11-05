@@ -24,19 +24,22 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Firestore rules rewrite (#27) | Deployed to production by Jack 2026-11-03 | `firestore.rules` |
 | Recovered features and the fixes for Jack's two reported bugs (#28) | Merged and live 2026-11-03 | `lib/` |
 | Jack's round-1 calls C1–C19 | Picked 2026-11-03; built in wave 3 | below |
-| Wave 3: Today and recording C2–C5 (#36), rules details C12–C14 (#33), platform and repo cleanup C1 C6–C11 (#34), ideas rework C15–C19 (#35) | Merged 2026-11-03. The rules from #33 are **not yet in production**: they deploy through CI once Jack enables it (below) | `lib/`, `firestore.rules`, `.github/workflows/deploy-firestore.yml`, `ideas/` |
+| Wave 3: Today and recording C2–C5 (#36), rules details C12–C14 (#33), platform and repo cleanup C1 C6–C11 (#34), ideas rework C15–C19 (#35) | Merged 2026-11-03. The rules from #33 reached production through CI on 2026-11-04 (below) | `lib/`, `firestore.rules`, `.github/workflows/deploy-firestore.yml`, `ideas/` |
 | Wave A of the finish-and-pitch run: Dependabot #37 #38, seed script emulator-only (#44), parsers default every field (#45), shared write layer `TrackerWrites` (#46), versioning 0.1.0 + changelog + release workflow (#43) | Merged 2026-11-03 | `lib/`, `admin/`, `CHANGELOG.md`, `.github/workflows/release.yml` |
 | Security patch: cloud_firestore 6.10.2, Firebase iOS SDK 12.19.3, for Firebase's eMudhra CA notice (#56) | Merged 2026-11-03; Jack's iPhone runs release 0.1.0 (244) built from it | `pubspec.yaml`, `ios/Podfile.lock` |
 | Wave B: rules-test deps (#49), accessibility (#51), navigation (#52), offline logging (#53), backend hardening with App Check client wiring (#55), account export, deletion, password reset and verification behind `accountProvider` (#54); register additions (#57); round-3 calls on the pitch page (#58) | Merged 2026-11-03/04. The new activities index is deployed to production (by Claude, with Jack's leave, 2026-11-03). App Check is wired but not registered or enforced (Jack's list) | `lib/`, `integration_test/`, `firestore.indexes.json` |
 | Wave C: register additions refreshed (#60), refused offline writes surface in a banner and Manage Data counts offline (#61), startup and load errors show a message with Retry (#62), dead lint and codegen tooling removed with riverpod_lint running in CI through `dart analyze` (#63), the record dialog's vice dropdown keyed on the id (#65, an e2e flake) | Merged 2026-11-04 | `lib/`, `.github/workflows/checks.yml` |
+| Wave D: data layer (#68), repo hygiene (#70), usage graph (#69), locale formatting (#67), widget state (#71), dead code and a `dart format` CI step (#66), Today chart keeps vice names readable at large text (#74), admin glob override for Dependabot alerts 197/198 (#75), pitch round 4 (#73) | Merged 2026-11-04. Each ran the full iOS e2e (31 tests) before merge, except #73 (docs) and #75 (seed script only; ran it under the emulators) | `lib/`, `admin/`, `docs/pitch/` |
+| CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
+| Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Ready to merge 2026-11-05: Jack made the Mac development profile, and `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
-| Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) and round 3 (`r3-*`, 4 calls) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 28 issues on master: 0 critical, 1 high, the macOS lockfile; #47 deletes it (25, 0 high, on its branch) (from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 30 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
+| Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
+| Tech-debt register | 24 issues on #47's branch: 0 critical, 0 high, 12 medium, 12 low (`tools/tech-debt-recount.py`, 2026-11-05; 27 with 1 high, the macOS lockfile, on master; from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
-Baseline on master, measured 2026-11-04 on Flutter 3.44.7: `flutter analyze` clean, `flutter test` 151/151,
-`tools/e2e.sh` 23/23 (on #54's branch just before it merged); rules tests run in CI. `flutter build macos` fails on master (deployment target); #47 fixes it. `dart run custom_lint`
-loads no rules (see the register). Re-measure; don't trust this.
+Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
+`dart format` check, `flutter test` and the rules tests. `flutter build macos` fails on master (deployment target);
+#47 fixes it. Test counts were last measured before wave D: re-measure; don't trust this.
 
 ## The queue (DECIDED work, in order)
 
@@ -54,43 +57,20 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    `ensureE2EBinding()`, which forces frames meanwhile), and the day menu in the 600 pt window leaves the newest
    days scrolled out (the test scrolls to them). One full macOS run also timed out once in `bounded_queries_test.dart`'s
    `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
-2. **What the reworked roadmap marks as needing no call** (`ideas/README.md`, step 2), in its order: parsers that
-   default every missing field (done, #45), backend hardening (done, #55), account deletion (done, #54), versioning
-   (done, #43), offline logging (done, #53), export (done, #54), and the layout-neutral half of one-tap logging. One-tap's tiles are a Today layout, which waits
-   on Jack's Today call; only a shared "log one at the default quantity, now" action with the 8-second Undo is
-   decided. Parallel where the files don't overlap.
-3. **Done 2026-11-04 (wave C) except the macOS lockfile high, which rides with #47.** Was: the remaining high tech debt (8 issues; wave B fixed navigation, auth lifecycle, accessibility highs, the
-   sign-out data leak and offline persistence):
-   - `error-handling-and-observability/`: bootstrap failure, AsyncValue error states;
-   - `offline-and-write-reliability/`: a queued write the server later refuses vanishes silently;
-   - `dependency-and-tooling-drift/`: the riverpod lint plugin that never loads, and the unused lint tooling capping
-     the analyzer;
-   - `ci-and-quality-gates/` and `repo-docs-and-release-hygiene/`: verify-and-delete where the issue no longer holds;
-   - `platform-and-delivery-config/` macOS lockfile: rides with #47.
-   Classes that touch the same files go in sequence, not in parallel.
-4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
+2. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
+   tiles are a Today layout, which waits on Jack's Today call (`r2-today`); only a shared "log one at the default
+   quantity, now" action with the 8-second Undo is decided. Unblocked. Parallel with item 4 where the files don't
+   overlap.
+3. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
-5. **The rest of the register**, medium then low, one class per PR.
+4. **The rest of the register**, medium then low, one class per PR.
 
 ### This run (`/finish-and-pitch`, started 2026-11-03)
 
-No round-2 call is picked yet, so nothing below rests on one. Waves merge in order; items in one wave run in
-parallel worktrees, and `tools/e2e.sh` runs one at a time.
+Waves A to D are merged (the table above has each). No round-2 call is picked, so nothing rests on one. Left over:
 
-- **Wave A (merged, except #47 as above):** macOS target (queue 1); parsers that default missing fields; a shared write layer (register,
-  `writes-bypass-providers`); versioning and changelog; Dependabot #37 and #38 once green; deleting merged branches (C9).
-- **Wave B (merged 2026-11-04):** account export and deletion, with re-authentication, password reset and auth calls behind a provider
-  (`auth-and-account-lifecycle/`); backend hardening (bounded queries, App Check client wiring, the sign-out data
-  leak); offline logging; `navigation-and-unreachable-ui/`; `accessibility-and-localization/` with the radar's 0
-  off-centre; the rules-test dependency alerts.
-- **Wave C (merged 2026-11-04):** `error-handling-and-observability/`; the rejected-queued-write high; the lint-tooling highs; the "log
-  one" action; wave B leftovers: Manage Data's `count()` is blank offline (server-only), and the register's evidence
-  line numbers have drifted after wave B's merges.
-- **Wave D (building 2026-11-04):** usage graph correctness and tests; widget state (archive consistency, cold-start
-  login flash, midnight rollover, the shared date field); dead code and `dart format` in CI; locale-aware dates with
-  English-only localization scaffolding; README and iOS repo hygiene; the data layer (no production default for bare
-  `firebase` commands, legacy vices without `archived`, server timestamps for "now"). Left for Jack's calls: brand
-  strings, telemetry, verified email, vice cap, other languages. The "log one" action still waits on `r2-today`.
+- Left for Jack's calls: brand strings, telemetry, verified email, vice cap, other languages. The "log one" action
+  waits on `r2-today`.
 - **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
   trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
 
@@ -103,7 +83,7 @@ location, so run the copy inside the worktree you are changing.
 Picked on the pitch page; the page keeps the options and costs each was chosen from.
 
 - **C1. Rules deployment** (`rules-deploy`): **CI deploys rules and indexes on merge to `master`.** So every rules PR
-  Claude merges reaches production; the rules tests gate it.
+  Claude merges reaches production; the rules tests gate it. On since 2026-11-04.
 - **C2. Today with 1 or 2 vices** (`today-few-vices`): **bars below 3 vices, the radar from 3 up.**
 - **C3. Save timeout** (`record-timeout`): **close the dialog and say the entry will sync.**
 - **C4. Undo duration** (`undo-duration`): **8 seconds.**
@@ -138,7 +118,12 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 
 - **`r2-web-site`** (2026-11-03, in chat): **take the live web site down now.** Claude can't: it is Firebase Hosting
   on the production project, which the hard rules put out of Claude's reach, so Jack did it; the site returns 404
-  (checked 2026-11-04).
+  (checked 2026-11-04). Done.
+- **`r2-icon`** (2026-11-05, in chat): **candidate 38**, the Today radar's coloured segments with spokes running past
+  them, centred, on a light background. Picked from 38 candidates on the icon sheet
+  (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on `mockup/icon-sheet`). Shipped as the iOS and macOS
+  icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
+  brand. Done.
 
 ## Calls waiting on Jack (UNDECIDED)
 
@@ -149,11 +134,11 @@ prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and
 app), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
-Firebase project), `r2-privacy`, `r2-icon`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
+Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
 
 Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
+icon (`mockup/brand-and-icon`, for `r2-brand`; its icon half is superseded by `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
 Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
 `lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
@@ -187,13 +172,19 @@ the device clock**, since offline logging (#53) is shipped; the cost is that a s
 entry anywhere, which the rules don't bound. Register:
 `tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md`; rule: `CLAUDE.md` **Days**.
 
+Round 5 (2026-11-04, from the Today chart fix, PR #74; on the pitch page, each built the first way). Recommendations,
+not decisions:
+- **`r5-radar-inset`**: radar inset by one title line on every side at all text sizes (recommended, as built) vs only
+  when the key shows.
+- **`r5-key-height`**: the key takes the height it needs and the chart is left out below four title lines of room
+  (recommended, as built) vs a half-height cap with scrolling vs bars instead of the radar at large text sizes, with
+  the key when bar names still don't fit (bars also need a name per bar, so the largest size still falls back to the
+  key; a day's work).
+- **`r5-key-always`**: also show the key whenever amounts are dropped from titles (**yes**, recommended) vs only when
+  a name is cut.
+
 ## For Jack to do (not decisions)
 
-- **Let CI deploy rules (C1):** grant the service account behind `FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER`
-  Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer, and keep Firebase Hosting Admin (or
-  add Firebase Viewer) for `firebase.projects.get`; then
-  `gh variable set DEPLOY_FIRESTORE_RULES --body true --repo Screendead/tracker`. Until then the deploy job is skipped
-  and #33's rules stay undeployed. The next merge after that deploys them. Jack's iPhone runs master as of 2026-11-03.
 - **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
   releases stay in the console, so this can be undone.
 - **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The main checkout may still
@@ -211,9 +202,9 @@ entry anywhere, which the rules don't bound. Register:
   yields no accepted token until it is added. TestFlight needs the paid membership anyway. Once the team has it, tell
   Claude: it adds the capability (`com.apple.developer.devicecheck.appattest-environment` = `production`) and proves the
   release build still signs.
-- **Register the iOS app with App Check** (Firebase console > Security > App Check > Apps): App Attest (needs the
+- **Register the iOS app with App Check** (waits on the paid Apple team; Jack: "can wait") (Firebase console > Security > App Check > Apps): App Attest (needs the
   Team ID) and DeviceCheck (needs a DeviceCheck key from the developer portal: the .p8 file, its Key ID, the Team ID).
-  Both need the paid team. Enforce nothing yet.
+  Enforce nothing yet.
 - **Enforce App Check on Firestore only after every installed copy has it:** your iPhone and every TestFlight
   tester on a build from the backend-hardening PR or later, the App Attest entitlement in place, and Security >
   App Check > APIs showing nearly all Firestore requests verified. An older build is refused once you click
@@ -254,7 +245,7 @@ entry anywhere, which the rules don't bound. Register:
 ## Thoughts
 
 - The app is a small Flutter + Firestore codebase (about 3,000 lines in `lib/`). Tests now exist at three levels
-  (rules tests, 151 unit and widget tests, 23 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
+  (rules tests, unit and widget tests, 31 e2e tests), but most of the app is still untested. Most of the work before release is making it trustworthy, not adding screens.
 - Firestore writes go through `TrackerWrites` (`trackerWritesProvider`), so widget tests cover every write path with
   a fake; Auth calls go through `Account` (`accountProvider`) the same way.
 

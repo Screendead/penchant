@@ -67,6 +67,12 @@ final List<Vice> _three = [
 RadarChartData _radar(WidgetTester tester) =>
     tester.widget<RadarChart>(find.byType(RadarChart)).data;
 
+final List<Vice> _longNamed = [
+  fakeVice('elderflower', name: 'Sparkling elderflower water'),
+  fakeVice('coffee'),
+  fakeVice('tea'),
+];
+
 void main() {
   group('the radar', () {
     testWidgets('puts a zero at the centre', (WidgetTester tester) async {
@@ -142,6 +148,25 @@ void main() {
         findsOneWidget,
       );
       expect(find.bySemanticsLabel('coffee (2 items)'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('hear the radar once when it shows a key', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      _usePhone(tester, textScale: 3);
+      await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+
+      expect(find.text('coffee: 0 items'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Totals for $_todayLabel. Sparkling elderflower water: 4 items; '
+          'coffee: 0 items; tea: 0 items',
+        ),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp('^coffee: 0 items')), findsNothing);
       semantics.dispose();
     });
 
@@ -239,6 +264,40 @@ void main() {
         await tester.tap(find.text('Graph'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('Today shows every name whole, on the chart or in its key', (
+        WidgetTester tester,
+      ) async {
+        _usePhone(tester, textScale: textScale);
+        await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+        expect(tester.takeException(), isNull);
+
+        // At this size the key may take the chart's whole space.
+        final Finder radar = find.byType(RadarChart);
+        final RadarChartData? data = radar.evaluate().isEmpty
+            ? null
+            : _radar(tester);
+        for (int i = 0; i < _longNamed.length; i++) {
+          final Vice vice = _longNamed[i];
+          final String title = data?.getTitle!(i, 0).text ?? '';
+          if (title == vice.name || title.startsWith('${vice.name} (')) {
+            continue;
+          }
+          final Finder entry = find.textContaining(RegExp('^${vice.name}: '));
+          // The test font is about twice as wide as the system's, so at text
+          // scale 3 this key outgrows the screen and scrolls; the e2e test
+          // checks the key unscrolled on a real device.
+          if (textScale == 3) {
+            await tester.ensureVisible(entry);
+            await tester.pumpAndSettle();
+          }
+          expect(
+            entry.hitTestable(),
+            findsOneWidget,
+            reason: '${vice.name} is not shown whole',
+          );
+        }
       });
 
       testWidgets('Today lays out without overflowing', (

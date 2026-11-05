@@ -80,7 +80,13 @@ void main() {
     final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-a11y-text@example.com');
-    await addVicesThroughManageData(tester);
+    const List<String> names = <String>[
+      'Coffee',
+      'Tea',
+      'Water',
+      'Sparkling water',
+    ];
+    await addVicesThroughManageData(tester, names);
 
     tester.platformDispatcher.textScaleFactorTestValue = 3;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -113,19 +119,39 @@ void main() {
     expect(tester.takeException(), isNull);
     final List<Object> stored = await storedActivities('Water');
     expect(stored, hasLength(1));
-    // At this size the radar cuts its titles short to fit; screen readers
-    // still hear the whole names.
+    // Vices list newest first.
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
         'Totals for ${formatDay(startOfDay(DateTime.now()))}. '
-        'Water: 4 drinks; Tea: 0 drinks; Coffee: 0 drinks',
+        'Sparkling water: 0 drinks; Water: 4 drinks; Tea: 0 drinks; '
+        'Coffee: 0 drinks',
       ),
     );
-    final List<String> titles = chartTitles(tester)!.toList();
-    expect(titles, hasLength(3));
-    expect(titles.where((String t) => t.endsWith(' (4 drinks)')), hasLength(1));
-    expect(titles.where((String t) => t.endsWith(' (0 drinks)')), hasLength(2));
+    // The Undo snackbar covers the bottom of the chart until it times out.
+    await pumpUntil(tester, find.byType(SnackBar), present: false);
+    await pumpFor(tester, const Duration(seconds: 1));
+    await screenshot(tester, 'a11y-today-text-3x');
+
+    // Each name is drawn whole, as a chart title or in the key below it,
+    // where hitTestable() rules out an entry scrolled away or covered.
+    // The key can leave no room for the chart, which is then not drawn.
+    final Set<String> titles = chartTitles(tester) ?? const <String>{};
+    for (final String name in names) {
+      if (titles.any((String t) => t == name || t.startsWith('$name ('))) {
+        continue;
+      }
+      expect(
+        find.textContaining(RegExp('^$name: ')).hitTestable(),
+        findsOneWidget,
+        reason: '$name is not shown whole',
+      );
+    }
+
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(tester.takeException(), isNull);
+    await screenshot(tester, 'a11y-today-text-2x');
     semantics.dispose();
   });
 }
