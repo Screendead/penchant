@@ -97,10 +97,22 @@ class Component extends DCLogic {
         ["30", "l-lean", "L", "Leaning, in one stroke."]
       ]]
     ];
+    const blob = {
+      "01": "53d79cb3b1c9c95b2091f2cec8aee2e4", "02": "f88050c0ecc84b05a760eb94ece8534f", "03": "b6d110bead35023a31f00ce7d54e4ac3",
+      "04": "d3006a48b24d14b338e193d42308d8b8", "05": "b5ce8a138a172255f053e84d09331227", "06": "62f53fdd8ff69b4374986c89d6b8b81e",
+      "07": "9aa6b95482f34314d824a0ea11821bc9", "08": "041cd58ee3e269716f24473ec02430ce", "09": "6484909d21725510e678b56d3a9e9e46",
+      "10": "8845c098ae50038d9e8785fecbac67f4", "11": "e04d74216c11a14c7337657035519360", "12": "b575fce460e27c35cc3ff4aca8a9fb0c",
+      "13": "33d318922b372842edb2a804597f97c9", "14": "7d213f223647ae91b3581117af146ae9", "15": "6ed8d81dbc7a7ca2285c949fb93b282c",
+      "16": "ece0e0381865f66a33866e08143396c0", "17": "65868204f88a35691d03b246e761750d", "18": "4f75233a385d684d87d4f56e7893e727",
+      "19": "05522a6a177dfbb0958f349abcbb3f58", "20": "cb3587c6b8cf6d1b533e86626dfa95a9", "21": "e75e7071b5c1ea3f022062be6d79ec51",
+      "22": "79dbbbafc122f1da27651fca01c42b94", "23": "10937b6df8c0d3e5fa995663600fabb6", "24": "4c69e1cc122bb60338ead6f6739af539",
+      "25": "99c8c137cd31daeea09ec4a77ce135b0", "26": "672aa72cf489eb72f43059fa1b81da8e", "27": "7aeb113dcbe71eb44dd4cacbba225177",
+      "28": "f684a449bd6446b4470634c158f19f1f", "29": "bdff140b9af48ba129d4939e31b30742", "30": "50faab45051fc793439d8e30d4c9998f"
+    };
     const sections = rows.map(([title, items]) => ({
       title,
       items: items.map(([n, slug, name, desc]) => ({
-        n, name, desc, label: n + " " + name, src: "icons/" + n + "-" + slug + ".svg"
+        n, name, desc, label: n + " " + name, src: "/_blob/" + blob[n]
       }))
     }));
     const all = sections.flatMap((s) => s.items);
