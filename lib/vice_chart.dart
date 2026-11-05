@@ -24,10 +24,8 @@ class ViceChart extends ConsumerWidget {
 
   static const int minimumRadarAxes = 3;
   static const int maximumRadarRings = 5;
-  static const double barWidth = 48;
   static const double titleGap = 8;
   static const double radarTitleOffset = 0.2;
-  static const int barTitleLines = 2;
 
   static String total(Vice vice, int quantity) =>
       '${vice.name}: ${vice.unit.label(quantity)}';
@@ -44,40 +42,17 @@ class ViceChart extends ConsumerWidget {
   static ({int top, int step}) radarScale(int largest) =>
       roundScale(largest, maximumRadarRings);
 
+  // A radar axis at zero collapses into the centre, so a day with fewer
+  // than three used vices reads as broken spokes; it gets bars instead.
+  static bool drawsRadar(List<int> quantities) =>
+      quantities.where((int quantity) => quantity > 0).length >=
+      minimumRadarAxes;
+
   static String _suffix(Vice vice, int quantity) =>
       ' (${vice.unit.label(quantity)})';
 
   static TextStyle _titleStyle(ThemeData theme) =>
       TextStyle(color: theme.colorScheme.secondary, fontSize: 14);
-
-  static List<({String text, bool nameWhole})> _barTitles(
-    BuildContext context,
-    TextStyle style,
-    double width,
-    List<Vice> vices,
-    List<int> quantities,
-  ) {
-    final double titleWidth =
-        barTitleWidth(width, vices.length, barWidth) - titleGap;
-    bool fits(String text) => chartLabelWraps(
-      context,
-      text,
-      style,
-      maxWidth: titleWidth,
-      maxLines: barTitleLines,
-    );
-
-    return [
-      for (int i = 0; i < vices.length; i++)
-        if (fits('${vices[i].name}${_suffix(vices[i], quantities[i])}'))
-          (
-            text: '${vices[i].name}${_suffix(vices[i], quantities[i])}',
-            nameWhole: true,
-          )
-        else
-          (text: vices[i].name, nameWhole: fits(vices[i].name)),
-    ];
-  }
 
   // fl_chart draws each radar title up to a full line beyond its rings
   // (0.96 of the half side plus the title's height), outside the chart's box.
@@ -89,8 +64,9 @@ class ViceChart extends ConsumerWidget {
     TextStyle style,
     Size size,
     List<Vice> vices,
-    List<int> quantities,
-  ) {
+    List<int> quantities, {
+    required bool withAmounts,
+  }) {
     final double titleWidth =
         radarTitleWidth(size, vices.length, radarTitleOffset) - titleGap;
 
@@ -99,7 +75,7 @@ class ViceChart extends ConsumerWidget {
         fitChartLabel(
           context,
           name: vices[i].name,
-          suffix: _suffix(vices[i], quantities[i]),
+          suffix: withAmounts ? _suffix(vices[i], quantities[i]) : '',
           style: style,
           maxWidth: titleWidth,
         ),
@@ -130,79 +106,6 @@ class ViceChart extends ConsumerWidget {
       ),
     ),
   );
-
-  Widget _bars(
-    BuildContext context,
-    ThemeData theme,
-    List<({String text, bool nameWhole})> titles,
-    List<int> quantities,
-  ) {
-    final TextStyle titleStyle = _titleStyle(theme);
-    final double lineHeight = chartLabelSize(context, 'Ag', titleStyle).height;
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double titleWidth =
-            barTitleWidth(constraints.maxWidth, titles.length, barWidth) -
-            titleGap;
-
-        return BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceEvenly,
-            minY: 0,
-            maxY: quantities.reduce(max) * 1.15,
-            gridData: const FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            barTouchData: BarTouchData(enabled: false),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(),
-              leftTitles: const AxisTitles(),
-              rightTitles: const AxisTitles(),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: max(48, barTitleLines * lineHeight + 8),
-                  getTitlesWidget: (double value, TitleMeta meta) {
-                    return SideTitleWidget(
-                      meta: meta,
-                      child: SizedBox(
-                        width: titleWidth,
-                        child: Text(
-                          titles[value.toInt()].text,
-                          maxLines: barTitleLines,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: titleStyle,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            barGroups: [
-              for (int i = 0; i < quantities.length; i++)
-                BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: quantities[i].toDouble(),
-                      width: barWidth,
-                      color: theme.colorScheme.primary,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.fastOutSlowIn,
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -263,8 +166,6 @@ class ViceChart extends ConsumerWidget {
     ];
 
     final TextStyle titleStyle = _titleStyle(theme);
-    // fl_chart asserts that a radar data set has at least three entries.
-    final bool asBars = vices.length < minimumRadarAxes;
 
     return Semantics(
       container: true,
@@ -272,57 +173,67 @@ class ViceChart extends ConsumerWidget {
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final List<({String text, bool nameWhole})>? barTitles = asBars
-                ? _barTitles(
-                    context,
-                    titleStyle,
-                    constraints.maxWidth,
-                    vices,
-                    quantities,
-                  )
-                : null;
-            final Widget chart = barTitles != null
-                ? _bars(context, theme, barTitles, quantities)
-                : _radar(context, theme, vices, quantities);
-            // Decided on the whole area: the key's height would otherwise
-            // change the radar's size, and with it whether the names fit.
-            final bool namesWhole =
-                (barTitles ??
-                        _radarTitles(
+        child: !drawsRadar(quantities)
+            ? DayBars(vices: vices, quantities: quantities)
+            : LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  // Decided on the whole area: the key's height would
+                  // otherwise change the radar's size, and with it whether
+                  // the titles fit.
+                  final List<({String text, bool nameWhole})> titles =
+                      _radarTitles(
+                        context,
+                        titleStyle,
+                        _radarInset(
                           context,
                           titleStyle,
-                          _radarInset(
-                            context,
-                            titleStyle,
-                          ).deflateSize(constraints.biggest),
-                          vices,
-                          quantities,
-                        ))
-                    .every((({String text, bool nameWhole}) t) => t.nameWhole);
-            if (namesWhole) {
-              return chart;
-            }
+                        ).deflateSize(constraints.biggest),
+                        vices,
+                        quantities,
+                        withAmounts: true,
+                      );
+                  final bool amountsShown = [
+                    for (int i = 0; i < vices.length; i++)
+                      titles[i].text ==
+                          '${vices[i].name}${_suffix(vices[i], quantities[i])}',
+                  ].every((bool shown) => shown);
+                  // With the amounts in the key, the titles need only name
+                  // the axes.
+                  final Widget chart = _radar(
+                    context,
+                    theme,
+                    vices,
+                    quantities,
+                    withAmounts: amountsShown,
+                  );
+                  if (amountsShown) {
+                    return chart;
+                  }
 
-            // A chart under four title lines tall cannot be read.
-            final double minimumChart =
-                4 * chartLabelSize(context, 'Ag', titleStyle).height;
-            return Column(
-              children: [
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints space) =>
-                        space.maxHeight < minimumChart
-                        ? const SizedBox.shrink()
-                        : chart,
-                  ),
-                ),
-                _key(titleStyle, constraints.maxHeight, vices, quantities),
-              ],
-            );
-          },
-        ),
+                  // A chart under four title lines tall cannot be read.
+                  final double minimumChart =
+                      4 * chartLabelSize(context, 'Ag', titleStyle).height;
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder:
+                              (BuildContext context, BoxConstraints space) =>
+                                  space.maxHeight < minimumChart
+                                  ? const SizedBox.shrink()
+                                  : chart,
+                        ),
+                      ),
+                      _key(
+                        titleStyle,
+                        constraints.maxHeight,
+                        vices,
+                        quantities,
+                      ),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }
@@ -331,8 +242,9 @@ class ViceChart extends ConsumerWidget {
     BuildContext context,
     ThemeData theme,
     List<Vice> vices,
-    List<int> quantities,
-  ) {
+    List<int> quantities, {
+    required bool withAmounts,
+  }) {
     final ({int top, int step}) scale = radarScale(quantities.reduce(max));
 
     final RadarDataSet dataSet = RadarDataSet(
@@ -371,6 +283,7 @@ class ViceChart extends ConsumerWidget {
             constraints.biggest,
             vices,
             quantities,
+            withAmounts: withAmounts,
           );
 
           return RadarChart(
@@ -396,9 +309,11 @@ class ViceChart extends ConsumerWidget {
               },
               tickCount: scale.top ~/ scale.step,
               // fl_chart scales the titles by the device text size, not the ticks.
-              ticksTextStyle: TextStyle(
-                color: theme.colorScheme.secondary,
-                fontSize: MediaQuery.textScalerOf(context).scale(10),
+              // fl_chart prints every ring's value with a decimal place,
+              // the centre's "0.0" included; the titles carry the amounts.
+              ticksTextStyle: const TextStyle(
+                color: Colors.transparent,
+                fontSize: 1,
               ),
               tickBorderData: BorderSide(
                 color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
@@ -413,6 +328,107 @@ class ViceChart extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+// One row per vice: its name and amount, and a bar scaled to the day's
+// largest amount, so an unused vice keeps its place as an empty track.
+class DayBars extends StatelessWidget {
+  const DayBars({super.key, required this.vices, required this.quantities});
+
+  final List<Vice> vices;
+  final List<int> quantities;
+
+  static const double trackHeight = 12;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    final int largest = quantities.reduce(max);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) =>
+          SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (int i = 0; i < vices.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: _row(
+                        colors,
+                        text,
+                        vices[i],
+                        quantities[i],
+                        largest,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _row(
+    ColorScheme colors,
+    TextTheme text,
+    Vice vice,
+    int quantity,
+    int largest,
+  ) {
+    final bool used = quantity > 0;
+    final Color ink = used ? colors.onSurface : colors.onSurfaceVariant;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text(
+                vice.name,
+                style: text.titleMedium?.copyWith(color: ink),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              vice.unit.label(quantity),
+              style: text.titleMedium?.copyWith(
+                color: used ? ink : colors.outline,
+                fontWeight: used ? FontWeight.w600 : FontWeight.w400,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(trackHeight / 2),
+          child: Container(
+            height: trackHeight,
+            color: colors.surfaceContainerHighest,
+            alignment: Alignment.centerLeft,
+            child: AnimatedFractionallySizedBox(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.fastOutSlowIn,
+              widthFactor: quantity / largest,
+              heightFactor: 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(trackHeight / 2),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
