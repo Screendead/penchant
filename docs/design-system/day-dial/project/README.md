@@ -82,7 +82,7 @@ Every text pair meets 4.5:1 in both themes, and `accent` marks meet 3:1 everywhe
 
 | Where | Light | Dark | Rule and fix |
 |---|---|---|---|
-| `data1`, `data2`, `data5` fills on `surface` / `bg` | 1.8, 2.6, 3.0 / 1.6, 2.7 | 4.1 or better | Beads carry `dataNRim` (4.4:1 or better on `surface`). A pip is always beside its habit's name, so its colour is never the only cue. |
+| `data1`, `data2`, `data5` fills | 1.8, 2.6 and 3.0 on `surface`; `data1` 1.6 and `data5` 2.7 on `bg` | 4.1 or better | Beads carry `dataNRim` (4.4:1 or better on `surface`). A pip is always beside its habit's name, so its colour is never the only cue. |
 | Ring beads (habits 6–10) | as above | passes | The mock draws them without a rim. Proposed: in light, add a 1px outer stroke in `dataNRim`. |
 | Chart raw line and day dots in `dataN` | as above | passes | The average line is `dataNInk`, and the readout pill states each value. The raw series is context, not the only carrier. |
 | Selected chip border | `data1` was 1.5 on `surface2` | passes | Fixed here: the border takes `dataNInk` (5.0:1 or better), not the mock's `dataN`. |
