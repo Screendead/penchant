@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-04. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-05. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -29,7 +29,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Security patch: cloud_firestore 6.10.2, Firebase iOS SDK 12.19.3, for Firebase's eMudhra CA notice (#56) | Merged 2026-11-03; Jack's iPhone runs release 0.1.0 (244) built from it | `pubspec.yaml`, `ios/Podfile.lock` |
 | Wave B: rules-test deps (#49), accessibility (#51), navigation (#52), offline logging (#53), backend hardening with App Check client wiring (#55), account export, deletion, password reset and verification behind `accountProvider` (#54); register additions (#57); round-3 calls on the pitch page (#58) | Merged 2026-11-03/04. The new activities index is deployed to production (by Claude, with Jack's leave, 2026-11-03). App Check is wired but not registered or enforced (Jack's list) | `lib/`, `integration_test/`, `firestore.indexes.json` |
 | Wave C: register additions refreshed (#60), refused offline writes surface in a banner and Manage Data counts offline (#61), startup and load errors show a message with Retry (#62), dead lint and codegen tooling removed with riverpod_lint running in CI through `dart analyze` (#63), the record dialog's vice dropdown keyed on the id (#65, an e2e flake) | Merged 2026-11-04 | `lib/`, `.github/workflows/checks.yml` |
-| macOS target (#47) | Merged with master and re-locked 2026-11-04; analyze, 267 tests, the unsigned build, CI and iOS `tools/e2e.sh` (31/31) pass. Held: the Mac App Development profile still does not exist, so no signed macOS build or macOS e2e can run (below) | `macos/`, `.github/workflows/macos-build.yml` |
+| macOS target (#47) | Ready to merge 2026-11-05: Jack made the Mac development profile, and `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later) and round 3 (`r3-*`, 4 calls) | Open on the pitch page since 2026-11-03 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
 | Tech-debt register | 28 issues on master: 0 critical, 1 high, the macOS lockfile; #47 deletes it (25, 0 high, on its branch) (from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 30 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
@@ -46,12 +46,14 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
 1. **macOS as a fully supported target** (C6's note): built in #47 (deployment target 12.0, emulator plist strip,
-   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Blocked
-   on Jack** (the Mac development profile, below): Firebase Auth on macOS needs Keychain Sharing, which needs a real
-   profile, so the macOS e2e can't run yet. On 2026-11-04 Jack set the team in Xcode in the main checkout, but master's
-   entitlements carry no Keychain Sharing, so Xcode had no reason to create a profile and none exists on this Mac
-   (`flutter build macos --debug` on #47 still stops at "No profiles ... were found"). Once it exists: run
-   `E2E_DEVICE=macos tools/e2e.sh` on #47, record it in the PR, merge.
+   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Ready to
+   merge** (2026-11-05): Jack created the Mac development profile, the signed build runs and Firebase Auth works on
+   macOS. `E2E_DEVICE=macos tools/e2e.sh` now runs each file in its own `flutter test` (the macOS runner cannot
+   relaunch the app for a second file) and passes 31/31; iOS passes 31/31. Two macOS-only test failures were the
+   harness, not the app: a hidden or covered macOS window stops frames, so a pump waited forever (tests now call
+   `ensureE2EBinding()`, which forces frames meanwhile), and the day menu in the 600 pt window leaves the newest
+   days scrolled out (the test scrolls to them). One full macOS run also timed out once in `bounded_queries_test.dart`'s
+   `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
 2. **What the reworked roadmap marks as needing no call** (`ideas/README.md`, step 2), in its order: parsers that
    default every missing field (done, #45), backend hardening (done, #55), account deletion (done, #54), versioning
    (done, #43), offline logging (done, #53), export (done, #54), and the layout-neutral half of one-tap logging. One-tap's tiles are a Today layout, which waits
@@ -194,17 +196,9 @@ entry anywhere, which the rules don't bound. Register:
   and #33's rules stay undeployed. The next merge after that deploys them. Jack's iPhone runs master as of 2026-11-03.
 - **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
   releases stay in the console, so this can be undone.
-- **Mac development profile** (unblocks #47; not done yet): open
-  `~/development/tracker-worktrees/feat-macos-target/macos/Runner.xcworkspace` in Xcode, **not the main checkout**:
-  only #47's branch has the Keychain Sharing entitlement, and that is what makes Xcode create a profile. Select Runner >
-  Signing & Capabilities, team 8N575942RT (Keychain Sharing is already listed), and build once (Cmd-B), so Xcode
-  registers this Mac and creates the Mac Team Provisioning Profile for `com.screendead.tracker.tracker`. Check:
-  `ls ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.provisionprofile` lists a file. Or, from that
-  worktree in Terminal: `xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug
-  -allowProvisioningUpdates build`. Claude's attempt at that command was refused by the permission classifier. The
-  main checkout has an uncommitted `macos/Runner.xcodeproj/project.pbxproj` from the 2026-11-04 attempt (the team
-  plus Xcode's own reformatting); #47 already carries the team, so discard it there with
-  `git checkout -- macos/Runner.xcodeproj/project.pbxproj`.
+- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The main checkout may still
+  hold an uncommitted `macos/Runner.xcodeproj/project.pbxproj` from the 2026-11-04 attempt; #47 carries the team, so
+  `git checkout -- macos/Runner.xcodeproj/project.pbxproj` there discards it.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
   Claude (`gh pr close 22 42`).
 - **The activities index is deployed** (Claude, 2026-11-03, with Jack's leave to deploy indexes only, never
