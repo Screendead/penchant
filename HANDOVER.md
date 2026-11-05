@@ -79,7 +79,8 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 
 ### This run (`/finish-and-pitch`, started 2026-11-03)
 
-Waves A to D are merged (the table above has each). No round-2 call is picked, so nothing rests on one. Left over:
+Waves A to D are merged (the table above has each). Of round 2 only `r2-web-site` and `r2-icon` are picked, and
+`r2-today` is settled by `r6-ui-direction`. Left over:
 
 - Left for Jack's calls: brand strings, telemetry, verified email, vice cap, other languages. The "log one" action
   is decided by `r6-ui-direction` and lands in overhaul step 1b.
