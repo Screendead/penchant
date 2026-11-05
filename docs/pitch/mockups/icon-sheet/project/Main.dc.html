@@ -15,10 +15,10 @@ body{margin:0}
 a{color:#3D5A80}a:hover{color:#22324a}
 </style>
 </helmet>
-<div style="width: 1360px; min-height: 2200px; box-sizing: border-box; padding: 64px 72px; background: #F6F4EF; color: #1D1C1A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 48px">
+<div style="width: 1360px; min-height: 2500px; box-sizing: border-box; padding: 64px 72px; background: #F6F4EF; color: #1D1C1A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 48px">
 <header style="display: flex; flex-direction: column; gap: 10px">
 <h1 style="margin: 0; font-size: 44px; font-weight: 700; letter-spacing: -0.02em">App icon candidates</h1>
-<p style="margin: 0; font-size: 18px; color: #55524C; max-width: 900px">30 directions. Rows 1 to 4 work with any name; row 5 needs the brand call. Each is shown at App Store size and at Settings size. Pick by number.</p>
+<p style="margin: 0; font-size: 18px; color: #55524C; max-width: 900px">34 candidates. New first: Outline and Prism combined, larger in the frame. Rows 2 to 5 work with any name; row 6 needs the brand call. Each is shown at App Store size and at Settings size. Pick by number.</p>
 </header>
 <sc-for list="{{sections}}" as="sec" hint-placeholder-count="5">
 <section style="display: flex; flex-direction: column; gap: 20px">
@@ -39,12 +39,12 @@ a{color:#3D5A80}a:hover{color:#22324a}
 </sc-for>
 <section style="display: flex; flex-direction: column; gap: 20px">
 <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #3B3934">At home-screen size, on dark and light wallpaper</h2>
-<div style="background: #1B1B1F; border-radius: 24px; padding: 28px; display: grid; grid-template-columns: repeat(15, 56px); gap: 16px 18px; justify-content: center">
+<div style="background: #1B1B1F; border-radius: 24px; padding: 28px; display: grid; grid-template-columns: repeat(17, 56px); gap: 16px 12px; justify-content: center">
 <sc-for list="{{all}}" as="item" hint-placeholder-count="30">
 <img src="{{item.src}}" alt="{{item.label}}" style="width: 56px; height: 56px; border-radius: 13px">
 </sc-for>
 </div>
-<div style="background: #E4DFD4; border-radius: 24px; padding: 28px; display: grid; grid-template-columns: repeat(15, 56px); gap: 16px 18px; justify-content: center">
+<div style="background: #E4DFD4; border-radius: 24px; padding: 28px; display: grid; grid-template-columns: repeat(17, 56px); gap: 16px 12px; justify-content: center">
 <sc-for list="{{all}}" as="item" hint-placeholder-count="30">
 <img src="{{item.src}}" alt="{{item.label}}" style="width: 56px; height: 56px; border-radius: 13px">
 </sc-for>
@@ -52,10 +52,16 @@ a{color:#3D5A80}a:hover{color:#22324a}
 </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":2200}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":2500}}'>
 class Component extends DCLogic {
   renderVals() {
     const rows = [
+      ["New: Outline and Prism combined, larger", [
+        ["31", "", "Prism outline, dark", "Prism's colours inside Outline's line and points."],
+        ["32", "", "Prism outline, teal", "The same on Outline's teal."],
+        ["33", "", "Glass", "Colours toned down, spokes showing through."],
+        ["34", "", "Prism outline, light", "On paper, with a dark line."]
+      ]],
       ["The Today radar: the app's own picture", [
         ["01", "web", "Web", "The radar with its rings. Reads as a chart."],
         ["02", "bloom", "Bloom", "The day's shape, softened into a pebble."],
@@ -107,7 +113,9 @@ class Component extends DCLogic {
       "19": "05522a6a177dfbb0958f349abcbb3f58", "20": "cb3587c6b8cf6d1b533e86626dfa95a9", "21": "e75e7071b5c1ea3f022062be6d79ec51",
       "22": "79dbbbafc122f1da27651fca01c42b94", "23": "10937b6df8c0d3e5fa995663600fabb6", "24": "4c69e1cc122bb60338ead6f6739af539",
       "25": "99c8c137cd31daeea09ec4a77ce135b0", "26": "672aa72cf489eb72f43059fa1b81da8e", "27": "7aeb113dcbe71eb44dd4cacbba225177",
-      "28": "f684a449bd6446b4470634c158f19f1f", "29": "bdff140b9af48ba129d4939e31b30742", "30": "50faab45051fc793439d8e30d4c9998f"
+      "28": "f684a449bd6446b4470634c158f19f1f", "29": "bdff140b9af48ba129d4939e31b30742", "30": "50faab45051fc793439d8e30d4c9998f",
+      "31": "d909df3ecbf17ca2ed9069de3316dcf2", "32": "a243e1a00f0e916f629008cfe3d384f7", "33": "c7a2aab7c4edd4a0f8e07842067a677f",
+      "34": "42666a659a6fa05623e89a50812c14b9"
     };
     const sections = rows.map(([title, items]) => ({
       title,
