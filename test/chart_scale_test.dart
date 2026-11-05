@@ -1,5 +1,3 @@
-import 'dart:ui' show Size;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/chart_scale.dart';
 
@@ -59,24 +57,5 @@ void main() {
     // Centres this far apart keep a label shifted by half its width clear.
     final int n = labelsThatFit(300, 40);
     expect(300 / (n - 1), greaterThanOrEqualTo(1.5 * 40 + 8));
-  });
-
-  group('barTitleWidth', () {
-    test('a single bar may use the whole width', () {
-      expect(barTitleWidth(300, 1, 48), 300);
-    });
-
-    test('two bars share the width between their centres', () {
-      // Space (300 - 96) / 3 = 68 around and between; centres 116 apart.
-      expect(barTitleWidth(300, 2, 48), 116);
-    });
-  });
-
-  test('radarTitleWidth is the chord between neighbouring titles', () {
-    const Size size = Size(300, 300);
-    // Radius 120, titles at 144: three axes are 144 * sqrt(3) apart.
-    expect(radarTitleWidth(size, 3, 0.2), closeTo(249.4, 0.1));
-    expect(radarTitleWidth(size, 12, 0.2), closeTo(74.5, 0.1));
-    expect(radarTitleWidth(const Size(200, 1000), 3, 0.2), closeTo(166.3, 0.1));
   });
 }

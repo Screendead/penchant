@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'dart:ui' show Offset, Path, Rect;
+import 'dart:ui' show Offset, Path, PathFillType, Rect;
 
 // The Log fan's geometry in points, about its centre, which sits [lift] above
 // the Log button's.
@@ -45,16 +45,27 @@ int? wedgeAt(Offset fromCentre, int n, {double scale = 1}) {
 }
 
 // A wedge with straight outer edges between the polygon's corners, as the
-// icon draws them, and an arc inside; below three wedges a polygon has no
-// area, so the outer edge is an arc too.
+// icon draws them, and an arc inside. Below four, a polygon's edge passes
+// inside the labels, so the outer edge is an arc too.
 Path wedgePath(int k, int n, double scale) {
+  if (n == 1) {
+    // One habit's wedge is the whole ring.
+    return Path()
+      ..fillType = PathFillType.evenOdd
+      ..addOval(
+        Rect.fromCircle(center: Offset.zero, radius: FanGeometry.outer * scale),
+      )
+      ..addOval(
+        Rect.fromCircle(center: Offset.zero, radius: FanGeometry.inner * scale),
+      );
+  }
   final double a0 = wedgeStart(k, n);
   final double a1 = wedgeStart(k + 1, n);
   final double ri = FanGeometry.inner * scale;
   final double ro = FanGeometry.outer * scale;
   Offset at(double a, double r) => Offset(cos(a), sin(a)) * r;
   final Path path = Path()..moveTo(at(a0, ri).dx, at(a0, ri).dy);
-  if (n >= 3) {
+  if (n >= 4) {
     path
       ..lineTo(at(a0, ro).dx, at(a0, ro).dy)
       ..lineTo(at(a1, ro).dx, at(a1, ro).dy);

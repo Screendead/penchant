@@ -30,15 +30,20 @@ import 'fakes.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
 
-Vice _vice(String id, String name, Unit unit, int order, {bool archived = false}) =>
-    Vice(
-      id: id,
-      name: name,
-      unit: unit,
-      ownerID: ownerID,
-      createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, order)),
-      archived: archived,
-    );
+Vice _vice(
+  String id,
+  String name,
+  Unit unit,
+  int order, {
+  bool archived = false,
+}) => Vice(
+  id: id,
+  name: name,
+  unit: unit,
+  ownerID: ownerID,
+  createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, order)),
+  archived: archived,
+);
 
 final List<Vice> _habits = <Vice>[
   _vice('coffee', 'Coffee', Unit.drink, 1),
@@ -51,9 +56,21 @@ final List<Vice> _habits = <Vice>[
 
 // The mock-up's busy day: habit, minute of the day, quantity.
 const List<(int, int, int)> _busy = <(int, int, int)>[
-  (3, 40, 1), (0, 425, 1), (4, 440, 15), (0, 580, 1), (0, 595, 1),
-  (4, 750, 20), (1, 770, 2), (0, 795, 1), (0, 950, 1), (4, 1005, 10),
-  (2, 1120, 1), (1, 1160, 3), (2, 1170, 2), (4, 1205, 35), (2, 1250, 1),
+  (3, 40, 1),
+  (0, 425, 1),
+  (4, 440, 15),
+  (0, 580, 1),
+  (0, 595, 1),
+  (4, 750, 20),
+  (1, 770, 2),
+  (0, 795, 1),
+  (0, 950, 1),
+  (4, 1005, 10),
+  (2, 1120, 1),
+  (1, 1160, 3),
+  (2, 1170, 2),
+  (4, 1205, 35),
+  (2, 1250, 1),
 ];
 
 const List<(int, int, int)> _sparse = <(int, int, int)>[
@@ -93,11 +110,12 @@ void main() {
   setUpAll(_loadFonts);
 
   for (final Brightness brightness in Brightness.values) {
-    for (final (String scene, List<(int, int, int)> entries) in <(String, List<(int, int, int)>)>[
-      ('busy', _busy),
-      ('sparse', _sparse),
-      ('clear', const <(int, int, int)>[]),
-    ]) {
+    for (final (String scene, List<(int, int, int)> entries)
+        in <(String, List<(int, int, int)>)>[
+          ('busy', _busy),
+          ('sparse', _sparse),
+          ('clear', const <(int, int, int)>[]),
+        ]) {
       testWidgets('renders Today, $scene, ${brightness.name}', (
         WidgetTester tester,
       ) async {

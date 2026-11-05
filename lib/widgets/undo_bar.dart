@@ -20,6 +20,7 @@ void showUndoBar(
   messenger.showSnackBar(
     SnackBar(
       persist: false,
+      behavior: SnackBarBehavior.floating,
       duration: onUndo == null ? noticeDuration : undoDuration,
       margin: bottomClearance == 0
           ? null
