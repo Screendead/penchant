@@ -15,6 +15,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/vice_chart.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -36,14 +37,9 @@ bool _enabled(WidgetTester tester, String tooltip) =>
         .onPressed !=
     null;
 
-double _chartedQuantity(WidgetTester tester) => tester
-    .widget<RadarChart>(find.byType(RadarChart))
-    .data
-    .dataSets
-    .first
-    .dataEntries
-    .first
-    .value;
+// One used vice of three is drawn as bars.
+int _chartedQuantity(WidgetTester tester) =>
+    tester.widget<DayBars>(find.byType(DayBars)).quantities.first;
 
 // WCAG 2.x contrast ratio.
 double _contrast(Color a, Color b) {
@@ -174,31 +170,31 @@ void main() {
     });
   });
 
-  group('fewer vices than radar axes', () {
+  group('fewer used vices than radar axes', () {
     final DateTime today = startOfDay(DateTime.now());
     final Vice coffee = fakeVice('coffee');
     final Vice beer = fakeVice('beer');
+    final Vice tea = fakeVice('tea');
 
-    List<Override> overrides(List<Vice> vices) => [
-      unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
-      viceActivityDayProvider.overrideWith((ref, DateTime day) {
-        final int daysAgo = daysBetween(day, today);
+    List<Override> overrides(List<Vice> vices, {List<Vice> used = const []}) =>
+        [
+          unarchivedViceListProvider.overrideWithValue(AsyncData(vices)),
+          viceActivityDayProvider.overrideWith((ref, DateTime day) {
+            final int daysAgo = daysBetween(day, today);
 
-        return AsyncData([
-          fakeActivity(coffee.id, daysAgo + 2, day),
-          fakeActivity(beer.id, daysAgo + 1, day),
-        ]);
-      }),
-    ];
+            return AsyncData([
+              fakeActivity(coffee.id, daysAgo + 2, day),
+              fakeActivity(beer.id, daysAgo + 1, day),
+              for (final Vice vice in used) fakeActivity(vice.id, 1, day),
+            ]);
+          }),
+        ];
 
-    List<double> barValues(WidgetTester tester) => [
-      for (final BarChartGroupData group
-          in tester.widget<BarChart>(find.byType(BarChart)).data.barGroups)
-        group.barRods.single.toY,
-    ];
+    List<int> barValues(WidgetTester tester) =>
+        tester.widget<DayBars>(find.byType(DayBars)).quantities;
 
-    Finder barTitle(String text) =>
-        find.descendant(of: find.byType(BarChart), matching: find.text(text));
+    Finder barText(String text) =>
+        find.descendant(of: find.byType(DayBars), matching: find.text(text));
 
     testWidgets('one vice is charted as a bar', (WidgetTester tester) async {
       await _pumpApp(tester, overrides([coffee]), const ViceTracker());
@@ -206,7 +202,8 @@ void main() {
 
       expect(find.byType(RadarChart), findsNothing);
       expect(barValues(tester), [2]);
-      expect(barTitle('coffee (2 items)'), findsOneWidget);
+      expect(barText('coffee'), findsOneWidget);
+      expect(barText('2 items'), findsOneWidget);
     });
 
     testWidgets('two vices are charted as bars that follow the selected day', (
@@ -217,29 +214,45 @@ void main() {
 
       expect(find.byType(RadarChart), findsNothing);
       expect(barValues(tester), [2, 1]);
-      expect(barTitle('coffee (2 items)'), findsOneWidget);
-      expect(barTitle('beer (1 item)'), findsOneWidget);
+      expect(barText('2 items'), findsOneWidget);
+      expect(barText('1 item'), findsOneWidget);
 
       await tester.tap(_button('Previous day'));
       await tester.pumpAndSettle();
 
       expect(find.text('Yesterday'), findsOneWidget);
       expect(barValues(tester), [3, 2]);
-      expect(barTitle('coffee (3 items)'), findsOneWidget);
-      expect(barTitle('beer (2 items)'), findsOneWidget);
+      expect(barText('3 items'), findsOneWidget);
+      expect(barText('2 items'), findsOneWidget);
     });
 
-    testWidgets('a third vice switches to the radar', (
+    testWidgets('an unused third vice keeps the bars, with its zero shown', (
       WidgetTester tester,
     ) async {
       await _pumpApp(
         tester,
-        overrides([coffee, beer, fakeVice('tea')]),
+        overrides([coffee, beer, tea]),
         const ViceTracker(),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(BarChart), findsNothing);
+      expect(find.byType(RadarChart), findsNothing);
+      expect(barValues(tester), [2, 1, 0]);
+      expect(barText('tea'), findsOneWidget);
+      expect(barText('0 items'), findsOneWidget);
+    });
+
+    testWidgets('a third used vice switches to the radar', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(
+        tester,
+        overrides([coffee, beer, tea], used: [tea]),
+        const ViceTracker(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DayBars), findsNothing);
       expect(find.byType(RadarChart), findsOneWidget);
     });
   });

@@ -39,17 +39,6 @@ List<int> labelIndices(int count, int maxLabels) {
   return <int>[for (int i = (count - 1) % step; i < count; i += step) i];
 }
 
-// The width each bar's title may take in a bar chart laid out with
-// BarChartAlignment.spaceEvenly: the distance between neighbouring bar
-// centres, or the whole width for a single bar.
-double barTitleWidth(double width, int bars, double barWidth) {
-  if (bars <= 1) {
-    return width;
-  }
-  final double space = max(0, width - bars * barWidth) / (bars + 1);
-  return space + barWidth;
-}
-
 // The length a radar title may take. fl_chart draws each title tangent to a
 // circle [titleOffset] beyond the radar's radius (0.8 of the shorter half
 // side), so a title is bounded by the chord to its neighbours' positions and by

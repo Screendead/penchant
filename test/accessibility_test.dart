@@ -64,6 +64,8 @@ final List<Vice> _three = [
   fakeVice('tea'),
 ];
 
+final List<Vice> _four = [..._three, fakeVice('gin')];
+
 RadarChartData _radar(WidgetTester tester) =>
     tester.widget<RadarChart>(find.byType(RadarChart)).data;
 
@@ -76,7 +78,7 @@ final List<Vice> _longNamed = [
 void main() {
   group('the radar', () {
     testWidgets('puts a zero at the centre', (WidgetTester tester) async {
-      await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
+      await _pump(tester, _day(_four, [2, 0, 1, 3]), const ViceTracker());
 
       final RadarChartData data = _radar(tester);
       expect(data.isMinValueAtCenter, isTrue);
@@ -85,6 +87,7 @@ void main() {
         2,
         0,
         1,
+        3,
       ]);
     });
 
@@ -156,17 +159,17 @@ void main() {
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       _usePhone(tester, textScale: 3);
-      await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+      await _pump(tester, _day(_longNamed, [4, 1, 1]), const ViceTracker());
 
-      expect(find.text('coffee: 0 items'), findsOneWidget);
+      expect(find.text('coffee: 1 item'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
           'Totals for $_todayLabel. Sparkling elderflower water: 4 items; '
-          'coffee: 0 items; tea: 0 items',
+          'coffee: 1 item; tea: 1 item',
         ),
         findsOneWidget,
       );
-      expect(find.bySemanticsLabel(RegExp('^coffee: 0 items')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('^coffee: 1 item')), findsNothing);
       semantics.dispose();
     });
 
@@ -270,7 +273,7 @@ void main() {
         WidgetTester tester,
       ) async {
         _usePhone(tester, textScale: textScale);
-        await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+        await _pump(tester, _day(_longNamed, [4, 1, 1]), const ViceTracker());
         expect(tester.takeException(), isNull);
 
         // At this size the key may take the chart's whole space.
@@ -297,6 +300,25 @@ void main() {
             findsOneWidget,
             reason: '${vice.name} is not shown whole',
           );
+        }
+      });
+
+      testWidgets('Today\'s bars show every name and amount whole', (
+        WidgetTester tester,
+      ) async {
+        _usePhone(tester, textScale: textScale);
+        await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+        expect(tester.takeException(), isNull);
+
+        for (final String text in [
+          for (final Vice vice in _longNamed) vice.name,
+          '4 items',
+          '0 items',
+        ]) {
+          final Finder found = find.text(text).first;
+          await tester.ensureVisible(found);
+          await tester.pumpAndSettle();
+          expect(found.hitTestable(), findsOneWidget, reason: text);
         }
       });
 

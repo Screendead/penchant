@@ -61,17 +61,6 @@ void main() {
     expect(300 / (n - 1), greaterThanOrEqualTo(1.5 * 40 + 8));
   });
 
-  group('barTitleWidth', () {
-    test('a single bar may use the whole width', () {
-      expect(barTitleWidth(300, 1, 48), 300);
-    });
-
-    test('two bars share the width between their centres', () {
-      // Space (300 - 96) / 3 = 68 around and between; centres 116 apart.
-      expect(barTitleWidth(300, 2, 48), 116);
-    });
-  });
-
   test('radarTitleWidth is the chord between neighbouring titles', () {
     const Size size = Size(300, 300);
     // Radius 120, titles at 144: three axes are 144 * sqrt(3) apart.

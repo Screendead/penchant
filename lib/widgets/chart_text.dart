@@ -25,26 +25,6 @@ Size chartLabelSize(BuildContext context, String text, TextStyle style) {
   return size;
 }
 
-// Whether [text] wraps into [maxLines] lines of [maxWidth] without being cut.
-bool chartLabelWraps(
-  BuildContext context,
-  String text,
-  TextStyle style, {
-  required double maxWidth,
-  required int maxLines,
-}) {
-  final TextPainter painter = _layOut(
-    context,
-    text,
-    style,
-    maxLines: maxLines,
-    maxWidth: maxWidth,
-  );
-  final bool fits = !painter.didExceedMaxLines;
-  painter.dispose();
-  return fits;
-}
-
 // fl_chart lays a radar title out on one line with no width limit, so the
 // string itself must fit in [maxWidth]: [suffix] is dropped first, then
 // [name] is cut short with an ellipsis, and when not even an ellipsis fits the

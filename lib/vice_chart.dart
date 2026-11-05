@@ -387,16 +387,14 @@ class DayBars extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        // At large text the amount moves under the name rather than
+        // squeezing it.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.end,
+          spacing: 12,
           children: [
-            Expanded(
-              child: Text(
-                vice.name,
-                style: text.titleMedium?.copyWith(color: ink),
-              ),
-            ),
-            const SizedBox(width: 12),
+            Text(vice.name, style: text.titleMedium?.copyWith(color: ink)),
             Text(
               vice.unit.label(quantity),
               style: text.titleMedium?.copyWith(
