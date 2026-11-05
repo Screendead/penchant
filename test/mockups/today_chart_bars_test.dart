@@ -71,7 +71,11 @@ Future<void> _loadFonts() async {
 }
 
 void main() {
-  setUpAll(_loadFonts);
+  setUpAll(() async {
+    if (autoUpdateGoldenFiles) {
+      await _loadFonts();
+    }
+  });
 
   for (final MapEntry<String, List<int>> day in _days.entries) {
     testWidgets('Today as bars, ${day.key} day', (WidgetTester tester) async {
