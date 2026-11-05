@@ -32,9 +32,10 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Wave D: data layer (#68), repo hygiene (#70), usage graph (#69), locale formatting (#67), widget state (#71), dead code and a `dart format` CI step (#66), Today chart keeps vice names readable at large text (#74), admin glob override for Dependabot alerts 197/198 (#75), pitch round 4 (#73) | Merged 2026-11-04. Each ran the full iOS e2e (31 tests) before merge, except #73 (docs) and #75 (seed script only; ran it under the emulators) | `lib/`, `admin/`, `docs/pitch/` |
 | CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
 | Web site | Down: returns 404 (checked 2026-11-04) | |
-| macOS target (#47) | Ready to merge 2026-11-05: Jack made the Mac development profile, and `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
+| macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
+| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in PR `feat/day-dial-foundation`: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 24 issues on #47's branch: 0 critical, 0 high, 12 medium, 12 low (`tools/tech-debt-recount.py`, 2026-11-05; 27 with 1 high, the macOS lockfile, on master; from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Tech-debt register | 23 issues on master: 0 critical, 0 high, 12 medium, 11 low (`tools/tech-debt-recount.py`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
@@ -48,20 +49,30 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 `tools/e2e.sh` or uses the default emulator ports. Subagents write PR bodies to uniquely named scratchpad files: the
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
-1. **macOS as a fully supported target** (C6's note): built in #47 (deployment target 12.0, emulator plist strip,
-   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Ready to
-   merge** (2026-11-05): Jack created the Mac development profile, the signed build runs and Firebase Auth works on
-   macOS. `E2E_DEVICE=macos tools/e2e.sh` now runs each file in its own `flutter test` (the macOS runner cannot
-   relaunch the app for a second file) and passes 31/31; iOS passes 31/31 (both after merging master through #77).
-   Three macOS-only test failures were the harness, not the app: a hidden or covered macOS window stops frames, so a
-   pump waited forever (tests now call `ensureE2EBinding()`, which forces frames meanwhile); the day menu in the
-   600 pt window leaves the newest days scrolled out (the test scrolls to them); and at text scale 3, which macOS
-   never reports outside a test, #74's key scrolls in that window (on macOS only, the test scrolls to each name). One full macOS run also timed out once in `bounded_queries_test.dart`'s
-   `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
-2. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
-   tiles are a Today layout, which waits on Jack's Today call (`r2-today`); only a shared "log one at the default
-   quantity, now" action with the 8-second Undo is decided. Unblocked. Parallel with item 4 where the files don't
-   overlap.
+1. **The Day Dial UI overhaul** (`r6-ui-direction`, below). The source of truth is branch
+   `origin/design/ui-overhaul-day-dial`, folder `docs/pitch/mockups/ui-overhaul/day-dial/`: `index.html` (the live
+   mock-up), `tokens.json` (mirrored in `lib/design/tokens.json`), `notes.md` (how each part is built in Flutter) and
+   the stills. One PR per step, in order; every screen keeps working between steps, and each PR keeps
+   `tools/e2e.sh` green by updating the tests its screens break. Habit names in examples are made up; the product
+   name strings stay until `r2-brand` (the mock-up's "Tracker" is a placeholder).
+   - **a. Theme foundation:** tokens, light and dark `ThemeData` with `themeMode: system`, bundled fonts, the habit
+     colour function, the hard-coded colours replaced. In review (`feat/day-dial-foundation`).
+   - **b. Today:** the dial (`CustomPainter`, beads at their times, now-hand, clear-day ring), the tally rows with a
+     `+` each, the one-tap "log one" action (the default quantity, now, with C4's 8-second Undo; this was the
+     layout-neutral half of one-tap logging), the Log button and its fan, the amount sheet that replaces the record
+     dialog for new entries, and the calendar sheet. The radar and C2's bars leave Today.
+   - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
+     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial.
+   - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
+     with Undo, and editing reuses the amount sheet.
+   - **e. Auth and settings screens:** one sign-in screen with a segmented control and the password checklist;
+     Settings and Account Settings in the card style. Copy stays as it is until `r3-delete-copy` and `r2-brand`.
+   - **f. Motion polish:** bead travel, day sweep, springs, page transitions (the mock-up's notes add the
+     `animations` package), and the reduce-motion fades.
+   - **g. e2e rewrite:** rebuild `integration_test/` around the new flows (fan gestures, dial semantics, the sheets),
+     on iOS and `E2E_DEVICE=macos`.
+2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. After 1c; the
+   mock-up does not show it.
 3. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
 4. **The rest of the register**, medium then low, one class per PR.
@@ -71,7 +82,7 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 Waves A to D are merged (the table above has each). No round-2 call is picked, so nothing rests on one. Left over:
 
 - Left for Jack's calls: brand strings, telemetry, verified email, vice cap, other languages. The "log one" action
-  waits on `r2-today`.
+  is decided by `r6-ui-direction` and lands in overhaul step 1b.
 - **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
   trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
 
@@ -85,7 +96,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 
 - **C1. Rules deployment** (`rules-deploy`): **CI deploys rules and indexes on merge to `master`.** So every rules PR
   Claude merges reaches production; the rules tests gate it. On since 2026-11-04.
-- **C2. Today with 1 or 2 vices** (`today-few-vices`): **bars below 3 vices, the radar from 3 up.**
+- **C2. Today with 1 or 2 vices** (`today-few-vices`): **bars below 3 vices, the radar from 3 up.** Superseded by
+  `r6-ui-direction` (2026-11-05): the radar leaves Today, and with it the bars rule, once overhaul step 1b lands.
 - **C3. Save timeout** (`record-timeout`): **close the dialog and say the entry will sync.**
 - **C4. Undo duration** (`undo-duration`): **8 seconds.**
 - **C5. Clean day** (`clean-day`): **quietly positive**: a green tint and short encouraging copy, no streak pressure.
@@ -126,6 +138,17 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
   brand. Done.
 
+## Jack's calls, round 6
+
+- **`r6-ui-direction`** (2026-11-05, on the UI overhaul pitch page https://claude.ai/artifact/23uvjtPyS7TqPvXaEBw9Px;
+  read from its `picks` collection): **Day Dial**, the day as a 24-hour dial with each entry a coloured bead at its
+  time. This also settles **`r2-today`**: the radar leaves Today, so C2's bars-below-3 rule is
+  superseded, and it allows the one-tap **"log one"** action (a tally row's `+`, or a tap on a Log-fan segment, logs
+  the default quantity now with the 8-second Undo). Chrome is ink on paper; the five icon colours mean habits only.
+  A habit's colour is its creation order (archived included) mod 5, rings from the sixth, dotted rings from the
+  eleventh; computed on the device, no stored field. Units stay the existing enum; new units are `r2-data-model`.
+  Built as the queue's item 1.
+
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
@@ -139,7 +162,8 @@ Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Fire
 
 Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, for `r2-brand`; its icon half is superseded by `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
+icon (`mockup/brand-and-icon`, for `r2-brand`; its icon half is superseded by `r2-icon`). Ids `r2-presets`,
+`r2-triggers`; `r2-today` is settled by `r6-ui-direction`.
 
 Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
 `lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
@@ -174,7 +198,8 @@ entry anywhere, which the rules don't bound. Register:
 `tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md`; rule: `CLAUDE.md` **Days**.
 
 Round 5 (2026-11-04, from the Today chart fix, PR #74; on the pitch page, each built the first way). Recommendations,
-not decisions:
+not decisions. All three concern the radar's key, which leaves Today in overhaul step 1b, so they are likely moot
+once it lands; they stay open until Jack says so:
 - **`r5-radar-inset`**: radar inset by one title line on every side at all text sizes (recommended, as built) vs only
   when the key shows.
 - **`r5-key-height`**: the key takes the height it needs and the chart is left out below four title lines of room
