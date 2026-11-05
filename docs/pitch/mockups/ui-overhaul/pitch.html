@@ -1,0 +1,141 @@
+<title>Tracker Redesign Directions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a decision memo — one recommendation band, then three direction panels, each with stills, a live mock-up and a pick button. */
+:root{
+  --bg:#F6F4EF; --surface:#FFFFFF; --ink:#1D1C1A; --muted:#625E57; --rule:#DCD7CC; --pick:#1D1C1A; --pick-ink:#F6F4EF; --ok:#2F7D4F;
+  --c1:#FFB347; --c2:#FF7A59; --c3:#E8505B; --c4:#9B5DE5; --c5:#4D96FF;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Public Sans", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#151412;--surface:#1E1D1A;--ink:#F3F0EA;--muted:#A8A399;--rule:#34312C;--pick:#F3F0EA;--pick-ink:#151412;--ok:#6CC28F;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151412;--surface:#1E1D1A;--ink:#F3F0EA;--muted:#A8A399;--rule:#34312C;--pick:#F3F0EA;--pick-ink:#151412;--ok:#6CC28F;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 72px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:var(--body)}
+p{margin:0;max-width:68ch}
+.spectrum{display:flex;height:6px;border-radius:3px;overflow:hidden;width:150px}
+.spectrum i{flex:1}
+header{display:flex;flex-direction:column;gap:14px}
+.lede{font-size:18px;color:var(--muted)}
+.rec{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+.rec strong{font-family:var(--display);font-size:20px}
+.dir{display:flex;flex-direction:column;gap:18px;padding-top:28px;border-top:1px solid var(--rule)}
+.dir-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 16px}
+.badge{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--ink);color:var(--bg)}
+.still{display:block;width:100%;border-radius:12px;border:1px solid var(--rule);background:var(--surface)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.facts > div{min-width:0;display:flex;flex-direction:column;gap:6px}
+.facts ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:760px){.facts{grid-template-columns:1fr}}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,.btn{font:600 15px var(--body);border-radius:10px;padding:11px 18px;cursor:pointer;border:1px solid var(--ink);background:transparent;color:var(--ink);text-decoration:none}
+button.primary{background:var(--pick);color:var(--pick-ink)}
+button[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+button:focus-visible,.btn:focus-visible,textarea:focus-visible{outline:3px solid var(--c5);outline-offset:2px}
+.live{width:100%;height:min(1000px,92vh);border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
+.status{font-size:14px;color:var(--muted)}
+textarea{width:100%;box-sizing:border-box;min-height:72px;font:15px var(--body);padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--surface);color:var(--ink)}
+.pickbar{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:20px 24px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="spectrum" aria-hidden="true"><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i><i style="background:var(--c5)"></i></div>
+  <h1>Pick the redesign direction</h1>
+  <p class="lede">Three complete directions for the new design system and UI. All three use the new icon's paper, ink and five colours, have light and dark themes, show a quiet day as data, and log an entry in one tap. Every phone in the live mock-ups responds to taps, drags and swipes. All habits shown are made up.</p>
+</header>
+
+<section class="rec" aria-labelledby="rec-h">
+  <h3 id="rec-h">Recommendation</h3>
+  <strong>Day Dial.</strong>
+  <p>You said the app is a journal for understanding yourself, with insights into triggers to come. Day Dial is the only direction that records <em>when</em> each entry happened. That is the raw material for trigger, calendar and Health insights, and it costs no extra reads. A quiet day is simply a quiet clock, so it can never look broken. The Log button fans out into the icon's own pentagon.</p>
+  <p class="status">Runner-up: Ledger, if you would rather have the fastest and plainest instrument. It is the cheapest to keep correct with 6 to 40 habits.</p>
+</section>
+
+<section class="dir" id="day-dial" aria-labelledby="dd-h">
+  <div class="dir-head"><h2 id="dd-h">A · Day Dial</h2><span class="badge">Recommended</span></div>
+  <p>The day is a 24-hour dial. Every entry is a coloured bead at the time it happened. Habit rows with a + sit beneath. Trends slides up as a sheet and includes "when it usually happens".</p>
+  <img class="still" src="day-dial/stills-light.png" alt="Day Dial: Today on a busy and a sparse day, the Log fan, Trends, Habits and Sign in, light theme" loading="lazy">
+  <div class="facts">
+    <div><h3>Strengths</h3><ul><li>Shows when things happen, ready for insights</li><li>A sparse day reads naturally, with times beside the beads</li><li>The Log fan is the icon; one tap logs an entry</li><li>No new reads or indexes</li></ul></div>
+    <div><h3>Weaknesses</h3><ul><li>Busy hours crowd near the hand</li><li>Bead size needs a key</li><li>Entries shift on the dial when the phone changes time zone</li></ul></div>
+    <div><h3>Cost and risk</h3><ul><li><b>M, about 2 weeks</b></li><li>The custom dial, hit-testing and fan gestures carry the risk</li><li>Replaces the radar (settles <code>r2-today</code>)</li></ul></div>
+  </div>
+  <div class="actions"><button class="primary" data-pick="day-dial">Choose Day Dial</button><button data-live="day-dial">Open the live mock-up</button><a class="btn" href="day-dial/stills-dark.png" target="_blank" rel="noopener">Dark still</a></div>
+  <iframe class="live" data-frame="day-dial" title="Day Dial live mock-up" hidden></iframe>
+</section>
+
+<section class="dir" id="petal" aria-labelledby="pe-h">
+  <div class="dir-head"><h2 id="pe-h">B · Petal</h2></div>
+  <p>The icon becomes the chart. Each habit owns a coloured petal, so every day draws its own version of the app icon, and the day strip shows a small icon for each day. Tiles under the chart log in one tap.</p>
+  <img class="still" src="petal/stills-light.png" alt="Petal: Today on a busy day, a sparse day and after logging, light theme" loading="lazy">
+  <div class="facts">
+    <div><h3>Strengths</h3><ul><li>The most delightful; the brand is on every screen</li><li>Petals grow and counts roll as you log</li><li>A sparse day keeps empty slots visible</li></ul></div>
+    <div><h3>Weaknesses</h3><ul><li>Petals can't be compared across habits; each is scaled to that habit's own busiest day</li><li>Colours repeat, with stripes, after five habits</li></ul></div>
+    <div><h3>Cost and risk</h3><ul><li><b>M</b>; the rose and its labels take 2 to 3 days</li><li>Today reads 30 days of entries, so more reads</li></ul></div>
+  </div>
+  <div class="actions"><button class="primary" data-pick="petal">Choose Petal</button><button data-live="petal">Open the live mock-up</button><a class="btn" href="petal/stills-dark.png" target="_blank" rel="noopener">Dark still</a></div>
+  <iframe class="live" data-frame="petal" title="Petal live mock-up" hidden></iframe>
+</section>
+
+<section class="dir" id="ledger" aria-labelledby="le-h">
+  <div class="dir-head"><h2 id="le-h">C · Ledger</h2></div>
+  <p>A precise instrument. The day is a ruled ledger with one row per habit: the count in mono and a thin trace of that habit's last 30 days. + logs one; tapping a row opens a stepper with time chips in place, with no dialog.</p>
+  <img class="still" src="ledger/stills-light.png" alt="Ledger: a busy day, a sparse day, inline logging and Trends, light theme" loading="lazy">
+  <div class="facts">
+    <div><h3>Strengths</h3><ul><li>Fastest to read and to log</li><li>Works with 6 to 40 habits</li><li>Stock Flutter widgets, lowest risk</li></ul></div>
+    <div><h3>Weaknesses</h3><ul><li>Least character; it can read as a spreadsheet</li><li>Today reads 30 days of entries, so more reads</li><li>Reordering habits needs a new field and a rules change</li></ul></div>
+    <div><h3>Cost and risk</h3><ul><li><b>M</b>, mostly Trends</li><li>Low technical risk</li></ul></div>
+  </div>
+  <div class="actions"><button class="primary" data-pick="ledger">Choose Ledger</button><button data-live="ledger">Open the live mock-up</button><a class="btn" href="ledger/stills-dark.png" target="_blank" rel="noopener">Dark still</a></div>
+  <iframe class="live" data-frame="ledger" title="Ledger live mock-up" hidden></iframe>
+</section>
+
+<section class="pickbar" aria-labelledby="note-h">
+  <h3 id="note-h">Your pick</h3>
+  <p class="status" id="status">No pick yet.</p>
+  <label for="note">Anything to take from the others, or to change (optional)</label>
+  <textarea id="note" placeholder="For example: Day Dial, but with Petal's tiles"></textarea>
+  <div class="actions"><button id="save-note">Save note</button></div>
+</section>
+</div>
+
+<script>
+(function(){
+  var names={"day-dial":"Day Dial","petal":"Petal","ledger":"Ledger"};
+  var state={choice:null,note:""}, doc=null;
+  var statusEl=document.getElementById('status'), noteEl=document.getElementById('note');
+  function render(){
+    document.querySelectorAll('[data-pick]').forEach(function(b){b.setAttribute('aria-pressed', String(b.dataset.pick===state.choice)); b.textContent=(b.dataset.pick===state.choice?'Chosen: ':'Choose ')+names[b.dataset.pick];});
+    statusEl.textContent = state.choice ? ('Picked: '+names[state.choice]+'. Claude reads this when you say so.') : 'No pick yet.';
+    if(document.activeElement!==noteEl) noteEl.value=state.note||'';
+  }
+  document.querySelectorAll('[data-live]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var f=document.querySelector('[data-frame="'+b.dataset.live+'"]');
+      if(!f.src) f.src=b.dataset.live+'/index.html';
+      f.hidden=!f.hidden; b.textContent=f.hidden?'Open the live mock-up':'Hide the live mock-up';
+    });
+  });
+  function save(){
+    if(!doc){statusEl.textContent='Could not save here. Tell Claude your pick in chat.';return;}
+    doc.set({choice:state.choice,note:state.note,at:new Date().toISOString()}).catch(function(){statusEl.textContent='Saving failed. Tell Claude your pick in chat.';});
+  }
+  document.querySelectorAll('[data-pick]').forEach(function(b){b.addEventListener('click',function(){state.choice=b.dataset.pick;render();save();});});
+  document.getElementById('save-note').addEventListener('click',function(){state.note=noteEl.value;save();statusEl.textContent='Note saved.';});
+  render();
+  if(window.claude&&claude.use){
+    claude.use('db').then(function(db){
+      if(!db) return;
+      doc=db.doc('picks/r6-ui-direction');
+      doc.onSnapshot(function(s){var d=s&&s.exists&&s.data?s.data():(s&&s.data)||null; if(d&&typeof d==='object'){state.choice=d.choice||null;state.note=d.note||'';render();}},function(){});
+    });
+  }
+})();
+</script>
