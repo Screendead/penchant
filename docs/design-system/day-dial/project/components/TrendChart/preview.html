@@ -19,12 +19,12 @@
   .chart svg { width: 100%; height: 100%; overflow: visible; display: block; }
   .grid line { stroke: var(--line); stroke-width: 1; }
   .lab { font: 500 10px/1 var(--font-mono); fill: var(--muted); }
-  .raw { fill: none; stroke: var(--c); stroke-width: 1.5; opacity: .5; stroke-linejoin: round; }
+  .raw { fill: none; stroke: var(--ci); stroke-width: 1.5; stroke-dasharray: 4 3; stroke-linecap: round; stroke-linejoin: round; }
   .avg { fill: none; stroke: var(--ci); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
   .area { fill: var(--c); opacity: .1; }
-  .dot { fill: var(--c); }
-  .cursor { stroke: var(--text); stroke-width: 1; opacity: .25; }
-  .sel-raw { fill: var(--c); stroke: var(--surface); stroke-width: 2.5; }
+  .dot { fill: var(--ci); }
+  .cursor { stroke: var(--outline); stroke-width: 1; }
+  .sel-raw { fill: var(--ci); stroke: var(--surface); stroke-width: 2.5; }
   .sel-avg { fill: var(--surface); stroke: var(--ci); stroke-width: 2.5; }
   .readout { position: absolute; top: 0; height: 28px; padding: 0 11px; border-radius: var(--radius-pill); background: var(--surface2); display: flex; align-items: center; gap: 7px; font: 400 12px/1 var(--font-text); color: var(--muted); white-space: nowrap; transform: translateX(-50%); }
   .readout b { font: 600 12.5px/1 var(--font-text); color: var(--text); }

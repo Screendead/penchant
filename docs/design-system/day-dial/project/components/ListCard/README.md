@@ -6,7 +6,7 @@ Cards of rows for the pages: the Habits list, a habit's history grouped by day, 
 
 - Card: `surface`, `radius-card`, 1px `line`, `shadow-card`. Dividers are 1px `line` starting after the leading mark.
 - Section labels in `labelS` `muted` sit above cards ("Archived", "App").
-- Habit row (66pt): a 14px pip (a ring pip for a ring habit), the name in `bodyL`, then "drinks · 1,287 entries" in `bodyS` `muted`, and a `muted` chevron. Archived habits go in their own card under "Archived".
+- Habit row (66pt): a 14px pip (`dataN` with its `dataNRim` rim, or a `dataNInk` ring for a ring habit), the name in `bodyL`, then "drinks · 1,287 entries" in `bodyS` `muted`, and a `muted` chevron. Archived habits go in their own card under "Archived".
 - Entry row (56pt): a 30px Bead, the time in `monoM`, and the amount right-aligned in Text 500 15px.
   - A day head above each group: "Today" and "4 drinks", both Text 600 13px `muted`, with the number in Mono.
   - Swipe left past 90pt to delete over a `danger` fill with a `surface` trash icon, then show the UndoBar. A tap opens the EntrySheet.

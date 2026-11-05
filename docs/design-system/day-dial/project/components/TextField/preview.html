@@ -9,14 +9,14 @@
   .wrap { display: flex; gap: 48px; justify-content: center; padding: 24px var(--space-gutter); }
   .col { width: 338px; display: flex; flex-direction: column; gap: 10px; }
   svg.i { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-  .field { height: var(--size-pillHeight); border-radius: var(--radius-input); background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; padding: 0 8px 0 18px; box-sizing: border-box; color: var(--muted); }
+  .field { height: var(--size-pillHeight); border-radius: var(--radius-input); background: var(--surface); border: 1px solid var(--outline); display: flex; align-items: center; gap: 10px; padding: 0 8px 0 18px; box-sizing: border-box; color: var(--muted); }
   .field.focus { border-color: var(--accent); box-shadow: var(--shadow-focus); }
   .field .v { flex: 1; font: 500 15.5px/1 var(--font-text); color: var(--text); }
   .field .ph { flex: 1; font: 400 15.5px/1 var(--font-text); color: var(--muted); }
   .eye { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; }
   .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; padding: 14px 16px; background: var(--surface); border-radius: 22px; border: 1px solid var(--line); }
   .ck { display: flex; align-items: center; gap: 8px; font: 500 13px/1.2 var(--font-text); color: var(--muted); }
-  .cb { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line); display: grid; place-items: center; flex: none; }
+  .cb { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--outline); display: grid; place-items: center; flex: none; }
   .cb svg.i { width: 12px; height: 12px; color: var(--surface); visibility: hidden; }
   .ck.ok { color: var(--text); }
   .ck.ok .cb { background: var(--clearInk); box-shadow: none; }

@@ -8,10 +8,11 @@
   html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
   .wrap { display: flex; gap: 40px; justify-content: center; padding: 20px var(--space-gutter) 0; }
   .sheet { width: 390px; background: var(--surface); border: 1px solid var(--line); border-bottom: 0; border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; box-shadow: var(--shadow-sheet); padding: 12px 22px var(--space-xxl); box-sizing: border-box; }
-  .grab { width: 38px; height: 5px; border-radius: 3px; background: var(--text); opacity: .18; margin: 0 auto 14px; }
+  .grab { width: 38px; height: 5px; border-radius: 3px; background: var(--outline); margin: 0 auto 14px; }
   .head { display: flex; align-items: center; justify-content: space-between; }
   .ttl { display: flex; align-items: center; gap: 10px; font: 700 20px/1 var(--font-display); }
   .pip { width: 12px; height: 12px; border-radius: 50%; }
+  .pip.c1 { background: var(--data1); box-shadow: inset 0 0 0 1.25px var(--data1Rim); } .pip.c3 { background: var(--data3); box-shadow: inset 0 0 0 1.25px var(--data3Rim); }
   .x { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); display: grid; place-items: center; }
   svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .big { display: flex; align-items: baseline; gap: 8px; margin: 18px 0 4px; }
@@ -31,7 +32,7 @@
   const P = { x: '<path d="M6 6l12 12M18 6L6 18"/>', pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/>' };
   const ic = n => `<svg class="i" viewBox="0 0 24 24">${P[n]}</svg>`;
   const sheet = (c, name, q, unit, meta) => `<div class="sheet" role="dialog" aria-label="Entry"><div class="grab"></div>
-    <div class="head"><div class="ttl"><span class="pip" style="background:var(--data${c})"></span>${name}</div><span class="x" aria-label="Close">${ic('x')}</span></div>
+    <div class="head"><div class="ttl"><span class="pip c${c}"></span>${name}</div><span class="x" aria-label="Close">${ic('x')}</span></div>
     <div class="big"><span class="n">${q}</span><span class="u">${unit}</span></div><div class="meta">${meta}</div>
     <div class="acts"><span class="tbtn">${ic('pencil')}Edit</span><span class="tbtn danger">${ic('trash')}Delete</span></div></div>`;
   document.getElementById('root').innerHTML =

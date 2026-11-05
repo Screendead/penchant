@@ -22,8 +22,10 @@
   .hint { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: var(--surface); color: var(--text); font: 500 13px/1 var(--font-text); padding: 10px 15px; border-radius: var(--radius-pill); white-space: nowrap; box-shadow: var(--shadow-pop); }
   .hint b { font-weight: 600; }
   svg.fan { position: absolute; inset: 0; width: 390px; height: 470px; overflow: visible; }
-  .c1 { --c: var(--data1); } .c2 { --c: var(--data2); } .c3 { --c: var(--data3); } .c4 { --c: var(--data4); } .c5 { --c: var(--data5); }
-  .wf { fill: var(--c); stroke: var(--bg); stroke-width: 3; stroke-linejoin: round; }
+  .c1 { --c: var(--data1); --cr: var(--data1Rim); } .c2 { --c: var(--data2); --cr: var(--data2Rim); } .c3 { --c: var(--data3); --cr: var(--data3Rim); } .c4 { --c: var(--data4); --cr: var(--data4Rim); } .c5 { --c: var(--data5); --cr: var(--data5Rim); }
+  .wf { fill: var(--c); }
+  .wr { fill: none; stroke: var(--cr); stroke-width: 5.5; stroke-linejoin: round; }
+  .ws { fill: none; stroke: var(--bg); stroke-width: 3; stroke-linejoin: round; }
   .wn { font: 600 12.5px/1 var(--font-text); fill: var(--wedgeInk); }
   .wq { font: 500 11px/1 var(--font-mono); fill: var(--wedgeInk); }
   .fspoke { stroke: var(--text); stroke-opacity: .45; stroke-width: 2; stroke-linecap: round; }
@@ -42,7 +44,8 @@
   let fan = `<svg class="fan" viewBox="0 0 390 470"><g transform="translate(${cx},${cy})">`;
   W.forEach(([n, q], k) => {
     const [ax, ay] = V(k), [bx, by] = V(k + 1), mid = (-54 + 72 * k) * Math.PI / 180, lx = 84 * Math.cos(mid), ly = 84 * Math.sin(mid);
-    fan += `<g class="c${k + 1}"><path class="wf" d="M${Ri * ax},${Ri * ay}L${Ro * ax},${Ro * ay}L${Ro * bx},${Ro * by}L${Ri * bx},${Ri * by}A${Ri},${Ri} 0 0 0 ${Ri * ax},${Ri * ay}Z"/>`
+    const d = `M${Ri * ax},${Ri * ay}L${Ro * ax},${Ro * ay}L${Ro * bx},${Ro * by}L${Ri * bx},${Ri * by}A${Ri},${Ri} 0 0 0 ${Ri * ax},${Ri * ay}Z`;
+    fan += `<g class="c${k + 1}"><clipPath id="w${k}"><path d="${d}"/></clipPath><path class="wf" d="${d}"/><path class="wr" d="${d}" clip-path="url(#w${k})"/><path class="ws" d="${d}"/>`
       + `<text class="wn" x="${lx}" y="${ly - 3}" text-anchor="middle"${n.length > 11 ? ' style="font-size:11px"' : ''}>${n}</text><text class="wq" x="${lx}" y="${ly + 12}" text-anchor="middle">${q}</text></g>`;
   });
   for (let k = 0; k < 5; k++) { const [x, y] = V(k); fan += `<line class="fspoke" x1="0" y1="0" x2="${x * (Ro + 16)}" y2="${y * (Ro + 16)}"/>`; }

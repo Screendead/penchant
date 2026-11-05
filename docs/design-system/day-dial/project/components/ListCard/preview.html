@@ -11,10 +11,10 @@
   .card { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); border: 1px solid var(--line); overflow: hidden; }
   .sect { font: 600 13px/1 var(--font-text); color: var(--muted); margin: 18px 6px 10px; }
   .sect:first-child { margin-top: 4px; }
-  .c1 { --c: var(--data1); --cr: var(--data1Rim); } .c2 { --c: var(--data2); --cr: var(--data2Rim); } .c3 { --c: var(--data3); --cr: var(--data3Rim); }
-  .c4 { --c: var(--data4); --cr: var(--data4Rim); } .c5 { --c: var(--data5); --cr: var(--data5Rim); }
-  .pip { width: 14px; height: 14px; border-radius: 50%; background: var(--c); flex: none; }
-  .pip.ring { background: none; box-shadow: inset 0 0 0 2.2px var(--c); }
+  .c1 { --c: var(--data1); --ci: var(--data1Ink); --cr: var(--data1Rim); } .c2 { --c: var(--data2); --ci: var(--data2Ink); --cr: var(--data2Rim); } .c3 { --c: var(--data3); --ci: var(--data3Ink); --cr: var(--data3Rim); }
+  .c4 { --c: var(--data4); --ci: var(--data4Ink); --cr: var(--data4Rim); } .c5 { --c: var(--data5); --ci: var(--data5Ink); --cr: var(--data5Rim); }
+  .pip { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1.25px var(--cr); flex: none; }
+  .pip.ring { background: none; box-shadow: inset 0 0 0 2.2px var(--ci); }
   .hrow { display: flex; align-items: center; gap: 14px; padding: 0 14px 0 18px; height: 66px; position: relative; }
   .hrow + .hrow:before, .srow + .srow:before, .ew + .ew:before { content: ""; position: absolute; top: 0; right: 0; height: 1px; background: var(--line); z-index: 2; }
   .hrow + .hrow:before { left: 44px; } .srow + .srow:before { left: 18px; } .ew + .ew:before { left: 56px; }

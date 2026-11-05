@@ -24,10 +24,10 @@ Day Dial draws a day as a 24-hour dial. Every entry is a coloured bead at the ti
 - Set text in `text`, and secondary text (units, dates, captions, numerals, counts) in `muted`. Both meet 4.5:1 on `bg`, `surface` and `surface2` in both themes.
 - Chrome is `accent`, with `onAccent` on its fills. That covers the primary button, the Log button, the now-hand, the scrub knob, selection, focus and today's ring. In light `accent` equals `text` (ink); in dark both are paper.
 - **Habit colours are data only.** `data1` to `data5` fill beads, pips, fan wedges and chart series, and nothing else. Never use one for a control, a link, a selection, a focus ring or a status. Amber must never mean both "Coffee" and "press here". Red `data3` is a habit; errors use `danger`.
-- **A habit's colour is its creation index**, counted in `createdAt` order with archived habits included, mod 5. Habits 1–5 are filled beads in `data1`–`data5`. Habits 6–10 are hollow rings (stroke 2.4) in the same hues, and 11–15 are dotted rings. The colour is computed on the device; nothing is stored. The source defines nothing past 15.
+- **A habit's colour is its creation index**, counted in `createdAt` order with archived habits included, mod 5. Habits 1–5 are filled beads in `data1`–`data5`. Habits 6–10 are hollow rings (stroke 2.4) and 11–15 dotted rings, drawn in the same hues' inks (`dataNInk`). The colour is computed on the device; nothing is stored. The source defines nothing past 15.
 - Set text *about* a habit (its tally total, the Trends number, the average line) in its `dataNInk`, never in `dataN`. Each ink meets 4.5:1 on `bg`, `surface` and `surface2` in both themes.
 - The only text on a habit colour is a fan wedge label, in `wedgeInk` (4.6:1 or better on all five).
-- Bead treatment differs by theme. In light a bead is `dataN` with an inner 1.25px rim in `dataNRim`, which gives it 3:1 on the disc. In dark it is `dataN` with a 6px blur glow in `dataNGlow`. Each token is transparent in the theme that does not use it, so draw both every time.
+- **Every habit mark holds 3:1 against what it sits on.** A filled mark (a bead, a pip, a fan wedge, an hour-ring wedge) is `dataN` with an inner 1.25px rim in `dataNRim`: in light the rim is the edge that holds 3:1, since amber, coral and blue fills cannot on paper. In dark the rim is transparent, the fill holds 3:1 itself, and a bead adds a 6px blur glow in `dataNGlow`. Each token is transparent in the theme that does not use it, so draw both every time. A hollow or thin mark (a ring or dotted bead, a pending bead's dashes, a ring pip, a calendar dot, a chart line or dot) is drawn in `dataNInk`.
 - Links are `text`, weight 600, underlined (offset 3px, `muted` underline). Never a habit colour.
 - Destructive actions are `danger` text, on `surface` or on a `dangerContainer` fill.
 - A clear day uses `clear` (the wash) and `clearInk` (the ring and its copy). Elsewhere `clearInk` only ticks a met password rule.
@@ -49,7 +49,7 @@ Day Dial draws a day as a 24-hour dial. Every entry is a coloured bead at the ti
   - the tallies, a scrolling list of `size-tallyRow` rows;
   - the Trends sheet peeking at 15% of the height, with the Log button docked on its top edge, centred.
 - Pages (Habits, a habit's history, Settings) push over Today. Each has a 44pt bar with a back circle left and at most one circle action right, a `displayXL` title, an optional `bodyS` subtitle in `muted`, then cards separated by `labelS` section labels in `muted`.
-- Sheets rise from the bottom with `radius-sheet` top corners, a 38×5 grab handle (`text` at 18%), 22px side padding and `space-xxl` below.
+- Sheets rise from the bottom with `radius-sheet` top corners, a 38×5 grab handle in `outline`, 22px side padding and `space-xxl` below.
 - On macOS from 900pt wide, split the window: the dial and tallies on the left, Trends on the right. No mock-up shows this yet.
 
 ### Shape and radii
@@ -70,25 +70,44 @@ Day Dial draws a day as a 24-hour dial. Every entry is a coloured bead at the ti
 - **Pressed:** scale to 0.92 (circles), 0.98 (wide buttons) or 0.88 (the tally +), springing back. No colour change.
 - **Disabled:** 35% opacity, no pointer. A disabled primary button turns `surface2` with a `muted` label.
 - **Focus:** a 2px solid `accent` outline at 2px offset on buttons. A text field turns its border `accent` and adds `shadow-focus`. Focus is always ink or paper, never a habit colour.
-- **Selected:** the large segmented control slides an `accent` thumb with an `onAccent` label. The small one, inside a sheet, slides a `surface` thumb with `shadow-tiny`, and the label turns from `muted` to `text`. A habit chip fills with its `dataN` at 18% over `surface` and takes a 1.5px border in its `dataNInk`.
-- **Zero:** a tally at 0 sets its name and number in `muted` and its pip at 40%.
-- **Pending (not yet synced):** a hollow bead with a dashed rim (`dataN`, dashes 3.2/2.6) that turns once every 2 s. When the server acknowledges it, the fill scales up from the centre over 240 ms. Rows add "Not yet synced" with the cloud-up icon in `muted`.
+- **Selected:** the large segmented control slides an `accent` thumb with an `onAccent` label. The small one, inside a sheet, slides a `surface` thumb with a 1px `outline` border and `shadow-tiny`, and the label turns from `muted` to `text`. A habit chip fills with its `dataN` at 18% over `surface` and takes a 1.5px border in its `dataNInk`.
+- **Zero:** a tally at 0 sets its name and number in `muted`. Its pip stays at full strength: it is still the habit's key to its beads.
+- **Pending (not yet synced):** a hollow bead with a dashed rim (`dataNInk`, dashes 3.2/2.6) that turns once every 2 s. When the server acknowledges it, the fill scales up from the centre over 240 ms. Rows add "Not yet synced" with the cloud-up icon in `muted`.
 - **Archived:** a habit keeps its colour. Its chip adds "· archived" in `muted`, and it is listed last under an "Archived" section label.
 - **Error:** `dangerContainer` pills with a `danger` icon and `text` copy. The pill drops in on a spring. Never red text alone.
 
-### Accessibility: what falls short, and the fix
+### Accessibility: every pair meets WCAG 2.2 AA
 
-Every text pair meets 4.5:1 in both themes, and `accent` marks meet 3:1 everywhere. These marks fall short. Each fix below is proposed and not yet made.
+The rule, in both themes (Jack, 2026-11-05):
 
-| Where | Light | Dark | Rule and fix |
-|---|---|---|---|
-| `data1`, `data2`, `data5` fills | 1.8, 2.6 and 3.0 on `surface`; `data1` 1.6 and `data5` 2.7 on `bg` | 4.1 or better | Beads carry `dataNRim` (4.4:1 or better on `surface`). A pip is always beside its habit's name, so its colour is never the only cue. |
-| Ring beads (habits 6–10) | as above | passes | The mock draws them without a rim. Proposed: in light, add a 1px outer stroke in `dataNRim`. |
-| Chart raw line and day dots in `dataN` | as above | passes | The average line is `dataNInk`, and the readout pill states each value. The raw series is context, not the only carrier. |
-| Selected chip border | `data1` was 1.5 on `surface2` | passes | Fixed here: the border takes `dataNInk` (5.0:1 or better), not the mock's `dataN`. |
-| `line` hairlines | 1.2 | 1.4 | Decorative. A text field is a `surface` pill with a `line` border on `bg`, so its edge is under 3:1. Its leading icon and placeholder identify it. Proposed if an audit asks: a `muted` field border at rest. |
-| Small segmented thumb (`surface` on `surface2`) | 1.2 | 1.1 | The selected label also turns `muted` to `text`. Proposed: give the thumb a 1px `line` border plus `shadow-tiny`, or use the `accent` thumb. |
-| `spoke` on `surface` | 2.9 | 4.7 | A grid. The numerals (`muted`, 5.9:1) and the hub carry the time. |
+- **Text** meets 4.5:1 against what it sits on (SC 1.4.3). Large text (24px, or 19px bold) could drop to 3:1; nothing here uses that allowance.
+- **Icons, graphics that carry meaning, the edges that identify a control or show its state, and focus indicators** meet 3:1 against every colour they touch (SC 1.4.11).
+- A colour at reduced opacity is scored as what it paints: composited over its ground first, and never rounded up (2.99 fails).
+
+`contrast-pairs.json` lists every pair the system paints, by where it is used. `tools/contrast-check.py` checks it against `tokens.json` (310 checks over both themes, all passing), and the app's `test/contrast_test.dart` runs the same list against the app's palette in CI. A new use of a colour adds its pair there.
+
+How the hard cases pass:
+
+| Where | How | Lowest |
+|---|---|---|
+| Filled habit marks: beads, pips, fan wedges, hour-ring wedges | Light: an inner 1.25px rim in `dataNRim` (the habit's ink at 90%). Dark: the fill itself, with the glow at 25%; `data3` and `data4` are a touch lighter in dark for this | 3.15 light (amber wedge over the scrim), 3.07 dark (red bead in its glow on `surface2`) |
+| Hollow and thin habit marks: ring and dotted beads, pending dashes, ring pips, calendar dots, the chart's raw series (dashed), its dots and average, the sparkline | `dataNInk` | 4.95 or better on `bg`, `surface`, `surface2`; 4.3 over a tint |
+| Text field borders, outlined and secondary buttons, the quiet segmented thumb, an unmet password rule, grab handles, slider tracks, the chart cursor | `outline`: ink at 50%, paper at 40% | 3.17 light, 3.23 dark |
+| Major spokes and hour-ring ticks | `spoke` (ink at 50% in light) | 3.17 light, 4.39 dark |
+| Clear-day ring | solid `clearInk` | 5.42 light |
+| Selected chip | a 1.5px `dataNInk` border | 4.33 against its own tint |
+| Focus, the now-hand, selection | `accent` | 12.9 |
+| Text | `text`, `muted`, `dataNInk`, `danger`, `clearInk`, `onAccent`, `wedgeInk` on their grounds | 4.63 (`wedgeInk` on violet), 4.71 (`muted` on a selected amber chip, dark) |
+
+Exempt, because WCAG does not require them and nothing relies on them:
+
+- `line` hairlines: card, pill and disc rims, dividers, chart gridlines, the hour ring's base circle. No control is identified by a line: fields and outlined buttons take `outline`; cards, circle buttons, tonal buttons, the tally + and chips at rest are identified by their text (4.5:1) or icon (3:1). The chart's axis labels and readout carry its values.
+- The dial's minor spokes (45%), the spokes dimmed to 25% on a clear day, and the fan's dividing spokes: a grid. The numerals, bead times and entry sheet carry the time; the wedges are split by the `bg` gap and their rims.
+- The elapsed arc (`accent` at 22%): it repeats the now-hand.
+- The amount sheet's ghost beads (40%): context; the chosen time is the knob and the hub's text.
+- Fills that only tint: `surface` on `bg`, `surface2` inside a surface, `clear`, `dangerContainer` and its 30% `danger` border, the chart's 10% area, `scrim`, shadows, glows, the focus halo, the coach mark's pulse, hover fills.
+- Disabled controls (35%) and future calendar days (30%): inactive, which SC 1.4.11 excludes.
+- The cover art: brand art, not interface.
 
 ### Motion: orbital, 150–700 ms
 
@@ -140,9 +159,9 @@ The dial is the system's one chart. Draw it exactly as below.
   - Every bead has a hit target 6 larger than its radius and opens its entry sheet.
 - **Times on sparse days.** On a day of 4 entries or fewer, each bead carries its time in `dialTime` `muted`, on the hub side, haloed 4px in `surface`. Above 4 entries the tallies and a tap carry the times.
 - **Dense days.** Above roughly 48 entries, merge an hour's beads into one arc labelled with its count.
-- **Clear day.** With no entries, dim the spokes to 25% and lay a 16px `clear` band at radius 116. Draw a 2px `clearInk` ring at 60% on it, clockwise from 00. The hub reads "A clear day" over "so far" (today) or "nothing logged" (a past day) in `clearInk`, Text 600 at 12.5px.
+- **Clear day.** With no entries, dim the spokes to 25% and lay a 16px `clear` band at radius 116. Draw a solid 2px `clearInk` ring on it, clockwise from 00. The hub reads "A clear day" over "so far" (today) or "nothing logged" (a past day) in `clearInk`, Text 600 at 12.5px.
 - **Mini dial** (amount sheet). The same face at 216px with the day's other beads at 40%. Add a scrub knob (radius 11, `accent`, 3px `surface` stroke) on radius 112, and an `accent` 3px hand from 42% to 90% of that radius. The hub shows the chosen time. Today clamps the knob to now.
-- **Hour ring** ("When it happens"). A 100-unit dial: `surface` disc, a `line` circle at 26, four `spoke` ticks. Each hour's total is a wedge from 26 out to 46 at the busiest hour, in the habit's `dataN`. "24 h" sits at the centre.
+- **Hour ring** ("When it happens"). A 100-unit dial: `surface` disc, a `line` circle at 26, four `spoke` ticks. Each hour's total is a wedge from 26 out to 46 at the busiest hour, in the habit's `dataN` with a 1.25px `dataNRim` edge. "24 h" sits at the centre.
 - **Semantics.** The dial is one labelled node: "Today, Thu 5 Nov. Coffee 5 drinks, Takeaway 5 items, Alcohol 4 drinks, Late nights 1 time, Doomscrolling 80 minutes. First entry 00:40, last 20:50." A clear day ends "Nothing recorded." Each bead is its own button that opens its entry. The tallies' + buttons are the list path for VoiceOver and Switch Control.
 - **Do not** draw a radar, bars or a pie for a day, and never show a habit colour on chrome. Never move a bead off its time to tidy the layout; push it along the arc only.
 
