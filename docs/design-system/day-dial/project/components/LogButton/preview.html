@@ -1,0 +1,55 @@
+<!-- @dsCard group="Recording" height=510 subtitle="Docked on the Trends sheet with the first-run coach mark, and the open fan" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: 40px; padding: 20px var(--space-gutter); justify-content: center; }
+  .stage { position: relative; width: 390px; height: 470px; overflow: hidden; border-radius: var(--radius-card); background: var(--bg); border: 1px solid var(--line); box-sizing: border-box; }
+  .sheet { position: absolute; left: 0; right: 0; top: var(--sheet-top); bottom: 0; background: var(--surface); border-top: 1px solid var(--line); border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; box-shadow: var(--shadow-sheet); padding: 18px 22px; box-sizing: border-box; }
+  .sheet b { display: block; font: 700 15px/1 var(--font-display); }
+  .sheet small { display: block; margin-top: 5px; font: 400 12.5px/1 var(--font-text); color: var(--muted); }
+  .log { position: absolute; left: 163px; width: var(--size-logButton); height: var(--size-logButton); border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--onAccent); box-shadow: var(--shadow-logButton); }
+  .log svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .log.open { background: var(--surface); color: var(--text); }
+  .log.open svg { transform: rotate(45deg); }
+  .coach { position: absolute; left: 241px; top: 343px; background: var(--text); color: var(--bg); font: 600 13px/1 var(--font-text); padding: 9px 14px; border-radius: var(--radius-pill); white-space: nowrap; }
+  .coach:after { content: ""; position: absolute; left: -5px; top: 50%; margin-top: -5px; border: 5px solid transparent; border-left: 0; border-right-color: var(--text); }
+  .pulse { position: absolute; left: 163px; top: 328px; width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 0 0 11px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .hint { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: var(--surface); color: var(--text); font: 500 13px/1 var(--font-text); padding: 10px 15px; border-radius: var(--radius-pill); white-space: nowrap; box-shadow: var(--shadow-pop); }
+  .hint b { font-weight: 600; }
+  svg.fan { position: absolute; inset: 0; width: 390px; height: 470px; overflow: visible; }
+  .c1 { --c: var(--data1); } .c2 { --c: var(--data2); } .c3 { --c: var(--data3); } .c4 { --c: var(--data4); } .c5 { --c: var(--data5); }
+  .wf { fill: var(--c); stroke: var(--bg); stroke-width: 3; stroke-linejoin: round; }
+  .wn { font: 600 12.5px/1 var(--font-text); fill: var(--wedgeInk); }
+  .wq { font: 500 11px/1 var(--font-mono); fill: var(--wedgeInk); }
+  .fspoke { stroke: var(--text); stroke-opacity: .45; stroke-width: 2; stroke-linecap: round; }
+  .fhub { fill: var(--surface); }
+  .fh1 { font: 500 15px/1 var(--font-mono); fill: var(--text); }
+  .fh2 { font: 500 10px/1 var(--font-text); fill: var(--muted); }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const plus = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+  const W = [['Coffee', '+1 drink'], ['Takeaway', '+1 item'], ['Alcohol', '+1 drink'], ['Late nights', '+1 time'], ['Doomscrolling', '+15 min']];
+  const cx = 195, cy = 240, Ro = 152, Ri = 44;
+  const V = k => { const a = (-90 + 72 * k) * Math.PI / 180; return [Math.cos(a), Math.sin(a)]; };
+  let fan = `<svg class="fan" viewBox="0 0 390 470"><g transform="translate(${cx},${cy})">`;
+  W.forEach(([n, q], k) => {
+    const [ax, ay] = V(k), [bx, by] = V(k + 1), mid = (-54 + 72 * k) * Math.PI / 180, lx = 84 * Math.cos(mid), ly = 84 * Math.sin(mid);
+    fan += `<g class="c${k + 1}"><path class="wf" d="M${Ri * ax},${Ri * ay}L${Ro * ax},${Ro * ay}L${Ro * bx},${Ro * by}L${Ri * bx},${Ri * by}A${Ri},${Ri} 0 0 0 ${Ri * ax},${Ri * ay}Z"/>`
+      + `<text class="wn" x="${lx}" y="${ly - 3}" text-anchor="middle"${n.length > 11 ? ' style="font-size:11px"' : ''}>${n}</text><text class="wq" x="${lx}" y="${ly + 12}" text-anchor="middle">${q}</text></g>`;
+  });
+  for (let k = 0; k < 5; k++) { const [x, y] = V(k); fan += `<line class="fspoke" x1="0" y1="0" x2="${x * (Ro + 16)}" y2="${y * (Ro + 16)}"/>`; }
+  fan += `<circle class="fhub" r="${Ri - 6}"/><text class="fh1" y="-1" text-anchor="middle">21:10</text><text class="fh2" y="14" text-anchor="middle">now</text></g></svg>`;
+  document.getElementById('root').innerHTML =
+    `<div class="stage" style="--sheet-top:360px"><div class="sheet"><b>Trends</b><small>Coffee · last 30 days</small></div><div class="pulse"></div><div class="log" style="top:328px" aria-label="Log an entry">${plus}</div><div class="coach">Tap Log</div></div>` +
+    `<div class="stage" style="--sheet-top:397px"><div class="sheet"></div><div class="scrim"></div><div class="hint"><b>Tap</b> to log now · <b>hold</b> for amount and time</div>${fan}<div class="log open" style="top:365px" aria-label="Close">${plus}</div></div>`;
+</script>
+</body>
+</html>

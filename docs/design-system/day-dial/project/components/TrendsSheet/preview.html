@@ -1,0 +1,57 @@
+<!-- @dsCard group="Trends" height=330 subtitle="The sheet at its 15% peek with the Log button docked, and the top of the open sheet" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: 40px; justify-content: center; padding: 20px var(--space-gutter) 0; }
+  .stage { position: relative; width: 390px; height: 310px; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border: 1px solid var(--line); border-bottom: 0; border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; box-shadow: var(--shadow-sheet); box-sizing: border-box; }
+  .grab { position: absolute; top: 8px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--text); opacity: .18; }
+  .peek { padding: 16px 22px 0; }
+  .row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .pt { font: 700 15px/1 var(--font-display); }
+  .ps { font: 400 12.5px/1 var(--font-text); color: var(--muted); margin-top: 5px; }
+  .pr { text-align: right; }
+  .pr .m { font: 500 17px/1 var(--font-mono); color: var(--data1Ink); }
+  .pr small { display: block; font: 400 12px/1 var(--font-text); color: var(--muted); margin-top: 4px; }
+  svg.spark { display: block; width: 346px; height: 44px; margin-top: 12px; }
+  .log { position: absolute; left: 163px; width: var(--size-logButton); height: var(--size-logButton); border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--onAccent); box-shadow: var(--shadow-logButton); }
+  .log svg, .cbtn svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .log svg { width: 28px; height: 28px; }
+  .full { padding: 22px var(--space-l) 0; }
+  .th { display: flex; justify-content: space-between; align-items: center; }
+  .th h3 { margin: 0; font: 900 26px/32px var(--font-display); letter-spacing: -.3px; }
+  .cbtn { width: var(--size-circleButton); height: var(--size-circleButton); border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-card); box-sizing: border-box; }
+  .cbtn svg { width: 20px; height: 20px; }
+  .chips { display: flex; gap: var(--space-xs); overflow: hidden; margin: 16px -20px 0; padding: 2px 20px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+  .chip { height: var(--size-chipHeight); padding: 0 14px 0 11px; border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 7px; font: 600 13px/1 var(--font-text); background: var(--surface2); white-space: nowrap; flex: none; border: 1.5px solid transparent; box-sizing: border-box; }
+  .chip.on { background: color-mix(in srgb, var(--data1) 18%, var(--surface)); border-color: var(--data1Ink); }
+  .pip { width: 10px; height: 10px; border-radius: 50%; }
+  .segs { display: flex; justify-content: space-between; margin-top: 14px; }
+  .seg { display: inline-flex; background: var(--surface2); border-radius: var(--radius-pill); padding: 3px; }
+  .seg span { padding: 8px 12px; border-radius: var(--radius-pill); font: 600 12.5px/1 var(--font-text); color: var(--muted); }
+  .seg span.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-tiny); }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const day = [4, 3, 2, 2, 3, 4, 3, 2, 3, 1, 2, 4, 7, 3, 2, 4, 2, 3, 1, 4, 2, 3, 5, 2, 3, 4, 4, 3, 2, 5];
+  const W = 346, Hh = 44, mx = Math.max(...day), X = i => i / 29 * W, Y = v => Hh - 3 - v / mx * (Hh - 8);
+  const av = day.map((_, i) => { const a = day.slice(Math.max(0, i - 6), i + 1); return a.reduce((s, x) => s + x, 0) / a.length; });
+  const path = a => a.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join('');
+  const spark = `<svg class="spark" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><path d="${path(day)}" fill="none" style="stroke:var(--data1)" stroke-width="1.5" opacity=".45"/><path d="${path(av)}" fill="none" style="stroke:var(--data1Ink)" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+  const tot = day.reduce((a, b) => a + b, 0);
+  const chips = [['Coffee', 1, true], ['Takeaway', 2], ['Alcohol', 3], ['Late nights', 4], ['Doomscrolling', 5]].map(([n, c, on]) => `<span class="chip${on ? ' on' : ''}" aria-pressed="${!!on}"><span class="pip" style="background:var(--data${c})"></span>${n}</span>`).join('');
+  const seg = (items, on) => `<span class="seg">${items.map(x => `<span${x === on ? ' class="on"' : ''}>${x}</span>`).join('')}</span>`;
+  document.getElementById('root').innerHTML =
+    `<div class="stage"><div class="sheet" style="height:127px"><div class="grab"></div><div class="peek"><div class="row"><div><div class="pt">Trends</div><div class="ps">Coffee · last 30 days</div></div><div class="pr"><span class="m">${(tot / 30).toFixed(1)}</span><small>drinks a day</small></div></div>${spark}</div></div>` +
+    `<div class="log" style="top:${310 - 127 - 32}px" aria-label="Log an entry"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div></div>` +
+    `<div class="stage"><div class="sheet" style="height:290px"><div class="grab"></div><div class="full"><div class="th"><h3>Trends</h3><span class="cbtn" aria-label="Close Trends"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>` +
+    `<div class="chips">${chips}</div><div class="segs">${seg(['7D', '30D', '90D', '1Y'], '30D')}${seg(['Day', 'Week'], 'Day')}</div></div></div></div>`;
+</script>
+</body>
+</html>

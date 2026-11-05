@@ -1,0 +1,39 @@
+<!-- @dsCard group="Today" height=280 subtitle="The tallies under the dial: a busy day, and a sparse one with zero rows dimmed" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: 48px; padding: 20px var(--space-gutter); justify-content: center; }
+  .list { width: 358px; }
+  .cap { font: 600 13px/18px var(--font-text); color: var(--muted); margin: 0 0 6px 10px; }
+  .c1 { --c: var(--data1); --ci: var(--data1Ink); } .c2 { --c: var(--data2); --ci: var(--data2Ink); } .c3 { --c: var(--data3); --ci: var(--data3Ink); }
+  .c4 { --c: var(--data4); --ci: var(--data4Ink); } .c5 { --c: var(--data5); --ci: var(--data5Ink); }
+  .row { height: var(--size-tallyRow); display: flex; align-items: center; gap: 10px; padding: 0 4px 0 10px; border-radius: 14px; }
+  .row.flash { background: color-mix(in srgb, var(--c) 16%, transparent); }
+  .pip { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .name { flex: 1; font: 500 16px/22px var(--font-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tot { display: flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+  .q { font: 500 15px/1 var(--font-mono); color: var(--ci); }
+  .u { font: 400 13px/18px var(--font-text); color: var(--muted); min-width: 58px; }
+  .zero .q, .zero .name { color: var(--muted); }
+  .zero .pip { opacity: .4; }
+  .plus { width: var(--size-tallyPlus); height: var(--size-tallyPlus); border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); color: var(--text); box-sizing: border-box; }
+  .plus svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const H = [['Coffee', 'drink', 'drinks'], ['Takeaway', 'item', 'items'], ['Alcohol', 'drink', 'drinks'], ['Late nights', 'time', 'times'], ['Doomscrolling', 'minute', 'minutes']];
+  const plus = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+  const list = (cap, totals, flash) => `<div class="list"><div class="cap">${cap}</div>` + H.map(([n, one, many], i) => {
+    const v = totals[i];
+    return `<div class="row c${i + 1}${v === 0 ? ' zero' : ''}${flash === i ? ' flash' : ''}"><span class="pip"></span><span class="name">${n}</span><span class="tot"><span class="q">${v}</span><span class="u">${v === 1 ? one : many}</span></span><span class="plus" aria-label="Log 1 ${one} of ${n}">${plus}</span></div>`;
+  }).join('') + '</div>';
+  document.getElementById('root').innerHTML = list('Busy day; Alcohol just logged', [5, 5, 4, 1, 80], 2) + list('Sparse day', [1, 1, 0, 0, 0]);
+</script>
+</body>
+</html>

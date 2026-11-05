@@ -1,0 +1,54 @@
+<!-- @dsCard group="Today" height=410 subtitle="The dial with no entries, today and on a past day" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .row { display: flex; gap: 64px; justify-content: center; padding: 24px var(--space-gutter); }
+  figure { margin: 0; width: var(--size-dial); }
+  figcaption { margin-top: var(--space-xs); text-align: center; font: 400 13px/18px var(--font-text); color: var(--muted); }
+  svg { width: var(--size-dial); height: var(--size-dial); overflow: visible; display: block; }
+  .disc { fill: var(--surface); filter: drop-shadow(var(--shadow-card)); }
+  .rim { fill: none; stroke: var(--line); stroke-width: 1; }
+  .spoke { stroke: var(--spoke); stroke-width: 1; stroke-linecap: round; opacity: .45; }
+  .spoke.maj { stroke-width: 1.4; opacity: 1; }
+  .numeral { font: 700 12px/1 var(--font-display); letter-spacing: .6px; fill: var(--muted); }
+  .wash { fill: none; stroke: var(--clear); stroke-width: 16; }
+  .ring { fill: none; stroke: var(--clearInk); stroke-width: 2; opacity: .6; stroke-linecap: round; }
+  .hub { fill: var(--bg); }
+  .hub-clear { font: 600 12.5px/1 var(--font-text); fill: var(--clearInk); }
+  .elapsed { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: .22; }
+  .hand line { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+  .hand circle { fill: var(--accent); }
+  .hand circle.tip { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+</style>
+</head>
+<body>
+<div id="root" class="row"></div>
+<script>
+  const TAU = Math.PI * 2, ang = m => m / 1440 * TAU - Math.PI / 2;
+  function clearDial(now, line2) {
+    let s = '<svg viewBox="-160 -160 320 320"><circle class="disc" r="124"/><circle class="rim" r="124"/>';
+    s += '<circle class="wash" r="116"/><circle class="ring" r="116"/><g opacity=".25">';
+    for (let i = 0; i < 24; i++) {
+      const maj = i % 3 === 0, a = ang(i * 60), r0 = maj ? 54 : 64, r1 = maj ? 140 : 132;
+      s += `<line class="spoke${maj ? ' maj' : ''}" x1="${r0 * Math.cos(a)}" y1="${r0 * Math.sin(a)}" x2="${r1 * Math.cos(a)}" y2="${r1 * Math.sin(a)}"/>`;
+    }
+    s += '</g>';
+    for (const h of [0, 6, 12, 18]) { const a = ang(h * 60); s += `<text class="numeral" x="${152 * Math.cos(a)}" y="${152 * Math.sin(a) + .5}" text-anchor="middle" dominant-baseline="central">${String(h).padStart(2, '0')}</text>`; }
+    if (now != null) {
+      const A = ang(now);
+      s += `<path class="elapsed" d="M0,-124 A124,124 0 ${now > 720 ? 1 : 0} 1 ${124 * Math.cos(A)},${124 * Math.sin(A)}"/>`;
+      s += `<g class="hand" transform="rotate(${now / 1440 * 360})"><line x1="0" y1="0" x2="0" y2="-140"/><circle r="3.2"/><circle class="tip" cy="-124" r="3.6"/></g>`;
+    }
+    s += `<circle class="hub" r="44"/><text class="hub-clear" text-anchor="middle" y="-4">A clear day</text><text class="hub-clear" text-anchor="middle" y="12">${line2}</text></svg>`;
+    return s;
+  }
+  document.getElementById('root').innerHTML =
+    `<figure>${clearDial(560, 'so far')}<figcaption>Today at 09:20, nothing logged yet.</figcaption></figure>` +
+    `<figure>${clearDial(null, 'nothing logged')}<figcaption>Tuesday 3 Nov, a past day with no entries.</figcaption></figure>`;
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!-- @dsCard group="Trends" height=460 subtitle="Stats, the raw series and its moving average, the readout and the average stepper" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: 40px; justify-content: center; padding: 20px var(--space-gutter); }
+  .panel { width: 390px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sheet); padding: 16px var(--space-l) 20px; box-sizing: border-box; }
+  .c1 { --c: var(--data1); --ci: var(--data1Ink); } .c3 { --c: var(--data3); --ci: var(--data3Ink); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xs); }
+  .stat { background: var(--surface2); border-radius: var(--radius-tile); padding: 11px 12px 12px; }
+  .sl { font: 500 11.5px/1 var(--font-text); color: var(--muted); }
+  .sv { font: 500 21px/1 var(--font-mono); margin-top: 7px; display: flex; align-items: baseline; gap: 4px; }
+  .sv small { font: 500 11px/1 var(--font-text); color: var(--muted); }
+  .ss { font: 400 11px/1 var(--font-text); color: var(--muted); margin-top: 5px; white-space: nowrap; }
+  .chart { position: relative; margin-top: 12px; height: 236px; }
+  .chart svg { width: 100%; height: 100%; overflow: visible; display: block; }
+  .grid line { stroke: var(--line); stroke-width: 1; }
+  .lab { font: 500 10px/1 var(--font-mono); fill: var(--muted); }
+  .raw { fill: none; stroke: var(--c); stroke-width: 1.5; opacity: .5; stroke-linejoin: round; }
+  .avg { fill: none; stroke: var(--ci); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .area { fill: var(--c); opacity: .1; }
+  .dot { fill: var(--c); }
+  .cursor { stroke: var(--text); stroke-width: 1; opacity: .25; }
+  .sel-raw { fill: var(--c); stroke: var(--surface); stroke-width: 2.5; }
+  .sel-avg { fill: var(--surface); stroke: var(--ci); stroke-width: 2.5; }
+  .readout { position: absolute; top: 0; height: 28px; padding: 0 11px; border-radius: var(--radius-pill); background: var(--surface2); display: flex; align-items: center; gap: 7px; font: 400 12px/1 var(--font-text); color: var(--muted); white-space: nowrap; transform: translateX(-50%); }
+  .readout b { font: 600 12.5px/1 var(--font-text); color: var(--text); }
+  .m { font-family: var(--font-mono); font-weight: 500; }
+  .avgctl { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; background: var(--surface2); border-radius: var(--radius-pill); padding: 5px 5px 5px 16px; }
+  .al { font: 500 14px/1 var(--font-text); }
+  .st { display: flex; gap: 6px; }
+  .st span { width: var(--size-chipHeight); height: var(--size-chipHeight); border-radius: 50%; background: var(--surface); display: grid; place-items: center; box-shadow: var(--shadow-tiny); }
+  .st svg { width: 16px; height: 16px; fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const TODAY = new Date(2026, 10, 5), back = n => new Date(2026, 10, 5 - n);
+  const ic = d => `<svg viewBox="0 0 24 24"><path d="${d}"/></svg>`;
+  function chart({ c, unit, vals, win, dates, labIdx, labs, selLab }) {
+    const n = vals.length, PL = 26, PR = 6, PT = 40, PB = 22, W = 350, Hh = 236, mx = Math.max(1, ...vals);
+    let step = 1; outer: for (const m of [1, 10, 100]) for (const s of [1, 2, 2.5, 5]) if (mx / (s * m) <= 4) { step = s * m; break outer; }
+    const yMax = Math.ceil(mx / step) * step, X = i => PL + i / (n - 1) * (W - PL - PR), Y = v => PT + (1 - v / yMax) * (Hh - PT - PB);
+    const avg = vals.map((_, i) => { const a = vals.slice(Math.max(0, i - win + 1), i + 1); return a.reduce((s, x) => s + x, 0) / a.length; });
+    let g = '';
+    for (let v = 0; v <= yMax; v += step) g += `<line x1="${PL}" x2="${W - PR}" y1="${Y(v)}" y2="${Y(v)}"/><text class="lab" x="${PL - 7}" y="${Y(v) + 3.5}" text-anchor="end">${v}</text>`;
+    const raw = vals.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join('');
+    let sm = `M${X(0)},${Y(avg[0])}`;
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = avg[Math.max(0, i - 1)], p1 = avg[i], p2 = avg[i + 1], p3 = avg[Math.min(n - 1, i + 2)], dx = (X(i + 1) - X(i)) / 3;
+      sm += `C${X(i) + dx},${Y(p1 + (p2 - p0) / 6)} ${X(i + 1) - dx},${Y(p2 - (p3 - p1) / 6)} ${X(i + 1)},${Y(p2)}`;
+    }
+    const dots = n <= 31 ? vals.map((v, i) => `<circle class="dot" cx="${X(i)}" cy="${Y(v)}" r="${n <= 7 ? 3.5 : 2.4}"/>`).join('') : '';
+    const xl = labIdx.map((i, j) => `<text class="lab" x="${X(i)}" y="${Hh - 4}" text-anchor="${j === 0 ? 'start' : j === labIdx.length - 1 ? 'end' : 'middle'}">${labs[j]}</text>`).join('');
+    const i = n - 1, x = X(i);
+    const tot = vals.reduce((a, b) => a + b, 0);
+    return { tot, avg, svg: `<svg viewBox="0 0 350 236"><g class="grid">${g}</g><path class="area" d="${sm}L${W - PR},${Y(0)}L${PL},${Y(0)}Z"/><path class="raw" d="${raw}"/><path class="avg" d="${sm}"/>${dots}<line class="cursor" x1="${x}" x2="${x}" y1="34" y2="${Y(0)}"/><circle class="sel-raw" r="5" cx="${x}" cy="${Y(vals[i])}"/><circle class="sel-avg" r="4.5" cx="${x}" cy="${Y(avg[i])}"/>${xl}</svg>`,
+      readout: `<div class="readout" style="left:${x}px">${selLab}<b><span class="m">${vals[i]}</span> ${unit}</b>avg <b><span class="m">${avg[i].toFixed(1)}</span></b></div>` };
+  }
+  const day = [4, 3, 2, 2, 3, 4, 3, 2, 3, 1, 2, 4, 7, 3, 2, 4, 2, 3, 1, 4, 2, 3, 5, 2, 3, 4, 4, 3, 2, 5];
+  const lab = d => `${d.getDate()} ${MO[d.getMonth()]}`;
+  const a = chart({ c: 1, unit: 'drinks', vals: day, win: 7, labIdx: [0, 10, 19, 29], labs: [lab(back(29)), lab(back(19)), lab(back(10)), 'Today'], selLab: 'Today' });
+  const peak = day.indexOf(Math.max(...day)), pd = back(29 - peak);
+  const wk = [3, 5, 2, 4, 6, 3, 7, 4, 5, 3, 6, 4, 5];
+  const b = chart({ c: 3, unit: 'drinks', vals: wk, win: 4, labIdx: [0, 4, 8, 12], labs: [lab(back(84)), lab(back(56)), lab(back(28)), 'Today'], selLab: '30 Oct–5 Nov' });
+  const panel = (c, stats, ch, win, per) => `<div class="panel c${c}"><div class="stats">${stats}</div><div class="chart">${ch.svg}${ch.readout}</div>
+    <div class="avgctl"><span class="al">Average over <b class="m">${win}</b> ${per}</span><span class="st"><span aria-label="Shorter average">${ic('M5 12h14')}</span><span aria-label="Longer average">${ic('M12 5v14M5 12h14')}</span></span></div></div>`;
+  const tile = (l, v, u, s) => `<div class="stat"><div class="sl">${l}</div><div class="sv">${v}${u ? `<small>${u}</small>` : ''}</div><div class="ss">${s}</div></div>`;
+  document.getElementById('root').innerHTML =
+    panel(1, tile('Total', a.tot, 'drinks', 'last 30 days') + tile('Average', (a.tot / 30).toFixed(1), '', 'per day') + tile('Peak', Math.max(...day), '', `${WD[pd.getDay()]} ${lab(pd)}`), a, 7, 'days') +
+    panel(3, tile('Total', b.tot, 'drinks', 'last 90 days') + tile('Average', (b.tot / wk.length).toFixed(1), '', 'per week') + tile('Peak', Math.max(...wk), '', 'week to 24 Sep'), b, 4, 'weeks');
+  document.querySelectorAll('.readout').forEach(r => { const w = r.offsetWidth, cw = r.parentNode.clientWidth, x = parseFloat(r.style.left); r.style.left = Math.max(w / 2, Math.min(cw - w / 2, x)) + 'px'; });
+</script>
+</body>
+</html>
