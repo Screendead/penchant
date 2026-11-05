@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/font_licence.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
@@ -176,8 +178,27 @@ void main() {
     );
   });
 
+  test('the licence page lists the fonts under the OFL', () async {
+    registerFontLicence();
+    final List<LicenseEntry> fonts = <LicenseEntry>[
+      for (final LicenseEntry entry in await LicenseRegistry.licenses.toList())
+        if (entry.packages.contains(DialFonts.text)) entry,
+    ];
+    expect(fonts, hasLength(1));
+    expect(
+      fonts.single.packages,
+      containsAll(<String>[DialFonts.display, DialFonts.mono]),
+    );
+    expect(
+      fonts.single.paragraphs.map((LicenseParagraph p) => p.text).join('\n'),
+      contains('SIL OPEN FONT LICENSE Version 1.1'),
+    );
+  });
+
   test('colours come from lib/design, not literals in the screens', () {
-    final RegExp literal = RegExp(r'\bColors\.(?!transparent\b)|\bColor\(0x');
+    final RegExp literal = RegExp(
+      r'\bColors\.(?!transparent\b)|\bColor\(\s*0[xX]|\bColor\.from',
+    );
     final List<String> found = <String>[
       for (final FileSystemEntity f in Directory(
         'lib',

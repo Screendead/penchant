@@ -336,9 +336,10 @@ treatment; and the display and Mono styles. Both fall back to the tokens for the
 outside `lib/design/`).
 
 Fonts are Red Hat Display (titles), Text (everything else) and Mono (changing numbers), bundled as variable fonts in
-`assets/fonts/` with their OFL, so nothing is fetched at runtime; `FontWeight` drives their `wght` axis. Every theme
-style sets tabular figures. Widget tests render in the test font unless they load the assets (`theme_test.dart`
-does).
+`assets/fonts/` with their OFL, so nothing is fetched at runtime; `FontWeight` drives their `wght` axis. `main()`
+registers the OFL (`registerFontLicence`, `lib/design/font_licence.dart`) so the licence page behind Settings > About
+lists it beside the packages' licences. Every theme style sets tabular figures. Widget tests render in the test font
+unless they load the assets (`theme_test.dart` does).
 
 A habit's colour is its creation order, oldest first and archived habits included: `habitMarks(vices)`
 (`lib/design/habit_mark.dart`) maps each vice id to a `HabitMark`, whose `slot` picks one of `data1`-`data5` and
