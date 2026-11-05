@@ -51,6 +51,9 @@ pull request titles (`gh pr list --state merged`).
   cut, and when any name is cut, a key below the chart lists every vice with its total. The chart's titles no longer
   run into the rows above and below it; at the largest sizes, when there is no room left for the chart, the key
   takes its place.
+- Today shows every vice's amount: when a title has no room for its amount, the key below the chart lists every
+  vice with its total, instead of that amount appearing nowhere. The radar's rings are labelled in whole numbers,
+  without the "0.0" that sat at its centre.
 
 ## [0.1.0] - Unreleased
 

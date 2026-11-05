@@ -401,14 +401,15 @@ void main() {
     });
 
     testWidgets(
-      'a bar drops the quantity at large text before cutting a name',
+      'a bar drops the quantity at large text before cutting a name, and '
+      'the key shows it',
       (WidgetTester tester) async {
         _usePhone(tester, textScale: 3);
         final List<Vice> vices = [fakeVice('coffee', name: 'Coffee')];
         await pumpToday(tester, vices);
 
         expect(find.text('Coffee'), findsOneWidget);
-        expect(keyEntry(vices.first), findsNothing);
+        expect(keyEntry(vices.first).hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -466,9 +467,8 @@ void main() {
       }
     });
 
-    testWidgets('radar names that fit without their quantities need no key', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('radar names that fit only without their quantities list '
+        'the quantities in the key', (WidgetTester tester) async {
       _usePhone(tester, textScale: 3);
       final List<Vice> vices = [
         fakeVice('gin', name: 'Gin'),
@@ -477,9 +477,12 @@ void main() {
       ];
       await pumpToday(tester, vices);
 
-      expect(radarTitles(tester), ['Gin', 'Tea', 'Rum']);
+      // The key takes room from the radar, whose titles may then be cut.
       expectRadarTitlesFit(tester, vices.length);
-      expect(keyEntry(vices.first), findsNothing);
+      expectTitlesClearOfTheKey(tester);
+      for (final Vice vice in vices) {
+        expect(keyEntry(vice).hitTestable(), findsOneWidget);
+      }
     });
   });
 
@@ -498,7 +501,7 @@ void main() {
     );
     // The test font draws every character 14 wide at this size.
     const TextStyle style = TextStyle(fontSize: 14);
-    ({String text, bool nameWhole}) fit(double width) => fitChartLabel(
+    ({String text, bool complete}) fit(double width) => fitChartLabel(
       context,
       name: 'Coffee',
       suffix: ' (2 items)',
@@ -506,9 +509,9 @@ void main() {
       maxWidth: width,
     );
 
-    expect(fit(16 * 14), (text: 'Coffee (2 items)', nameWhole: true));
-    expect(fit(6 * 14), (text: 'Coffee', nameWhole: true));
-    expect(fit(4 * 14), (text: 'Cof…', nameWhole: false));
-    expect(fit(13), (text: '', nameWhole: false));
+    expect(fit(16 * 14), (text: 'Coffee (2 items)', complete: true));
+    expect(fit(6 * 14), (text: 'Coffee', complete: false));
+    expect(fit(4 * 14), (text: 'Cof…', complete: false));
+    expect(fit(13), (text: '', complete: false));
   });
 }

@@ -50,12 +50,14 @@ double barTitleWidth(double width, int bars, double barWidth) {
   return space + barWidth;
 }
 
+// fl_chart draws a radar of this radius about the centre of its box.
+double radarRadius(Size size) => min(size.width, size.height) / 2 * 0.8;
+
 // The length a radar title may take. fl_chart draws each title tangent to a
-// circle [titleOffset] beyond the radar's radius (0.8 of the shorter half
-// side), so a title is bounded by the chord to its neighbours' positions and by
-// the chart's width.
+// circle [titleOffset] beyond the radar's radius, so a title is bounded by the
+// chord to its neighbours' positions and by the chart's width.
 double radarTitleWidth(Size size, int axes, double titleOffset) {
-  final double radius = min(size.width, size.height) / 2 * 0.8;
+  final double radius = radarRadius(size);
   final double titleRadius = radius * (1 + titleOffset);
   if (axes <= 1) {
     return size.width;
