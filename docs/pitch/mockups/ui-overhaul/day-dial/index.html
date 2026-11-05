@@ -15,7 +15,7 @@
   --accent:#1D5FC2; --on-accent:#FFFFFF; --danger:#B42A37; --danger-c:#FBE7E9;
   --d1:#F2A23A; --d2:#F5714F; --d3:#DE4654; --d4:#8F55D9; --d5:#3F86F0;
   --d1i:#8F5600; --d2i:#B03E1C; --d3i:#B42A37; --d4i:#6A31B5; --d5i:#1D5FC2;
-  --spoke:#141B2D73; --clear:#E3F0E8; --clear-ink:#276B43; --scrim:#0C122247;
+  --spoke:#141B2D73; --clear:#E3F0E8; --clear-ink:#276B43; --scrim:#13203D2E;
   --page:#DCE3EE; --page-2:#CFD8E5; --bezel:#0B0F19;
   --card-shadow:0 2px 8px #141B2D14; --sheet-shadow:0 -6px 24px #141B2D1F; --pop-shadow:0 10px 30px #141B2D29;
   --glow-r:0px; --glow-a:0%; --rim-a:.55;
@@ -73,7 +73,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .frame{width:calc(410px * var(--s,1));display:flex;flex-direction:column;gap:12px}
 .cap h2{font:700 17px/1.2 var(--fd);margin:0;display:flex;gap:8px;align-items:baseline}
 .cap h2 .n{font:500 12px/1 var(--fm);color:var(--muted)}
-.cap p{margin:6px 0 0;font:400 13px/1.45 var(--ft);color:var(--muted);min-height:38px}
+.cap p{margin:6px 0 0;font:400 13px/1.45 var(--ft);color:var(--muted);min-height:57px}
 .phone-wrap{width:calc(410px * var(--s,1));height:calc(864px * var(--s,1))}
 .phone{width:410px;height:864px;padding:10px;border-radius:60px;background:var(--bezel);box-shadow:0 0 0 1px #ffffff14 inset,0 30px 60px -20px #0c122266,0 0 0 1px var(--line);transform:scale(var(--s,1));transform-origin:top left}
 .ctrls{display:flex;flex-wrap:wrap;gap:8px}
@@ -118,8 +118,8 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 .dial .hub{fill:var(--bg)}
 .dial .hub-t1{font:500 21px/1 var(--fm);fill:var(--text)}
 .dial .hub-t2{font:500 10.5px/1 var(--ft);fill:var(--muted)}
-.dial .hub-clear{font:600 11.5px/1 var(--ft);fill:var(--clear-ink)}
-.dial .elapsed{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;opacity:.5}
+.dial .hub-clear{font:600 12.5px/1 var(--ft);fill:var(--clear-ink)}
+.dial .elapsed{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;opacity:.3}
 .dial .hand line{stroke:var(--accent);stroke-width:2;stroke-linecap:round}
 .dial .hand circle{fill:var(--accent)}
 .dial .sweep line{stroke:var(--text);stroke-width:1.5;opacity:.5;stroke-linecap:round}
@@ -219,9 +219,9 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 .logbtn.open{background:var(--surface);color:var(--text)}
 .logbtn.open svg{transform:rotate(45deg)}
 .rm .logbtn svg{transition:none}
-.coach{position:absolute;left:50%;top:640px;transform:translateX(-50%);z-index:43;background:var(--text);color:var(--bg);font:600 13px/1 var(--ft);padding:9px 14px;border-radius:999px;white-space:nowrap;pointer-events:none;animation:bob 1.6s ease-in-out infinite}
-.coach:after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--text)}
-@keyframes bob{50%{transform:translate(-50%,-4px)}}
+.coach{position:absolute;left:241px;top:700px;z-index:43;background:var(--text);color:var(--bg);font:600 13px/1 var(--ft);padding:9px 14px;border-radius:999px;white-space:nowrap;pointer-events:none;animation:bob 1.6s ease-in-out infinite}
+.coach:after{content:"";position:absolute;left:-5px;top:50%;margin-top:-5px;border:5px solid transparent;border-left:0;border-right-color:var(--text)}
+@keyframes bob{50%{transform:translateX(4px)}}
 .pulse{position:absolute;left:163px;top:685px;width:64px;height:64px;border-radius:50%;z-index:41;pointer-events:none;box-shadow:0 0 0 0 var(--accent);animation:pulse 1.6s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 22px transparent}}
 .rm .coach,.rm .pulse{animation:none}
@@ -236,7 +236,7 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 .wedge .wq{font:500 10.5px/1 var(--fm);opacity:.8}
 .wedge.hot path.wf{filter:brightness(1.08)}
 .fan .fspoke{stroke:var(--text);stroke-opacity:.45;stroke-width:2;stroke-linecap:round}
-.fanhint{position:absolute;left:50%;top:530px;transform:translateX(-50%);background:var(--surface);color:var(--text);font:500 13px/1 var(--ft);padding:10px 15px;border-radius:999px;white-space:nowrap;box-shadow:var(--pop-shadow);opacity:0;transition:opacity .2s}
+.fanhint{position:absolute;left:50%;top:338px;transform:translateX(-50%);background:var(--surface);color:var(--text);font:500 13px/1 var(--ft);padding:10px 15px;border-radius:999px;white-space:nowrap;box-shadow:var(--pop-shadow);opacity:0;transition:opacity .2s}
 .fan.open .fanhint{opacity:1}
 .fanhint b{font-weight:600}
 .travel{position:absolute;inset:0;width:100%;height:100%;z-index:60;pointer-events:none;overflow:visible}
@@ -265,7 +265,7 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 .scrubmeta button{color:var(--accent);font-weight:600}
 .pbtn{width:100%;height:54px;border-radius:999px;background:var(--accent);color:var(--on-accent);font:600 16px/1 var(--ft);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;transition:transform .15s,opacity .2s}
 .pbtn:active{transform:scale(.98)}
-.pbtn[disabled]{opacity:.4;cursor:default}
+.pbtn[disabled]{background:var(--surface2);color:var(--muted);cursor:default}
 .pbtn .mono{font-weight:500}
 .tbtn{height:46px;padding:0 18px;border-radius:999px;background:var(--surface2);font:600 15px/1 var(--ft);display:inline-flex;align-items:center;gap:8px;justify-content:center}
 .tbtn svg{width:18px;height:18px}
@@ -300,12 +300,12 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 .snack{position:absolute;left:16px;right:16px;bottom:170px;min-height:52px;border-radius:999px;background:var(--text);color:var(--bg);display:flex;align-items:center;gap:10px;padding:6px 6px 6px 18px;z-index:65;font:500 14px/1.3 var(--ft);opacity:0;pointer-events:none;transform:translateY(20px)}
 .snack.on{pointer-events:auto}
 .snack .stx{flex:1}
-.snack .stx .mono{font-size:13px}
+.snack .stx b{font-weight:600}
 .snack .undo{height:40px;padding:0 14px 0 10px;border-radius:999px;display:flex;align-items:center;gap:8px;font:600 14px/1 var(--ft);color:var(--bg);background:color-mix(in srgb,var(--bg) 14%,transparent)}
 .snack .undo svg{width:20px;height:20px}
 .snack .undo circle.track{stroke:color-mix(in srgb,var(--bg) 30%,transparent)}
 .pills{position:absolute;top:54px;left:16px;right:16px;z-index:66;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
-.pill{pointer-events:auto;max-width:100%;border-radius:22px;background:var(--surface);box-shadow:var(--pop-shadow);border:1px solid var(--line);font:500 13.5px/1.3 var(--ft);display:flex;flex-direction:column;overflow:hidden}
+.pill{pointer-events:auto;width:100%;border-radius:22px;background:var(--surface);box-shadow:var(--pop-shadow);border:1px solid var(--line);font:500 13.5px/1.3 var(--ft);display:flex;flex-direction:column;overflow:hidden}
 .pill .ph{display:flex;align-items:center;gap:9px;padding:10px 16px 10px 12px;min-height:42px}
 .pill .ph svg{width:18px;height:18px;flex:none}
 .pill.rej{background:var(--danger-c);color:var(--text);border-color:color-mix(in srgb,var(--danger) 30%,transparent);cursor:pointer;width:100%}
@@ -365,6 +365,7 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 .oc-h h3{margin:0;font:900 24px/1 var(--fd)}
 .oc-h .os{font:400 13px/1 var(--ft);color:var(--muted);margin-top:5px}
 .oc-dial{width:300px;height:300px;margin:12px auto 0}
+.oc .dial .disc{fill:var(--surface2)} .oc .dial .hub{fill:var(--surface)}
 .oc-tal .trow{height:34px}
 
 /* Auth */
@@ -400,7 +401,8 @@ svg.dial{width:100%;height:100%;overflow:visible;display:block}
 /* System section */
 .system{max-width:1360px;margin:0 auto;padding:10px 24px 80px}
 .system h2{font:900 26px/1 var(--fd);margin:0 0 18px;letter-spacing:-.3px}
-.sysgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.sysgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+@media (max-width:900px){.sysgrid{grid-template-columns:1fr}}
 .syscard{background:var(--surface);border-radius:24px;border:1px solid var(--line);box-shadow:var(--card-shadow);padding:20px}
 .syscard h3{font:700 15px/1 var(--fd);margin:0 0 14px}
 .swrow{display:flex;gap:6px;margin-bottom:8px;align-items:center}
@@ -501,6 +503,7 @@ const E = {
   inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
   in: t => t * t * t, out: t => 1 - Math.pow(1 - t, 3), lin: t => t,
 };
+const cap = (el, e) => { try { el.setPointerCapture(e.pointerId); } catch (_) {} };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 function tween(dur, fn, ease = E.inOut, alive) {
   return new Promise(res => {
@@ -625,8 +628,9 @@ function summary(world, d) {
 
 /* ============ Dial ============ */
 const ang = min => min / 1440 * TAU - Math.PI / 2;
-const beadR = e => Math.max(4.5, Math.min(13, 6.5 * Math.sqrt(e.q / HABITS[e.h].typ)));
-const TRACK = [98, 113, 83, 68];
+const FANY = 560;
+const beadR = e => Math.max(5, Math.min(14, 7.5 * Math.sqrt(e.q / HABITS[e.h].typ)));
+const TRACK = [100, 116, 84, 68];
 class Dial {
   constructor(host, o = {}) {
     this.o = Object.assign({ mini: false, onBead: null }, o);
@@ -721,12 +725,13 @@ class Dial {
       this.clearRing.setAttribute('stroke-dashoffset', on ? C * (1 - k) : C * k);
       this.gClear.setAttribute('opacity', on ? Math.min(1, k * 2) : 1 - k);
     }, E.inOut);
-    if (on) this.setHub('A clear day', today ? 'so far' : '', true);
+    if (on) this.setHub('A clear day', today ? 'so far' : 'nothing logged', true);
   }
   async contract() {
     const bs = [...this.beads.values()];
     if (RM()) { await tween(150, k => bs.forEach(b => b.setAttribute('opacity', 1 - k)), E.lin); return; }
-    await tween(200, k => bs.forEach(b => this.setB(b, b.st0x * (1 - k), b.st0y * (1 - k), 1 - k)), E.in, null, bs.forEach(b => { b.st0x = b.st.x; b.st0y = b.st.y; }));
+    bs.forEach(b => { b.st0x = b.st.x; b.st0y = b.st.y; b.st0s = b.st.s; });
+    await tween(200, k => bs.forEach(b => this.setB(b, b.st0x * (1 - k), b.st0y * (1 - k), b.st0s * (1 - k))), E.in);
   }
   async sweepIn(entries) {
     const my = ++this.gen; this.render(entries);
@@ -922,7 +927,7 @@ class App {
     this.logBtn.addEventListener('pointerdown', e => {
       if (this.fanOpen) { this.closeFan(); return; }
       this.openFan(); drag = { x: e.clientX, y: e.clientY, moved: false };
-      this.logBtn.setPointerCapture(e.pointerId);
+      cap(this.logBtn, e);
     });
     this.logBtn.addEventListener('pointermove', e => {
       if (!drag) return; if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 14) drag.moved = true;
@@ -935,7 +940,7 @@ class App {
   }
   wedgeAt(cx, cy) {
     if (!this.wedges) return null; const p = localPt(this.scr, cx, cy);
-    const dx = p.x - 195, dy = p.y - this.sheetTop, r = Math.hypot(dx, dy); if (r < 40 || r > 150) return null;
+    const dx = p.x - 195, dy = p.y - FANY, r = Math.hypot(dx, dy); if (r < 40 || r > 160) return null;
     const a = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360; return this.wedges[Math.floor(a / 72) % this.wedges.length];
   }
   showCoach(on) {
@@ -947,19 +952,19 @@ class App {
   openFan() {
     if (this.fanOpen) return; this.fanOpen = true; this.showCoach(false); this.closeMenu();
     this.logBtn.classList.add('open'); this.fan.classList.add('open');
-    const cx = 195, cy = this.sheetTop, Ro = 142, Ri = 44, svg = this.fanSvg; svg.textContent = '';
+    const cx = 195, cy = FANY, Ro = 152, Ri = 44, svg = this.fanSvg, y0 = this.sheetTop; svg.textContent = '';
     const V = k => { const a = (-90 + 72 * k) * Math.PI / 180; return [Math.cos(a), Math.sin(a)]; };
     const spokes = S('g', { transform: `translate(${cx},${cy})`, opacity: 0 });
     this.wedges = ACTIVE.slice(0, 5).map((h, k) => {
       const [ax, ay] = V(k), [bx, by] = V(k + 1), hb = HABITS[h];
       const path = `M${Ri * ax},${Ri * ay}L${Ro * ax},${Ro * ay}L${Ro * bx},${Ro * by}L${Ri * bx},${Ri * by}A${Ri},${Ri} 0 0 0 ${Ri * ax},${Ri * ay}Z`;
-      const mid = (-54 + 72 * k) * Math.PI / 180, lr = 92, lx = lr * Math.cos(mid), ly = lr * Math.sin(mid);
+      const mid = (-54 + 72 * k) * Math.PI / 180, lr = 84, lx = lr * Math.cos(mid), ly = lr * Math.sin(mid);
       const dark = [3, 4].includes(hb.c); const fill = dark ? '#fff' : '#141B2D';
       const g = S('g', { class: `wedge c${hb.c}`, role: 'button', 'aria-label': `Log ${qty(h, hb.def)} of ${hb.name}. Hold to set amount and time.` },
         S('path', { class: 'wf', d: path }),
         S('text', { class: 'wn', x: lx, y: ly - 3, 'text-anchor': 'middle', fill, text: hb.name.length > 11 ? hb.name.slice(0, 5) + '…' : hb.name }),
         S('text', { class: 'wq', x: lx, y: ly + 12, 'text-anchor': 'middle', fill, text: `+${qty(h, hb.def)}`.replace('minutes', 'min') }));
-      if (hb.name.length > 11) { g.querySelector('.wn').textContent = hb.name; g.querySelector('.wn').setAttribute('style', 'font-size:10.5px'); }
+      if (hb.name.length > 11) { g.querySelector('.wn').textContent = hb.name; g.querySelector('.wn').setAttribute('style', 'font-size:11px'); }
       const w = { g, h, k, pt: { cx: cx + lx, cy: cy + ly } };
       let timer = null, held = false;
       g.addEventListener('pointerdown', e => { e.stopPropagation(); held = false; this.pressWedge(w, true); timer = setTimeout(() => { held = true; this.pressWedge(w, false); this.openAmount(h); }, 400); });
@@ -968,11 +973,14 @@ class App {
       return w;
     });
     for (let k = 0; k < 5; k++) { const [x, y] = V(k); spokes.append(S('line', { class: 'fspoke', x1: 0, y1: 0, x2: x * (Ro + 16), y2: y * (Ro + 16) })); }
-    const wg = S('g'); this.wedges.forEach(w => wg.append(w.g)); svg.append(wg, spokes);
-    const place = (w, s, rot, op) => { w.g.setAttribute('transform', `translate(${cx},${cy}) rotate(${rot}) scale(${s})`); w.g.setAttribute('opacity', op); };
-    if (RM()) { this.wedges.forEach(w => place(w, 1, 0, 1)); spokes.setAttribute('opacity', 1); return; }
-    this.wedges.forEach((w, i) => { place(w, .3, -14, 0); setTimeout(() => spring(0, 1, v => place(w, .3 + .7 * v, -14 * (1 - v), Math.min(1, v * 1.6))), i * 30); });
-    setTimeout(() => tween(200, k => spokes.setAttribute('opacity', k)), 150);
+    const hub = S('g', { transform: `translate(${cx},${cy})`, opacity: 0 }, S('circle', { r: Ri - 6, fill: 'var(--surface)' }),
+      S('text', { y: -1, 'text-anchor': 'middle', style: 'font:500 15px var(--fm);fill:var(--text)', text: hm(nowMin()) }),
+      S('text', { y: 14, 'text-anchor': 'middle', style: 'font:500 10px var(--ft);fill:var(--muted)', text: 'now' }));
+    const wg = S('g'); this.wedges.forEach(w => wg.append(w.g)); svg.append(wg, spokes, hub);
+    const place = (w, s, rot, op, v = 1) => { w.g.setAttribute('transform', `translate(${cx},${y0 + (cy - y0) * v}) rotate(${rot}) scale(${s})`); w.g.setAttribute('opacity', op); };
+    if (RM()) { this.wedges.forEach(w => place(w, 1, 0, 1)); spokes.setAttribute('opacity', 1); hub.setAttribute('opacity', 1); return; }
+    this.wedges.forEach((w, i) => { place(w, .2, -14, 0, 0); setTimeout(() => spring(0, 1, v => place(w, .2 + .8 * v, -14 * (1 - v), Math.min(1, v * 1.6), v)), i * 30); });
+    setTimeout(() => tween(220, k => { spokes.setAttribute('opacity', k); hub.setAttribute('opacity', k); }), 180);
   }
   pressWedge(w, on) { const p = w.g.querySelector('path'); p.style.transition = 'transform .4s'; p.style.transformOrigin = '0 0'; p.style.transform = on ? 'scale(.95)' : ''; }
   closeFan(keep) {
@@ -989,6 +997,7 @@ class App {
     await this.logEntry(e, from, TODAY);
   }
   async logEntry(e, from, d) {
+    this.showCoach(false);
     if (!sameDay(this.day, d)) await this.showDay(d, 'sweep', 1);
     this.closePages?.();
     const entries = [...this.w.day(d), e];
@@ -1020,7 +1029,7 @@ class App {
     this.dial.setHub(...Object.values(this.hubFor(d)));
     this.dial.label = summary(this.w, d); this.o.onSummary?.(this.dial.label);
     this.tallies.set(this.w.totals(d), e.h); this.updatePeek();
-    this.snack(this.offline ? `Saved on this device. It will sync when you're back online.` : `Logged <span class="mono">${qty(e.h, e.q)}</span> of ${hb.name} at <span class="mono">${hm(e.min)}</span>`, () => this.removeEntry(e, d, true));
+    this.snack(this.offline ? `Saved on this device. It will sync when you're back online.` : `Logged <b>${qty(e.h, e.q)}</b> of ${hb.name} at <b>${hm(e.min)}</b>`, () => this.removeEntry(e, d, true));
   }
   async removeEntry(e, d, undo) {
     this.w.remove(d, e.id);
@@ -1034,7 +1043,7 @@ class App {
     }
     this.hist?.refresh?.();
     if (undo) this.snack('Entry removed');
-    else this.snack(`Deleted <span class="mono">${qty(e.h, e.q)}</span> of ${HABITS[e.h].name}`, () => this.restore(e, d));
+    else this.snack(`Deleted <b>${qty(e.h, e.q)}</b> of ${HABITS[e.h].name}`, () => this.restore(e, d));
   }
   restore(e, d) {
     this.w.add(d, e); if (sameDay(this.day, d)) { this.dial.render(this.w.day(d)); this.dial.setClear(false); this.dial.setHub(...Object.values(this.hubFor(d))); const b = this.dial.beads.get(e.id); if (b && !RM()) spring(0, 1, s => this.dial.setB(b, b.st.x, b.st.y, s)); this.tallies.set(this.w.totals(d), e.h); }
@@ -1064,7 +1073,7 @@ class App {
       const btn = H('button', { class: 'undo', html: `<svg viewBox="0 0 20 20"><circle class="track" cx="10" cy="10" r="8" fill="none" stroke-width="2.2"/><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="${C}" stroke-dashoffset="0" transform="rotate(-90 10 10)" stroke-linecap="round"/></svg>Undo`, onclick: () => { this.hideSnack(); undo(); } });
       el.append(btn); btn.querySelectorAll('circle')[1].animate([{ strokeDashoffset: 0 }, { strokeDashoffset: C }], { duration: 8000, fill: 'forwards' });
     }
-    el.style.bottom = (844 - this.sheetTop + 46) + 'px';
+    el.style.bottom = (this.sheetTop > 400 ? 844 - this.sheetTop + 46 : 40) + 'px';
     el.classList.add('on');
     if (!el.shown) { el.shown = true; if (RM()) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: 'forwards' }); else springKF(el, 0, 1, v => ({ opacity: Math.min(1, v * 1.5), transform: `translateY(${20 * (1 - v)}px)` })); }
     this.snackT = setTimeout(() => this.hideSnack(), dur);
@@ -1161,12 +1170,12 @@ class App {
       H('div', { class: 'bs-h' }, H('div', { class: `ttl c${hb.c}` }, H('span', { class: 'pip' }), edit ? `Edit ${hb.name}` : hb.name), H('button', { class: 'cbtn', 'aria-label': 'Close', html: ic('x'), onclick: () => this.closeSheet() })),
       H('div', { class: 'stepper' }, minus, H('div', { class: 'sv' }, num, unit), plus), scrubHost, meta, go);
     const mini = new Dial(scrubHost, { mini: true, ghost: true });
-    mini.setMeta({ isToday, hub1: '', hub2: '' }); mini.render(this.w.day(d).filter(x => !edit || x.id !== edit.id));
+    mini.setMeta({ isToday: false, hub1: '', hub2: '' }); mini.render(this.w.day(d).filter(x => !edit || x.id !== edit.id));
     const knob = S('circle', { r: 11, class: 'knob' }), handL = S('line', { class: 'shand', x1: 0, y1: 0 });
     mini.gTop.append(handL, knob);
     const upd = () => {
       const a = ang(st.min), x = 112 * Math.cos(a), y = 112 * Math.sin(a);
-      knob.setAttribute('cx', x); knob.setAttribute('cy', y); handL.setAttribute('x2', x * .9); handL.setAttribute('y2', y * .9);
+      knob.setAttribute('cx', x); knob.setAttribute('cy', y); handL.setAttribute('x1', x * .42); handL.setAttribute('y1', y * .42); handL.setAttribute('x2', x * .9); handL.setAttribute('y2', y * .9);
       mini.setHub(hm(st.min), '');
       const ago = Math.round(nowMin() - st.min);
       meta.innerHTML = !isToday ? `${relDay(d)}, ${dShort(d)}` : ago < 3 ? 'Now · drag the hand to change the time' : `${ago >= 60 ? Math.floor(ago / 60) + ' h ' : ''}${ago % 60} min ago · <button>Now</button>`;
@@ -1182,7 +1191,7 @@ class App {
       if (isToday && m > nowMin()) m = Math.floor(nowMin()); st.min = m; upd();
     };
     let dragging = false;
-    scrubHost.addEventListener('pointerdown', ev => { dragging = true; scrubHost.setPointerCapture(ev.pointerId); fromPtr(ev); });
+    scrubHost.addEventListener('pointerdown', ev => { dragging = true; cap(scrubHost, ev); fromPtr(ev); });
     scrubHost.addEventListener('pointermove', ev => dragging && fromPtr(ev));
     scrubHost.addEventListener('pointerup', () => dragging = false);
     go.onclick = async () => {
@@ -1205,7 +1214,7 @@ class App {
       this.dial.relayout(this.w.day(d)); if (!RM()) this.dial.ripple(p.x, p.y, p.r, HABITS[e.h].c);
     }
     this.tallies.set(this.w.totals(d), e.h); this.hist?.refresh?.();
-    this.snack(`Entry updated: <span class="mono">${qty(e.h, q)}</span> at <span class="mono">${hm(min)}</span>`);
+    this.snack(`Entry updated: <b>${qty(e.h, q)}</b> at <b>${hm(min)}</b>`);
   }
 
   /* ----- Calendar ----- */
@@ -1233,21 +1242,21 @@ class App {
   buildTrends() {
     const s = this.scr; this.tdim = H('div', { class: 'tdim' }); s.append(this.tdim);
     this.tr = { h: 0, range: 30, step: 'day', win: 7, sel: null };
-    this.peekEl = H('div', { class: 'peek', onclick: () => this.setSheet(67) });
+    this.peekEl = H('div', { class: 'peek', onclick: () => { if (!this.justDragged) this.setSheet(67); } });
     this.sheet = H('div', { class: 'tsheet' }, H('div', { class: 'grab' }), this.peekEl);
     this.tfull = H('div', { class: 'tfull' }); this.sheet.append(this.tfull); s.append(this.sheet);
     this.buildTrendsFull();
     // drag
     let drag = null;
     const start = (e) => { drag = { y: e.clientY, top: this.sheetTop, t: performance.now(), v: 0, ly: e.clientY, moved: false }; this.sheetAnim = (this.sheetAnim || 0) + 1; };
-    this.sheet.addEventListener('pointerdown', e => { if (e.target.closest('.chart,.chips,.seg,.avgctl,button') && this.sheetTop < 400) return; if (this.sheetTop < 400 && !e.target.closest('.th,.grab') && e.target.closest('.tfull') && this.tfull.scrollTop > 0) return; start(e); this.sheet.setPointerCapture(e.pointerId); });
+    this.sheet.addEventListener('pointerdown', e => { if (e.target.closest('.chart,.chips,.seg,.avgctl,button') && this.sheetTop < 400) return; if (this.sheetTop < 400 && !e.target.closest('.th,.grab') && e.target.closest('.tfull') && this.tfull.scrollTop > 0) return; start(e); cap(this.sheet, e); });
     this.sheet.addEventListener('pointermove', e => {
       if (!drag) return; const k = this.scr.getBoundingClientRect().width / 390; const dy = (e.clientY - drag.y) / k;
       if (Math.abs(dy) > 5) drag.moved = true; if (!drag.moved) return;
       const now = performance.now(); drag.v = ((e.clientY - drag.ly) / k) / Math.max(1, now - drag.t) * 1000; drag.t = now; drag.ly = e.clientY;
       let top = drag.top + dy; if (top < 67) top = 67 - (67 - top) * .3; if (top > 717) top = 717 + (top - 717) * .3; this.placeSheet(top);
     });
-    const end = () => { if (!drag) return; const d = drag; drag = null; if (!d.moved) return; const proj = this.sheetTop + d.v * .18; this.setSheet(proj < 392 ? 67 : 717, false, d.v); };
+    const end = () => { if (!drag) return; const d = drag; drag = null; if (!d.moved) return; this.justDragged = true; setTimeout(() => this.justDragged = false, 50); const proj = this.sheetTop + d.v * .18; this.setSheet(proj < 392 ? 67 : 717, false, d.v); };
     this.sheet.addEventListener('pointerup', end); this.sheet.addEventListener('pointercancel', end);
   }
   placeSheet(top) {
@@ -1259,7 +1268,7 @@ class App {
     this.tdim.style.opacity = p * .9;
     const lb = Math.max(0, 1 - p * 4);
     this.logBtn.style.top = (top - 32) + 'px'; this.logBtn.style.transform = `scale(${.6 + .4 * lb})`; this.logBtn.style.opacity = lb; this.logBtn.style.pointerEvents = lb < .5 ? 'none' : '';
-    if (this.coach) { this.coach.style.top = (top - 77) + 'px'; this.pulse.style.top = (top - 32) + 'px'; }
+    if (this.coach) { this.coach.style.top = (top - 16) + 'px'; this.pulse.style.top = (top - 32) + 'px'; }
   }
   setSheet(top, instant, v = 0) {
     const my = this.sheetAnim = (this.sheetAnim || 0) + 1; this.closeFan();
@@ -1293,7 +1302,7 @@ class App {
     this.chartEl.append(svg, this.readout);
     let down = null;
     const pick = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) / r.width * 350; const n = this.pts.length; const i = Math.round((x - this.PL) / (350 - this.PL - this.PR) * (n - 1)); this.tr.sel = Math.max(0, Math.min(n - 1, i)); this.drawSel(); };
-    this.chartEl.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; this.chartEl.setPointerCapture(ev.pointerId); pick(ev); });
+    this.chartEl.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; cap(this.chartEl, ev); pick(ev); });
     this.chartEl.addEventListener('pointermove', ev => { if (down) pick(ev); else if (ev.pointerType === 'mouse') pick(ev); });
     this.chartEl.addEventListener('pointerup', ev => { if (down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) < 6 && this.tr.step === 'day') this.openDayFromChart(); down = null; });
     this.drawChart(false);
@@ -1304,8 +1313,7 @@ class App {
     this.chartEl.className = `chart c${hb.c}`;
     const PL = this.PL = 26, PR = this.PR = 6, PT = 40, PB = 22, W = 350, Hh = 236;
     const mx = Math.max(1, ...pts.map(p => p.v));
-    const nice = [1, 2, 2.5, 5, 10]; let stepY = 1; for (const m of [1, 10, 100, 1000]) for (const s of nice) { if (mx / (s * m) <= 4 && stepY === 1 && !(s * m < 1)) { stepY = s * m; break; } }
-    for (const m of [1, 10, 100, 1000]) { let found = false; for (const s of nice) if (mx / (s * m) <= 4) { stepY = s * m; found = true; break; } if (found) break; }
+    let stepY = 1; outer: for (const m of [1, 10, 100, 1000]) for (const s of [1, 2, 2.5, 5]) if (mx / (s * m) <= 4) { stepY = s * m; break outer; }
     const yMax = Math.ceil(mx / stepY) * stepY;
     const X = i => PL + (n === 1 ? .5 : i / (n - 1)) * (W - PL - PR), Y = v => PT + (1 - v / yMax) * (Hh - PT - PB);
     this.X = X; this.Y = Y;
@@ -1387,7 +1395,7 @@ class App {
     const oc = H('div', { class: 'oc' }), inner = H('div', { class: 'oc-in' });
     const back = H('button', { class: 'cbtn', 'aria-label': 'Back to Trends', html: ic('left') });
     const n = this.w.day(d).length;
-    inner.append(H('div', { class: 'oc-h' }, back, H('div', null, H('h3', null, sameDay(d, TODAY) ? 'Today' : dShort(d)), H('div', { class: 'os' }, `${n} ${n === 1 ? 'entry' : 'entries'} · ${relDay(d) === 'Today' ? 'so far' : WDL[d.getDay()]}`))));
+    inner.append(H('div', { class: 'oc-h' }, back, H('div', null, H('h3', null, sameDay(d, TODAY) ? 'Today' : dShort(d)), H('div', { class: 'os' }, `${n} ${n === 1 ? 'entry' : 'entries'} · ${HABITS[this.tr.h].name} ${qty(this.tr.h, this.w.sum(d, this.tr.h))}`))));
     const dh = H('div', { class: 'oc-dial' }); inner.append(dh);
     const tl = H('div', { class: 'oc-tal' }); inner.append(tl);
     oc.append(inner); this.sheet.append(oc);
@@ -1467,7 +1475,7 @@ class App {
     const wrap = H('div', { class: 'erow-wrap' }, H('div', { class: 'erow-del', html: ic('trash') }), inner);
     wrap.entry = e;
     let x0 = null, dx = 0;
-    inner.addEventListener('pointerdown', ev => { x0 = ev.clientX; dx = 0; inner.setPointerCapture(ev.pointerId); inner.style.transition = 'none'; });
+    inner.addEventListener('pointerdown', ev => { x0 = ev.clientX; dx = 0; cap(inner, ev); inner.style.transition = 'none'; });
     inner.addEventListener('pointermove', ev => { if (x0 == null) return; dx = Math.min(0, (ev.clientX - x0) / (this.scr.getBoundingClientRect().width / 390)); inner.style.transform = `translateX(${dx}px)`; });
     inner.addEventListener('pointerup', async () => {
       if (x0 == null) return; x0 = null;
@@ -1476,7 +1484,7 @@ class App {
         const hh = wrap.offsetHeight; await wrap.animate([{ height: hh + 'px' }, { height: '0px' }], { duration: RM() ? 0 : 240, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }).finished;
         wrap.remove(); this.w.remove(d, e.id);
         if (sameDay(d, this.day)) { const b = this.dial.beads.get(e.id); if (b) { b.remove(); this.dial.beads.delete(e.id); } this.dial.render(this.w.day(d)); this.tallies.set(this.w.totals(d)); }
-        this.snack(`Deleted <span class="mono">${qty(e.h, e.q)}</span> at <span class="mono">${hm(e.min)}</span>`, () => this.restore(e, d));
+        this.snack(`Deleted <b>${qty(e.h, e.q)}</b> at <b>${hm(e.min)}</b>`, () => this.restore(e, d));
       } else if (dx > -6) { inner.style.transform = ''; this.day = d; this.openEntryFromHistory(e, d); }
       else inner.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], { duration: 260, easing: 'cubic-bezier(.3,1.4,.5,1)' }), inner.style.transform = '';
     });
@@ -1531,11 +1539,11 @@ class Auth {
     this.seg = makeSeg('', [['in', 'Sign in'], ['up', 'Create account']], 'in', v => this.setMode(v)); a.append(this.seg);
     const field = (icon, type, ph, eye) => { const inp = H('input', { type, placeholder: ph, autocomplete: 'off', spellcheck: 'false' }); const f = H('label', { class: 'field', html: ic(icon) }, inp); if (eye) f.append(H('button', { class: 'eye', type: 'button', 'aria-label': 'Show password', html: ic('eye'), onclick: ev => { ev.preventDefault(); inp.type = inp.type === 'password' ? 'text' : 'password'; } })); return { f, inp }; };
     this.email = field('mail', 'email', 'Email'); this.pw = field('lock', 'password', 'Password', true); this.pw2 = field('lock', 'password', 'Confirm password', true);
-    this.email.inp.value = 'sam@example.com';
+    this.email.inp.value = 'sam@example.com'; this.pw.inp.value = 'quiet-morning';
     this.fields = H('div', { class: 'fields' }, this.email.f, this.pw.f, this.pw2.f); a.append(this.fields);
     this.pw2.f.style.display = 'none';
     const ck = t => H('div', { class: 'ck', html: `<span class="cb">${ic('check')}</span>${t}` });
-    this.cks = [ck('8 or more characters'), ck('An upper-case letter'), ck('A lower-case letter'), ck('A number'), ck('Passwords match')];
+    this.cks = [ck('8+ characters'), ck('An upper-case letter'), ck('A lower-case letter'), ck('A number'), ck('Passwords match')];
     this.checks = H('div', { class: 'checks' }, ...this.cks); this.checks.style.display = 'none'; a.append(this.checks);
     this.err = H('div', { class: 'aerr', role: 'alert', html: `${ic('alert')}<span>That email and password don't match an account.</span>` }); a.append(this.err);
     this.btn = H('button', { class: 'pbtn', onclick: () => this.submit() }, 'Sign in'); a.append(this.btn);
@@ -1592,8 +1600,8 @@ function mountFrame(i) {
   for (const [label, fn, cls] of F.ctrls(inst)) { const b = H('button', { class: 'ctrl ' + (cls || '') }, label); b.onclick = () => fn(b); slot.ctrls.append(b); }
   return inst;
 }
-function resetFrame(i) { CLOCKS.length = 0; frameEls.forEach(f => f.inst && f.inst.scr && null); const inst = mountFrame(i); rebuildClocks(); inst.intro?.(); }
-function rebuildClocks() { CLOCKS.length = 0; frameEls.forEach(f => { const st = f.scr.querySelector('.status span'); if (st) CLOCKS.push(() => st.textContent = hm(nowMin())); if (f.inst && f.inst.tick) CLOCKS.push(() => f.inst.tick()); }); }
+function resetFrame(i) { const inst = mountFrame(i); rebuildClocks(); inst.intro?.(); }
+function rebuildClocks() { CLOCKS.length = 0; frameEls.forEach(f => { if (f.skip) return; const st = f.scr.querySelector('.status span'); if (st) CLOCKS.push(() => st.textContent = hm(nowMin())); if (f.inst && f.inst.tick) CLOCKS.push(() => f.inst.tick()); }); }
 const only = Q.get('only');
 const host = document.getElementById('frames');
 FRAMES.forEach((F, i) => {
@@ -1641,6 +1649,9 @@ fit(); addEventListener('resize', fit);
    <div class="tyrow"><span style="font:500 16px/1.2 var(--ft)">Late nights</span><small>Text 500 · 16</small></div>
    <div class="tyrow"><span style="font:400 13px/1.3 var(--ft);color:var(--muted)">Saved on this device. It will sync when you're back online.</span><small>Text 400 · 13</small></div>
    <div class="tyrow"><span style="font:500 22px/1 var(--fm)">21:10 · 80 min</span><small>Mono 500 · 22</small></div></div>
+  <div class="syscard"><h3>Shape: circular and orbital</h3>
+   <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px"><span style="width:64px;height:64px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none">${ic('plus').replace('<svg', '<svg width="28" height="28"')}</span><span class="cbtn" style="display:grid">${ic('left')}</span><span style="height:44px;padding:0 18px;border-radius:999px;background:var(--surface2);display:flex;align-items:center;white-space:nowrap;font:700 16px var(--fd)">Today <span style="font:500 13px var(--ft);color:var(--muted);margin-left:6px">Thu 5 Nov</span></span></div>
+   ${[['Log button', '64 pt circle, ringed in bg'], ['Day arrows, close, back', '40 pt circles'], ['Buttons, chips, inputs, banners', 'pills'], ['Cards', 'radius 24'], ['Sheets', 'radius 32, top only'], ['Stat tiles', 'radius 18'], ['Light elevation', '1 px rim + y2 soft shadow'], ['Dark elevation', 'rim only; beads glow'], ['Dial spokes', '24, every 3 h stronger, 45% ink']].map(([x, y]) => `<div class="mrow"><span>${x}</span><span class="mono">${y}</span></div>`).join('')}</div>
   <div class="syscard"><h3>Motion: orbital, 350–700 ms</h3>
    ${[['Bead travels from Log to its hour', 'easeInOutCubic 520'], ['Landing: overshoot and ripple', 'spring 220/22 · 300'], ['Tally number rolls', 'easeOut 300'], ['Day change: contract, then sweep', 'easeIn 200 · 600'], ['Clear day: spokes dim, sage rim', 'easeInOut 600'], ['Trends sheet snaps', 'spring + velocity'], ['Chart morphs between ranges', 'easeInOutCubic 450'], ['Chart day opens its dial', 'container 450'], ['Pages', 'fade-through 320'], ['Pending bead fills on sync', 'easeOut 240 · dash 2 s/turn'], ['Banner pills drop in', 'spring ≈ 260'], ['Reduce motion', 'fades 150, no travel']].map(([a, b]) => `<div class="mrow"><span>${a}</span><span class="mono">${b}</span></div>`).join('')}</div>
   </div>`;
