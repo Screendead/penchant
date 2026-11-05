@@ -226,7 +226,10 @@ class _FanRoute extends PopupRoute<void> {
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
-  ) => _FanPage(route: this);
+  ) => Material(
+    type: MaterialType.transparency,
+    child: _FanPage(route: this),
+  );
 }
 
 class _FanPage extends StatefulWidget {
@@ -452,7 +455,7 @@ class _Wedge extends StatelessWidget {
   final VoidCallback onHold;
 
   static String amount(Unit unit) =>
-      '+${unit.label(defaultQuantity)}'.replaceAll('minutes', 'min');
+      '+${unit.label(defaultQuantity)}'.replaceAll(RegExp(r'minutes?'), 'min');
 
   @override
   Widget build(BuildContext context) {

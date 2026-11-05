@@ -23,6 +23,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -114,6 +115,7 @@ void main() {
           ('busy', _busy),
           ('sparse', _sparse),
           ('clear', const <(int, int, int)>[]),
+          ('fan', _sparse),
         ]) {
       testWidgets('renders Today, $scene, ${brightness.name}', (
         WidgetTester tester,
@@ -155,6 +157,10 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        if (scene == 'fan') {
+          await tester.tap(find.byType(LogButton));
+          await tester.pumpAndSettle();
+        }
 
         await tester.runAsync(() async {
           final ui.Image image =
