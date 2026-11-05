@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
@@ -14,8 +13,7 @@ final Finder _graphTab = find.byIcon(Icons.show_chart_outlined);
 final Finder _todayTab = find.byIcon(Icons.today_outlined);
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();

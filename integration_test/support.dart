@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,7 +7,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -18,6 +21,35 @@ const Duration timeout = Duration(seconds: 30);
 // Set by tools/e2e-screenshots.sh; each screenshot() call then blocks until the
 // host has captured the simulator screen.
 const String _screenshotServer = String.fromEnvironment('E2E_SCREENSHOT_URL');
+
+// macOS reports the app hidden whenever none of its window is on screen
+// (covered by another window, on another Space, the app hidden), and a hidden
+// app schedules no frames. Every pump of a live test waits for a frame, so a
+// run would stall, with no timeout, until the window came back. Forcing frames
+// leaves the lifecycle the app hears untouched. flutter test creates the
+// binding before main runs, so it cannot be a subclass.
+class _FramesWhileHidden with WidgetsBindingObserver {
+  Timer? _forcing;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _forcing?.cancel();
+    _forcing = null;
+    if (!SchedulerBinding.instance.framesEnabled) {
+      _forcing = Timer.periodic(
+        const Duration(milliseconds: 16),
+        (_) => SchedulerBinding.instance.scheduleForcedFrame(),
+      );
+    }
+  }
+}
+
+void ensureE2EBinding() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
+    _FramesWhileHidden(),
+  );
+  WidgetController.hitTestWarningShouldBeFatal = true;
+}
 
 void requireEmulators() {
   if (!useFirebaseEmulators) {

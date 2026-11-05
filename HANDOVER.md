@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-04. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-05. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -32,9 +32,9 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Wave D: data layer (#68), repo hygiene (#70), usage graph (#69), locale formatting (#67), widget state (#71), dead code and a `dart format` CI step (#66), Today chart keeps vice names readable at large text (#74), admin glob override for Dependabot alerts 197/198 (#75), pitch round 4 (#73) | Merged 2026-11-04. Each ran the full iOS e2e (31 tests) before merge, except #73 (docs) and #75 (seed script only; ran it under the emulators) | `lib/`, `admin/`, `docs/pitch/` |
 | CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
 | Web site | Down: returns 404 (checked 2026-11-04) | |
-| macOS target (#47) | Merged with master, iOS e2e 31/31, macOS CI build green; waits only on Jack's Mac development profile and then the macOS e2e (below) | `macos/`, `.github/workflows/macos-build.yml` |
+| macOS target (#47) | Ready to merge 2026-11-05: Jack made the Mac development profile, and `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 27 issues: 0 critical, 1 high, 13 medium, 13 low (`tools/tech-debt-recount.py`, 2026-11-04; from 162 on 2026-08-11). The high is the macOS lockfile that #47 fixes | `tech-debt/README.md` |
+| Tech-debt register | 24 issues on #47's branch: 0 critical, 0 high, 12 medium, 12 low (`tools/tech-debt-recount.py`, 2026-11-05; 27 with 1 high, the macOS lockfile, on master; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
@@ -49,10 +49,15 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
 1. **macOS as a fully supported target** (C6's note): built in #47 (deployment target 12.0, emulator plist strip,
-   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build), merged with
-   master, iOS e2e 31/31, macOS CI build green. **Blocked on Jack** (the Mac development profile, below): no macOS
-   profile exists, and Firebase Auth on macOS needs Keychain Sharing, which needs one, so the macOS e2e can't run.
-   Once it exists: run the macOS e2e on #47, record it in the PR, merge.
+   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Ready to
+   merge** (2026-11-05): Jack created the Mac development profile, the signed build runs and Firebase Auth works on
+   macOS. `E2E_DEVICE=macos tools/e2e.sh` now runs each file in its own `flutter test` (the macOS runner cannot
+   relaunch the app for a second file) and passes 31/31; iOS passes 31/31 (both after merging master through #77).
+   Three macOS-only test failures were the harness, not the app: a hidden or covered macOS window stops frames, so a
+   pump waited forever (tests now call `ensureE2EBinding()`, which forces frames meanwhile); the day menu in the
+   600 pt window leaves the newest days scrolled out (the test scrolls to them); and at text scale 3, which macOS
+   never reports outside a test, #74's key scrolls in that window (on macOS only, the test scrolls to each name). One full macOS run also timed out once in `bounded_queries_test.dart`'s
+   `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
 2. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
    tiles are a Today layout, which waits on Jack's Today call (`r2-today`); only a shared "log one at the default
    quantity, now" action with the 8-second Undo is decided. Unblocked. Parallel with item 4 where the files don't
@@ -183,10 +188,9 @@ not decisions:
 
 - **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
   releases stay in the console, so this can be undone.
-- **Mac development profile** (unblocks #47; no macOS profile exists): open
-  `~/development/tracker-worktrees/feat-macos-target/macos/Runner.xcworkspace` in Xcode, Runner > Signing &
-  Capabilities, team 8N575942RT, and build once (Cmd-B). Then discard the stray signing change in the main checkout:
-  `git checkout -- macos/Runner.xcodeproj/project.pbxproj`. Claude's attempt was refused by the permission classifier.
+- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The main checkout may still
+  hold an uncommitted `macos/Runner.xcodeproj/project.pbxproj` from the 2026-11-04 attempt; #47 carries the team, so
+  `git checkout -- macos/Runner.xcodeproj/project.pbxproj` there discards it.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
   Claude (`gh pr close 22 42`).
 - **The activities index is deployed** (Claude, 2026-11-03, with Jack's leave to deploy indexes only, never
@@ -228,8 +232,8 @@ not decisions:
 - `npm --prefix tests/firestore-rules test` runs the rules suite; CI runs it on every PR.
 - Only one agent at a time may use the simulator and the default emulator ports. Parallel agents that need an
   emulator use other ports (Firestore 8180, hub 4410, logging 4510, UI off) through a config outside the repo.
-- `flutter pub get` rewrites `macos/Flutter/GeneratedPluginRegistrant.swift`; revert it, don't commit it (in the
-  register).
+- `macos/Flutter/GeneratedPluginRegistrant.swift` is tracked (iOS gitignores its own; in the register).
+  `flutter pub get` rewrites it only when the plugin set changes; commit the rewrite with the change that caused it.
 - Read the Firebase documentation before any change to rules, indexes, queries or emulator wiring, and cite it in
   the PR.
 

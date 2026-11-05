@@ -52,7 +52,8 @@ flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
-flutter build macos --debug      # the macOS target still builds (CI builds no app)
+flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
+FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
 dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
 ```
 
@@ -62,13 +63,25 @@ End to end against the Firebase emulators (Auth + Firestore, project `demo-track
 tools/e2e.sh                      # integration_test/ on the first available "iPhone 18 Pro" simulator; exits with the test status
 tools/e2e.sh integration_test/smoke_test.dart
 E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
+E2E_DEVICE=macos tools/e2e.sh     # integration_test/ as a macOS app on this Mac
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
 tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each screenshot(tester, name) call
 ```
 
-Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), refuse to start if an emulator port
-(8080, 9099, 9150, 4000, 4400, 4500) is taken, and start the emulators under `demo-tracker` from
-`tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
+Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set; `E2E_DEVICE=macos` skips the
+simulator and runs on this Mac), refuse to start if an emulator port (8080, 9099, 9150, 4000, 4400, 4500) is taken,
+and start the emulators under `demo-tracker` from `tools/emulator-env.sh`. `e2e-screenshots.sh` needs a simulator.
+Flutter's macOS runner cannot relaunch the app for a second file in one `flutter test`, so on macOS `e2e.sh` hands
+`tools/e2e-macos-each-file.sh` the targets, which runs each file on its own in the one emulator session, prints
+PASS or FAIL per file and fails if any did. Every test file starts with `ensureE2EBinding()` (`integration_test/support.dart`)
+rather than the stock binding call: it forces frames while macOS reports the app hidden (its window covered or on
+another Space), when the framework schedules none and every pump would wait forever.
+
+A signed macOS build (`flutter build macos`, `-d macos`, `E2E_DEVICE=macos`) needs a Mac App Development
+provisioning profile for `com.screendead.tracker.tracker` on team `8N575942RT`. Firebase Auth on macOS keeps the
+user in the keychain, which needs the Keychain Sharing entitlement, which needs that profile; ad-hoc signed, sign-in
+fails with `keychain-error`. Flutter does not pass `-allowProvisioningUpdates`, so the profile comes from building
+once in Xcode (`macos/Runner.xcworkspace`, Runner, Signing & Capabilities) with Jack's account. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
 Versions and releases. `version:` in `pubspec.yaml` is the user-facing semantic version (0.x until the first App
@@ -123,7 +136,10 @@ every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only i
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. Nothing builds or deploys the app. Flutter is pinned in
+group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
+define, on a `macos-26` runner, for PRs and pushes to `master` that touch `macos/`, `pubspec.*`,
+`lib/firebase_init.dart`, the strip script or the Flutter setup; macOS minutes bill at 10x in a private repo. Nothing
+builds the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
 `pubspec.yaml` dependency), pinned to 3.1.4: 3.1.6 to 3.1.8 resolve an `analysis_server_plugin` whose protocol the
@@ -134,7 +150,8 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 ## Architecture
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
-It targets iOS and macOS only; `firebase_options.dart` throws on any other platform.
+It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
+`firebase_options.dart` throws on any other platform.
 
 **Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
 hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
@@ -297,8 +314,8 @@ default app resolves to a non-`demo-` project. App Check is activated right afte
 `initializeApp` in both modes and enforced nowhere: App Attest with the DeviceCheck
 fallback in production, the debug provider (no committed token) under the emulators, which
 ignore App Check. App Attest yields no accepted token until the Runner target carries the
-App Attest entitlement, which the current signing team cannot sign (HANDOVER.md). On iOS, firebase_core configures the native
-default app from the bundled `GoogleService-Info.plist` before Dart runs, so the Runner
-target's "Strip Firebase plist for emulators" build phase
-(`tools/ios-strip-firebase-plist.sh`) moves it out of the bundle for flagged builds. macOS
-bundles its own plist with no such phase, so a flagged macOS build should fail at startup.
+App Attest entitlement, which the current signing team cannot sign (HANDOVER.md). On iOS and
+macOS, firebase_core configures the native default app from the bundled
+`GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
+Firebase plist for emulators" build phase (`tools/strip-firebase-plist.sh`) that moves it out
+of the bundle for flagged builds.

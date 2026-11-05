@@ -321,7 +321,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$SRCROOT/../tools/ios-strip-firebase-plist.sh\"\n";
+			shellScript = "/bin/sh \"$SRCROOT/../tools/strip-firebase-plist.sh\"\n";
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
