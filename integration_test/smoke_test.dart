@@ -1,5 +1,5 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/vice_chart.dart';
 import 'package:tracker/main.dart' as app;
 
 import 'support.dart';
@@ -22,7 +22,7 @@ void main() {
     await addVicesThroughManageData(tester);
 
     await recordActivity(tester, 'Coffee', 2);
-    await pumpUntil(tester, find.byType(RadarChart));
+    await pumpUntil(tester, find.byType(ViceRadar));
 
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntil(tester, find.text('Your Vices'));

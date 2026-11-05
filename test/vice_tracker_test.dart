@@ -15,6 +15,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/vice_chart.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -36,14 +37,8 @@ bool _enabled(WidgetTester tester, String tooltip) =>
         .onPressed !=
     null;
 
-double _chartedQuantity(WidgetTester tester) => tester
-    .widget<RadarChart>(find.byType(RadarChart))
-    .data
-    .dataSets
-    .first
-    .dataEntries
-    .first
-    .value;
+int _chartedQuantity(WidgetTester tester) =>
+    tester.widget<ViceRadar>(find.byType(ViceRadar)).quantities.first;
 
 // WCAG 2.x contrast ratio.
 double _contrast(Color a, Color b) {
@@ -204,7 +199,7 @@ void main() {
       await _pumpApp(tester, overrides([coffee]), const ViceTracker());
       await tester.pumpAndSettle();
 
-      expect(find.byType(RadarChart), findsNothing);
+      expect(find.byType(ViceRadar), findsNothing);
       expect(barValues(tester), [2]);
       expect(barTitle('coffee (2 items)'), findsOneWidget);
     });
@@ -215,7 +210,7 @@ void main() {
       await _pumpApp(tester, overrides([coffee, beer]), const ViceTracker());
       await tester.pumpAndSettle();
 
-      expect(find.byType(RadarChart), findsNothing);
+      expect(find.byType(ViceRadar), findsNothing);
       expect(barValues(tester), [2, 1]);
       expect(barTitle('coffee (2 items)'), findsOneWidget);
       expect(barTitle('beer (1 item)'), findsOneWidget);
@@ -240,7 +235,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BarChart), findsNothing);
-      expect(find.byType(RadarChart), findsOneWidget);
+      expect(find.byType(ViceRadar), findsOneWidget);
     });
   });
 

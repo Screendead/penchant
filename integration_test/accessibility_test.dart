@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/vice_chart.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/data/day.dart';
@@ -28,7 +29,7 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('the radar puts an unused vice at its centre, and screen '
+  testWidgets('the radar gives an unused vice its own point, and screen '
       'readers hear both charts', (WidgetTester tester) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
@@ -43,11 +44,11 @@ void main() {
       'Water (0 drinks)',
     });
 
-    final RadarChartData radar = tester
-        .widget<RadarChart>(find.byType(RadarChart))
-        .data;
-    expect(radar.isMinValueAtCenter, isTrue);
-    expect(radar.minEntry.value, 0);
+    expect(tester.widget<ViceRadar>(find.byType(ViceRadar)).quantities, [
+      0,
+      1,
+      2,
+    ]);
     await screenshot(tester, 'a11y-radar-zero-at-centre');
 
     // Vices list newest first.

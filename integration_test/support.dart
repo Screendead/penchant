@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:tracker/vice_chart.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -337,8 +338,8 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
   }
 }
 
-// The radar chart paints its labels, so they are not Text widgets; read them
-// from the chart's data instead. The bar chart's labels are Text widgets.
+// Each chart's labels, as name and amount: the bar chart's are Text widgets,
+// and the radar's are a name and an amount, read as one from the radar.
 Set<String>? chartTitles(WidgetTester tester) {
   final Finder bars = find.byType(BarChart);
   if (bars.evaluate().isNotEmpty) {
@@ -348,15 +349,11 @@ Set<String>? chartTitles(WidgetTester tester) {
         (e.widget as Text).data!,
     };
   }
-  final Finder chart = find.byType(RadarChart);
+  final Finder chart = find.byType(ViceRadar);
   if (chart.evaluate().isEmpty) {
     return null;
   }
-  final RadarChartData data = tester.widget<RadarChart>(chart).data;
-  return <String>{
-    for (int i = 0; i < data.dataSets.first.dataEntries.length; i++)
-      data.getTitle!(i, 0).text,
-  };
+  return tester.widget<ViceRadar>(chart).titles.toSet();
 }
 
 Future<void> expectChart(WidgetTester tester, Set<String> titles) =>
@@ -368,7 +365,7 @@ Future<void> expectChart(WidgetTester tester, Set<String> titles) =>
 
 Future<void> expectBars(WidgetTester tester, Set<String> titles) async {
   await expectChart(tester, titles);
-  expect(find.byType(RadarChart), findsNothing);
+  expect(find.byType(ViceRadar), findsNothing);
 }
 
 Future<void> expectRadar(WidgetTester tester, Set<String> titles) async {

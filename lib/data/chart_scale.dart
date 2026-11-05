@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui' show Size;
 
 // An axis that ends on a round number of units: [top] is a multiple of [step],
 // at least [largest], in at most [maxSteps] steps of 1, 2 or 5 times a power
@@ -48,17 +47,4 @@ double barTitleWidth(double width, int bars, double barWidth) {
   }
   final double space = max(0, width - bars * barWidth) / (bars + 1);
   return space + barWidth;
-}
-
-// The length a radar title may take. fl_chart draws each title tangent to a
-// circle [titleOffset] beyond the radar's radius (0.8 of the shorter half
-// side), so a title is bounded by the chord to its neighbours' positions and by
-// the chart's width.
-double radarTitleWidth(Size size, int axes, double titleOffset) {
-  final double radius = min(size.width, size.height) / 2 * 0.8;
-  final double titleRadius = radius * (1 + titleOffset);
-  if (axes <= 1) {
-    return size.width;
-  }
-  return min(size.width, 2 * titleRadius * sin(pi / axes));
 }

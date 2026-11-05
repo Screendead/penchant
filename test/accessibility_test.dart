@@ -64,8 +64,8 @@ final List<Vice> _three = [
   fakeVice('tea'),
 ];
 
-RadarChartData _radar(WidgetTester tester) =>
-    tester.widget<RadarChart>(find.byType(RadarChart)).data;
+ViceRadar _radar(WidgetTester tester) =>
+    tester.widget<ViceRadar>(find.byType(ViceRadar));
 
 final List<Vice> _longNamed = [
   fakeVice('elderflower', name: 'Sparkling elderflower water'),
@@ -75,29 +75,26 @@ final List<Vice> _longNamed = [
 
 void main() {
   group('the radar', () {
-    testWidgets('puts a zero at the centre', (WidgetTester tester) async {
+    testWidgets('gives an unused vice its own point and shows its zero', (
+      WidgetTester tester,
+    ) async {
       await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
 
-      final RadarChartData data = _radar(tester);
-      expect(data.isMinValueAtCenter, isTrue);
-      expect(data.minEntry.value, 0);
-      expect(data.dataSets.first.dataEntries.map((RadarEntry e) => e.value), [
-        2,
-        0,
-        1,
+      expect(_radar(tester).quantities, [2, 0, 1]);
+      expect(_radar(tester).titles, [
+        'coffee (2 items)',
+        'beer (0 items)',
+        'tea (1 item)',
       ]);
+      expect(find.text('0 items'), findsOneWidget);
     });
 
-    testWidgets('keeps the centre at zero when every vice was used', (
+    testWidgets('rings the top value in round steps', (
       WidgetTester tester,
     ) async {
       await _pump(tester, _day(_three, [3, 1, 2]), const ViceTracker());
 
-      final RadarChartData data = _radar(tester);
-      expect(data.isMinValueAtCenter, isTrue);
-      expect(data.minEntry.value, 0);
-      expect(data.maxEntry.value, 3);
-      expect(data.tickCount, 3);
+      expect(_radar(tester).scale, (top: 3, step: 1));
     });
 
     test('rings are round numbers, at most five of them', () {
@@ -274,14 +271,17 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // At this size the key may take the chart's whole space.
-        final Finder radar = find.byType(RadarChart);
-        final RadarChartData? data = radar.evaluate().isEmpty
-            ? null
-            : _radar(tester);
+        final bool keyed = find.byType(Wrap).evaluate().isNotEmpty;
         for (int i = 0; i < _longNamed.length; i++) {
           final Vice vice = _longNamed[i];
-          final String title = data?.getTitle!(i, 0).text ?? '';
-          if (title == vice.name || title.startsWith('${vice.name} (')) {
+          if (!keyed) {
+            expect(
+              find.descendant(
+                of: find.byType(ViceRadar),
+                matching: find.text(vice.name),
+              ),
+              findsOneWidget,
+            );
             continue;
           }
           final Finder entry = find.textContaining(RegExp('^${vice.name}: '));
