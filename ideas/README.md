@@ -33,7 +33,7 @@ Each list is in the recommended build order.
 ## Release blockers (9)
 
 - [Position the app as a neutral journal for learning about yourself](release-blockers/positioning-and-target-user.md). S. Decided (C15)
-- [Lock the bundle ID and clear the Penchant name before the first upload](release-blockers/name-and-bundle-id.md). S. Decided (C19, `r2-brand`: Penchant), Needs Jack (Firebase registrations, trademark, domain)
+- [Lock the bundle ID and clear the Penchant name before the first upload](release-blockers/name-and-bundle-id.md). S. Decided (C19, `r2-brand`: Penchant), Needs Jack (domain)
 - [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, Needs Jack (`vice-cap`); bounded activity queries and App Check wiring built in #55
 - [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, Needs Jack
@@ -103,7 +103,6 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 
 ## Needs Jack
 
-- **Trademark:** pay for a professional trademark search on Penchant before the first upload (`r2-trademark`)?
 - **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
   recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
   the visible "when"?

@@ -144,8 +144,10 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   brand. Done.
 - **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
   **Penchant**, with the recommended App Store subtitle **"Habit journal & sleep insights"**. Applied to every
-  identity string by #81; the bundle IDs are queue item 3. Backups if the trademark search fails:
-  Kenning, then Sounding.
+  identity string by #81; the bundle IDs are queue item 3. Backups if the name proves unusable: Kenning, then Sounding.
+- **`r2-mac-config`** (2026-11-05): the Mac shares the iOS app's Firebase registration and config file (the
+  recommended side); the console offered no separate macOS app.
+- **No trademark search** (2026-11-05, Jack): none will be done, professional or otherwise. Don't raise it again.
 - **Wording** (2026-11-05, Jack): the app says **"habits"**, not "vices", in its UI. Code, routes, Firestore
   collections and fields, and the export's column names keep `vice`, so the data shape is unchanged
   (#81).
@@ -166,8 +168,7 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
 recommendation. Ids: `r2-e2ee` (end-to-end encryption of what each entry says; `ideas/release-blockers/end-to-end-encryption.md`,
 prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and quantities, dates may stay plaintext),
-`r2-mac-config` (the macOS Firebase config: reuse the iOS app's registration, recommended, or register a separate
-app), `r2-trademark` (pay for a professional trademark search on Penchant), `r2-age` (18+ in
+`r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
 Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
@@ -258,17 +259,12 @@ once it lands; they stay open until Jack says so:
   over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
   edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
   `demo-tracker`. Register: `tech-debt/firebase-data-layer/every-firebase-command-targets-production.md`.
-- **Register Penchant's apps in Firebase** (before any TestFlight upload): in Firebase project
-  `screendead-vice-tracker` (console > Project settings > Your apps > Add app), register an iOS app and an Apple
-  (macOS) app, each with bundle ID `com.screendead.penchant`, and download the two `GoogleService-Info.plist` files.
-  If the console refuses a second Apple app with the same bundle ID (not checked), the iOS app's file serves the Mac
-  too, which is the recommended side of `r2-mac-config`. Put the files where Claude can read them (for example
-  `~/Downloads`) and say so. Claude then
-  switches both bundle IDs and both config files in one PR (queue item 3). The phone will then see Penchant as a new
-  app: the build installed under the old ID (`com.screendead.tracker.tracker`) stays beside it until you delete it,
-  and the new one starts signed out.
-- **Trademark search on "Penchant"** in classes 9, 42 and 44 (USPTO, UKIPO, EUIPO), before the first upload. Whether
-  to pay for a professional one is `r2-trademark`.
+- **Firebase registration: done** (2026-11-05). Jack registered the iOS app `com.screendead.penchant` in
+  `screendead-vice-tracker` and supplied its `GoogleService-Info.plist` (copy in
+  `~/development/tracker-tools/firebase-config/`). The console offers no separate macOS app, so the Mac shares that
+  registration and file, which settles `r2-mac-config` on its recommended side. Claude switches both bundle IDs and
+  configs in one PR (queue item 3). The phone will then see Penchant as a new app: the build installed under the old
+  ID (`com.screendead.tracker.tracker`) stays beside it until deleted, and the new one starts signed out.
 - **Choose the domain variant** before the first upload: `penchant.com` is held (MarkMonitor, owner unknown) and
   `penchant.app` is parked, so a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. It sets the
   support and legal-page addresses.
