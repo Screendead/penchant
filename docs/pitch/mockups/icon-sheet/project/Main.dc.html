@@ -15,10 +15,10 @@ body{margin:0}
 a{color:#3D5A80}a:hover{color:#22324a}
 </style>
 </helmet>
-<div style="width: 1360px; min-height: 2500px; box-sizing: border-box; padding: 64px 72px; background: #F6F4EF; color: #1D1C1A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 48px">
+<div style="width: 1360px; min-height: 2800px; box-sizing: border-box; padding: 64px 72px; background: #F6F4EF; color: #1D1C1A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 48px">
 <header style="display: flex; flex-direction: column; gap: 10px">
 <h1 style="margin: 0; font-size: 44px; font-weight: 700; letter-spacing: -0.02em">App icon candidates</h1>
-<p style="margin: 0; font-size: 18px; color: #55524C; max-width: 900px">34 candidates. New first: Outline and Prism combined, larger in the frame. Rows 2 to 5 work with any name; row 6 needs the brand call. Each is shown at App Store size and at Settings size. Pick by number.</p>
+<p style="margin: 0; font-size: 18px; color: #55524C; max-width: 900px">38 candidates, newest first. Only the last row needs the brand call. Each is shown at App Store size and at Settings size. Pick by number.</p>
 </header>
 <sc-for list="{{sections}}" as="sec" hint-placeholder-count="5">
 <section style="display: flex; flex-direction: column; gap: 20px">
@@ -52,10 +52,16 @@ a{color:#3D5A80}a:hover{color:#22324a}
 </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":2500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":2800}}'>
 class Component extends DCLogic {
   renderVals() {
     const rows = [
+      ["Newest: centred, Prism's colours, Outline's spokes", [
+        ["35", "", "Spokes, dark", "Centre of the shape at the centre of the icon; spokes run past it."],
+        ["36", "", "Spokes, teal", "The same on Outline's teal."],
+        ["37", "", "Spokes and ring", "Adds the radar's faint outer ring."],
+        ["38", "", "Spokes, light", "On paper, with dark spokes."]
+      ]],
       ["New: Outline and Prism combined, larger", [
         ["31", "", "Prism outline, dark", "Prism's colours inside Outline's line and points."],
         ["32", "", "Prism outline, teal", "The same on Outline's teal."],
@@ -115,7 +121,9 @@ class Component extends DCLogic {
       "25": "99c8c137cd31daeea09ec4a77ce135b0", "26": "672aa72cf489eb72f43059fa1b81da8e", "27": "7aeb113dcbe71eb44dd4cacbba225177",
       "28": "f684a449bd6446b4470634c158f19f1f", "29": "bdff140b9af48ba129d4939e31b30742", "30": "50faab45051fc793439d8e30d4c9998f",
       "31": "d909df3ecbf17ca2ed9069de3316dcf2", "32": "a243e1a00f0e916f629008cfe3d384f7", "33": "c7a2aab7c4edd4a0f8e07842067a677f",
-      "34": "42666a659a6fa05623e89a50812c14b9"
+      "34": "42666a659a6fa05623e89a50812c14b9",
+      "35": "6c6d14b618dcef22e3650d09b323d9cd", "36": "cf8c8640bfe687d941ee362fa34da493", "37": "537e646a1ec0d82916099903ca90803e",
+      "38": "023736983cf5cfa5fe1aaec412fb5281"
     };
     const sections = rows.map(([title, items]) => ({
       title,
