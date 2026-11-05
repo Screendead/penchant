@@ -66,11 +66,11 @@ dev_dependencies:
 
 flutter_launcher_icons:
   ios: true
-  image_path: "assets/icon.webp"
+  image_path: "assets/icon.png"
   remove_alpha_ios: true
   macos:
     generate: true
-    image_path: "assets/icon.webp"
+    image_path: "assets/icon-macos.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

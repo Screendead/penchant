@@ -115,6 +115,11 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 - **`r2-web-site`** (2026-11-03, in chat): **take the live web site down now.** Claude can't: it is Firebase Hosting
   on the production project, which the hard rules put out of Claude's reach, so Jack did it; the site returns 404
   (checked 2026-11-04). Done.
+- **`r2-icon`** (2026-11-05, in chat): **candidate 38**, the Today radar's coloured segments with spokes running past
+  them, centred, on a light background. Picked from 38 candidates on the icon sheet
+  (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on `mockup/icon-sheet`). Shipped as the iOS and macOS
+  icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
+  brand. Done.
 
 ## Calls waiting on Jack (UNDECIDED)
 
@@ -125,11 +130,11 @@ prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and
 app), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
-Firebase project), `r2-privacy`, `r2-icon`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
+Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
 
 Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, for `r2-brand` and `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
+icon (`mockup/brand-and-icon`, for `r2-brand`; its icon half is superseded by `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
 
 Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
 `lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the

@@ -53,7 +53,7 @@ dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omi
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # the macOS target still builds (CI builds no app)
-dart run flutter_launcher_icons  # after changing assets/icon.webp
+dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
 ```
 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
