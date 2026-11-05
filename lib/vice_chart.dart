@@ -50,7 +50,7 @@ class ViceChart extends ConsumerWidget {
   static TextStyle _titleStyle(ThemeData theme) =>
       TextStyle(color: theme.colorScheme.secondary, fontSize: 14);
 
-  static List<({String text, bool nameWhole})> _barTitles(
+  static List<({String text, bool complete})> _barTitles(
     BuildContext context,
     TextStyle style,
     double width,
@@ -72,10 +72,10 @@ class ViceChart extends ConsumerWidget {
         if (fits('${vices[i].name}${_suffix(vices[i], quantities[i])}'))
           (
             text: '${vices[i].name}${_suffix(vices[i], quantities[i])}',
-            nameWhole: true,
+            complete: true,
           )
         else
-          (text: vices[i].name, nameWhole: fits(vices[i].name)),
+          (text: vices[i].name, complete: false),
     ];
   }
 
@@ -84,7 +84,7 @@ class ViceChart extends ConsumerWidget {
   static EdgeInsets _radarInset(BuildContext context, TextStyle style) =>
       EdgeInsets.all(chartLabelSize(context, 'Ag', style).height);
 
-  static List<({String text, bool nameWhole})> _radarTitles(
+  static List<({String text, bool complete})> _radarTitles(
     BuildContext context,
     TextStyle style,
     Size size,
@@ -134,7 +134,7 @@ class ViceChart extends ConsumerWidget {
   Widget _bars(
     BuildContext context,
     ThemeData theme,
-    List<({String text, bool nameWhole})> titles,
+    List<({String text, bool complete})> titles,
     List<int> quantities,
   ) {
     final TextStyle titleStyle = _titleStyle(theme);
@@ -274,7 +274,7 @@ class ViceChart extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final List<({String text, bool nameWhole})>? barTitles = asBars
+            final List<({String text, bool complete})>? barTitles = asBars
                 ? _barTitles(
                     context,
                     titleStyle,
@@ -287,8 +287,8 @@ class ViceChart extends ConsumerWidget {
                 ? _bars(context, theme, barTitles, quantities)
                 : _radar(context, theme, vices, quantities);
             // Decided on the whole area: the key's height would otherwise
-            // change the radar's size, and with it whether the names fit.
-            final bool namesWhole =
+            // change the radar's size, and with it whether the titles fit.
+            final bool titlesComplete =
                 (barTitles ??
                         _radarTitles(
                           context,
@@ -300,8 +300,8 @@ class ViceChart extends ConsumerWidget {
                           vices,
                           quantities,
                         ))
-                    .every((({String text, bool nameWhole}) t) => t.nameWhole);
-            if (namesWhole) {
+                    .every((({String text, bool complete}) t) => t.complete);
+            if (titlesComplete) {
               return chart;
             }
 
@@ -334,6 +334,7 @@ class ViceChart extends ConsumerWidget {
     List<int> quantities,
   ) {
     final ({int top, int step}) scale = radarScale(quantities.reduce(max));
+    final int rings = scale.top ~/ scale.step;
 
     final RadarDataSet dataSet = RadarDataSet(
       fillColor: theme.colorScheme.primary.withValues(alpha: 0.2),
@@ -365,7 +366,7 @@ class ViceChart extends ConsumerWidget {
       padding: _radarInset(context, titleStyle),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final List<({String text, bool nameWhole})> titles = _radarTitles(
+          final List<({String text, bool complete})> titles = _radarTitles(
             context,
             titleStyle,
             constraints.biggest,
@@ -373,7 +374,8 @@ class ViceChart extends ConsumerWidget {
             quantities,
           );
 
-          return RadarChart(
+          final double radius = radarRadius(constraints.biggest);
+          final RadarChart chart = RadarChart(
             RadarChartData(
               dataSets: [dataSet, scaleSet],
               isMinValueAtCenter: true,
@@ -394,12 +396,10 @@ class ViceChart extends ConsumerWidget {
                   angle: angle + correctionFactor,
                 );
               },
-              tickCount: scale.top ~/ scale.step,
-              // fl_chart scales the titles by the device text size, not the ticks.
-              ticksTextStyle: TextStyle(
-                color: theme.colorScheme.secondary,
-                fontSize: MediaQuery.textScalerOf(context).scale(10),
-              ),
+              tickCount: rings,
+              // fl_chart prints every ring's value with one decimal, the
+              // centre's 0 included; the rings are labelled below instead.
+              ticksTextStyle: const TextStyle(color: Colors.transparent),
               tickBorderData: BorderSide(
                 color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
               ),
@@ -410,6 +410,26 @@ class ViceChart extends ConsumerWidget {
             ),
             duration: const Duration(milliseconds: 600),
             curve: Curves.fastOutSlowIn,
+          );
+
+          // Each inner ring's value sits just above it, right of the top
+          // axis, where fl_chart would print it; the outer ring is the edge.
+          return Stack(
+            children: [
+              Positioned.fill(child: chart),
+              for (int ring = 1; ring < rings; ring++)
+                Positioned(
+                  left: constraints.maxWidth / 2 + 5,
+                  bottom: constraints.maxHeight / 2 + radius * ring / rings,
+                  child: Text(
+                    formatCount(ring * scale.step),
+                    style: TextStyle(
+                      color: theme.colorScheme.secondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),

@@ -48,8 +48,8 @@ bool chartLabelWraps(
 // fl_chart lays a radar title out on one line with no width limit, so the
 // string itself must fit in [maxWidth]: [suffix] is dropped first, then
 // [name] is cut short with an ellipsis, and when not even an ellipsis fits the
-// label is empty. [nameWhole] is false whenever the name is not shown in full.
-({String text, bool nameWhole}) fitChartLabel(
+// label is empty. [complete] is false whenever any of name or suffix is cut.
+({String text, bool complete}) fitChartLabel(
   BuildContext context, {
   required String name,
   required String suffix,
@@ -60,13 +60,13 @@ bool chartLabelWraps(
       chartLabelSize(context, text, style).width <= maxWidth;
 
   if (fits('$name$suffix')) {
-    return (text: '$name$suffix', nameWhole: true);
+    return (text: '$name$suffix', complete: true);
   }
   if (fits(name)) {
-    return (text: name, nameWhole: true);
+    return (text: name, complete: false);
   }
   if (!fits('…')) {
-    return (text: '', nameWhole: false);
+    return (text: '', complete: false);
   }
 
   final Characters characters = name.characters;
@@ -82,6 +82,6 @@ bool chartLabelWraps(
   }
   return (
     text: '${characters.take(low).toString().trimRight()}…',
-    nameWhole: false,
+    complete: false,
   );
 }
