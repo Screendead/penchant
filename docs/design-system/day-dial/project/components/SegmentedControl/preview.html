@@ -1,0 +1,33 @@
+<!-- @dsCard group="Controls" height=240 subtitle="The ink thumb on a ground, the quiet thumb inside a sheet, and the full-width sign-in switch" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m) 48px; padding: 24px 40px; align-items: start; }
+  .cap { font: 600 13px/18px var(--font-text); color: var(--muted); margin-bottom: var(--space-xs); }
+  .seg { display: inline-flex; background: var(--surface); border-radius: var(--radius-pill); padding: 4px; box-shadow: var(--shadow-card); border: 1px solid var(--line); }
+  .seg span { padding: 8px 14px; border-radius: var(--radius-pill); font: 600 13px/1 var(--font-text); color: var(--muted); }
+  .seg span.on { background: var(--accent); color: var(--onAccent); }
+  .sheet { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: var(--space-m); display: flex; justify-content: space-between; }
+  .sm { display: inline-flex; background: var(--surface2); border-radius: var(--radius-pill); padding: 3px; }
+  .sm span { padding: 8px 12px; border-radius: var(--radius-pill); font: 600 12.5px/1 var(--font-text); color: var(--muted); }
+  .sm span.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-tiny); }
+  .full { display: flex; background: var(--surface2); border-radius: var(--radius-pill); padding: 4px; }
+  .full span { flex: 1; text-align: center; padding: 12px 0; border-radius: var(--radius-pill); font: 600 14px/1 var(--font-text); color: var(--muted); }
+  .full span.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-tiny); }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const seg = (cls, items, on) => `<div class="${cls}" role="group">${items.map(x => `<span aria-pressed="${x === on}"${x === on ? ' class="on"' : ''}>${x}</span>`).join('')}</div>`;
+  document.getElementById('root').innerHTML =
+    `<div><div class="cap">On a ground: Settings, Appearance</div>${seg('seg', ['Auto', 'Light', 'Dark'], 'Auto')}</div>` +
+    `<div><div class="cap">Inside a sheet: Trends range and step</div><div class="sheet">${seg('sm', ['7D', '30D', '90D', '1Y'], '30D')}${seg('sm', ['Day', 'Week'], 'Day')}</div></div>` +
+    `<div style="grid-column:1/-1"><div class="cap">Full width: sign in</div>${seg('full', ['Sign in', 'Create account'], 'Sign in')}</div>`;
+</script>
+</body>
+</html>

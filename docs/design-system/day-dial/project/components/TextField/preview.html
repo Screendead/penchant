@@ -1,0 +1,42 @@
+<!-- @dsCard group="Controls" height=290 subtitle="Pill fields with a leading icon, focus, the live password checklist and the error pill" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: 48px; justify-content: center; padding: 24px var(--space-gutter); }
+  .col { width: 338px; display: flex; flex-direction: column; gap: 10px; }
+  svg.i { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .field { height: var(--size-pillHeight); border-radius: var(--radius-input); background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; padding: 0 8px 0 18px; box-sizing: border-box; color: var(--muted); }
+  .field.focus { border-color: var(--accent); box-shadow: var(--shadow-focus); }
+  .field .v { flex: 1; font: 500 15.5px/1 var(--font-text); color: var(--text); }
+  .field .ph { flex: 1; font: 400 15.5px/1 var(--font-text); color: var(--muted); }
+  .eye { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; padding: 14px 16px; background: var(--surface); border-radius: 22px; border: 1px solid var(--line); }
+  .ck { display: flex; align-items: center; gap: 8px; font: 500 13px/1.2 var(--font-text); color: var(--muted); }
+  .cb { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line); display: grid; place-items: center; flex: none; }
+  .cb svg.i { width: 12px; height: 12px; color: var(--surface); visibility: hidden; }
+  .ck.ok { color: var(--text); }
+  .ck.ok .cb { background: var(--clearInk); box-shadow: none; }
+  .ck.ok .cb svg.i { visibility: visible; }
+  .err { border-radius: var(--radius-pill); background: var(--dangerContainer); color: var(--text); font: 500 13.5px/1.3 var(--font-text); display: flex; gap: 9px; align-items: center; padding: 12px 16px; }
+  .err svg.i { width: 18px; height: 18px; color: var(--danger); }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const P = { mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7l8 6 8-6"/>', lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/>', eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.2v.3"/>' };
+  const ic = n => `<svg class="i" viewBox="0 0 24 24">${P[n]}</svg>`;
+  const field = (icon, text, o = {}) => `<label class="field${o.focus ? ' focus' : ''}">${ic(icon)}<span class="${o.ph ? 'ph' : 'v'}">${text}</span>${o.eye ? `<span class="eye" aria-label="Show password">${ic('eye')}</span>` : ''}</label>`;
+  const ck = (t, ok) => `<div class="ck${ok ? ' ok' : ''}"><span class="cb">${ic('check')}</span>${t}</div>`;
+  document.getElementById('root').innerHTML =
+    `<div class="col">${field('mail', 'sam@example.com')}${field('lock', '••••••••••••', { eye: true, focus: true })}
+      <div class="err" role="alert">${ic('alert')}<span>That email and password don't match an account.</span></div></div>` +
+    `<div class="col">${field('lock', 'Morning7', { eye: true })}${field('lock', 'Morning', { eye: true, focus: true })}
+      <div class="checks">${ck('8+ characters', true)}${ck('An upper-case letter', true)}${ck('A lower-case letter', true)}${ck('A number', true)}${ck('Passwords match', false)}</div></div>`;
+</script>
+</body>
+</html>
