@@ -20,6 +20,12 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Today is a 24-hour dial: each entry is a coloured bead at the time it happened, sized against your usual amount
+  that day, with the time beside it on a quiet day and the clock hand on today. Under it, a row per habit gives the
+  day's total and a + that logs one now, with eight seconds to Undo. The Log button opens a fan of your habits: tap
+  one to log it now, hold it for the amount and time. Tap a bead to edit its entry; change the day with the arrows, a
+  swipe across the dial or the calendar, which goes back as far as you like and marks the days each habit was
+  logged. The radar and bar charts are gone.
 - The app is called Penchant, and it says "habit" wherever it said "vice". Exports are named `penchant-…`.
 - A new look: paper and ink colours from the app icon, the Red Hat typefaces built into the app, and light and
   dark themes that follow your device's appearance setting (the app was dark only).

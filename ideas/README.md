@@ -24,7 +24,7 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**29 ideas: 9 release blockers, 7 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 17 need a call from
+**28 ideas: 9 release blockers, 6 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 17 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
@@ -42,12 +42,11 @@ Each list is in the recommended build order.
 - [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M
 - [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6), Needs Jack
 
-## v1 must-haves (7)
+## v1 must-haves (6)
 
 - [Add crash reporting before TestFlight, and only content-free analytics](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
 - [Let people start without an account, and finish the basic sign-in flows](v1-must-haves/guest-mode-and-sign-in.md). M, Needs Jack
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
-- [Make Today a journal of the day: a timeline, per-vice tiles and the chart](v1-must-haves/today-screen-rework.md). L. Decided: the Day Dial (`r6-ui-direction`)
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
 - [Get a new user from install to a first log in under a minute](v1-must-haves/first-run-onboarding.md). M, Needs Jack
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6), Needs Jack

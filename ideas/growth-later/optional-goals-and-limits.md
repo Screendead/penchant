@@ -31,6 +31,6 @@ tool, against C16. Never suggest a limit from public guidance: that pulls toward
 
 **Revenue impact:** Low to medium: retention for the users who want it.
 
-**Depends on:** [granular logging](../insights/granular-logging-and-data-model.md); [Today](../v1-must-haves/today-screen-rework.md).
+**Depends on:** [granular logging](../insights/granular-logging-and-data-model.md).
 
 **Needs Jack:** no
