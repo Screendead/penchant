@@ -1142,20 +1142,20 @@ class App {
   }
 
   /* ----- Entry card + amount sheet ----- */
-  openEntry(e) {
-    const hb = HABITS[e.h], d = this.day;
+  openEntry(e, d = this.day) {
+    const hb = HABITS[e.h];
     const el = H('div', { class: 'bsheet', role: 'dialog', 'aria-label': 'Entry' },
       H('div', { class: 'grab' }),
       H('div', { class: 'bs-h' }, H('div', { class: `ttl c${hb.c}` }, H('span', { class: 'pip' }), hb.name), H('button', { class: 'cbtn', 'aria-label': 'Close', html: ic('x'), onclick: () => this.closeSheet() })),
       H('div', { class: 'entry-big' }, H('span', { class: 'mono' }, String(e.q)), H('span', null, unitW(e.h, e.q))),
       H('div', { class: 'entry-meta', html: `at <span class="mono">${hm(e.min)}</span> · ${relDay(d)}, ${dShort(d)}${e.pending ? ' · not yet synced' : ''}` }),
       H('div', { class: 'entry-acts' },
-        H('button', { class: 'tbtn', html: `${ic('pencil')}Edit`, onclick: () => this.openAmount(e.h, e) }),
+        H('button', { class: 'tbtn', html: `${ic('pencil')}Edit`, onclick: () => this.openAmount(e.h, e, d) }),
         H('button', { class: 'tbtn danger', html: `${ic('trash')}Delete`, onclick: () => { this.closeSheet(); this.removeEntry(e, d); } })));
     this.openSheet(el);
   }
-  openAmount(h, edit) {
-    this.closeFan(); const hb = HABITS[h], d = edit ? this.day : TODAY, isToday = sameDay(d, TODAY);
+  openAmount(h, edit, editDay) {
+    this.closeFan(); const hb = HABITS[h], d = edit ? (editDay || this.day) : TODAY, isToday = sameDay(d, TODAY);
     const st = { q: edit ? edit.q : hb.def, min: edit ? edit.min : Math.floor(nowMin() / 5) * 5, moved: !!edit };
     if (!edit) st.min = Math.min(Math.floor(nowMin()), 1439);
     const num = H('span', { class: 'roll num' }); rollTo(num, st.q);
@@ -1203,7 +1203,7 @@ class App {
     this.amount = { st, setQ, upd, scrubTo: async (m, dur) => { const m0 = st.min; await tween(dur, k => { st.min = Math.round((m0 + (m - m0) * k) / 5) * 5; upd(); }, E.inOut); st.min = m; upd(); }, go };
   }
   async saveEdit(e, q, min, d) {
-    const b = this.dial.beads.get(e.id); const oldMin = e.min; const qChanged = q !== e.q;
+    const b = sameDay(d, this.day) ? this.dial.beads.get(e.id) : null; const qChanged = q !== e.q;
     e.q = q; e.min = min; this.w.day(d).sort((a, b) => a.min - b.min);
     if (b) {
       const p = this.dial.posFor(this.w.day(d), e.id), from = b.st, R0 = Math.hypot(from.x, from.y), a0 = Math.atan2(from.y, from.x);
@@ -1213,7 +1213,7 @@ class App {
       await tween(RM() ? 0 : 520, k => { const a = a0 + (a1 - a0) * k, R = R0 + (p.R - R0) * k; this.dial.setB(bb, R * Math.cos(a), R * Math.sin(a), 1); }, E.inOut);
       this.dial.relayout(this.w.day(d)); if (!RM()) this.dial.ripple(p.x, p.y, p.r, HABITS[e.h].c);
     }
-    this.tallies.set(this.w.totals(d), e.h); this.hist?.refresh?.();
+    if (sameDay(d, this.day)) this.tallies.set(this.w.totals(d), e.h); this.hist?.refresh?.();
     this.snack(`Entry updated: <b>${qty(e.h, q)}</b> at <b>${hm(min)}</b>`);
   }
 
@@ -1242,13 +1242,13 @@ class App {
   buildTrends() {
     const s = this.scr; this.tdim = H('div', { class: 'tdim' }); s.append(this.tdim);
     this.tr = { h: 0, range: 30, step: 'day', win: 7, sel: null };
-    this.peekEl = H('div', { class: 'peek', onclick: () => { if (!this.justDragged) this.setSheet(67); } });
+    this.peekEl = H('div', { class: 'peek' });
     this.sheet = H('div', { class: 'tsheet' }, H('div', { class: 'grab' }), this.peekEl);
     this.tfull = H('div', { class: 'tfull' }); this.sheet.append(this.tfull); s.append(this.sheet);
     this.buildTrendsFull();
     // drag
     let drag = null;
-    const start = (e) => { drag = { y: e.clientY, top: this.sheetTop, t: performance.now(), v: 0, ly: e.clientY, moved: false }; this.sheetAnim = (this.sheetAnim || 0) + 1; };
+    const start = (e) => { drag = { target: e.target, y: e.clientY, top: this.sheetTop, t: performance.now(), v: 0, ly: e.clientY, moved: false }; this.sheetAnim = (this.sheetAnim || 0) + 1; };
     this.sheet.addEventListener('pointerdown', e => { if (e.target.closest('.chart,.chips,.seg,.avgctl,button') && this.sheetTop < 400) return; if (this.sheetTop < 400 && !e.target.closest('.th,.grab') && e.target.closest('.tfull') && this.tfull.scrollTop > 0) return; start(e); cap(this.sheet, e); });
     this.sheet.addEventListener('pointermove', e => {
       if (!drag) return; const k = this.scr.getBoundingClientRect().width / 390; const dy = (e.clientY - drag.y) / k;
@@ -1256,7 +1256,7 @@ class App {
       const now = performance.now(); drag.v = ((e.clientY - drag.ly) / k) / Math.max(1, now - drag.t) * 1000; drag.t = now; drag.ly = e.clientY;
       let top = drag.top + dy; if (top < 67) top = 67 - (67 - top) * .3; if (top > 717) top = 717 + (top - 717) * .3; this.placeSheet(top);
     });
-    const end = () => { if (!drag) return; const d = drag; drag = null; if (!d.moved) return; this.justDragged = true; setTimeout(() => this.justDragged = false, 50); const proj = this.sheetTop + d.v * .18; this.setSheet(proj < 392 ? 67 : 717, false, d.v); };
+    const end = () => { if (!drag) return; const d = drag; drag = null; if (!d.moved) { if (this.sheetTop > 400 && d.target.closest('.peek')) this.setSheet(67); return; } const proj = this.sheetTop + d.v * .18; this.setSheet(proj < 392 ? 67 : 717, false, d.v); };
     this.sheet.addEventListener('pointerup', end); this.sheet.addEventListener('pointercancel', end);
   }
   placeSheet(top) {
@@ -1485,12 +1485,11 @@ class App {
         wrap.remove(); this.w.remove(d, e.id);
         if (sameDay(d, this.day)) { const b = this.dial.beads.get(e.id); if (b) { b.remove(); this.dial.beads.delete(e.id); } this.dial.render(this.w.day(d)); this.tallies.set(this.w.totals(d)); }
         this.snack(`Deleted <b>${qty(e.h, e.q)}</b> at <b>${hm(e.min)}</b>`, () => this.restore(e, d));
-      } else if (dx > -6) { inner.style.transform = ''; this.day = d; this.openEntryFromHistory(e, d); }
+      } else if (dx > -6) { inner.style.transform = ''; this.openEntry(e, d); }
       else inner.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], { duration: 260, easing: 'cubic-bezier(.3,1.4,.5,1)' }), inner.style.transform = '';
     });
     return wrap;
   }
-  openEntryFromHistory(e, d) { this.openEntry(e); }
   syncHistory() {
     const p = this.scr.querySelector('.erow .bp.spin'); if (!p) return;
     const svg = p.closest('svg'), fill = svg.querySelector('.bf'), row = svg.closest('.erow'), ep = row.querySelector('.ep');
