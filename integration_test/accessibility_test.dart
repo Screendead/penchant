@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -140,6 +141,15 @@ void main() {
     for (final String name in names) {
       if (titles.any((String t) => t == name || t.startsWith('$name ('))) {
         continue;
+      }
+      // macOS reports no system text size (its embedder sends a scale of 1),
+      // so this size exists there only in a test, and in the 600 pt window
+      // the key outgrows its space and scrolls: scroll to each entry first.
+      if (defaultTargetPlatform == TargetPlatform.macOS) {
+        await tester.ensureVisible(
+          find.textContaining(RegExp('^$name: '), skipOffstage: false),
+        );
+        await pumpFor(tester, const Duration(milliseconds: 500));
       }
       expect(
         find.textContaining(RegExp('^$name: ')).hitTestable(),
