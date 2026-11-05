@@ -22,6 +22,7 @@
   --sheet-shadow: 0 -4px 16px rgba(29,28,26,.06);
   --scrim: rgba(29,28,26,.28);
   --bar: rgba(246,244,239,.74);
+  --rawbar: .35;
   --page: #E7E3DA; --page-2: #DCD7CC; --device: #1D1C1A;
   --spring: cubic-bezier(.3,1.3,.5,1);
   --out: cubic-bezier(.33,1,.68,1);
@@ -39,7 +40,9 @@
     --snack-action: #9A5B00;
     --shadow: 0 4px 16px rgba(0,0,0,.35); --sheet-shadow: 0 -4px 24px rgba(0,0,0,.45);
     --scrim: rgba(0,0,0,.5); --bar: rgba(23,22,20,.74);
-    --page: #0D0C0B; --page-2: #1A1917; --device: #000;
+    --rawbar: .26;
+    --rawbar: .26;
+  --page: #0D0C0B; --page-2: #1A1917; --device: #000;
     color-scheme: dark;
   }
 }
@@ -53,11 +56,13 @@
   --snack-action: #9A5B00;
   --shadow: 0 4px 16px rgba(0,0,0,.35); --sheet-shadow: 0 -4px 24px rgba(0,0,0,.45);
   --scrim: rgba(0,0,0,.5); --bar: rgba(23,22,20,.74);
+  --rawbar: .26;
   --page: #0D0C0B; --page-2: #1A1917; --device: #000;
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   background: var(--page); color: var(--text);
@@ -109,7 +114,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .status {
   position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 50;
   display: flex; justify-content: space-between; align-items: center; padding: 6px 30px 0 44px;
-  font: 600 16px/1 Figtree; letter-spacing: -0.01em; pointer-events: none; color: var(--text);
+  font: 600 16px/1 Figtree; letter-spacing: -0.01em; pointer-events: none; color: var(--text); background: linear-gradient(var(--bg) 62%, transparent);
 }
 .status .glyphs { display: flex; gap: 6px; align-items: center; }
 .homebar { position: absolute; bottom: 8px; left: 50%; width: 136px; height: 5px; margin-left: -68px; border-radius: 3px; background: var(--text); opacity: .9; z-index: 70; pointer-events: none; }
@@ -119,7 +124,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .views { position: absolute; inset: 0; }
 .view { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding-top: 54px; padding-bottom: 130px; }
 .view::-webkit-scrollbar { display: none; }
-.view[hidden] { display: block; visibility: hidden; pointer-events: none; }
+.view[hidden] { display: block !important; visibility: hidden; pointer-events: none; }
 .ft-out { animation: ftOut 105ms var(--out) forwards; }
 .ft-in { animation: ftIn 195ms 105ms var(--out) both; }
 @keyframes ftOut { to { opacity: 0; } }
@@ -162,6 +167,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .rose .breath.go { animation: breath 1200ms cubic-bezier(.37,0,.63,1) 1; }
 @keyframes breath { 50% { transform: scale(1.02); } }
 .rose .wash { transition: opacity 400ms var(--out); }
+.rose.is-clean .lab { color: var(--muted); }
 .rose-cap { text-align: center; font: 500 12.5px/16px Figtree; color: var(--muted); margin: -2px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .clearmsg { text-align: center; margin: 4px 20px 0; transition: opacity 400ms var(--out), transform 400ms var(--out); }
 .clearmsg h3 { margin: 0; font: 700 22px/26px Gabarito; color: var(--clear-ink); letter-spacing: -0.01em; }
@@ -175,13 +181,13 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .chip .cnt { color: var(--muted); font-size: 14px; }
 .chip.on { background: var(--accent); color: var(--on-accent); }
 .chip.on .cnt { color: inherit; opacity: .7; }
-.chip .sw { width: 14px; height: 14px; flex: none; overflow: visible; }
+.sw { width: 14px; height: 14px; flex: none; overflow: visible; }
 .hint { padding: 8px 20px 0; font: 500 12.5px/16px Figtree; color: var(--muted); }
 
 /* odometer */
 .odo { display: inline-flex; height: 1.15em; line-height: 1.15em; overflow: hidden; vertical-align: -0.2em; }
 .odo .col { display: flex; flex-direction: column; transition: transform 220ms var(--out); }
-.odo .col span { height: 1.15em; text-align: center; }
+.odo .col span { height: 1.15em; line-height: 1.15em; text-align: center; }
 
 /* list cards */
 .sec { display: flex; justify-content: space-between; align-items: baseline; padding: 24px 20px 8px; }
@@ -612,7 +618,9 @@ class Rose {
     const step = 2 * Math.PI / n; this.step = step;
     // reference rim: the busiest day in the last 30
     const rim = []; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i * step; rim.push([CX + R * Math.cos(a), CY + R * Math.sin(a)]); }
-    this.rim = s("polygon", { points: ptsStr(rim), fill: "none", style: "stroke:var(--muted)", "stroke-opacity": .35, "stroke-width": 1, "stroke-dasharray": "1.5 4", "stroke-linecap": "round" });
+    const rimM = s("mask", { id: `rim-${this.app.id}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: RW, height: RH });
+    this.rimMask = s("polygon", { points: ptsStr(rim), fill: "none", stroke: "#fff", "stroke-width": 6, pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": 0 }); rimM.append(this.rimMask); defs.append(rimM);
+    this.rim = s("polygon", { points: ptsStr(rim), fill: "none", style: "stroke:var(--muted)", "stroke-opacity": .35, "stroke-width": 1.2, "stroke-dasharray": "1.5 4", "stroke-linecap": "round", mask: `url(#rim-${this.app.id})` });
     this.g.append(this.rim);
     this.ghost = s("g", { opacity: 0 }); this.g.append(this.ghost);
     habits.forEach((hb, i) => {
@@ -620,12 +628,13 @@ class Rose {
       const grp = s("g", { class: "pet" }); grp.addEventListener("click", () => { if (!this.swiped) this.app.setFilter(hb.id); });
       const hit = s("path", { d: `M${CX},${CY} L${CX + (R + 20) * Math.cos(a0)},${CY + (R + 20) * Math.sin(a0)} L${CX + (R + 20) * Math.cos(a1)},${CY + (R + 20) * Math.sin(a1)} Z`, fill: "transparent" });
       const shape = s("polygon", { style: `fill:${fill};stroke:${fill}`, "stroke-width": 3, "stroke-linejoin": "round", opacity: 0 });
-      const dots = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", style: `stroke:${DATA_FILL[hb.order % 5]}`, "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0, mask: `url(#m-${this.app.id}-${i})` });
+      const dots = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-opacity": .8, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0, mask: `url(#m-${this.app.id}-${i})` });
       const mask = s("mask", { id: `m-${this.app.id}-${i}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: RW, height: RH });
       const mp = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", stroke: "#fff", "stroke-width": 6, pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": 0 });
       mask.append(mp); defs.append(mask);
       const pend = s("line", { style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2, "stroke-linecap": "round", "stroke-dasharray": "3 3", opacity: 0 });
-      grp.append(hit, dots, shape, pend); this.g.append(grp);
+      const zf = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), style: `fill:${DATA_FILL[hb.order % 5]}`, "fill-opacity": .18, opacity: 0 });
+      grp.append(hit, zf, dots, shape, pend); this.g.append(grp);
       const gh = s("polygon", { points: ptsStr(wedgePts(CX, CY, R * .6, a0, a1, GAP)), fill: "none", style: "stroke:var(--muted)", "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-opacity": .6 });
       this.ghost.append(gh);
       // label, horizontal, outside the rim
@@ -634,7 +643,7 @@ class Rose {
       const tx = c > .3 ? "0" : c < -.3 ? "-100%" : "-50%", ty = sn < -.3 ? "-100%" : sn > .3 ? "0" : "-50%";
       lab.style.left = lx + "px"; lab.style.top = ly + "px"; lab.style.transform = `translate(${tx},${ty})`; lab.style.textAlign = c > .3 ? "left" : c < -.3 ? "right" : "center";
       this.el.append(lab);
-      this.petals.push({ hb, a0, a1, grp, shape, dots, mp, pend, lab, r: 0, v: 0, shown: false });
+      this.petals.push({ hb, a0, a1, grp, shape, dots, zf, mp, pend, lab, r: 0, v: 0, shown: false });
     });
     // spokes, as in the icon: from the centre to 8 px past the rim
     const sp = s("path", { d: Array.from({ length: n }, (_, i) => { const a = -Math.PI / 2 + i * step; return `M${CX},${CY} L${(CX + (R + 8) * Math.cos(a)).toFixed(2)},${(CY + (R + 8) * Math.sin(a)).toFixed(2)}`; }).join(" "), style: "stroke:var(--spoke)", "stroke-width": 1.5, "stroke-linecap": "round", fill: "none", "pointer-events": "none" });
@@ -661,10 +670,11 @@ class Rose {
       p.shape.style.transition = "opacity 180ms";
       p.dots.style.transition = "opacity 220ms";
       const delay = mode === "bloom" ? i * 40 : mode === "morph" ? i * 35 : (opts.delay || 0);
-      if (RM || mode === "instant") { p.r = target; this.draw(p); p.shape.setAttribute("opacity", nonzero ? 1 : 0); p.dots.setAttribute("opacity", nonzero ? 0 : 1); p.shown = nonzero; return; }
+      p.zf.style.transition = "opacity 220ms";
+      if (RM || mode === "instant") { p.r = target; this.draw(p); p.shape.setAttribute("opacity", nonzero ? 1 : 0); p.dots.setAttribute("opacity", nonzero ? 0 : 1); p.zf.setAttribute("opacity", nonzero ? 0 : 1); p.shown = nonzero; return; }
       if (nonzero) { setTimeout(() => p.shape.setAttribute("opacity", 1), delay); }
       else { setTimeout(() => p.shape.setAttribute("opacity", 0), delay + 120); }
-      setTimeout(() => p.dots.setAttribute("opacity", nonzero ? 0 : 1), delay + (nonzero ? 0 : 160));
+      setTimeout(() => { p.dots.setAttribute("opacity", nonzero ? 0 : 1); p.zf.setAttribute("opacity", nonzero ? 0 : 1); }, delay + (nonzero ? 0 : 160));
       p.shown = nonzero;
       if (Math.abs(from - target) > .1 || mode === "bloom") this.anims.set(p, { from, to: target, t0: now + delay });
       else { p.r = target; this.draw(p); }
@@ -685,9 +695,11 @@ class Rose {
     this.wash.style.transition = RM || !animate ? "none" : "opacity 400ms cubic-bezier(.33,1,.68,1)";
     this.wash.setAttribute("opacity", on ? 1 : 0);
     this.rim.style.transition = "stroke 300ms";
-    this.rim.style.stroke = on ? "var(--clear-ink)" : "var(--muted)";
+    this.rim.style.stroke = on ? "var(--clear-ink)" : "var(--muted)"; this.rim.setAttribute("stroke-opacity", on ? .75 : .35); this.rim.setAttribute("stroke-width", on ? 2 : 1.2); this.rim.setAttribute("stroke-dasharray", on ? "0 6" : "1.5 4");
+    this.el.classList.toggle("is-clean", on);
+    if (on && animate && !RM) { const m = this.rimMask; m.style.transition = "none"; m.setAttribute("stroke-dashoffset", 1); m.getBoundingClientRect(); m.style.transition = "stroke-dashoffset 700ms 120ms cubic-bezier(.65,0,.35,1)"; requestAnimationFrame(() => m.setAttribute("stroke-dashoffset", 0)); }
     this.petals.forEach(p => {
-      p.dots.style.stroke = on ? "var(--clear-ink)" : DATA_FILL[p.hb.order % 5];
+      p.dots.style.stroke = on ? "var(--clear-ink)" : habitInk(p.hb.order); p.zf.style.fill = on ? "var(--clear-ink)" : DATA_FILL[p.hb.order % 5];
       if (on && animate && !RM) { p.mp.style.transition = "none"; p.mp.setAttribute("stroke-dashoffset", 1); p.mp.getBoundingClientRect(); p.mp.style.transition = "stroke-dashoffset 500ms cubic-bezier(.65,0,.35,1)"; requestAnimationFrame(() => p.mp.setAttribute("stroke-dashoffset", 0)); }
     });
     if (on && animate && !RM) { this.g.classList.remove("go"); void this.g.getBoundingClientRect(); setTimeout(() => this.g.classList.add("go"), 380); }
@@ -929,7 +941,7 @@ class App {
     if (RM) show(); else setTimeout(show, 120);
   }
   /* ---- record sheet ---- */
-  openSheet(content) { this.sheet.textContent = ""; this.sheet.append(h("div", { class: "handle" }), ...content); this.sheet.classList.remove("closing"); this.scrim.classList.add("show"); requestAnimationFrame(() => this.sheet.classList.add("show")); }
+  openSheet(content) { this.sheet.textContent = ""; this.sheet.append(h("div", { class: "handle" }), ...content.filter(Boolean)); this.sheet.classList.remove("closing"); this.scrim.classList.add("show"); requestAnimationFrame(() => this.sheet.classList.add("show")); }
   closeSheet() { this.sheet.classList.add("closing"); this.sheet.classList.remove("show"); this.scrim.classList.remove("show"); }
   openRecord({ habit, entry }) {
     const st = entry ? { habit: entry.h, q: entry.q, when: "earlier", d: entry.d, t: entry.t } : { habit: habit || this.lastHabit, q: 1, when: "now", d: this.day, t: Math.max(0, this.nowMin() - 60) };
@@ -937,7 +949,7 @@ class App {
     const hbNow = () => this.habit(st.habit);
     const pick = h("div", { class: "hpick", role: "radiogroup", "aria-label": "Habit" });
     const drawPick = () => { pick.textContent = ""; for (const hb of this.live()) pick.append(h("button", { class: "chip" + (hb.id === st.habit ? " on" : ""), role: "radio", "aria-checked": String(hb.id === st.habit), "data-h": hb.id, onclick: () => { st.habit = hb.id; drawPick(); drawNum(); } }, swatch(hb.order), hb.name)); };
-    const big = odo(st.q); big.classList.add("big"); big.classList.remove("odo"); big.classList.add("odo");
+    const big = odo(st.q);
     const unitL = h("span", { class: "unit" });
     const minus = h("button", { class: "stepb", "aria-label": "One fewer", onclick: () => setQ(st.q - 1) }, icon("minus", 26, 2.2));
     const plus = h("button", { class: "stepb", "aria-label": "One more", onclick: () => setQ(st.q + 1) }, icon("plus", 26, 2.2));
@@ -985,6 +997,7 @@ class App {
     this.openSheet([h("div", { class: "sh-head" }, h("h3", {}, entry ? "Edit entry" : "Log an entry"), h("button", { class: "iconbtn", "aria-label": "Close", onclick: () => this.closeSheet() }, icon("close", 20, 2))),
       pick, h("div", { class: "stepper" }, minus, num, plus), seg, whenL, wheelW, cta, extra]);
     this.sheetState = st; this.sheetCta = cta;
+    requestAnimationFrame(() => { const on = pick.querySelector(".chip.on"); if (on) pick.scrollLeft = Math.max(0, on.offsetLeft - 20); });
   }
   /* ---- trends ---- */
   renderTrends(animate) {
@@ -995,7 +1008,7 @@ class App {
     for (const hb of all) row.append(h("button", { class: "chip" + (hb.id === T.habit ? " on" : "") + (hb.archived ? " arch" : ""), role: "radio", "aria-checked": String(hb.id === T.habit), onclick: () => { T.habit = hb.id; this.renderTrends(true); } }, swatch(hb.order), hb.archived ? `${hb.name} (archived)` : hb.name));
     v.append(row);
     v.append(h("div", { class: "tctl" },
-      makeSeg([[7, "7"], [30, "30"], [90, "90"], [365, "365"]], T.range, x => { T.range = +x; this.renderTrends(true); }, "sm", "Range in days"),
+      makeSeg([[7, "7"], [30, "30"], [90, "90"], [365, "365"]], T.range, x => { T.range = +x; if (T.step === "day") T.win = { 7: 3, 30: 7, 90: 14, 365: 30 }[x]; this.renderTrends(true); }, "sm", "Range in days"),
       makeSeg([["day", "Day"], ["week", "Week"]], T.step, x => { T.step = x; T.win = x === "week" ? 3 : 7; this.renderTrends(true); }, "sm", "Bucket")));
     const hb = this.habit(T.habit);
     // buckets
@@ -1015,7 +1028,7 @@ class App {
     for (let y = 0; y <= yMax + 1e-9; y += stepV) { svg.append(s("line", { class: "gl", x1: pl, x2: W - pr, y1: Y(y), y2: Y(y), "stroke-width": 1 })); const t = s("text", { class: "tick", x: pl - 8, y: Y(y) + 3.5, "text-anchor": "end" }); t.textContent = fmtN(y); svg.append(t); }
     const bw = Math.max(1, iw / buckets.length - (buckets.length > 60 ? 0.4 : 3));
     const bars = s("g", { "aria-hidden": "true" });
-    buckets.forEach((b, i) => { if (!b.v) return; const y = Y(b.v); const r = s("rect", { x: X(i) - bw / 2, y, width: bw, height: Y(0) - y, rx: Math.min(3, bw / 2), style: `fill:${habitFill(hb.order)}`, opacity: .35 }); if (animate && !RM) { r.style.transformOrigin = `0 ${Y(0)}px`; r.style.animation = `grow 420ms ${Math.min(300, i * 6)}ms var(--spring) both`; } bars.append(r); });
+    buckets.forEach((b, i) => { if (!b.v) return; const y = Y(b.v); const r = s("rect", { x: X(i) - bw / 2, y, width: bw, height: Y(0) - y, rx: Math.min(3, bw / 2), style: `fill:${habitFill(hb.order)};opacity:var(--rawbar)` }); if (animate && !RM) { r.style.transformOrigin = `0 ${Y(0)}px`; r.style.animation = `grow 420ms ${Math.min(300, i * 6)}ms var(--spring) both`; } bars.append(r); });
     svg.append(bars);
     // x labels
     const nL = 4; for (let k = 0; k < nL; k++) { const i = Math.round(k * (buckets.length - 1) / (nL - 1)); const t = s("text", { class: "tick", x: X(i), y: H - 5, "text-anchor": k === 0 ? "start" : k === nL - 1 ? "end" : "middle" }); t.textContent = short(buckets[i].label); if (k === 0) t.setAttribute("x", pl); if (k === nL - 1) t.setAttribute("x", W - pr); svg.append(t); }
@@ -1244,7 +1257,7 @@ document.getElementById("rmBtn").addEventListener("click", e => { RM = !RM; root
   // motion: the spring plotted
   const W = 300, H = 120, pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60 * .6; pts.push(`${(i / 60 * W).toFixed(1)},${(H - 16 - spring(t) * (H - 36)).toFixed(1)}`); }
   g.append(h("div", { class: "syscard" }, h("h3", {}, "Motion"), h("svg", { viewBox: `0 0 ${W} ${H}`, style: "width:100%;height:auto;display:block", html: `<line x1="0" x2="${W}" y1="${H - 16 - (H - 36)}" y2="${H - 16 - (H - 36)}" stroke="currentColor" stroke-opacity=".15" stroke-dasharray="2 3"/><line x1="0" x2="${W}" y1="${H - 16}" y2="${H - 16}" stroke="currentColor" stroke-opacity=".15"/><polyline points="${pts.join(" ")}" fill="none" stroke="var(--i2)" stroke-width="2.5" stroke-linejoin="round"/><text x="0" y="${H - 2}" font-family="Spline Sans Mono" font-size="10" fill="var(--muted)">0 ms</text><text x="${W}" y="${H - 2}" text-anchor="end" font-family="Spline Sans Mono" font-size="10" fill="var(--muted)">600 ms</text>` }),
-    h("p", { class: "swl", style: "font-family:Figtree;font-size:12.5px;line-height:1.45;margin-top:8px" }, `Spring: stiffness 380, damping 26, mass 1. Peaks at ${Math.round(Math.PI / SP.wd * 1000)} ms with ${Math.round(Math.exp(-SP.z * Math.PI / Math.sqrt(1 - SP.z * SP.z)) * 100)}% overshoot and settles by 420 ms. Opacity eases out cubic. Reduce motion turns every spring into a 150 ms crossfade.`)));
+    h("p", { class: "swl", style: "font-family:Figtree;font-size:12.5px;line-height:1.45;margin-top:8px" }, `Spring: stiffness 380, damping 26, mass 1. Peaks at ${Math.round(Math.PI / SP.wd * 1000)} ms with ${Math.round(Math.exp(-SP.z * Math.PI / Math.sqrt(1 - SP.z * SP.z)) * 100)}% overshoot and stays within 0.5% of its target from 350 ms. Opacity eases out cubic. Reduce motion turns every spring into a 150 ms crossfade.`)));
 })();
 /* stills: ?record=sheet opens the sheet in the record frame */
 if (params.get("record") && apps.record) setTimeout(() => { const a = apps.record; a.openRecord({ habit: "sugar" }); const p = a.sheet.querySelectorAll(".stepb")[1]; p.click(); p.click(); if (params.get("record") === "earlier") a.sheet.querySelectorAll(".seg button")[1].click(); }, 1200);
