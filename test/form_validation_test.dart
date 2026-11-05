@@ -74,7 +74,7 @@ void main() {
     });
   });
 
-  testWidgets('Add Vice shows the length message inline', (tester) async {
+  testWidgets('Add Habit shows the length message inline', (tester) async {
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
     ], const ViceForm());

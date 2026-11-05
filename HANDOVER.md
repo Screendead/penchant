@@ -83,8 +83,8 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 
 ### This run (`/finish-and-pitch`, started 2026-11-03)
 
-Waves A to D are merged (the table above has each). Of round 2 only `r2-web-site` and `r2-icon` are picked, and
-`r2-today` is settled by `r6-ui-direction`. Left over:
+Waves A to D are merged (the table above has each). Of round 2 only `r2-web-site`, `r2-icon` and `r2-brand` are
+picked, and `r2-today` is settled by `r6-ui-direction`. Left over:
 
 - Left for Jack's calls: telemetry, verified email, vice cap, other languages. The "log one" action
   is decided by `r6-ui-direction` and lands in overhaul step 1b.
@@ -265,7 +265,8 @@ once it lands; they stay open until Jack says so:
   too, which is the recommended side of `r2-mac-config`. Put the files where Claude can read them (for example
   `~/Downloads`) and say so. Claude then
   switches both bundle IDs and both config files in one PR (queue item 3). The phone will then see Penchant as a new
-  app: the installed "Tracker" build stays beside it until you delete it, and the new one starts signed out.
+  app: the build installed under the old ID (`com.screendead.tracker.tracker`) stays beside it until you delete it,
+  and the new one starts signed out.
 - **Trademark search on "Penchant"** in classes 9, 42 and 44 (USPTO, UKIPO, EUIPO), before the first upload. Whether
   to pay for a professional one is `r2-trademark`.
 - **Choose the domain variant** before the first upload: `penchant.com` is held (MarkMonitor, owner unknown) and

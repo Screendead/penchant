@@ -365,8 +365,8 @@ void main() {
         ('Manage Data', '/manage-data', 'Sweets'),
         ('Settings', '/settings', 'About'),
         ('Account Settings', '/settings/account', 'someone@example.com'),
-        ('Add Vice', '/vices/add', 'Unit'),
-        ('Edit Vice', '/vices/coffee/edit', 'Coffee'),
+        ('Add Habit', '/vices/add', 'Unit'),
+        ('Edit Habit', '/vices/coffee/edit', 'Coffee'),
         ('history', '/vices/coffee/activities', 'Coffee'),
         ('the entry editor', '/vices/coffee/activities/a1', 'Quantity'),
       ]) {
