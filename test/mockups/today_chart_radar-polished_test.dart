@@ -20,6 +20,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/providers/offline_provider.dart';
+import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -32,6 +33,12 @@ import '../fakes.dart';
 const String _out = '../../docs/pitch/mockups/today-chart/radar-polished';
 
 final GlobalKey _screen = GlobalKey();
+
+// The header shows the date, so the images would change every day.
+class _PinnedToday extends Today {
+  @override
+  DateTime build() => DateTime(2026, 11, 5);
+}
 
 Vice _vice(String id, String name, Unit unit) => Vice(
   id: id,
@@ -90,6 +97,7 @@ Future<void> _render(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        todayProvider.overrideWith(_PinnedToday.new),
         userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
         offlineProvider.overrideWith((ref) => Stream.value(false)),
         viceListProvider.overrideWith((ref) => AsyncData(_vices)),

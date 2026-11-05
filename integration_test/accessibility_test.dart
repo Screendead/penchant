@@ -49,7 +49,7 @@ void main() {
       1,
       2,
     ]);
-    await screenshot(tester, 'a11y-radar-zero-at-centre');
+    await screenshot(tester, 'a11y-radar-zero-on-its-axis');
 
     // Vices list newest first.
     final DateTime today = startOfDay(DateTime.now());
