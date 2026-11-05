@@ -138,22 +138,22 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .scrub-ul{position:absolute;bottom:0;left:0;width:30px;height:1px;background:var(--accent);transition:transform 180ms var(--ease-move)}
 .scrub-ul::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--accent)}
 .dbody{touch-action:pan-y}
-.colheads{display:flex;justify-content:space-between;padding:14px 16px 6px 31px}
+.colheads{display:flex;justify-content:space-between;padding:12px 16px 6px 31px}
 .colheads span:last-child{margin-right:56px}
 .rows{transition:background-color 260ms var(--ease-move);border-top:1px solid var(--rule)}
 .rows.clean{background:var(--clear)}
 
-.row{position:relative;display:grid;grid-template-columns:3px minmax(0,1fr) 44px;column-gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule)}
+.row{position:relative;display:grid;grid-template-columns:3px minmax(0,1fr) 44px;column-gap:12px;padding:10px 16px 11px;border-bottom:1px solid var(--rule)}
 .row .tab{grid-row:1;border-radius:2px;background:var(--c)}
 .row.hollow .tab{background:none;box-shadow:inset 0 0 0 1px var(--c)}
 .row-main{grid-row:1;min-width:0;cursor:pointer;user-select:none;-webkit-user-select:none;border-radius:4px}
-.row-top{display:flex;align-items:baseline;gap:10px;min-height:36px}
+.row-top{display:flex;align-items:baseline;gap:10px;min-height:32px}
 .r-name{flex:1;min-width:0;font:600 17px/22px var(--font-body);overflow-wrap:anywhere}
 .r-count{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
-.r-num{font:500 32px/36px var(--font-mono);letter-spacing:-.02em}
+.r-num{font:500 32px/32px var(--font-mono);letter-spacing:-.02em}
 .r-unit{font:400 13px/18px var(--font-body);color:var(--muted);width:46px}
 .row.zero .r-num{color:var(--muted)}
-.track{position:relative;height:16px;margin:6px 30px 0 0}
+.track{position:relative;height:16px;margin:5px 30px 0 0}
 .track .ln{position:absolute;left:0;right:0;top:7.5px;height:1px;background:var(--rule-strong)}
 .row.hollow .track .ln{background:repeating-linear-gradient(90deg,var(--rule-strong) 0 4px,transparent 4px 7px)}
 .track .tk{position:absolute;top:3px;width:1.5px;height:10px;margin-left:-.75px;background:var(--c);opacity:.38;transition:left 180ms var(--ease-move)}
@@ -198,7 +198,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .wcol.num div{font:500 15px/32px var(--font-mono)}
 .xp-act{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
 
-.loghead{display:flex;justify-content:space-between;align-items:baseline;padding:22px 16px 8px}
+.loghead{display:flex;justify-content:space-between;align-items:baseline;padding:18px 16px 8px}
 .log{border-top:1px solid var(--rule)}
 .line{position:relative;height:44px;border-bottom:1px solid var(--rule);overflow:hidden;touch-action:pan-y}
 .line .ldel{position:absolute;inset:0;background:var(--error);color:var(--bg);display:flex;align-items:center;justify-content:flex-end;padding-right:16px;font-weight:600}
@@ -252,7 +252,15 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .chev{width:14px;height:14px;fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dt-head{display:flex;gap:12px;align-items:stretch;padding:16px 16px 4px}
 .dt-head .tab{width:3px;border-radius:2px;background:var(--c)}
-.segs{display:flex;gap:8px;padding:12px 16px 0;flex-wrap:wrap}
+.segs{display:flex;gap:8px;padding:14px 16px 0}
+.segs .seg{flex:1}
+.segs .seg button{flex:1}
+.hchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px 16px 0}
+.hchips::-webkit-scrollbar{display:none}
+.hchips .chip{flex:none}
+.hchips .chip i{display:block;width:3px;height:14px;border-radius:1px;background:var(--c)}
+.hchips .chip.hollow i{background:none;box-shadow:inset 0 0 0 1px var(--c)}
+.hchips .chip[aria-pressed=true] i{box-shadow:0 0 0 1px var(--bg)}
 .seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;padding:2px;gap:2px}
 .seg button{border:0;background:none;height:30px;padding:0 10px;border-radius:4px;font:400 13px/1 var(--font-body);color:var(--muted)}
 .seg button[aria-pressed=true]{background:var(--text);color:var(--bg);font-weight:600}
@@ -265,13 +273,17 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .readout b{font-weight:500;color:var(--text)}
 .chart{display:block;margin:4px 0 0 0;touch-action:pan-y}
 .chart text{font:400 11px var(--font-mono);fill:var(--muted)}
-.avgrow{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 0}
+.chart .rb{opacity:.4}
+:root[data-theme=dark] .chart .rb{opacity:.55}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .chart .rb{opacity:.55}}
+.avgrow{display:flex;align-items:center;gap:12px;padding:10px 16px 0}
+.avgrow .lbl{flex:1}
 .avgrow .stepper .step{width:36px;height:36px}
 .avgrow .lbl{font-size:15px}
 .avgrow .lbl .mono{font-size:15px}
 .legend{display:flex;gap:18px;padding:14px 16px 24px;font-size:13px;color:var(--muted)}
 .legend i{display:inline-block;width:18px;height:0;border-top:2.5px solid var(--c);vertical-align:middle;margin-right:6px}
-.legend i.raw{border-top-width:1.5px;opacity:.5}
+.legend i.raw{width:10px;height:10px;border:0;border-radius:1px;background:var(--c);opacity:.4;vertical-align:-1px}
 
 /* Journal, lists */
 .jday{position:sticky;top:0;z-index:2;background:var(--bg);display:flex;align-items:center;gap:10px;padding:14px 16px 8px;border-bottom:1px solid var(--rule)}
@@ -310,6 +322,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .field .inrow{position:relative}
 .field .inrow .btn-text{position:absolute;right:-8px;top:0;height:40px;font-size:13px}
 .unitchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.unitchips .chip{padding:0 8px}
 .sheet .acts{display:flex;justify-content:space-between;margin-top:24px}
 
 /* sign in */
@@ -355,6 +368,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 
 <script>
 'use strict';
+const ERRS=[];addEventListener('error',e=>{ERRS.push(e.message+' @'+e.lineno);showErr()});addEventListener('unhandledrejection',e=>{ERRS.push('promise: '+(e.reason&&e.reason.stack||e.reason));showErr()});
+function showErr(){let b=document.getElementById('errbox');if(!b){b=document.createElement('pre');b.id='errbox';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#b00;color:#fff;font:12px monospace;padding:8px;margin:0;white-space:pre-wrap';document.body.append(b)}b.textContent=ERRS.join('\n')}
 /* ================= utilities ================= */
 const params=new URLSearchParams(location.search);
 const EASE={move:'cubic-bezier(.25,1,.5,1)',enter:'cubic-bezier(.2,0,0,1)',trace:'cubic-bezier(.65,0,.35,1)'};
@@ -793,34 +808,45 @@ class TrendsView{
       b.onclick=()=>{haptic('selection');this.app.push(new TrendDetail(this.app,hb.id))};return b}));
   }
 }
+let CLIPN=0;
 class TrendDetail{
   constructor(app,hid){
-    this.app=app;this.hb=app.store.habit(hid);this.days=30;this.weekly=false;this.win=7;this.scale=null;
-    const hb=this.hb;
+    this.app=app;this.hb=app.store.habit(hid);this.days=30;this.weekly=false;this.win=7;this.scale=null;this.clipId='tc'+(CLIPN++);
     this.totR=new Roll();this.avgR=new Roll();this.bR=new Roll();
     this.bSub=h('small',{});this.avgLbl=h('div',{class:'label'},'Per day');this.bLbl=h('div',{class:'label'},'Busiest day');
     this.readout=h('div',{class:'readout','aria-live':'polite'});
     this.svg=sv('svg',{class:'chart',width:390,height:232,viewBox:'0 0 390 232',role:'img'});
+    this.clipRect=sv('rect',{x:0,y:0,width:390,height:232});
+    this.svg.append(sv('defs',{},sv('clipPath',{id:this.clipId},this.clipRect)));
     const seg=(opts,cur,fn)=>{const s=h('div',{class:'seg',role:'group'});opts.forEach(([v,l])=>{const b=h('button',{'aria-pressed':String(v===cur)},l);b.onclick=()=>{s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));haptic('selection');fn(v)};s.append(b)});return s};
     this.winR=new Roll();this.winU=h('span',{});
     const wm=h('button',{class:'step','aria-label':'Shorter average'},icon(I.minus));const wp=h('button',{class:'step','aria-label':'Longer average'},icon(I.plus));
     wm.onclick=()=>this.setWin(this.win-1);wp.onclick=()=>this.setWin(this.win+1);
     this.avgText=h('span',{class:'lbl'},'Average of ',h('span',{class:'mono'},this.winR.el),' ',this.winU);
-    this.legAvg=h('span',{});
-    const legend=h('div',{class:'legend',style:styleFor(hb.ci)},h('span',{},h('i',{class:'raw'}),this.legRaw=h('span',{},'Each day')),h('span',{},h('i',{}),this.legAvg));
-    const body=h('div',{class:'scroll'},
-      h('div',{class:'dt-head'+(isHollow(hb.ci)?' hollow':''),style:styleFor(hb.ci)},h('i',{class:'tab'}),h('div',{},h('h2',{class:'title-xl'},hb.name),h('div',{class:'muted',style:'font-size:13px'},hb.unit+(hb.archived?', archived':'')))),
-      h('div',{class:'segs'},seg([[7,'7 days'],[30,'30 days'],[90,'90 days'],[365,'1 year']],30,v=>{this.days=v;this.fixWin();this.draw(true)}),seg([[false,'Day'],[true,'Week']],false,v=>{this.weekly=v;this.win=v?2:7;this.fixWin();this.draw(true)})),
+    this.legAvg=h('span',{});this.legRaw=h('span',{},'Each day');
+    this.legend=h('div',{class:'legend'},h('span',{},h('i',{class:'raw'}),this.legRaw),h('span',{},h('i',{}),this.legAvg));
+    this.hTitle=h('h2',{class:'title-xl'});this.hSub=h('div',{class:'muted',style:'font-size:13px'});
+    this.head=h('div',{class:'dt-head'},h('i',{class:'tab'}),h('div',{},this.hTitle,this.hSub));
+    const st=app.store,all=[...st.active(),...st.habits.filter(x=>x.archived)];
+    this.chips=h('div',{class:'hchips',role:'group','aria-label':'Habit'},...all.map(hb=>{const c=h('button',{class:'chip'+(isHollow(hb.ci)?' hollow':''),style:styleFor(hb.ci),'aria-pressed':String(hb.id===hid),'data-h':hb.id},h('i',{}),hb.name);
+      c.onclick=()=>{if(this.hb===hb)return;haptic('selection');this.chips.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',String(x===c)));this.setHabit(hb);this.draw(true)};return c}));
+    const body=h('div',{class:'scroll'},this.head,this.chips,
+      h('div',{class:'segs'},seg([[7,'7 days'],[30,'30 days'],[90,'90 days'],[365,'1 year']],30,v=>{this.days=v;this.fixWin();this.draw(true)})),
       h('div',{class:'stats'},h('div',{class:'stat'},h('div',{class:'label'},'Total'),h('div',{class:'v'},this.totR.el)),h('div',{class:'stat'},this.avgLbl,h('div',{class:'v'},this.avgR.el)),h('div',{class:'stat'},this.bLbl,h('div',{class:'v'},this.bR.el,this.bSub))),
       this.readout,this.svg,
-      h('div',{class:'avgrow'},this.avgText,h('div',{class:'stepper',style:'gap:8px'},wm,wp)),legend);
+      h('div',{class:'avgrow'},seg([[false,'Day'],[true,'Week']],false,v=>{this.weekly=v;this.win=v?2:7;this.fixWin();this.draw(true)}),this.avgText,h('div',{class:'stepper',style:'gap:6px'},wm,wp)),this.legend);
     const back=h('button',{class:'back'},icon(I.back),'Trends');back.onclick=()=>app.pop();
     this.el=h('section',{},h('div',{class:'appbar'},back,h('div',{class:'ab-title'},''),h('span',{})),body);
     this.svg.addEventListener('pointermove',e=>this.hover(e));this.svg.addEventListener('pointerdown',e=>this.hover(e));
     this.svg.addEventListener('pointerleave',()=>this.hover(null));
-    this.fixWin();
+    this.setHabit(this.hb);this.fixWin();
   }
-  onShow(first){this.draw(true)}
+  setHabit(hb){
+    this.hb=hb;this.head.className='dt-head'+(isHollow(hb.ci)?' hollow':'');this.head.style.cssText=styleFor(hb.ci);this.legend.style.cssText=styleFor(hb.ci);
+    this.hTitle.textContent=hb.name;this.hSub.textContent=hb.unit+(hb.archived?', archived':'');
+    const old=this.svg.querySelector('g.paths');if(old){old.remove();this.cross.remove()}
+  }
+  onShow(){this.draw(true)}
   fixWin(){const n=this.weekly?Math.ceil(this.days/7):this.days;this.win=Math.max(1,Math.min(this.win,n,this.weekly?8:30));}
   setWin(w){const old=this.win;this.win=w;this.fixWin();if(this.win!==old){haptic('selection');this.draw(false,true)}}
   draw(trace,avgOnly){
@@ -837,52 +863,53 @@ class TrendDetail{
     this.avgText.style.opacity=this.win===1?.6:1;
     this.legRaw.textContent=this.weekly?'Each week':'Each day';
     this.legAvg.textContent=this.win===1?'No average':`${this.win}-${unitW} average`;
-    const W=390,x0=40,x1=374,y0=10,y1=196;
+    const step=(370-46)/Math.max(1,n-1),bw=Math.max(1,Math.min(10,step*.55));
+    const x0=46,x1=370,y0=10,y1=196;
     const sc=niceScale(Math.max(1,...s.map(b=>b.v)));
     const X=i=>n===1?(x0+x1)/2:x0+i*(x1-x0)/(n-1),Y=v=>y1-v/sc.max*(y1-y0);
     this.geo={X,Y,n,s,avg,x0,x1,y0,y1};
     const svg=this.svg;
     const scaleChanged=!this.scale||this.scale.max!==sc.max;
     const prevTicks=svg.querySelector('g.ticks');
-    if(!avgOnly||scaleChanged){
+    if(!prevTicks||scaleChanged){
       const g=sv('g',{class:'ticks'});
-      for(let v=0;v<=sc.max;v+=sc.step){g.append(sv('line',{x1:x0,x2:x1,y1:Y(v),y2:Y(v),style:`stroke:var(${v===0?'--rule-strong':'--rule'})`,'stroke-width':1}));
-        const t=sv('text',{x:x0-10,y:Y(v)+4,'text-anchor':'end'});t.textContent=v;g.append(t)}
-      if(prevTicks){prevTicks.classList.remove('ticks');
-        if(scaleChanged&&this.scale){const up=sc.max>this.scale.max?-1:1;
-          anim(prevTicks,[{opacity:1,transform:'none'},{opacity:0,transform:`translateY(${up*8}px)`}],{d:180,keep:true});
-          anim(g,[{opacity:0,transform:`translateY(${-up*8}px)`},{opacity:1,transform:'none'}],{d:180,e:EASE.move});
-          setTimeout(()=>prevTicks.remove(),reduced?0:190)}else prevTicks.remove()}
-      svg.insertBefore(g,svg.firstChild);
+      for(let v=0;v<=sc.max;v+=sc.step){g.append(sv('line',{x1:x0-bw/2-4,x2:x1+bw/2,y1:Y(v),y2:Y(v),style:`stroke:var(${v===0?'--rule-strong':'--rule'})`,'stroke-width':1}));
+        const t=sv('text',{x:x0-bw/2-10,y:Y(v)+4,'text-anchor':'end'});t.textContent=v;g.append(t)}
+      if(prevTicks){prevTicks.classList.remove('ticks');const up=sc.max>this.scale.max?-1:1;
+        const a=anim(prevTicks,[{opacity:1,transform:'none'},{opacity:0,transform:`translateY(${up*10}px)`}],{d:180,keep:true});
+        anim(g,[{opacity:0,transform:`translateY(${-up*10}px)`},{opacity:1,transform:'none'}],{d:180,e:EASE.move});
+        setTimeout(()=>prevTicks.remove(),a?190:0)}
+      svg.insertBefore(g,svg.querySelector('defs').nextSibling);
     }
     this.scale=sc;
     svg.querySelectorAll('g.xl').forEach(x=>x.remove());
     const xl=sv('g',{class:'xl'});const lab=Math.min(n,4);
-    for(let k=0;k<lab;k++){const i=lab===1?n-1:Math.round(k*(n-1)/(lab-1));const t=sv('text',{x:X(i),y:220,'text-anchor':k===0&&lab>1?'start':k===lab-1?'end':'middle'});t.textContent=fmtDM(s[i].a);xl.append(t)}
+    for(let k=0;k<lab;k++){const i=lab===1?n-1:Math.round(k*(n-1)/(lab-1));const t=sv('text',{x:k===0&&lab>1?X(i)-bw/2:k===lab-1?X(i)+bw/2:X(i),y:220,'text-anchor':k===0&&lab>1?'start':k===lab-1?'end':'middle'});t.textContent=fmtDM(this.weekly?s[i].a:s[i].a);xl.append(t)}
     svg.append(xl);
-    const rawD='M'+s.map((b,i)=>X(i).toFixed(1)+','+Y(b.v).toFixed(1)).join('L');
     const avgD=monotone(avg.map((v,i)=>[X(i),Y(v)]));
     const c=colorVar(hb.ci),e=`var(--e${hb.ci%5})`;
     let paths=svg.querySelector('g.paths');
     if(!paths){paths=sv('g',{class:'paths'});
-      this.pRaw=sv('path',{fill:'none',style:`stroke:${c}`,'stroke-width':1.5,'stroke-linejoin':'round',opacity:.55});
+      this.gBars=sv('g',{'clip-path':`url(#${this.clipId})`});
       this.pAvgE=sv('path',{fill:'none',style:`stroke:${e}`,'stroke-width':4.5,'stroke-linecap':'round'});
       this.pAvg=sv('path',{fill:'none',style:`stroke:${c}`,'stroke-width':2.5,'stroke-linecap':'round'});
       this.cross=sv('g',{style:'display:none'});
-      this.cLine=sv('line',{y1:y0,y2:y1,style:'stroke:var(--text)','stroke-width':1,opacity:.5});
-      this.cDot=sv('circle',{r:3.5,style:`fill:${c};stroke:var(--bg)`,'stroke-width':2});
+      this.cBand=sv('rect',{y:y0,height:y1-y0,style:'fill:var(--text)',opacity:.06});
+      this.cLine=sv('line',{y1:y0,y2:y1,style:'stroke:var(--text)','stroke-width':1,opacity:.45});
       this.cAvg=sv('circle',{r:4.5,style:`fill:var(--bg);stroke:${c}`,'stroke-width':2.5});
-      this.cross.append(this.cLine,this.cDot,this.cAvg);
-      paths.append(this.pRaw,this.pAvgE,this.pAvg);svg.append(paths,this.cross);}
-    this.pRaw.setAttribute('d',rawD);
+      this.cross.append(this.cBand,this.cLine,this.cAvg);
+      paths.append(this.gBars,this.pAvgE,this.pAvg);svg.append(paths);svg.append(this.cross);}
+    this.gBars.replaceChildren(...s.filter(b=>b.v>0).map(b=>{const i=s.indexOf(b);return sv('rect',{x:(X(i)-bw/2).toFixed(2),y:Y(b.v).toFixed(2),width:bw.toFixed(2),height:(y1-Y(b.v)).toFixed(2),rx:Math.min(1.5,bw/2),class:'rb',style:`fill:${c}`})}));
+    this.bw=bw;
     [this.pAvgE,this.pAvg].forEach(p=>{p.setAttribute('d',avgD);p.style.display=this.win===1?'none':''});
     this.svg.setAttribute('aria-label',`${hb.name}, last ${this.days} days by ${unitW}: total ${total}, ${(total/n).toFixed(1)} per ${unitW}, busiest ${s[bi].v}.`);
-    if(trace){this.trace(this.pRaw,0);this.trace(this.pAvgE,120);this.trace(this.pAvg,120)}
+    if(trace){this.revealBars();this.trace(this.pAvgE,120);this.trace(this.pAvg,120)}
     else if(avgOnly){this.trace(this.pAvgE,0,300);this.trace(this.pAvg,0,300)}
     this.hover(null);
   }
+  revealBars(){if(reduced||!this.clipRect.animate)return;this.clipRect.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:480,easing:EASE.trace})}
   trace(p,delay,dur=480){
-    if(reduced||!p.getTotalLength)return;const L=p.getTotalLength();if(!L)return;
+    if(reduced||!p.getTotalLength||p.style.display==='none')return;const L=p.getTotalLength();if(!L)return;
     p.style.strokeDasharray=L;
     const a=p.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:dur,delay,easing:EASE.trace,fill:'both'});
     a.onfinish=()=>{a.cancel();p.style.strokeDasharray=''};
@@ -890,9 +917,9 @@ class TrendDetail{
   hover(ev){
     const g=this.geo;if(!g)return;const hb=this.hb;let i=g.n-1;
     if(ev){const r=this.svg.getBoundingClientRect();const x=(ev.clientX-r.left)/r.width*390;i=Math.max(0,Math.min(g.n-1,Math.round((x-g.x0)/((g.x1-g.x0)/Math.max(1,g.n-1)))));
-      this.cross.style.display='';this.cLine.setAttribute('x1',g.X(i));this.cLine.setAttribute('x2',g.X(i));
-      this.cDot.setAttribute('cx',g.X(i));this.cDot.setAttribute('cy',g.Y(g.s[i].v));
-      this.cAvg.setAttribute('cx',g.X(i));this.cAvg.setAttribute('cy',g.Y(g.avg[i]));this.cAvg.style.display=this.win===1?'none':''}
+      this.cross.style.display='';const bx=g.X(i);this.cLine.setAttribute('x1',bx);this.cLine.setAttribute('x2',bx);
+      const bw=Math.max(8,this.bw+6);this.cBand.setAttribute('x',bx-bw/2);this.cBand.setAttribute('width',bw);
+      this.cAvg.setAttribute('cx',bx);this.cAvg.setAttribute('cy',g.Y(g.avg[i]));this.cAvg.style.display=this.win===1?'none':''}
     else this.cross.style.display='none';
     const b=g.s[i];const when=this.weekly?(b.a===b.b?fmtDM(b.a):`${fmtDM(b.a)} to ${fmtDM(b.b)}`):fmtShort(b.a);
     this.readout.replaceChildren(h('span',{},when),h('b',{},`${b.v} ${unitOf(hb,b.v)}`),this.win>1?h('span',{},'avg ',h('b',{},g.avg[i].toFixed(1))):'');
@@ -1042,9 +1069,9 @@ class AuthPage{
     const submit=h('button',{class:'btn btn-primary submit'},'Sign in');const prog=h('div',{class:'aprog'});
     const forgot=h('button',{class:'btn-text',style:'padding-left:0;margin-top:8px;align-self:flex-start'},'Forgot password?');
     const bIn=h('button',{'aria-pressed':'true'},'Sign in'),bUp=h('button',{'aria-pressed':'false'},'Create account');const ul=h('i',{class:'ul'});
-    const setMode=m=>{this.mode=m;bIn.setAttribute('aria-pressed',String(m==='in'));bUp.setAttribute('aria-pressed',String(m==='up'));
+    const setMode=(m,init)=>{this.mode=m;bIn.setAttribute('aria-pressed',String(m==='in'));bUp.setAttribute('aria-pressed',String(m==='up'));
       const b=m==='in'?bIn:bUp;ul.style.width=b.offsetWidth+'px';ul.style.transform=`translateX(${b.offsetLeft}px)`;
-      submit.textContent=m==='in'?'Sign in':'Create account';openGrow(createOnly,m==='up');forgot.style.visibility=m==='in'?'':'hidden';openGrow(this.err,false);upd()};
+      submit.textContent=m==='in'?'Sign in':'Create account';openGrow(createOnly,m==='up');forgot.style.visibility=m==='in'?'':'hidden';if(!init)openGrow(this.err,false);upd()};
     bIn.onclick=()=>setMode('in');bUp.onclick=()=>setMode('up');
     submit.onclick=async()=>{haptic('selection');prog.classList.remove('on');prog.offsetWidth;prog.classList.add('on');await wait(reduced?120:600);prog.classList.remove('on');
       const ok=this.mode==='in'?pw.value.length>=8:rules.every(r=>r[1](pw.value))&&pw.value===pw2.value;
@@ -1058,7 +1085,7 @@ class AuthPage{
       h('label',{class:'field'},h('span',{class:'flab'},'Password'),h('div',{class:'inrow'},pw,show)),
       createOnly,this.err,submit,prog,forgot,
       h('div',{class:'foot'},'Entries are private to your account and sync between your devices.')));
-    requestAnimationFrame(()=>requestAnimationFrame(()=>setMode('in')));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>setMode(this.mode,true)));
     this.setMode=setMode;
   }
 }
@@ -1226,6 +1253,8 @@ const FRAMES=[
   {k:6,cfg:{habits:true},t:'Habits and history',c:'Drag a handle to reorder (Day follows; colours stay with the habit). Tap a habit for its history; swipe an entry left to delete, with Undo. New adds a habit and shows the colour it will keep.'},
   {k:7,cfg:{signedOut:true},t:'Sign in',c:'Wordmark, one form, a text toggle. A password under 8 characters shows the error strip; 8 or more signs in and the ledger loads. Create account shows the password rule as a live checklist.'},
 ];
+if(params.get('bare')){document.querySelector('.pg-head').style.display='none';document.getElementById('stage').style.cssText='max-width:none;padding-top:40px'}
+if(params.get('net')==='off')offline=true;
 const only=params.get('only')?params.get('only').split(',').map(Number):null;
 const stage=document.getElementById('stage');
 for(const f of FRAMES){
@@ -1240,6 +1269,11 @@ for(const f of FRAMES){
     btn.onclick=async()=>{btn.disabled=true;btn.textContent='Playing…';await playFlow(app);btn.disabled=false;btn.textContent='Play again'};
     if(params.get('rec')==='open')setTimeout(()=>{const r=app.dayView.rows[0];r.toggle(true);r.setQty(2);r.choose('15')},50);
   }
+  if(f.k===1&&params.get('tap'))setTimeout(()=>{const r=app.dayView.rows.find(r=>r.hb.id===params.get('tap'));r&&r.plusBtn.click()},200);
+  if(f.k===6&&params.get('sheet'))setTimeout(()=>{app.stack[1].sheet();const i=app.root.querySelector('.sheet input');i.value='Late snacks';i.dispatchEvent(new Event('input'))},200);
+  if(f.k===6&&params.get('hist'))setTimeout(()=>app.openHistory(params.get('hist')),200);
+  if(f.cfg.signedOut&&params.get('auth')==='err')setTimeout(()=>{const pw=app.auth.el.querySelector('input[type=password]');pw.value='hunter';app.auth.el.querySelector('.submit').click()},300);
+  if(f.cfg.signedOut&&params.get('auth')==='up')setTimeout(()=>{app.auth.el.querySelectorAll('.atoggle button')[1].click();const pw=app.auth.el.querySelectorAll('input[type=password]');pw[0].value='Ledger1';pw[0].dispatchEvent(new Event('input'))},300);
 }
 async function playFlow(app){
   if(app.stack.length)while(app.stack.length)app.pop();
@@ -1267,8 +1301,24 @@ seg('themeSeg',th,v=>{if(v==='system')delete document.documentElement.dataset.th
 const applyMotion=()=>document.documentElement.classList.toggle('rm',reduced);applyMotion();
 seg('motionSeg',reduced?'reduced':'full',v=>{reduced=v==='reduced';applyMotion()});
 mqReduce.addEventListener('change',()=>{reduced=mqReduce.matches;applyMotion();seg('motionSeg',reduced?'reduced':'full',v=>{reduced=v==='reduced';applyMotion()})});
-seg('netSeg','on',v=>{offline=v==='off';APPS.forEach(a=>a.setOffline(offline))});
+seg('netSeg',offline?'off':'on',v=>{offline=v==='off';APPS.forEach(a=>a.setOffline(offline))});
 document.getElementById('rejectBtn').onclick=()=>APPS.forEach(a=>a.reject());
+
+if(params.get('selftest')){(async()=>{
+  const A=APPS,step=async(n,f)=>{try{await f()}catch(e){ERRS.push(n+': '+e.stack);showErr()}};
+  await wait(600);
+  await step('tabs',async()=>{const a=A[0];a.setTab('trends');await wait(400);a.tabViews.trends.list.children[1].click();await wait(700);
+    a.stack[0].chips.children[2].click();await wait(700);a.stack[0].el.querySelectorAll('.segs button')[3].click();await wait(700);a.stack[0].el.querySelectorAll('.avgrow .seg button')[1].click();await wait(700);
+    a.stack[0].setWin(4);await wait(400);a.pop();await wait(500);a.setTab('journal');await wait(500);a.setTab('day');await wait(400);
+    a.dayView.setDay(3);await wait(400);a.dayView.setDay(0);await wait(400);a.dayView.rows[1].plusBtn.click();await wait(900);a.setTab('journal');await wait(400)});
+  await step('play',()=>playFlow(A[2]));
+  await step('offline',async()=>{const a=A[1];offline=true;a.setOffline(true);a.dayView.rows[0].plusBtn.click();await wait(1500);a.reject();await wait(400)});
+  await step('habits',async()=>{const a=A[5];const hp=a.stack[1];hp.sheet();await wait(400);const inp=a.root.querySelector('.sheet input');inp.value='Late snacks';inp.dispatchEvent(new Event('input'));a.root.querySelector('.sheet .btn-primary').click();await wait(600);
+    a.openHistory('coffee');await wait(600);const w=a.stack[2].list.querySelector('.lwrap');a.deleteEntry(a.store.entries.find(e=>e.id==w.dataset.id),w,true);await wait(600)});
+  await step('auth',async()=>{const a=A[6];a.auth.el.querySelectorAll('.atoggle button')[1].click();await wait(300);const pw=a.auth.el.querySelectorAll('input[type=password]');pw[0].value='Ledger12';pw[0].dispatchEvent(new Event('input'));await wait(300)});
+  await step('signin',async()=>{const a=A[3];a.signOut();await wait(500);const pw=a.auth.el.querySelector('input[type=password]');pw.value='short';a.auth.el.querySelector('.submit').click();await wait(900)});
+  document.title='SELFTEST '+ERRS.length;
+})()}
 </script>
 </body>
 </html>
