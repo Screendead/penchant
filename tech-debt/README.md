@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**24 issues: 0 critical, 0 high, 12 medium, 12 low.**
+**23 issues: 0 critical, 0 high, 12 medium, 11 low.**
 
 ## Firebase Data Layer (5)
 
@@ -44,13 +44,12 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 - **medium** — [A queued change the server refuses after the app restarts vanishes without a word](offline-and-write-reliability/rejected-write-from-an-earlier-launch-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
-## Accessibility and Localization (3)
+## Accessibility and Localization (2)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 - **low** — [The usage graph sizes its date labels from one sample date](accessibility-and-localization/date-axis-sizes-labels-from-one-sample-month.md)
-- **low** — [The radar's ring numbers print with a decimal and skip the region's number format](accessibility-and-localization/radar-ring-numbers-skip-the-region-format.md)
 
 ## Auth and Account Lifecycle (1)
 
