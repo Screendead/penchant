@@ -47,7 +47,7 @@ Future<void> _pickDay(WidgetTester tester, DateTime day) async {
   await tester.ensureVisible(
     find.descendant(
       of: find.byType(ListView),
-      matching: find.text(formatDay(day)),
+      matching: find.text(formatDay(day), skipOffstage: false),
       skipOffstage: false,
     ),
   );
