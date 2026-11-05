@@ -1,9 +1,7 @@
 import 'dart:math';
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -13,7 +11,6 @@ import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/widgets/chart_text.dart';
 import 'package:tracker/widgets/clean_day.dart';
 import 'package:tracker/widgets/info_box.dart';
 
@@ -22,12 +19,8 @@ class ViceChart extends ConsumerWidget {
 
   final DateTime selectedDate;
 
-  static const int minimumRadarAxes = 3;
-  static const int maximumRadarRings = 5;
-  static const double barWidth = 48;
-  static const double titleGap = 8;
-  static const double radarTitleOffset = 0.2;
-  static const int barTitleLines = 2;
+  static const double barHeight = 16;
+  static const Duration barAnimation = Duration(milliseconds: 600);
 
   static String total(Vice vice, int quantity) =>
       '${vice.name}: ${vice.unit.label(quantity)}';
@@ -40,169 +33,9 @@ class ViceChart extends ConsumerWidget {
     return 'Totals for ${formatDay(day)}. $totals';
   }
 
-  // The outermost ring's value and the spacing between rings.
-  static ({int top, int step}) radarScale(int largest) =>
-      roundScale(largest, maximumRadarRings);
-
-  static String _suffix(Vice vice, int quantity) =>
-      ' (${vice.unit.label(quantity)})';
-
-  static TextStyle _titleStyle(ThemeData theme) =>
-      TextStyle(color: theme.colorScheme.secondary, fontSize: 14);
-
-  static List<({String text, bool nameWhole})> _barTitles(
-    BuildContext context,
-    TextStyle style,
-    double width,
-    List<Vice> vices,
-    List<int> quantities,
-  ) {
-    final double titleWidth =
-        barTitleWidth(width, vices.length, barWidth) - titleGap;
-    bool fits(String text) => chartLabelWraps(
-      context,
-      text,
-      style,
-      maxWidth: titleWidth,
-      maxLines: barTitleLines,
-    );
-
-    return [
-      for (int i = 0; i < vices.length; i++)
-        if (fits('${vices[i].name}${_suffix(vices[i], quantities[i])}'))
-          (
-            text: '${vices[i].name}${_suffix(vices[i], quantities[i])}',
-            nameWhole: true,
-          )
-        else
-          (text: vices[i].name, nameWhole: fits(vices[i].name)),
-    ];
-  }
-
-  // fl_chart draws each radar title up to a full line beyond its rings
-  // (0.96 of the half side plus the title's height), outside the chart's box.
-  static EdgeInsets _radarInset(BuildContext context, TextStyle style) =>
-      EdgeInsets.all(chartLabelSize(context, 'Ag', style).height);
-
-  static List<({String text, bool nameWhole})> _radarTitles(
-    BuildContext context,
-    TextStyle style,
-    Size size,
-    List<Vice> vices,
-    List<int> quantities,
-  ) {
-    final double titleWidth =
-        radarTitleWidth(size, vices.length, radarTitleOffset) - titleGap;
-
-    return [
-      for (int i = 0; i < vices.length; i++)
-        fitChartLabel(
-          context,
-          name: vices[i].name,
-          suffix: _suffix(vices[i], quantities[i]),
-          style: style,
-          maxWidth: titleWidth,
-        ),
-    ];
-  }
-
-  Widget _key(
-    TextStyle style,
-    double maxHeight,
-    List<Vice> vices,
-    List<int> quantities,
-  ) => ConstrainedBox(
-    constraints: BoxConstraints(maxHeight: maxHeight),
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 16,
-        runSpacing: 4,
-        children: [
-          for (int i = 0; i < vices.length; i++)
-            Text(
-              total(vices[i], quantities[i]),
-              textAlign: TextAlign.center,
-              style: style,
-            ),
-        ],
-      ),
-    ),
-  );
-
-  Widget _bars(
-    BuildContext context,
-    ThemeData theme,
-    List<({String text, bool nameWhole})> titles,
-    List<int> quantities,
-  ) {
-    final TextStyle titleStyle = _titleStyle(theme);
-    final double lineHeight = chartLabelSize(context, 'Ag', titleStyle).height;
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double titleWidth =
-            barTitleWidth(constraints.maxWidth, titles.length, barWidth) -
-            titleGap;
-
-        return BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceEvenly,
-            minY: 0,
-            maxY: quantities.reduce(max) * 1.15,
-            gridData: const FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            barTouchData: BarTouchData(enabled: false),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(),
-              leftTitles: const AxisTitles(),
-              rightTitles: const AxisTitles(),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: max(48, barTitleLines * lineHeight + 8),
-                  getTitlesWidget: (double value, TitleMeta meta) {
-                    return SideTitleWidget(
-                      meta: meta,
-                      child: SizedBox(
-                        width: titleWidth,
-                        child: Text(
-                          titles[value.toInt()].text,
-                          maxLines: barTitleLines,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: titleStyle,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            barGroups: [
-              for (int i = 0; i < quantities.length; i++)
-                BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: quantities[i].toDouble(),
-                      width: barWidth,
-                      color: theme.colorScheme.primary,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.fastOutSlowIn,
-        );
-      },
-    );
-  }
+  // Each bar's length as a share of the day's largest total.
+  static double share(int quantity, int largest) =>
+      largest == 0 ? 0 : quantity / largest;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -257,162 +90,137 @@ class ViceChart extends ConsumerWidget {
       );
     }
 
-    final ThemeData theme = Theme.of(context);
     final List<int> quantities = [
       for (final Vice vice in vices) quantityByViceID[vice.id]!,
     ];
-
-    final TextStyle titleStyle = _titleStyle(theme);
-    // fl_chart asserts that a radar data set has at least three entries.
-    final bool asBars = vices.length < minimumRadarAxes;
+    final int largest = quantities.reduce(max);
 
     return Semantics(
       container: true,
       label: summary(selectedDate, vices, quantities),
       excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final List<({String text, bool nameWhole})>? barTitles = asBars
-                ? _barTitles(
-                    context,
-                    titleStyle,
-                    constraints.maxWidth,
-                    vices,
-                    quantities,
-                  )
-                : null;
-            final Widget chart = barTitles != null
-                ? _bars(context, theme, barTitles, quantities)
-                : _radar(context, theme, vices, quantities);
-            // Decided on the whole area: the key's height would otherwise
-            // change the radar's size, and with it whether the names fit.
-            final bool namesWhole =
-                (barTitles ??
-                        _radarTitles(
-                          context,
-                          titleStyle,
-                          _radarInset(
-                            context,
-                            titleStyle,
-                          ).deflateSize(constraints.biggest),
-                          vices,
-                          quantities,
-                        ))
-                    .every((({String text, bool nameWhole}) t) => t.nameWhole);
-            if (namesWhole) {
-              return chart;
-            }
-
-            // A chart under four title lines tall cannot be read.
-            final double minimumChart =
-                4 * chartLabelSize(context, 'Ag', titleStyle).height;
-            return Column(
-              children: [
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints space) =>
-                        space.maxHeight < minimumChart
-                        ? const SizedBox.shrink()
-                        : chart,
-                  ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) =>
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: max(0, constraints.maxHeight - 32),
                 ),
-                _key(titleStyle, constraints.maxHeight, vices, quantities),
-              ],
-            );
-          },
-        ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (int i = 0; i < vices.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: _ViceBar(
+                          vice: vices[i],
+                          quantity: quantities[i],
+                          share: share(quantities[i], largest),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
       ),
     );
   }
+}
 
-  Widget _radar(
-    BuildContext context,
-    ThemeData theme,
-    List<Vice> vices,
-    List<int> quantities,
-  ) {
-    final ({int top, int step}) scale = radarScale(quantities.reduce(max));
+class _ViceBar extends StatelessWidget {
+  const _ViceBar({
+    required this.vice,
+    required this.quantity,
+    required this.share,
+  });
 
-    final RadarDataSet dataSet = RadarDataSet(
-      fillColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-      borderColor: theme.colorScheme.primary,
-      entryRadius: 6,
-      dataEntries: [
-        for (final int quantity in quantities)
-          RadarEntry(value: quantity.toDouble()),
-      ],
-      borderWidth: 2,
+  final Vice vice;
+  final int quantity;
+  final double share;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final bool none = quantity == 0;
+    final Color ink = none ? colors.onSurfaceVariant : colors.onSurface;
+    final TextStyle nameStyle = theme.textTheme.titleMedium!.copyWith(
+      color: ink,
+      fontWeight: none ? FontWeight.w400 : FontWeight.w500,
     );
-    // fl_chart puts the smallest entry of all data sets at the centre and the
-    // largest on the outer ring, so this invisible set pins them to 0 and to
-    // a round top value.
-    final RadarDataSet scaleSet = RadarDataSet(
-      fillColor: Colors.transparent,
-      borderColor: Colors.transparent,
-      borderWidth: 0,
-      entryRadius: 0,
-      dataEntries: [
-        RadarEntry(value: scale.top.toDouble()),
-        for (int i = 1; i < quantities.length; i++) const RadarEntry(value: 0),
+    final TextStyle countStyle = theme.textTheme.titleMedium!.copyWith(
+      color: ink,
+      fontWeight: none ? FontWeight.w400 : FontWeight.w700,
+    );
+    final TextStyle unitStyle = theme.textTheme.bodyMedium!.copyWith(
+      color: colors.onSurfaceVariant,
+    );
+    final BorderRadius radius = BorderRadius.circular(ViceChart.barHeight / 3);
+
+    final TextSpan amount = TextSpan(
+      children: [
+        TextSpan(text: formatCount(quantity), style: countStyle),
+        TextSpan(text: ' ${vice.unit.nameFor(quantity)}', style: unitStyle),
       ],
     );
+    final TextPainter amountPainter = TextPainter(
+      text: amount,
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final double amountWidth = amountPainter.width;
+    amountPainter.dispose();
 
-    final TextStyle titleStyle = _titleStyle(theme);
-
-    return Padding(
-      padding: _radarInset(context, titleStyle),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final List<({String text, bool nameWhole})> titles = _radarTitles(
-            context,
-            titleStyle,
-            constraints.biggest,
-            vices,
-            quantities,
-          );
-
-          return RadarChart(
-            RadarChartData(
-              dataSets: [dataSet, scaleSet],
-              isMinValueAtCenter: true,
-              borderData: FlBorderData(show: false),
-              radarBorderData: BorderSide(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-              ),
-              radarShape: RadarShape.polygon,
-              titlePositionPercentageOffset: radarTitleOffset,
-              titleTextStyle: titleStyle,
-              getTitle: (int index, double angle) {
-                final double correctionFactor = angle > 90 && angle < 270
-                    ? 180
-                    : 0;
-
-                return RadarChartTitle(
-                  text: titles[index].text,
-                  angle: angle + correctionFactor,
-                );
-              },
-              tickCount: scale.top ~/ scale.step,
-              // fl_chart scales the titles by the device text size, not the ticks.
-              ticksTextStyle: TextStyle(
-                color: theme.colorScheme.secondary,
-                fontSize: MediaQuery.textScalerOf(context).scale(10),
-              ),
-              tickBorderData: BorderSide(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-              ),
-              gridBorderData: BorderSide(
-                color: theme.colorScheme.tertiary,
-                width: 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) =>
+              // At large text the amount alone can fill the row and squeeze
+              // the name to a letter a line, so it moves under the name.
+              amountWidth > constraints.maxWidth / 3
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(vice.name, style: nameStyle),
+                    Text.rich(amount),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Expanded(child: Text(vice.name, style: nameStyle)),
+                    const SizedBox(width: 12),
+                    Text.rich(amount),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: ViceChart.barHeight,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest,
+              borderRadius: radius,
+            ),
+            child: AnimatedFractionallySizedBox(
+              alignment: AlignmentDirectional.centerStart,
+              widthFactor: share,
+              duration: ViceChart.barAnimation,
+              curve: Curves.fastOutSlowIn,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: radius,
+                ),
               ),
             ),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.fastOutSlowIn,
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

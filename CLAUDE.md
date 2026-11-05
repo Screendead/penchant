@@ -273,15 +273,13 @@ anything else is `NotFound`. Only the forms (add or edit a vice, edit an activit
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
 swapping `home` alone would leave the old session's pages on the stack.
 
-**Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
-(`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
+**Two home tabs.** `ViceTracker` shows one day at a time as horizontal bars built from plain widgets
+(`vice_chart.dart`): one row per unarchived vice, its name and total above a bar whose length is its share of the
+day's largest total, so a zero is an empty track. `UsageGraphView` shows one vice over a
 date range as a line chart, bucketing activities by day or by week (counted back from today, so the newest week is
-whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic and both charts' axis scales and label spacing are pure functions in
-`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Below three vices Today draws bars instead (fl_chart's
-radar needs three axes). The radar carries
-a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
-centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
-text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
+whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic and the graph's axis scales and label spacing are pure functions in
+`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Each chart sits in one `Semantics` node whose label is
+a text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints the graph's titles
 outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible tab;
 each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
 `todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the

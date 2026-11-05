@@ -64,8 +64,12 @@ final List<Vice> _three = [
   fakeVice('tea'),
 ];
 
-RadarChartData _radar(WidgetTester tester) =>
-    tester.widget<RadarChart>(find.byType(RadarChart)).data;
+List<double> _barShares(WidgetTester tester) => [
+  for (final AnimatedFractionallySizedBox bar in tester.widgetList(
+    find.byType(AnimatedFractionallySizedBox),
+  ))
+    bar.widthFactor!,
+];
 
 final List<Vice> _longNamed = [
   fakeVice('elderflower', name: 'Sparkling elderflower water'),
@@ -74,48 +78,25 @@ final List<Vice> _longNamed = [
 ];
 
 void main() {
-  group('the radar', () {
-    testWidgets('puts a zero at the centre', (WidgetTester tester) async {
-      await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
-
-      final RadarChartData data = _radar(tester);
-      expect(data.isMinValueAtCenter, isTrue);
-      expect(data.minEntry.value, 0);
-      expect(data.dataSets.first.dataEntries.map((RadarEntry e) => e.value), [
-        2,
-        0,
-        1,
-      ]);
-    });
-
-    testWidgets('keeps the centre at zero when every vice was used', (
+  group('the bars', () {
+    testWidgets('give a zero an empty bar and the day\'s largest a full one', (
       WidgetTester tester,
     ) async {
-      await _pump(tester, _day(_three, [3, 1, 2]), const ViceTracker());
+      await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
 
-      final RadarChartData data = _radar(tester);
-      expect(data.isMinValueAtCenter, isTrue);
-      expect(data.minEntry.value, 0);
-      expect(data.maxEntry.value, 3);
-      expect(data.tickCount, 3);
+      expect(_barShares(tester), [1, 0, 0.5]);
+      expect(find.text('0 items', findRichText: true), findsOneWidget);
     });
 
-    test('rings are round numbers, at most five of them', () {
-      expect(ViceChart.radarScale(1), (top: 1, step: 1));
-      expect(ViceChart.radarScale(3), (top: 3, step: 1));
-      expect(ViceChart.radarScale(7), (top: 8, step: 2));
-      expect(ViceChart.radarScale(120), (top: 150, step: 50));
-      for (int largest = 1; largest <= 1000; largest++) {
-        final ({int top, int step}) scale = ViceChart.radarScale(largest);
-        expect(scale.top, greaterThanOrEqualTo(largest));
-        expect(scale.top ~/ scale.step, lessThanOrEqualTo(5));
-        expect(scale.top % scale.step, 0);
-      }
+    test('are a share of the largest total', () {
+      expect(ViceChart.share(3, 6), 0.5);
+      expect(ViceChart.share(0, 6), 0);
+      expect(ViceChart.share(0, 0), 0);
     });
   });
 
   group('screen readers', () {
-    testWidgets('hear the radar as the day and each total', (
+    testWidgets('hear the chart as the day and each total', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
@@ -147,18 +128,18 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.bySemanticsLabel('coffee (2 items)'), findsNothing);
+      expect(find.bySemanticsLabel('coffee'), findsNothing);
+      expect(find.bySemanticsLabel('2 items'), findsNothing);
       semantics.dispose();
     });
 
-    testWidgets('hear the radar once when it shows a key', (
+    testWidgets('hear the chart once at large text', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       _usePhone(tester, textScale: 3);
       await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
 
-      expect(find.text('coffee: 0 items'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
           'Totals for $_todayLabel. Sparkling elderflower water: 4 items; '
@@ -166,10 +147,9 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.bySemanticsLabel(RegExp('^coffee: 0 items')), findsNothing);
+      expect(find.bySemanticsLabel('coffee'), findsNothing);
       semantics.dispose();
     });
-
     testWidgets('hear the graph as its range, total and peak', (
       WidgetTester tester,
     ) async {
@@ -266,40 +246,26 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('Today shows every name whole, on the chart or in its key', (
+      testWidgets('Today shows every name whole beside its amount', (
         WidgetTester tester,
       ) async {
         _usePhone(tester, textScale: textScale);
         await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
         expect(tester.takeException(), isNull);
 
-        // At this size the key may take the chart's whole space.
-        final Finder radar = find.byType(RadarChart);
-        final RadarChartData? data = radar.evaluate().isEmpty
-            ? null
-            : _radar(tester);
-        for (int i = 0; i < _longNamed.length; i++) {
-          final Vice vice = _longNamed[i];
-          final String title = data?.getTitle!(i, 0).text ?? '';
-          if (title == vice.name || title.startsWith('${vice.name} (')) {
-            continue;
-          }
-          final Finder entry = find.textContaining(RegExp('^${vice.name}: '));
+        for (final Vice vice in _longNamed) {
           // The test font is about twice as wide as the system's, so at text
-          // scale 3 this key outgrows the screen and scrolls; the e2e test
-          // checks the key unscrolled on a real device.
-          if (textScale == 3) {
-            await tester.ensureVisible(entry);
-            await tester.pumpAndSettle();
-          }
+          // scale 3 the rows outgrow the screen and scroll.
+          await tester.ensureVisible(find.text(vice.name));
+          await tester.pumpAndSettle();
           expect(
-            entry.hitTestable(),
+            find.text(vice.name).hitTestable(),
             findsOneWidget,
             reason: '${vice.name} is not shown whole',
           );
         }
+        expect(find.text('4 items', findRichText: true), findsOneWidget);
       });
-
       testWidgets('Today lays out without overflowing', (
         WidgetTester tester,
       ) async {

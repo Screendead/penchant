@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -14,7 +13,6 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_chart.dart';
-import 'package:tracker/widgets/chart_text.dart';
 
 import 'fakes.dart';
 
@@ -270,22 +268,28 @@ void main() {
     });
   });
 
-  group('Today chart titles stay within their own space', () {
+  group('Today shows every name and amount whole', () {
     final String longName = '${'a' * 30} ${'b' * 29}';
 
-    List<Override> day(List<Vice> vices) => [
+    List<Override> day(List<Vice> vices, List<int> quantities) => [
       unarchivedViceListProvider.overrideWith((ref) => AsyncData(vices)),
       viceActivityDayProvider.overrideWith(
         (ref, DateTime day) => AsyncData([
-          for (final Vice vice in vices) fakeActivity(vice.id, 2, day),
+          for (int i = 0; i < vices.length; i++)
+            if (quantities[i] > 0)
+              fakeActivity(vices[i].id, quantities[i], day),
         ]),
       ),
     ];
 
-    Future<void> pumpToday(WidgetTester tester, List<Vice> vices) async {
+    Future<void> pumpToday(
+      WidgetTester tester,
+      List<Vice> vices,
+      List<int> quantities,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: day(vices),
+          overrides: day(vices, quantities),
           child: MaterialApp(
             home: Scaffold(body: ViceChart(selectedDate: _today)),
           ),
@@ -294,221 +298,55 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    List<String> radarTitles(WidgetTester tester) {
-      final RadarChartData data = tester
-          .widget<RadarChart>(find.byType(RadarChart))
-          .data;
-      return [
-        for (int i = 0; i < data.dataSets.first.dataEntries.length; i++)
-          data.getTitle!(i, 0).text,
-      ];
-    }
+    Finder amount(String text) => find.text(text, findRichText: true);
 
-    void expectRadarTitlesFit(WidgetTester tester, int axes) {
-      final RadarChartData data = tester
-          .widget<RadarChart>(find.byType(RadarChart))
-          .data;
-      final BuildContext context = tester.element(find.byType(RadarChart));
-      final Size size = tester.getSize(find.byType(RadarChart));
-      for (final String title in radarTitles(tester)) {
-        expect(
-          chartLabelSize(context, title, data.titleTextStyle!).width,
-          lessThanOrEqualTo(
-            radarTitleWidth(size, axes, ViceChart.radarTitleOffset),
-          ),
-          reason: '"$title" is wider than its space',
-        );
+    testWidgets('a 60-character name wraps whole beside its amount', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester);
+      await pumpToday(
+        tester,
+        [fakeVice('long', name: longName), fakeVice('tea')],
+        [1, 0],
+      );
+
+      for (final Finder text in [
+        find.text(longName),
+        amount('1 item'),
+        find.text('tea'),
+        amount('0 items'),
+      ]) {
+        expect(text, findsOneWidget);
+        final Rect rect = tester.getRect(text);
+        expect(rect.left, greaterThanOrEqualTo(0));
+        expect(rect.top, greaterThanOrEqualTo(0));
+        expect(rect.right, lessThanOrEqualTo(375));
+        expect(rect.bottom, lessThanOrEqualTo(667));
       }
-    }
-
-    // fl_chart paints the titles outside the chart's box, up to a line
-    // beyond 0.96 of its half side.
-    void expectTitlesClearOfTheKey(WidgetTester tester) {
-      final RadarChartData data = tester
-          .widget<RadarChart>(find.byType(RadarChart))
-          .data;
-      final BuildContext context = tester.element(find.byType(RadarChart));
-      final Rect chart = tester.getRect(find.byType(RadarChart));
-      final double reach =
-          chart.shortestSide / 2 * 0.8 * (1 + ViceChart.radarTitleOffset) +
-          chartLabelSize(context, 'Ag', data.titleTextStyle!).height;
       expect(
-        chart.center.dy + reach,
-        lessThanOrEqualTo(tester.getRect(find.byType(Wrap)).top),
+        tester
+            .getRect(find.text(longName))
+            .overlaps(tester.getRect(amount('1 item'))),
+        isFalse,
       );
-    }
-
-    // The key's entries, which every vice has once the key is shown.
-    Finder keyEntry(Vice vice) => find.text('${vice.name}: 2 items');
-
-    testWidgets('two bars, one with a 60-character name, and a key', (
-      WidgetTester tester,
-    ) async {
-      _usePhone(tester);
-      final List<Vice> vices = [
-        fakeVice('long', name: longName),
-        fakeVice('tea'),
-      ];
-      await pumpToday(tester, vices);
-
-      final Finder titles = find.descendant(
-        of: find.byType(BarChart),
-        matching: find.byType(Text),
-      );
-      expect(titles, findsNWidgets(2));
-      _expectApart(titles.evaluate().toList());
-      final Rect chart = tester.getRect(find.byType(BarChart));
-      for (final Element title in titles.evaluate()) {
-        expect(chart.left, lessThanOrEqualTo(_rect(title).left));
-        expect(chart.right, greaterThanOrEqualTo(_rect(title).right));
-      }
-      expect(titles.evaluate().map((Element e) => (e.widget as Text).data), [
-        longName,
-        'tea (2 items)',
-      ]);
-      for (final Vice vice in vices) {
-        expect(keyEntry(vice), findsOneWidget);
-      }
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('two bars at large text with a 60-character name have a '
-        'key that names both', (WidgetTester tester) async {
-      _usePhone(tester, textScale: 3);
-      final List<Vice> vices = [
-        fakeVice('long', name: longName),
-        fakeVice('tea'),
-      ];
-      await pumpToday(tester, vices);
-
-      for (final Vice vice in vices) {
-        await tester.ensureVisible(keyEntry(vice));
-        await tester.pumpAndSettle();
-        expect(keyEntry(vice).hitTestable(), findsOneWidget);
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('bars whose titles fit have no key', (
-      WidgetTester tester,
-    ) async {
-      _usePhone(tester);
-      final List<Vice> vices = [fakeVice('tea'), fakeVice('gin')];
-      await pumpToday(tester, vices);
-
-      expect(find.text('tea (2 items)'), findsOneWidget);
-      expect(keyEntry(vices.first), findsNothing);
-    });
-
-    testWidgets(
-      'a bar drops the quantity at large text before cutting a name',
-      (WidgetTester tester) async {
-        _usePhone(tester, textScale: 3);
-        final List<Vice> vices = [fakeVice('coffee', name: 'Coffee')];
-        await pumpToday(tester, vices);
-
-        expect(find.text('Coffee'), findsOneWidget);
-        expect(keyEntry(vices.first), findsNothing);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('a radar with too many axes for its names cuts them and '
-        'lists every vice in the key', (WidgetTester tester) async {
-      _usePhone(tester);
-      final List<Vice> vices = [
-        for (int i = 1; i <= 12; i++) fakeVice('v$i', name: 'Vice $i'),
-      ];
-      await pumpToday(tester, vices);
-
-      expect(radarTitles(tester), everyElement(endsWith('…')));
-      expectRadarTitlesFit(tester, vices.length);
-      expectTitlesClearOfTheKey(tester);
-      for (final Vice vice in vices) {
-        expect(keyEntry(vice).hitTestable(), findsOneWidget);
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('a key with no room left for the radar takes its place', (
+    testWidgets('at large text, many vices scroll rather than overflow', (
       WidgetTester tester,
     ) async {
       _usePhone(tester, textScale: 3);
       final List<Vice> vices = [
         for (int i = 1; i <= 31; i++) fakeVice('v$i', name: 'Vice $i'),
       ];
-      await pumpToday(tester, vices);
+      await pumpToday(tester, vices, [for (int i = 1; i <= 31; i++) i % 3]);
 
-      expect(find.byType(RadarChart), findsNothing);
-      expect(keyEntry(vices.first).hitTestable(), findsOneWidget);
-      expect(keyEntry(vices.last), findsOneWidget);
+      for (final Vice vice in [vices.first, vices.last]) {
+        await tester.ensureVisible(find.text(vice.name));
+        await tester.pumpAndSettle();
+        expect(find.text(vice.name).hitTestable(), findsOneWidget);
+      }
       expect(tester.takeException(), isNull);
     });
-
-    testWidgets('a radar title drops its quantity, then is cut, to fit the '
-        'space between its neighbours', (WidgetTester tester) async {
-      _usePhone(tester);
-      final List<Vice> vices = [
-        fakeVice('long', name: longName),
-        fakeVice('tea'),
-        fakeVice('beer'),
-      ];
-      await pumpToday(tester, vices);
-
-      final List<String> titles = radarTitles(tester);
-      expect(titles.first, startsWith('aaa'));
-      expect(titles.first, endsWith('…'));
-      expect(titles.sublist(1), ['tea (2 items)', 'beer (2 items)']);
-      expectRadarTitlesFit(tester, vices.length);
-      expectTitlesClearOfTheKey(tester);
-      for (final Vice vice in vices) {
-        expect(keyEntry(vice), findsOneWidget);
-      }
-    });
-
-    testWidgets('radar names that fit without their quantities need no key', (
-      WidgetTester tester,
-    ) async {
-      _usePhone(tester, textScale: 3);
-      final List<Vice> vices = [
-        fakeVice('gin', name: 'Gin'),
-        fakeVice('tea', name: 'Tea'),
-        fakeVice('rum', name: 'Rum'),
-      ];
-      await pumpToday(tester, vices);
-
-      expect(radarTitles(tester), ['Gin', 'Tea', 'Rum']);
-      expectRadarTitlesFit(tester, vices.length);
-      expect(keyEntry(vices.first), findsNothing);
-    });
-  });
-
-  testWidgets('a chart label drops its suffix, then cuts its name, then is '
-      'left empty', (WidgetTester tester) async {
-    late BuildContext context;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (BuildContext c) {
-            context = c;
-            return const SizedBox();
-          },
-        ),
-      ),
-    );
-    // The test font draws every character 14 wide at this size.
-    const TextStyle style = TextStyle(fontSize: 14);
-    ({String text, bool nameWhole}) fit(double width) => fitChartLabel(
-      context,
-      name: 'Coffee',
-      suffix: ' (2 items)',
-      style: style,
-      maxWidth: width,
-    );
-
-    expect(fit(16 * 14), (text: 'Coffee (2 items)', nameWhole: true));
-    expect(fit(6 * 14), (text: 'Coffee', nameWhole: true));
-    expect(fit(4 * 14), (text: 'Cof…', nameWhole: false));
-    expect(fit(13), (text: '', nameWhole: false));
   });
 }

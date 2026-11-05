@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -36,14 +35,15 @@ bool _enabled(WidgetTester tester, String tooltip) =>
         .onPressed !=
     null;
 
-double _chartedQuantity(WidgetTester tester) => tester
-    .widget<RadarChart>(find.byType(RadarChart))
-    .data
-    .dataSets
-    .first
-    .dataEntries
-    .first
-    .value;
+Finder _amount(String text) => find.text(text, findRichText: true);
+
+// The first vice's total, as its row prints it.
+int _chartedQuantity(WidgetTester tester) {
+  final RichText amount = tester.widget<RichText>(
+    find.textContaining(RegExp(r'^\d+ items?$'), findRichText: true).first,
+  );
+  return int.parse(amount.text.toPlainText().split(' ').first);
+}
 
 // WCAG 2.x contrast ratio.
 double _contrast(Color a, Color b) {
@@ -174,7 +174,7 @@ void main() {
     });
   });
 
-  group('fewer vices than radar axes', () {
+  group('one bar per vice', () {
     final DateTime today = startOfDay(DateTime.now());
     final Vice coffee = fakeVice('coffee');
     final Vice beer = fakeVice('beer');
@@ -191,22 +191,20 @@ void main() {
       }),
     ];
 
-    List<double> barValues(WidgetTester tester) => [
-      for (final BarChartGroupData group
-          in tester.widget<BarChart>(find.byType(BarChart)).data.barGroups)
-        group.barRods.single.toY,
+    List<double> barShares(WidgetTester tester) => [
+      for (final AnimatedFractionallySizedBox bar in tester.widgetList(
+        find.byType(AnimatedFractionallySizedBox),
+      ))
+        bar.widthFactor!,
     ];
-
-    Finder barTitle(String text) =>
-        find.descendant(of: find.byType(BarChart), matching: find.text(text));
 
     testWidgets('one vice is charted as a bar', (WidgetTester tester) async {
       await _pumpApp(tester, overrides([coffee]), const ViceTracker());
       await tester.pumpAndSettle();
 
-      expect(find.byType(RadarChart), findsNothing);
-      expect(barValues(tester), [2]);
-      expect(barTitle('coffee (2 items)'), findsOneWidget);
+      expect(barShares(tester), [1]);
+      expect(find.text('coffee'), findsOneWidget);
+      expect(_amount('2 items'), findsOneWidget);
     });
 
     testWidgets('two vices are charted as bars that follow the selected day', (
@@ -215,21 +213,20 @@ void main() {
       await _pumpApp(tester, overrides([coffee, beer]), const ViceTracker());
       await tester.pumpAndSettle();
 
-      expect(find.byType(RadarChart), findsNothing);
-      expect(barValues(tester), [2, 1]);
-      expect(barTitle('coffee (2 items)'), findsOneWidget);
-      expect(barTitle('beer (1 item)'), findsOneWidget);
+      expect(barShares(tester), [1, 0.5]);
+      expect(_amount('2 items'), findsOneWidget);
+      expect(_amount('1 item'), findsOneWidget);
 
       await tester.tap(_button('Previous day'));
       await tester.pumpAndSettle();
 
       expect(find.text('Yesterday'), findsOneWidget);
-      expect(barValues(tester), [3, 2]);
-      expect(barTitle('coffee (3 items)'), findsOneWidget);
-      expect(barTitle('beer (2 items)'), findsOneWidget);
+      expect(barShares(tester), [1, 2 / 3]);
+      expect(_amount('3 items'), findsOneWidget);
+      expect(_amount('2 items'), findsOneWidget);
     });
 
-    testWidgets('a third vice switches to the radar', (
+    testWidgets('a third vice, unused that day, adds an empty bar', (
       WidgetTester tester,
     ) async {
       await _pumpApp(
@@ -239,8 +236,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(BarChart), findsNothing);
-      expect(find.byType(RadarChart), findsOneWidget);
+      expect(barShares(tester), [1, 0.5, 0]);
+      expect(find.text('tea'), findsOneWidget);
+      expect(_amount('0 items'), findsOneWidget);
     });
   });
 
@@ -262,7 +260,7 @@ void main() {
       expect(find.byType(CleanDay), findsOneWidget);
       expect(find.text('A clear day so far'), findsOneWidget);
       expect(find.text('Nothing recorded today.'), findsOneWidget);
-      expect(find.byType(BarChart), findsNothing);
+      expect(find.byType(AnimatedFractionallySizedBox), findsNothing);
 
       await tester.tap(_button('Previous day'));
       await tester.pump();
