@@ -19,10 +19,12 @@ for (let i = 0; i < 50 && !target; i++) { await sleep(150); try { target = (awai
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise(r => ws.addEventListener("open", r));
 let id = 0; const pending = new Map();
-ws.addEventListener("message", e => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+ws.addEventListener("message", e => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+  if (m.method === "Runtime.exceptionThrown") { const d = m.params.exceptionDetails; console.error(`${out}: page error: ${d.exception?.description || d.text}`); process.exitCode = 1; } });
 const send = (method, params = {}) => new Promise(r => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 await send("Emulation.setDeviceMetricsOverride", { width: +w, height: +hgt, deviceScaleFactor: +scale, mobile: false });
 await send("Page.enable");
+await send("Runtime.enable");
 await send("Page.navigate", { url: page });
 await sleep(1200);
 if (js) { const r = await send("Runtime.evaluate", { expression: js, awaitPromise: true }); if (r.result?.exceptionDetails) console.error(JSON.stringify(r.result.exceptionDetails)); else if (r.result?.result?.value !== undefined) console.log(r.result.result.value); }

@@ -1,8 +1,9 @@
 # Petal: how each piece is built in Flutter
 
 `index.html` is the clickable mock-up and `tokens.json` holds the tokens. `stills-*.png` are renders of
-`index.html`, made by `node shoot.mjs <out.png> "<query>" <w> <h> [waitMs] [js] [scale]` (headless Chrome over
-CDP in real time; `--virtual-time-budget` proved unreliable for requestAnimationFrame and froze the springs
+`index.html`; `./stills.sh` regenerates every one of them (`./stills.sh states` only those matching). Each is
+`node shoot.mjs <out.png> "<query>" <w> <h> [waitMs] [js] [scale]` (headless Chrome over
+CDP in real time, exiting non-zero on any page error; `--virtual-time-budget` proved unreliable for requestAnimationFrame and froze the springs
 in one run). Query flags:
 `theme=light|dark`, `rm=1` (reduced motion), `frames=today-busy,record,...`, `record=sheet|earlier`,
 `probe=<bucket>`, `hist=1`, `signup=1`.
@@ -39,15 +40,19 @@ existing `Unit` enum (drinks, times, minutes, items). Nothing reads Firestore.
   collapses to spokes. The painter draws:
   - one chord wedge per habit, with a 3 px gap built by offsetting each edge (the helper `wedgePts` in
     `index.html`) and rounded joins (`StrokeJoin.round`);
-  - for a zero habit, a dotted outline (`PathMetrics` dashes with round caps) and an 18% tint at the 22% floor;
+  - for a zero habit, a dotted outline in `muted` (`PathMetrics` dashes with round caps) over a 7% `muted` fill at
+    the 30% floor. It is never in the habit's colour, so an empty slot cannot be read as a small value;
   - the reference rim as a dotted polygon, with spokes at 45% ink running 8 px past it;
   - for a pending entry, a 2 px dashed rim.
-  Radius: `floor + (1 - floor) * sqrt(v / busiest30)`.
+  Radius: `floor + (1 - floor) * sqrt(v / busiest30)`, where `busiest30` is that habit's own busiest day, so petals
+  compare a habit with its own recent past, not with each other (the caption says "each habit's").
 - **Rose animation**: each petal's radius is driven by its own `AnimationController.unbounded`, run with
   `animateWith(SpringSimulation(SpringDescription(mass: 1, stiffness: 380, damping: 26), from, to, 0))`.
   The mock-up's JS uses the same closed form, so the motion should match. Bloom and day morphs add a per-petal
   `Future.delayed` stagger (40 ms and 35 ms).
-- **Labels**: real `Text` widgets in a `CustomMultiChildLayout` around the painter, so they follow the device
+- **Labels**: anchored on each wedge's bisector at `R * cos(step / 2) + 14`, 14 px past the rim's edge (not its
+  corners, which left the bottom label 40 px adrift), and cornered away from the centre. Real `Text` widgets in a
+  `CustomMultiChildLayout` around the painter, so they follow the device
   text scale. A `TextPainter` measures them first; when they overflow, they switch to numbered markers plus a key
   list, never dropping an amount (this closes `r5-key-always`). Tapping a petal hit-tests the wedge angle in
   `GestureDetector.onTapUp` and sets a filter `StateProvider`.
@@ -56,7 +61,8 @@ existing `Unit` enum (drinks, times, minutes, items). Nothing reads Firestore.
   the same spring.
 - **Busiest day in the last 30**: a new `busiest30ForUserProvider(uid)` over a 30-day `createdAt` range. It has
   the day query's shape, so it needs no new index; the cost is more reads (risk 2 in the pitch).
-- **Chips**: a `Wrap` of `GestureDetector`s:
+- **Log tiles**: a two-column `GridView` (shrink-wrapped) of 48 px tiles, radius 16, name left and count
+  right-aligned in mono, so the counts line up as a column; a zero count is `muted`. Each is a `GestureDetector`:
   - `onTapDown` scales to 0.94 (90 ms); release springs back;
   - `onTap` writes through `trackerWrites.recordActivity` plus `settleWrite`, then
     `HapticFeedback.lightImpact()`;
@@ -67,10 +73,14 @@ existing `Unit` enum (drinks, times, minutes, items). Nothing reads Firestore.
   (end-to-start) that deletes with the existing 8 s Undo snackbar. Pending rows show the existing
   `NotSyncedMarker` restyled.
 - **Clean day**: the same painter with `cleanProgress` driving a path trim (`PathMetric.extractPath`, 500 ms),
-  the sage wash as an `AnimatedOpacity` (400 ms), and one `TweenSequence` breath (1.0 to 1.02 to 1.0, 1200 ms,
-  `Curves.easeInOutSine`) run once from `initState`, never repeated. C5 stays quietly positive.
+  the sage wash (the rim polygon with a 16 px rounded stroke, not a circle) as an `AnimatedOpacity` (400 ms), and one `TweenSequence` breath (1.0 to 1.02 to 1.0, 1200 ms,
+  `Curves.easeInOutSine`) run once from `initState`, never repeated. C5 stays quietly positive. The only how-to copy on Today lives here ("Tap a habit to log one;
+  hold it for more."): a day with entries carries no instructions.
 - **Offline banner**: `AnimatedSize` plus `SlideTransition` (240 ms, `easeOutCubic`), keeping its
-  `Semantics(liveRegion: true)`. RejectedWritesBanner gets the same treatment in `MaterialApp.builder`.
+  `Semantics(liveRegion: true)`.
+- **Rejected write** (built: "Rejected write" on the busy frame): `RejectedWritesBanner` in `MaterialApp.builder`
+  becomes a danger-tonal card pinned under the status bar over every screen, "Not saved" plus what was refused and
+  when, and a tonal Dismiss pill; it enters on the spring from -24 px.
 
 ## Log sheet (record and edit)
 
@@ -81,7 +91,8 @@ existing `Unit` enum (drinks, times, minutes, items). Nothing reads Firestore.
 - Stepper: two circular `IconButton.filledTonal`s around the odometer. A `GestureDetector(onHorizontalDragUpdate)`
   scrubs by one step every 22 px, with `HapticFeedback.selectionClick()` on each step.
 - Time: a `SegmentedButton<When>` (Now or Earlier). Earlier expands an `AnimatedSize` holding a
-  `CupertinoDatePicker(mode: dateAndTime, use24hFormat: per locale)` with minute resolution. That replaces the
+  `CupertinoDatePicker(mode: dateAndTime, use24hFormat: per locale, maximumDate: now)` with minute resolution:
+  older days above, Today, then future days greyed and snapping back, as the iOS picker draws them. That replaces the
   lock toggle and the Material date and time pickers. `ActivityDateField` becomes this control.
 - Save: a pill `FilledButton` whose child is an `AnimatedSwitcher` (label to `CircularProgressIndicator`) inside
   an `AnimatedContainer` that narrows to a circle. The 50% black scrim is removed. `settleWrite`, the 10 s timeout
@@ -95,12 +106,14 @@ existing `Unit` enum (drinks, times, minutes, items). Nothing reads Firestore.
   "buckets" wording used to be. Changing the range resets N to a sensible default (3, 7, 14, 30).
 - Chart: fl_chart 1.2 `LineChart` with `BarChart` behind it in a `Stack` sharing one scale from
   `chart_scale.dart`, or a single `CustomPainter` (simpler, and the hit-testing is ours):
-  - raw buckets as bars at 35% of the habit fill;
+  - raw buckets as neutral bars (`text` at 11% light, 16% dark); the touched bucket's bar takes the habit fill at
+    100%. Habit-coloured bars at 35% read as brown in dark and fought the line;
+  - above 120 buckets (365 by day) a bar is under 2.5 px, so the bars drop out and the area carries the shape;
   - the average as a curved 2.5 px line in the habit ink (`dataNInk` in light, since the fills are fill-only on
-    paper), over a 12% area fill.
+    paper), over a 12% area fill only when the bars are hidden.
   Draw-in is a path trim (500 ms, `easeInOutCubic`) with the area 100 ms behind.
-- Readout: `LineTouchData` with a custom `getTooltipItems`, or a positioned ink bubble driven by
-  `onPanUpdate`. It shows the date, the value in mono and the average.
+- Readout: a fixed 44 px header row in the chart card (date, value in mono 22, unit, average), defaulting to the
+  latest bucket and following `onPanUpdate`. A floating bubble covered the line where you were reading it.
 - Stats row: three cards (total, daily or weekly average, busiest day or week) from the same numbers
   `UsageGraphView.summary` already computes. The summary's Semantics label is unchanged.
 
@@ -118,9 +131,11 @@ existing `Unit` enum (drinks, times, minutes, items). Nothing reads Firestore.
 
 ## Shell
 
-- Phone: a `Scaffold(extendBody: true)` with a custom bottom bar, a `ClipRect` over a
-  `BackdropFilter(ImageFilter.blur(20, 20))` at 74% paper, holding three destinations. The Log button is a
-  `Positioned` 66 px circle: a `SweepGradient` ring in the five icon colours, a paper gap, an ink core, and the one
+- Phone: a `Scaffold(extendBody: true)` with a floating capsule tab bar (iOS 26's shape): a `Positioned` 236×62
+  `ClipRRect` (radius 31) over a `BackdropFilter(ImageFilter.blur(20, 20))` at 74% paper, 16 px from the left and
+  26 px from the bottom, holding three 76 px destinations over a `fill` thumb that slides on the spring
+  (`AnimatedAlign`). A 140 px paper gradient, solid from 40%, keeps content out of the gap. The Log button is a
+  separate `Positioned` 66 px circle on the same centre line: a `SweepGradient` ring in the five icon colours, a paper gap, an ink core, and the one
   ambient shadow. The drawer goes.
 - Tab change: `PageTransitionSwitcher` with `FadeThroughTransition` from `animations` (a new dependency), 300 ms,
   with the incoming scale at 0.96.
@@ -149,6 +164,11 @@ The mock-up honours `prefers-reduced-motion`, and its "Reduce motion" button sim
 
 ## Accessibility notes measured or computed here
 
+- Text contrast, computed from the tokens: `muted` is 5.1:1 on paper, 5.6 on surface, 4.6 on fill (light) and
+  6.8 / 6.1 / 5.3 (dark); placeholders and the stepper hint now use `muted` at full opacity (at 80% they were 3.2
+  and 3.7:1). `clearInk` on `clear` 5.5 / 9.8, `dangerInk` on `danger` 6.2 / 8.6, the snackbar action 9.6 / 4.9.
+- Type is a whole-pixel ladder (11, 12, 13, 14, 15, 16, 17, 18, 22, 34, 40, 76); every tab root's title is 34.
+
 - Light-mode data fills on paper measure 1.6 to 3.8:1, so they are fill-only. Coloured text uses `dataNInk`
   (4.9 to 6.6:1).
 - The icon order puts coral and red next to each other. They are 10 OKLab units apart for normal vision, under
@@ -164,7 +184,7 @@ The mock-up honours `prefers-reduced-motion`, and its "Reduce motion" button sim
 - **9 or more habits**: in the direction, the rose shrinks to a summary and ranked habit rows become the main read.
   This is not built or demoed. The mock-up shows 5 habits, and 6 once you add one under Habits (striped colour).
 - **Label overflow**: the fallback to numbered markers and a key list is specified above but not demoed.
-- **Rejected-write banner and the macOS rail**: described above but not drawn.
+- **The macOS rail**: described above but not drawn.
 
 ## What it costs
 

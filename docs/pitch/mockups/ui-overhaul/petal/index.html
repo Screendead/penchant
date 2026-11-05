@@ -22,7 +22,7 @@
   --sheet-shadow: 0 -4px 16px rgba(29,28,26,.06);
   --scrim: rgba(29,28,26,.28);
   --bar: rgba(246,244,239,.74);
-  --rawbar: .35;
+  --rawbar: .11; --hl: #FFFFFF;
   --page: #E7E3DA; --page-2: #DCD7CC; --device: #1D1C1A;
   --spring: cubic-bezier(.3,1.3,.5,1);
   --out: cubic-bezier(.33,1,.68,1);
@@ -40,9 +40,8 @@
     --snack-action: #9A5B00;
     --shadow: 0 4px 16px rgba(0,0,0,.35); --sheet-shadow: 0 -4px 24px rgba(0,0,0,.45);
     --scrim: rgba(0,0,0,.5); --bar: rgba(23,22,20,.74);
-    --rawbar: .26;
-    --rawbar: .26;
-  --page: #0D0C0B; --page-2: #1A1917; --device: #000;
+    --rawbar: .16; --hl: #3A3733;
+    --page: #0D0C0B; --page-2: #1A1917; --device: #000;
     color-scheme: dark;
   }
 }
@@ -56,7 +55,7 @@
   --snack-action: #9A5B00;
   --shadow: 0 4px 16px rgba(0,0,0,.35); --sheet-shadow: 0 -4px 24px rgba(0,0,0,.45);
   --scrim: rgba(0,0,0,.5); --bar: rgba(23,22,20,.74);
-  --rawbar: .26;
+  --rawbar: .16; --hl: #3A3733;
   --page: #0D0C0B; --page-2: #1A1917; --device: #000;
   color-scheme: dark;
 }
@@ -114,8 +113,9 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .status {
   position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 50;
   display: flex; justify-content: space-between; align-items: center; padding: 6px 30px 0 44px;
-  font: 600 16px/1 Figtree; letter-spacing: -0.01em; pointer-events: none; color: var(--text); background: linear-gradient(var(--bg) 62%, transparent);
+  font: 600 16px/1 Figtree; letter-spacing: -0.01em; pointer-events: none; color: var(--text); background: var(--bg);
 }
+.status::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(var(--bg), transparent); }
 .status .glyphs { display: flex; gap: 6px; align-items: center; }
 .homebar { position: absolute; bottom: 8px; left: 50%; width: 136px; height: 5px; margin-left: -68px; border-radius: 3px; background: var(--text); opacity: .9; z-index: 70; pointer-events: none; }
 
@@ -138,7 +138,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .title-wrap .t { transition: opacity 220ms var(--out), transform 220ms var(--out); }
 .title-wrap .t.leaving { position: absolute; top: 0; left: 0; opacity: 0; transform: translateY(-6px); }
 .title-wrap .t.entering { opacity: 0; transform: translateY(6px); }
-.screen-title { font: 800 30px/34px Gabarito, sans-serif; letter-spacing: -0.01em; margin: 0; }
+.screen-title { font: 800 34px/38px Gabarito, sans-serif; letter-spacing: -0.01em; margin: 0; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; margin-top: 2px; color: var(--text); }
 .avatar span { font: 700 15px/1 Gabarito; }
 
@@ -156,33 +156,38 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .dayb.today .wd::after { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--text); margin-left: 3px; vertical-align: 2px; }
 
 /* rose */
-.rose { position: relative; width: 390px; height: 292px; margin-top: 6px; touch-action: pan-y; user-select: none; }
+.rose { position: relative; width: 390px; height: 272px; margin-top: 6px; touch-action: pan-y; user-select: none; }
 .rose svg { position: absolute; inset: 0; overflow: visible; }
-.rose .lab { position: absolute; white-space: nowrap; font: 600 13.5px/17px Figtree; transition: opacity 240ms var(--out); pointer-events: auto; cursor: pointer; }
-.rose .lab .amt { display: block; font: 500 12.5px/16px "Spline Sans Mono"; }
+.rose .lab { position: absolute; white-space: nowrap; font: 600 14px/18px Figtree; transition: opacity 240ms var(--out); pointer-events: auto; cursor: pointer; }
+.rose .lab .amt { display: block; font: 500 13px/17px Figtree; }
+.rose .lab .amt b { font: 500 13px/17px "Spline Sans Mono"; }
 .rose .lab.zero .amt { color: var(--muted) !important; }
 .rose .lab.dim, .rose .pet.dim { opacity: .28; }
 .rose .pet { transition: opacity 240ms var(--out); cursor: pointer; }
-.rose .breath { transform-origin: 195px 140px; transform-box: view-box; }
+.rose .breath { transform-origin: 195px 132px; transform-box: view-box; }
 .rose .breath.go { animation: breath 1200ms cubic-bezier(.37,0,.63,1) 1; }
 @keyframes breath { 50% { transform: scale(1.02); } }
 .rose .wash { transition: opacity 400ms var(--out); }
 .rose.is-clean .lab { color: var(--muted); }
-.rose-cap { text-align: center; font: 500 12.5px/16px Figtree; color: var(--muted); margin: -2px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.rose-cap { text-align: center; font: 500 13px/16px Figtree; color: var(--muted); margin: -2px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .clearmsg { text-align: center; margin: 4px 20px 0; transition: opacity 400ms var(--out), transform 400ms var(--out); }
 .clearmsg h3 { margin: 0; font: 700 22px/26px Gabarito; color: var(--clear-ink); letter-spacing: -0.01em; }
-.clearmsg p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.clearmsg p { margin: 4px auto 0; color: var(--muted); font-size: 14px; line-height: 19px; max-width: 34ch; }
 .clearmsg.pre { opacity: 0; transform: translateY(8px); }
 
 /* chips */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 20px 0; }
+.chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 16px 20px 0; }
+.chips .chip { height: 48px; border-radius: 16px; padding: 0 14px 0 12px; gap: 10px; min-width: 0; }
+.chips .chip .nm { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chips .chip .cnt { color: var(--text); font-size: 15px; }
+.chips .chip .cnt.z { color: var(--muted); }
 .chip { height: 40px; border-radius: 999px; background: var(--surface); display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 11px; font: 600 14px/1 Figtree; transition: transform 380ms var(--spring), background-color 200ms var(--out), color 200ms var(--out); user-select: none; touch-action: manipulation; }
 .chip.press { transform: scale(.94); transition-duration: 90ms; transition-timing-function: var(--out); }
 .chip .cnt { color: var(--muted); font-size: 14px; }
 .chip.on { background: var(--accent); color: var(--on-accent); }
 .chip.on .cnt { color: inherit; opacity: .7; }
 .sw { width: 14px; height: 14px; flex: none; overflow: visible; }
-.hint { padding: 8px 20px 0; font: 500 12.5px/16px Figtree; color: var(--muted); }
+.hint { padding: 8px 20px 0; font: 500 13px/16px Figtree; color: var(--muted); }
 
 /* odometer */
 .odo { display: inline-flex; height: 1.15em; line-height: 1.15em; overflow: hidden; vertical-align: -0.2em; }
@@ -220,19 +225,31 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .banner-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 240ms var(--out); position: relative; z-index: 5; }
 .banner-wrap.show { grid-template-rows: 1fr; }
 .banner-wrap > div { overflow: hidden; min-height: 0; }
-.banner { margin: 8px 20px 0; padding: 12px 14px; border-radius: 16px; background: var(--fill); display: flex; gap: 10px; align-items: flex-start; font: 500 13.5px/18px Figtree; transform: translateY(-8px); opacity: 0; transition: transform 240ms var(--out), opacity 240ms var(--out); }
+.banner { margin: 8px 20px 0; padding: 12px 14px; border-radius: 16px; background: var(--fill); display: flex; gap: 10px; align-items: flex-start; font: 500 14px/19px Figtree; transform: translateY(-8px); opacity: 0; transition: transform 240ms var(--out), opacity 240ms var(--out); }
 .banner-wrap.show .banner { transform: none; opacity: 1; }
 .banner svg { flex: none; margin-top: -1px; }
 
-/* bottom bar */
-.bar { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; z-index: 30; background: var(--bar);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); border-top: 1px solid var(--divider);
-  display: flex; align-items: flex-start; padding: 6px 12px 0 12px; }
-.tab { width: 76px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font: 600 11px/1 Figtree; transition: color 200ms var(--out); }
+/* rejected write: sits over every screen until dismissed */
+.rej { position: absolute; left: 12px; right: 12px; top: 52px; z-index: 45; background: var(--danger); color: var(--danger-ink); border-radius: 18px; padding: 12px 8px 12px 14px;
+  display: flex; gap: 10px; align-items: flex-start; font: 500 14px/19px Figtree; box-shadow: var(--shadow); transform: translateY(-24px) scale(.98); opacity: 0; pointer-events: none;
+  transition: transform 380ms var(--spring), opacity 200ms var(--out); }
+.rej.show { transform: none; opacity: 1; pointer-events: auto; }
+.rej svg { flex: none; margin-top: 0; }
+.rej .msg { flex: 1; }
+.rej .msg b { display: block; font-weight: 700; }
+.rej button { flex: none; height: 32px; padding: 0 12px; border-radius: 999px; font: 600 14px/32px Figtree; color: inherit; background: color-mix(in srgb, currentColor 12%, transparent); }
+
+/* bottom bar: a floating capsule of three tabs, and the Log button beside it */
+.edge { position: absolute; left: 0; right: 0; bottom: 0; height: 140px; z-index: 29; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--bg) 40%); }
+.bar { position: absolute; left: 16px; bottom: 26px; height: 62px; z-index: 30; border-radius: 31px; background: var(--bar);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); box-shadow: 0 0 0 1px var(--divider), var(--shadow);
+  display: flex; align-items: center; padding: 4px; }
+.bar .tthumb { position: absolute; top: 4px; left: 4px; width: 76px; height: 54px; border-radius: 27px; background: var(--fill); transition: transform 380ms var(--spring); }
+.tab { position: relative; width: 76px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font: 600 11px/1 Figtree; transition: color 200ms var(--out); }
 .tab[aria-selected="true"] { color: var(--text); }
 .tab svg { transition: transform 380ms var(--spring); }
-.tab[aria-selected="true"] svg { transform: translateY(-1px) scale(1.06); }
-.logb { position: absolute; right: 18px; top: -20px; width: 66px; height: 66px; border-radius: 50%;
+.tab[aria-selected="true"] svg { transform: scale(1.06); }
+.logb { position: absolute; right: 16px; bottom: 24px; z-index: 30; width: 66px; height: 66px; border-radius: 50%;
   background: conic-gradient(from -90deg, #FFB347 0 20%, #FF7A59 0 40%, #E8505B 0 60%, #9B5DE5 0 80%, #4D96FF 0);
   padding: 3px; box-shadow: var(--shadow); transition: transform 380ms var(--spring); }
 .logb::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--bg); }
@@ -240,16 +257,16 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .logb:active { transform: scale(.94); transition-duration: 90ms; }
 
 /* snackbar */
-.snack { position: absolute; left: 14px; right: 14px; bottom: 112px; z-index: 40; border-radius: 18px; background: var(--accent); color: var(--on-accent);
-  display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 16px; font: 500 14.5px/19px Figtree;
+.snack { position: absolute; left: 16px; right: 16px; bottom: 104px; z-index: 40; border-radius: 18px; background: var(--accent); color: var(--on-accent);
+  display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 16px; font: 500 15px/20px Figtree;
   transform: translateY(24px) scale(.98); opacity: 0; transition: transform 380ms var(--spring), opacity 200ms var(--out); pointer-events: none; box-shadow: var(--shadow); }
 .snack.show { transform: none; opacity: 1; pointer-events: auto; }
 .snack .msg { flex: 1; }
-.snack .undo { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 999px; font: 700 14.5px/1 Figtree; color: var(--snack-action); }
+.snack .undo { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 999px; font: 700 15px/1 Figtree; color: var(--snack-action); }
 .snack .ring { width: 18px; height: 18px; transform: rotate(-90deg); }
 
 /* pushed pages */
-.page { position: absolute; inset: 0; background: var(--bg); z-index: 20; overflow-y: auto; scrollbar-width: none; padding: 54px 0 60px; transform: translateX(100%); transition: transform 420ms var(--spring); box-shadow: -10px 0 30px rgba(0,0,0,.08); }
+.page { position: absolute; inset: 0; background: var(--bg); z-index: 20; overflow-y: auto; scrollbar-width: none; padding: 54px 0 130px; transform: translateX(100%); transition: transform 420ms var(--spring); box-shadow: -10px 0 30px rgba(0,0,0,.08); }
 .page::-webkit-scrollbar { display: none; }
 .page.in { transform: none; }
 .views.pushed { transform: translateX(-28%); filter: brightness(.96); }
@@ -269,7 +286,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .sh-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .sh-head h3 { margin: 0; font: 700 22px/26px Gabarito; letter-spacing: -0.01em; }
 .iconbtn { width: 36px; height: 36px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; color: var(--text); }
-.hpick { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px 2px; }
+.hpick { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px 2px; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
 .hpick::-webkit-scrollbar { display: none; }
 .hpick .chip { background: var(--fill); flex: none; }
 .hpick .chip.on { background: var(--accent); }
@@ -280,11 +297,9 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .num { text-align: center; cursor: ew-resize; touch-action: none; user-select: none; }
 .num .big { font: 500 76px/80px "Spline Sans Mono"; letter-spacing: -0.04em; display: inline-flex; }
 .num .unit { display: block; font: 500 15px/18px Figtree; color: var(--muted); margin-top: 2px; }
-.num .scrub { display: block; font: 500 11.5px/14px Figtree; color: var(--muted); opacity: .8; margin-top: 4px; }
+.num .scrub { display: block; font: 500 12px/16px Figtree; color: var(--muted); margin-top: 4px; }
 .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--fill); border-radius: 999px; padding: 3px; height: 40px; }
-.seg .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; border-radius: 999px; background: var(--surface); box-shadow: 0 1px 3px rgba(29,28,26,.10); transition: transform 380ms var(--spring); }
-:root[data-theme="dark"] .seg .thumb { background: #3A3733; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg .thumb { background: #3A3733; } }
+.seg .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; border-radius: 999px; background: var(--hl); box-shadow: 0 1px 3px rgba(29,28,26,.10); transition: transform 380ms var(--spring); }
 .seg button { position: relative; z-index: 1; font: 600 14px/34px Figtree; color: var(--muted); transition: color 200ms; }
 .seg button[aria-pressed="true"] { color: var(--text); }
 .seg.sm { height: 34px; }
@@ -300,6 +315,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .wcol::-webkit-scrollbar { display: none; }
 .wcol div { height: 34px; line-height: 34px; text-align: center; scroll-snap-align: center; font: 500 17px/34px "Spline Sans Mono"; color: var(--text); }
 .wcol.days div { font: 500 16px/34px Figtree; }
+.wcol div.off { color: var(--muted); opacity: .45; }
 .cta { position: relative; display: block; width: 100%; height: 56px; margin: 22px auto 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 600 17px/56px Figtree; transition: width 320ms var(--spring), transform 380ms var(--spring), opacity 200ms; overflow: hidden; }
 .cta:active { transform: scale(.97); transition-duration: 90ms; }
 .cta:disabled { opacity: .35; cursor: default; }
@@ -319,7 +335,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .input { display: flex; align-items: center; height: 52px; border-radius: 14px; background: var(--fill); padding: 0 6px 0 14px; box-shadow: 0 0 0 0 var(--accent); transition: box-shadow 160ms var(--out); }
 .input:focus-within { box-shadow: 0 0 0 2px var(--accent); }
 .input input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: 400 16px/1 Figtree; color: var(--text); height: 100%; }
-.input input::placeholder { color: var(--muted); opacity: .8; }
+.input input::placeholder { color: var(--muted); opacity: 1; }
 .input .iconbtn { background: none; }
 .units { display: flex; flex-wrap: wrap; gap: 8px; }
 .units .chip { background: var(--fill); height: 36px; padding: 0 14px; }
@@ -335,16 +351,16 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .errcard.show { grid-template-rows: 1fr; }
 .errcard > div { overflow: hidden; min-height: 0; }
 .errcard .in { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--danger); color: var(--danger-ink); display: flex; gap: 10px; font: 500 14px/19px Figtree; }
-.auth { position: absolute; inset: 0; padding: 92px 24px 40px; overflow-y: auto; scrollbar-width: none; background: var(--bg); }
+.auth { position: absolute; inset: 0; padding: 76px 24px 56px; overflow-y: auto; scrollbar-width: none; background: var(--bg); }
 .auth .mark { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .auth .mark svg { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 0 0 1px var(--divider), var(--shadow); }
 .auth h1 { margin: 18px 0 0; font: 800 40px/44px Gabarito; letter-spacing: -0.015em; }
 .auth .tag { margin: 6px 0 26px; color: var(--muted); font-size: 15px; line-height: 21px; max-width: 30ch; }
-.auth .link { display: block; margin: 16px auto 0; font: 600 14.5px/1 Figtree; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--divider); }
-.auth .foot { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 28px; font: 500 12.5px/16px Figtree; color: var(--muted); }
+.auth .link { display: block; margin: 16px auto 0; font: 600 15px/1 Figtree; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--divider); }
+.auth .foot { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 28px; font: 500 13px/16px Figtree; color: var(--muted); }
 
 /* trends */
-.hrow { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 14px 20px 2px; }
+.hrow { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 14px 20px 2px; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
 .hrow::-webkit-scrollbar { display: none; }
 .hrow .chip { flex: none; height: 36px; }
 .hrow .chip.arch { color: var(--muted); }
@@ -353,8 +369,8 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .chartcard { margin: 14px 20px 0; background: var(--surface); border-radius: 20px; padding: 16px 12px 12px 8px; position: relative; }
 .chartcard svg { display: block; overflow: visible; }
 .chartcard .gl { stroke: var(--divider); }
-.chartcard .tick { font: 500 10.5px "Spline Sans Mono"; fill: var(--muted); }
-.legend { display: flex; gap: 14px; padding: 2px 8px 0 14px; font: 500 12.5px/16px Figtree; color: var(--muted); }
+.chartcard .tick { font: 500 11px "Spline Sans Mono"; fill: var(--muted); }
+.legend { display: flex; gap: 14px; padding: 2px 8px 0 14px; font: 500 13px/16px Figtree; color: var(--muted); }
 .legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
 .avgrow { display: flex; align-items: center; justify-content: space-between; margin: 12px 20px 0; padding: 6px 6px 6px 16px; border-radius: 999px; background: var(--surface); }
 .avgrow .l { font: 500 14px/1 Figtree; }
@@ -364,12 +380,15 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .mini button:disabled { opacity: .35; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 20px 0; }
 .stat { background: var(--surface); border-radius: 20px; padding: 12px 14px 14px; }
-.stat .k { font: 500 12.5px/16px Figtree; color: var(--muted); }
+.stat .k { font: 500 13px/16px Figtree; color: var(--muted); }
 .stat .v { font: 500 22px/26px "Spline Sans Mono"; letter-spacing: -0.02em; margin-top: 6px; }
-.stat .u { font: 500 12.5px/16px Figtree; color: var(--muted); }
-.readout { position: absolute; top: 8px; pointer-events: none; background: var(--accent); color: var(--on-accent); border-radius: 12px; padding: 7px 10px; font: 500 12px/16px Figtree; opacity: 0; transform: translateY(4px); transition: opacity 120ms, transform 200ms var(--out); white-space: nowrap; z-index: 2; }
-.readout.show { opacity: 1; transform: none; }
-.readout b { display: block; font: 500 13px/17px "Spline Sans Mono"; }
+.stat .u { font: 500 13px/16px Figtree; color: var(--muted); }
+.readout { display: flex; align-items: baseline; gap: 8px; height: 44px; padding: 0 8px 10px 14px; white-space: nowrap; }
+.readout .rd { font: 600 13px/16px Figtree; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.readout .rv { margin-left: auto; font: 500 22px/26px "Spline Sans Mono"; letter-spacing: -0.02em; }
+.readout .ru { font: 500 13px/16px Figtree; color: var(--muted); }
+.readout .ra { font: 500 13px/16px Figtree; color: var(--muted); padding-left: 10px; border-left: 1px solid var(--divider); }
+.readout .ra b { font: 500 13px/16px "Spline Sans Mono"; color: var(--text); }
 .line { transition: stroke-dashoffset 500ms var(--inout); }
 
 /* habits */
@@ -403,7 +422,6 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 @media (max-width: 480px) {
   .page-head, .frames, .system { padding-left: 16px; padding-right: 16px; }
   .frame { width: 100%; max-width: 414px; }
-  .device { transform-origin: top left; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
@@ -590,7 +608,7 @@ function setOdo(e, value, instant) {
 }
 
 /* ================= rose ================= */
-const RW = 390, RH = 292, CX = 195, CY = 140, R = 88, FLOOR = .22, GAP = 3;
+const RW = 390, RH = 272, CX = 195, CY = 132, R = 88, FLOOR = .30, GAP = 3;
 function wedgePts(cx, cy, r, a0, a1, g) {
   const half = (a1 - a0) / 2, bis = (a0 + a1) / 2, apex = g / Math.sin(half);
   const rr = Math.max(r, apex + 0.6);
@@ -613,11 +631,11 @@ class Rose {
   build(habits) {
     this.habits = habits; const n = habits.length; this.svg.textContent = ""; this.el.querySelectorAll(".lab").forEach(x => x.remove()); this.petals = [];
     const defs = s("defs"); this.svg.append(defs);
-    this.wash = s("circle", { class: "wash", cx: CX, cy: CY, r: R + 30, style: "fill:var(--clear)", opacity: 0 }); this.svg.append(this.wash);
-    this.g = s("g", { class: "breath" }); this.svg.append(this.g);
     const step = 2 * Math.PI / n; this.step = step;
-    // reference rim: the busiest day in the last 30
+    // reference rim: each habit's busiest day in the last 30 days
     const rim = []; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i * step; rim.push([CX + R * Math.cos(a), CY + R * Math.sin(a)]); }
+    this.wash = s("polygon", { class: "wash", points: ptsStr(rim), style: "fill:var(--clear);stroke:var(--clear)", "stroke-width": 16, "stroke-linejoin": "round", opacity: 0 }); this.svg.append(this.wash);
+    this.g = s("g", { class: "breath" }); this.svg.append(this.g);
     const rimM = s("mask", { id: `rim-${this.app.id}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: RW, height: RH });
     this.rimMask = s("polygon", { points: ptsStr(rim), fill: "none", stroke: "#fff", "stroke-width": 6, pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": 0 }); rimM.append(this.rimMask); defs.append(rimM);
     this.rim = s("polygon", { points: ptsStr(rim), fill: "none", style: "stroke:var(--muted)", "stroke-opacity": .35, "stroke-width": 1.2, "stroke-dasharray": "1.5 4", "stroke-linecap": "round", mask: `url(#rim-${this.app.id})` });
@@ -628,17 +646,17 @@ class Rose {
       const grp = s("g", { class: "pet" }); grp.addEventListener("click", () => { if (!this.swiped) this.app.setFilter(hb.id); });
       const hit = s("path", { d: `M${CX},${CY} L${CX + (R + 20) * Math.cos(a0)},${CY + (R + 20) * Math.sin(a0)} L${CX + (R + 20) * Math.cos(a1)},${CY + (R + 20) * Math.sin(a1)} Z`, fill: "transparent" });
       const shape = s("polygon", { style: `fill:${fill};stroke:${fill}`, "stroke-width": 3, "stroke-linejoin": "round", opacity: 0 });
-      const dots = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-opacity": .8, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0, mask: `url(#m-${this.app.id}-${i})` });
+      const dots = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", style: "stroke:var(--muted)", "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-opacity": .75, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0, mask: `url(#m-${this.app.id}-${i})` });
       const mask = s("mask", { id: `m-${this.app.id}-${i}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: RW, height: RH });
       const mp = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), fill: "none", stroke: "#fff", "stroke-width": 6, pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": 0 });
       mask.append(mp); defs.append(mask);
       const pend = s("line", { style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2, "stroke-linecap": "round", "stroke-dasharray": "3 3", opacity: 0 });
-      const zf = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), style: `fill:${DATA_FILL[hb.order % 5]}`, "fill-opacity": .18, opacity: 0 });
+      const zf = s("polygon", { points: ptsStr(wedgePts(CX, CY, FLOOR * R, a0, a1, GAP)), style: "fill:var(--muted)", "fill-opacity": .07, opacity: 0 });
       grp.append(hit, zf, dots, shape, pend); this.g.append(grp);
       const gh = s("polygon", { points: ptsStr(wedgePts(CX, CY, R * .6, a0, a1, GAP)), fill: "none", style: "stroke:var(--muted)", "stroke-width": 2, "stroke-dasharray": "0 4.5", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-opacity": .6 });
       this.ghost.append(gh);
       // label, horizontal, outside the rim
-      const bis = (a0 + a1) / 2, d = R + 16, lx = CX + d * Math.cos(bis), ly = CY + d * Math.sin(bis), c = Math.cos(bis), sn = Math.sin(bis);
+      const bis = (a0 + a1) / 2, d = R * Math.cos(step / 2) + 14, lx = CX + d * Math.cos(bis), ly = CY + d * Math.sin(bis), c = Math.cos(bis), sn = Math.sin(bis);
       const lab = h("div", { class: "lab", role: "button", tabindex: 0, onclick: () => this.app.setFilter(hb.id) }, h("span", { class: "nm" }, hb.name), h("span", { class: "amt", style: `color:${habitInk(hb.order)}` }));
       const tx = c > .3 ? "0" : c < -.3 ? "-100%" : "-50%", ty = sn < -.3 ? "-100%" : sn > .3 ? "0" : "-50%";
       lab.style.left = lx + "px"; lab.style.top = ly + "px"; lab.style.transform = `translate(${tx},${ty})`; lab.style.textAlign = c > .3 ? "left" : c < -.3 ? "right" : "center";
@@ -662,7 +680,7 @@ class Rose {
       const v = vals[p.hb.id] || 0; if (v > 0) allZero = false;
       const target = v > 0 ? radiusFor(v, maxes[p.hb.id]) : FLOOR * R;
       const nonzero = v > 0;
-      const amt = p.lab.querySelector(".amt"); amt.textContent = `${v} ${unitFor(p.hb.unit, v)}`; p.lab.classList.toggle("zero", !nonzero);
+      const amt = p.lab.querySelector(".amt"); amt.innerHTML = `<b>${v}</b> ${unitFor(p.hb.unit, v)}`; p.lab.classList.toggle("zero", !nonzero);
       p.lab.setAttribute("aria-label", `${p.hb.name}, ${v} ${unitFor(p.hb.unit, v)}`);
       let from = p.r;
       if (mode === "bloom") from = 0;
@@ -672,6 +690,7 @@ class Rose {
       const delay = mode === "bloom" ? i * 40 : mode === "morph" ? i * 35 : (opts.delay || 0);
       p.zf.style.transition = "opacity 220ms";
       if (RM || mode === "instant") { p.r = target; this.draw(p); p.shape.setAttribute("opacity", nonzero ? 1 : 0); p.dots.setAttribute("opacity", nonzero ? 0 : 1); p.zf.setAttribute("opacity", nonzero ? 0 : 1); p.shown = nonzero; return; }
+      if (mode === "bloom") { p.lab.style.opacity = 0; setTimeout(() => p.lab.style.opacity = "", delay + 90); }
       if (nonzero) { setTimeout(() => p.shape.setAttribute("opacity", 1), delay); }
       else { setTimeout(() => p.shape.setAttribute("opacity", 0), delay + 120); }
       setTimeout(() => { p.dots.setAttribute("opacity", nonzero ? 0 : 1); p.zf.setAttribute("opacity", nonzero ? 0 : 1); }, delay + (nonzero ? 0 : 160));
@@ -699,7 +718,7 @@ class Rose {
     this.el.classList.toggle("is-clean", on);
     if (on && animate && !RM) { const m = this.rimMask; m.style.transition = "none"; m.setAttribute("stroke-dashoffset", 1); m.getBoundingClientRect(); m.style.transition = "stroke-dashoffset 700ms 120ms cubic-bezier(.65,0,.35,1)"; requestAnimationFrame(() => m.setAttribute("stroke-dashoffset", 0)); }
     this.petals.forEach(p => {
-      p.dots.style.stroke = on ? "var(--clear-ink)" : habitInk(p.hb.order); p.zf.style.fill = on ? "var(--clear-ink)" : DATA_FILL[p.hb.order % 5];
+      p.dots.style.stroke = on ? "var(--clear-ink)" : "var(--muted)"; p.zf.style.fill = on ? "var(--clear-ink)" : "var(--muted)";
       if (on && animate && !RM) { p.mp.style.transition = "none"; p.mp.setAttribute("stroke-dashoffset", 1); p.mp.getBoundingClientRect(); p.mp.style.transition = "stroke-dashoffset 500ms cubic-bezier(.65,0,.35,1)"; requestAnimationFrame(() => p.mp.setAttribute("stroke-dashoffset", 0)); }
     });
     if (on && animate && !RM) { this.g.classList.remove("go"); void this.g.getBoundingClientRect(); setTimeout(() => this.g.classList.add("go"), 380); }
@@ -757,26 +776,29 @@ class App {
     for (const k in this.v) { this.views.append(this.v[k]); if (k !== this.tab) this.v[k].hidden = true; }
     this.bannerW = h("div", { class: "banner-wrap", "aria-live": "polite" }, h("div", {}, h("div", { class: "banner" }, icon("cloudOff", 20), h("span", {}, "Offline. Showing what this device has saved. New entries sync when you are back online."))));
     this.snack = h("div", { class: "snack", role: "status", "aria-live": "polite" });
+    this.rej = h("div", { class: "rej", role: "alert" });
     this.scrim = h("div", { class: "scrim", onclick: () => this.closeSheet() });
     this.sheet = h("div", { class: "sheet", role: "dialog", "aria-modal": "true" });
-    L.append(this.views, this.buildBar(), this.snack, this.scrim, this.sheet);
+    L.append(this.views, h("div", { class: "edge", "aria-hidden": "true" }), this.buildBar(), this.logBtn, this.rej, this.snack, this.scrim, this.sheet);
     scr.insertBefore(L, scr.querySelector(".homebar"));
     this.buildToday(first); this.renderTrends(); this.renderHabits();
   }
   buildBar() {
     const bar = h("nav", { class: "bar", "aria-label": "Main" }); this.tabs = {};
+    this.tthumb = h("span", { class: "tthumb", "aria-hidden": "true" }); bar.append(this.tthumb); this.placeThumb(this.tab);
     for (const [k, label] of [["today", "Today"], ["trends", "Trends"], ["habits", "Habits"]]) {
       const b = h("button", { class: "tab", role: "tab", "aria-selected": String(k === this.tab), onclick: () => this.go(k) }, tabIcon(k, k === this.tab), label);
       this.tabs[k] = b; bar.append(b);
     }
     this.logBtn = h("button", { class: "logb", "aria-label": "Log an entry", onclick: () => this.openRecord({ habit: this.lastHabit }) }, h("span", { class: "core" }, icon("plus", 28, 2.4)));
-    bar.append(this.logBtn); return bar;
+    return bar;
   }
+  placeThumb(tab) { this.tthumb.style.transform = `translateX(${["today", "trends", "habits"].indexOf(tab) * 76}px)`; }
   go(tab) {
     if (tab === this.tab) { this.v[tab].scrollTo({ top: 0, behavior: "smooth" }); return; }
     const out = this.v[this.tab], inn = this.v[tab];
     for (const k in this.tabs) { const on = k === tab; this.tabs[k].setAttribute("aria-selected", on); this.tabs[k].firstChild.replaceWith(tabIcon(k, on)); }
-    this.tab = tab;
+    this.tab = tab; this.placeThumb(tab);
     if (tab === "trends") this.renderTrends(true);
     if (tab === "habits") this.renderHabits();
     if (RM) { out.hidden = true; inn.hidden = false; return; }
@@ -791,10 +813,10 @@ class App {
     v.append(h("div", { class: "head" }, this.titleW, av), this.bannerW);
     this.strip = h("div", { class: "strip", role: "listbox", "aria-label": "Days" }); v.append(this.strip); this.renderStrip();
     this.rose = new Rose(this); this.rose.build(this.live()); v.append(this.rose.el);
-    this.roseCap = h("p", { class: "rose-cap" }, h("svg", { width: 18, height: 6, html: '<path d="M1 3h16" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 3" stroke-linecap="round"/>' }), "Outer ring: your busiest day in the last 30");
+    this.roseCap = h("p", { class: "rose-cap" }, h("svg", { width: 18, height: 6, html: '<path d="M1 3h16" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 3" stroke-linecap="round"/>' }), "Outer ring: each habit's busiest day in the last 30 days");
     this.clearMsg = h("div", { class: "clearmsg pre", hidden: true }, h("h3", {}, ""), h("p", {}, ""));
     v.append(this.roseCap, this.clearMsg);
-    this.chipsEl = h("div", { class: "chips" }); v.append(this.chipsEl, h("p", { class: "hint" }, "Tap a habit to log one. Hold it, or press +, for more."));
+    this.chipsEl = h("div", { class: "chips" }); v.append(this.chipsEl);
     this.entriesSec = h("div"); v.append(this.entriesSec);
     this.renderChips(); this.renderEntries();
     const vals = this.dayVals(0), mx = this.maxes();
@@ -821,7 +843,7 @@ class App {
     this.clearMsg.hidden = !showClean;
     if (showClean) {
       this.clearMsg.querySelector("h3").textContent = this.day === 0 ? "A clear day so far" : "A clear day";
-      this.clearMsg.querySelector("p").textContent = this.offline ? "Entries made elsewhere show once you are back online." : this.day === 0 ? "Nothing logged today." : "Nothing logged on this day.";
+      this.clearMsg.querySelector("p").textContent = this.offline ? "Entries made elsewhere show once you are back online." : `Nothing logged ${this.day === 0 ? "today" : "on this day"}. Tap a habit to log one; hold it for more.`;
       this.clearMsg.classList.add("pre"); setTimeout(() => this.clearMsg.classList.remove("pre"), RM ? 0 : 260);
     }
   }
@@ -850,7 +872,7 @@ class App {
     const vals = this.dayVals(this.day); this.chipsEl.textContent = ""; this.chipMap = {};
     for (const hb of this.live()) {
       const cnt = odo(vals[hb.id] || 0);
-      const c = h("button", { class: "chip", "aria-label": `Log one ${UNIT1[hb.unit]} of ${hb.name}` }, swatch(hb.order), hb.name, h("span", { class: "cnt" }, cnt));
+      const c = h("button", { class: "chip", "aria-label": `Log one ${UNIT1[hb.unit]} of ${hb.name}` }, swatch(hb.order), h("span", { class: "nm" }, hb.name), h("span", { class: "cnt" + ((vals[hb.id] || 0) ? "" : " z") }, cnt));
       let t = null, held = false;
       c.addEventListener("pointerdown", () => { c.classList.add("press"); held = false; t = setTimeout(() => { held = true; c.classList.remove("press"); this.openRecord({ habit: hb.id }); }, 450); });
       const up = () => { clearTimeout(t); c.classList.remove("press"); };
@@ -860,7 +882,7 @@ class App {
       this.chipsEl.append(c); this.chipMap[hb.id] = cnt;
     }
   }
-  updateCounts() { const vals = this.dayVals(this.day); for (const id in this.chipMap) setOdo(this.chipMap[id], vals[id] || 0); }
+  updateCounts() { const vals = this.dayVals(this.day); for (const id in this.chipMap) { setOdo(this.chipMap[id], vals[id] || 0); this.chipMap[id].parentNode.classList.toggle("z", !vals[id]); } }
   renderEntries(freshId) {
     const sec = this.entriesSec; sec.textContent = "";
     let list = this.entries.filter(e => e.d === this.day).sort((a, b) => b.t - a.t);
@@ -923,6 +945,16 @@ class App {
     const hb = this.habit(e.h);
     this.toast(`Deleted ${e.q} ${unitFor(hb.unit, e.q)} of ${hb.name}.`, () => { this.entries.push(e); this.afterWrite(e.d, e.id, e.h); if (this.histPage) this.renderHistory(); });
   }
+  /* a write the server refused after the 10 s settle window: the entry leaves, and the banner names it */
+  showRejected() {
+    const hb = this.habit("sugar"), t = this.nowMin(), e = this.addEntry(hb.id, 1, this.day, t);
+    setTimeout(() => {
+      this.entries = this.entries.filter(x => x.id !== e.id); this.afterWrite(e.d, null, hb.id);
+      this.rej.textContent = "";
+      this.rej.append(icon("alert", 20), h("span", { class: "msg" }, h("b", {}, "Not saved"), `The server refused 1 ${UNIT1[hb.unit]} of ${hb.name} at ${hm(t)}, so it is not in your history.`), h("button", { onclick: () => this.rej.classList.remove("show") }, "Dismiss"));
+      this.rej.classList.add("show");
+    }, RM ? 300 : 1400);
+  }
   setOffline(on) {
     this.offline = on; this.bannerW.classList.toggle("show", on);
     if (!on) setTimeout(() => { let any = false; this.entries.forEach(e => { if (e.pending) { e.pending = false; any = true; } }); if (any) { this.rose.pending(new Set()); this.renderEntries(); if (this.histPage) this.renderHistory(); } }, 700);
@@ -968,9 +1000,10 @@ class App {
     const whenL = h("p", { class: "when" });
     const drawWhen = () => { whenL.innerHTML = st.when === "now" ? `Logs at <b>${this.opt.clock || "9:41"}</b> today` : `${relDay(st.d)}, <b>${hm(st.t)}</b>`; };
     const wheel = h("div", { class: "wheel" });
-    const mkCol = (cls, items, sel, on) => { const c = h("div", { class: "wcol " + cls }); items.forEach(x => c.append(h("div", {}, x))); let tm; c.addEventListener("scroll", () => { clearTimeout(tm); tm = setTimeout(() => { on(Math.round(c.scrollTop / 34)); drawWhen(); }, 80); }); requestAnimationFrame(() => c.scrollTop = sel * 34); return c; };
+    const mkCol = (cls, items, sel, on, last = items.length - 1) => { const c = h("div", { class: "wcol " + cls }); items.forEach((x, i) => c.append(h("div", { class: i > last ? "off" : null }, x))); let tm; c.addEventListener("scroll", () => { clearTimeout(tm); tm = setTimeout(() => { const i = Math.round(c.scrollTop / 34); if (i > last) { c.scrollTo({ top: last * 34, behavior: "smooth" }); return; } on(i); drawWhen(); }, 80); }); requestAnimationFrame(() => c.scrollTop = sel * 34); return c; };
+    const dayLabel = off => off === 0 || off === 1 ? relDay(off) : `${WD[dayDate(off).getDay()].slice(0, 3)} ${short(dayDate(off))}`;
     wheel.append(
-      mkCol("days", Array.from({ length: 14 }, (_, i) => i < 2 ? relDay(i) : `${WD[dayDate(i).getDay()].slice(0, 3)} ${short(dayDate(i))}`), st.d, i => st.d = i),
+      mkCol("days", [...Array.from({ length: 14 }, (_, i) => dayLabel(13 - i)), dayLabel(-1), dayLabel(-2)], 13 - st.d, i => st.d = 13 - i, 13),
       mkCol("", Array.from({ length: 24 }, (_, i) => pad(i)), Math.floor(st.t / 60), i => st.t = i * 60 + st.t % 60),
       mkCol("", Array.from({ length: 60 }, (_, i) => pad(i)), st.t % 60, i => st.t = Math.floor(st.t / 60) * 60 + i));
     const wheelW = h("div", { class: "wheelwrap" + (st.when === "earlier" ? " show" : "") }, h("div", {}, wheel));
@@ -997,7 +1030,7 @@ class App {
     this.openSheet([h("div", { class: "sh-head" }, h("h3", {}, entry ? "Edit entry" : "Log an entry"), h("button", { class: "iconbtn", "aria-label": "Close", onclick: () => this.closeSheet() }, icon("close", 20, 2))),
       pick, h("div", { class: "stepper" }, minus, num, plus), seg, whenL, wheelW, cta, extra]);
     this.sheetState = st; this.sheetCta = cta;
-    requestAnimationFrame(() => { const on = pick.querySelector(".chip.on"); if (on) pick.scrollLeft = Math.max(0, on.offsetLeft - 20); });
+    requestAnimationFrame(() => { const on = pick.querySelector(".chip.on"); if (on) pick.scrollLeft = Math.max(0, on.offsetLeft + on.offsetWidth + 36 - pick.clientWidth); });
   }
   /* ---- trends ---- */
   renderTrends(animate) {
@@ -1026,9 +1059,11 @@ class App {
     const X = i => pl + (buckets.length === 1 ? iw / 2 : (i + .5) * iw / buckets.length), Y = val => pt + ih - val / yMax * ih;
     const svg = s("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${hb.name}, last ${T.range} days: ${total} ${unitFor(hb.unit, total)} in total.` });
     for (let y = 0; y <= yMax + 1e-9; y += stepV) { svg.append(s("line", { class: "gl", x1: pl, x2: W - pr, y1: Y(y), y2: Y(y), "stroke-width": 1 })); const t = s("text", { class: "tick", x: pl - 8, y: Y(y) + 3.5, "text-anchor": "end" }); t.textContent = fmtN(y); svg.append(t); }
-    const bw = Math.max(1, iw / buckets.length - (buckets.length > 60 ? 0.4 : 3));
-    const bars = s("g", { "aria-hidden": "true" });
-    buckets.forEach((b, i) => { if (!b.v) return; const y = Y(b.v); const r = s("rect", { x: X(i) - bw / 2, y, width: bw, height: Y(0) - y, rx: Math.min(3, bw / 2), style: `fill:${habitFill(hb.order)};opacity:var(--rawbar)` }); if (animate && !RM) { r.style.transformOrigin = `0 ${Y(0)}px`; r.style.animation = `grow 420ms ${Math.min(300, i * 6)}ms var(--spring) both`; } bars.append(r); });
+    // above 120 buckets a bar is under 2.5 px wide, so the raw values drop out and the average carries the chart
+    const showBars = buckets.length <= 120;
+    const bw = Math.max(1, iw / buckets.length - (buckets.length > 60 ? 1 : 3));
+    const bars = s("g", { "aria-hidden": "true" }); const barEls = [];
+    buckets.forEach((b, i) => { if (!b.v || !showBars) return; const y = Y(b.v); const r = s("rect", { x: X(i) - bw / 2, y, width: bw, height: Y(0) - y, rx: Math.min(3, bw / 2), style: "fill:var(--text);fill-opacity:var(--rawbar)" }); if (animate && !RM) { r.style.transformOrigin = `0 ${Y(0)}px`; r.style.animation = `grow 420ms ${Math.min(300, i * 6)}ms var(--spring) both`; } bars.append(r); barEls[i] = r; });
     svg.append(bars);
     // x labels
     const nL = 4; for (let k = 0; k < nL; k++) { const i = Math.round(k * (buckets.length - 1) / (nL - 1)); const t = s("text", { class: "tick", x: X(i), y: H - 5, "text-anchor": k === 0 ? "start" : k === nL - 1 ? "end" : "middle" }); t.textContent = short(buckets[i].label); if (k === 0) t.setAttribute("x", pl); if (k === nL - 1) t.setAttribute("x", W - pr); svg.append(t); }
@@ -1036,26 +1071,32 @@ class App {
     const pts = avg.map((a, i) => [X(i), Y(a)]);
     const dLine = smoothPath(pts);
     const area = s("path", { d: `${dLine} L${X(buckets.length - 1)},${Y(0)} L${X(0)},${Y(0)} Z`, style: `fill:${DATA_FILL[hb.order % 5]}`, opacity: 0 });
-    area.style.transition = "opacity 400ms 200ms"; svg.append(area);
+    area.style.transition = "opacity 400ms 200ms"; if (!showBars) svg.append(area);
     const line = s("path", { class: "line", d: dLine, fill: "none", style: `stroke:${habitInk(hb.order)}`, "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round", pathLength: 1, "stroke-dasharray": "1 1", "stroke-dashoffset": animate && !RM ? 1 : 0 });
     svg.append(line);
     const cross = s("line", { y1: pt, y2: Y(0), style: "stroke:var(--text)", "stroke-opacity": .35, "stroke-width": 1, opacity: 0 });
     const dot = s("circle", { r: 5, style: `fill:${habitInk(hb.order)};stroke:var(--surface)`, "stroke-width": 2.5, opacity: 0 });
     svg.append(cross, dot);
     const card = h("div", { class: "chartcard" });
-    const ro = h("div", { class: "readout", "aria-hidden": "true" });
+    const ro = h("div", { class: "readout", "aria-live": "polite" });
     card.append(ro, svg, h("div", { class: "legend" },
-      h("span", {}, h("i", { style: `width:8px;height:12px;border-radius:2px;background:${DATA_FILL[hb.order % 5]};opacity:.5` }), T.step === "day" ? "Each day" : "Each week"),
+      showBars ? h("span", {}, h("i", { style: "width:8px;height:12px;border-radius:2px;background:var(--text);opacity:.22" }), T.step === "day" ? "Each day" : "Each week") : null,
       h("span", {}, h("i", { style: `width:16px;height:2.5px;border-radius:2px;background:${habitInk(hb.order)}` }), T.win > 1 ? `Average over ${T.win} ${T.step === "day" ? "days" : "weeks"}` : "No averaging")));
     v.append(card);
     const hit = s("rect", { x: pl, y: 0, width: iw, height: H, fill: "transparent", style: "cursor:crosshair" }); svg.append(hit);
-    const move = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width; const i = Math.max(0, Math.min(buckets.length - 1, Math.floor((x - pl) / iw * buckets.length))); const b = buckets[i];
-      cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("opacity", 1); dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(avg[i])); dot.setAttribute("opacity", 1);
-      ro.innerHTML = `${T.step === "day" ? WD[b.label.getDay()].slice(0, 3) + " " + short(b.label) : "Week to " + short(dayDate(b.d1))}<b>${b.v} ${unitFor(hb.unit, b.v)}</b>${T.win > 1 ? `<span style="opacity:.75">Average ${fmtN(avg[i])}</span>` : ""}`;
-      ro.classList.add("show"); const left = 8 + X(i) * (r.width / W); ro.style.left = Math.max(10, Math.min(card.clientWidth - ro.offsetWidth - 10, left - ro.offsetWidth / 2)) + "px"; };
+    let hi = null;
+    const show = (i, probing) => { const b = buckets[i];
+      if (hi) { hi.style.fill = "var(--text)"; hi.style.fillOpacity = "var(--rawbar)"; } hi = barEls[i] || null;
+      if (hi) { hi.style.fill = habitFill(hb.order); hi.style.fillOpacity = 1; }
+      cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("opacity", probing ? 1 : 0); dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(avg[i])); dot.setAttribute("opacity", 1);
+      const when = T.step === "day" ? (b.d0 < 2 ? relDay(b.d0) : WD[b.label.getDay()].slice(0, 3) + " " + short(b.label)) : (b.d1 === 0 ? "This week" : "Week to " + short(dayDate(b.d1)));
+      ro.textContent = ""; ro.append(h("span", { class: "rd" }, when), h("span", { class: "rv" }, fmtN(b.v)), h("span", { class: "ru" }, unitFor(hb.unit, b.v)));
+      if (T.win > 1) ro.append(h("span", { class: "ra" }, "avg ", h("b", {}, fmtN(avg[i])))); };
+    const move = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width; show(Math.max(0, Math.min(buckets.length - 1, Math.floor((x - pl) / iw * buckets.length))), true); };
     hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
-    hit.addEventListener("pointerleave", () => { ro.classList.remove("show"); cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
-    this.trendProbe = i => move({ clientX: svg.getBoundingClientRect().left + X(i) * svg.getBoundingClientRect().width / W });
+    hit.addEventListener("pointerleave", () => show(buckets.length - 1, false));
+    show(buckets.length - 1, false);
+    this.trendProbe = i => show(i, true);
     if (animate && !RM) requestAnimationFrame(() => requestAnimationFrame(() => { line.style.transitionDelay = "100ms"; line.setAttribute("stroke-dashoffset", 0); area.setAttribute("opacity", .12); })); else area.setAttribute("opacity", .12);
     // average stepper
     const unitW = T.step === "day" ? "days" : "weeks";
@@ -1204,10 +1245,10 @@ function setTheme(t) { if (t === "system") delete root.dataset.theme; else root.
 
 /* ================= frames ================= */
 const FRAMES = [
-  { key: "today-busy", title: "Today, a busy day", text: "Five habits, each with its own petal, scaled to that habit's busiest day in the last 30. Tap a chip to log one: the petal springs out and the count rolls. Tap a petal to filter the entries. Swipe the flower or tap the strip to change day.", opt: { data: "busy", clock: "21:14", seed: 7 }, acts: ["offline", "replay"] },
+  { key: "today-busy", title: "Today, a busy day", text: "Five habits, each with its own petal, scaled to that habit's busiest day in the last 30. Tap a tile to log one: the petal springs out and the count rolls. Tap a petal to filter the entries. Swipe the flower or tap the strip to change day.", opt: { data: "busy", clock: "21:14", seed: 7 }, acts: ["offline", "rejected", "replay"] },
   { key: "today-sparse", title: "Today, a sparse day", text: "Two of five habits at 1. Each draws a clear petal; the other three keep a dotted slot at the floor and read \"0\", so nothing goes missing and the shape still says what happened.", opt: { data: "sparse", clock: "10:02", seed: 11 }, acts: ["replay"] },
-  { key: "record", title: "Logging an entry", text: "Press + or hold a chip. The habit is preselected; the stepper scrubs by dragging; Now or Earlier replaces the lock icons. While it saves the button becomes its own spinner, then the petal grows on the chart.", opt: { data: "record", clock: "18:30", seed: 5, lastHabit: "coffee" }, acts: ["play", "replay"] },
-  { key: "trends", title: "Trends", text: "One habit over time. Bars for each day, a line for the average, in the habit's colour. Touch the chart for a readout. Switch Day and Week, change the range, lengthen the average.", opt: { data: "busy", clock: "21:14", seed: 7, tab: "trends" }, acts: ["probe", "replay"] },
+  { key: "record", title: "Logging an entry", text: "Press + or hold a tile. The habit is preselected; the stepper scrubs by dragging; Now or Earlier replaces the lock icons. While it saves the button becomes its own spinner, then the petal grows on the chart.", opt: { data: "record", clock: "18:30", seed: 5, lastHabit: "coffee" }, acts: ["play", "replay"] },
+  { key: "trends", title: "Trends", text: "One habit over time: neutral bars for each day and the average as a line in the habit's colour. Touch a bar to light it and read it in the header, which never covers the plot. Switch Day and Week, change the range, lengthen the average.", opt: { data: "busy", clock: "21:14", seed: 7, tab: "trends" }, acts: ["probe", "replay"] },
   { key: "habits", title: "Habits and history", text: "Renamed from Manage Data. Swipe a row to archive (with Undo); archived habits sit last and keep their history. Tap a habit for its history; swipe an entry to delete it, with Undo.", opt: { data: "busy", clock: "21:14", seed: 7, tab: "habits" }, acts: ["history", "replay"] },
   { key: "clear", title: "A clear day", text: "Nothing logged yet. The dotted flower draws itself in, a sage wash fades up behind it and the flower breathes once. Quietly positive, never looped.", opt: { data: "clear", clock: "08:05", seed: 3 }, acts: ["replay"] },
   { key: "auth", title: "Sign in", text: "One screen with the icon and wordmark. Sign in and Create account share a segmented control; the password rule is a live checklist; errors sit in a tonal card. Try a short password, then a long one.", opt: { auth: true, data: "busy", clock: "9:41", seed: 7 }, acts: ["replay"] },
@@ -1220,6 +1261,7 @@ for (const f of FRAMES) {
   const acts = h("div", { class: "acts" });
   for (const a of f.acts) {
     if (a === "replay") acts.append(h("button", { class: "pbtn", onclick: () => app.reset() }, "Replay"));
+    if (a === "rejected") acts.append(h("button", { class: "pbtn", onclick: () => app.showRejected() }, "Rejected write"));
     if (a === "offline") { const b = h("button", { class: "pbtn", "aria-pressed": "false", onclick: () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); app.setOffline(on); } }, "Offline"); acts.append(b); }
     if (a === "play") acts.append(h("button", { class: "pbtn", onclick: () => playRecord(app) }, "Play the flow"));
     if (a === "probe") acts.append(h("button", { class: "pbtn", onclick: () => app.trendProbe(22) }, "Show a readout"));
@@ -1227,6 +1269,9 @@ for (const f of FRAMES) {
   }
   document.getElementById("frames").append(h("section", { class: "frame", "aria-label": f.title }, dev, h("div", { class: "cap" }, h("h2", {}, f.title), h("p", {}, f.text), acts)));
 }
+/* below 446 px the phones shrink to fit the column; zoom (not transform) so the page reflows around them */
+function fitDevices() { document.querySelectorAll(".frame").forEach(f => { const d = f.querySelector(".device"); d.style.zoom = ""; const z = Math.min(1, f.clientWidth / 414); if (z < 1) d.style.zoom = z.toFixed(4); }); }
+fitDevices(); addEventListener("resize", fitDevices);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function playRecord(app) {
   app.closeSheet(); await wait(300);
@@ -1246,7 +1291,7 @@ document.getElementById("rmBtn").addEventListener("click", e => { RM = !RM; root
   g.append(h("div", { class: "syscard" }, h("h3", {}, "Habit colours, in creation order"),
     h("div", { class: "swatches" }, ["Amber", "Coral", "Red", "Violet", "Blue"].map((n, i) => sw(DATA_FILL[i], n, getComputedStyle(root).getPropertyValue(`--d${i + 1}`).trim()))),
     h("div", { class: "swatches", style: "margin-top:12px" }, [0, 1, 2, 3, 4].map(i => h("div", {}, h("svg", { viewBox: "0 0 40 24", style: "width:100%;height:40px;border-radius:10px;display:block", html: `<rect width="40" height="24" fill="url(#hatch${i})"/>` }), h("div", { class: "swl" }, h("b", { style: `color:${DATA_INK[i]}` }, `Ink ${i + 1}`), `Habit ${i + 6}`)))),
-    h("p", { class: "swl", style: "margin-top:12px;font-family:Figtree;font-size:12.5px;line-height:1.45" }, "Fills only on paper (1.6 to 3.8:1). Text in a habit's colour uses its ink, shown here. Habits 6 to 10 reuse the hues striped, 11 to 15 dotted. Archiving never recolours.")));
+    h("p", { class: "swl", style: "margin-top:12px;font-family:Figtree;font-size:13px;line-height:1.45" }, "Fills only on paper (1.6 to 3.8:1). Text in a habit's colour uses its ink, shown here. Habits 6 to 10 reuse the hues striped, 11 to 15 dotted. Archiving never recolours.")));
   g.append(h("div", { class: "syscard" }, h("h3", {}, "Paper and ink"),
     h("div", { class: "swatches" }, sw("var(--bg)", "Paper", "bg", true), sw("var(--surface)", "Surface", "cards", true), sw("var(--fill)", "Fill", "inputs"), sw("var(--text)", "Ink", "text, accent"), sw("var(--muted)", "Muted", "5.1:1")),
     h("div", { class: "swatches", style: "margin-top:12px" }, sw("var(--clear)", "Clear", "clean day"), sw("var(--clear-ink)", "Clear ink", "5.5:1"), sw("var(--danger)", "Danger", "error card"), sw("var(--danger-ink)", "Danger ink", "text"), sw("var(--spoke)", "Spoke", "45% ink"))));
@@ -1257,7 +1302,7 @@ document.getElementById("rmBtn").addEventListener("click", e => { RM = !RM; root
   // motion: the spring plotted
   const W = 300, H = 120, pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60 * .6; pts.push(`${(i / 60 * W).toFixed(1)},${(H - 16 - spring(t) * (H - 36)).toFixed(1)}`); }
   g.append(h("div", { class: "syscard" }, h("h3", {}, "Motion"), h("svg", { viewBox: `0 0 ${W} ${H}`, style: "width:100%;height:auto;display:block", html: `<line x1="0" x2="${W}" y1="${H - 16 - (H - 36)}" y2="${H - 16 - (H - 36)}" stroke="currentColor" stroke-opacity=".15" stroke-dasharray="2 3"/><line x1="0" x2="${W}" y1="${H - 16}" y2="${H - 16}" stroke="currentColor" stroke-opacity=".15"/><polyline points="${pts.join(" ")}" fill="none" stroke="var(--i2)" stroke-width="2.5" stroke-linejoin="round"/><text x="0" y="${H - 2}" font-family="Spline Sans Mono" font-size="10" fill="var(--muted)">0 ms</text><text x="${W}" y="${H - 2}" text-anchor="end" font-family="Spline Sans Mono" font-size="10" fill="var(--muted)">600 ms</text>` }),
-    h("p", { class: "swl", style: "font-family:Figtree;font-size:12.5px;line-height:1.45;margin-top:8px" }, `Spring: stiffness 380, damping 26, mass 1. Peaks at ${Math.round(Math.PI / SP.wd * 1000)} ms with ${Math.round(Math.exp(-SP.z * Math.PI / Math.sqrt(1 - SP.z * SP.z)) * 100)}% overshoot and stays within 0.5% of its target from 350 ms. Opacity eases out cubic. Reduce motion turns every spring into a 150 ms crossfade.`)));
+    h("p", { class: "swl", style: "font-family:Figtree;font-size:13px;line-height:1.45;margin-top:8px" }, `Spring: stiffness 380, damping 26, mass 1. Peaks at ${Math.round(Math.PI / SP.wd * 1000)} ms with ${Math.round(Math.exp(-SP.z * Math.PI / Math.sqrt(1 - SP.z * SP.z)) * 100)}% overshoot and stays within 0.5% of its target from 350 ms. Opacity eases out cubic. Reduce motion turns every spring into a 150 ms crossfade.`)));
 })();
 /* stills: ?record=sheet opens the sheet in the record frame */
 if (params.get("record") && apps.record) setTimeout(() => { const a = apps.record; a.openRecord({ habit: "sugar" }); const p = a.sheet.querySelectorAll(".stepb")[1]; p.click(); p.click(); if (params.get("record") === "earlier") a.sheet.querySelectorAll(".seg button")[1].click(); }, 1200);
