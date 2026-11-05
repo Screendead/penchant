@@ -39,7 +39,7 @@
     { "fg": "accent", "bg": "surface2", "min": 3, "kind": "focus", "purpose": "Focus outline on a recessed fill, progress on its track" },
     { "fg": "onAccent", "bg": ["mix(onAccent,30)", "accent"], "min": 3, "kind": "graphic", "purpose": "A busy button's spinner arc on its track" },
 
-    { "fg": "outline", "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or outlined button's border against the ground", "was": { "fg": "line" } },
+    { "fg": "outline", "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or outlined button's border against the ground; a slider's track; in the app's current charts, the raw series and the radar's rings", "was": { "fg": "line" } },
     { "fg": "outline", "bg": "surface", "min": 3, "kind": "boundary", "purpose": "A text field's border against its own fill; an outlined button on a card or sheet", "was": { "fg": "line" } },
     { "fg": "outline", "bg": "surface2", "min": 3, "kind": "boundary", "purpose": "The small segmented thumb's border against its track", "was": { "fg": "surface" } },
     { "fg": "outline", "bg": "surface", "min": 3, "kind": "boundary", "purpose": "A sheet's grab handle", "was": { "fg": "text@0.18" } },
