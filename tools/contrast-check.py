@@ -26,6 +26,7 @@ unrounded: 2.99 fails a 3:1 minimum.
 
 import argparse
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -80,7 +81,7 @@ def flatten(layers, tokens, theme, rounded):
     for rgb, alpha in reversed(stack[:-1]):
         out = [alpha * f + (1 - alpha) * b for f, b in zip(rgb, out)]
         if rounded:
-            out = [float(round(c)) for c in out]
+            out = [math.floor(c + 0.5) for c in out]
     return out
 
 
