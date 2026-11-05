@@ -47,7 +47,7 @@
 
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--page);color:var(--text);font-family:var(--ft);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--page);color:var(--text);font-family:var(--ft);-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 a{color:var(--text);text-underline-offset:3px;text-decoration-color:var(--muted)}
@@ -107,7 +107,7 @@ h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
 .pick[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .rec .pick{background:var(--accent);color:var(--on-accent)}
 
-.panels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px}
+.panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr) minmax(0,1.3fr) minmax(0,1fr);gap:14px;margin-top:22px}
 @media (max-width:1180px){.panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.panels{grid-template-columns:minmax(0,1fr)}}
 .pn{display:flex;flex-direction:column;gap:9px;min-width:0}
@@ -121,8 +121,8 @@ h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
 
 /* 1. Wordmark */
 .wm{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;height:100%}
-.lock{display:flex;align-items:center;gap:14px}
-.lock .ic{width:58px;height:58px;border-radius:15px;box-shadow:var(--pop-shadow)}
+.lock{display:flex;align-items:center;gap:12px}
+.lock .ic{width:52px;height:52px;border-radius:13px;box-shadow:var(--pop-shadow)}
 .lock span{font:900 42px/1 var(--fd);letter-spacing:-.8px}
 .bar{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--tiny-shadow);font:900 21px/1 var(--fd);letter-spacing:-.3px}
 .bar .ic{width:26px;height:26px;border-radius:7px}
@@ -130,7 +130,7 @@ h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
 
 /* 2. Home screen: SF, as iOS draws it */
 .home{background:radial-gradient(120% 90% at 20% 0%,#5B6C7E 0%,#2D3440 55%,#1B1E24 100%);border:0}
-.hgrid{position:absolute;left:50%;top:50%;transform:translate(-50%,-56%);display:grid;grid-template-columns:repeat(4,62px);column-gap:16px;row-gap:22px}
+.hgrid{position:absolute;left:50%;top:34px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,76px);column-gap:12px;row-gap:20px;justify-items:center}
 .app{display:flex;flex-direction:column;align-items:center;gap:6px;width:62px}
 .app .tile{width:62px;height:62px;border-radius:14px;overflow:hidden;background:#ffffff26;display:grid;place-items:center}
 .app .tile .ic{width:62px;height:62px}
@@ -138,12 +138,14 @@ h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
 .lbl{width:76px;font:400 12px/1.2 var(--ios);color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #0006;letter-spacing:-.05px}
 .app.dim .tile{background:#ffffff1f}
 .app.dim .lbl{opacity:.78}
-.dock{position:absolute;left:12px;right:12px;bottom:12px;height:72px;border-radius:26px;background:#ffffff26;backdrop-filter:blur(8px);display:flex;justify-content:space-around;align-items:center;padding:0 10px}
-.dock i{width:50px;height:50px;border-radius:12px;background:#ffffff26;display:block}
+.dots{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:7px}
+.dots i{width:6px;height:6px;border-radius:50%;background:#ffffff59}
+.dots i:first-child{background:#fff}
 .hl{outline:1.5px dashed #ffffff8c;outline-offset:3px;border-radius:2px}
 
 /* 3. App Store result: SF, the App Store's own colours */
-.store{background:var(--as-bg);font-family:var(--ios);color:var(--as-text);display:flex;flex-direction:column;justify-content:center;padding:0 16px}
+.store{background:var(--as-bg);font-family:var(--ios);color:var(--as-text)}
+.store .in{width:min(350px,calc(100% - 20px));margin:0 auto;height:100%;display:flex;flex-direction:column;justify-content:center}
 .search{height:36px;border-radius:10px;background:var(--as-get);display:flex;align-items:center;gap:6px;padding:0 9px;font:400 16px/1 var(--ios);color:var(--as-muted);margin-bottom:18px}
 .search svg{width:16px;height:16px}
 .search b{font-weight:400;color:var(--as-text)}
@@ -159,7 +161,7 @@ h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
 
 /* 4. Sign-in top: Day Dial auth screen, cropped */
 .signin{display:flex;flex-direction:column;align-items:center;padding:52px 20px 0;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
-.island{position:absolute;top:9px;left:50%;width:92px;height:27px;margin-left:-46px;border-radius:16px;background:#000}
+.island{position:absolute;top:10px;left:50%;width:78px;height:24px;margin-left:-39px;border-radius:14px;background:#000}
 .status{position:absolute;top:0;left:0;right:0;height:42px;display:flex;align-items:center;justify-content:space-between;padding:4px 22px 0 30px;font:600 13.5px/1 var(--ios)}
 .status svg{display:block}
 .status .si{display:flex;gap:5px;align-items:center}
@@ -182,6 +184,9 @@ h1{font:900 42px/1.02 var(--fd);letter-spacing:-.8px;margin:7px 0 0}
 .fact li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--muted)}
 .fact code{font:500 12.5px/1 var(--fm)}
 .fact .rat{font:500 17px/1.4 var(--fd)}
+.why{margin-top:18px;display:flex;gap:12px;align-items:flex-start;background:var(--bg);border-radius:20px;padding:14px 16px;font:400 14.5px/1.5 var(--ft)}
+.why b{font:700 14.5px/1.5 var(--fd);white-space:nowrap}
+@media (max-width:560px){.why{flex-direction:column;gap:2px}}
 
 /* Decision */
 .decide{margin:36px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:32px;padding:26px;box-shadow:var(--card-shadow);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px;align-items:start}
@@ -242,7 +247,7 @@ textarea::placeholder{color:var(--muted)}
     </div>
   </section>
 
-  <p class="foot">Not shown, from the same check: Tidemark, Proclivity and Bearing (verdict "Crowded"), and nine names dropped after it. Home-screen labels and the App Store card are set in the system font, as iOS sets them; the 76 px label box (about 12 characters) is an estimate, unchecked against a device. Source: <code>ideas/release-blockers/brand-name.md</code>.</p>
+  <p class="foot">Not shown, from the same check: Tidemark, Proclivity and Bearing (verdict "Crowded"), and nine names dropped after it. Home-screen labels and the App Store card are set in the system font, as iOS sets them; the 76 px label box (about 12 characters) and the App Store card (at most 350 px wide) are estimates, unchecked against a device, and so is how the App Store breaks a long subtitle. Source: <code>ideas/release-blockers/brand-name.md</code>.</p>
 </div>
 
 <script>
@@ -263,6 +268,7 @@ const C = [
     rat: 'A habitual liking: names the leaning without judging it.',
     check: 'No app found; no software or wellness brand found. <code>.com</code> held through MarkMonitor since 1995 (a brand owner, unknown); <code>.app</code> parked.',
     verdict: 'Clear-ish',
+    why: 'It is the only clear-ish name that says "this is about your leanings" without saying "vice" or "problem", it reads well in the pattern, and the check found no app or software brand on it.',
     risks: ['<code>.com</code> held through MarkMonitor since 1995 (a brand owner, unknown)', '<code>.app</code> parked'] },
   { name: 'Kenning', tag: 'Backup 1', sub: 'Know your habits and triggers', subSrc: 'Proposed',
     rat: 'Old English "knowing": self-knowledge.',
@@ -321,6 +327,7 @@ C.forEach((c, i) => {
         <div class="badges">${badge}<span class="badge ver${plain ? '' : ' warn'}">${esc(c.verdict)}</span></div></div>
       <button type="button" class="pick" data-pick="${id}" aria-pressed="false">${SV.check}<span>Pick ${c.name}</span></button>
     </div>
+    ${c.why ? `<div class="why"><b>Why it leads</b><span>${esc(c.why)}</span></div>` : ''}
     <div class="panels">
       <div class="pn">
         <div class="pl"><span>Wordmark</span><span class="mono">Red Hat Display 900</span></div>
@@ -334,25 +341,23 @@ C.forEach((c, i) => {
         <div class="pl"><span>Home screen</span><span class="mono">SF 12, 76 px box</span></div>
         <div class="stage home"><div class="hgrid">
           <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Calendar</div></div>
-          <div class="app"><div class="tile">${ICON()}</div><div class="lbl hl" data-label>${c.name}</div></div>
+          <div class="app"><div class="tile">${ICON()}</div><div class="lbl hl" data-label><span>${c.name}</span></div></div>
           <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Notes</div></div>
           <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Reminders</div></div>
-          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Weather</div></div>
           <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Health</div></div>
-          <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Photos</div></div>
           <div class="app dim"><div class="tile"><i></i></div><div class="lbl">Settings</div></div>
-        </div><div class="dock"><i></i><i></i><i></i><i></i></div></div>
+        </div><div class="dots"><i></i><i></i><i></i></div></div>
         <div class="meta" data-fit></div>
       </div>
       <div class="pn">
         <div class="pl"><span>App Store search</span><span class="mono">${len(c.sub)}/${SUB_MAX}</span></div>
         <div class="stage store">
-          <div class="search">${SV.search}<b>${c.name.toLowerCase()}</b></div>
-          <div class="res">${ICON()}<div class="rt"><div class="rn">${c.name}</div><div class="rs">${esc(c.sub)}</div></div><span class="get">Get</span></div>
+          <div class="in"><div class="search">${SV.search}<b>${c.name.toLowerCase()}</b></div>
+          <div class="res">${ICON()}<div class="rt"><div class="rn">${c.name}</div><div class="rs" data-sub>${esc(c.sub)}</div></div><span class="get">Get</span></div>
           <div class="shots"><i></i><i></i><i></i></div>
           <div class="sep"></div>
-        </div>
-        <div class="meta"><b>${esc(listing)}</b><br>${c.subSrc} subtitle, <span class="mono">${len(c.sub)}</span> characters${len(c.sub) <= SUB_MAX ? '' : ' (over the limit)'}.</div>
+        </div></div>
+        <div class="meta"><b>${esc(listing)}</b><br>${c.subSrc} subtitle, <span class="mono">${len(c.sub)}</span> characters${len(c.sub) <= SUB_MAX ? '' : ' (over the limit)'}<span data-lines></span>.</div>
       </div>
       <div class="pn">
         <div class="pl"><span>Sign-in, top</span><span class="mono">Day Dial frame 06</span></div>
@@ -384,11 +389,17 @@ function measure() {
   document.querySelectorAll('.cand').forEach(card => {
     const l = card.querySelector('[data-label]');
     const out = card.querySelector('[data-fit]');
-    const cut = l.scrollWidth > l.clientWidth + 0.5;
-    const w = Math.ceil(l.scrollWidth);
+    const w = Math.ceil(l.firstChild.getBoundingClientRect().width);
+    const cut = w > l.clientWidth;
     out.innerHTML = cut
       ? `<b>Truncates</b>: needs <span class="mono">${w}</span> of <span class="mono">${l.clientWidth}</span> px.`
       : `<span class="ok">Fits</span>, <span class="mono">${len(l.textContent)}</span> characters, <span class="mono">${w}</span> of <span class="mono">${l.clientWidth}</span> px.`;
+  });
+  document.querySelectorAll('.cand').forEach(card => {
+    const s = card.querySelector('[data-sub]');
+    const lines = Math.round(s.getBoundingClientRect().height / parseFloat(getComputedStyle(s).lineHeight));
+    const w = card.querySelector('.store .in').clientWidth;
+    card.querySelector('[data-lines]').textContent = `; ${lines === 1 ? 'one line' : lines + ' lines'} in a ${w} px card`;
   });
   document.documentElement.dataset.sh = document.documentElement.scrollHeight;
   document.documentElement.dataset.sw = document.documentElement.scrollWidth;
