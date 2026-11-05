@@ -145,10 +145,11 @@ Future<void> pumpFor(WidgetTester tester, Duration duration) async {
 }
 
 // Waits for the target to be hit-testable as well as present, so taps wait out
-// route transitions and overlays animating away.
+// route transitions and overlays animating away. Only the hit-testable match is
+// tapped: a page pushed over Today leaves Today's tally names in the tree.
 Future<void> tap(WidgetTester tester, Finder finder) async {
   await pumpUntil(tester, finder.hitTestable());
-  await tester.tap(finder);
+  await tester.tap(finder.hitTestable());
   await tester.pump();
 }
 

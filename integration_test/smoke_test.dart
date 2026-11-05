@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart' as app;
 
 import 'support.dart';
@@ -36,8 +37,11 @@ void main() {
       () => find.text('0 activities').evaluate().length == 2,
       () => "two '0 activities' rows",
     );
-    expect(find.text('Coffee'), findsOneWidget);
-    expect(find.text('Tea'), findsOneWidget);
-    expect(find.text('Water'), findsOneWidget);
+    for (final String name in <String>['Coffee', 'Tea', 'Water']) {
+      expect(
+        find.descendant(of: find.byType(ManageData), matching: find.text(name)),
+        findsOneWidget,
+      );
+    }
   });
 }
