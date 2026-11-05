@@ -1,13 +1,17 @@
 # Day Dial: how it is built in Flutter
 
 `index.html` is the mock-up (open it in a browser; every phone is live). `tokens.json` holds the tokens. The stills
-are `stills-light.png`, `stills-dark.png` and `stills-record.png`. `shoot.mjs` re-renders them with headless Chrome
-over the DevTools protocol (`node shoot.mjs out.png 1400x2950 "theme=dark&state=fan" 3000`). Chrome's own
-`--screenshot` with `--virtual-time-budget` barely advances `requestAnimationFrame`, so it catches animations half
-done. Habit names and entries are made up.
+are `stills-light.png`, `stills-dark.png` and `stills-record.png`; `./stills.sh` re-renders all three through
+`shoot.mjs`, which drives headless Chrome over the DevTools protocol in real time (Chrome's own `--screenshot` with
+`--virtual-time-budget` barely advances `requestAnimationFrame`, so it catches animations half done).
+`?board=record` lays out the three Record states for `stills-record.png`. Habit names and entries are made up.
 
 ## Theme and tokens
 
+- **Paper and ink.** The ground and chrome come from the icon: paper `#F6F4EF` and spoke ink `#1D1C1A`. The primary
+  action, the now-hand, selection and focus are ink on paper (paper on ink in dark). The five icon colours are
+  reserved for habits, in both themes, so no control ever shares a colour with a habit. Links are text-coloured and
+  underlined.
 - `ThemeData` for light and dark built from `tokens.json`, with `themeMode: ThemeMode.system`. That replaces the
   dark-only pink seed. A `ThemeExtension<DialColors>` carries what `ColorScheme` has no slot for: the `data1-5` and
   `data1-5Ink` pairs, `spoke`, `clear` and `clearInk`, and the bead treatment (rim in light, glow in dark).
@@ -28,7 +32,10 @@ done. Habit names and entries are made up.
   `onTap` that opens its entry sheet.
 - **The now-hand** uses a `Ticker` that repaints once a second (once a minute under reduce motion). Midnight moves the
   day on through `todayProvider`, as now.
-- **Tallies** are a `ListView` of rows in fixed habit order. The total is an `AnimatedSwitcher` with a vertical
+- **Sparse days carry times.** With 4 entries or fewer, each bead has its time in Mono 11 beside it, on the hub side,
+  haloed in surface. Above that the rows and a tap carry the times.
+- **Tallies** are a `ListView` of rows in fixed habit order. A zero row dims its name and pip, so a sparse day reads at
+  a glance; the `+` is 32 pt drawn and 44 pt hit. The total is an `AnimatedSwitcher` with a vertical
   `SlideTransition`, which gives the roll. Each row's `+` logs the default amount: that is the list path for VoiceOver
   and Switch Control.
 - **Semantics:** the dial keeps one `Semantics` label, `DayDial.summary`, which gives the totals and the first and
@@ -46,7 +53,7 @@ done. Habit names and entries are made up.
 
 - **Log button:** a 64 pt `FloatingActionButton`-sized circle docked on the Trends sheet's edge.
 - **Fan:** an `OverlayEntry` holding a `BackdropFilter` blur and a `CustomPaint` of pentagon wedges, laid out like the
-  icon, with at most 8 per ring and "More" beyond. Each wedge springs in, 30 ms apart. `Listener` and `onLongPress`
+  icon, with at most 8 per ring and "More" beyond. Every wedge label is `wedgeInk` (4.6:1 or better on all five fills). Each wedge springs in, 30 ms apart. `Listener` and `onLongPress`
   separate a tap (log the default amount now), a 400 ms hold (the amount sheet) and press-drag-release from the Log
   button (hit-test on pointer up).
 - **Bead travel:** a `Path` (quadratic Bézier) followed with `PathMetric.getTangentForOffset` under an
