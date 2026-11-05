@@ -33,7 +33,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
 | Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
-| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in PR `feat/day-dial-foundation`: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
+| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
 | Tech-debt register | 23 issues on master: 0 critical, 0 high, 12 medium, 11 low (`tools/tech-debt-recount.py`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
@@ -56,7 +56,7 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    `tools/e2e.sh` green by updating the tests its screens break. Habit names in examples are made up; the product
    name strings stay until `r2-brand` (the mock-up's "Tracker" is a placeholder).
    - **a. Theme foundation:** tokens, light and dark `ThemeData` with `themeMode: system`, bundled fonts, the habit
-     colour function, the hard-coded colours replaced. In review (`feat/day-dial-foundation`).
+     colour function, the hard-coded colours replaced. In review (#79).
    - **b. Today:** the dial (`CustomPainter`, beads at their times, now-hand, clear-day ring), the tally rows with a
      `+` each, the one-tap "log one" action (the default quantity, now, with C4's 8-second Undo; this was the
      layout-neutral half of one-tap logging), the Log button and its fan, the amount sheet that replaces the record
