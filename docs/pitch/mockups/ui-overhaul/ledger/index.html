@@ -1133,7 +1133,7 @@ class App{
     const order=['day','trends','journal'];const dir=order.indexOf(k)>order.indexOf(this.tab)?1:-1;
     let v=this.tabViews[k];
     if(!v||this.dirty[k]){if(v)v.el.remove();v=this.tabViews[k]=k==='trends'?new TrendsView(this):k==='journal'?new JournalView(this):this.dayView;this.dirty[k]=false}
-    if(k==='day'&&this.dirty.day){this.dayView.buildRows();this.dayView.refresh({instant:true});this.dirty.day=false}
+    if(k==='day'&&this.dirty.day)this.syncDay();
     const old=this.tabViews[this.tab];this.tab=k;
     this.tabbar.querySelectorAll('[role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.k===k)));
     this.ind.style.transform=`translateX(${order.indexOf(k)*100}%)`;
@@ -1154,23 +1154,24 @@ class App{
     if(instant){prev.style.visibility='hidden';return}
     anim(page.el,[{transform:'translateX(100%)'},{transform:'none'}],{d:260,e:EASE.enter,essential:true});
     page._prevAnim=anim(prev,[{transform:'none'},{transform:'translateX(-25%)'}],{d:260,e:EASE.enter,keep:true});
-    setTimeout(()=>{prev.style.visibility='hidden'},reduced?130:265);
+    setTimeout(()=>{if(this.stack[this.stack.length-1]===page)prev.style.visibility='hidden'},reduced?130:265);
   }
   pop(){
     const page=this.stack.pop();if(!page)return;
     const prev=this.stack.length?this.stack[this.stack.length-1]:null;const prevEl=prev?prev.el:this.main;
     prevEl.style.visibility='';if(prev&&prev.onShow)prev.onShow();
-    if(!this.stack.length){this.undoHost.style.bottom='';if(this.dirty.day&&this.tab==='day'){this.dayView.buildRows();this.dayView.refresh({instant:true});this.dirty.day=false}
+    if(!this.stack.length){this.undoHost.style.bottom='';if(this.dirty.day&&this.tab==='day')this.syncDay();
       if(this.tab!=='day'&&this.dirty[this.tab])this.refreshTab()}
     if(page._prevAnim)page._prevAnim.cancel();
     anim(prevEl,[{transform:'translateX(-25%)'},{transform:'none'}],{d:260,e:EASE.enter});
     const a=anim(page.el,[{transform:'none'},{transform:'translateX(100%)'}],{d:240,e:EASE.move,keep:true,essential:true,rmkf:[{opacity:1},{opacity:0}]});
     setTimeout(()=>page.el.remove(),reduced?130:245);
   }
+  syncDay(){const dv=this.dayView;dv.buildRows();dv.refresh({instant:true});dv.track.querySelectorAll('.scell').forEach(c=>c.replaceChild(glyph(this.store,+c.dataset.d,28),c.children[1]));this.dirty.day=false}
   refreshTab(){const k=this.tab,v=this.tabViews[k];if(!v)return;const nv=k==='trends'?new TrendsView(this):new JournalView(this);this.views.replaceChild(nv.el,v.el);this.tabViews[k]=nv;this.dirty[k]=false}
   openSettings(){this.push(new SettingsPage(this))}
   openHistory(hid){this.push(new HistoryPage(this,hid))}
-  habitsChanged(){this.dirty.day=true;this.dirty.trends=true;this.dirty.journal=true;this.dayView._dirtyCells=true}
+  habitsChanged(){this.dirty.day=true;this.dirty.trends=true;this.dirty.journal=true}
   logEntry(hid,q,t){
     const e={id:this.store.nextId++,h:hid,t,q,pending:true};this.store.add(e);
     this.dayView.onLogged(e);this.dirty.trends=this.dirty.journal=true;
