@@ -20,7 +20,7 @@ const test=`(async()=>{const r={};const w=ms=>new Promise(f=>setTimeout(f,ms));c
  const a=A[6];const pw=a.auth.el.querySelector('input[type=password]');pw.value='short';a.auth.el.querySelector('.submit').click();
  await w(700);r.authErrMid=Math.round(a.auth.err.getBoundingClientRect().height);await w(400);r.authErrEnd=Math.round(a.auth.err.getBoundingClientRect().height);
  const dv=A[0].dayView,row=dv.rows[0];const W=()=>Math.round(row.bar.getBoundingClientRect().width);
- const b0=W();row.plusBtn.click();await w(440);const bm=W();await w(400);r.bar=[b0,bm,W()];
+ const b0=W();row.plusBtn.click();await w(440);const bm=W();r.flashMid=+(+getComputedStyle(row.flash).opacity).toFixed(3);await w(400);r.bar=[b0,bm,W()];
  r.roll=row.roll.cols.map(c=>c.strip.style.transform).join(' ');
  r.undoH=Math.round(A[0].undoHost.getBoundingClientRect().height);r.logLines=dv.log.children.length;
  r.pendingNow=A[0].root.querySelectorAll('.sync.pending:not(.acked)').length;await w(900);r.ackedLater=A[0].root.querySelectorAll('.sync.acked').length;
