@@ -283,6 +283,23 @@ void main() {
         );
       });
 
+      test('draws the edges that identify a control in outline', () {
+        expect(scheme.outline, p.outline);
+        expect(theme.inputDecorationTheme.border!.borderSide.color, p.outline);
+        expect(
+          theme.inputDecorationTheme.enabledBorder!.borderSide.color,
+          p.outline,
+        );
+        expect(
+          theme.outlinedButtonTheme.style!.side!
+              .resolve(<WidgetState>{})!
+              .color,
+          p.outline,
+        );
+        expect(theme.bottomSheetTheme.dragHandleColor, p.outline);
+        expect(theme.sliderTheme.inactiveTrackColor, p.outline);
+      });
+
       test('gives no ColorScheme role a habit colour', () {
         final Set<Color> roles = <Color>{
           scheme.primary,

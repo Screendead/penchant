@@ -380,9 +380,7 @@ class ViceChart extends ConsumerWidget {
               dataSets: [dataSet, scaleSet],
               isMinValueAtCenter: true,
               borderData: FlBorderData(show: false),
-              radarBorderData: BorderSide(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-              ),
+              radarBorderData: BorderSide(color: theme.colorScheme.outline),
               radarShape: RadarShape.polygon,
               titlePositionPercentageOffset: radarTitleOffset,
               titleTextStyle: titleStyle,
@@ -400,9 +398,7 @@ class ViceChart extends ConsumerWidget {
               // fl_chart prints every ring's value with one decimal, the
               // centre's 0 included; the rings are labelled below instead.
               ticksTextStyle: const TextStyle(color: Colors.transparent),
-              tickBorderData: BorderSide(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-              ),
+              tickBorderData: BorderSide(color: theme.colorScheme.outline),
               gridBorderData: BorderSide(
                 color: theme.colorScheme.tertiary,
                 width: 1,

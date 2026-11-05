@@ -23,6 +23,9 @@ pull request titles (`gh pr list --state merged`).
 - The app is called Penchant, and it says "habit" wherever it said "vice". Exports are named `penchant-…`.
 - A new look: paper and ink colours from the app icon, the Red Hat typefaces built into the app, and light and
   dark themes that follow your device's appearance setting (the app was dark only).
+- Every colour meets the WCAG 2.2 AA contrast minimum in both themes: text fields, outlined buttons, sheet handles
+  and the smoothing slider's track have a clearly visible edge, the usage graph's raw line and the Today chart's
+  rings are darker, and dark mode's secondary text is a little brighter.
 - A new app icon: the Today chart's shape, one colour per segment, on a light background.
 - The history list opens an entry by tapping the row only; the separate pencil button is gone.
 - A screen that cannot load its data says why and offers Retry, instead of spinning forever; so does the app when it
