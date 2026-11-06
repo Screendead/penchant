@@ -4,7 +4,10 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice_activity.dart';
 
 // The most buckets the moving average may span.
-const int maxSmoothingWindow = 7;
+const int maxSmoothingWindow = 30;
+
+// The window the average starts at: a week of days, or four weeks.
+int defaultWindow(int stepDays) => stepDays == 1 ? 7 : 4;
 
 // The [days] days the usage graph covers, from [start] to the end of today,
 // in buckets of [stepDays] days.
@@ -74,4 +77,81 @@ List<double> movingAverage(List<double> values, int window) {
     averages[i] = sum / min(i + 1, span);
   }
   return averages;
+}
+
+typedef UsageStats = ({double total, double average, int peakIndex});
+
+// The range's total, its average per day (daily) or per bucket (weekly, where
+// the oldest bucket may be short), and the first bucket holding the most.
+UsageStats usageStats(UsageRange range, List<double> totals) {
+  double total = 0;
+  int peakIndex = 0;
+  for (int i = 0; i < totals.length; i++) {
+    total += totals[i];
+    if (totals[i] > totals[peakIndex]) {
+      peakIndex = i;
+    }
+  }
+  final int per = range.stepDays == 1 ? range.days : totals.length;
+  return (
+    total: total,
+    average: per == 0 ? 0 : total / per,
+    peakIndex: peakIndex,
+  );
+}
+
+// The most days the hour-of-day profile looks back over.
+const int hourProfileMaxDays = 90;
+
+typedef HourProfile = ({
+  // The quantity logged in each local hour, 0 to 23.
+  List<double> hours,
+  double total,
+  // The first hour of the three in a row, wrapping past midnight, that hold
+  // the most; the earliest on a tie.
+  int busiestStart,
+  // The share logged before noon, rounded to a whole percent.
+  int beforeNoonPercent,
+});
+
+// The last [hourProfileMaxDays] days of [range], or all of a shorter one.
+DateTime hourProfileStart(UsageRange range) =>
+    addDays(range.end, -min(range.days, hourProfileMaxDays));
+
+// When in the day [activities] happen, counting those from [start] to the
+// end of [range].
+HourProfile hourProfile(
+  UsageRange range,
+  Iterable<ViceActivity> activities,
+) {
+  final DateTime start = hourProfileStart(range);
+  final DateTime end = range.end;
+  final List<double> hours = List<double>.filled(24, 0);
+  for (final ViceActivity activity in activities) {
+    final DateTime at = activity.createdAt.toDate();
+    if (at.isBefore(start) || !at.isBefore(end)) {
+      continue;
+    }
+    hours[at.hour] += activity.quantity;
+  }
+
+  int busiestStart = 0;
+  double busiest = -1;
+  for (int h = 0; h < 24; h++) {
+    final double sum = hours[h] + hours[(h + 1) % 24] + hours[(h + 2) % 24];
+    if (sum > busiest) {
+      busiest = sum;
+      busiestStart = h;
+    }
+  }
+  final double total = hours.fold<double>(0, (double a, double b) => a + b);
+  final double morning = hours
+      .sublist(0, 12)
+      .fold<double>(0, (double a, double b) => a + b);
+  return (
+    hours: hours,
+    total: total,
+    busiestStart: busiestStart,
+    beforeNoonPercent: total == 0 ? 0 : (morning / total * 100).round(),
+  );
 }

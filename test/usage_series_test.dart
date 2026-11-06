@@ -201,8 +201,9 @@ void main() {
   });
 
   group('smoothing window', () {
-    test('is at most seven buckets, and at most the bucket count', () {
-      expect(smoothingLimit(30), 7);
+    test('is at most thirty buckets, and at most the bucket count', () {
+      expect(smoothingLimit(365), 30);
+      expect(smoothingLimit(30), 30);
       expect(smoothingLimit(4), 4);
       expect(smoothingLimit(1), 1);
       expect(smoothingLimit(0), 1);
@@ -213,6 +214,89 @@ void main() {
       expect(effectiveWindow(7, weeks), 5);
       expect(effectiveWindow(3, weeks), 3);
       expect(effectiveWindow(0, weeks), 1);
+    });
+
+    test('starts at a week of days or four weeks', () {
+      expect(defaultWindow(1), 7);
+      expect(defaultWindow(7), 4);
+    });
+  });
+
+  group('usageStats', () {
+    test('a daily range averages per day and finds the first peak', () {
+      final UsageRange range = usageRange(_today, 7, 1);
+      final UsageStats stats = usageStats(range, [0, 2, 5, 0, 5, 1, 1]);
+      expect(stats.total, 14);
+      expect(stats.average, 2);
+      expect(stats.peakIndex, 2);
+    });
+
+    test('a weekly range averages per bucket, the short oldest one included',
+        () {
+      final UsageRange range = usageRange(_today, 30, 7);
+      final UsageStats stats = usageStats(range, [1, 0, 0, 4, 5]);
+      expect(stats.total, 10);
+      expect(stats.average, 2);
+      expect(stats.peakIndex, 4);
+    });
+
+    test('an empty range has nothing in it', () {
+      final UsageStats stats = usageStats(
+        usageRange(_today, 30, 1),
+        List<double>.filled(30, 0),
+      );
+      expect(stats.total, 0);
+      expect(stats.average, 0);
+      expect(stats.peakIndex, 0);
+    });
+  });
+
+  group('hourProfile', () {
+    test('sums each local hour and finds the busiest three in a row', () {
+      final HourProfile profile = hourProfile(usageRange(_today, 30, 1), [
+        _at(0, 2, hour: 7),
+        _at(1, 1, hour: 8),
+        _at(2, 3, hour: 9),
+        _at(3, 1, hour: 20),
+      ]);
+      expect(profile.hours[7], 2);
+      expect(profile.hours[9], 3);
+      expect(profile.total, 7);
+      expect(profile.busiestStart, 7);
+      expect(profile.beforeNoonPercent, 86);
+    });
+
+    test('the busiest window wraps past midnight', () {
+      final HourProfile profile = hourProfile(usageRange(_today, 7, 1), [
+        _at(0, 2, hour: 23),
+        _at(1, 2, hour: 0),
+        _at(1, 2, hour: 1),
+        _at(2, 1, hour: 12),
+      ]);
+      expect(profile.busiestStart, 23);
+      expect(profile.beforeNoonPercent, 57);
+    });
+
+    test('looks back at most ninety days, and not past the range', () {
+      final UsageRange year = usageRange(_today, 365, 1);
+      expect(hourProfileStart(year), addDays(_today, -89));
+      final HourProfile profile = hourProfile(year, [
+        _at(89, 1, hour: 6),
+        _at(90, 5, hour: 6),
+        _at(-1, 5, hour: 6),
+      ]);
+      expect(profile.total, 1);
+
+      final UsageRange week = usageRange(_today, 7, 1);
+      expect(hourProfileStart(week), week.start);
+      expect(hourProfile(week, [_at(7, 1)]).total, 0);
+    });
+
+    test('nothing logged has no share before noon', () {
+      final HourProfile profile = hourProfile(usageRange(_today, 7, 1), []);
+      expect(profile.total, 0);
+      expect(profile.beforeNoonPercent, 0);
+      expect(profile.busiestStart, 0);
     });
   });
 
