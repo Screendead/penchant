@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/firestore_retry.dart';
@@ -16,6 +17,7 @@ final viceActivityHistoryForUserProvider = StreamProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, ViceActivityHistoryQuery query})>(
       retry: firestoreRetry,
       (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         return FirebaseFirestore.instance
             .collection('activities')
             .where('viceID', isEqualTo: key.query.viceID)
@@ -25,7 +27,9 @@ final viceActivityHistoryForUserProvider = StreamProvider.autoDispose
             // The server's acknowledgement of a local write changes only
             // metadata, and clears an entry's not-yet-synced mark.
             .snapshots(includeMetadataChanges: true)
-            .map(ViceActivity.fromQuerySnapshot);
+            .asyncMap(
+              (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+            );
       },
     );
 
@@ -51,6 +55,7 @@ final viceActivityGraphForUserProvider = StreamProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, ViceActivityGraphQuery query})>(
       retry: firestoreRetry,
       (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         return FirebaseFirestore.instance
             .collection('activities')
             .where('viceID', isEqualTo: key.query.viceID)
@@ -62,7 +67,9 @@ final viceActivityGraphForUserProvider = StreamProvider.autoDispose
             .where('createdAt', isLessThan: Timestamp.fromDate(key.query.end))
             .orderBy('createdAt', descending: true)
             .snapshots()
-            .map(ViceActivity.fromQuerySnapshot);
+            .asyncMap(
+              (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+            );
       },
     );
 
@@ -87,18 +94,19 @@ final viceActivityForUserProvider = StreamProvider.autoDispose
     .family<ViceActivity?, ({String uid, String activityID})>(
       retry: (_, _) => null,
       (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         return FirebaseFirestore.instance
             .collection('activities')
             .doc(key.activityID)
             .snapshots()
-            .map(
+            .asyncMap(
               (DocumentSnapshot<Map<String, dynamic>> snapshot) =>
                   switch (snapshot.data()) {
                     null => null,
-                    final Map<String, dynamic> json => ViceActivity.fromJson(
-                      id: snapshot.id,
-                      json: json,
-                      pending: snapshot.metadata.hasPendingWrites,
+                    final Map<String, dynamic> json => ViceActivity.open(
+                      snapshot,
+                      json,
+                      opener,
                     ),
                   },
             );

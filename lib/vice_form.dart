@@ -61,7 +61,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
       write = ref
           .read(trackerWritesProvider)
           .updateVice(
-            vice.id,
+            vice,
             name: name == vice.name ? null : name,
             unit: unit == vice.unit ? null : unit,
           );

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/data/json_fields.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 
 class Vice {
@@ -10,6 +11,7 @@ class Vice {
     required this.ownerID,
     required this.createdAt,
     required this.archived,
+    this.locked = false,
   });
 
   final String id;
@@ -18,19 +20,43 @@ class Vice {
   final String ownerID;
   final Timestamp createdAt;
   final bool archived;
+  // Sealed fields this device could not open: [name] and [unit] are
+  // placeholders, and must never be written back.
+  final bool locked;
 
   factory Vice.fromJson({
     required String id,
     required Map<String, dynamic> json,
     bool pending = false,
+    Map<String, Object?>? opened,
   }) {
+    final bool locked = isSealed(json) && opened == null;
+    final Map<String, Object?> content = contentOf(json, opened);
     return Vice(
       id: id,
-      name: readString(json['name']),
-      unit: Unit.fromString(json['unit']),
+      name: locked ? lockedViceName : readString(content['name']),
+      unit: Unit.fromString(content['unit']),
       ownerID: readString(json['ownerID']),
       createdAt: readTimestamp(json['createdAt'], pending: pending),
       archived: readBool(json['archived'], fallback: false),
+      locked: locked,
+    );
+  }
+
+  static Future<List<Vice>> openQuerySnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+    SealedOpener opener,
+  ) {
+    return Future.wait(
+      snapshot.docs.map((doc) async {
+        final Map<String, dynamic> json = doc.data();
+        return Vice.fromJson(
+          id: doc.id,
+          json: json,
+          pending: doc.metadata.hasPendingWrites,
+          opened: await opener.open('vices', doc.id, json),
+        );
+      }),
     );
   }
 
