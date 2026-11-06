@@ -60,8 +60,10 @@ flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
+flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
-dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
+dart run flutter_launcher_icons  # macOS icons, after changing assets/icon-macos.png (rendered from the .svg beside it)
+cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # the single-size iOS icon; a test checks the copy
 ```
 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
@@ -158,8 +160,8 @@ indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
-define, on a `macos-26` runner, when run by hand. Nothing
+group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
+with the emulator define) on a `macos-26` runner, when run by hand. Nothing
 builds the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a

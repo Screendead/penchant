@@ -62,6 +62,7 @@ pull request titles (`gh pr list --state merged`).
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
 - The iPhone and Mac builds get Firebase through Swift Package Manager instead of CocoaPods, which Firebase no
   longer publishes to. Nothing changes in the app.
+- On iPhone, the screen shown while the app opens is the app's paper colour, dark in dark mode, instead of white.
 
 ### Fixed
 
@@ -78,6 +79,7 @@ pull request titles (`gh pr list --state merged`).
 - Today shows every vice's amount: when a title has no room for its amount, the key below the chart lists every
   vice with its total, instead of that amount appearing nowhere. The radar's rings are labelled in whole numbers,
   without the "0.0" that sat at its centre.
+- The Mac app builds for release, as one app for both Apple silicon and Intel Macs.
 
 ## [0.1.0] - Unreleased
 
