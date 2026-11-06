@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/widgets/sync_status.dart';
@@ -47,6 +48,8 @@ void main() {
 
     await pumpUntil(tester, rejected);
     expect(inBanner('The server refused this change.'), findsOneWidget);
+    // A refused write leaves the queue too, so the pill comes back to Synced.
+    await pumpUntil(tester, find.text(SyncPill.synced));
     await screenshot(tester, 'rejected-write-banner');
 
     final QuerySnapshot<Map<String, dynamic>> stored = await FirebaseFirestore

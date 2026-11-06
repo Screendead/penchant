@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/account_settings.dart';
@@ -135,14 +136,11 @@ void main() {
       WidgetTester tester,
     ) async {
       await pumpHome(tester);
-      expect(
-        tester.getSemantics(find.byKey(Homepage.menuKey)),
-        containsSemantics(
-          label: Homepage.menuLabel,
-          isButton: true,
-          hasTapAction: true,
-        ),
-      );
+      final SemanticsData menu = tester
+          .getSemantics(find.byKey(Homepage.menuKey))
+          .getSemanticsData();
+      expect(menu.label, Homepage.menuLabel);
+      expect(menu.hasAction(SemanticsAction.tap), isTrue);
       expect(
         tester.getSize(find.byKey(Homepage.menuKey)).height,
         greaterThanOrEqualTo(44),

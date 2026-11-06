@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart' as app;
 
@@ -28,7 +29,7 @@ void main() {
       'Water (0 drinks)',
     });
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('Your Habits'));
     // Each row's count is its own server request, so the rows fill in any order.
     await pumpUntil(tester, find.text('1 activity'));

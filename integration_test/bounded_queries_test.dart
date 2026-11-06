@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -68,7 +69,7 @@ void main() {
       );
     }
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('$stored activities'));
     await tap(tester, find.text('Coffee'));
     await pumpUntilRouteSettled(tester, find.text('Coffee history'));
