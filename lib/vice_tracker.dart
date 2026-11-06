@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
@@ -34,12 +35,25 @@ class ViceTracker extends ConsumerStatefulWidget {
   static const String noHabits =
       'No habits yet. Add one from Manage Data in the menu.';
 
-  // Room for the sheet's peek and the Log button on it, below a snackbar.
-  static double logClearance(BuildContext context) =>
-      TrendsSheet.peekHeight(context) +
-      DialSize.logButton / 2 +
-      6 +
-      DialSpace.xs;
+  // From this width Today and Trends sit side by side, Trends as a pane.
+  static const double splitWidth = 900;
+
+  // Room below a snackbar for the Log button: on the sheet's peek, or at the
+  // foot of Today's column in the split view.
+  static double logClearance(BuildContext context, {bool split = false}) =>
+      split
+      ? _splitLogInset(context) + DialSize.logButton + DialSpace.xs
+      : TrendsSheet.peekHeight(context) +
+            DialSize.logButton / 2 +
+            6 +
+            DialSpace.xs;
+
+  static double _splitLogInset(BuildContext context) =>
+      max(DialSpace.m, MediaQuery.paddingOf(context).bottom);
+
+  // Today's column in the split view.
+  static double splitColumnWidth(double width) =>
+      (width * 0.42).clamp(400.0, 560.0);
 
   @override
   ConsumerState<ViceTracker> createState() => _ViceTrackerState();
@@ -50,6 +64,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
   // Null follows today, so the tab moves on at midnight.
   DateTime? pinnedDay;
+
+  // Whether the last layout was the split view.
+  bool _split = false;
 
   final DraggableScrollableController _sheet = DraggableScrollableController();
   late final SheetPosition _position = SheetPosition(_sheet);
@@ -91,7 +108,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       vice,
       from: from,
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-      bottomClearance: ViceTracker.logClearance(context),
+      bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
   }
 
@@ -100,7 +117,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       context: context,
       builder: (_) => RecordNewActivityDialog(
         initialViceID: vice?.id,
-        bottomClearance: ViceTracker.logClearance(context),
+        bottomClearance: ViceTracker.logClearance(context, split: _split),
       ),
     );
   }
@@ -196,7 +213,12 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = min(constraints.maxWidth, 600.0);
+        final bool split = constraints.maxWidth >= ViceTracker.splitWidth;
+        _split = split;
+        final double column = split
+            ? ViceTracker.splitColumnWidth(constraints.maxWidth)
+            : constraints.maxWidth;
+        final double width = min(column, 600.0);
         final double side = min(
           DialSize.dialDiameter,
           width - 2 * DialSpace.gutter,
@@ -205,6 +227,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         final double height = constraints.maxHeight;
         final double peek = TrendsSheet.peekHeight(context);
         final double minSize = min(0.5, peek / height);
+        final double logInset = ViceTracker._splitLogInset(context);
         final Widget page = noHabits
             ? const Padding(
                 padding: EdgeInsets.all(DialSpace.m),
@@ -218,7 +241,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                       DialSpace.m,
                       DialSpace.xs,
                       DialSpace.m,
-                      DialSize.logButton / 2 + 6 + DialSpace.m,
+                      split
+                          ? logInset + DialSize.logButton + DialSpace.m
+                          : DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
                     children: <Widget>[
                       Padding(
@@ -280,6 +305,69 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 ),
               );
 
+        // Left and Right step through days anywhere on Today but the chart,
+        // which takes them for its cursor; nothing has focus at launch, so
+        // Today takes it.
+        final int back = Directionality.of(context) == TextDirection.rtl
+            ? 1
+            : -1;
+        final Widget todayPage = CallbackShortcuts(
+          bindings: <ShortcutActivator, VoidCallback>{
+            const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+                _selectDay(addDays(day, back)),
+            const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+                _selectDay(addDays(day, -back)),
+          },
+          child: Focus(
+            autofocus: true,
+            skipTraversal: true,
+            debugLabel: 'Today',
+            child: page,
+          ),
+        );
+        final Widget? logButton = vices == null || vices.isEmpty
+            ? null
+            : LogButton(
+                habits: <FanHabit>[
+                  for (final Vice vice in vices)
+                    (vice: vice, mark: markOf(vice)),
+                ],
+                onLog: _log,
+                onRecord: _record,
+              );
+
+        if (split) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SizedBox(
+                width: column,
+                child: Stack(
+                  children: <Widget>[
+                    Positioned.fill(child: todayPage),
+                    if (logButton != null)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: logInset,
+                        child: Center(child: logButton),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: allVices == null || allVices.isEmpty
+                    ? const SizedBox.shrink()
+                    : TrendsSheet.pane(
+                        habits: trendsOrder(allVices, marks),
+                        marks: marks,
+                        onOpenDay: _selectDay,
+                      ),
+              ),
+            ],
+          );
+        }
+
         return Stack(
           children: <Widget>[
             // Today ends where the peek starts, so nothing hides under it.
@@ -295,7 +383,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   excluding: TrendsSheet.openness(_sheet, minSize) > 0.9,
                   child: child!,
                 ),
-                child: page,
+                child: todayPage,
               ),
             ),
             ListenableBuilder(
@@ -336,7 +424,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   marks: marks,
                 ),
               ),
-            if (vices != null && vices.isNotEmpty)
+            if (logButton != null)
               ListenableBuilder(
                 listenable: _position,
                 builder: (BuildContext context, Widget? child) {
@@ -370,16 +458,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                     ),
                   );
                 },
-                child: Center(
-                  child: LogButton(
-                    habits: <FanHabit>[
-                      for (final Vice vice in vices)
-                        (vice: vice, mark: markOf(vice)),
-                    ],
-                    onLog: _log,
-                    onRecord: _record,
-                  ),
-                ),
+                child: Center(child: logButton),
               ),
           ],
         );
