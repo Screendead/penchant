@@ -307,7 +307,22 @@ must name a vice the writer owns, checked with one `get()` (a billed read, even 
 denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
-while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test.
+
+**Sealed fields** (`r2-e2ee`). A document may instead hold its content fields (a vice's `name` and `unit`, an
+activity's `quantity`, and every later content field) in one `sealed` string, an envelope only the user's key opens;
+`ownerID`, `createdAt`, `viceID` and `archived` stay plaintext, so every query, index, `count()` and the
+`ownsVice()` check work unchanged. The rules accept either shape on create, never both at once, bound `sealed` to
+1 to 2048 UTF-16 code units, and let an update convert a plaintext document by setting `sealed` and deleting the
+plaintext fields (a deleted field is an affected key). They cannot read a sealed name or quantity, so for sealed
+documents `lib/data/limits.dart` is the only guard on them. `lib/data/sealed.dart` holds the contract:
+`FieldSealer` (seal and open one document's content, bound to its path), `sealerProvider` (null while no key
+exists, and then every write stays plaintext), and `SealedOpener`, which each query provider runs over its
+snapshots (`asyncMap`) and the export over what it reads. It never throws: a document that will not open parses
+with `locked` set, a placeholder name and default content, and is reported once per listener. `TrackerWrites`
+seals when it has a sealer: an update reseals the whole content (so `updateVice` takes the `Vice`, and refuses a
+locked one), and `SentWrite.fields` then holds only the plaintext fields, since the envelope does not exist yet
+when the write is handed back. Tests override `sealerProvider` with `test/fake_sealer.dart`. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.
