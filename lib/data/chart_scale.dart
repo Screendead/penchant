@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui' show Size;
 
 // An axis that ends on a round number of units: [top] is a multiple of [step],
 // at least [largest], in at most [maxSteps] steps of 1, 2 or 5 times a power
@@ -37,30 +36,4 @@ List<int> labelIndices(int count, int maxLabels) {
 
   final int step = ((count - 1) / (maxLabels - 1)).ceil();
   return <int>[for (int i = (count - 1) % step; i < count; i += step) i];
-}
-
-// The width each bar's title may take in a bar chart laid out with
-// BarChartAlignment.spaceEvenly: the distance between neighbouring bar
-// centres, or the whole width for a single bar.
-double barTitleWidth(double width, int bars, double barWidth) {
-  if (bars <= 1) {
-    return width;
-  }
-  final double space = max(0, width - bars * barWidth) / (bars + 1);
-  return space + barWidth;
-}
-
-// fl_chart draws a radar of this radius about the centre of its box.
-double radarRadius(Size size) => min(size.width, size.height) / 2 * 0.8;
-
-// The length a radar title may take. fl_chart draws each title tangent to a
-// circle [titleOffset] beyond the radar's radius, so a title is bounded by the
-// chord to its neighbours' positions and by the chart's width.
-double radarTitleWidth(Size size, int axes, double titleOffset) {
-  final double radius = radarRadius(size);
-  final double titleRadius = radius * (1 + titleOffset);
-  if (axes <= 1) {
-    return size.width;
-  }
-  return min(size.width, 2 * titleRadius * sin(pi / axes));
 }

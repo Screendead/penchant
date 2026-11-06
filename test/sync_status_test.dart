@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/offline_provider.dart';
-import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -50,9 +49,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          unarchivedViceListProvider.overrideWith(
-            (ref) => AsyncData([fakeVice('coffee')]),
-          ),
+          ...habitOverrides([fakeVice('coffee')]),
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
           viceActivityDayForUserProvider.overrideWith((ref, key) => day.stream),
         ],
@@ -81,9 +78,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          unarchivedViceListProvider.overrideWith(
-            (ref) => AsyncData([fakeVice('coffee')]),
-          ),
+          ...habitOverrides([fakeVice('coffee')]),
           viceActivityDayProvider.overrideWith(
             (ref, DateTime selected) => AsyncData([pending]),
           ),
@@ -91,7 +86,12 @@ void main() {
         child: const MaterialApp(home: Scaffold(body: ViceTracker())),
       ),
     );
-    await tester.pumpAndSettle();
+    // A pending bead's rim turns until it syncs, so nothing settles.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    // Today scrolls; at this size the note sits below the dial.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text(PendingDayNote.text(1)), findsOneWidget);
     expect(tester.takeException(), isNull);

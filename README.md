@@ -35,4 +35,4 @@ Commands for seeding data, the Firestore rules tests, versioning and releases ar
 - `CHANGELOG.md`: user-visible changes per release.
 - `firestore.rules`, `firestore.indexes.json`: backend rules and indexes. CI deploys them on merge to `master` only once the `DEPLOY_FIRESTORE_RULES` repository variable is `true`; until then the deploy job is skipped and they are deployed by hand.
 
-The app is proprietary; all rights reserved.
+The code is proprietary; all rights reserved. See [LICENSE](LICENSE).

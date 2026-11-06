@@ -1,10 +1,10 @@
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/foundation.dart';
+import 'package:fl_chart/fl_chart.dart' show LineChart;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
@@ -28,8 +28,8 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('the radar puts an unused vice at its centre, and screen '
-      'readers hear both charts', (WidgetTester tester) async {
+  testWidgets('screen readers hear the dial, each bead and tally, and the '
+      'graph', (WidgetTester tester) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-a11y-charts@example.com');
@@ -37,41 +37,58 @@ void main() {
 
     await recordActivity(tester, 'Coffee', 2);
     await recordActivity(tester, 'Tea', 1);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (1 drink)',
       'Water (0 drinks)',
     });
 
-    final RadarChartData radar = tester
-        .widget<RadarChart>(find.byType(RadarChart))
-        .data;
-    expect(radar.isMinValueAtCenter, isTrue);
-    expect(radar.minEntry.value, 0);
-    await screenshot(tester, 'a11y-radar-zero-at-centre');
-
-    // Vices list newest first.
+    // Habits list oldest first.
     final DateTime today = startOfDay(DateTime.now());
     expect(
       find.bySemanticsLabel(
-        'Totals for ${formatDay(today)}. Water: 0 drinks; '
-        'Tea: 1 drink; Coffee: 2 drinks',
+        RegExp(
+          '^Today, ${RegExp.escape(dayPillDate(today, today))}\\. '
+          'Coffee 2 drinks, Tea 1 drink, Water 0 drinks\\. First entry ',
+        ),
       ),
       findsOneWidget,
     );
+    expect(
+      find.bySemanticsLabel(RegExp('^Coffee, 2 drinks at ')),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp('^Tea, 1 drink at ')), findsOneWidget);
+    await screenshot(tester, 'a11y-today-dial');
+    // macOS's window can leave the last row below the fold.
+    await scrollIntoView(
+      tester,
+      find.byTooltip('Log 1 drink of Water', skipOffstage: false),
+    );
+    expect(find.bySemanticsLabel('Water, 0 drinks'), findsOneWidget);
+    expect(find.byTooltip('Log 1 drink of Water'), findsOneWidget);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
-    await tap(tester, find.byType(DropdownButtonFormField<String>));
-    await tap(tester, find.text('Coffee').last);
+    // Coffee is the oldest habit, so Trends opens on it.
+    expect(
+      find.bySemanticsLabel(
+        'Trends. Coffee, last 30 days: ${formatAverage(2 / 30)} drinks a day',
+      ),
+      findsOneWidget,
+    );
+    await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
     expect(
       find.bySemanticsLabel(
         'Daily totals of Coffee over the last 30 days: 2 drinks in all. '
-        'The most was 2 drinks on ${formatShortDay(today)}.',
+        'The most was 2 drinks on ${formatShortDay(today)}. '
+        'Shown with a 7-day average.',
       ),
       findsOneWidget,
     );
+    // The Log button stays in the widget tree, out of the semantics tree.
+    expect(find.semantics.byLabel(LogButton.label), findsNothing);
+    expect(find.byType(LogButton).hitTestable(), findsNothing);
+    await closeTrends(tester);
     semantics.dispose();
   });
 
@@ -94,18 +111,15 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
 
-    await tap(tester, find.widgetWithText(TextButton, 'Record'));
+    // The fan's labels stop growing at 1.3 times, so the wedge stays whole.
+    await tap(tester, find.byType(LogButton));
+    await pumpFor(tester, const Duration(milliseconds: 800));
+    expect(tester.takeException(), isNull);
+    await screenshot(tester, 'a11y-log-fan-text-3x');
+    await tester.longPress(fanWedge('Water'));
     final Finder dialog = find.byType(AlertDialog);
     await pumpUntil(tester, dialog);
     await screenshot(tester, 'a11y-record-dialog-text-3x');
-    await _tapInDialog(
-      tester,
-      find.descendant(
-        of: find.byType(RecordNewActivityDialog),
-        matching: find.byType(DropdownButtonFormField<String>),
-      ),
-    );
-    await tap(tester, find.text('Water').last);
     final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
     await pumpUntil(tester, quantity);
     await tester.ensureVisible(quantity);
@@ -120,39 +134,42 @@ void main() {
     expect(tester.takeException(), isNull);
     final List<Object> stored = await storedActivities('Water');
     expect(stored, hasLength(1));
-    // Vices list newest first.
+    // Habits list oldest first.
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
-        'Totals for ${formatDay(startOfDay(DateTime.now()))}. '
-        'Sparkling water: 0 drinks; Water: 4 drinks; Tea: 0 drinks; '
-        'Coffee: 0 drinks',
+        RegExp(
+          '^Today, .*\\. Coffee 0 drinks, Tea 0 drinks, Water 4 drinks, '
+          'Sparkling water 0 drinks\\. One entry, at ',
+        ),
       ),
     );
-    // The Undo snackbar covers the bottom of the chart until it times out.
+    // The Undo bar covers the bottom of the screen until it times out.
     await pumpUntil(tester, find.byType(SnackBar), present: false);
     await pumpFor(tester, const Duration(seconds: 1));
     await screenshot(tester, 'a11y-today-text-3x');
 
-    // Each name is drawn whole, as a chart title or in the key below it,
-    // where hitTestable() rules out an entry scrolled away or covered.
-    // The key can leave no room for the chart, which is then not drawn.
-    final Set<String> titles = chartTitles(tester) ?? const <String>{};
+    // Each name is drawn whole in its tally row; hitTestable() rules out a
+    // row covered by the Log button. Today scrolls, so each is brought into
+    // view first.
     for (final String name in names) {
-      if (titles.any((String t) => t == name || t.startsWith('$name ('))) {
-        continue;
+      final Finder row = find.descendant(
+        of: find.byType(TallyRow, skipOffstage: false),
+        matching: find.text(name, skipOffstage: false),
+        skipOffstage: false,
+      );
+      for (int i = 0; i < 20 && row.evaluate().isEmpty; i++) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+        await pumpFor(tester, const Duration(milliseconds: 300));
       }
-      // macOS reports no system text size (its embedder sends a scale of 1),
-      // so this size exists there only in a test, and in the 600 pt window
-      // the key outgrows its space and scrolls: scroll to each entry first.
-      if (defaultTargetPlatform == TargetPlatform.macOS) {
-        await tester.ensureVisible(
-          find.textContaining(RegExp('^$name: '), skipOffstage: false),
-        );
-        await pumpFor(tester, const Duration(milliseconds: 500));
-      }
+      await scrollIntoView(tester, row);
+      await pumpFor(tester, const Duration(milliseconds: 500));
+      final Text text = tester.widget<Text>(row);
+      expect(text.maxLines, isNull, reason: name);
       expect(
-        find.textContaining(RegExp('^$name: ')).hitTestable(),
+        find
+            .descendant(of: find.byType(TallyRow), matching: find.text(name))
+            .hitTestable(),
         findsOneWidget,
         reason: '$name is not shown whole',
       );

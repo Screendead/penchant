@@ -22,44 +22,44 @@ Pitch page: https://claude.ai/artifact/UZp2zogfZyEL1MiursXsYt (private until Jac
 pinned to commit `9b23cb9`:
 
 - **Code:**
-  - [`lib/crypto/`](https://github.com/Screendead/tracker/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/crypto):
+  - [`lib/crypto/`](https://github.com/Screendead/penchant/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/crypto):
     the cipher, recovery key, keychain store, key service, provider, reader, migrator and native-AES guard.
-  - [`lib/journal_key/`](https://github.com/Screendead/tracker/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/journal_key):
+  - [`lib/journal_key/`](https://github.com/Screendead/penchant/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/journal_key):
     the key screens and `JournalGate`.
-  - The data path: [`lib/data/vice.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/data/vice.dart),
-    [`vice_activity.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/data/vice_activity.dart),
-    [`add_vice.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/add_vice.dart),
-    [`record_new_activity_dialog.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/widgets/record_new_activity_dialog.dart),
-    [`vice_activity_editor_page.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/vice_activity_editor_page.dart).
+  - The data path: [`lib/data/vice.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/data/vice.dart),
+    [`vice_activity.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/data/vice_activity.dart),
+    [`add_vice.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/add_vice.dart),
+    [`record_new_activity_dialog.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/widgets/record_new_activity_dialog.dart),
+    [`vice_activity_editor_page.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/vice_activity_editor_page.dart).
 - **Rules R1** (the dual-shape phase) and indexes:
-  [`firestore.rules`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/firestore.rules),
-  [`firestore.indexes.json`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/firestore.indexes.json).
+  [`firestore.rules`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/firestore.rules),
+  [`firestore.indexes.json`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/firestore.indexes.json).
 - **Tests:**
-  - [`tests/firestore-rules/e2ee.test.js`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/tests/firestore-rules/e2ee.test.js)
-    and [`bytes-probe.test.js`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/tests/firestore-rules/bytes-probe.test.js).
-  - [`test/crypto/`](https://github.com/Screendead/tracker/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/test/crypto).
+  - [`tests/firestore-rules/e2ee.test.js`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/tests/firestore-rules/e2ee.test.js)
+    and [`bytes-probe.test.js`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/tests/firestore-rules/bytes-probe.test.js).
+  - [`test/crypto/`](https://github.com/Screendead/penchant/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/test/crypto).
 - **Tools:**
-  - [`tools/e2ee-metadata-view.js`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/tools/e2ee-metadata-view.js):
+  - [`tools/e2ee-metadata-view.js`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/tools/e2ee-metadata-view.js):
     what someone with console access still sees. Sample output:
-    [`metadata-view.txt`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/metadata-view.txt).
-  - [`tools/bench/`](https://github.com/Screendead/tracker/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/tools/bench).
+    [`metadata-view.txt`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/metadata-view.txt).
+  - [`tools/bench/`](https://github.com/Screendead/penchant/tree/9b23cb96a0df094feb9cf308f2e27618f285397c/tools/bench).
 - **Screens:** rendered by
-  [`test/mockups/e2e_encryption_test.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/test/mockups/e2e_encryption_test.dart)
+  [`test/mockups/e2e_encryption_test.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/test/mockups/e2e_encryption_test.dart)
   at iPhone size:
   - Offering the recovery key, in the two candidate timings:
-    [on Today after a week](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/a-today-deferred-card.png),
-    [at sign-up](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/b-signup-recovery-step.png).
+    [on Today after a week](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/a-today-deferred-card.png),
+    [at sign-up](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/b-signup-recovery-step.png).
   - Saving and checking it:
-    [save sheet](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/save-sheet.png),
-    [confirm a group](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/confirm-group.png),
-    [wrong group](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/confirm-group-wrong.png),
-    [Settings > Recovery key](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/settings-recovery-key.png).
+    [save sheet](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/save-sheet.png),
+    [confirm a group](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/confirm-group.png),
+    [wrong group](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/confirm-group-wrong.png),
+    [Settings > Recovery key](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/settings-recovery-key.png).
   - A new or lost device:
-    [opening the journal](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/opening-journal.png),
-    [enter the key](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/enter-key.png),
-    [a typo located](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/enter-key-typo.png),
-    [a valid key for another journal](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/enter-key-wrong-journal.png),
-    [Start a new journal](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/start-new-journal.png).
+    [opening the journal](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/opening-journal.png),
+    [enter the key](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/enter-key.png),
+    [a typo located](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/enter-key-typo.png),
+    [a valid key for another journal](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/enter-key-wrong-journal.png),
+    [Start a new journal](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/docs/pitch/mockups/e2e-encryption/start-new-journal.png).
 
 What the spike shows, re-run on this branch on 2026-11-03 (SOURCED: local runs):
 
@@ -141,7 +141,7 @@ His steer: "you only need to encrypt the actual names/quantities of vices surely
     - cryptography_flutter routes inputs under 2,000 bytes to pure Dart by default, which is every blob this app
       writes. It also falls back to Dart silently when the plugin is missing (`flutter_cipher.dart`,
       `defaultChannelPolicy`). An override is required.
-      [`native_aes.dart`](https://github.com/Screendead/tracker/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/crypto/native_aes.dart)
+      [`native_aes.dart`](https://github.com/Screendead/penchant/blob/9b23cb96a0df094feb9cf308f2e27618f285397c/lib/crypto/native_aes.dart)
       sends every length to CryptoKit and refuses the fallback.
     - On Apple, only AES-GCM, ChaCha20 and the curve primitives run natively. PBKDF2 (`BackgroundPbkdf2` is Dart in
       an isolate), HKDF and HMAC are pure Dart (`flutter_pbkdf2.dart`, `flutter_hmac.dart`).

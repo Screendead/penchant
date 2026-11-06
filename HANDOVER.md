@@ -33,9 +33,9 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
 | Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
-| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
+| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, merged in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. Step 1b, Today, in review in #83 (`feat/today-day-dial`): the dial, tallies with one-tap log, the Log fan, day picker and calendar; the radar and bars are gone | `lib/design/`, `assets/fonts/`, `lib/widgets/day_dial.dart` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), in review from `feat/bundle-id-penchant` (2026-11-05); both development profiles exist, and a signed `flutter build ios --release` carries the new ID. iOS and macOS e2e 31/31 (queue item 3) | `lib/firebase_options.dart`, `ios/`, `macos/` |
+| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), merged in #84 (2026-11-06); both development profiles exist, and a signed `flutter build ios --release` carries the new ID | `lib/firebase_options.dart`, `ios/`, `macos/` |
 | Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
@@ -61,9 +61,20 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    - **b. Today:** the dial (`CustomPainter`, beads at their times, now-hand, clear-day ring), the tally rows with a
      `+` each, the one-tap "log one" action (the default quantity, now, with C4's 8-second Undo; this was the
      layout-neutral half of one-tap logging), the Log button and its fan, the amount sheet that replaces the record
-     dialog for new entries, and the calendar sheet. The radar and C2's bars leave Today.
+     dialog for new entries, and the calendar sheet. The radar and C2's bars leave Today. In review in #83,
+     all of it but the amount sheet: a held wedge (or More, past eight habits) opens the
+     existing record dialog with the habit chosen, so new entries with an amount or time still go through it. Left
+     for later steps: the amount sheet (with 1d's editor, which reuses it), the SyncBadge pill (it needs a signal for
+     "everything synced" the app does not have; the offline banner and the day's pending note stay), merging a dense
+     hour's beads into one arc above about 48 entries, and docking the Log button on the Trends sheet (1c). Bead
+     size is against the habit's median entry on the shown day, so it costs no extra read; the "your usual" ghost
+     beads and a cross-day typical would cost a 7-day query. `r5-*` (the radar's key) are moot once this merges.
    - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
-     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial.
+     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial. In review in #89
+     (`feat/trends-sheet`, stacked on #83): all of it, and the Log button docks on the sheet's edge. Left for 1f: the
+     chart's morph between ranges (fl_chart tweens only equal-length series, so a range change snaps) and the day's
+     container transform with the `animations` package (it fades in place). The weekly remainder stays as built
+     (`r4-weekly`). The average now runs to 30 buckets, starting at 7 days or 4 weeks, as the mock-up has it.
    - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
      with Undo, and editing reuses the amount sheet.
    - **e. Auth and settings screens:** one sign-in screen with a segmented control and the password checklist;
@@ -74,7 +85,7 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      on iOS and `E2E_DEVICE=macos`.
 2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. After 1c; the
    mock-up does not show it.
-3. **Bundle IDs to `com.screendead.penchant`: in review** (PR from `feat/bundle-id-penchant`, 2026-11-05): iOS and
+3. **Bundle IDs to `com.screendead.penchant`: done** (#84, merged 2026-11-06): iOS and
    macOS, Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`,
    the macOS keychain group. The idea file is deleted; what it had left (the domain variant, an App Store search on a
    device) moved to the support-pages and TestFlight ideas and to For Jack to do. iOS e2e 31/31 and a signed release
@@ -89,12 +100,8 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
-The first pass (waves A to D) is merged. **CI is down:** since 2026-11-06 GitHub refuses to start Actions jobs
-("recent account payments have failed or your spending limit needs to be increased"), so no PR that changes code can
-show green CI, and nothing touching `firestore.rules` or `firestore.indexes.json` merges until it is back (merging
-deploys them, and the deploy job can't run). Docs-only PRs run no checks and still merge. #84 merged on its green CI
-(the last commit was docs only). #83 waits on Jack: merge on the review's local run of CI's commands plus both e2e
-suites, or wait for CI.
+The first pass (waves A to D) is merged. CI was down on 2026-11-06 (Actions billing limit) until Jack made the repo
+public and renamed it `Screendead/penchant` the same day; public repos run standard Actions runners free. #83 merged.
 
 **DECIDED** (in order; code PRs open and stack, and merge once CI is back or Jack waives it):
 
@@ -113,9 +120,7 @@ suites, or wait for CI.
   the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below), plus `r7-ci` (how to get CI back:
-restore Actions billing, wait for the reset, or a self-hosted runner on this Mac) and `#83`'s merge. Round 5 is moot
-once #83 merges. Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
+**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below),. `r7-ci` is moot (the repo is public) and so is round 5 (#83 merged). Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
 time, the weekly remainder (the Trends sheet keeps A as built), units and the data model.
 
 **Blocked on Jack, not decisions:** the domain variant (support and legal pages), the paid Apple team (App Attest,
@@ -290,7 +295,7 @@ once it lands; they stay open until Jack says so:
   `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
   itself still answers "no such user" differently from "wrong password". Also check the password-reset and
   verification email templates read sensibly now that the app sends both.
-- **Clear the main checkout's active Firebase project** (from #68): in `/Users/jacklusher/development/tracker`, run
+- **Clear the main checkout's active Firebase project** (from #68): in `~/development/tracker`, run
   `firebase use --clear`. The CLI's configstore maps that directory to `screendead-vice-tracker`, and that entry wins
   over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
   edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints

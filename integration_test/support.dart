@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -13,7 +12,11 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
+import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 const Duration timeout = Duration(seconds: 30);
@@ -143,10 +146,11 @@ Future<void> pumpFor(WidgetTester tester, Duration duration) async {
 }
 
 // Waits for the target to be hit-testable as well as present, so taps wait out
-// route transitions and overlays animating away.
+// route transitions and overlays animating away. Only the hit-testable match is
+// tapped: a page pushed over Today leaves Today's tally names in the tree.
 Future<void> tap(WidgetTester tester, Finder finder) async {
   await pumpUntil(tester, finder.hitTestable());
-  await tester.tap(finder);
+  await tester.tap(finder.hitTestable());
   await tester.pump();
 }
 
@@ -198,7 +202,7 @@ Future<void> openFromDrawer(WidgetTester tester, String title) async {
   await tap(tester, find.text(title));
 }
 
-// Three vices by default, the fewest the home chart draws as a radar.
+// Three vices by default.
 Future<void> addVicesThroughManageData(
   WidgetTester tester, [
   List<String> names = const <String>['Coffee', 'Tea', 'Water'],
@@ -228,25 +232,64 @@ Future<void> closeDrawerPage(WidgetTester tester) async {
   await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
 }
 
-// Records through the app's dialog. With [at], unlocks the date field and
-// types the time, as a user correcting the clock would.
+// A Log-fan wedge, by its habit's name: the fan names each by a label.
+Finder fanWedge(String viceName) => find
+    .byWidgetPredicate(
+      (Widget w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('fan-wedge-') &&
+          w is! Positioned,
+      description: 'a Log-fan wedge',
+    )
+    .withText(viceName);
+
+extension on Finder {
+  // The wedge whose label reads [text]; More stands for habits past eight.
+  Finder withText(String text) =>
+      find.descendant(of: this, matching: find.text(text));
+}
+
+// Records through Today's Log fan: a hold on the habit's wedge opens the
+// record dialog with it chosen, or More does when the fan has no room for it.
+// With [at], unlocks the date field and types the time, as a user correcting
+// the clock would.
 Future<void> recordActivity(
   WidgetTester tester,
   String viceName,
   int quantity, {
   DateTime? at,
 }) async {
-  await tap(tester, find.widgetWithText(TextButton, 'Record'));
+  await tap(tester, find.byType(LogButton));
+  final Finder wedge = fanWedge(viceName);
+  final Finder more = fanWedge('More');
+  await pumpUntilTrue(
+    tester,
+    () =>
+        wedge.hitTestable().evaluate().isNotEmpty ||
+        more.hitTestable().evaluate().isNotEmpty,
+    () => 'the Log fan to open',
+  );
+  // Let the wedges finish springing out before holding one.
+  await pumpFor(tester, const Duration(milliseconds: 800));
+  if (wedge.evaluate().isNotEmpty) {
+    await tester.longPress(wedge);
+  } else {
+    await tester.tap(more);
+  }
+  await tester.pump();
   final Finder dialog = find.byType(AlertDialog);
   await pumpUntil(tester, dialog);
-  await tap(
-    tester,
-    find.descendant(
-      of: find.byType(RecordNewActivityDialog),
-      matching: find.byType(DropdownButtonFormField<String>),
-    ),
+  final Finder chosen = find.descendant(
+    of: find.byType(RecordNewActivityDialog),
+    matching: find.byType(DropdownButtonFormField<String>),
   );
-  await tap(tester, find.text(viceName).last);
+  if (find
+      .descendant(of: chosen, matching: find.text(viceName))
+      .evaluate()
+      .isEmpty) {
+    await tap(tester, chosen);
+    await tap(tester, find.text(viceName).last);
+  }
   if (at != null) {
     await tap(tester, find.byTooltip('Manually enter date and time'));
     await enterText(
@@ -258,6 +301,31 @@ Future<void> recordActivity(
   await enterText(tester, 'Quantity', '$quantity');
   await tap(tester, find.descendant(of: dialog, matching: find.text('Record')));
   await pumpUntil(tester, dialog, present: false);
+}
+
+// Logs one of [viceName] now with its tally's +.
+Future<void> logOne(WidgetTester tester, String viceName) async {
+  final Finder row = find.byWidgetPredicate(
+    (Widget w) => w is TallyRow && w.vice.name == viceName,
+    skipOffstage: false,
+  );
+  await pumpUntil(tester, row);
+  final TallyRow tally = tester.widget<TallyRow>(row);
+  final String label = 'Log ${tally.vice.unit.label(1)} of $viceName';
+  await scrollIntoView(tester, find.byTooltip(label, skipOffstage: false));
+  await tap(tester, find.byTooltip(label));
+}
+
+// Scrolls Today, or the open Trends sheet, until [finder] is in the middle of
+// its view, clear of the Log button.
+Future<void> scrollIntoView(WidgetTester tester, Finder finder) async {
+  await pumpUntilTrue(
+    tester,
+    () => finder.evaluate().isNotEmpty,
+    () => '$finder to be built',
+  );
+  await Scrollable.ensureVisible(tester.element(finder.first), alignment: 0.5);
+  await tester.pump();
 }
 
 Future<String> storedViceID(String viceName) async {
@@ -337,43 +405,65 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
   }
 }
 
-// The radar chart paints its labels, so they are not Text widgets; read them
-// from the chart's data instead. The bar chart's labels are Text widgets.
-Set<String>? chartTitles(WidgetTester tester) {
-  final Finder bars = find.byType(BarChart);
-  if (bars.evaluate().isNotEmpty) {
-    return <String>{
-      for (final Element e
-          in find.descendant(of: bars, matching: find.byType(Text)).evaluate())
-        (e.widget as Text).data!,
-    };
-  }
-  final Finder chart = find.byType(RadarChart);
-  if (chart.evaluate().isEmpty) {
+// Today's tallies, each as "Name (2 drinks)", or null while the day loads.
+Set<String>? todayTallies(WidgetTester tester) {
+  final List<TallyRow> rows = tester
+      .widgetList<TallyRow>(
+        find.byWidgetPredicate(
+          // A day opened from Trends draws its tallies without a +.
+          (Widget w) => w is TallyRow && w.onLog != null,
+          skipOffstage: false,
+        ),
+      )
+      .toList();
+  if (rows.isEmpty || rows.any((TallyRow row) => row.total == null)) {
     return null;
   }
-  final RadarChartData data = tester.widget<RadarChart>(chart).data;
   return <String>{
-    for (int i = 0; i < data.dataSets.first.dataEntries.length; i++)
-      data.getTitle!(i, 0).text,
+    for (final TallyRow row in rows)
+      '${row.vice.name} (${row.vice.unit.label(row.total!)})',
   };
 }
 
-Future<void> expectChart(WidgetTester tester, Set<String> titles) =>
-    pumpUntilTrue(
-      tester,
-      () => setEquals(chartTitles(tester), titles),
-      () => 'the chart to show $titles (showing ${chartTitles(tester)})',
+// Waits for Today to show exactly [tallies]: the dial's summary, which names
+// every habit's total, and every tally row built so far (the list builds rows
+// only as they near the screen).
+Future<void> expectTallies(WidgetTester tester, Set<String> tallies) {
+  bool matches() {
+    final String? summary = dialSummary(tester);
+    final Set<String>? built = todayTallies(tester);
+    if (summary == null || built == null || !tallies.containsAll(built)) {
+      return false;
+    }
+    final String totals = summary.substring(
+      summary.indexOf('. ') + 2,
+      summary.contains(' First entry ') || summary.contains(' One entry')
+          ? summary.lastIndexOf(RegExp(r'\. (First|One) entry'))
+          : summary.lastIndexOf('. Nothing recorded.'),
     );
+    final Set<String> spoken = <String>{
+      for (final String t in tallies)
+        '${t.substring(0, t.lastIndexOf(' ('))} '
+            '${t.substring(t.lastIndexOf(' (') + 2, t.length - 1)}',
+    };
+    return setEquals(totals.split(', ').toSet(), spoken);
+  }
 
-Future<void> expectBars(WidgetTester tester, Set<String> titles) async {
-  await expectChart(tester, titles);
-  expect(find.byType(RadarChart), findsNothing);
+  return pumpUntilTrue(
+    tester,
+    matches,
+    () =>
+        'Today to show $tallies (rows: ${todayTallies(tester)}; '
+        'dial: ${dialSummary(tester)})',
+  );
 }
 
-Future<void> expectRadar(WidgetTester tester, Set<String> titles) async {
-  await expectChart(tester, titles);
-  expect(find.byType(BarChart), findsNothing);
+String? dialSummary(WidgetTester tester) {
+  final Finder dial = find.byType(DayDial, skipOffstage: false);
+  return dial.evaluate().isEmpty
+      ? null
+      // Today's comes first; a day opened from Trends adds another.
+      : tester.widget<DayDial>(dial.first).semanticsLabel;
 }
 
 Future<void> signOutThroughSettings(WidgetTester tester) async {
@@ -392,11 +482,13 @@ Future<void> signIn(WidgetTester tester, String email) async {
   await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
 }
 
-// Every string the app shows, offstage tabs and painted chart labels included.
+// Every string the app shows, offstage tabs, Today's tallies and the dial's
+// spoken summary included.
 Set<String> shownStrings(WidgetTester tester) => <String>{
   for (final Element e in find.byType(Text, skipOffstage: false).evaluate())
     ?((e.widget as Text).data ?? (e.widget as Text).textSpan?.toPlainText()),
-  ...?chartTitles(tester),
+  ...?todayTallies(tester),
+  ?dialSummary(tester),
 };
 
 // Pumps frame by frame until [until] appears, failing on the first frame that
@@ -422,4 +514,25 @@ Future<void> pumpUntilNeverShowing(
     check();
     return until.evaluate().isNotEmpty;
   }, () => '$until to appear');
+}
+
+// Opens the Trends sheet with a tap on its peek, and waits for it to settle.
+Future<void> openTrends(WidgetTester tester) async {
+  await tap(
+    tester,
+    find.descendant(
+      of: find.byType(TrendsSheet),
+      matching: find.text(TrendsSheet.title),
+    ),
+  );
+  await pumpUntil(tester, find.byTooltip(TrendsSheet.closeLabel).hitTestable());
+  await pumpFor(tester, const Duration(milliseconds: 500));
+}
+
+Future<void> closeTrends(WidgetTester tester) async {
+  // Close sits at the top of the sheet, which may have scrolled.
+  await scrollIntoView(tester, find.byTooltip(TrendsSheet.closeLabel));
+  await tap(tester, find.byTooltip(TrendsSheet.closeLabel));
+  await pumpUntil(tester, find.byType(LogButton).hitTestable());
+  await pumpFor(tester, const Duration(milliseconds: 500));
 }

@@ -1,0 +1,67 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Day Dial</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-text); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; }
+  .art { position: absolute; top: 0; left: 480px; width: 480px; height: 288px; overflow: hidden; }
+  .art svg { display: block; width: 480px; height: 288px; }
+  .ink { fill: var(--text); }
+  .amber { fill: var(--data1); }
+  .coral { fill: var(--data2); }
+  .blue { fill: var(--data5); }
+  .blk { rx: var(--radius-card); }
+  .slab { rx: var(--radius-sheet); }
+  .pill { rx: var(--space-xxl); }
+  .spoke { stroke: var(--bg); stroke-width: 1.4; stroke-linecap: round; }
+  .spoke.min { stroke-width: 1; opacity: .45; }
+  .hub { fill: var(--bg); }
+  .hand { stroke: var(--bg); stroke-width: 2; stroke-linecap: round; }
+  .words { position: absolute; left: var(--space-xl); bottom: var(--space-xl); max-width: 440px; }
+  .name { margin: 0; font: 900 88px/.92 var(--font-display); letter-spacing: -1.5px; color: var(--text); white-space: nowrap; }
+  .tag { margin: var(--space-s) 0 0 4px; font: 400 14px/20px var(--font-text); color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg id="art" viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      data1 120×192 bled off the top · data2 120×80 · data5 64×144 pill (size-logButton wide) · text (ink, paper in dark) 264×336 slab bled off top, bottom and right — about 39% of 960×288
+  arrangement one tall ink slab with three satellites to its left, gutters space-m, the satellites' bottoms on one line space-xl above the edge
+  pattern     the dial itself, from "the day as a 24-hour dial": 24 spokes at the Day Dial radii (majors 54–140, minors 64–132), the hub (44) and the now-hand at 21:10 cut out of the slab in bg, three beads on the 100 track in data2 and data5, the face cropped by the right edge
+  scales      sides in space-xxxl and space-xxl multiples (120, 80, 192, 144); gutters space-m; corners radius-card on the satellites, radius-sheet on the slab, the pill rx space-xxl (half of size-logButton)
+-->
+<rect class="amber blk" x="24" y="-24" width="120" height="192" rx="24"/>
+<rect class="coral blk" x="24" y="184" width="120" height="80" rx="24"/>
+<rect class="blue pill" x="160" y="120" width="64" height="144" rx="32"/>
+<rect class="ink slab" x="240" y="-24" width="264" height="336" rx="32"/>
+<g id="dial" transform="translate(420 144)"></g>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Day Dial</h1>
+<p class="tag">A private journal of your days, drawn as a 24-hour clock.</p>
+</div>
+</div>
+<script>
+  const ang = m => m / 1440 * Math.PI * 2 - Math.PI / 2, NS = 'http://www.w3.org/2000/svg', g = document.getElementById('dial');
+  const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); g.append(e); };
+  for (let i = 0; i < 24; i++) {
+    const maj = i % 3 === 0, a = ang(i * 60), r0 = maj ? 54 : 64, r1 = maj ? 140 : 132;
+    el('line', { class: 'spoke' + (maj ? '' : ' min'), x1: r0 * Math.cos(a), y1: r0 * Math.sin(a), x2: r1 * Math.cos(a), y2: r1 * Math.sin(a) });
+  }
+  const h = ang(21 * 60 + 10);
+  el('line', { class: 'hand', x1: 0, y1: 0, x2: 140 * Math.cos(h), y2: 140 * Math.sin(h) });
+  el('circle', { class: 'hub', r: 44 });
+  for (const [m, r, c] of [[16 * 60 + 10, 7.5, 'coral'], [18 * 60 + 40, 14, 'blue'], [20 * 60 + 20, 10.6, 'coral']]) {
+    const a = ang(m); el('circle', { class: c, cx: 100 * Math.cos(a), cy: 100 * Math.sin(a), r });
+  }
+</script>
+</body>
+</html>

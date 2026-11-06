@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/date_symbols.dart';
 import 'package:intl/date_time_patterns.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/day.dart';
 
 // Every English region Flutter's Material localizations carry, so its date and
 // time pickers can use the same conventions as the rest of the app.
@@ -113,3 +114,38 @@ String relativeDay(int daysAgo) => switch (daysAgo) {
   _ =>
     '${formatCount(daysAgo)} ${pluralWord(daysAgo, one: 'day', other: 'days')} ago',
 };
+
+// The dial is a 24-hour face, so the times on it are 24-hour whatever the
+// device's setting.
+String formatClock(DateTime moment) =>
+    DateFormat('HH:mm', formatLocale).format(moment);
+
+String formatTime(DateTime moment, {required bool alwaysUse24HourFormat}) =>
+    (alwaysUse24HourFormat
+            ? DateFormat.Hm(formatLocale)
+            : DateFormat('h:mm a', formatLocale))
+        .format(moment);
+
+// "Today", "Yesterday", then the weekday's name.
+String dayWord(DateTime day, DateTime today) =>
+    switch (daysBetween(day, today)) {
+      0 => 'Today',
+      1 => 'Yesterday',
+      _ => DateFormat.EEEE(formatLocale).format(day),
+    };
+
+// The date beside the day word: with its weekday for today and yesterday,
+// whose word does not name one.
+String dayPillDate(DateTime day, DateTime today) => daysBetween(day, today) < 2
+    ? DateFormat.MMMEd(formatLocale).format(day)
+    : DateFormat.MMMd(formatLocale).format(day);
+
+String formatWeekdayShort(DateTime day) =>
+    DateFormat.E(formatLocale).format(day);
+
+String formatMonth(DateTime month) =>
+    DateFormat.yMMMM(formatLocale).format(month);
+
+// An average, always to one decimal place, so 3 reads 3.0 beside 3.1.
+String formatAverage(double value) =>
+    NumberFormat('#,##0.0', formatLocale).format(value);

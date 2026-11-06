@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +30,11 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/trends/trends_chart.dart';
+import 'package:tracker/trends/trends_day.dart';
+import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
@@ -419,29 +424,17 @@ void main() {
         });
       });
 
-      testWidgets('the clear day is the sage wash with readable copy', (
+      testWidgets('the clear day says so in the sage ink', (
         WidgetTester tester,
       ) async {
         await _pumpThemed(tester, brightness, '/', empty: true);
 
-        final Color background =
-            (tester
-                        .widget<DecoratedBox>(
-                          find
-                              .descendant(
-                                of: find.byType(CleanDay),
-                                matching: find.byType(DecoratedBox),
-                              )
-                              .first,
-                        )
-                        .decoration
-                    as BoxDecoration)
-                .color!;
-        expect(background, p.clear);
-        expect(
-          tester.widget<Text>(find.text('A clear day so far')).style!.color,
-          p.clearInk,
-        );
+        for (final String text in <String>[
+          ClearDay.headline,
+          ClearDay.subline(isToday: true),
+        ]) {
+          expect(tester.widget<Text>(find.text(text)).style!.color, p.clearInk);
+        }
       });
 
       // Each screen renders in Red Hat at the smallest phone size without an
@@ -467,17 +460,35 @@ void main() {
         });
       }
 
-      testWidgets('renders the Graph tab', (WidgetTester tester) async {
+      testWidgets('renders the Trends sheet and a day opened from it', (
+        WidgetTester tester,
+      ) async {
         await _pumpThemed(tester, brightness, '/');
-        await tester.tap(find.text('Graph'));
+        await tester.tap(find.text(TrendsSheet.title));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull);
+        expect(find.byType(TrendsChart), findsOneWidget);
+        final Rect chart = tester.getRect(find.byType(LineChart));
+        await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.byType(TrendsDay), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
       testWidgets('renders the record dialog', (WidgetTester tester) async {
         await _pumpThemed(tester, brightness, '/');
-        await tester.tap(find.text('Record'));
+        await tester.tap(find.byType(LogButton));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull);
+        await tester.longPress(
+          find.descendant(
+            of: find.byKey(const ValueKey<String>('fan-wedge-coffee')),
+            matching: find.text('Coffee'),
+          ),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
