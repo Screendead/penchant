@@ -89,4 +89,16 @@ void main() {
       expect(tester.getRect(find.byWidget(e.widget)).bottom, lessThan(logTop));
     }
   });
+
+  testWidgets("the menu's rows are the mock-up's 44 pt", (
+    WidgetTester tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.byKey(Homepage.menuKey));
+    await tester.pumpAndSettle();
+    for (final Element e in find.byType(MenuItemButton).evaluate()) {
+      expect(tester.getRect(find.byWidget(e.widget)).height, 44);
+    }
+    expect(find.byType(MenuItemButton), findsNWidgets(2));
+  });
 }

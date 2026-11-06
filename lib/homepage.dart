@@ -89,6 +89,8 @@ class _AppMenu extends StatelessWidget {
     final ButtonStyle itemStyle = MenuItemButton.styleFrom(
       padding: const EdgeInsets.all(12),
       minimumSize: const Size(228, DialSize.minTapTarget),
+      // Padded, Material grows each row to 48; the mock-up's rows are 44.
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       textStyle: DialTypeScale.bodyL.copyWith(fontSize: 15.5, height: 1.2),
       foregroundColor: scheme.onSurface,

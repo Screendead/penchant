@@ -205,7 +205,7 @@ class _TallyRowState extends State<TallyRow>
 
 // The row is one screen-reader stop, its name and total with the + as its
 // tap. The row is 38 pt, so the stop's frame is stretched to 44 pt about its
-// middle, overlapping its neighbours' by 3 pt, as the + itself does.
+// middle, overlapping its neighbours' by 3 pt, as the +'s ink does.
 class _TallSemantics extends SingleChildRenderObjectWidget {
   const _TallSemantics({required Widget super.child});
 
@@ -239,9 +239,9 @@ class _PlusButton extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
 
-    // 32 pt drawn in a 38 pt row, as the mock-up has it. The target is 44 pt
-    // square and overhangs the row by 3 pt above and below; where it overlaps
-    // a neighbour's, the row under the finger takes the tap.
+    // 32 pt drawn in a 38 pt row, as the mock-up has it. The ink is 44 pt
+    // square, but hit testing stops at the row's bounds, so a touch lands on
+    // a 44 x 38 target; the rows' targets meet with no gap between them.
     return SizedBox(
       width: DialSize.minTapTarget,
       height: DialSize.tallyRow,
