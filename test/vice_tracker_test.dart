@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -852,6 +853,46 @@ void main() {
             .initialViceID,
         isNull,
       );
+    });
+
+    testWidgets('works from a keyboard: Enter opens it, Tab and Enter log a '
+        'wedge, Escape closes it', (WidgetTester tester) async {
+      await _pumpApp(
+        tester,
+        _today(habits(3), (_) => const <ViceActivity>[], writes: writes),
+        const ViceTracker(),
+      );
+
+      Future<void> openFromKeyboard() async {
+        Focus.of(
+          tester.element(
+            find.descendant(
+              of: find.byType(LogButton),
+              matching: find.byType(Listener),
+            ),
+          ),
+        ).requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(wedge('h0'), findsOneWidget);
+      }
+
+      await openFromKeyboard();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(wedge('h0'), findsNothing);
+      expect(writes.writes, isEmpty);
+
+      await openFromKeyboard();
+      // Clockwise from the top: the second Tab reaches the second habit.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(wedge('h1'), findsNothing);
+      expect(writes.writes.single.fields['viceID'], 'h1');
     });
 
     testWidgets('offers each habit to a screen reader as an action on the '

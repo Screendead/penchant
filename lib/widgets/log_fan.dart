@@ -305,45 +305,110 @@ class _FanPageState extends State<_FanPage>
     final int n = route.count;
     final TextScaler labels = media.textScaler.clamp(maxScaleFactor: 1.3);
 
-    return Stack(
-      children: <Widget>[
-        Positioned.fill(
-          child: Semantics(
-            button: true,
-            label: 'Close',
-            onTap: () => Navigator.of(context).pop(),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).pop(),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                child: ColoredBox(color: colors.scrim),
-              ),
-            ),
-          ),
+    void close() => Navigator.of(context).maybePop();
+
+    // The route below keeps no focus: Escape closes the fan, and Tab walks
+    // the wedges clockwise, then Close.
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        DismissIntent: CallbackAction<DismissIntent>(
+          onInvoke: (_) {
+            close();
+            return null;
+          },
         ),
-        Positioned(
-          left: DialSpace.m,
-          right: DialSpace.m,
-          top: centre.dy - reach - 52,
-          child: Center(child: _Hint(scheme: scheme)),
-        ),
-        AnimatedBuilder(
-          animation: Listenable.merge(<Listenable>[_open, route.hot]),
-          builder: (BuildContext context, _) => Stack(
+      },
+      child: Focus(
+        autofocus: true,
+        skipTraversal: true,
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Stack(
             children: <Widget>[
-              for (int k = 0; k < n; k++)
-                _placedWedge(context, k, n, centre, scale, labels),
+              Positioned.fill(
+                child: Semantics(
+                  button: true,
+                  label: 'Close',
+                  onTap: () => Navigator.of(context).pop(),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).pop(),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                      child: ColoredBox(color: colors.scrim),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: DialSpace.m,
+                right: DialSpace.m,
+                top: centre.dy - reach - 52,
+                child: Center(child: _Hint(scheme: scheme)),
+              ),
+              AnimatedBuilder(
+                animation: Listenable.merge(<Listenable>[_open, route.hot]),
+                builder: (BuildContext context, _) => Stack(
+                  children: <Widget>[
+                    for (int k = 0; k < n; k++)
+                      FocusTraversalOrder(
+                        order: NumericFocusOrder(k.toDouble()),
+                        child: _placedWedge(
+                          context,
+                          k,
+                          n,
+                          centre,
+                          scale,
+                          labels,
+                        ),
+                      ),
+                    Positioned.fromRect(
+                      rect: Rect.fromCircle(center: centre, radius: reach + 18),
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: (_open.value * 3).clamp(0, 1),
+                          child: CustomPaint(
+                            painter: _SpokesPainter(
+                              count: n,
+                              scale: scale,
+                              color: scheme.onSurface.withValues(alpha: 0.45),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Positioned.fromRect(
-                rect: Rect.fromCircle(center: centre, radius: reach + 18),
+                rect: Rect.fromCircle(
+                  center: centre,
+                  radius: (FanGeometry.inner - 6) * scale,
+                ),
                 child: IgnorePointer(
-                  child: Opacity(
-                    opacity: (_open.value * 3).clamp(0, 1),
-                    child: CustomPaint(
-                      painter: _SpokesPainter(
-                        count: n,
-                        scale: scale,
-                        color: scheme.onSurface.withValues(alpha: 0.45),
+                  child: _FanHub(scheme: scheme, colors: colors),
+                ),
+              ),
+              Positioned.fromRect(
+                rect: route.anchor,
+                child: FocusTraversalOrder(
+                  order: NumericFocusOrder(n.toDouble()),
+                  child: Semantics(
+                    button: true,
+                    label: 'Close',
+                    excludeSemantics: true,
+                    child: Material(
+                      color: scheme.surfaceContainerLow,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: close,
+                        customBorder: const CircleBorder(),
+                        child: Icon(
+                          Icons.close,
+                          size: 28,
+                          color: scheme.onSurface,
+                        ),
                       ),
                     ),
                   ),
@@ -352,33 +417,7 @@ class _FanPageState extends State<_FanPage>
             ],
           ),
         ),
-        Positioned.fromRect(
-          rect: Rect.fromCircle(
-            center: centre,
-            radius: (FanGeometry.inner - 6) * scale,
-          ),
-          child: IgnorePointer(
-            child: _FanHub(scheme: scheme, colors: colors),
-          ),
-        ),
-        Positioned.fromRect(
-          rect: route.anchor,
-          child: Semantics(
-            button: true,
-            label: 'Close',
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLow,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.close, size: 28, color: scheme.onSurface),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -433,8 +472,9 @@ class _FanPageState extends State<_FanPage>
   }
 }
 
-// One wedge of the fan. It is hit only inside its own shape.
-class _Wedge extends StatelessWidget {
+// One wedge of the fan. It is hit only inside its own shape. With a keyboard,
+// Enter or Space on a focused wedge does what a tap does.
+class _Wedge extends StatefulWidget {
   const _Wedge({
     super.key,
     required this.index,
@@ -458,12 +498,28 @@ class _Wedge extends StatelessWidget {
       '+${unit.label(defaultQuantity)}'.replaceAll(RegExp(r'minutes?'), 'min');
 
   @override
+  State<_Wedge> createState() => _WedgeState();
+}
+
+class _WedgeState extends State<_Wedge> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
+    final int index = widget.index;
+    final int count = widget.count;
+    final double scale = widget.scale;
+    final FanHabit? habit = widget.habit;
+    final TextScaler labels = widget.labels;
+    final VoidCallback onTap = widget.onTap;
+    final VoidCallback onHold = widget.onHold;
     final DialColors colors = DialColors.of(context);
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final Vice? vice = habit?.vice;
     final String name = vice?.name ?? 'More';
-    final String detail = vice == null ? 'all habits' : amount(vice.unit);
+    final String detail = vice == null
+        ? 'all habits'
+        : _Wedge.amount(vice.unit);
     final double chord =
         2 * FanGeometry.label * scale * sin(pi / max(count, 2)) * 0.9;
 
@@ -480,86 +536,103 @@ class _Wedge extends StatelessWidget {
           onTap: onTap,
           onLongPress: onHold,
           excludeSemantics: true,
+          // Inside the clip, so the detector's mouse region takes no hits
+          // outside the wedge.
           child: ClipPath(
             clipper: _WedgeClipper(index, count, scale),
-            child: RawGestureDetector(
-              behavior: HitTestBehavior.opaque,
-              gestures: <Type, GestureRecognizerFactory>{
-                TapGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-                      TapGestureRecognizer.new,
-                      (TapGestureRecognizer t) => t.onTap = onTap,
-                    ),
-                LongPressGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<
-                      LongPressGestureRecognizer
-                    >(
-                      () => LongPressGestureRecognizer(
-                        duration: DialMotion.holdForAmount,
-                      ),
-                      (LongPressGestureRecognizer l) => l.onLongPress = onHold,
-                    ),
-              },
-              child: CustomPaint(
-                painter: _WedgePainter(
-                  index: index,
-                  count: count,
-                  scale: scale,
-                  fill: habit == null
-                      ? scheme.surfaceContainerLow
-                      : colors.habit(habit!.mark),
-                  rim: habit == null
-                      ? colors.line
-                      : colors
-                            .habitInk(habit!.mark)
-                            .withValues(alpha: colors.bead.rimAlpha),
-                  rimWidth: habit == null ? 1 : colors.bead.rimWidth,
-                  gap: scheme.surface,
+            child: FocusableActionDetector(
+              actions: <Type, Action<Intent>>{
+                ActivateIntent: CallbackAction<ActivateIntent>(
+                  onInvoke: (_) {
+                    onTap();
+                    return null;
+                  },
                 ),
-                child: Stack(
-                  children: <Widget>[
-                    Positioned(
-                      left: label.dx - width / 2,
-                      top: label.dy - 18 * scale,
-                      width: width,
-                      child: MediaQuery(
-                        data: MediaQuery.of(
-                          context,
-                        ).copyWith(textScaler: labels),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: DialTypeScale.label.copyWith(
-                                fontSize: 12.5,
-                                height: 1.2,
-                                color: habit == null
-                                    ? scheme.onSurface
-                                    : colors.wedgeInk,
+              },
+              onShowFocusHighlight: (bool on) => setState(() => _focused = on),
+              child: RawGestureDetector(
+                behavior: HitTestBehavior.opaque,
+                gestures: <Type, GestureRecognizerFactory>{
+                  TapGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                        TapGestureRecognizer
+                      >(
+                        TapGestureRecognizer.new,
+                        (TapGestureRecognizer t) => t.onTap = onTap,
+                      ),
+                  LongPressGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                        LongPressGestureRecognizer
+                      >(
+                        () => LongPressGestureRecognizer(
+                          duration: DialMotion.holdForAmount,
+                        ),
+                        (LongPressGestureRecognizer l) =>
+                            l.onLongPress = onHold,
+                      ),
+                },
+                child: CustomPaint(
+                  painter: _WedgePainter(
+                    index: index,
+                    count: count,
+                    scale: scale,
+                    fill: habit == null
+                        ? scheme.surfaceContainerLow
+                        : colors.habit(habit.mark),
+                    rim: habit == null
+                        ? colors.line
+                        : colors
+                              .habitInk(habit.mark)
+                              .withValues(alpha: colors.bead.rimAlpha),
+                    rimWidth: habit == null ? 1 : colors.bead.rimWidth,
+                    gap: scheme.surface,
+                    focus: _focused ? scheme.onSurface : null,
+                  ),
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned(
+                        left: label.dx - width / 2,
+                        top: label.dy - 18 * scale,
+                        width: width,
+                        child: MediaQuery(
+                          data: MediaQuery.of(
+                            context,
+                          ).copyWith(textScaler: labels),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: DialTypeScale.label.copyWith(
+                                  fontSize: 12.5,
+                                  height: 1.2,
+                                  color: habit == null
+                                      ? scheme.onSurface
+                                      : colors.wedgeInk,
+                                ),
                               ),
-                            ),
-                            Text(
-                              detail,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: DialTypeScale.monoM.copyWith(
-                                fontSize: 11,
-                                height: 1.3,
-                                color: habit == null
-                                    ? colors.muted
-                                    : colors.wedgeInk,
+                              Text(
+                                detail,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: DialTypeScale.monoM.copyWith(
+                                  fontSize: 11,
+                                  height: 1.3,
+                                  color: habit == null
+                                      ? colors.muted
+                                      : colors.wedgeInk,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -595,6 +668,7 @@ class _WedgePainter extends CustomPainter {
     required this.rim,
     required this.rimWidth,
     required this.gap,
+    this.focus,
   });
 
   final int index;
@@ -604,6 +678,8 @@ class _WedgePainter extends CustomPainter {
   final Color rim;
   final double rimWidth;
   final Color gap;
+  // The keyboard focus ring's colour, while the wedge has focus.
+  final Color? focus;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -643,6 +719,24 @@ class _WedgePainter extends CustomPainter {
           ..color = gap,
       );
     }
+    if (focus case final Color ring) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = 3 + 2 * 3
+          ..color = ring,
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = 3
+          ..color = gap,
+      );
+    }
     canvas.restore();
   }
 
@@ -651,6 +745,7 @@ class _WedgePainter extends CustomPainter {
       old.fill != fill ||
       old.rim != rim ||
       old.gap != gap ||
+      old.focus != focus ||
       old.scale != scale ||
       old.index != index ||
       old.count != count;
