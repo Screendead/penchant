@@ -69,7 +69,7 @@ cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
 
 ```bash
-tools/e2e.sh                      # integration_test/ on the first available "iPhone 18 Pro" simulator; exits with the test status
+tools/e2e.sh                      # integration_test/all_test.dart (every file, one build) on the first available "iPhone 18 Pro" simulator; exits with the test status
 tools/e2e.sh integration_test/smoke_test.dart
 E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
 E2E_DEVICE=macos tools/e2e.sh     # integration_test/ as a macOS app on this Mac
@@ -163,8 +163,9 @@ except prose-only ones (Markdown, `docs/`, `ideas/`, `tech-debt/`). `rules-tests
 suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos-build.yml` runs only by hand
 (`gh workflow run macos-build.yml`). A PR with no checks has nothing to wait for. `e2e.yml` never runs on a PR: on a
 non-prose push to `master` (or `gh workflow run e2e.yml`) it waits two minutes on Linux, then runs `tools/e2e.sh`
-over all of `integration_test/` on an iPhone simulator of a `macos-26` runner (about 75 minutes: flutter rebuilds
-the app for each file), and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
+over `integration_test/all_test.dart` on an iPhone simulator of a `macos-26` runner (it imports
+every file so flutter builds the app once, where one file per build took 74), caching the Swift packages and Xcode's
+DerivedData, and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
 newer merge cancels the older run, waiting or running, so a burst of merges tests only its last commit. There is no
 macOS e2e job: the runner has no Mac development profile (that would take signing secrets), and unsigned, every
 sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
@@ -365,8 +366,8 @@ one. Habits list oldest first, as their colours are given, and Today reads `vice
 unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). The Trends sheet (`TrendsSheet`,
 `lib/trends/`) is a `DraggableScrollableSheet` over Today that replaced the Graph tab: it peeks below the tallies with
 a sparkline of the chosen habit, and opens over the dial to that habit over a range (7, 30 or 90 days or a year), by
-day or by week (counted back from today, so the newest week is whole and the oldest bucket holds what is left of the
-range), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
+day or by week (counted back from today, the range rounded down to whole weeks, so 30 days shows 28 and no week is
+short), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
 it happens. That arithmetic and the chart's axis scale and label spacing are pure functions in
 `lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Its chips list the habits in use oldest first, then
 the archived ones, so the default is never archived. It reads the range through the graph query alone (the hour

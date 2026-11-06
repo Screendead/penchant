@@ -11,6 +11,8 @@ pull request titles (`gh pr list --state merged`).
 
 - A monthly server job stores each habit's typical amount over the last three months, and the Day Dial sizes beads
   against it, falling back to the shown day's median until it has run.
+- On the Mac, Cmd-1 to Cmd-9 log one of the first nine habits in Today's order, with the same Undo as the +; a Log
+  menu in the menu bar lists them by name. A hardware keyboard on an iPad gets the same keys on Today.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
@@ -30,6 +32,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Trends by week shows whole weeks only: the range rounds down to a whole number of weeks (30 days shows 28, 90 shows
+  84, a year shows 364), so the oldest point no longer reads low from holding a few days.
 - Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
   each habit's colour and entry count; a habit's history groups its entries by day with a daily total. Archive and
   Edit habit live on the history page.
