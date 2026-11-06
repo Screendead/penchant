@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 
 enum WriteOp { create, update, delete }
@@ -56,6 +57,7 @@ class TrackerWrites {
     required String ownerID,
     required String name,
     required Unit unit,
+    ViceCategory category = ViceCategory.fallback,
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
@@ -68,6 +70,7 @@ class TrackerWrites {
           'ownerID': ownerID,
           'createdAt': FieldValue.serverTimestamp(),
           'archived': false,
+          'category': category.name,
         }),
         collection: _vices.id,
         id: vice.id,
@@ -76,8 +79,17 @@ class TrackerWrites {
     );
   }
 
-  SentWrite updateVice(String viceID, {String? name, Unit? unit}) {
-    return _update(_vices, viceID, {'name': ?name, 'unit': ?unit?.name});
+  SentWrite updateVice(
+    String viceID, {
+    String? name,
+    Unit? unit,
+    ViceCategory? category,
+  }) {
+    return _update(_vices, viceID, {
+      'name': ?name,
+      'unit': ?unit?.name,
+      'category': ?category?.name,
+    });
   }
 
   SentWrite setViceArchived(String viceID, {required bool archived}) {

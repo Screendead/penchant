@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -64,25 +65,37 @@ class FakeTrackerWrites implements TrackerWrites {
     required String ownerID,
     required String name,
     required Unit unit,
+    ViceCategory category = ViceCategory.fallback,
   }) => _write(
     Write('addVice', 'vice-${++_ids}', <String, Object?>{
       'ownerID': ownerID,
       'name': name,
       'unit': unit,
+      'category': category,
     }),
     collection: 'vices',
     op: WriteOp.create,
   );
 
   @override
-  SentWrite updateVice(String viceID, {String? name, Unit? unit}) => _write(
+  SentWrite updateVice(
+    String viceID, {
+    String? name,
+    Unit? unit,
+    ViceCategory? category,
+  }) => _write(
     Write('updateVice', viceID, <String, Object?>{
       'name': ?name,
       'unit': ?unit,
+      'category': ?category,
     }),
     collection: 'vices',
     op: WriteOp.update,
-    fields: <String, Object>{'name': ?name, 'unit': ?unit?.name},
+    fields: <String, Object>{
+      'name': ?name,
+      'unit': ?unit?.name,
+      'category': ?category?.name,
+    },
   );
 
   @override
