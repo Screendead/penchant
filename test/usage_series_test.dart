@@ -27,37 +27,36 @@ void main() {
       }
     });
 
-    test('weekly ranges cover every day picked, the newest week ending today '
-        'and the oldest bucket holding the remainder', () {
-      const Map<int, (int, int)> weeks = {
-        7: (1, 7),
-        14: (2, 7),
-        30: (5, 2),
-        90: (13, 6),
-        180: (26, 5),
-        365: (53, 1),
-      };
-      weeks.forEach((int days, (int, int) expected) {
-        final (int count, int oldestDays) = expected;
-        final UsageRange range = usageRange(_today, days, 7);
-        expect(range.bucketCount, count, reason: '$days days');
-        expect(range.days, days);
-        expect(range.start, addDays(_today, 1 - days));
-        expect(range.end, addDays(_today, 1));
-        expect(range.bucketStart(0), range.start);
-        expect(range.bucketStart(count - 1), addDays(_today, -6));
-        final DateTime oldestEnd = count == 1
-            ? range.end
-            : range.bucketStart(1);
-        expect(daysBetween(range.start, oldestEnd), oldestDays);
-        for (int i = 1; i < count; i++) {
-          final DateTime next = i + 1 < count
-              ? range.bucketStart(i + 1)
-              : range.end;
-          expect(daysBetween(range.bucketStart(i), next), 7);
-        }
-      });
-    });
+    test(
+      'weekly ranges round down to whole weeks, the newest ending today',
+      () {
+        const Map<int, int> weeks = {
+          7: 1,
+          14: 2,
+          30: 4,
+          90: 12,
+          180: 25,
+          365: 52,
+          3: 1,
+        };
+        weeks.forEach((int picked, int count) {
+          final UsageRange range = usageRange(_today, picked, 7);
+          final int days = count * 7;
+          expect(range.bucketCount, count, reason: '$picked days');
+          expect(range.days, days, reason: '$picked days');
+          expect(range.start, addDays(_today, 1 - days));
+          expect(range.end, addDays(_today, 1));
+          expect(range.bucketStart(0), range.start);
+          expect(range.bucketStart(count - 1), addDays(_today, -6));
+          for (int i = 0; i < count; i++) {
+            final DateTime next = i + 1 < count
+                ? range.bucketStart(i + 1)
+                : range.end;
+            expect(daysBetween(range.bucketStart(i), next), 7);
+          }
+        });
+      },
+    );
 
     test('ignores the time of day of today', () {
       expect(
@@ -108,17 +107,18 @@ void main() {
       );
     });
 
-    test('the newest weekly bucket is a full week, not a remainder', () {
-      // The two-day remainder of 30 days used to be the newest bucket.
-      final UsageRange range = usageRange(_today, 30, 7);
-      expect(range.bucketCount, 5);
-      expect(daysBetween(range.bucketStart(4), range.end), 7);
+    test(
+      'weekly: every bucket is a full week, the days rounded off dropped',
+      () {
+        final UsageRange range = usageRange(_today, 30, 7);
+        expect(range.bucketCount, 4);
 
-      final List<double> totals = bucketTotals(range, [
-        for (int day = 0; day < 30; day++) _at(day, 1),
-      ]);
-      expect(totals, [2, 7, 7, 7, 7]);
-    });
+        final List<double> totals = bucketTotals(range, [
+          for (int day = 0; day < 30; day++) _at(day, 1),
+        ]);
+        expect(totals, [7, 7, 7, 7]);
+      },
+    );
 
     test('sparse: a single day in a long range', () {
       final List<double> totals = bucketTotals(usageRange(_today, 30, 1), [
@@ -130,13 +130,7 @@ void main() {
     });
 
     test('empty: every bucket is zero', () {
-      expect(bucketTotals(usageRange(_today, 30, 7), const []), [
-        0,
-        0,
-        0,
-        0,
-        0,
-      ]);
+      expect(bucketTotals(usageRange(_today, 30, 7), const []), [0, 0, 0, 0]);
     });
 
     test('drops activities before and after the range', () {
@@ -147,8 +141,8 @@ void main() {
         [0, 0],
       );
       expect(
-        bucketTotals(usageRange(_today, 30, 7), [_at(30, 1), _at(34, 1)]),
-        [0, 0, 0, 0, 0],
+        bucketTotals(usageRange(_today, 30, 7), [_at(28, 1), _at(34, 1)]),
+        [0, 0, 0, 0],
       );
     });
 
@@ -211,7 +205,7 @@ void main() {
 
     test('a window picked for daily shrinks to fit weekly', () {
       final int weeks = usageRange(_today, 30, 7).bucketCount;
-      expect(effectiveWindow(7, weeks), 5);
+      expect(effectiveWindow(7, weeks), 4);
       expect(effectiveWindow(3, weeks), 3);
       expect(effectiveWindow(0, weeks), 1);
     });
@@ -231,16 +225,13 @@ void main() {
       expect(stats.peakIndex, 2);
     });
 
-    test(
-      'a weekly range averages per bucket, the short oldest one included',
-      () {
-        final UsageRange range = usageRange(_today, 30, 7);
-        final UsageStats stats = usageStats(range, [1, 0, 0, 4, 5]);
-        expect(stats.total, 10);
-        expect(stats.average, 2);
-        expect(stats.peakIndex, 4);
-      },
-    );
+    test('a weekly range averages per week', () {
+      final UsageRange range = usageRange(_today, 30, 7);
+      final UsageStats stats = usageStats(range, [3, 0, 4, 5]);
+      expect(stats.total, 12);
+      expect(stats.average, 3);
+      expect(stats.peakIndex, 3);
+    });
 
     test('an empty range has nothing in it', () {
       final UsageStats stats = usageStats(
