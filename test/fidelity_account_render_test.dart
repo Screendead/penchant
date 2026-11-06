@@ -68,6 +68,7 @@ void main() {
           ProviderScope(
             overrides: [
               userProvider.overrideWith((ref) => Stream.value(user)),
+              userProfileProvider.overrideWith((ref) => Stream.value(user)),
               packageInfoProvider.overrideWith(
                 (ref) async => PackageInfo(
                   appName: 'Penchant',

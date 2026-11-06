@@ -38,6 +38,9 @@ class FakeAccount implements Account {
       });
 
   @override
+  bool isGuest = false;
+
+  @override
   Future<void> startAsGuest() => _call('startAsGuest');
 
   @override

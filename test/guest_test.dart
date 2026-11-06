@@ -170,7 +170,7 @@ void main() {
 
   group('signing a guest out', () {
     Future<FakeAccount> openSettings(WidgetTester tester) async {
-      final FakeAccount account = FakeAccount();
+      final FakeAccount account = FakeAccount()..isGuest = true;
       await _pump(
         tester,
         account,

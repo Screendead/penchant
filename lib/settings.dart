@@ -75,7 +75,7 @@ class _SettingsState extends ConsumerState<Settings> {
     final NavigatorState navigator = Navigator.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
-      if (ref.read(userProvider).value?.isAnonymous ?? false) {
+      if (account.isGuest) {
         if (!await _confirmGuestSignOut(context)) {
           return;
         }
@@ -120,10 +120,15 @@ class _SettingsState extends ConsumerState<Settings> {
     final String? version = ref
         .watch(packageInfoProvider)
         .whenOrNull(data: (info) => '${info.version} (${info.buildNumber})');
-    final User? user = ref.watch(userProvider).value;
-    final String? email = (user?.isAnonymous ?? false)
-        ? AccountCopy.guest
-        : user?.email;
+    // The profile stream, since linking a guest or changing the address
+    // leaves the auth-state User as it was.
+    final String? email = ref.watch(
+      userProfileProvider.select(
+        (AsyncValue<User?> user) => (user.value?.isAnonymous ?? false)
+            ? AccountCopy.guest
+            : user.value?.email,
+      ),
+    );
     return CardPage(
       title: 'Settings',
       children: <Widget>[

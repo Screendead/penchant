@@ -78,6 +78,10 @@ class Account {
   // email and password or lost by signing out.
   Future<void> startAsGuest() => _auth.signInAnonymously();
 
+  // Read live: the User a provider holds is a snapshot that linking leaves
+  // anonymous.
+  bool get isGuest => _auth.currentUser?.isAnonymous ?? false;
+
   // Linking keeps the uid, so the guest's entries stay theirs with nothing
   // copied.
   Future<void> linkEmail({
@@ -92,6 +96,9 @@ class Account {
     } on FirebaseAuthException catch (e, stack) {
       _report(e, stack, 'sending the verification email');
     }
+    // userChanges re-emits on a reload, so screens see the email and the
+    // account as no longer anonymous.
+    await reloadUser();
   }
 
   Future<void> sendPasswordResetEmail(String email) {
@@ -178,7 +185,7 @@ class Account {
           beforeCommit: () => removing = true,
         );
       }
-      await user.delete();
+      await _deleteUser(user);
     } catch (e, stack) {
       if (!removing) {
         rethrow;
@@ -186,6 +193,21 @@ class Account {
       Error.throwWithStackTrace(DeletionIncompleteException(e), stack);
     }
     await _clearLocalCache();
+  }
+
+  // A guest cannot re-authenticate, so a guest whose sign-in is too old to
+  // delete is signed out instead: its data is gone and nothing can reach the
+  // empty account again.
+  Future<void> _deleteUser(User user) async {
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e, stack) {
+      if (!user.isAnonymous || e.code != 'requires-recent-login') {
+        rethrow;
+      }
+      _report(e, stack, 'deleting a guest whose sign-in is old');
+      await _auth.signOut();
+    }
   }
 
   // Equality on ownerID ordered by document id is served by the automatic
