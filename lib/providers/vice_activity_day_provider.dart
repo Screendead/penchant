@@ -53,11 +53,16 @@ final viceActivityDayProvider = Provider.autoDispose
 final viceActivityMonthForUserProvider = StreamProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, DateTime month})>(
       retry: firestoreRetry,
-      (ref, key) => _activitiesBetween(
-        key.uid,
-        DateTime(key.month.year, key.month.month),
-        DateTime(key.month.year, key.month.month + 1),
-      ).snapshots().map(ViceActivity.fromQuerySnapshot),
+      (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
+        return _activitiesBetween(
+          key.uid,
+          DateTime(key.month.year, key.month.month),
+          DateTime(key.month.year, key.month.month + 1),
+        ).snapshots().asyncMap(
+          (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+        );
+      },
     );
 
 final viceActivityMonthProvider = Provider.autoDispose
