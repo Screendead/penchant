@@ -29,16 +29,24 @@ class CircleButton extends StatelessWidget {
         focusNode: focusNode,
         onPressed: onPressed,
         icon: Icon(icon, size: 20),
-        style: IconButton.styleFrom(
-          fixedSize: const Size.square(DialSize.circleButton),
-          minimumSize: const Size.square(DialSize.circleButton),
-          tapTargetSize: MaterialTapTargetSize.padded,
-          backgroundColor: scheme.surfaceContainerLow,
-          disabledBackgroundColor: scheme.surfaceContainerLow,
-          foregroundColor: scheme.onSurface,
-          disabledForegroundColor: scheme.onSurface,
-          side: BorderSide(color: colors.line),
-        ),
+        style:
+            IconButton.styleFrom(
+              fixedSize: const Size.square(DialSize.circleButton),
+              minimumSize: const Size.square(DialSize.circleButton),
+              tapTargetSize: MaterialTapTargetSize.padded,
+              backgroundColor: scheme.surfaceContainerLow,
+              disabledBackgroundColor: scheme.surfaceContainerLow,
+              foregroundColor: scheme.onSurface,
+              disabledForegroundColor: scheme.onSurface,
+            ).copyWith(
+              // A side set here replaces the theme's focus ring, so it is
+              // drawn here too.
+              side: WidgetStateProperty.resolveWith(
+                (Set<WidgetState> s) => s.contains(WidgetState.focused)
+                    ? BorderSide(color: scheme.primary, width: 2)
+                    : BorderSide(color: colors.line),
+              ),
+            ),
       ),
     );
   }
