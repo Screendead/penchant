@@ -158,6 +158,11 @@ void main() {
       ) async {
         tester.view.devicePixelRatio = 3;
         tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+        // An iPhone's status bar and home indicator.
+        tester.view.padding = const FakeViewPadding(
+          top: 47 * 3,
+          bottom: 34 * 3,
+        );
         tester.platformDispatcher.platformBrightnessTestValue = brightness;
         addTearDown(tester.view.reset);
         addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);

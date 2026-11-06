@@ -576,24 +576,29 @@ class _Peek extends StatelessWidget {
                     if (perDay != null) ...<Widget>[
                       const SizedBox(width: DialSpace.s),
                       Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            Text(
-                              formatAverage(perDay),
-                              style: type.monoM.copyWith(
-                                fontSize: 17,
-                                color: colors.habitInk(mark),
+                        flex: 2,
+                        // Holds the number against the right edge.
+                        child: Align(
+                          alignment: AlignmentDirectional.topEnd,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: <Widget>[
+                              Text(
+                                formatAverage(perDay),
+                                style: type.monoM.copyWith(
+                                  fontSize: 17,
+                                  color: colors.habitInk(mark),
+                                ),
+                                maxLines: 1,
                               ),
-                              maxLines: 1,
-                            ),
-                            Text(
-                              '${vice.unit.plural} a day',
-                              style: small,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                              Text(
+                                '${vice.unit.plural} a day',
+                                style: small,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
