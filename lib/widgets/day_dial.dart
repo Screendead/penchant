@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
@@ -165,6 +166,8 @@ class _DayDialState extends ConsumerState<DayDial>
   );
   Timer? _clockTimer;
   double _drag = 0;
+  final ValueNotifier<double> _spin = ValueNotifier<double>(0);
+  bool _wasMoving = false;
 
   bool get _reduced => MediaQuery.disableAnimationsOf(context);
   bool get _isToday => widget.day == widget.today;
@@ -209,6 +212,7 @@ class _DayDialState extends ConsumerState<DayDial>
   void dispose() {
     _clockTimer?.cancel();
     _clock.dispose();
+    _spin.dispose();
     for (final OverlayEntry flight in _flights) {
       flight.remove();
       flight.dispose();
@@ -250,13 +254,28 @@ class _DayDialState extends ConsumerState<DayDial>
     return _t;
   }
 
+  // A pending bead's turning rim only repaints the bead layer, so a day left
+  // unsynced offline does not rebuild the dial every frame.
   void _onTick(Duration elapsed) {
     _t = elapsed;
-    if (!_animating()) {
+    _spin.value = _reduced
+        ? 0
+        : elapsed.inMicroseconds /
+              DialMotion.pendingRotation.inMicroseconds *
+              2 *
+              pi;
+    final bool moving = _animating();
+    if (!moving && !_spinning) {
       _ticker.stop();
     }
-    setState(() {});
+    // One more build after the motion ends draws its last frame.
+    if (moving || _wasMoving) {
+      setState(() {});
+    }
+    _wasMoving = moving;
   }
+
+  bool get _spinning => _pending.isNotEmpty && !_reduced;
 
   bool _within(Duration? start, Duration length) =>
       start != null && _t - start < length;
@@ -272,8 +291,7 @@ class _DayDialState extends ConsumerState<DayDial>
       _fadeInAt.values.any(
         (Duration s) => _within(s, DialMotion.reducedFade),
       ) ||
-      _within(_clearStart, DialMotion.cleanDayGlow) ||
-      (_pending.isNotEmpty && !_reduced);
+      _within(_clearStart, DialMotion.cleanDayGlow);
 
   bool get _awaitingSweepAfterContract =>
       _awaitingSweep && widget.entries != null && _contractStart != null;
@@ -304,7 +322,7 @@ class _DayDialState extends ConsumerState<DayDial>
       }
     }
     _pending = pending;
-    if (pending.isNotEmpty && !_reduced) {
+    if (_spinning) {
       _start();
     }
 
@@ -525,10 +543,6 @@ class _DayDialState extends ConsumerState<DayDial>
               )
         : 1;
     final double clear = entries == null ? 0 : _clearProgress();
-    final double rotation =
-        (_t.inMicroseconds / DialMotion.pendingRotation.inMicroseconds) *
-        2 *
-        pi;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -581,30 +595,32 @@ class _DayDialState extends ConsumerState<DayDial>
           ),
         );
 
-        final Widget beadLayer = CustomPaint(
-          size: size,
-          painter: _BeadsPainter(
-            beads: beads,
-            colors: colors,
-            surface: scheme.surfaceContainerLow,
-            labelStyle: type.dialTime,
-            textScaler: textScaler,
-            rotation: _reduced ? 0 : rotation,
-            ripples:
-                <({Offset centre, double radius, HabitMark mark, double k})>[
-                  for (final _PlacedBead b in beads)
-                    if (_landAt[b.entry.id] case final Duration landed
-                        when _t - landed < DialMotion.landingRipple)
-                      (
-                        centre: b.centre,
-                        radius: b.radius,
-                        mark: b.entry.mark,
-                        k: DialMotion.enter.transform(
-                          (_t - landed).inMicroseconds /
-                              DialMotion.landingRipple.inMicroseconds,
+        final Widget beadLayer = RepaintBoundary(
+          child: CustomPaint(
+            size: size,
+            painter: _BeadsPainter(
+              beads: beads,
+              colors: colors,
+              surface: scheme.surfaceContainerLow,
+              labelStyle: type.dialTime,
+              textScaler: textScaler,
+              spin: _spin,
+              ripples:
+                  <({Offset centre, double radius, HabitMark mark, double k})>[
+                    for (final _PlacedBead b in beads)
+                      if (_landAt[b.entry.id] case final Duration landed
+                          when _t - landed < DialMotion.landingRipple)
+                        (
+                          centre: b.centre,
+                          radius: b.radius,
+                          mark: b.entry.mark,
+                          k: DialMotion.enter.transform(
+                            (_t - landed).inMicroseconds /
+                                DialMotion.landingRipple.inMicroseconds,
+                          ),
                         ),
-                      ),
-                ],
+                  ],
+            ),
           ),
         );
 
@@ -997,16 +1013,17 @@ class _BeadsPainter extends CustomPainter {
     required this.surface,
     required this.labelStyle,
     required this.textScaler,
-    required this.rotation,
+    required this.spin,
     required this.ripples,
-  });
+  }) : super(repaint: spin);
 
   final List<_PlacedBead> beads;
   final DialColors colors;
   final Color surface;
   final TextStyle labelStyle;
   final TextScaler textScaler;
-  final double rotation;
+  // The pending rims' turn, in radians.
+  final ValueListenable<double> spin;
   final List<({Offset centre, double radius, HabitMark mark, double k})>
   ripples;
 
@@ -1043,7 +1060,7 @@ class _BeadsPainter extends CustomPainter {
         colors,
         pending: b.entry.pending,
         fill: b.fill,
-        rotation: rotation,
+        rotation: spin.value,
       );
       if (faded) {
         canvas.restore();

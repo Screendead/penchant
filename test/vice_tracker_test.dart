@@ -281,6 +281,48 @@ void main() {
     final Vice tea = _habit('Tea', unit: Unit.time);
     final Vice old = _habit('Sugar', unit: Unit.item, archived: true);
 
+    testWidgets("a pending bead's rim keeps turning without rebuilding the "
+        'dial', (WidgetTester tester) async {
+      await _pumpApp(
+        tester,
+        _today(
+          [coffee],
+          (DateTime day) => [
+            ViceActivity(
+              id: 'queued',
+              viceID: coffee.id,
+              quantity: 1,
+              ownerID: ownerID,
+              createdAt: Timestamp.fromDate(
+                today.add(const Duration(hours: 1)),
+              ),
+              pending: true,
+            ),
+          ],
+        ),
+        const ViceTracker(),
+      );
+      // Past the day's sweep and the bead's spring.
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      CustomPainter beads() => tester
+          .widget<CustomPaint>(
+            find.byWidgetPredicate(
+              (Widget w) =>
+                  w is CustomPaint &&
+                  w.painter.runtimeType.toString() == '_BeadsPainter',
+            ),
+          )
+          .painter!;
+      final CustomPainter before = beads();
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(tester.binding.hasScheduledFrame, isTrue);
+      }
+      expect(identical(beads(), before), isTrue);
+    });
+
     testWidgets('is one node saying the day, each total and the first and '
         'last entry', (WidgetTester tester) async {
       final DateTime first = today.add(const Duration(hours: 8, minutes: 5));
