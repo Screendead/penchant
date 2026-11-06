@@ -226,8 +226,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        await tester.ensureVisible(find.text('Please select a vice'));
-        expect(find.text('Please select a vice'), findsOneWidget);
+        await tester.ensureVisible(find.text('Please select a habit'));
+        expect(find.text('Please select a habit'), findsOneWidget);
         expect(find.text('Please enter at least 1'), findsOneWidget);
       });
 

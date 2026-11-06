@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -119,7 +120,7 @@ class _RecordNewActivityDialogState
         setState(() {
           // The rules deny a vice that was deleted after this list loaded.
           error = e.code == 'permission-denied'
-              ? 'That vice no longer exists'
+              ? 'That habit no longer exists'
               : 'Not recorded. ${firestoreErrorMessage(e)}';
         });
       }
@@ -198,10 +199,10 @@ class _RecordNewActivityDialogState
 
     if (vicesValue.error case final Object loadError when vices == null) {
       return AlertDialog(
-        title: const Text('Record New Vice Activity'),
+        title: const Text('Record New Habit Activity'),
         icon: const Icon(Icons.addchart),
         content: InfoBox(
-          message: loadErrorMessage('your vices', loadError),
+          message: loadErrorMessage('your habits', loadError),
           isError: true,
           onRetry: () =>
               ref.invalidate(viceListForUserProvider, asReload: true),
@@ -234,7 +235,7 @@ class _RecordNewActivityDialogState
             excluding: loading,
             child: AlertDialog(
               scrollable: true,
-              title: const Text('Record New Vice Activity'),
+              title: const Text('Record New Habit Activity'),
               icon: const Icon(Icons.addchart),
               content: Form(
                 key: formKey,
@@ -245,7 +246,7 @@ class _RecordNewActivityDialogState
                       key: ValueKey<String?>(selectedVice?.id),
                       initialValue: selectedVice?.id,
                       isExpanded: true,
-                      hint: const Text('Select Vice'),
+                      hint: const Text('Select Habit'),
                       onChanged: (String? id) {
                         final int parsedQuantity =
                             int.tryParse(quantityController.text) ?? 0;
@@ -265,10 +266,10 @@ class _RecordNewActivityDialogState
                             ),
                           )
                           .toList(),
-                      decoration: const InputDecoration(labelText: 'Vice'),
+                      decoration: const InputDecoration(labelText: 'Habit'),
                       validator: (String? value) {
                         if (value == null) {
-                          return 'Please select a vice';
+                          return 'Please select a habit';
                         }
 
                         return null;
@@ -323,7 +324,7 @@ class _RecordNewActivityDialogState
           ),
           if (loading) ...[
             Positioned.fill(
-              child: Container(color: Colors.black.withValues(alpha: 0.5)),
+              child: ColoredBox(color: DialColors.of(context).scrim),
             ),
             const Center(child: CircularProgressIndicator()),
           ],

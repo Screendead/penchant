@@ -32,10 +32,12 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Wave D: data layer (#68), repo hygiene (#70), usage graph (#69), locale formatting (#67), widget state (#71), dead code and a `dart format` CI step (#66), Today chart keeps vice names readable at large text (#74), admin glob override for Dependabot alerts 197/198 (#75), pitch round 4 (#73) | Merged 2026-11-04. Each ran the full iOS e2e (31 tests) before merge, except #73 (docs) and #75 (seed script only; ran it under the emulators) | `lib/`, `admin/`, `docs/pitch/` |
 | CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
 | Web site | Down: returns 404 (checked 2026-11-04) | |
-| macOS target (#47) | Ready to merge 2026-11-05: Jack made the Mac development profile, and `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
+| macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
+| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Tech-debt register | 24 issues on #47's branch: 0 critical, 0 high, 12 medium, 12 low (`tools/tech-debt-recount.py`, 2026-11-05; 27 with 1 high, the macOS lockfile, on master; from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 31 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
+| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), in review from `feat/bundle-id-penchant` (2026-11-05); both development profiles exist, and a signed `flutter build ios --release` carries the new ID. iOS and macOS e2e 31/31 (queue item 3) | `lib/firebase_options.dart`, `ios/`, `macos/` |
+| Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
 Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
 `dart format` check, `flutter test` and the rules tests. `flutter build macos` fails on master (deployment target);
@@ -48,32 +50,72 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 `tools/e2e.sh` or uses the default emulator ports. Subagents write PR bodies to uniquely named scratchpad files: the
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
-1. **macOS as a fully supported target** (C6's note): built in #47 (deployment target 12.0, emulator plist strip,
-   network and Keychain Sharing entitlements, `E2E_DEVICE=macos tools/e2e.sh`, a path-filtered CI build). **Ready to
-   merge** (2026-11-05): Jack created the Mac development profile, the signed build runs and Firebase Auth works on
-   macOS. `E2E_DEVICE=macos tools/e2e.sh` now runs each file in its own `flutter test` (the macOS runner cannot
-   relaunch the app for a second file) and passes 31/31; iOS passes 31/31 (both after merging master through #77).
-   Three macOS-only test failures were the harness, not the app: a hidden or covered macOS window stops frames, so a
-   pump waited forever (tests now call `ensureE2EBinding()`, which forces frames meanwhile); the day menu in the
-   600 pt window leaves the newest days scrolled out (the test scrolls to them); and at text scale 3, which macOS
-   never reports outside a test, #74's key scrolls in that window (on macOS only, the test scrolls to each name). One full macOS run also timed out once in `bounded_queries_test.dart`'s
-   `register`; it passed in every rerun and the cause is unknown (PR body). Merge is the main session's.
-2. **The layout-neutral half of one-tap logging** (`ideas/README.md`, step 2; the rest of that step is done). One-tap's
-   tiles are a Today layout, which waits on Jack's Today call (`r2-today`); only a shared "log one at the default
-   quantity, now" action with the 8-second Undo is decided. Unblocked. Parallel with item 4 where the files don't
-   overlap.
-3. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
+1. **The Day Dial UI overhaul** (`r6-ui-direction`, below). The source of truth is branch
+   `origin/design/ui-overhaul-day-dial`, folder `docs/pitch/mockups/ui-overhaul/day-dial/`: `index.html` (the live
+   mock-up), `tokens.json` (mirrored in `lib/design/tokens.json`), `notes.md` (how each part is built in Flutter) and
+   the stills. One PR per step, in order; every screen keeps working between steps, and each PR keeps
+   `tools/e2e.sh` green by updating the tests its screens break. Habit names in examples are made up; the product
+   name is Penchant (`r2-brand`; the mock-up's "Tracker" is a placeholder).
+   - **a. Theme foundation:** tokens, light and dark `ThemeData` with `themeMode: system`, bundled fonts, the habit
+     colour function, the hard-coded colours replaced. In review (#79).
+   - **b. Today:** the dial (`CustomPainter`, beads at their times, now-hand, clear-day ring), the tally rows with a
+     `+` each, the one-tap "log one" action (the default quantity, now, with C4's 8-second Undo; this was the
+     layout-neutral half of one-tap logging), the Log button and its fan, the amount sheet that replaces the record
+     dialog for new entries, and the calendar sheet. The radar and C2's bars leave Today.
+   - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
+     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial.
+   - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
+     with Undo, and editing reuses the amount sheet.
+   - **e. Auth and settings screens:** one sign-in screen with a segmented control and the password checklist;
+     Settings and Account Settings in the card style. Copy stays as it is until `r3-delete-copy`.
+   - **f. Motion polish:** bead travel, day sweep, springs, page transitions (the mock-up's notes add the
+     `animations` package), and the reduce-motion fades.
+   - **g. e2e rewrite:** rebuild `integration_test/` around the new flows (fan gestures, dial semantics, the sheets),
+     on iOS and `E2E_DEVICE=macos`.
+2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. After 1c; the
+   mock-up does not show it.
+3. **Bundle IDs to `com.screendead.penchant`: in review** (PR from `feat/bundle-id-penchant`, 2026-11-05): iOS and
+   macOS, Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`,
+   the macOS keychain group. The idea file is deleted; what it had left (the domain variant, an App Store search on a
+   device) moved to the support-pages and TestFlight ideas and to For Jack to do. iOS e2e 31/31 and a signed release
+   build pass, and the review's full `E2E_DEVICE=macos tools/e2e.sh` (2026-11-06, load about 7) passed 31/31 with
+   34 registrations. Earlier runs under load 40 and up had 3 of 70 registrations time out at 30 s (Homepage never
+   appeared), beside other 30 s timeouts that touch no Auth code (a server count, a dialog close); a load effect, not
+   a keychain one, is the likelier reading. If the hang comes back on a quiet machine, the macOS keychain access group
+   (`macos/Runner/*.entitlements`) is the one ID-specific piece on Auth's persistence path.
+4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
-4. **The rest of the register**, medium then low, one class per PR.
+5. **The rest of the register**, medium then low, one class per PR.
 
-### This run (`/finish-and-pitch`, started 2026-11-03)
+### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
-Waves A to D are merged (the table above has each). No round-2 call is picked, so nothing rests on one. Left over:
+The first pass (waves A to D) is merged. **CI is down:** since 2026-11-06 GitHub refuses to start Actions jobs
+("recent account payments have failed or your spending limit needs to be increased"), so no PR that changes code can
+show green CI, and nothing touching `firestore.rules` or `firestore.indexes.json` merges until it is back (merging
+deploys them, and the deploy job can't run). Docs-only PRs run no checks and still merge. #84 merged on its green CI
+(the last commit was docs only). #83 waits on Jack: merge on the review's local run of CI's commands plus both e2e
+suites, or wait for CI.
 
-- Left for Jack's calls: brand strings, telemetry, verified email, vice cap, other languages. The "log one" action
-  waits on `r2-today`.
-- **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
-  trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
+**DECIDED** (in order; code PRs open and stack, and merge once CI is back or Jack waives it):
+
+- **Track A, the overhaul, stacked on #83:** 1c Trends sheet, then 2 macOS split view, then 1d Habits/history/editor
+  (with the amount sheet, swipe-to-delete with Undo, which also settles the register's inconsistent-delete item),
+  1e auth and settings (with keyboard focus on list rows, navigation destinations and the slider, which #82 found at
+  about 1.2:1), 1f motion polish, 1g e2e rewrite. One PR each, on top of the last.
+- **Track B, Apple platform debt, off `master`:** the CocoaPods sunset (move Firebase to Swift Package Manager, which
+  also retires the Podfile overrides), the failing `flutter build macos --release`, the legacy signing config and the
+  dead scaffold assets.
+- **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently;
+  the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
+- **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
+
+**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below), plus `r7-ci` (how to get CI back:
+restore Actions billing, wait for the reset, or a self-hosted runner on this Mac) and `#83`'s merge. Round 5 is moot
+once #83 merges. Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
+time, the weekly remainder (the Trends sheet keeps A as built), units and the data model.
+
+**Blocked on Jack, not decisions:** the domain variant (support and legal pages), the paid Apple team (App Attest,
+TestFlight), the privacy-policy details, `firebase use --clear` in the main checkout.
 
 Housekeeping that rides along with whatever PR touches it: delete each tech-debt file a PR fixes, and each idea file
 a PR ships, with its README line; run `tools/tech-debt-recount.py` to fix the counts. It resolves paths from its own
@@ -85,7 +127,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 
 - **C1. Rules deployment** (`rules-deploy`): **CI deploys rules and indexes on merge to `master`.** So every rules PR
   Claude merges reaches production; the rules tests gate it. On since 2026-11-04.
-- **C2. Today with 1 or 2 vices** (`today-few-vices`): **bars below 3 vices, the radar from 3 up.**
+- **C2. Today with 1 or 2 vices** (`today-few-vices`): **bars below 3 vices, the radar from 3 up.** Superseded by
+  `r6-ui-direction` (2026-11-05): the radar leaves Today, and with it the bars rule, once overhaul step 1b lands.
 - **C3. Save timeout** (`record-timeout`): **close the dialog and say the entry will sync.**
 - **C4. Undo duration** (`undo-duration`): **8 seconds.**
 - **C5. Clean day** (`clean-day`): **quietly positive**: a green tint and short encouraging copy, no streak pressure.
@@ -112,8 +155,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 - **C17. Business model** (`business`): **free 1.0, then a one-time Pro unlock in 1.1.**
 - **C18. New fields on vices** (`goals-fields`): **yes.** Optional fields are fine. Mandatory fields are allowed too,
   but only with a migrator that runs on first launch and adds them to existing records.
-- **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand itself is open on the pitch page (`r2-brand`;
-  candidates in `ideas/release-blockers/brand-name.md`).
+- **C19. Name** (`name`): **a distinct brand plus a descriptive subtitle.** The brand is Penchant (`r2-brand`, round
+  2 below).
 
 ## Jack's calls, round 2
 
@@ -125,21 +168,46 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on `mockup/icon-sheet`). Shipped as the iOS and macOS
   icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
   brand. Done.
+- **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
+  **Penchant**, with the recommended App Store subtitle **"Habit journal & sleep insights"**. Applied to every
+  identity string by #81; the bundle IDs followed in `feat/bundle-id-penchant`. Backups if the name proves unusable: Kenning, then Sounding.
+- **`r2-mac-config`** (2026-11-05): the Mac shares the iOS app's Firebase registration and config file (the
+  recommended side); the console offered no separate macOS app.
+- **No trademark search** (2026-11-05, Jack): none will be done, professional or otherwise. Don't raise it again.
+- **Wording** (2026-11-05, Jack): the app says **"habits"**, not "vices", in its UI. Code, routes, Firestore
+  collections and fields, and the export's column names keep `vice`, so the data shape is unchanged
+  (#81).
+
+## Jack's calls, round 6
+
+- **`r6-ui-direction`** (2026-11-05, on the UI overhaul pitch page https://claude.ai/artifact/23uvjtPyS7TqPvXaEBw9Px;
+  read from its `picks` collection): **Day Dial**, the day as a 24-hour dial with each entry a coloured bead at its
+  time. This also settles **`r2-today`**: the radar leaves Today, so C2's bars-below-3 rule is
+  superseded, and it allows the one-tap **"log one"** action (a tally row's `+`, or a tap on a Log-fan segment, logs
+  the default quantity now with the 8-second Undo). Chrome is ink on paper; the five icon colours mean habits only.
+  A habit's colour is its creation order (archived included) mod 5, rings from the sixth, dotted rings from the
+  eleventh; computed on the device, no stored field. Units stay the existing enum; new units are `r2-data-model`.
+  Built as the queue's item 1.
+- **Contrast** (2026-11-05, in chat): **every colour pair meets the accepted accessibility minimum in both themes**,
+  WCAG 2.2 AA: 4.5:1 for text, 3:1 for icons, meaningful graphics, control edges and focus. Fix, never flag; the
+  habit colours keep the icon's five hues (lightness, rims and inks may change). The pairs are
+  `docs/design-system/day-dial/project/contrast-pairs.json`, checked by `tools/contrast-check.py` and
+  `test/contrast_test.dart`; a new use of a colour adds its pair there.
 
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
 recommendation. Ids: `r2-e2ee` (end-to-end encryption of what each entry says; `ideas/release-blockers/end-to-end-encryption.md`,
 prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and quantities, dates may stay plaintext),
-`r2-mac-config` (the macOS Firebase config: reuse the iOS app's registration, recommended, or register a separate
-app), `r2-brand`, `r2-trademark`, `r2-age` (18+ in
+`r2-age` (18+ in
 place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
 `r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
 Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
 
 Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, for `r2-brand`; its icon half is superseded by `r2-icon`). Ids `r2-today`, `r2-presets`, `r2-triggers`.
+icon (`mockup/brand-and-icon`, superseded by `r2-brand` and `r2-icon`). Ids `r2-presets`,
+`r2-triggers`; `r2-today` is settled by `r6-ui-direction`.
 
 Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
 `lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
@@ -174,7 +242,8 @@ entry anywhere, which the rules don't bound. Register:
 `tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md`; rule: `CLAUDE.md` **Days**.
 
 Round 5 (2026-11-04, from the Today chart fix, PR #74; on the pitch page, each built the first way). Recommendations,
-not decisions:
+not decisions. All three concern the radar's key, which leaves Today in overhaul step 1b, so they are likely moot
+once it lands; they stay open until Jack says so:
 - **`r5-radar-inset`**: radar inset by one title line on every side at all text sizes (recommended, as built) vs only
   when the key shows.
 - **`r5-key-height`**: the key takes the height it needs and the chart is left out below four title lines of room
@@ -188,7 +257,8 @@ not decisions:
 
 - **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
   releases stay in the console, so this can be undone.
-- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The main checkout may still
+- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The `com.screendead.penchant`
+  profiles (iOS and Mac) were made by Claude with `xcodebuild -allowProvisioningUpdates` (`CLAUDE.md`), no clicks. The main checkout may still
   hold an uncommitted `macos/Runner.xcodeproj/project.pbxproj` from the 2026-11-04 attempt; #47 carries the team, so
   `git checkout -- macos/Runner.xcodeproj/project.pbxproj` there discards it.
 - **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
@@ -221,6 +291,18 @@ not decisions:
   over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
   edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
   `demo-tracker`. Register: `tech-debt/firebase-data-layer/every-firebase-command-targets-production.md`.
+- **Firebase registration: done** (2026-11-05). Jack registered the iOS app `com.screendead.penchant` in
+  `screendead-vice-tracker` and supplied its `GoogleService-Info.plist` (copy in
+  `~/development/tracker-tools/firebase-config/`). The console offers no separate macOS app, so the Mac shares that
+  registration and file, which settles `r2-mac-config` on its recommended side. Both bundle IDs and configs are
+  switched (queue item 3). The phone sees Penchant as a new app: the build installed under the old ID
+  (`com.screendead.tracker.tracker`) stays beside it until deleted, and the new one starts signed out. The two old
+  iOS registrations in the console (`com.screendead.tracker.tracker` and `…tracker.RunnerTests`) serve only that old
+  install; remove them once it is deleted, if wanted.
+- **Choose the domain variant** before the first upload: `penchant.com` is held (MarkMonitor, owner unknown) and
+  `penchant.app` is parked, so a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. It sets the
+  support and legal-page addresses (`ideas/release-blockers/support-about-and-legal-pages.md`). Also before the first
+  upload: search the App Store for Penchant on a device.
 - **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
   support email; the TestFlight testers. They stay out of the repo.
 

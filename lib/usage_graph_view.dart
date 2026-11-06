@@ -136,7 +136,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
 
     if (viceListValue.error case final Object error) {
       return ErrorView(
-        message: loadErrorMessage('your vices', error),
+        message: loadErrorMessage('your habits', error),
         onRetry: () => ref.invalidate(viceListForUserProvider, asReload: true),
       );
     }
@@ -155,7 +155,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
     ];
 
     if (viceList.isEmpty) {
-      return const InfoBox(message: 'No vices available to graph');
+      return const InfoBox(message: 'No habits available to graph');
     }
 
     final String? effectiveViceID = _effectiveViceID(viceList);
@@ -255,7 +255,7 @@ class _UsageGraphViewState extends ConsumerState<UsageGraphView> {
       key: ValueKey<String?>(effectiveViceID),
       isExpanded: true,
       initialValue: effectiveViceID,
-      decoration: const InputDecoration(labelText: 'Vice'),
+      decoration: const InputDecoration(labelText: 'Habit'),
       items: viceList
           .map(
             (Vice vice) => DropdownMenuItem<String>(
@@ -384,7 +384,7 @@ class _UsageChart extends StatelessWidget {
                 runSpacing: 4,
                 children: [
                   _LegendEntry(
-                    color: scheme.primary.withValues(alpha: 0.5),
+                    color: scheme.outline,
                     dashed: true,
                     label: UsageGraphView.seriesName(stepDays),
                   ),
@@ -419,6 +419,12 @@ class _UsageChart extends StatelessWidget {
       ],
     );
   }
+
+  static FlLine _gridLine(ColorScheme scheme) => FlLine(
+    color: scheme.outlineVariant,
+    strokeWidth: 1,
+    dashArray: const [8, 4],
+  );
 
   LineChartData _data(BuildContext context, ColorScheme scheme, Size size) {
     final Size dateLabel = chartLabelSize(
@@ -470,7 +476,17 @@ class _UsageChart extends StatelessWidget {
         left: false,
         right: false,
       ),
-      gridData: const FlGridData(show: true),
+      // fl_chart draws the grid and the touch tooltip in its own blue-grey;
+      // the tooltip text is each line's colour, ink.
+      gridData: FlGridData(
+        getDrawingHorizontalLine: (double value) => _gridLine(scheme),
+        getDrawingVerticalLine: (double value) => _gridLine(scheme),
+      ),
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (LineBarSpot spot) => scheme.surfaceContainerHighest,
+        ),
+      ),
       borderData: FlBorderData(show: false),
       titlesData: FlTitlesData(
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -519,7 +535,7 @@ class _UsageChart extends StatelessWidget {
           spots: rawSpots,
           isCurved: true,
           preventCurveOverShooting: true,
-          color: scheme.primary.withValues(alpha: 0.5),
+          color: scheme.outline,
           barWidth: 2,
           dashArray: const [4, 4],
           dotData: const FlDotData(show: false),

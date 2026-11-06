@@ -82,8 +82,8 @@ void main() {
     expect(
       <String>[for (final ExportFile f in files) f.name],
       <String>[
-        'tracker-entries-2026-11-02.csv',
-        'tracker-export-2026-11-02.json',
+        'penchant-entries-2026-11-02.csv',
+        'penchant-export-2026-11-02.json',
       ],
     );
     expect(

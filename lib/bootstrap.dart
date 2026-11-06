@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/theme.dart';
+import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/widgets/info_box.dart';
 
 enum _Startup { running, failed, done }
@@ -13,7 +13,7 @@ class Bootstrap extends StatefulWidget {
   const Bootstrap({super.key, required this.initialize, required this.child});
 
   static const String failedMessage =
-      'Vice Tracker could not start. Try again, and if it keeps failing, '
+      'Penchant could not start. Try again, and if it keeps failing, '
       'close the app and reopen it.';
 
   final Future<void> Function() initialize;
@@ -58,8 +58,10 @@ class _BootstrapState extends State<Bootstrap> {
     }
 
     return MaterialApp(
-      title: 'Vice Tracker',
-      theme: appTheme(),
+      title: 'Penchant',
+      theme: appTheme(Brightness.light),
+      darkTheme: appTheme(Brightness.dark),
+      themeMode: ThemeMode.system,
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: appLocales,
       localeListResolutionCallback: resolveAppLocale,

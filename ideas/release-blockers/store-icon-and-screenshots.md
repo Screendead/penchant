@@ -32,6 +32,6 @@ obviously illustrative (round numbers, neutral vices like coffee) so screenshots
 
 **Revenue impact:** Direct, through store conversion.
 
-**Depends on:** [brand name](brand-name.md), for the captions.
+**Depends on:** the brand, Penchant (`r2-brand`), for the captions.
 
-**Needs Jack:** no, beyond the brand call.
+**Needs Jack:** no

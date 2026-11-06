@@ -67,11 +67,11 @@ void main() {
 
     await openFromDrawer(tester, 'Manage Data');
     await tap(tester, _rowButton('Coffee', 'Edit'));
-    await pumpUntilRouteSettled(tester, find.text('Edit Vice'));
+    await pumpUntilRouteSettled(tester, find.text('Edit Habit'));
     expect(find.byType(NotFound), findsNothing);
     expect(find.byType(CloseButton), findsOneWidget);
     await screenshot(tester, 'edit-vice');
-    await enterText(tester, 'Vice Name', 'Espresso');
+    await enterText(tester, 'Habit Name', 'Espresso');
     await tap(tester, find.byType(DropdownButtonFormField<Unit>));
     await tap(tester, find.text(Unit.hour.plural).last);
     await tap(tester, find.widgetWithText(TextButton, 'Save'));

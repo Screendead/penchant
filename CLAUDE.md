@@ -78,10 +78,21 @@ rather than the stock binding call: it forces frames while macOS reports the app
 another Space), when the framework schedules none and every pump would wait forever.
 
 A signed macOS build (`flutter build macos`, `-d macos`, `E2E_DEVICE=macos`) needs a Mac App Development
-provisioning profile for `com.screendead.tracker.tracker` on team `8N575942RT`. Firebase Auth on macOS keeps the
-user in the keychain, which needs the Keychain Sharing entitlement, which needs that profile; ad-hoc signed, sign-in
-fails with `keychain-error`. Flutter does not pass `-allowProvisioningUpdates`, so the profile comes from building
-once in Xcode (`macos/Runner.xcworkspace`, Runner, Signing & Capabilities) with Jack's account. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
+provisioning profile for `com.screendead.penchant` on team `8N575942RT`, and a device build for iOS an iOS one.
+Firebase Auth on macOS keeps the user in the keychain, which needs the Keychain Sharing entitlement, which needs that
+profile; ad-hoc signed, sign-in fails with `keychain-error`. Flutter does not pass `-allowProvisioningUpdates`, so a
+missing profile comes from one `xcodebuild` that does, with the Xcode account signed in (both were made this way on
+2026-11-05):
+
+```bash
+flutter build macos --debug --config-only && (cd macos && xcodebuild -workspace Runner.xcworkspace -scheme Runner \
+  -configuration Debug -allowProvisioningUpdates -derivedDataPath ../build/xcode-prov build)
+flutter build ios --release --config-only && (cd ios && xcodebuild -workspace Runner.xcworkspace -scheme Runner \
+  -configuration Release -sdk iphoneos -destination generic/platform=iOS -allowProvisioningUpdates \
+  -derivedDataPath ../build/xcode-prov build)
+```
+
+`flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
 Versions and releases. `version:` in `pubspec.yaml` is the user-facing semantic version (0.x until the first App
@@ -130,15 +141,18 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
-CI (`.github/workflows/`): `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings`
-and `flutter test` on every PR to `master`. `rules-tests.yml` runs the Firestore rules suite on
-every PR. On a push to `master`, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
+CI (`.github/workflows/`) spends Actions minutes from a capped private-repo allowance, so keep it lean.
+`checks.yml` runs `dart analyze --fatal-infos --fatal-warnings` and `flutter test` on every PR to `master`
+except prose-only ones (Markdown, `docs/`, `ideas/`, `tech-debt/`). `rules-tests.yml` runs the Firestore rules
+suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos-build.yml` runs only by hand
+(`gh workflow run macos-build.yml`): macOS minutes bill at 10x, and the macOS e2e run before merge builds the
+app anyway. A PR with no checks has nothing to wait for. On a push to `master` that touches the rules,
+indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
 group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
-define, on a `macos-26` runner, for PRs and pushes to `master` that touch `macos/`, `pubspec.*`,
-`lib/firebase_init.dart`, the strip script or the Flutter setup; macOS minutes bill at 10x in a private repo. Nothing
+define, on a `macos-26` runner, when run by hand. Nothing
 builds the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
@@ -151,7 +165,9 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
-`firebase_options.dart` throws on any other platform.
+`firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
+(test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
+`macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
 **Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
 hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
@@ -233,7 +249,9 @@ writes still queued on the device, and fails offline. The vice lists have no lim
 nothing caps how many vices a user creates; whether to add a cap is undecided (register,
 `vice-lists-are-unbounded`).
 
-**Data model.** Two flat top-level collections joined by `viceID`: `vices`
+**Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
+collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
+flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
 `quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
@@ -319,3 +337,30 @@ macOS, firebase_core configures the native default app from the bundled
 `GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
 Firebase plist for emulators" build phase (`tools/strip-firebase-plist.sh`) that moves it out
 of the bundle for flagged builds.
+
+## Design
+
+The UI follows the Day Dial direction (`r6-ui-direction`; the mock-up and its Flutter notes are on
+`origin/design/ui-overhaul-day-dial`, `docs/pitch/mockups/ui-overhaul/day-dial/`). Its tokens live in `lib/design/`:
+`tokens.json` is the mock-up's export and `tokens.dart` mirrors it (colours for light and dark, the type scale,
+spacing, radii, sizes, motion durations and curves); `test/design_tokens_test.dart` fails when the two drift.
+`appTheme(Brightness)` (`lib/design/app_theme.dart`) builds both `ThemeData`s from them, and `MaterialApp` follows the
+system with `themeMode: ThemeMode.system`. Chrome is ink on paper (paper on ink in dark): `primary` and the selection
+roles are ink, and no `ColorScheme` role takes one of the five habit colours. What `ColorScheme` has no role for comes
+from two `ThemeExtension`s read with `DialColors.of(context)` and `DialType.of(context)`: the habit colours `data` and
+their text colours `dataInk`, `spoke`, `clear`/`clearInk` (the clear day), `scrim`, `wedgeInk` and the bead
+treatment; and the display and Mono styles. Both fall back to the tokens for the ambient brightness when a test's bare
+`ThemeData` lacks them. Screens take colours from the theme, never literals (`test/theme_test.dart` checks `lib/`
+outside `lib/design/`).
+
+Fonts are Red Hat Display (titles), Text (everything else) and Mono (changing numbers), bundled as variable fonts in
+`assets/fonts/` with their OFL, so nothing is fetched at runtime; `FontWeight` drives their `wght` axis. `main()`
+registers the OFL (`registerFontLicence`, `lib/design/font_licence.dart`) so the licence page behind Settings > About
+lists it beside the packages' licences. Every theme style sets tabular figures. Widget tests render in the test font
+unless they load the assets (`theme_test.dart` does).
+
+A habit's colour is its creation order, oldest first and archived habits included: `habitMarks(vices)`
+(`lib/design/habit_mark.dart`) maps each vice id to a `HabitMark`, whose `slot` picks one of `data1`-`data5` and
+whose `style` is filled for habits 1-5, a ring for 6-10 and a dotted ring for 11-15, repeating after that. Pass it
+`viceListProvider`'s full list, not the unarchived one, or archiving a habit recolours the ones after it. Equal
+`createdAt`s are ordered by id. It is computed on the device and stores nothing.

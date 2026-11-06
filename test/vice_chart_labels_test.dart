@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/vice_chart.dart';
@@ -36,7 +37,7 @@ Future<void> _pumpDay(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(
-        theme: ThemeData.dark(),
+        theme: appTheme(Brightness.dark),
         home: const Scaffold(body: ViceTracker()),
       ),
     ),

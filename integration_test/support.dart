@@ -204,15 +204,15 @@ Future<void> addVicesThroughManageData(
   List<String> names = const <String>['Coffee', 'Tea', 'Water'],
 ]) async {
   await openFromDrawer(tester, 'Manage Data');
-  await pumpUntil(tester, find.text('Your Vices'));
+  await pumpUntil(tester, find.text('Your Habits'));
   for (final String name in names) {
-    await tap(tester, find.byTooltip('Add vice'));
-    await pumpUntil(tester, find.text('Add Vice'));
-    await enterText(tester, 'Vice Name', name);
+    await tap(tester, find.byTooltip('Add habit'));
+    await pumpUntil(tester, find.text('Add Habit'));
+    await enterText(tester, 'Habit Name', name);
     await tap(tester, find.byType(DropdownButtonFormField<Unit>));
     await tap(tester, find.text(Unit.drink.plural).last);
     await tap(tester, find.widgetWithText(TextButton, 'Save'));
-    await pumpUntil(tester, find.text('Add Vice'), present: false);
+    await pumpUntil(tester, find.text('Add Habit'), present: false);
     await pumpUntil(tester, find.text(name));
   }
   await closeDrawerPage(tester);

@@ -218,7 +218,7 @@ class ViceChart extends ConsumerWidget {
     // With no vices there is nothing to chart, whatever the day's query did.
     if (!vicesValue.hasError && vices != null && vices.isEmpty) {
       return const InfoBox(
-        message: 'No vices yet. Add one from Manage Data in the menu.',
+        message: 'No habits yet. Add one from Manage Data in the menu.',
       );
     }
 
@@ -337,7 +337,7 @@ class ViceChart extends ConsumerWidget {
     final int rings = scale.top ~/ scale.step;
 
     final RadarDataSet dataSet = RadarDataSet(
-      fillColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+      fillColor: theme.colorScheme.primary.withValues(alpha: 0.1),
       borderColor: theme.colorScheme.primary,
       entryRadius: 6,
       dataEntries: [
@@ -380,9 +380,7 @@ class ViceChart extends ConsumerWidget {
               dataSets: [dataSet, scaleSet],
               isMinValueAtCenter: true,
               borderData: FlBorderData(show: false),
-              radarBorderData: BorderSide(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-              ),
+              radarBorderData: BorderSide(color: theme.colorScheme.outline),
               radarShape: RadarShape.polygon,
               titlePositionPercentageOffset: radarTitleOffset,
               titleTextStyle: titleStyle,
@@ -400,9 +398,7 @@ class ViceChart extends ConsumerWidget {
               // fl_chart prints every ring's value with one decimal, the
               // centre's 0 included; the rings are labelled below instead.
               ticksTextStyle: const TextStyle(color: Colors.transparent),
-              tickBorderData: BorderSide(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.5),
-              ),
+              tickBorderData: BorderSide(color: theme.colorScheme.outline),
               gridBorderData: BorderSide(
                 color: theme.colorScheme.tertiary,
                 width: 1,

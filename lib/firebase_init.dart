@@ -22,7 +22,7 @@ const FirebaseOptions _emulatorOptions = FirebaseOptions(
   appId: '1:000000000000:ios:0000000000000000',
   messagingSenderId: '000000000000',
   projectId: emulatorProjectId,
-  iosBundleId: 'com.screendead.tracker.tracker',
+  iosBundleId: 'com.screendead.penchant',
 );
 
 // Offline logging rests on this: the disk cache keeps queued writes across

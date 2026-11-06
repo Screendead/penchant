@@ -2,6 +2,13 @@ name: Firestore rules tests
 
 on:
   pull_request:
+    paths:
+      - "firestore.rules"
+      - "firestore.indexes.json"
+      - "firebase.json"
+      - "tests/firestore-rules/**"
+      - ".github/workflows/rules-tests.yml"
+      - ".github/workflows/deploy-firestore.yml"
   workflow_call:
 
 permissions:

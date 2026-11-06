@@ -80,8 +80,8 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 .read(rejectedWritesProvider.notifier)
                 .reporter(
                   vice == null
-                      ? 'Not saved: the vice $name'
-                      : 'Change not saved: the vice ${vice.name}',
+                      ? 'Not saved: the habit $name'
+                      : 'Change not saved: the habit ${vice.name}',
                 ),
           )) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
@@ -90,7 +90,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
         Navigator.of(context).pop();
       }
     } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while saving a vice');
+      reportError(e, stack, context: 'while saving a habit');
       if (mounted) {
         setState(() {
           saving = false;
@@ -105,11 +105,11 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   @override
   Widget build(BuildContext context) {
     final User? user = ref.watch(userProvider).value;
-    final String title = widget.vice == null ? 'Add Vice' : 'Edit Vice';
+    final String title = widget.vice == null ? 'Add Habit' : 'Edit Habit';
 
     if (user == null) {
       return const Scaffold(
-        body: Center(child: Text('Please sign in to add a vice')),
+        body: Center(child: Text('Please sign in to add a habit')),
       );
     }
 
@@ -137,7 +137,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             children: [
               TextFormField(
                 controller: viceNameController,
-                decoration: const InputDecoration(labelText: 'Vice Name'),
+                decoration: const InputDecoration(labelText: 'Habit Name'),
                 validator: (String? value) =>
                     viceNameError(value, unchanged: opened?.name),
               ),
@@ -188,10 +188,10 @@ class EditVice extends ConsumerWidget {
 
     if (viceList == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Vice')),
+        appBar: AppBar(title: const Text('Edit Habit')),
         body: switch (viceListValue.error) {
           final Object error => ErrorView(
-            message: loadErrorMessage('your vices', error),
+            message: loadErrorMessage('your habits', error),
             onRetry: () =>
                 ref.invalidate(viceListForUserProvider, asReload: true),
           ),
@@ -204,8 +204,8 @@ class EditVice extends ConsumerWidget {
 
     if (vice == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Vice')),
-        body: const Center(child: Text('Vice not found')),
+        appBar: AppBar(title: const Text('Edit Habit')),
+        body: const Center(child: Text('Habit not found')),
       );
     }
 

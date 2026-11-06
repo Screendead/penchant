@@ -43,7 +43,7 @@ void main() {
     });
 
     await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('Your Vices'));
+    await pumpUntil(tester, find.text('Your Habits'));
     final Finder juiceRow = find.ancestor(
       of: find.text('Juice'),
       matching: find.byType(ListTile),
@@ -62,7 +62,7 @@ void main() {
     await pumpUntil(tester, find.text('Quantity: 2'));
     await tap(tester, find.byType(BackButton));
     await pumpUntil(tester, find.text('Juice history'), present: false);
-    await pumpUntilRouteSettled(tester, find.text('Your Vices'));
+    await pumpUntilRouteSettled(tester, find.text('Your Habits'));
     await closeDrawerPage(tester);
 
     await expectRadar(tester, <String>{

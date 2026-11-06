@@ -74,12 +74,12 @@ void main() {
     });
   });
 
-  testWidgets('Add Vice shows the length message inline', (tester) async {
+  testWidgets('Add Habit shows the length message inline', (tester) async {
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
     ], const ViceForm());
 
-    await tester.enterText(_field('Vice Name'), 'x' * 61);
+    await tester.enterText(_field('Habit Name'), 'x' * 61);
     // No unit is selected, so validation runs but nothing is written.
     await tester.tap(find.text('Save'));
     await tester.pump();
@@ -113,7 +113,7 @@ void main() {
     ], const RecordNewActivityDialog());
 
     await pumpWith([fakeVice('coffee'), fakeVice('tea')]);
-    await tester.tap(find.text('Select Vice'));
+    await tester.tap(find.text('Select Habit'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('coffee').last);
     await tester.pumpAndSettle();
@@ -126,7 +126,7 @@ void main() {
     // The selected vice is archived: the selection clears instead of asserting.
     await pumpWith([fakeVice('tea')]);
     expect(tester.takeException(), isNull);
-    expect(find.text('Select Vice'), findsOneWidget);
+    expect(find.text('Select Habit'), findsOneWidget);
   });
 
   group('the activity editor', () {
