@@ -29,6 +29,8 @@ jobs:
       - rules-tests
     # Skipped, not failed, until the service account holds the deploy roles and the variable is set.
     if: ${{ vars.DEPLOY_FIRESTORE_RULES == 'true' }}
+    # The service-account secret lives only in this environment, which admits master alone.
+    environment: firestore-production
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
