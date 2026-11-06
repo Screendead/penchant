@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/vice.dart';
 
 enum WriteOp { create, update, delete }
 
@@ -33,13 +35,46 @@ Object? comparableValue(Object? value) => switch (value) {
 };
 
 // Every write the app makes. The field sets must match what firestore.rules
-// accepts on create and update.
+// accepts on create and update. With a [FieldSealer], content fields go into
+// one sealed field; without one, every field is plaintext.
 class TrackerWrites {
-  TrackerWrites(this._firestore, {void Function()? onWrite})
-    : _onWrite = onWrite;
+  TrackerWrites(
+    this._firestore, {
+    void Function()? onWrite,
+    FieldSealer? sealer,
+  }) : _onWrite = onWrite,
+       _sealer = sealer;
 
   final FirebaseFirestore _firestore;
   final void Function()? _onWrite;
+  final FieldSealer? _sealer;
+
+  // The SDK sees the write only once the envelope exists, so an offline
+  // write still queues, a moment later.
+  Future<void> _sealing(
+    FieldSealer sealer,
+    DocumentReference<Map<String, dynamic>> doc,
+    Map<String, Object?> content,
+    Future<void> Function(Blob envelope) write,
+  ) async {
+    final Uint8List envelope;
+    try {
+      envelope = await sealer.seal(
+        content,
+        context: sealContext(doc.parent.id, doc.id),
+      );
+    } on FirebaseException {
+      rethrow;
+    } catch (e) {
+      // settleWrite shows only a FirebaseException as a failed save.
+      throw FirebaseException(
+        plugin: 'sealer',
+        code: 'failed-precondition',
+        message: 'Could not seal the change: $e',
+      );
+    }
+    return write(Blob(envelope));
+  }
 
   SentWrite _issued(SentWrite write) {
     _onWrite?.call();
@@ -60,15 +95,23 @@ class TrackerWrites {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
     final DocumentReference<Map<String, dynamic>> vice = _vices.doc();
+    final Map<String, Object> structural = <String, Object>{
+      'ownerID': ownerID,
+      'createdAt': FieldValue.serverTimestamp(),
+      'archived': false,
+    };
+    final FieldSealer? sealer = _sealer;
     return _issued(
       SentWrite(
-        vice.set({
-          'name': name,
-          'unit': unit.name,
-          'ownerID': ownerID,
-          'createdAt': FieldValue.serverTimestamp(),
-          'archived': false,
-        }),
+        sealer == null
+            ? vice.set({'name': name, 'unit': unit.name, ...structural})
+            : _sealing(
+                sealer,
+                vice,
+                <String, Object?>{'name': name, 'unit': unit.name},
+                (Blob envelope) =>
+                    vice.set({sealedField: envelope, ...structural}),
+              ),
         collection: _vices.id,
         id: vice.id,
         op: WriteOp.create,
@@ -76,8 +119,20 @@ class TrackerWrites {
     );
   }
 
-  SentWrite updateVice(String viceID, {String? name, Unit? unit}) {
-    return _update(_vices, viceID, {'name': ?name, 'unit': ?unit?.name});
+  // Sealed, the whole content is written again, so [vice] supplies what is
+  // unchanged, and a legacy vice's plaintext fields are removed.
+  SentWrite updateVice(Vice vice, {String? name, Unit? unit}) {
+    final FieldSealer? sealer = _sealer;
+    if (sealer == null) {
+      return _update(_vices, vice.id, {'name': ?name, 'unit': ?unit?.name});
+    }
+    if (vice.locked) {
+      throw StateError('a locked vice has no content to write back');
+    }
+    return _sealedUpdate(sealer, _vices, vice.id, <String, Object?>{
+      'name': name ?? vice.name,
+      'unit': (unit ?? vice.unit).name,
+    });
   }
 
   SentWrite setViceArchived(String viceID, {required bool archived}) {
@@ -111,7 +166,9 @@ class TrackerWrites {
   }
 
   // Only the given fields are written: an untouched field may hold a legacy
-  // value that the parser shows as a default.
+  // value that the parser shows as a default. Activities have no sealed
+  // field yet: the quantity stays plaintext (Jack, 2026-11-06). When the
+  // triggers field lands it is sealed, and this must then reseal it.
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
@@ -149,6 +206,36 @@ class TrackerWrites {
           for (final MapEntry<String, Object>(:key, :value) in fields.entries)
             key: comparableValue(value)!,
         },
+      ),
+    );
+  }
+
+  // [SentWrite.fields] is empty: the envelope does not exist yet when the
+  // write is handed back, so a later launch cannot check the server for a
+  // queued sealed edit.
+  SentWrite _sealedUpdate(
+    FieldSealer sealer,
+    CollectionReference<Map<String, dynamic>> collection,
+    String id,
+    Map<String, Object?> content,
+  ) {
+    final DocumentReference<Map<String, dynamic>> doc = collection.doc(id);
+    return _issued(
+      SentWrite(
+        _sealing(
+          sealer,
+          doc,
+          content,
+          (Blob envelope) => doc.update({
+            sealedField: envelope,
+            for (final String field in contentFields[collection.id]!)
+              field: FieldValue.delete(),
+          }),
+        ),
+        collection: collection.id,
+        id: id,
+        op: WriteOp.update,
+        fields: const <String, Object>{},
       ),
     );
   }

@@ -133,7 +133,8 @@ class _ViceActivityEditorPageState
     final Map<String, Object> changes = <String, Object>{
       if (dateController.text != storedDateText)
         'createdAt': dateFormat.parse(dateController.text),
-      if (quantityController.text != storedQuantityText)
+      // A locked entry's quantity is a placeholder, never to be saved.
+      if (quantityController.text != storedQuantityText && !activity.locked)
         'quantity': int.parse(quantityController.text),
     };
 
@@ -251,7 +252,8 @@ class _ViceActivityEditorPageState
                 IconButton(
                   tooltip: 'Delete',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: loading
+                  // Undo could not write a locked entry's content back.
+                  onPressed: loading || activity.locked
                       ? null
                       : () => _deleteActivity(vice, activity),
                 ),
@@ -285,6 +287,7 @@ class _ViceActivityEditorPageState
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: quantityController,
+                      readOnly: activity.locked,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'Quantity',

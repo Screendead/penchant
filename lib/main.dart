@@ -6,6 +6,7 @@ import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
+import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
@@ -63,6 +64,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         navigatorKey.currentState?.popUntil((Route<dynamic> r) => r.isFirst);
       }
     });
+
+    // Kept alive here so sealing runs whichever screen is open.
+    ref.listen(plaintextMigrationProvider, (_, _) {});
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),

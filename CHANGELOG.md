@@ -9,6 +9,14 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Habits can be stored sealed: a habit's name and unit travel in one encrypted field, with dates, ids and entry
+  amounts left plain so every list and chart works as before. The rules accept both shapes; sealing stays off until
+  the encryption work is complete (until then everything is written as before).
+- Groundwork for end-to-end encryption: the code to make a key for your account, keep it in iCloud Keychain, seal and
+  open data with it, and write it out as a recovery key. The app does not use it yet, so nothing is encrypted.
+- Once end-to-end encryption is on, the first launch with your key seals the habits you created before
+  it, in the background, and removes their readable copies from the server. It waits for a connection, picks up
+  where it left off if interrupted, and Settings shows its progress.
 - A recovery key screen, under Account settings and offered on Today a week in: the key in large groups with Copy
   and Share, then a check that you typed its last group back. A device without the journal key will ask for it before
   any screen opens, the entry field points to a mistyped character, and the page offers Sign out and a lost-key path

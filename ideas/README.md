@@ -35,7 +35,7 @@ Each list is in the recommended build order.
 - [Position the app as a neutral journal for learning about yourself](release-blockers/positioning-and-target-user.md). S. Decided (C15)
 - [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, Needs Jack (`vice-cap`); bounded activity queries and App Check wiring built in #55
-- [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, Needs Jack
+- [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, decided (O1, 2026-11-06); part 1 (`lib/crypto/`) built
 - [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M, Needs Jack
 - [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S, Needs Jack
 - [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M

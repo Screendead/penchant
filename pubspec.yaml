@@ -48,6 +48,9 @@ dependencies:
   # 0.5 needs firebase_core 5, which means a major bump of every Firebase plugin.
   firebase_app_check: ^0.4.9
   cryptography: ^2.9.0
+  cryptography_flutter: ^2.3.4
+  # 11 needs win32 6 through its Windows package; share_plus 12 needs win32 5.
+  flutter_secure_storage: ^10.0.0
 
 dev_dependencies:
   flutter_test:
