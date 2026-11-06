@@ -25,6 +25,8 @@ pull request titles (`gh pr list --state merged`).
   sheet: the dial and tallies on the left, with the Log button under them, and the chart on the right. A day picked on
   the chart moves Today's dial to it. Resizing across 900 pt keeps the day and habit you picked. The left and right
   arrow keys step through days, except on the chart, where they move its cursor.
+- The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
+  you left it. It narrows to 390 pt, where the phone layout returns.
 
 ### Changed
 
