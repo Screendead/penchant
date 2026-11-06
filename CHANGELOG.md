@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
+  gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
   and an empty day offline says the device may not have it rather than calling it clear.
 - A change saved offline that the server later refuses (for example, an entry for a vice deleted on another device)
