@@ -51,7 +51,14 @@ class _FramesWhileHidden with WidgetsBindingObserver {
   }
 }
 
+bool _bindingReady = false;
+
+// all_test.dart calls every file's main() in one process.
 void ensureE2EBinding() {
+  if (_bindingReady) {
+    return;
+  }
+  _bindingReady = true;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
     _FramesWhileHidden(),
   );
@@ -151,9 +158,24 @@ Future<void> pumpFor(WidgetTester tester, Duration duration) async {
 
 // Waits for the target to be hit-testable as well as present, so taps wait out
 // route transitions and overlays animating away. Only the hit-testable match is
-// tapped: a page pushed over Today leaves Today's tally names in the tree.
+// tapped: a page pushed over Today leaves Today's tally names in the tree. A
+// target in a Scrollable is scrolled into view first: the keyboard can push a
+// form's button below the fold, where it is on screen but not hit-testable,
+// and may still be rising when the wait starts, so the scroll is retried.
 Future<void> tap(WidgetTester tester, Finder finder) async {
-  await pumpUntil(tester, finder.hitTestable());
+  await pumpUntilTrue(tester, () {
+    if (finder.hitTestable().evaluate().isNotEmpty) {
+      return true;
+    }
+    for (final Element e in finder.evaluate()) {
+      if (Scrollable.maybeOf(e) != null) {
+        // With no duration the scroll jumps; the next pump lays it out.
+        unawaited(Scrollable.ensureVisible(e));
+        break;
+      }
+    }
+    return false;
+  }, () => '${finder.hitTestable()} to appear');
   await tester.tap(finder.hitTestable());
   await tester.pump();
 }
@@ -192,18 +214,40 @@ Future<void> register(WidgetTester tester, String email) async {
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
   await tap(tester, find.byKey(Authenticate.registerTab));
+  // The tabs cross-fade, so both forms' Email fields are in the tree until
+  // sign-in's has gone.
+  final Finder emailField = find.widgetWithText(TextFormField, 'Email');
+  await pumpUntilTrue(
+    tester,
+    () =>
+        emailField.evaluate().length == 1 &&
+        find
+            .widgetWithText(TextFormField, 'Confirm password')
+            .evaluate()
+            .isNotEmpty,
+    () => 'the register form alone',
+  );
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
   await enterText(tester, 'Confirm password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Create account'));
+  // The keyboard and the password checklist can push the button below the
+  // fold; tap scrolls it back.
+  final Finder createAccount = find.widgetWithText(
+    ElevatedButton,
+    'Create account',
+  );
+  await tap(tester, createAccount);
   await pumpUntil(tester, find.byType(Homepage));
 }
 
 // Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.
+// Waits out the push: until it ends, Today's habit names under the sliding
+// page are hit-testable, so a tap on a name lands on Today instead.
 Future<void> openFromMenu(WidgetTester tester, String item) async {
   await tap(tester, find.byKey(Homepage.menuKey));
   await pumpUntil(tester, find.text(item).hitTestable());
   await tap(tester, find.text(item));
+  await pumpUntilRouteSettled(tester, find.byTooltip('Back'));
 }
 
 // Three vices by default.
