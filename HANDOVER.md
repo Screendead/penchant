@@ -133,7 +133,7 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   `test/firestore_indexes_test.dart`; no app change, so no e2e).
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below),. `r7-ci` is moot (the repo is public) and so is round 5 (#83 merged). Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
+**UNDECIDED** (on the pitch page): the open round-2 to round-4 calls (below), and round 8 (2026-11-06, from #83, #92 and #94; recommendations, not decisions): `r8-clear-spokes` (A, majors at full strength), `r8-coach` (A, the "Tap Log" pill until the first entry), `r8-bead-size` (B, the 7-day usual), `r8-tally-target` (A, 44 x 38), `r8-mac-window` (B, about 1200 x 780, with 1g), `r8-mac-keys` (B, Cmd-1 to Cmd-9). `r7-ci` is moot (the repo is public) and so is round 5 (#83 merged); both are off the page, as is the settled e2e-in-CI call. Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
 time, the weekly remainder (the Trends sheet keeps A as built), units and the data model.
 
 **Blocked on Jack, not decisions:** the domain variant (support and legal pages), the paid Apple team (App Attest,
