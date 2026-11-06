@@ -113,6 +113,25 @@ void main() {
       );
       expect(refusedAmong([setQuantity, again], {'quantity': 3}), [again]);
     });
+
+    test('a field written since is left out of the comparison', () {
+      expect(
+        refusedAmong(
+          [setQuantity],
+          {'quantity': 4},
+          ignoring: const {'quantity'},
+        ),
+        isEmpty,
+      );
+      expect(
+        refusedAmong(
+          [setQuantity],
+          {'quantity': 2},
+          ignoring: const {'createdAt'},
+        ),
+        [setQuantity],
+      );
+    });
   });
 
   group('QueuedWriteJournal', () {
@@ -308,8 +327,8 @@ void main() {
       expect(_stored(store), hasLength(1));
     });
 
-    test('drops an earlier write to a document this launch wrote, whose own '
-        'answer says what became of it', () async {
+    test('drops an earlier write to a document this launch has since '
+        'deleted, whose own answer says what became of it', () async {
       final MemoryJournalStore store = await _leftBehind([
         _entry('a', WriteOp.create),
       ]);
@@ -326,6 +345,89 @@ void main() {
       expect(writes.checked, isEmpty);
       expect(shown(container), isEmpty);
       expect(_stored(store), isEmpty);
+    });
+
+    test('still names an earlier edit refused on a field this launch did '
+        'not write to the same document', () async {
+      final MemoryJournalStore store = await _leftBehind([
+        _entry(
+          'a',
+          WriteOp.update,
+          what: 'Change not saved: Coffee, 3 drinks',
+          fields: {'quantity': 3},
+        ),
+      ]);
+      final DateTime at = DateTime(2026, 11, 6, 9);
+      writes.server['activities/a'] = {
+        'quantity': 2,
+        'createdAt': Timestamp.fromDate(at),
+      };
+      final Completer<void> drained = Completer<void>();
+      writes.pendingWrites = drained.future;
+      final ProviderContainer container = await launch(store);
+
+      await container
+          .read(rejectedWritesProvider.notifier)
+          .settle(
+            writes.updateActivity('a', createdAt: at),
+            'Change not saved: Coffee, 2 drinks',
+          );
+      drained.complete();
+      await pumpEventQueue();
+
+      expect(shown(container), ['Change not saved: Coffee, 3 drinks']);
+      expect(_stored(store), isEmpty);
+    });
+
+    test('does not call an earlier edit refused for a field this launch '
+        'wrote since', () async {
+      final MemoryJournalStore store = await _leftBehind([
+        _entry('a', WriteOp.update, fields: {'quantity': 3}),
+      ]);
+      writes.server['activities/a'] = {'quantity': 4};
+      final Completer<void> drained = Completer<void>();
+      writes.pendingWrites = drained.future;
+      final ProviderContainer container = await launch(store);
+
+      await container
+          .read(rejectedWritesProvider.notifier)
+          .settle(
+            writes.updateActivity('a', quantity: 4),
+            'Change not saved: Coffee',
+          );
+      drained.complete();
+      await pumpEventQueue();
+
+      expect(writes.checked, ['activities/a']);
+      expect(shown(container), isEmpty);
+      expect(_stored(store), isEmpty);
+    });
+
+    test('names an earlier refused create that this launch edited, in place '
+        'of the edit', () async {
+      final MemoryJournalStore store = await _leftBehind([
+        _entry('a', WriteOp.create, what: 'Not saved: Coffee, 2 drinks'),
+      ]);
+      final Completer<void> drained = Completer<void>();
+      writes.pendingWrites = drained.future;
+      final ProviderContainer container = await launch(store);
+      final RejectedWrites rejected = container.read(
+        rejectedWritesProvider.notifier,
+      );
+
+      await rejected.settle(
+        writes.updateActivity('a', quantity: 3),
+        'Change not saved: Coffee, 3 drinks',
+      );
+      drained.complete();
+      await pumpEventQueue();
+      expect(shown(container), ['Not saved: Coffee, 2 drinks']);
+
+      // The edit's own refusal, arriving after the check, is not shown.
+      rejected.reporter('Change not saved: Coffee, 3 drinks', changes: 'a')(
+        _denied(),
+      );
+      expect(shown(container), ['Not saved: Coffee, 2 drinks']);
     });
 
     testWidgets('the banner names a refused write from an earlier launch', (

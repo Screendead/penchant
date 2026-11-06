@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
@@ -143,22 +145,46 @@ void main() {
       'is named on that launch, and one the server holds is not', (
     WidgetTester tester,
   ) async {
+    // The journal file outlives the run, so the test sets what it starts
+    // from, before the app loads it: an entry another user's launch left,
+    // which must stay unchecked.
+    const FileJournalStore file = FileJournalStore(emulatorProjectId);
+    final QueuedWrite foreign = QueuedWrite(
+      uid: 'someone-else',
+      what: 'Not saved: Coffee, 1 drink',
+      collection: 'activities',
+      id: 'foreign',
+      op: WriteOp.create,
+    );
+    await file.write(jsonEncode(<Object>[foreign.toJson()]));
+    Future<List<Object?>> journaled({required String by}) async => <Object?>[
+      for (final Object? entry
+          in jsonDecode(await file.read() ?? '[]') as List<Object?>)
+        if (entry case {
+          'uid': final String owner,
+          'what': final Object what,
+        } when owner == by)
+          what,
+    ];
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-rejected-restart@example.com');
     await addVicesThroughManageData(tester);
     final String coffeeID = await storedViceID('Coffee');
     final String uid = FirebaseAuth.instance.currentUser!.uid;
-    const FileJournalStore file = FileJournalStore(emulatorProjectId);
     final Finder banner = find.byType(RejectedWritesBanner);
     Finder inBanner(String text) =>
         find.descendant(of: banner, matching: find.textContaining(text));
     final Finder rejected = inBanner('Not saved: Coffee, 2 drinks, ');
 
     await FirebaseFirestore.instance.disableNetwork();
+    addTearDown(() => FirebaseFirestore.instance.enableNetwork());
     await pumpUntil(tester, find.text(OfflineBanner.message));
     await recordActivity(tester, 'Coffee', 2);
     await pumpUntil(tester, find.text(queuedMessage));
-    expect(await file.read(), contains('Not saved: Coffee, 2 drinks, '));
+    expect(
+      await journaled(by: uid),
+      contains(startsWith('Not saved: Coffee, 2 drinks, ')),
+    );
 
     // The launch ends with the entry still queued. Under the emulators the
     // cache is off, so terminating drops the queue: the next launch's server
@@ -185,7 +211,7 @@ void main() {
     expect(inBanner('The server refused this change.'), findsOneWidget);
     await screenshot(tester, 'rejected-write-earlier-launch');
     final DateTime deadline = DateTime.now().add(timeout);
-    while ((await file.read())?.contains('Coffee') ?? false) {
+    while ((await journaled(by: uid)).isNotEmpty) {
       if (DateTime.now().isAfter(deadline)) {
         fail(
           'The journal still holds the checked writes: ${await file.read()}',
@@ -195,6 +221,8 @@ void main() {
     }
     // Both entries are checked by now, so the vice's would be showing.
     expect(inBanner('the habit Coffee'), findsNothing);
+    expect(inBanner(foreign.what), findsNothing);
+    expect(await journaled(by: foreign.uid), <Object>[foreign.what]);
 
     await tap(
       tester,

@@ -121,7 +121,8 @@ class RejectedWrites extends Notifier<List<RejectedWrite>> {
       await writes.waitForPendingWrites();
       while (unchecked.isNotEmpty && _signedIn(uid)) {
         final List<QueuedWrite> document = unchecked.first;
-        if (!journal.written(document.first.document)) {
+        final String path = document.first.document;
+        if (!journal.replaced(path)) {
           final Map<String, Object?>? server = await writes.serverDocument(
             document.first.collection,
             document.first.id,
@@ -130,7 +131,11 @@ class RejectedWrites extends Notifier<List<RejectedWrite>> {
           if (!_signedIn(uid)) {
             return;
           }
-          for (final QueuedWrite refused in refusedAmong(document, server)) {
+          for (final QueuedWrite refused in refusedAmong(
+            document,
+            server,
+            ignoring: journal.fieldsSet(path),
+          )) {
             _report(
               refused.what,
               null,

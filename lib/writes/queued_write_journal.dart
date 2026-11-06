@@ -79,11 +79,13 @@ class QueuedWrite {
 /// Of [writes], all to one document and in the order they were made, those
 /// the server's copy [server] (null when it holds none) shows were refused.
 /// A refused create stands for the changes made after it, which were refused
-/// with it.
+/// with it. Fields in [ignoring] were set again since, which supersedes what
+/// these writes set there.
 List<QueuedWrite> refusedAmong(
   List<QueuedWrite> writes,
-  Map<String, Object?>? server,
-) {
+  Map<String, Object?>? server, {
+  Set<String> ignoring = const <String>{},
+}) {
   final int lastDelete = writes.lastIndexWhere(
     (QueuedWrite write) => write.op == WriteOp.delete,
   );
@@ -101,7 +103,8 @@ List<QueuedWrite> refusedAmong(
   }
   final Map<String, QueuedWrite> lastToSet = <String, QueuedWrite>{
     for (final QueuedWrite write in since)
-      for (final String field in write.fields.keys) field: write,
+      for (final String field in write.fields.keys)
+        if (!ignoring.contains(field)) field: write,
   };
   return <QueuedWrite>{
     for (final MapEntry<String, QueuedWrite>(key: field, value: write)
@@ -156,7 +159,9 @@ class QueuedWriteJournal {
   Future<void> _last = Future<void>.value();
   final Set<QueuedWrite> _added = Set<QueuedWrite>.identity();
   final Set<QueuedWrite> _claimed = Set<QueuedWrite>.identity();
-  final Set<String> _written = <String>{};
+  // For each document this launch wrote, the fields its edits set, or null
+  // once it created or deleted the document.
+  final Map<String, Set<String>?> _written = <String, Set<String>?>{};
 
   // Every read and change runs after the one before, on the loaded list.
   Future<T> _serially<T>(FutureOr<T> Function(List<QueuedWrite> entries) op) {
@@ -203,7 +208,13 @@ class QueuedWriteJournal {
 
   Future<void> add(QueuedWrite entry) {
     _added.add(entry);
-    _written.add(entry.document);
+    if (entry.op != WriteOp.update) {
+      _written[entry.document] = null;
+    } else if (_written.containsKey(entry.document)) {
+      _written[entry.document]?.addAll(entry.fields.keys);
+    } else {
+      _written[entry.document] = <String>{...entry.fields.keys};
+    }
     return _change((List<QueuedWrite> entries) => entries.add(entry));
   }
 
@@ -238,10 +249,15 @@ class QueuedWriteJournal {
 
   void release(Iterable<QueuedWrite> entries) => _claimed.removeAll(entries);
 
-  /// Whether this launch has written [document]. Its own write then reports
-  /// whether the server took it, and changes the server's copy so that it no
-  /// longer shows what became of an earlier launch's write.
-  bool written(String document) => _written.contains(document);
+  /// Whether this launch has created or deleted [document]. That write's own
+  /// answer then says what became of the document, and the server's copy no
+  /// longer shows what became of an earlier launch's writes to it.
+  bool replaced(String document) =>
+      _written.containsKey(document) && _written[document] == null;
+
+  /// The fields this launch's edits have set on [document].
+  Set<String> fieldsSet(String document) =>
+      _written[document] ?? const <String>{};
 }
 
 final queuedWriteJournalProvider = Provider<QueuedWriteJournal>(

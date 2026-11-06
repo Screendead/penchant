@@ -106,7 +106,7 @@ suites, or wait for CI.
   also retires the Podfile overrides), the failing `flutter build macos --release`, the legacy signing config and the
   dead scaffold assets.
 - **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently
-  (in review from `fix/rejected-write-earlier-launch`: a journal on the device, checked on the next launch);
+  (PR #88 from `fix/rejected-write-earlier-launch`, reviewed: a journal on the device, checked on the next launch);
   the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
