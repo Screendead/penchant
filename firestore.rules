@@ -85,8 +85,9 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
 
       // The quantity stays plaintext beside any envelope (Jack, 2026-11-06),
-      // so a server-side job can sum it. No activity field is sealed yet: the
-      // triggers field joins sealedAlone's list when it lands.
+      // so a server-side job can sum it. No activity field is sealed yet: when
+      // the triggers field lands, create and update gain
+      // sealedAlone(request.resource.data, ['triggers']).
       // ownsVice() last, so a request the other checks deny costs no read.
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
@@ -96,7 +97,6 @@ service cloud.firestore {
         && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
         && (!('sealed' in request.resource.data) || validSealed(request.resource.data.sealed))
-        && sealedAlone(request.resource.data, [])
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
@@ -104,7 +104,6 @@ service cloud.firestore {
         && (!('quantity' in changedKeys())
           || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
-        && sealedAlone(request.resource.data, [])
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
     }
   }
