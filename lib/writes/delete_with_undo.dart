@@ -125,6 +125,7 @@ Future<void> _restore(
             viceID: activity.viceID,
             quantity: activity.quantity,
             createdAt: activity.createdAt.toDate(),
+            triggers: activity.triggers,
           ),
           'Not restored: $entry',
         )

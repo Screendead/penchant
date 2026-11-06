@@ -28,6 +28,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
+  Craving) or typed in. Nothing picks them yet; exports include them as a "triggers" column.
 - Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
   each habit's colour and entry count; a habit's history groups its entries by day with a daily total. Archive and
   Edit habit live on the history page.

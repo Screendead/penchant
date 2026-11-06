@@ -28,6 +28,9 @@ After a log, the detail sheet offers triggers:
 
 ## Data
 
+Shipped (r2-triggers A, part 1): the optional `triggers` field, its rules and parser, and the starter tree in
+`lib/data/trigger_tree.dart`. Free text is stored as the label itself for now; `triggerNodes` is not built.
+
 - On `activities`: `triggers`, an array of path strings (`"work/meeting/1:1"`, `"custom/<id>"`), optional.
 - Custom nodes: a per-user `triggerNodes` collection (`ownerID`, `parentPath`, `label`, `createdAt`), so a renamed
   label renames everywhere. The built-in tree ships in the app and is versioned there.

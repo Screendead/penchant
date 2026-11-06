@@ -295,10 +295,15 @@ nothing caps how many vices a user creates; whether to add a cap is undecided (r
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
 flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
-`quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
+`quantity`, `ownerID`, `createdAt`, and an optional `triggers`). `triggers` is a list of at most 10
+strings of 1 to 60 UTF-16 code units, each a path of node ids in the starter tree (`lib/data/trigger_tree.dart`,
+such as `work/meeting`) or a free-text label; a node's id never changes once shipped. Every read and write of it goes
+through `lib/data/activity_triggers.dart`, so sealing it (`r2-e2ee`) touches one file; the parser reads a missing
+or mistyped list as empty, the record write omits an empty list, and the export joins it with `; `. Rules cannot
+loop, so `validTriggers` in `firestore.rules` checks each of the 10 indexes. Both collections carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
 one on create. The rules also fix each collection's field set and types on create, allow
-updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`/`triggers`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
 stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,

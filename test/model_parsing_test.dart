@@ -220,6 +220,45 @@ void main() {
         parse(_with(_activity(), 'createdAt', null), pending: true).createdAt,
       );
     });
+
+    test('an activity without triggers reads as none', () {
+      expect(parse(_activity()).triggers, isEmpty);
+      expect(parse(<String, dynamic>{}).triggers, isEmpty);
+    });
+
+    test('reads stored triggers in order', () {
+      expect(
+        parse(
+          _with(_activity(), 'triggers', <Object?>[
+            'work/meeting',
+            'Late train',
+          ]),
+        ).triggers,
+        ['work/meeting', 'Late train'],
+      );
+    });
+
+    test('mistyped triggers read as none, and non-string entries drop', () {
+      for (final Object? value in <Object?>[
+        'work',
+        7,
+        null,
+        <String, Object>{},
+      ]) {
+        expect(parse(_with(_activity(), 'triggers', value)).triggers, isEmpty);
+      }
+      expect(
+        parse(
+          _with(_activity(), 'triggers', <Object?>[
+            'work',
+            7,
+            null,
+            'body/tired',
+          ]),
+        ).triggers,
+        ['work', 'body/tired'],
+      );
+    });
   });
 
   group('fromQuerySnapshot', () {
