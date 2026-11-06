@@ -11,11 +11,15 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
+import 'package:tracker/providers/user_provider.dart';
+
+import 'fakes.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
 
@@ -35,7 +39,7 @@ void main() {
   setUpAll(_loadFonts);
   final String formatted = RecoveryKey.format(RecoveryKey.generate(Random(11)));
   for (final Brightness brightness in Brightness.values) {
-    for (final String name in <String>['key', 'confirm', 'entry']) {
+    for (final String name in <String>['key', 'confirm', 'entry', 'lost']) {
       testWidgets('fidelity recovery-$name ${brightness.name}', (
         WidgetTester tester,
       ) async {
@@ -54,6 +58,8 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              e2eeEnabledProvider.overrideWithValue(true),
+              userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
               recoveryKeyStatusProvider.overrideWithValue(
                 RecoveryKeyStatus(
                   formatted: formatted,
@@ -61,7 +67,7 @@ void main() {
                 ),
               ),
               journalNeedsRecoveryKeyProvider.overrideWithValue(
-                name == 'entry',
+                name == 'entry' || name == 'lost',
               ),
             ],
             child: RepaintBoundary(
@@ -71,7 +77,8 @@ void main() {
                 debugShowCheckedModeBanner: false,
                 theme: appTheme(Brightness.light),
                 darkTheme: appTheme(Brightness.dark),
-                home: const RecoveryKeyGate(child: Scaffold()),
+                builder: (context, child) => RecoveryKeyGate(child: child!),
+                home: const Scaffold(),
               ),
             ),
           ),
@@ -92,6 +99,8 @@ void main() {
             ].join(' '),
           );
           await tester.tap(find.text(RecoveryKeyCopy.unlock));
+        } else if (name == 'lost') {
+          await tester.tap(find.text(RecoveryKeyCopy.lostKey));
         } else {
           navigator.currentState!.push(
             MaterialPageRoute<void>(builder: (_) => const RecoveryKeyPage()),

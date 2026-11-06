@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tracker/account/sign_out.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
+import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 class RecoveryKeyCopy {
@@ -64,6 +68,19 @@ class RecoveryKeyCopy {
       'This is not a valid recovery key. Check it against your saved copy.';
   static const String notThisJournal =
       'That is a recovery key, but for a different journal.';
+  static const String lostKey = "I've lost my key";
+  static const String signOut = 'Sign out';
+  static const String lostTitle = 'Lost your recovery key?';
+  static const String lostBody =
+      "Without it, the entries in your journal can't be opened by anyone, "
+      'including us.';
+  static const String lostWayForward =
+      'The only way forward is to start a new journal. Your old entries stay '
+      'unreadable for good.';
+  static const String startNewJournal = 'Start a new journal';
+  static const String keepLooking = 'Keep looking';
+  static const String startNewFailed =
+      "Couldn't start a new journal. Try again.";
 }
 
 /// The dismissible offer on Today, shown once [recoveryCardDue] says so.
@@ -72,6 +89,9 @@ class RecoveryKeyCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(e2eeEnabledProvider)) {
+      return const SizedBox.shrink();
+    }
     final bool due = recoveryCardDue(
       ref.watch(recoveryKeyStatusProvider),
       ref.watch(todayProvider),
@@ -437,6 +457,20 @@ class _RecoveryKeyEntryPageState extends ConsumerState<RecoveryKeyEntryPage> {
     super.dispose();
   }
 
+  Future<void> _whileBusy(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _signOut() =>
+      signOutAsking(context, ref.read(accountProvider), busy: _whileBusy);
+
   Future<void> _unlock() async {
     final RecoveryKeyParse parse = RecoveryKey.parse(_typed.text);
     final String? problem = recoveryKeyProblem(parse);
@@ -521,21 +555,145 @@ class _RecoveryKeyEntryPageState extends ConsumerState<RecoveryKeyEntryPage> {
           onPressed: _busy ? null : _unlock,
           child: const Text(RecoveryKeyCopy.unlock),
         ),
+        const SizedBox(height: DialSpace.xs),
+        TextButton(
+          onPressed: _busy
+              ? null
+              : () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const RecoveryKeyLostPage(),
+                  ),
+                ),
+          child: const Text(RecoveryKeyCopy.lostKey),
+        ),
+        TextButton(
+          onPressed: _busy ? null : _signOut,
+          child: const Text(RecoveryKeyCopy.signOut),
+        ),
       ],
     );
   }
 }
 
-/// Holds [child] closed behind [RecoveryKeyEntryPage] while the journal
-/// needs its recovery key on this device.
+/// Says what losing the recovery key costs, and offers the one way on: a
+/// new journal.
+class RecoveryKeyLostPage extends ConsumerStatefulWidget {
+  const RecoveryKeyLostPage({super.key});
+
+  @override
+  ConsumerState<RecoveryKeyLostPage> createState() =>
+      _RecoveryKeyLostPageState();
+}
+
+class _RecoveryKeyLostPageState extends ConsumerState<RecoveryKeyLostPage> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _startNewJournal() async {
+    final NavigatorState navigator = Navigator.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(recoveryKeyActionsProvider).startNewJournal();
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = RecoveryKeyCopy.startNewFailed;
+        });
+      }
+      return;
+    }
+    if (mounted) {
+      navigator.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final DialColors colors = DialColors.of(context);
+    return CardPage(
+      title: RecoveryKeyCopy.lostTitle,
+      children: <Widget>[
+        DialCard(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(DialSpace.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    RecoveryKeyCopy.lostBody,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: DialSpace.xs),
+                  Text(
+                    RecoveryKeyCopy.lostWayForward,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6, DialSpace.s, 6, 0),
+            child: Text(
+              _error!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+        const SizedBox(height: DialSpace.xl),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: theme.colorScheme.error,
+            foregroundColor: theme.colorScheme.onError,
+          ),
+          onPressed: _busy ? null : _startNewJournal,
+          child: const Text(RecoveryKeyCopy.startNewJournal),
+        ),
+        const SizedBox(height: DialSpace.xs),
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(),
+          child: const Text(RecoveryKeyCopy.keepLooking),
+        ),
+      ],
+    );
+  }
+}
+
+/// Holds [child], the app's navigator, closed behind [RecoveryKeyEntryPage]
+/// while a signed-in user's journal needs its recovery key on this device.
+/// For [MaterialApp.builder], so no route shows while the journal is locked.
 class RecoveryKeyGate extends ConsumerWidget {
   const RecoveryKeyGate({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      ref.watch(journalNeedsRecoveryKeyProvider)
-      ? const RecoveryKeyEntryPage()
-      : child;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool locked =
+        ref.watch(e2eeEnabledProvider) &&
+        ref.watch(userProvider).value != null &&
+        ref.watch(journalNeedsRecoveryKeyProvider);
+    if (!locked) {
+      return child;
+    }
+    // Above the app's navigator: the entry page needs one of its own for its
+    // dialogs and the lost-key page.
+    return Navigator(
+      onGenerateRoute: (RouteSettings settings) => MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const RecoveryKeyEntryPage(),
+      ),
+    );
+  }
 }

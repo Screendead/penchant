@@ -50,6 +50,10 @@ abstract class RecoveryKeyActions {
   Future<void> markSaved();
   Future<void> dismissCard();
   Future<UnlockOutcome> unlock(Uint8List recoveryKey);
+
+  /// Replaces the journal key with a new one, leaving every entry sealed
+  /// under the old key unreadable. Throws when it cannot.
+  Future<void> startNewJournal();
 }
 
 class _NoKeyActions implements RecoveryKeyActions {
@@ -64,6 +68,10 @@ class _NoKeyActions implements RecoveryKeyActions {
   @override
   Future<UnlockOutcome> unlock(Uint8List recoveryKey) async =>
       const UnlockFailed('This build has no journal key to open.');
+
+  @override
+  Future<void> startNewJournal() =>
+      Future<void>.error(StateError('This build has no journal key service.'));
 }
 
 // The key service overrides these three. Until it does there is no key: the

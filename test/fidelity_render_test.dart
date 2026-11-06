@@ -29,6 +29,7 @@ import 'package:tracker/providers/sync_status_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -286,6 +287,8 @@ void main() {
                 offlineProvider.overrideWith((ref) => Stream.value(false)),
                 trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
                 pendingWritesWaiterProvider.overrideWithValue(() async {}),
+                if (name == 'recovery-card')
+                  e2eeEnabledProvider.overrideWithValue(true),
                 if (name == 'recovery-card')
                   recoveryKeyStatusProvider.overrideWithValue(
                     RecoveryKeyStatus(

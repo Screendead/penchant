@@ -79,14 +79,17 @@ class _MyAppState extends ConsumerState<MyApp> {
         // Until Auth reports the persisted session, a signed-in user would
         // otherwise see the sign-in screen; a signed-out one is AsyncData(null).
         home: user != null
-            ? const RecoveryKeyGate(child: Homepage())
+            ? const Homepage()
             : userValue.hasError
             ? const AuthStateFailure()
             : !userValue.hasValue
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
-        builder: rejectedWritesBuilder,
+        builder: (BuildContext context, Widget? child) => rejectedWritesBuilder(
+          context,
+          RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }

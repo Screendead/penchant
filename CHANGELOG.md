@@ -10,8 +10,9 @@ pull request titles (`gh pr list --state merged`).
 ### Added
 
 - A recovery key screen, under Account settings and offered on Today a week in: the key in large groups with Copy
-  and Share, then a check that you typed its last group back. A device without the journal key will ask for it, and
-  the entry field points to a mistyped character. Inert until the encryption core lands.
+  and Share, then a check that you typed its last group back. A device without the journal key will ask for it before
+  any screen opens, the entry field points to a mistyped character, and the page offers Sign out and a lost-key path
+  to a new journal. Switched off until the encryption core lands.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,

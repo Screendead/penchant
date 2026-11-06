@@ -1,15 +1,24 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/account/account.dart';
+import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
+import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
+
+import '../fake_account.dart';
+import '../fakes.dart';
 
 class _FakeToday extends Today {
   _FakeToday(this._start);
@@ -27,6 +36,7 @@ class _FakeActions implements RecoveryKeyActions {
   final bool fails;
   int saved = 0;
   int dismissed = 0;
+  int newJournals = 0;
   final List<Uint8List> unlocks = <Uint8List>[];
 
   @override
@@ -48,18 +58,49 @@ class _FakeActions implements RecoveryKeyActions {
     }
     return outcome;
   }
+
+  @override
+  Future<void> startNewJournal() async {
+    if (fails) {
+      throw StateError('keychain');
+    }
+    newJournals++;
+  }
 }
+
+class _Locked extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void lock() => state = true;
+}
+
+final _lockedProvider = NotifierProvider<_Locked, bool>(_Locked.new);
 
 final Uint8List _key = RecoveryKey.generate(Random(11));
 final String _formatted = RecoveryKey.format(_key);
 
-Widget _app(List<Override> overrides, Widget home) => ProviderScope(
-  overrides: overrides,
+Widget _app(
+  List<Override> overrides,
+  Widget home, {
+  bool enabled = true,
+  bool signedIn = true,
+}) => ProviderScope(
+  overrides: <Override>[
+    e2eeEnabledProvider.overrideWithValue(enabled),
+    userProvider.overrideWith(
+      (ref) => Stream<User?>.value(signedIn ? FakeUser('u') : null),
+    ),
+    ...overrides,
+  ],
   child: MaterialApp(
     theme: appTheme(Brightness.light),
     routes: <String, WidgetBuilder>{
       RecoveryKeyPage.route: (_) => const RecoveryKeyPage(),
+      '/pushed': (_) => const Scaffold(body: Text('pushed page')),
     },
+    builder: (BuildContext context, Widget? child) =>
+        RecoveryKeyGate(child: child!),
     home: home,
   ),
 );
@@ -136,6 +177,22 @@ void main() {
       await tester.pump();
       expect(find.text(RecoveryKeyCopy.cardTitle), findsNothing);
       expect(actions.dismissed, 1);
+    });
+
+    testWidgets('shows nothing while E2EE is off', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          <Override>[
+            todayProvider.overrideWith(() => _FakeToday(DateTime(2026, 12))),
+            recoveryKeyStatusProvider.overrideWithValue(
+              RecoveryKeyStatus(formatted: _formatted, keyCreatedAt: created),
+            ),
+          ],
+          const Scaffold(body: RecoveryKeyCard()),
+          enabled: false,
+        ),
+      );
+      expect(find.text(RecoveryKeyCopy.cardTitle), findsNothing);
     });
 
     testWidgets('shows nothing while no key exists', (tester) async {
@@ -242,14 +299,24 @@ void main() {
       UnlockOutcome outcome = const UnlockOpened(),
       bool locked = true,
       bool fails = false,
+      bool enabled = true,
+      bool signedIn = true,
+      FakeAccount? account,
     }) async {
       final _FakeActions actions = _FakeActions(outcome: outcome, fails: fails);
       await tester.pumpWidget(
-        _app(<Override>[
-          journalNeedsRecoveryKeyProvider.overrideWithValue(locked),
-          recoveryKeyActionsProvider.overrideWithValue(actions),
-        ], const RecoveryKeyGate(child: Text('journal'))),
+        _app(
+          <Override>[
+            journalNeedsRecoveryKeyProvider.overrideWithValue(locked),
+            recoveryKeyActionsProvider.overrideWithValue(actions),
+            accountProvider.overrideWithValue(account ?? FakeAccount()),
+          ],
+          const Text('journal'),
+          enabled: enabled,
+          signedIn: signedIn,
+        ),
       );
+      await tester.pump();
       return actions;
     }
 
@@ -265,6 +332,110 @@ void main() {
       await pumpEntry(tester, locked: false);
       expect(find.text('journal'), findsOneWidget);
       expect(find.byType(RecoveryKeyEntryPage), findsNothing);
+    });
+
+    testWidgets('the gate opens straight through while E2EE is off', (
+      tester,
+    ) async {
+      await pumpEntry(tester, enabled: false);
+      expect(find.text('journal'), findsOneWidget);
+      expect(find.byType(RecoveryKeyEntryPage), findsNothing);
+    });
+
+    testWidgets('the gate leaves a signed-out user to the sign-in screens', (
+      tester,
+    ) async {
+      await pumpEntry(tester, signedIn: false);
+      expect(find.text('journal'), findsOneWidget);
+      expect(find.byType(RecoveryKeyEntryPage), findsNothing);
+    });
+
+    testWidgets('the gate covers a route pushed before it locked', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(
+          <Override>[
+            journalNeedsRecoveryKeyProvider.overrideWith(
+              (ref) => ref.watch(_lockedProvider),
+            ),
+          ],
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).pushNamed('/pushed'),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.text('pushed page'), findsOneWidget);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.text('pushed page')),
+      );
+      container.read(_lockedProvider.notifier).lock();
+      await tester.pumpAndSettle();
+      expect(find.text('pushed page'), findsNothing);
+      expect(find.byType(RecoveryKeyEntryPage), findsOneWidget);
+    });
+
+    testWidgets('Sign out signs out, asking before it drops unsynced entries', (
+      tester,
+    ) async {
+      final FakeAccount account = FakeAccount();
+      account.respond = (call) async {
+        if (call.fields['discardUnsynced'] == false) {
+          throw const UnsyncedEntriesException();
+        }
+      };
+      await pumpEntry(tester, account: account);
+      await tester.tap(find.text(RecoveryKeyCopy.signOut));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AccountCopy.signOutAnyway));
+      await tester.pumpAndSettle();
+      expect(
+        account.calls.map((call) => call.fields['discardUnsynced']),
+        <bool>[false, true],
+      );
+    });
+
+    testWidgets("I've lost my key explains, then starts a new journal", (
+      tester,
+    ) async {
+      final _FakeActions actions = await pumpEntry(tester);
+      await tester.tap(find.text(RecoveryKeyCopy.lostKey));
+      await tester.pumpAndSettle();
+      expect(find.text(RecoveryKeyCopy.lostBody), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.lostWayForward), findsOneWidget);
+      expect(actions.newJournals, 0);
+      await tester.tap(find.text(RecoveryKeyCopy.startNewJournal));
+      await tester.pumpAndSettle();
+      expect(actions.newJournals, 1);
+      expect(find.byType(RecoveryKeyLostPage), findsNothing);
+    });
+
+    testWidgets('a new journal that fails stays on the page and says so', (
+      tester,
+    ) async {
+      await pumpEntry(tester, fails: true);
+      await tester.tap(find.text(RecoveryKeyCopy.lostKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(RecoveryKeyCopy.startNewJournal));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecoveryKeyLostPage), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.startNewFailed), findsOneWidget);
+    });
+
+    testWidgets("Keep looking goes back to the entry page", (tester) async {
+      await pumpEntry(tester);
+      await tester.tap(find.text(RecoveryKeyCopy.lostKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(RecoveryKeyCopy.keepLooking));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecoveryKeyLostPage), findsNothing);
+      expect(find.byKey(RecoveryKeyEntryPage.field), findsOneWidget);
     });
 
     testWidgets('rejects a bad checksum and says where', (tester) async {
