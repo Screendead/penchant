@@ -13,6 +13,8 @@ pull request titles (`gh pr list --state merged`).
   and an empty day offline says the device may not have it rather than calling it clear.
 - A change saved offline that the server later refuses (for example, an entry for a vice deleted on another device)
   is named in a banner at the top of the screen until you dismiss it, instead of disappearing without a word.
+  That holds across a restart too: a change made offline and refused after you closed the app is named the next
+  time it opens and syncs.
 - Account Settings exports your data as CSV and JSON, deletes the account with everything in it, resends the
   verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
   device's copy of your data, and asks first if entries have not synced (#54).

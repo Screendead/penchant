@@ -188,16 +188,25 @@ data. `trackerWritesProvider` is a plain `Provider` that hands out the write lay
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
 `TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every write the
 screens make to a single document. It has one method
-per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
-`updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
-error messages and Undo stay in the widgets. Each widget hands the future to `settleWrite`
-(`lib/writes/settle_write.dart`), which waits ten seconds and then calls the write queued.
-It keeps listening, and a refusal after that goes to `onRejectedLater`: widgets pass
-`ref.read(rejectedWritesProvider.notifier).reporter('<what, named at write time>')`. That
-`NotifierProvider` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
+per write (`addVice`, `updateVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
+`updateActivity`, `deleteActivity`) and returns a `SentWrite`: the SDK's future unchanged, plus
+the document it writes and, for an update, the fields it sets. Timeouts, error messages and
+Undo stay in the widgets. Each widget hands it to
+`ref.read(rejectedWritesProvider.notifier).settle(write, '<what, named at write time>')`,
+which runs `settleWrite` (`lib/writes/settle_write.dart`): that waits ten seconds and then
+calls the write queued, and keeps listening, so a refusal after that reaches the banner.
+`RejectedWrites` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
 signed-in user, cleared when the uid changes, and `MaterialApp.builder`
 (`lib/widgets/rejected_writes_banner.dart`) shows them above every screen until dismissed.
-A write queued by an earlier launch has no future to listen to, so its refusal is not seen. The record dialog takes one id from
+The SDK keeps queued writes across launches but answers only the launch that made them, so
+`settle` also keeps each write in a journal on the device (`lib/writes/queued_write_journal.dart`,
+a JSON file per Firebase project in Application Support) until its future completes. On
+sign-in, a launch takes what earlier launches left for that user, waits for
+`waitForPendingWrites()` (it resolves after a refusal as after success), then reads each
+document's server copy with an `ownerID` query bounded to its id (the rules deny a get of a
+missing document) and names in the banner each write the server's copy does not show
+(`refusedAmong`). A check that fails keeps its writes for the next launch; sign-out and account
+deletion clear the journal with the cache. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
 document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
 (`lib/account/account.dart`): sign-in, register (which also sends the verification email),

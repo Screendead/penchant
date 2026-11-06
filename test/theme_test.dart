@@ -76,6 +76,7 @@ List<Override> _overrides({bool empty = false}) {
     accountProvider.overrideWithValue(FakeAccount()),
     exportShareProvider.overrideWithValue(FakeExportShare()),
     trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+    memoryJournal(),
     packageInfoProvider.overrideWith(
       (ref) async => PackageInfo(
         appName: 'tracker',

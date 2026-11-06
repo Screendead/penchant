@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/settle_write.dart';
+import 'package:tracker/writes/tracker_writes.dart';
 
 import 'support.dart';
 
@@ -134,5 +137,70 @@ void main() {
     for (final String text in forbidden) {
       expect(find.textContaining(text), findsNothing);
     }
+  });
+
+  testWidgets('an entry queued offline that is lost before the next launch '
+      'is named on that launch, and one the server holds is not', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-rejected-restart@example.com');
+    await addVicesThroughManageData(tester);
+    final String coffeeID = await storedViceID('Coffee');
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    const FileJournalStore file = FileJournalStore(emulatorProjectId);
+    final Finder banner = find.byType(RejectedWritesBanner);
+    Finder inBanner(String text) =>
+        find.descendant(of: banner, matching: find.textContaining(text));
+    final Finder rejected = inBanner('Not saved: Coffee, 2 drinks, ');
+
+    await FirebaseFirestore.instance.disableNetwork();
+    await pumpUntil(tester, find.text(OfflineBanner.message));
+    await recordActivity(tester, 'Coffee', 2);
+    await pumpUntil(tester, find.text(queuedMessage));
+    expect(await file.read(), contains('Not saved: Coffee, 2 drinks, '));
+
+    // The launch ends with the entry still queued. Under the emulators the
+    // cache is off, so terminating drops the queue: the next launch's server
+    // holds no such entry, as after a refusal. Its future never completes,
+    // so nothing in this launch removes it from the journal.
+    await FirebaseFirestore.instance.terminate();
+    // A write whose answer the earlier launch missed, but the server took.
+    final QueuedWriteJournal earlier = QueuedWriteJournal(file);
+    await earlier.add(
+      QueuedWrite(
+        uid: uid,
+        what: 'Not saved: the habit Coffee',
+        collection: 'vices',
+        id: coffeeID,
+        op: WriteOp.create,
+      ),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    // The next launch: Auth kept the session; Firestore starts afresh, online.
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await pumpUntil(tester, rejected);
+    expect(inBanner('The server refused this change.'), findsOneWidget);
+    expect(inBanner('the habit Coffee'), findsNothing);
+    await screenshot(tester, 'rejected-write-earlier-launch');
+    final DateTime deadline = DateTime.now().add(timeout);
+    while ((await file.read())?.contains('Coffee') ?? false) {
+      if (DateTime.now().isAfter(deadline)) {
+        fail(
+          'The journal still holds the checked writes: ${await file.read()}',
+        );
+      }
+      await pumpFor(tester, const Duration(milliseconds: 100));
+    }
+
+    await tap(
+      tester,
+      find.descendant(
+        of: banner,
+        matching: find.text(RejectedWritesBanner.dismissLabel),
+      ),
+    );
+    await pumpUntil(tester, rejected, present: false);
   });
 }
