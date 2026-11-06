@@ -96,8 +96,8 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
-The first pass (waves A to D) is merged. **CI is down:** since 2026-11-06 GitHub refuses to start Actions jobs
-("recent account payments have failed or your spending limit needs to be increased"), so no PR that changes code can
+The first pass (waves A to D) is merged. **CI is down:** since 2026-11-06 Actions stopped starting jobs
+(billing limit), so no PR that changes code can
 show green CI, and nothing touching `firestore.rules` or `firestore.indexes.json` merges until it is back (merging
 deploys them, and the deploy job can't run). Docs-only PRs run no checks and still merge. #84 merged on its green CI
 (the last commit was docs only). #83 waits on Jack: merge on the review's local run of CI's commands plus both e2e
@@ -293,7 +293,7 @@ once it lands; they stay open until Jack says so:
   `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
   itself still answers "no such user" differently from "wrong password". Also check the password-reset and
   verification email templates read sensibly now that the app sends both.
-- **Clear the main checkout's active Firebase project** (from #68): in `/Users/jacklusher/development/tracker`, run
+- **Clear the main checkout's active Firebase project** (from #68): in `~/development/tracker`, run
   `firebase use --clear`. The CLI's configstore maps that directory to `screendead-vice-tracker`, and that entry wins
   over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
   edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints

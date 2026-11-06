@@ -37,3 +37,11 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+
+# Signing keys and service-account credentials
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*service-account*.json
+*-firebase-adminsdk-*.json
