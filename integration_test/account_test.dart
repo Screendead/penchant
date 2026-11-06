@@ -122,7 +122,7 @@ Future<void> _signInThroughForm(
 ) async {
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', password);
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign in'));
   await pumpUntil(tester, find.byType(Homepage));
 }
 
