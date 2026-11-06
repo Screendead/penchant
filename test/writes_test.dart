@@ -785,7 +785,7 @@ void main() {
     ];
 
     final Finder row = find.descendant(
-      of: find.byType(ListView),
+      of: find.byType(SingleChildScrollView),
       matching: find.byType(Dismissible),
     );
 

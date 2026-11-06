@@ -269,8 +269,8 @@ void main() {
         ),
       ], const ManageData());
 
-      expect(find.text('${ManageData.archivedLabel}, 2 activities'), findsOne);
-      expect(find.text('2 activities'), findsOne);
+      expect(find.text(ManageData.archivedLabel), findsOne);
+      expect(find.textContaining(' · 2 entries'), findsNWidgets(2));
 
       await tester.tap(find.text('tea'));
       await tester.pumpAndSettle();

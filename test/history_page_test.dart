@@ -66,12 +66,15 @@ void main() {
     await tester.pump();
   }
 
-  Finder quantity(int value) => find.text('Quantity: $value');
+  Finder quantity(int value) => find.descendant(
+    of: find.byType(Dismissible),
+    matching: find.text(coffee.unit.label(value)),
+  );
 
   Future<void> scrollToEnd(WidgetTester tester) async {
     await tester.dragUntilVisible(
       find.text('Show older'),
-      find.byType(ListView),
+      find.byType(SingleChildScrollView),
       const Offset(0, -2000),
     );
   }
@@ -98,7 +101,7 @@ void main() {
 
     await tester.dragUntilVisible(
       quantity(pageSize),
-      find.byType(ListView),
+      find.byType(SingleChildScrollView),
       const Offset(0, -2000),
     );
     expect(find.text('Show older'), findsNothing);
@@ -122,10 +125,10 @@ void main() {
 
   testWidgets('times follow the device 24-hour setting', (tester) async {
     await pumpHistory(tester, 2, alwaysUse24HourFormat: true);
-    expect(find.textContaining('Nov 2, 2026 11:00'), findsOneWidget);
+    expect(find.text('11:00'), findsOneWidget);
     expect(find.textContaining('AM'), findsNothing);
 
     await pumpHistory(tester, 2);
-    expect(find.textContaining('Nov 2, 2026 11:00\u202fAM'), findsOneWidget);
+    expect(find.text('11:00\u202fAM'), findsOneWidget);
   });
 }

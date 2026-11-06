@@ -53,51 +53,56 @@ class DialPage extends StatelessWidget {
             ),
             const OfflineBanner(),
             Expanded(
-              child: ListView(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
                   DialSpace.gutter,
                   2,
                   DialSpace.gutter,
                   50,
                 ),
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
-                    child: Semantics(
-                      header: true,
-                      child: Row(
-                        children: <Widget>[
-                          if (leading != null) ...<Widget>[
-                            leading!,
-                            const SizedBox(width: 12),
-                          ],
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: DialTypeScale.displayXL.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                height: 1.05,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+                      child: Semantics(
+                        header: true,
+                        child: Row(
+                          children: <Widget>[
+                            if (leading != null) ...<Widget>[
+                              leading!,
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: DialTypeScale.displayXL.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                  height: 1.05,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-                      child: Text(
-                        subtitle!,
-                        style: DialTypeScale.bodyS.copyWith(
-                          color: colors.muted,
-                          fontSize: 14,
-                          height: 1.4,
+                          ],
                         ),
                       ),
                     ),
-                  ...children,
-                ],
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                        child: Text(
+                          subtitle!,
+                          style: DialTypeScale.bodyS.copyWith(
+                            color: colors.muted,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ...children,
+                  ],
+                ),
               ),
             ),
           ],

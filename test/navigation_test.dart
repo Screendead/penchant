@@ -118,9 +118,10 @@ void main() {
       expect(find.text(Homepage.settingsItem), findsOneWidget);
       await tester.tap(find.text(Homepage.habitsItem));
       await tester.pumpAndSettle();
-      expect(find.text('Your Habits'), findsOneWidget);
+      expect(find.byType(ManageData), findsOneWidget);
+      expect(find.text(ManageData.title), findsOneWidget);
 
-      await tester.tap(find.byType(BackButton));
+      await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
       expect(find.byType(ManageData), findsNothing);
       expect(find.text(Homepage.habitsItem), findsNothing);

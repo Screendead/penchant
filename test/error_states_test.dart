@@ -344,7 +344,7 @@ void main() {
       await _tapRetry(tester);
 
       expect(history.listens, 2);
-      expect(find.text('No activities found for this habit'), findsOneWidget);
+      expect(find.text(ViceActivityHistoryPage.empty), findsOneWidget);
     });
 
     testWidgets('a list still loading is a spinner, not an error', (
