@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -840,7 +841,7 @@ class _TrendsPanel extends StatelessWidget {
               ),
             ),
             CircleButton(
-              icon: Icons.keyboard_arrow_down,
+              icon: DialGlyph.down,
               tooltip: TrendsSheet.closeLabel,
               focusNode: closeFocus,
               onPressed: onClose,

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
@@ -94,7 +95,7 @@ class TrendsDay extends ConsumerWidget {
     final Widget header = Row(
       children: <Widget>[
         CircleButton(
-          icon: Icons.chevron_left,
+          icon: DialGlyph.left,
           tooltip: backLabel,
           focusNode: backFocus,
           onPressed: onBack,

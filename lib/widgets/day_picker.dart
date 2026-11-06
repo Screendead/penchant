@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
@@ -59,7 +60,7 @@ class DayPicker extends StatelessWidget {
     return Row(
       children: <Widget>[
         CircleButton(
-          icon: Icons.chevron_left,
+          icon: DialGlyph.left,
           tooltip: 'Previous day',
           onPressed: () => onSelect(addDays(day, -1)),
         ),
@@ -68,43 +69,60 @@ class DayPicker extends StatelessWidget {
           child: Center(
             child: Tooltip(
               message: chooseDay,
-              child: Material(
-                color: scheme.surfaceContainerLow,
-                shape: StadiumBorder(side: BorderSide(color: colors.line)),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => _openCalendar(context),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: DialSize.minTapTarget,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 6,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  shape: const StadiumBorder(),
+                  shadows: DialShadows.card(Theme.of(context).brightness),
+                ),
+                child: Material(
+                  color: scheme.surfaceContainerLow,
+                  shape: StadiumBorder(side: BorderSide(color: colors.line)),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _openCalendar(context),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: DialSize.minTapTarget,
                       ),
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        children: <Widget>[
-                          Text(dayWord(day, today), style: type.displayM),
-                          Text(
-                            dayPillDate(day, today),
-                            style: DialTypeScale.bodyS.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: colors.muted,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 6,
+                        ),
+                        // One paragraph, so the day and the date share a
+                        // baseline and wrap together at large text.
+                        child: Center(
+                          widthFactor: 1,
+                          child: Text.rich(
+                            TextSpan(
+                              children: <InlineSpan>[
+                                TextSpan(
+                                  text: dayWord(day, today),
+                                  style: type.displayM.copyWith(height: 1.2),
+                                ),
+                                const WidgetSpan(child: SizedBox(width: 8)),
+                                TextSpan(
+                                  text: dayPillDate(day, today),
+                                  style: DialTypeScale.bodyS.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.muted,
+                                  ),
+                                ),
+                                const WidgetSpan(child: SizedBox(width: 8)),
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: StrokeIcon(
+                                    DialGlyph.down,
+                                    size: 14,
+                                    color: colors.muted,
+                                  ),
+                                ),
+                              ],
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          ExcludeSemantics(
-                            child: Icon(
-                              Icons.expand_more,
-                              size: 16,
-                              color: colors.muted,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -115,7 +133,7 @@ class DayPicker extends StatelessWidget {
         ),
         const SizedBox(width: DialSpace.xs),
         CircleButton(
-          icon: Icons.chevron_right,
+          icon: DialGlyph.right,
           tooltip: 'Next day',
           onPressed: isToday ? null : () => onSelect(addDays(day, 1)),
         ),
@@ -272,7 +290,7 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
           Row(
             children: <Widget>[
               CircleButton(
-                icon: Icons.chevron_left,
+                icon: DialGlyph.left,
                 tooltip: 'Previous month',
                 onPressed: () => setState(
                   () => _month = DateTime(_month.year, _month.month - 1),
@@ -286,7 +304,7 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
                 ),
               ),
               CircleButton(
-                icon: Icons.chevron_right,
+                icon: DialGlyph.right,
                 tooltip: 'Next month',
                 onPressed: _isCurrentMonth
                     ? null

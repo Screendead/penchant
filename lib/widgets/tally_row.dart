@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -137,41 +138,46 @@ class _TallyRowState extends State<TallyRow>
         child: child,
       ),
       child: Padding(
-        padding: const EdgeInsets.only(left: 10, right: 4),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Semantics(
-                label: total == null
-                    ? widget.vice.name
-                    : TallyRow.label(widget.vice, total),
-                excludeSemantics: true,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: <Widget>[
-                      HabitPip(mark: widget.mark),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.vice.name,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: zero ? colors.muted : null,
+        padding: const EdgeInsets.only(left: 10),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: DialSize.tallyRow),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Semantics(
+                  label: total == null
+                      ? widget.vice.name
+                      : TallyRow.label(widget.vice, total),
+                  excludeSemantics: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: <Widget>[
+                        HabitPip(mark: widget.mark, dim: zero),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.vice.name,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontSize: 15.5,
+                              color: zero ? colors.muted : null,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      totals,
-                    ],
+                        const SizedBox(width: 10),
+                        totals,
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (widget.onLog case final void Function(Offset) onLog)
-              _PlusButton(label: logOneLabel(widget.vice), onPressed: onLog)
-            else
-              const SizedBox(height: DialSize.minTapTarget),
-          ],
+              const SizedBox(width: 4),
+              if (widget.onLog case final void Function(Offset) onLog)
+                _PlusButton(label: logOneLabel(widget.vice), onPressed: onLog)
+              else
+                const SizedBox(width: DialSize.minTapTarget),
+            ],
+          ),
         ),
       ),
     );
@@ -189,27 +195,44 @@ class _PlusButton extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
 
-    return Tooltip(
-      message: label,
-      child: SizedBox.square(
-        dimension: DialSize.minTapTarget,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkResponse(
-            radius: DialSize.minTapTarget / 2,
-            onTap: () {
-              final RenderBox box = context.findRenderObject()! as RenderBox;
-              onPressed(box.localToGlobal(box.size.center(Offset.zero)));
-            },
-            child: Center(
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  color: scheme.surfaceContainerLow,
-                  shape: CircleBorder(side: BorderSide(color: colors.line)),
-                ),
-                child: SizedBox.square(
-                  dimension: DialSize.tallyPlus,
-                  child: Icon(Icons.add, size: 16, color: scheme.onSurface),
+    // 32 pt drawn in a 38 pt row, as the mock-up has it. The target is 44 pt
+    // square and overhangs the row by 3 pt above and below; where it overlaps
+    // a neighbour's, the row under the finger takes the tap.
+    return SizedBox(
+      width: DialSize.minTapTarget,
+      height: DialSize.tallyRow,
+      child: OverflowBox(
+        maxHeight: DialSize.minTapTarget,
+        child: Tooltip(
+          message: label,
+          child: SizedBox.square(
+            dimension: DialSize.minTapTarget,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkResponse(
+                radius: DialSize.minTapTarget / 2,
+                onTap: () {
+                  final RenderBox box =
+                      context.findRenderObject()! as RenderBox;
+                  onPressed(box.localToGlobal(box.size.center(Offset.zero)));
+                },
+                child: Center(
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      color: scheme.surfaceContainerLow,
+                      shape: CircleBorder(side: BorderSide(color: colors.line)),
+                    ),
+                    child: SizedBox.square(
+                      dimension: DialSize.tallyPlus,
+                      child: Center(
+                        child: StrokeIcon(
+                          DialGlyph.plus,
+                          size: 16,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
