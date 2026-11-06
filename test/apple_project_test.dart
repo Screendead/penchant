@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,6 +30,21 @@ List<String> _targetBuildSettings(String pbxproj) {
       .toList();
 }
 
+// App Store Connect rejects an app icon that has an alpha channel, and the
+// plain copy no longer strips one the way flutter_launcher_icons'
+// remove_alpha_ios did. Returns the width, height and whether the PNG can
+// carry transparency (colour type 4 or 6, or a tRNS chunk).
+({int width, int height, bool alpha}) _png(String path) {
+  final ByteData b = File(path).readAsBytesSync().buffer.asByteData();
+  var alpha = <int>{4, 6}.contains(b.getUint8(25));
+  for (var at = 8; at + 8 <= b.lengthInBytes;) {
+    final int length = b.getUint32(at);
+    if (b.getUint32(at + 4) == 0x74524E53) alpha = true; // tRNS
+    at += 12 + length;
+  }
+  return (width: b.getUint32(16), height: b.getUint32(20), alpha: alpha);
+}
+
 String _hex(Map<String, dynamic> colour) {
   final Map<String, dynamic> c =
       (colour['color'] as Map<String, dynamic>)['components']
@@ -44,16 +60,20 @@ void main() {
     expect(image['size'], '1024x1024');
     expect(image['idiom'], 'universal');
     expect(image['platform'], 'ios');
+    // Hidden files (Finder's .DS_Store) are git-ignored and never built.
     expect(
-      Directory(
-        _iconSet,
-      ).listSync().map((FileSystemEntity f) => f.uri.pathSegments.last).toSet(),
+      Directory(_iconSet)
+          .listSync()
+          .map((FileSystemEntity f) => f.uri.pathSegments.last)
+          .where((String name) => !name.startsWith('.'))
+          .toSet(),
       <String>{'Contents.json', image['filename'] as String},
     );
     expect(
       File('$_iconSet/${image['filename']}').readAsBytesSync(),
       File('assets/icon.png').readAsBytesSync(),
     );
+    expect(_png('assets/icon.png'), (width: 1024, height: 1024, alpha: false));
   });
 
   test('the iOS launch screen is the theme background, light and dark', () {
