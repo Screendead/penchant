@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
+  life with more specific options inside, or your own words, which become a choice once used three times. It is
+  optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
