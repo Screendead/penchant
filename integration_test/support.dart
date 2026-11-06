@@ -206,10 +206,13 @@ Future<void> register(WidgetTester tester, String email) async {
 }
 
 // Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.
+// Waits out the push: until it ends, Today's habit names under the sliding
+// page are hit-testable, so a tap on a name lands on Today instead.
 Future<void> openFromMenu(WidgetTester tester, String item) async {
   await tap(tester, find.byKey(Homepage.menuKey));
   await pumpUntil(tester, find.text(item).hitTestable());
   await tap(tester, find.text(item));
+  await pumpUntilRouteSettled(tester, find.byTooltip('Back'));
 }
 
 // Three vices by default.
