@@ -202,7 +202,7 @@ Reasons for the choices inside O1:
 
 - **AES-GCM through CryptoKit rather than XChaCha:** to stay in the export row that asks for no documents (SOURCED:
   [Apple's table](https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption/)).
-  The case is weaker than it looks: the Firestore SDK already bundles BoringSSL (SOURCED: `ios/Podfile.lock`), and the
+  The case is weaker than it looks: the Firestore SDK already bundles BoringSSL (SOURCED: `grpc-binary` in `ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved`), and the
   questionnaire's wording is sourced only from a forum. Confirm before TestFlight.
 - **A recovery key used directly as an AES-128 wrapping key, with no key derivation:** every primitive then stays
   native.

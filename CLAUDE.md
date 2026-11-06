@@ -169,6 +169,18 @@ It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's
 (test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
 `macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
+**Native dependencies come from Swift Package Manager; there is no CocoaPods.** Every plugin with native code ships
+a `Package.swift`, so neither platform has a Podfile. `pubspec.yaml` sets `flutter: config:
+enable-swift-package-manager: true`, which beats a user-wide `flutter config --no-enable-swift-package-manager`
+(this machine has one) that would otherwise send the build back to CocoaPods. Flutter generates
+`<platform>/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage` (untracked) from the plugins, the Runner
+target links it, and the Runner scheme's "Run Prepare Flutter Framework Script" pre-action belongs to that wiring.
+Each FlutterFire plugin's `Package.swift` pins `firebase-ios-sdk` `exact:`, so the native Firebase version moves only
+with a pub upgrade of the Firebase plugins (12.19.3 now; keep 12.19.3 or later, the eMudhra CA fix). The transitive
+pins (gRPC, abseil, GoogleUtilities, ...) are in the tracked `Package.resolved` under
+`<platform>/Runner.xcworkspace/xcshareddata/swiftpm/` (what `flutter build` builds) and its twin under
+`Runner.xcodeproj/project.xcworkspace/` (what Flutter's package prefetch writes); they match.
+
 **Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
 hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
 `userProfileProvider` one over `userChanges()`. Each
