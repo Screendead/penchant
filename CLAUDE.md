@@ -50,6 +50,7 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 flutter pub get
 flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
+dart format --output=none --set-exit-if-changed lib test integration_test  # CI's format check; not `.`, since build/ holds plugin copies
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
@@ -101,7 +102,7 @@ rises with every merge and App Store Connect never sees a repeat. Build with the
 
 ```bash
 tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
-flags=$(tools/build-version.sh) && flutter build ipa $flags
+flags=$(tools/build-version.sh) && flutter build ipa $flags   # bash; zsh needs ${=flags}
 ```
 
 To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
