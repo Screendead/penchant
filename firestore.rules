@@ -74,5 +74,12 @@ service cloud.firestore {
           || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
     }
+
+    // Written only by the monthly summaries function, whose Admin SDK bypasses
+    // these rules; nobody edits a typical by hand.
+    match /summaries/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
   }
 }
