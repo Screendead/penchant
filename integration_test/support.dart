@@ -157,8 +157,20 @@ Future<void> pumpFor(WidgetTester tester, Duration duration) async {
 
 // Waits for the target to be hit-testable as well as present, so taps wait out
 // route transitions and overlays animating away. Only the hit-testable match is
-// tapped: a page pushed over Today leaves Today's tally names in the tree.
+// tapped: a page pushed over Today leaves Today's tally names in the tree. A
+// target in a Scrollable is scrolled into view first: the keyboard can push a
+// form's button below the fold, where it is on screen but not hit-testable.
 Future<void> tap(WidgetTester tester, Finder finder) async {
+  await pumpUntil(tester, finder);
+  if (finder.hitTestable().evaluate().isEmpty) {
+    for (final Element e in finder.evaluate()) {
+      if (Scrollable.maybeOf(e) != null) {
+        await Scrollable.ensureVisible(e);
+        await tester.pump(const Duration(milliseconds: 300));
+        break;
+      }
+    }
+  }
   await pumpUntil(tester, finder.hitTestable());
   await tester.tap(finder.hitTestable());
   await tester.pump();
@@ -215,14 +227,11 @@ Future<void> register(WidgetTester tester, String email) async {
   await enterText(tester, 'Password', 'Passw0rdE2E');
   await enterText(tester, 'Confirm password', 'Passw0rdE2E');
   // The keyboard and the password checklist can push the button below the
-  // fold, where it is not hit-testable.
+  // fold; tap scrolls it back.
   final Finder createAccount = find.widgetWithText(
     ElevatedButton,
     'Create account',
   );
-  await pumpUntil(tester, createAccount);
-  await tester.ensureVisible(createAccount);
-  await tester.pump(const Duration(milliseconds: 300));
   await tap(tester, createAccount);
   await pumpUntil(tester, find.byType(Homepage));
 }

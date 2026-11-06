@@ -440,13 +440,23 @@ void main() {
     final Map<String, dynamic> requantified = await stored('legacy-quantity');
     expect(requantified['quantity'], 2.5);
     expect((requantified['createdAt'] as Timestamp).toDate(), moved);
+    // The row's label carries the full date; it shows only the time, under a
+    // Yesterday heading.
+    final String movedLabel = formatDayAndTime(
+      moved,
+      alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat,
+    );
     await pumpUntil(
       tester,
       find
-          .textContaining(
-            'on ${formatDayAndTime(moved, alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat)}',
+          .ancestor(
+            of: historyEntry(3),
+            matching: find.byWidgetPredicate(
+              (Widget w) => w is Semantics && w.properties.label == movedLabel,
+            ),
           )
           .hitTestable(),
     );
+    expect(find.text('Yesterday'), findsOneWidget);
   });
 }
