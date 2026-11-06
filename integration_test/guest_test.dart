@@ -7,8 +7,25 @@ import 'package:tracker/authenticate.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/settings.dart';
 
 import 'support.dart';
+
+// Settings hides Homepage offstage, so Homepage vanishing does not mean the
+// sign-out has finished.
+Future<void> expectSignInWithNothingAbove(WidgetTester tester) async {
+  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
+  await pumpUntil(
+    tester,
+    find.byType(Settings, skipOffstage: false),
+    present: false,
+  );
+  await pumpUntil(
+    tester,
+    find.byType(Homepage, skipOffstage: false),
+    present: false,
+  );
+}
 
 void main() {
   ensureE2EBinding();
@@ -42,7 +59,7 @@ void main() {
     await tap(tester, find.text('Sign out'));
     await pumpUntil(tester, find.text(AccountCopy.guestSignOutTitle));
     await tap(tester, find.text(AccountCopy.guestSignOutAction));
-    await pumpUntil(tester, find.byType(Homepage), present: false);
+    await expectSignInWithNothingAbove(tester);
     expect(FirebaseAuth.instance.currentUser, isNull);
     expect(await existsBypassingRules('vices', viceID), isFalse);
     expect(await existsBypassingRules('activities', activityID), isFalse);
@@ -88,7 +105,7 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 1));
     // A linked account signs out like any other, without the guest warning.
     await tap(tester, find.text('Sign out'));
-    await pumpUntil(tester, find.byType(Homepage), present: false);
+    await expectSignInWithNothingAbove(tester);
     expect(find.text(AccountCopy.guestSignOutTitle), findsNothing);
 
     await signIn(tester, email);
