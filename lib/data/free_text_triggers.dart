@@ -41,6 +41,13 @@ class FreeTextTriggers {
     await prefs.setString(key(uid), jsonEncode(counts));
   }
 
+  /// Removes [uid]'s counts, whose keys are the user's own words, from this
+  /// device.
+  Future<void> forget(String uid) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key(uid));
+  }
+
   /// The free-text triggers used at least [freeTextPromotionUses] times, most
   /// used first.
   Future<List<String>> promoted(String uid) async {

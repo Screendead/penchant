@@ -126,6 +126,7 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
   final TextEditingController freeText = TextEditingController();
   final FocusNode freeTextFocus = FocusNode();
   bool showFreeText = false;
+  String? freeTextError;
 
   bool get full => selected.length >= maxTriggers;
 
@@ -164,9 +165,14 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
     freeTextFocus.requestFocus();
   }
 
+  // The field's maxLength counts characters, the rules UTF-16 code units, so
+  // an emoji-heavy label can fit the field and still be too long to store.
   void addFreeText() {
     final String label = freeText.text.trim();
-    if (label.isEmpty || label.length > maxTriggerLength) return;
+    if (label.isEmpty) return;
+    final String? error = triggersError(<String>[label]);
+    setState(() => freeTextError = error);
+    if (error != null) return;
     setState(() {
       if (!selected.contains(label) && !full) selected.add(label);
       freeText.clear();
@@ -308,6 +314,7 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
           focusNode: freeTextFocus,
           hint: 'In your own words',
           onSubmit: addFreeText,
+          error: freeTextError,
         ),
       ],
     ];
@@ -373,6 +380,7 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
           focusNode: freeTextFocus,
           hint: 'Something else, in your own words',
           onSubmit: addFreeText,
+          error: freeTextError,
         ),
       ),
     ];
@@ -561,12 +569,14 @@ class _FreeTextField extends StatelessWidget {
     required this.focusNode,
     required this.hint,
     required this.onSubmit,
+    this.error,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String hint;
   final VoidCallback onSubmit;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -578,6 +588,7 @@ class _FreeTextField extends StatelessWidget {
       onSubmitted: (_) => onSubmit(),
       decoration: InputDecoration(
         hintText: hint,
+        errorText: error,
         counterText: '',
         prefixIcon: const Icon(Icons.edit_outlined),
         suffixIcon: IconButton(

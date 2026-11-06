@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/free_text_triggers.dart';
+import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -142,6 +143,50 @@ void main() {
 
     await tester.tap(find.text('Done'));
     expect(done, <String>['work/meeting']);
+  });
+
+  testWidgets('refuses free text the rules would refuse, and says why', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1179, 2556)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    List<String>? done;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: appTheme(Brightness.light),
+        home: Scaffold(
+          body: TriggerPickerSheet(
+            viceName: 'Coffee',
+            onDone: (List<String> picked) => done = picked,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Your own words'));
+    await tester.pumpAndSettle();
+    // 31 characters for the field, 62 UTF-16 code units for the rules.
+    final String emoji = '\u{1F44D}' * 31;
+    await tester.enterText(
+      find.widgetWithText(TextField, 'In your own words'),
+      emoji,
+    );
+    await tester.tap(find.byTooltip('Add'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Keep each trigger to $maxTriggerLength characters or fewer'),
+      findsOneWidget,
+    );
+    expect(find.byType(InputChip), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'Pitch review');
+    await tester.tap(find.byTooltip('Add'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('characters or fewer'), findsNothing);
+    await tester.tap(find.text('Done'));
+    expect(done, <String>['Pitch review']);
   });
 
   testWidgets('offers the habit\'s usual triggers first', (tester) async {

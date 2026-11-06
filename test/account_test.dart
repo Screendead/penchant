@@ -4,11 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
@@ -359,6 +361,8 @@ void main() {
     });
 
     group('delete account', () {
+      setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
+
       Future<void> startDeletion(WidgetTester tester, FakeAccount account) {
         return _pump(
           tester,
@@ -375,6 +379,10 @@ void main() {
 
       testWidgets('says what goes, asks for the password, deletes, and '
           'returns to the root', (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          FreeTextTriggers.key(ownerID): '{"Pitch review":3}',
+          FreeTextTriggers.key('someone-else'): '{"Other":3}',
+        });
         final FakeAccount account = FakeAccount();
         await startDeletion(tester, account);
         expect(find.text(AccountCopy.deleteConfirmBody), findsOneWidget);
@@ -393,6 +401,11 @@ void main() {
         ]);
         expect(find.byType(AccountSettings), findsNothing);
         expect(find.text(AccountCopy.deleted), findsOneWidget);
+        // The user's own words don't outlive the account on this device.
+        expect(await const FreeTextTriggers().uses(ownerID), isEmpty);
+        expect(await const FreeTextTriggers().uses('someone-else'), {
+          'Other': 3,
+        });
       });
 
       testWidgets('cancelling at either step deletes nothing', (tester) async {
