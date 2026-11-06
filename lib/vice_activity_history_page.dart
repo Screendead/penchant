@@ -315,7 +315,10 @@ class _ViceActivityHistoryPageState
             ).pushNamed('/vices/$viceID/activities/${activity.id}');
           },
           child: Semantics(
-            label: formatDayAndTime(createdAt, alwaysUse24HourFormat: h24),
+            label: <String>[
+              formatDayAndTime(createdAt, alwaysUse24HourFormat: h24),
+              ...activity.triggers.map(triggerDisplay),
+            ].join(', '),
             excludeSemantics: false,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 56),
@@ -347,16 +350,18 @@ class _ViceActivityHistoryPageState
                             ),
                           ),
                           if (activity.triggers.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                activity.triggers
-                                    .map(triggerShortDisplay)
-                                    .join(' · '),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: DialTypeScale.bodyS.copyWith(
-                                  color: colors.muted,
+                            ExcludeSemantics(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  activity.triggers
+                                      .map(triggerShortDisplay)
+                                      .join(' · '),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DialTypeScale.bodyS.copyWith(
+                                    color: colors.muted,
+                                  ),
                                 ),
                               ),
                             ),

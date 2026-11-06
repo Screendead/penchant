@@ -12,7 +12,6 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
-import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -161,6 +160,7 @@ class _ViceActivityEditorPageState
     });
 
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
     try {
       final bool synced = await rejected.settle(
         ref
@@ -174,7 +174,20 @@ class _ViceActivityEditorPageState
         'Change not saved: ${_describe(vice, activity)}',
       );
       if (changes['triggers'] case final List<String> picked) {
-        _countFreeText(picked.where((t) => !activity.triggers.contains(t)));
+        freeText
+            .recordUses(
+              activity.ownerID,
+              picked.where(
+                (t) => isFreeTextTrigger(t) && !activity.triggers.contains(t),
+              ),
+            )
+            .catchError((Object e, StackTrace stack) {
+              reportError(
+                e,
+                stack,
+                context: 'while counting free-text triggers',
+              );
+            });
       }
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
@@ -198,17 +211,6 @@ class _ViceActivityEditorPageState
       });
       _followRolledBack();
     }
-  }
-
-  void _countFreeText(Iterable<String> added) {
-    final String? uid = ref.read(userProvider).value?.uid;
-    if (uid == null) return;
-    ref
-        .read(freeTextTriggersProvider)
-        .recordUses(uid, added.where(isFreeTextTrigger))
-        .catchError((Object e, StackTrace stack) {
-          reportError(e, stack, context: 'while counting free-text triggers');
-        });
   }
 
   @override

@@ -107,6 +107,7 @@ class _RecordNewActivityDialogState
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
 
+    final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
     final bool synced;
 
     try {
@@ -121,7 +122,7 @@ class _RecordNewActivityDialogState
         ),
         'Not saved: $entry',
       );
-      _countFreeText(user.uid, triggers);
+      _countFreeText(freeText, user.uid, triggers);
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while recording an activity');
       if (mounted) {
@@ -164,13 +165,14 @@ class _RecordNewActivityDialogState
     );
   }
 
-  void _countFreeText(String uid, List<String> saved) {
-    ref
-        .read(freeTextTriggersProvider)
-        .recordUses(uid, saved.where(isFreeTextTrigger))
-        .catchError((Object e, StackTrace stack) {
-          reportError(e, stack, context: 'while counting free-text triggers');
-        });
+  // Runs after the save, when this dialog may be gone, so it takes no ref.
+  void _countFreeText(FreeTextTriggers store, String uid, List<String> saved) {
+    store.recordUses(uid, saved.where(isFreeTextTrigger)).catchError((
+      Object e,
+      StackTrace stack,
+    ) {
+      reportError(e, stack, context: 'while counting free-text triggers');
+    });
   }
 
   void updateUnit(int quantity) {
