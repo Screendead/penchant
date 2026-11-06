@@ -99,7 +99,18 @@ ErrorForwarder crashlyticsForwarder(RecordError record) =>
       ).ignore();
     };
 
-Future<void> initializeFirebase() async {
+// integration_test/all_test.dart runs every integration file, each of which
+// starts Firebase, in one process; the settings and emulator calls must run
+// once. A failure clears it so Bootstrap's retry starts again.
+Future<void>? _started;
+
+Future<void> initializeFirebase() =>
+    _started ??= _initializeFirebase().catchError((Object e, StackTrace s) {
+      _started = null;
+      Error.throwWithStackTrace(e, s);
+    });
+
+Future<void> _initializeFirebase() async {
   if (!useFirebaseEmulators) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

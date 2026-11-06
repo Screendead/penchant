@@ -111,22 +111,21 @@ void main() {
     expect(find.textContaining('of it before noon'), findsOneWidget);
     await screenshot(tester, 'trends-daily');
 
-    // Four whole weeks back from today, then the two days left over, which
-    // hold the activity 29 days ago.
+    // Four whole weeks back from today; the 30-day range rounds down to 28,
+    // which leaves out the activity 29 days ago.
     await _pick(tester, 'Week');
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
-        'Weekly totals of Coffee over the last 30 days: 10 drinks in all. '
+        'Weekly totals of Coffee over the last 28 days: 9 drinks in all. '
         'The most was 5 drinks in the week of '
         '${formatShortDay(addDays(today, -6))}. '
         'Shown with a 4-week average.',
       ),
     );
-    expect(_totals(tester), [1, 0, 0, 4, 5]);
-    await _use(tester, find.byTooltip(TrendsSheet.longerAverage));
-    await pumpUntil(tester, find.text('Average over 5 weeks'));
-    // Five buckets hold no longer average.
+    expect(_totals(tester), [0, 0, 4, 5]);
+    expect(find.text('Average over 4 weeks'), findsOneWidget);
+    // Four buckets hold no longer average.
     expect(
       tester
           .widget<IconButton>(

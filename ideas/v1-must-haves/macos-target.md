@@ -13,9 +13,10 @@
   `-allowProvisioningUpdates` (2026-11-05).
 - **Feature parity:** logging, triggers, timeline, trends, export, deletion, calendar correlation, and the insights
   engine all run on the Mac. Apple Health does not (below).
-- **Mac-native touches:** keyboard shortcuts for quick log (⌘1–⌘9 per vice), a menu-bar quick-log item later. The
-  two-pane layout at wide sizes is built (`feat/macos-split-view`: Today and Trends side by side from 900 pt, Left
-  and Right step days).
+- **Mac-native touches:** ⌘1–⌘9 log one of the habit in that place on Today, listed in a Log menu in the menu bar
+  (`r8-mac-keys` B, built in `feat/r8-mac-keys`); a menu-bar status item for quick logs is later. The two-pane
+  layout at wide sizes is built (`feat/macos-split-view`: Today and Trends side by side from 900 pt, Left and Right
+  step days).
 - **Distribution:** the same bundle ID and App Store record as iOS, so one Pro purchase covers both (universal
   purchase; from memory, to verify).
 
