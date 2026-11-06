@@ -307,125 +307,110 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       maxChildSize: 1,
       snap: true,
       builder: (BuildContext context, ScrollController scroll) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
+        // The sheet's edge is its 1 px rim; tokens give sheets no shadow.
+        return Material(
+          color: scheme.surfaceContainerLow,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(DialRadius.sheet),
             ),
-            boxShadow: scheme.brightness == Brightness.light
-                ? const <BoxShadow>[
-                    BoxShadow(
-                      color: Color(0x1A1D1C1A),
-                      offset: Offset(0, -6),
-                      blurRadius: 24,
-                    ),
-                  ]
-                : null,
+            side: BorderSide(color: colors.line),
           ),
-          child: Material(
-            color: scheme.surfaceContainerLow,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(DialRadius.sheet),
-              ),
-              side: BorderSide(color: colors.line),
-            ),
-            child: CallbackShortcuts(
-              bindings: <ShortcutActivator, VoidCallback>{
-                const SingleActivator(LogicalKeyboardKey.escape): _close,
-              },
-              child: SingleChildScrollView(
-                controller: scroll,
-                child: Stack(
-                  children: <Widget>[
-                    ListenableBuilder(
+          child: CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.escape): _close,
+            },
+            child: SingleChildScrollView(
+              controller: scroll,
+              child: Stack(
+                children: <Widget>[
+                  ListenableBuilder(
+                    listenable: controller,
+                    builder: (BuildContext context, Widget? child) {
+                      final double p = TrendsSheet.openness(
+                        controller,
+                        widget.minSize,
+                      );
+                      // Built only once the sheet moves off its peek.
+                      if (p <= 0) {
+                        return SizedBox(height: peek);
+                      }
+                      final bool open = p > 0.9;
+                      return Opacity(
+                        opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
+                        child: IgnorePointer(
+                          ignoring: !open,
+                          child: ExcludeSemantics(
+                            excluding: !open,
+                            child: child,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        DialSpace.gutter,
+                        DialSpace.xl,
+                        DialSpace.gutter,
+                        DialSpace.xl + bottomInset,
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: MediaQuery.disableAnimationsOf(context)
+                            ? DialMotion.reducedFade
+                            : DialMotion.fadeThrough,
+                        child: content,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: peek,
+                    child: ListenableBuilder(
                       listenable: controller,
                       builder: (BuildContext context, Widget? child) {
                         final double p = TrendsSheet.openness(
                           controller,
                           widget.minSize,
                         );
-                        // Built only once the sheet moves off its peek.
-                        if (p <= 0) {
-                          return SizedBox(height: peek);
-                        }
-                        final bool open = p > 0.9;
                         return Opacity(
-                          opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
+                          opacity: (1 - p * 3).clamp(0.0, 1.0),
                           child: IgnorePointer(
-                            ignoring: !open,
+                            ignoring: p > 0.2,
                             child: ExcludeSemantics(
-                              excluding: !open,
+                              excluding: p > 0.2,
                               child: child,
                             ),
                           ),
                         );
                       },
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          DialSpace.gutter,
-                          DialSpace.xl,
-                          DialSpace.gutter,
-                          DialSpace.xl + bottomInset,
-                        ),
-                        child: AnimatedSwitcher(
-                          duration: MediaQuery.disableAnimationsOf(context)
-                              ? DialMotion.reducedFade
-                              : DialMotion.fadeThrough,
-                          child: content,
+                      child: _Peek(
+                        vice: vice,
+                        mark: mark,
+                        rangeDays: rangeDays,
+                        series: series,
+                        onOpen: _open,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: DialSpace.xs,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 38,
+                        height: 5,
+                        decoration: ShapeDecoration(
+                          color: scheme.outline,
+                          shape: const StadiumBorder(),
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: peek,
-                      child: ListenableBuilder(
-                        listenable: controller,
-                        builder: (BuildContext context, Widget? child) {
-                          final double p = TrendsSheet.openness(
-                            controller,
-                            widget.minSize,
-                          );
-                          return Opacity(
-                            opacity: (1 - p * 3).clamp(0.0, 1.0),
-                            child: IgnorePointer(
-                              ignoring: p > 0.2,
-                              child: ExcludeSemantics(
-                                excluding: p > 0.2,
-                                child: child,
-                              ),
-                            ),
-                          );
-                        },
-                        child: _Peek(
-                          vice: vice,
-                          mark: mark,
-                          rangeDays: rangeDays,
-                          series: series,
-                          onOpen: _open,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: DialSpace.xs,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          width: 38,
-                          height: 5,
-                          decoration: ShapeDecoration(
-                            color: scheme.outline,
-                            shape: const StadiumBorder(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -486,6 +471,7 @@ class _Peek extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Expanded(
+                      flex: 3,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -504,25 +490,30 @@ class _Peek extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (perDay != null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: <Widget>[
-                          Text(
-                            formatAverage(perDay),
-                            style: type.monoM.copyWith(
-                              fontSize: 17,
-                              color: colors.habitInk(mark),
+                    if (perDay != null) ...<Widget>[
+                      const SizedBox(width: DialSpace.s),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            Text(
+                              formatAverage(perDay),
+                              style: type.monoM.copyWith(
+                                fontSize: 17,
+                                color: colors.habitInk(mark),
+                              ),
+                              maxLines: 1,
                             ),
-                            maxLines: 1,
-                          ),
-                          Text(
-                            '${vice.unit.plural} a day',
-                            style: small,
-                            maxLines: 1,
-                          ),
-                        ],
+                            Text(
+                              '${vice.unit.plural} a day',
+                              style: small,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: TrendsSheet._sparkGap),
