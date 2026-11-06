@@ -249,7 +249,7 @@ class _ViceActivityHistoryPageState
             SectionLabel(
               ViceActivityHistoryPage.dayLabel(day, today),
               trailing: vice.unit.label(
-                entries.fold<int>(0, (int s, ViceActivity a) => s + a.quantity),
+                entries.fold<num>(0, (num s, ViceActivity a) => s + a.measure),
               ),
             ),
             DialCard(
@@ -346,7 +346,7 @@ class _ViceActivityHistoryPageState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Text(
-                          vice.unit.label(activity.quantity),
+                          vice.unit.label(activity.measure),
                           style: DialTypeScale.body.copyWith(
                             fontWeight: FontWeight.w500,
                             color: theme.colorScheme.onSurface,

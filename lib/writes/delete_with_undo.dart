@@ -23,7 +23,7 @@ InlineSpan deletedMessage(
 }) => TextSpan(
   children: <InlineSpan>[
     const TextSpan(text: 'Deleted '),
-    TextSpan(text: vice.unit.label(activity.quantity), style: undoBarBold),
+    TextSpan(text: vice.unit.label(activity.measure), style: undoBarBold),
     const TextSpan(text: ' at '),
     TextSpan(
       text: formatTime(
@@ -57,7 +57,7 @@ Future<void> deleteWithUndo(
   final String entry = describeActivity(
     vice.name,
     vice.unit,
-    activity.quantity,
+    activity.measure,
     activity.createdAt.toDate(),
     alwaysUse24HourFormat: alwaysUse24HourFormat,
   );
@@ -124,6 +124,7 @@ Future<void> _restore(
             ownerID: ownerID,
             viceID: activity.viceID,
             quantity: activity.quantity,
+            amount: activity.amount,
             createdAt: activity.createdAt.toDate(),
           ),
           'Not restored: $entry',

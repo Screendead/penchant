@@ -1071,8 +1071,8 @@ class _Stats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int total = stats.total.round();
-    final int peak = totals[stats.peakIndex].round();
+    final double total = stats.total;
+    final double peak = totals[stats.peakIndex];
     final bool daily = range.stepDays == 1;
     final DateTime peakStart = range.bucketStart(stats.peakIndex);
     final List<Widget> tiles = <Widget>[

@@ -102,12 +102,14 @@ class FakeTrackerWrites implements TrackerWrites {
     required String ownerID,
     required String viceID,
     required int quantity,
+    double? amount,
     required DateTime createdAt,
   }) => _write(
     Write('recordActivity', activityID, <String, Object?>{
       'ownerID': ownerID,
       'viceID': viceID,
       'quantity': quantity,
+      'amount': ?amount,
       'createdAt': createdAt,
     }),
     collection: 'activities',
@@ -118,15 +120,21 @@ class FakeTrackerWrites implements TrackerWrites {
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
+    double? amount,
     DateTime? createdAt,
   }) => _write(
     Write('updateActivity', activityID, <String, Object?>{
       'quantity': ?quantity,
+      'amount': ?amount,
       'createdAt': ?createdAt,
     }),
     collection: 'activities',
     op: WriteOp.update,
-    fields: <String, Object>{'quantity': ?quantity, 'createdAt': ?createdAt},
+    fields: <String, Object>{
+      'quantity': ?quantity,
+      'amount': ?amount,
+      'createdAt': ?createdAt,
+    },
   );
 
   @override

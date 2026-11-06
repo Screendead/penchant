@@ -111,7 +111,7 @@ String formatCount(num count) =>
 
 // The words are English, so English plural rules pick them whatever the
 // region: under fr's rules 0 would take the singular.
-String pluralWord(int count, {required String one, required String other}) =>
+String pluralWord(num count, {required String one, required String other}) =>
     Intl.plural(count, one: one, other: other, locale: 'en');
 
 String relativeDay(int daysAgo) => switch (daysAgo) {

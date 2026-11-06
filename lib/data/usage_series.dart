@@ -44,7 +44,7 @@ List<double> bucketTotals(UsageRange range, Iterable<ViceActivity> activities) {
       continue;
     }
     final int daysAgo = range.days - 1 - offset;
-    totals[bucketCount - 1 - daysAgo ~/ range.stepDays] += activity.quantity;
+    totals[bucketCount - 1 - daysAgo ~/ range.stepDays] += activity.measure;
   }
 
   return totals;
@@ -129,7 +129,7 @@ HourProfile hourProfile(UsageRange range, Iterable<ViceActivity> activities) {
     if (at.isBefore(start) || !at.isBefore(end)) {
       continue;
     }
-    hours[at.hour] += activity.quantity;
+    hours[at.hour] += activity.measure;
   }
 
   int busiestStart = 0;
