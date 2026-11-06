@@ -294,11 +294,11 @@ nothing caps how many vices a user creates; whether to add a cap is undecided (r
 **Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
 flat top-level collections joined by `viceID`: `vices`
-(`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
+(`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`) and `activities` (`viceID`,
 `quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
 one on create. The rules also fix each collection's field set and types on create, allow
-updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+updates only to `name`/`unit`/`archived`/`category` (vices) and `quantity`/`createdAt`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
 stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
@@ -308,7 +308,12 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
-supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
+supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
+Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on
+create, since app versions before it create without it. The parser reads a missing one as `other` and sets
+`Vice.categoryStored` false, and `categoryMigrationProvider` (`lib/writes/category_migration.dart`, kept alive by
+`MyApp`) writes `guessCategory(name)` to each such vice in the signed-in user's live vice list, once per vice per
+launch, through `updateVice`; offline the write queues, and the local snapshot then holds the field. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.
 

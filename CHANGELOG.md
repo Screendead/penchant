@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Each habit has a category (alcohol, caffeine, nicotine, cannabis, food, gambling or other), picked in the habit
+  editor. Habits made before this get one guessed from their name the first time the app opens, which you can change.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,

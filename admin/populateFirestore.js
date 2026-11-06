@@ -19,14 +19,15 @@ function requireEmulators() {
     }
 }
 
-// Units are the names of the Unit enum in lib/data/unit.dart.
+// Units and categories are the names of the Unit and ViceCategory enums in
+// lib/data/unit.dart and lib/data/category.dart.
 const vices = [
-    { name: 'Marijuana', unit: 'puff', archived: false },
-    { name: 'Booze', unit: 'drink', archived: false },
-    { name: 'Cigarettes', unit: 'item', archived: false },
-    { name: 'Junk Food', unit: 'item', archived: false },
-    { name: 'Video Games', unit: 'hour', archived: false },
-    { name: 'Old Habit', unit: 'time', archived: true },
+    { name: 'Marijuana', unit: 'puff', archived: false, category: 'cannabis' },
+    { name: 'Booze', unit: 'drink', archived: false, category: 'alcohol' },
+    { name: 'Cigarettes', unit: 'item', archived: false, category: 'nicotine' },
+    { name: 'Junk Food', unit: 'item', archived: false, category: 'food' },
+    { name: 'Video Games', unit: 'hour', archived: false, category: 'other' },
+    { name: 'Old Habit', unit: 'time', archived: true, category: 'other' },
 ];
 
 async function seedUser(auth) {

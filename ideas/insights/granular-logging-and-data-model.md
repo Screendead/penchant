@@ -18,7 +18,7 @@ Every entry can carry, beyond vice, quantity and time:
 | `cost` | activity | number, optional | Overrides the vice's cost per unit |
 | `note` | activity | string ≤ 500 | Free text |
 | `source` | activity | enum | manual / quick / widget / shortcut, for data-quality weighting |
-| `category` | vice | enum | alcohol / caffeine / nicotine / cannabis / screen / gambling / food / other: maps a vice to HealthKit types and to sensible defaults |
+| `category` | vice | enum | SHIPPED without `screen`: alcohol / caffeine / nicotine / cannabis / food / gambling / other (`lib/data/category.dart`), with a migrator that guesses it for older vices |
 | `defaultQuantity`, `unitLabel`, `costPerUnit` | vice | | [quick logging](../v1-must-haves/one-tap-quick-logging.md), [units and cost](../monetisation/units-and-cost-per-unit.md) |
 | `schemaVersion` | both | int | Which migrations a document has had |
 
