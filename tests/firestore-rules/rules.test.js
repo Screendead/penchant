@@ -8,10 +8,12 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import {
+  Bytes,
   Timestamp,
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   documentId,
   getCountFromServer,
@@ -730,5 +732,134 @@ describe('account export and deletion', () => {
     batch.delete(doc(db, 'vices/aliceVice'));
     batch.delete(doc(db, 'vices/bobVice'));
     await assertFails(batch.commit());
+  });
+});
+
+// lib/crypto/plaintext_migrator.dart's one update per legacy document.
+describe('sealing plaintext on first launch', () => {
+  const sealed = () => Bytes.fromUint8Array(new Uint8Array([1, 2, 3, 4]));
+  const sealVice = (extra = {}) => ({
+    sealed: sealed(),
+    name: deleteField(),
+    unit: deleteField(),
+    ...extra,
+  });
+  const sealActivity = (extra = {}) => ({ sealed: sealed(), quantity: deleteField(), ...extra });
+
+  it('allows the owner to seal a vice, removing name and unit', async () => {
+    const ref = doc(asAlice(), 'vices/aliceVice');
+    await assertSucceeds(updateDoc(ref, sealVice()));
+    const stored = (await getDoc(ref)).data();
+    assert.deepEqual(Object.keys(stored).sort(), ['archived', 'createdAt', 'ownerID', 'sealed']);
+  });
+
+  it('allows sealing legacy vices: no `archived`, a unit outside the enum, a long name', async () => {
+    for (const id of ['aliceLegacyVice', 'aliceUnknownUnitVice', 'aliceLongNameVice']) {
+      await assertSucceeds(updateDoc(doc(asAlice(), `vices/${id}`), sealVice()));
+    }
+  });
+
+  it('allows sealing a vice that has no unit', async () => {
+    await testEnv.withSecurityRulesDisabled((context) =>
+      setDoc(doc(context.firestore(), 'vices/aliceNoUnit'), {
+        name: 'Tea',
+        ownerID: ALICE,
+        createdAt,
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(asAlice(), 'vices/aliceNoUnit'), { sealed: sealed(), name: deleteField() }),
+    );
+  });
+
+  it('allows the owner to seal an activity, removing quantity', async () => {
+    const ref = doc(asAlice(), 'activities/aliceActivity');
+    await assertSucceeds(updateDoc(ref, sealActivity()));
+    const stored = (await getDoc(ref)).data();
+    assert.deepEqual(Object.keys(stored).sort(), ['createdAt', 'ownerID', 'sealed', 'viceID']);
+  });
+
+  it('allows sealing legacy activities: zero quantity, an orphan, a foreign vice', async () => {
+    for (const id of ['aliceZeroActivity', 'aliceOrphanActivity', 'aliceForeignViceActivity']) {
+      await assertSucceeds(updateDoc(doc(asAlice(), `activities/${id}`), sealActivity()));
+    }
+  });
+
+  it('allows sealing in a batch, as the migrator commits', async () => {
+    const db = asAlice();
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'vices/aliceVice'), sealVice());
+    batch.update(doc(db, 'activities/aliceActivity'), sealActivity());
+    await assertSucceeds(batch.commit());
+  });
+
+  it('denies sealing that keeps any plaintext', async () => {
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: sealed(), unit: deleteField() }),
+    );
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: sealed(), name: deleteField() }),
+    );
+    await assertFails(updateDoc(doc(asAlice(), 'activities/aliceActivity'), { sealed: sealed() }));
+  });
+
+  it('denies removing plaintext without adding sealed', async () => {
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: deleteField(), unit: deleteField() }),
+    );
+    await assertFails(
+      updateDoc(doc(asAlice(), 'activities/aliceActivity'), { quantity: deleteField() }),
+    );
+  });
+
+  it('denies a sealed value that is not bytes', async () => {
+    await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice({ sealed: 'AQID' })));
+    await assertFails(
+      updateDoc(doc(asAlice(), 'activities/aliceActivity'), sealActivity({ sealed: [1, 2] })),
+    );
+  });
+
+  it('denies changing any other field while sealing', async () => {
+    const vices = [
+      { archived: true },
+      { ownerID: BOB },
+      { createdAt: Timestamp.fromDate(new Date('2025-01-01T00:00:00Z')) },
+      { note: 'x' },
+    ];
+    for (const extra of vices) {
+      await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice(extra)));
+    }
+    const activities = [
+      { viceID: 'aliceLegacyVice' },
+      { createdAt: Timestamp.fromDate(new Date('2025-01-01T00:00:00Z')) },
+      { quantity: 3 },
+      { note: deleteField() },
+    ];
+    for (const extra of activities) {
+      await assertFails(
+        updateDoc(doc(asAlice(), 'activities/aliceLegacyActivity'), sealActivity(extra)),
+      );
+    }
+  });
+
+  it('denies replacing or removing sealed once it is there', async () => {
+    const ref = doc(asAlice(), 'activities/aliceActivity');
+    await assertSucceeds(updateDoc(ref, sealActivity()));
+    const other = Bytes.fromUint8Array(new Uint8Array([9, 9]));
+    await assertFails(updateDoc(ref, { sealed: other }));
+    await assertFails(updateDoc(ref, { sealed: deleteField() }));
+    await assertFails(updateDoc(ref, { sealed: deleteField(), quantity: 2 }));
+  });
+
+  it('denies sealing another user\'s documents', async () => {
+    await assertFails(updateDoc(doc(asAlice(), 'vices/bobVice'), sealVice()));
+    await assertFails(updateDoc(doc(asAlice(), 'activities/bobActivity'), sealActivity()));
+    await assertFails(updateDoc(doc(asGuest(), 'vices/aliceVice'), sealVice()));
+  });
+
+  it('leaves the ordinary updates as they were', async () => {
+    await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: 'Tea' }));
+    await assertSucceeds(updateDoc(doc(asAlice(), 'activities/aliceActivity'), { quantity: 3 }));
+    await assertFails(updateDoc(doc(asAlice(), 'activities/aliceActivity'), { quantity: 0 }));
   });
 });

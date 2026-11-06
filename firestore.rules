@@ -38,6 +38,17 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
+    // The first-launch migrator's one rewrite (lib/crypto/plaintext_migrator.dart):
+    // a document without `sealed` gains it as bytes and loses the plaintext
+    // fields in the same update, and nothing else changes. Leaving any of
+    // them behind would keep the plaintext the sealing exists to remove.
+    function sealsPlaintext(plaintext) {
+      return !('sealed' in resource.data)
+        && request.resource.data.sealed is bytes
+        && changedKeys().hasOnly(plaintext.concat(['sealed']))
+        && !request.resource.data.keys().hasAny(plaintext);
+    }
+
     match /vices/{viceID} {
       allow read, delete: if ownsExisting();
 
@@ -50,10 +61,11 @@ service cloud.firestore {
         && request.resource.data.archived is bool;
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived'])
-        && (!('name' in changedKeys()) || validName(request.resource.data.name))
-        && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
-        && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
+        && (sealsPlaintext(['name', 'unit'])
+          || (changedKeys().hasOnly(['name', 'unit', 'archived'])
+            && (!('name' in changedKeys()) || validName(request.resource.data.name))
+            && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
+            && (!('archived' in changedKeys()) || request.resource.data.archived is bool)));
     }
 
     match /activities/{activityID} {
@@ -69,10 +81,11 @@ service cloud.firestore {
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt'])
-        && (!('quantity' in changedKeys())
-          || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
-        && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
+        && (sealsPlaintext(['quantity'])
+          || (changedKeys().hasOnly(['quantity', 'createdAt'])
+            && (!('quantity' in changedKeys())
+              || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
+            && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp)));
     }
   }
 }
