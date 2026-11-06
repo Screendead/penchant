@@ -356,8 +356,8 @@ one. Habits list oldest first, as their colours are given, and Today reads `vice
 unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). The Trends sheet (`TrendsSheet`,
 `lib/trends/`) is a `DraggableScrollableSheet` over Today that replaced the Graph tab: it peeks below the tallies with
 a sparkline of the chosen habit, and opens over the dial to that habit over a range (7, 30 or 90 days or a year), by
-day or by week (counted back from today, so the newest week is whole and the oldest bucket holds what is left of the
-range), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
+day or by week (counted back from today, the range rounded down to whole weeks, so 30 days shows 28 and no week is
+short), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
 it happens. That arithmetic and the chart's axis scale and label spacing are pure functions in
 `lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Its chips list the habits in use oldest first, then
 the archived ones, so the default is never archived. It reads the range through the graph query alone (the hour
