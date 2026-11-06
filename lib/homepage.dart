@@ -42,9 +42,18 @@ class _HomepageState extends ConsumerState<Homepage> {
       final List<Vice>? unarchived = ref
           .watch(unarchivedViceListProvider)
           .value;
+      // offlineProvider is false only once the server has answered the
+      // vices query. Before that an empty list can be an empty cache (a
+      // reinstall keeps the iOS session in the keychain), and an existing
+      // account would be offered presets it may already have.
+      final bool serverAnswered = ref.watch(offlineProvider).value == false;
       if (all != null && unarchived != null) {
-        // An account whose habits are all archived is not new.
-        onboarding = all.isEmpty && unarchived.isEmpty;
+        if (all.isNotEmpty) {
+          // An account whose habits are all archived is not new.
+          onboarding = false;
+        } else if (serverAnswered) {
+          onboarding = true;
+        }
       }
     }
     if (onboarding ?? false) {

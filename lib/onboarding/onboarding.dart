@@ -84,7 +84,8 @@ class _OnboardingState extends ConsumerState<Onboarding> {
   // waiting up to settleWrite's ten seconds for the server.
   void _createPicked() {
     final User? user = ref.read(userProvider).value;
-    if (user == null) {
+    // A second tap before the rebuild would create every pick again.
+    if (user == null || step != OnboardingStep.picker) {
       return;
     }
     final TrackerWrites writes = ref.read(trackerWritesProvider);
@@ -109,7 +110,7 @@ class _OnboardingState extends ConsumerState<Onboarding> {
 
   void _log(Vice vice) {
     final User? user = ref.read(userProvider).value;
-    if (user == null) {
+    if (user == null || logged.contains(vice.id)) {
       return;
     }
     final TrackerWrites writes = ref.read(trackerWritesProvider);

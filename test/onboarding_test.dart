@@ -38,7 +38,11 @@ void main() {
   );
 
   // The habit list follows [habits]; nothing is emitted until a test adds.
-  Future<void> pumpHome(WidgetTester tester, {List<Vice>? initial}) async {
+  Future<void> pumpHome(
+    WidgetTester tester, {
+    List<Vice>? initial,
+    Stream<bool>? offline,
+  }) async {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -47,7 +51,10 @@ void main() {
         overrides: <Override>[
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
           viceListProvider.overrideWith((ref) => ref.watch(liveHabits)),
-          offlineProvider.overrideWithValue(const AsyncData(false)),
+          if (offline == null)
+            offlineProvider.overrideWithValue(const AsyncData(false))
+          else
+            offlineProvider.overrideWith((ref) => offline),
           trackerWritesProvider.overrideWithValue(writes),
           memoryJournal(),
           viceActivityDayProvider.overrideWith(
@@ -94,6 +101,28 @@ void main() {
     expect(find.text(OnboardingCopy.introHeadline), findsNothing);
   });
 
+  testWidgets('an empty list waits for the server before deciding', (
+    WidgetTester tester,
+  ) async {
+    final StreamController<bool> offline = StreamController<bool>();
+    addTearDown(offline.close);
+    await pumpHome(tester, offline: offline.stream);
+
+    // An empty cache, as on a reinstall with the session kept: no server
+    // answer yet, then offline.
+    habits.add(const <Vice>[]);
+    await tester.pump();
+    expect(find.byType(Onboarding), findsNothing);
+    offline.add(true);
+    await tester.pump();
+    expect(find.byType(Onboarding), findsNothing);
+    expect(find.byType(ViceTracker), findsOneWidget);
+
+    offline.add(false);
+    await tester.pump();
+    expect(find.byType(Onboarding), findsOneWidget);
+  });
+
   testWidgets('an existing account never sees it', (WidgetTester tester) async {
     await pumpHome(tester, initial: <Vice>[fakeVice('coffee')]);
 
@@ -134,6 +163,8 @@ void main() {
     await tester.pump();
     expect(find.text(OnboardingCopy.continueWith(2)), findsOneWidget);
 
+    // Twice before a frame: the second tap must not create them again.
+    await tester.tap(find.text(OnboardingCopy.continueWith(2)));
     await tester.tap(find.text(OnboardingCopy.continueWith(2)));
     await tester.pumpAndSettle();
 
