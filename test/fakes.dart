@@ -36,14 +36,19 @@ Vice fakeVice(String id, {String? name}) => Vice(
   archived: false,
 );
 
-ViceActivity fakeActivity(String viceID, int quantity, DateTime at) =>
-    ViceActivity(
-      id: '$viceID-$quantity-${at.toIso8601String()}',
-      viceID: viceID,
-      quantity: quantity,
-      ownerID: ownerID,
-      createdAt: Timestamp.fromDate(at),
-    );
+ViceActivity fakeActivity(
+  String viceID,
+  int quantity,
+  DateTime at, {
+  double? amount,
+}) => ViceActivity(
+  id: '$viceID-$quantity-${at.toIso8601String()}',
+  viceID: viceID,
+  quantity: quantity,
+  amount: amount,
+  ownerID: ownerID,
+  createdAt: Timestamp.fromDate(at),
+);
 
 // Today colours each habit by its place among all of them, archived ones
 // included, so it reads the full list as well as the unarchived one.

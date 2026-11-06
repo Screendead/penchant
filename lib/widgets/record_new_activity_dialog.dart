@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -94,11 +96,12 @@ class _RecordNewActivityDialogState
 
     final DateTime date = ActivityDateField.format.parse(dateController.text);
     final Vice vice = selectedVice!;
-    final int quantity = int.parse(quantityController.text);
+    final num typed = parseAmount(quantityController.text)!;
+    final StoredMeasure measure = storedMeasure(typed);
     final String entry = describeActivity(
       vice.name,
       vice.unit,
-      quantity,
+      typed,
       date,
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
@@ -111,7 +114,8 @@ class _RecordNewActivityDialogState
           activityID,
           ownerID: user.uid,
           viceID: vice.id,
-          quantity: quantity,
+          quantity: measure.quantity,
+          amount: measure.amount,
           createdAt: date,
         ),
         'Not saved: $entry',
@@ -158,7 +162,7 @@ class _RecordNewActivityDialogState
     );
   }
 
-  void updateUnit(int quantity) {
+  void updateUnit(num quantity) {
     setState(() {
       unit = selectedVice == null
           ? Unit.item.nameFor(quantity)
@@ -233,8 +237,8 @@ class _RecordNewActivityDialogState
                       isExpanded: true,
                       hint: const Text('Select Habit'),
                       onChanged: (String? id) {
-                        final int parsedQuantity =
-                            int.tryParse(quantityController.text) ?? 0;
+                        final num parsedQuantity =
+                            parseAmount(quantityController.text) ?? 0;
 
                         setState(() {
                           selectedVice = vices.firstWhere(
@@ -268,14 +272,16 @@ class _RecordNewActivityDialogState
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: quantityController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Quantity',
                         suffixText: unit,
                       ),
                       validator: quantityError,
                       onChanged: (String value) {
-                        final int parsed = int.tryParse(value) ?? 0;
+                        final num parsed = parseAmount(value) ?? 0;
                         updateUnit(parsed);
                       },
                     ),

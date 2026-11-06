@@ -155,3 +155,39 @@ String formatMonth(DateTime month) =>
 // An average, always to one decimal place, so 3 reads 3.0 beside 3.1.
 String formatAverage(double value) =>
     NumberFormat('#,##0.0', formatLocale).format(value);
+
+NumberFormat _amountFormat(String locale) =>
+    NumberFormat.decimalPattern(locale)..turnOffGrouping();
+
+// A typed amount, in the region's digits but without grouping, so that
+// parseAmount reads back what this shows.
+String formatAmount(num value, {String? locale}) =>
+    _amountFormat(locale ?? formatLocale).format(value);
+
+// intl's own parse skips grouping separators, so en_US would read "1,5" as
+// 15. This takes digits with at most one decimal mark, the region's or a
+// point, and an optional leading minus for the validator to refuse. Whole
+// input, "2.0" included, comes back as an int.
+num? parseAmount(String text, {String? locale}) {
+  final String decimal = _amountFormat(
+    locale ?? formatLocale,
+  ).symbols.DECIMAL_SEP;
+  final String typed = text.trim().replaceAll(decimal, '.');
+  final RegExpMatch? match = RegExp(
+    r'^(-?)(\d*)(?:\.(\d*))?$',
+  ).firstMatch(typed);
+  if (match == null) return null;
+  final String whole = match[2]!;
+  final String fraction = match[3] ?? '';
+  if (whole.isEmpty && fraction.isEmpty) return null;
+  if (fraction.replaceAll('0', '').isEmpty) {
+    final int? parsed = int.tryParse(
+      '${match[1]}${whole.isEmpty ? '0' : whole}',
+    );
+    return parsed;
+  }
+  final double? parsed = double.tryParse(
+    '${match[1]}${whole.isEmpty ? '0' : whole}.$fraction',
+  );
+  return parsed != null && parsed.isFinite ? parsed : null;
+}

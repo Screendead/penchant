@@ -1,5 +1,18 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/data/json_fields.dart';
+
+typedef StoredMeasure = ({int quantity, double? amount});
+
+// How a typed value is written: a whole number as quantity alone, the shape
+// every build reads; anything finer also as amount, with quantity rounded up
+// so that a build reading quantity alone still counts it. [keepAmount] is for
+// an entry that already carries an amount, which a whole number then replaces.
+StoredMeasure storedMeasure(num value, {bool keepAmount = false}) =>
+    value is int && !keepAmount
+    ? (quantity: value, amount: null)
+    : (quantity: max(1, value.ceil()), amount: value.toDouble());
 
 class ViceActivity {
   ViceActivity({

@@ -26,6 +26,7 @@ AccountData _data() => AccountData(
       data: <String, dynamic>{
         'viceID': 'gone',
         'quantity': 1,
+        'amount': 0.5,
         'ownerID': 'owner',
         'createdAt': Timestamp.fromDate(_monday.add(const Duration(hours: 2))),
       },
@@ -44,16 +45,19 @@ AccountData _data() => AccountData(
 );
 
 void main() {
-  test('the CSV has one row per activity, oldest first, quoted per RFC 4180, '
-      'and keeps an activity whose vice is gone', () {
-    expect(
-      exportCsv(_data()),
-      'time,vice,quantity,unit,vice_id,entry_id\r\n'
-      '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,drink,v1,a1'
-      '\r\n'
-      '2026-11-02T11:30:00.000Z,,1,,gone,a2\r\n',
-    );
-  });
+  test(
+    'the CSV has one row per activity, oldest first, quoted per RFC 4180, '
+    'keeps an activity whose vice is gone, and leaves a missing amount blank',
+    () {
+      expect(
+        exportCsv(_data()),
+        'time,vice,quantity,amount,unit,vice_id,entry_id\r\n'
+        '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,,drink,v1,a1'
+        '\r\n'
+        '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2\r\n',
+      );
+    },
+  );
 
   test('the JSON holds every stored field, ids, and UTC ISO-8601 times', () {
     final Map<String, dynamic> json =
