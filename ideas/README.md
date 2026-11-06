@@ -52,7 +52,7 @@ Each list is in the recommended build order.
 
 ## Insights (7)
 
-- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Vice fields decided (C18), Needs Jack
+- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount` shipped
 - [Tag what led to each entry, from a tree that learns your common triggers](insights/trigger-tagging.md). M, 1.0, Needs Jack
 - [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
@@ -104,7 +104,6 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 - **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
   recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
   the visible "when"?
-- **Data model:** extend C18 to fields on `activities`, the `days` and `triggerNodes` collections, and decimals through a separate `amount` field?
 - **Age rating:** confirm 18+, since Apple retired 17+ in 2025.
 - **Mac:** ship in 1.0 or 1.0.x, and confirm Health results never sync to the Mac?
 - **Pro line and price:** the analysis layer as Pro at USD 24.99 (recommended), or a different line?

@@ -295,18 +295,25 @@ nothing caps how many vices a user creates; whether to add a cap is undecided (r
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
 flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
-`quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
+`quantity`, `ownerID`, `createdAt`, and an optional `amount`). Both carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
 one on create. The rules also fix each collection's field set and types on create, allow
-updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`/`amount`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
 stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
-Dart `String.length`); a quantity is an int of at least 1; a new activity's `viceID`
+Dart `String.length`); a quantity is an int of at least 1; an amount, when present, is any number above 0. A decimal
+typed into the Quantity field is written as `amount` with `quantity` set to it rounded up (`storedMeasure` in
+`lib/data/vice_activity.dart`), so builds that read only `quantity` still count it; a whole number is written as
+`quantity` alone, unless the entry already has an amount. Charts, totals and labels count `ViceActivity.measure`:
+the amount when present, else the quantity. The amount is read in `ViceActivity.fromJson` and written only by
+`TrackerWrites`, so sealing it later (`r2-e2ee`) touches those two places. `parseAmount` (`lib/formats.dart`)
+reads the region's decimal mark or a point and refuses grouping. A new activity's `viceID`
 must name a vice the writer owns, checked with one `get()` (a billed read, even when
 denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
-(empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
+(empty string, `false`, 0, the nearest int for a double, null for an amount that is not a positive number,
+`Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
