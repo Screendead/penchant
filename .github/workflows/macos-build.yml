@@ -1,7 +1,6 @@
 name: macOS build
 on:
-  # Run by hand only: macOS runners are the costliest when minutes are billed, and the
-  # macOS end-to-end run before merge already builds the app.
+  # Run by hand only: macOS runners are the costliest when minutes are billed.
   workflow_dispatch:
 permissions:
   contents: read

@@ -31,11 +31,11 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   `~/.config/configstore/firebase-tools.json`), so never run `firebase use screendead-vice-tracker`.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
   emulators, read the current Firebase documentation for it (firebase.google.com/docs) and cite the page in the PR.
-- **End-to-end before merge, targeted.** A change that touches app behaviour merges only after the integration tests
-  that exercise it, and could fail because of it, have run on an iOS Simulator against the Firebase emulators
-  (`tools/e2e.sh integration_test/<file>`, see HANDOVER.md), and the PR says what was exercised. Never run the whole
-  suite by default, rerun everything after a fix, or add the macOS run unless the change is platform-specific (Jack,
-  2026-11-06): this Mac is Jack's machine, and each full run takes about 18 minutes. CI runs the unit and rules tests.
+- **End-to-end runs in CI after merge.** `e2e.yml` runs all of `integration_test/` on an iOS Simulator against the
+  emulators on `master` after each merge, debounced (Jack, 2026-11-06). PRs merge on the PR checks. Before merge, run
+  locally only the one test file that exercises the change (`tools/e2e.sh integration_test/<file>`), and only when
+  the change is risky enough to want it; the PR says what ran. Never run the whole suite or the macOS run on this Mac:
+  it is Jack's machine. A red e2e run on `master` is fixed forward before anything else merges.
 
 ## Git, pull requests and merging
 
@@ -150,19 +150,24 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
-CI (`.github/workflows/`) spends Actions minutes from a capped allowance, so keep it lean.
+CI (`.github/workflows/`) runs on standard GitHub-hosted runners, free while the repo is public.
 `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings` and `flutter test` on every PR to `master`
 except prose-only ones (Markdown, `docs/`, `ideas/`, `tech-debt/`). `rules-tests.yml` runs the Firestore rules
 suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos-build.yml` runs only by hand
-(`gh workflow run macos-build.yml`): macOS runners cost far more per minute than Linux ones when minutes are billed (standard GitHub-hosted runners are free in a public repo), and the macOS e2e run before merge builds the
-app anyway. A PR with no checks has nothing to wait for. On a push to `master` that touches the rules,
+(`gh workflow run macos-build.yml`). A PR with no checks has nothing to wait for. `e2e.yml` never runs on a PR: on a
+non-prose push to `master` (or `gh workflow run e2e.yml`) it waits two minutes on Linux, then runs `tools/e2e.sh`
+over all of `integration_test/` on an iPhone simulator of a `macos-26` runner (about 75 minutes: flutter rebuilds
+the app for each file), and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
+newer merge cancels the older run, waiting or running, so a burst of merges tests only its last commit. There is no
+macOS e2e job: the runner has no Mac development profile (that would take signing secrets), and unsigned, every
+sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
 indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
 group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
 with the emulator define) on a `macos-26` runner, when run by hand. Nothing
-builds the iOS app or deploys either app. Flutter is pinned in
+builds a release of the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
 `pubspec.yaml` dependency), pinned to 3.1.4: 3.1.6 to 3.1.8 resolve an `analysis_server_plugin` whose protocol the
