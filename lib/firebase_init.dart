@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -48,10 +50,27 @@ const int _firestoreCacheBytes = 100 * 1024 * 1024;
 
 // Collection is set on every launch: the override persists, and an emulator
 // build of the same bundle ID on this device turned it off.
-Future<void> _reportToCrashlytics() async {
+void _reportToCrashlytics() {
   final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.instance;
-  await crashlytics.setCrashlyticsCollectionEnabled(true);
   errorForwarder = crashlyticsForwarder(crashlytics.recordError);
+  _setCrashlyticsCollection(true);
+}
+
+// Not awaited, and a failure is only reported: Bootstrap shows its retry
+// screen when initializeFirebase throws, so a crash reporter that failed or
+// hung would keep the user out of the app on every launch.
+void _setCrashlyticsCollection(bool enabled) {
+  unawaited(
+    FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(enabled)
+        .catchError((Object e, StackTrace stack) {
+          reportError(
+            e,
+            stack,
+            context: 'while setting Crashlytics collection',
+          );
+        }),
+  );
 }
 
 typedef RecordError =
@@ -85,7 +104,7 @@ Future<void> initializeFirebase() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    await _reportToCrashlytics();
+    _reportToCrashlytics();
     // App Attest yields no token App Check accepts until the Runner target
     // has the App Attest entitlement, which the current signing team cannot
     // sign (HANDOVER.md, "For Jack to do"). firebase_app_check 0.4.9 picks App
@@ -115,7 +134,7 @@ Future<void> initializeFirebase() async {
   // Crashlytics has no emulator. The override persists across launches and
   // takes effect from the next one; the emulator build's Info.plist
   // (tools/strip-firebase-plist.sh) covers this launch.
-  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
+  _setCrashlyticsCollection(false);
 
   // The emulators ignore App Check. A debug token is a production credential
   // once registered in the console, so none is committed here.
