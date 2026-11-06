@@ -12,6 +12,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/trends/trends_sheet.dart';
@@ -283,10 +284,11 @@ Finder historyTitle(String viceName) => find.descendant(
 );
 
 // The history row whose quantity is [quantity], as "3 drinks".
-Finder historyEntry(int quantity) => find.descendant(
+Finder historyEntry(num quantity) => find.descendant(
   of: historyRows,
   matching: find.byWidgetPredicate(
-    (Widget w) => w is Text && (w.data?.startsWith('$quantity ') ?? false),
+    (Widget w) =>
+        w is Text && (w.data?.startsWith('${formatCount(quantity)} ') ?? false),
   ),
 );
 
@@ -336,7 +338,7 @@ extension on Finder {
 Future<void> recordActivity(
   WidgetTester tester,
   String viceName,
-  int quantity, {
+  num quantity, {
   DateTime? at,
 }) async {
   await tap(tester, find.byType(LogButton));
@@ -378,7 +380,7 @@ Future<void> recordActivity(
       ActivityDateField.format.format(at),
     );
   }
-  await enterText(tester, 'Quantity', '$quantity');
+  await enterText(tester, 'Quantity', formatAmount(quantity));
   await tap(tester, find.descendant(of: dialog, matching: find.text('Record')));
   await pumpUntil(tester, dialog, present: false);
 }
