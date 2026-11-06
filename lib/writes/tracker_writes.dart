@@ -55,9 +55,9 @@ class TrackerWrites {
     FieldSealer sealer,
     DocumentReference<Map<String, dynamic>> doc,
     Map<String, Object?> content,
-    Future<void> Function(String envelope) write,
+    Future<void> Function(Blob envelope) write,
   ) async {
-    final String envelope;
+    final Uint8List envelope;
     try {
       envelope = await sealer.seal(
         content,
@@ -73,7 +73,7 @@ class TrackerWrites {
         message: 'Could not seal the change: $e',
       );
     }
-    return write(envelope);
+    return write(Blob(envelope));
   }
 
   SentWrite _issued(SentWrite write) {
@@ -109,7 +109,7 @@ class TrackerWrites {
                 sealer,
                 vice,
                 <String, Object?>{'name': name, 'unit': unit.name},
-                (String envelope) =>
+                (Blob envelope) =>
                     vice.set({sealedField: envelope, ...structural}),
               ),
         collection: _vices.id,
@@ -150,26 +150,14 @@ class TrackerWrites {
     required int quantity,
     required DateTime createdAt,
   }) {
-    final DocumentReference<Map<String, dynamic>> activity = _activities.doc(
-      activityID,
-    );
-    final Map<String, Object> structural = <String, Object>{
-      'createdAt': createdAt,
-      'ownerID': ownerID,
-      'viceID': viceID,
-    };
-    final FieldSealer? sealer = _sealer;
     return _issued(
       SentWrite(
-        sealer == null
-            ? activity.set({'quantity': quantity, ...structural})
-            : _sealing(
-                sealer,
-                activity,
-                <String, Object?>{'quantity': quantity},
-                (String envelope) =>
-                    activity.set({sealedField: envelope, ...structural}),
-              ),
+        _activities.doc(activityID).set({
+          'createdAt': createdAt,
+          'ownerID': ownerID,
+          'quantity': quantity,
+          'viceID': viceID,
+        }),
         collection: _activities.id,
         id: activityID,
         op: WriteOp.create,
@@ -178,28 +166,18 @@ class TrackerWrites {
   }
 
   // Only the given fields are written: an untouched field may hold a legacy
-  // value that the parser shows as a default. Sealed, the quantity is the
-  // whole content; a later content field must be passed here too, or a
-  // reseal drops it.
+  // value that the parser shows as a default. Activities have no sealed
+  // field yet: the quantity stays plaintext (Jack, 2026-11-06). When the
+  // triggers field lands it is sealed, and this must then reseal it.
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
     DateTime? createdAt,
   }) {
-    final FieldSealer? sealer = _sealer;
-    if (sealer == null || quantity == null) {
-      return _update(_activities, activityID, {
-        'createdAt': ?createdAt,
-        'quantity': ?quantity,
-      });
-    }
-    return _sealedUpdate(
-      sealer,
-      _activities,
-      activityID,
-      <String, Object?>{'quantity': quantity},
-      also: {'createdAt': ?createdAt},
-    );
+    return _update(_activities, activityID, {
+      'createdAt': ?createdAt,
+      'quantity': ?quantity,
+    });
   }
 
   SentWrite deleteActivity(String activityID) {
@@ -232,16 +210,15 @@ class TrackerWrites {
     );
   }
 
-  // [SentWrite.fields] holds only the plaintext fields: the envelope does
-  // not exist yet when the write is handed back, so a later launch cannot
-  // check the server for the sealed part of a queued edit.
+  // [SentWrite.fields] is empty: the envelope does not exist yet when the
+  // write is handed back, so a later launch cannot check the server for a
+  // queued sealed edit.
   SentWrite _sealedUpdate(
     FieldSealer sealer,
     CollectionReference<Map<String, dynamic>> collection,
     String id,
-    Map<String, Object?> content, {
-    Map<String, Object> also = const <String, Object>{},
-  }) {
+    Map<String, Object?> content,
+  ) {
     final DocumentReference<Map<String, dynamic>> doc = collection.doc(id);
     return _issued(
       SentWrite(
@@ -249,19 +226,16 @@ class TrackerWrites {
           sealer,
           doc,
           content,
-          (String envelope) => doc.update({
+          (Blob envelope) => doc.update({
             sealedField: envelope,
-            for (final String field in content.keys) field: FieldValue.delete(),
-            ...also,
+            for (final String field in contentFields[collection.id]!)
+              field: FieldValue.delete(),
           }),
         ),
         collection: collection.id,
         id: id,
         op: WriteOp.update,
-        fields: <String, Object>{
-          for (final MapEntry<String, Object>(:key, :value) in also.entries)
-            key: comparableValue(value)!,
-        },
+        fields: const <String, Object>{},
       ),
     );
   }

@@ -20,8 +20,8 @@ class ViceActivity {
   final Timestamp createdAt;
   // A local write the server has not acknowledged yet.
   final bool pending;
-  // Sealed fields this device could not open: [quantity] is a placeholder,
-  // and must never be written back.
+  // Sealed fields this device could not open, which must never be written
+  // back. The quantity stays plaintext (Jack, 2026-11-06), so it is real.
   final bool locked;
 
   factory ViceActivity.fromJson({
@@ -34,7 +34,7 @@ class ViceActivity {
     return ViceActivity(
       id: id,
       viceID: readString(json['viceID']),
-      quantity: readInt(contentOf(json, opened)['quantity']),
+      quantity: readInt(json['quantity']),
       ownerID: readString(json['ownerID']),
       createdAt: readTimestamp(json['createdAt'], pending: pending),
       pending: pending,

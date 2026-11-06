@@ -1,42 +1,37 @@
-import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:cryptography/cryptography.dart';
+import 'package:tracker/crypto/journal_field_sealer.dart';
+import 'package:tracker/crypto/sealer.dart';
 import 'package:tracker/data/sealed.dart';
 
-// A reversible stand-in for the real cipher: no secrecy, but the stored
-// envelope holds no field in the clear, and it opens only for its document.
+// The app's real envelope under a fixed key, with AES-GCM in Dart rather than
+// CryptoKit, so tests on any host and the e2e tests share one format.
 class FakeSealer implements FieldSealer {
-  static const String prefix = 'fake.';
+  FakeSealer({int keyByte = 7})
+    : _real = JournalFieldSealer(
+        Sealer(aes: AesGcm.with256bits(), key: List<int>.filled(32, keyByte)),
+      );
 
+  final JournalFieldSealer _real;
   final List<String> opened = <String>[];
 
   @override
-  Future<String> seal(
+  Future<Uint8List> seal(
     Map<String, Object?> fields, {
     required String context,
-  }) async =>
-      prefix +
-      base64Url.encode(
-        utf8.encode(jsonEncode(<String, Object?>{'c': context, 'f': fields})),
-      );
+  }) => _real.seal(fields, context: context);
 
   @override
   Future<Map<String, Object?>> open(
-    String envelope, {
+    Uint8List envelope, {
     required String context,
   }) async {
-    if (!envelope.startsWith(prefix)) {
-      throw const FormatException('not a fake envelope');
-    }
-    final Object? decoded = jsonDecode(
-      utf8.decode(base64Url.decode(envelope.substring(prefix.length))),
+    final Map<String, Object?> fields = await _real.open(
+      envelope,
+      context: context,
     );
-    if (decoded case {
-      'c': final String sealedFor,
-      'f': final Map<String, Object?> fields,
-    } when sealedFor == context) {
-      opened.add(context);
-      return fields;
-    }
-    throw const FormatException('sealed for another document');
+    opened.add(context);
+    return fields;
   }
 }

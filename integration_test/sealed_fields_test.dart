@@ -67,7 +67,7 @@ void main() {
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> activities =
         await _owned('activities');
     expect(activities.single.data().keys.toSet(), <String>{
-      sealedField,
+      'quantity',
       'ownerID',
       'viceID',
       'createdAt',
@@ -94,7 +94,7 @@ void main() {
           for (final QueryDocumentSnapshot<Map<String, dynamic>> vice
               in await _owned('vices'))
             vice.id: await sealer.open(
-              vice.data()[sealedField] as String,
+              (vice.data()[sealedField] as Blob).bytes,
               context: sealContext('vices', vice.id),
             ),
         };

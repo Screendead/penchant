@@ -90,12 +90,14 @@ class _Store {
 
 class _FailingSealer implements FieldSealer {
   @override
-  Future<String> seal(Map<String, Object?> fields, {required String context}) =>
-      Future<String>.error(StateError('no key'));
+  Future<Uint8List> seal(
+    Map<String, Object?> fields, {
+    required String context,
+  }) => Future<Uint8List>.error(StateError('no key'));
 
   @override
   Future<Map<String, Object?>> open(
-    String envelope, {
+    Uint8List envelope, {
     required String context,
   }) => Future<Map<String, Object?>>.error(StateError('no key'));
 }
@@ -109,6 +111,8 @@ Vice _vice({bool locked = false}) => Vice(
   archived: false,
   locked: locked,
 );
+
+final Blob _garbage = Blob(Uint8List.fromList(List<int>.filled(40, 9)));
 
 void main() {
   late FakeSealer sealer;
@@ -125,10 +129,12 @@ void main() {
   tearDown(() => debugPrint = originalPrint!);
 
   Future<Map<String, dynamic>> sealedVice(String id) async => <String, dynamic>{
-    sealedField: await sealer.seal(<String, Object?>{
-      'name': 'Coffee',
-      'unit': 'drink',
-    }, context: 'vices/$id'),
+    sealedField: Blob(
+      await sealer.seal(<String, Object?>{
+        'name': 'Coffee',
+        'unit': 'drink',
+      }, context: 'vices/$id'),
+    ),
     'ownerID': 'owner',
     'createdAt': _at,
     'archived': false,
@@ -207,20 +213,25 @@ void main() {
       },
     );
 
-    test('a sealed activity opens to its quantity', () async {
+    test('a sealed activity keeps its plaintext quantity', () async {
       final List<ViceActivity> activities =
           await ViceActivity.openQuerySnapshot(
             _snapshot(<String, Map<String, dynamic>>{
               'a': <String, dynamic>{
-                sealedField: await sealer.seal(<String, Object?>{
-                  'quantity': 3,
-                }, context: 'activities/a'),
+                sealedField: Blob(
+                  await sealer.seal(
+                    <String, Object?>{},
+                    context: 'activities/a',
+                  ),
+                ),
+                'quantity': 3,
                 'viceID': 'coffee',
                 'ownerID': 'owner',
                 'createdAt': _at,
               },
               'b': <String, dynamic>{
-                sealedField: 'garbage',
+                sealedField: _garbage,
+                'quantity': 2,
                 'viceID': 'coffee',
                 'ownerID': 'owner',
                 'createdAt': _at,
@@ -232,7 +243,7 @@ void main() {
       expect(activities.first.locked, isFalse);
       expect(activities.first.viceID, 'coffee');
       expect(activities.last.locked, isTrue);
-      expect(activities.last.quantity, 0);
+      expect(activities.last.quantity, 2);
       expect(activities.last.createdAt, _at);
     });
   });
@@ -266,7 +277,7 @@ void main() {
         expect(stored[sealedField].toString(), isNot(contains('Coffee')));
         expect(
           await sealer.open(
-            stored[sealedField]! as String,
+            (stored[sealedField]! as Blob).bytes,
             context: 'vices/${write.id}',
           ),
           <String, Object?>{'name': 'Coffee', 'unit': 'drink'},
@@ -282,7 +293,7 @@ void main() {
       expect(update['unit'], FieldValue.delete());
       expect(
         await sealer.open(
-          update[sealedField]! as String,
+          (update[sealedField]! as Blob).bytes,
           context: 'vices/coffee',
         ),
         <String, Object?>{'name': 'Espresso', 'unit': 'drink'},
@@ -314,7 +325,8 @@ void main() {
       },
     );
 
-    test('recordActivity seals the quantity', () async {
+    test('activities stay plaintext: the quantity is not sealed', () async {
+      final DateTime moved = DateTime(2026, 1, 3);
       await writes
           .recordActivity(
             'a',
@@ -324,54 +336,19 @@ void main() {
             createdAt: _at.toDate(),
           )
           .done;
-      final Map<String, Object?> stored = store.sets['activities/a']!;
+      await writes.updateActivity('a', quantity: 4, createdAt: moved).done;
 
-      expect(stored.keys.toSet(), <String>{
-        sealedField,
-        'ownerID',
-        'viceID',
-        'createdAt',
+      expect(store.sets['activities/a'], <String, Object?>{
+        'createdAt': _at.toDate(),
+        'ownerID': 'owner',
+        'quantity': 2,
+        'viceID': 'coffee',
       });
-      expect(
-        await sealer.open(
-          stored[sealedField]! as String,
-          context: 'activities/a',
-        ),
-        <String, Object?>{'quantity': 2},
-      );
+      expect(store.updates['activities/a'], <Object, Object?>{
+        'createdAt': moved,
+        'quantity': 4,
+      });
     });
-
-    test(
-      'updateActivity reseals a quantity, and leaves a date plaintext',
-      () async {
-        final DateTime moved = DateTime(2026, 1, 3);
-        final SentWrite write = writes.updateActivity(
-          'a',
-          quantity: 4,
-          createdAt: moved,
-        );
-        await write.done;
-        final Map<Object, Object?> update = store.updates['activities/a']!;
-
-        expect(update['quantity'], FieldValue.delete());
-        expect(update['createdAt'], moved);
-        expect(
-          await sealer.open(
-            update[sealedField]! as String,
-            context: 'activities/a',
-          ),
-          <String, Object?>{'quantity': 4},
-        );
-        expect(write.fields, <String, Object>{
-          'createdAt': moved.microsecondsSinceEpoch,
-        });
-
-        await writes.updateActivity('b', createdAt: moved).done;
-        expect(store.updates['activities/b'], <Object, Object?>{
-          'createdAt': moved,
-        });
-      },
-    );
   });
 
   test('without a sealer the writes stay plaintext', () async {
@@ -420,7 +397,7 @@ void main() {
 
     final Map<String, dynamic> locked = <String, dynamic>{
       ...stored,
-      sealedField: 'garbage',
+      sealedField: _garbage,
     };
     expect(
       unsealed(locked, await SealedOpener(sealer).open('vices', 'x', locked)),

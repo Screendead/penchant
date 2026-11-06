@@ -8,6 +8,7 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import {
+  Bytes,
   Timestamp,
   addDoc,
   collection,
@@ -735,9 +736,14 @@ describe('account export and deletion', () => {
 });
 
 // New documents may hold their content in one `sealed` envelope instead
-// (lib/data/sealed.dart); the structural fields stay plaintext.
+// (lib/data/sealed.dart); the structural fields stay plaintext. An envelope is
+// bytes: 29 bytes of version, nonce and tag around a padded plaintext of at
+// most 4096 (lib/crypto/sealer.dart).
+const bytesOf = (length, fill = 1) => Bytes.fromUint8Array(new Uint8Array(length).fill(fill));
+
 describe('sealed documents', () => {
-  const envelope = 'v1.' + 'A'.repeat(120);
+  const envelope = bytesOf(29 + 64);
+  const resealed = bytesOf(29 + 256, 2);
   const sealedVice = (overrides = {}) => ({
     sealed: envelope,
     ownerID: ALICE,
@@ -747,6 +753,7 @@ describe('sealed documents', () => {
   });
   const sealedActivity = (overrides = {}) => ({
     sealed: envelope,
+    quantity: 1,
     createdAt: new Date('2026-01-02T08:30:00Z'),
     ownerID: ALICE,
     viceID: 'aliceVice',
@@ -781,11 +788,12 @@ describe('sealed documents', () => {
       }
     });
 
-    it('refuses an empty, oversized or non-string envelope', async () => {
-      await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: '' })));
-      await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: 'A'.repeat(2049) })));
+    it('refuses a short, oversized or non-bytes envelope', async () => {
+      await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: bytesOf(29) })));
+      await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: bytesOf(29 + 4097) })));
+      await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: 'A'.repeat(120) })));
       await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: 7 })));
-      await assertSucceeds(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: 'A'.repeat(2048) })));
+      await assertSucceeds(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ sealed: bytesOf(29 + 4096) })));
     });
 
     it('refuses a sealed vice for another owner', async () => {
@@ -794,7 +802,7 @@ describe('sealed documents', () => {
 
     it('reseals and archives a sealed vice', async () => {
       const db = asAlice();
-      await assertSucceeds(updateDoc(doc(db, 'vices/aliceSealedVice'), { sealed: 'v1.BBBB' }));
+      await assertSucceeds(updateDoc(doc(db, 'vices/aliceSealedVice'), { sealed: resealed }));
       await assertSucceeds(updateDoc(doc(db, 'vices/aliceSealedVice'), { archived: true }));
     });
 
@@ -802,7 +810,7 @@ describe('sealed documents', () => {
       const db = asAlice();
       await assertFails(updateDoc(doc(db, 'vices/aliceSealedVice'), { sealed: deleteField() }));
       await assertFails(updateDoc(doc(db, 'vices/aliceSealedVice'), { name: 'Coffee' }));
-      await assertFails(updateDoc(doc(db, 'vices/aliceSealedVice'), { sealed: 'A'.repeat(2049) }));
+      await assertFails(updateDoc(doc(db, 'vices/aliceSealedVice'), { sealed: bytesOf(29 + 4097) }));
     });
 
     it('converts a plaintext vice by sealing it and removing its name and unit', async () => {
@@ -837,12 +845,14 @@ describe('sealed documents', () => {
 
     it("refuses Bob's reads and writes of Alice's sealed vice", async () => {
       await assertFails(getDoc(doc(asBob(), 'vices/aliceSealedVice')));
-      await assertFails(updateDoc(doc(asBob(), 'vices/aliceSealedVice'), { sealed: 'v1.BBBB' }));
+      await assertFails(updateDoc(doc(asBob(), 'vices/aliceSealedVice'), { sealed: resealed }));
     });
   });
 
+  // The quantity stays plaintext (Jack, 2026-11-06); no activity field is
+  // sealed yet, but an envelope may sit beside the plaintext structure.
   describe('activities', () => {
-    it('creates a sealed activity on an owned vice, plaintext or sealed', async () => {
+    it('creates an activity with an envelope beside its plaintext quantity', async () => {
       const db = asAlice();
       await assertSucceeds(setDoc(doc(db, 'activities/new'), sealedActivity()));
       await assertSucceeds(
@@ -854,52 +864,42 @@ describe('sealed documents', () => {
       await assertSucceeds(setDoc(doc(asAlice(), 'activities/new'), activity()));
     });
 
-    it("refuses a sealed activity on a vice the writer doesn't own or that is gone", async () => {
+    it("refuses an activity on a vice the writer doesn't own or that is gone", async () => {
       await assertFails(setDoc(doc(asAlice(), 'activities/new'), sealedActivity({ viceID: 'bobVice' })));
       await assertFails(setDoc(doc(asAlice(), 'activities/new'), sealedActivity({ viceID: 'gone' })));
     });
 
-    it('refuses a sealed activity that also carries a quantity', async () => {
-      await assertFails(setDoc(doc(asAlice(), 'activities/new'), sealedActivity({ quantity: 2 })));
-    });
-
-    it('refuses a sealed activity without its structural fields', async () => {
-      for (const field of ['viceID', 'ownerID', 'createdAt']) {
+    it('refuses a sealed activity without its quantity or structural fields', async () => {
+      for (const field of ['quantity', 'viceID', 'ownerID', 'createdAt']) {
         await assertFails(setDoc(doc(asAlice(), 'activities/new'), without(sealedActivity(), field)));
       }
     });
 
-    it('refuses an oversized envelope', async () => {
+    it('refuses an oversized or non-bytes envelope', async () => {
       await assertFails(
-        setDoc(doc(asAlice(), 'activities/new'), sealedActivity({ sealed: 'A'.repeat(2049) })),
+        setDoc(doc(asAlice(), 'activities/new'), sealedActivity({ sealed: bytesOf(29 + 4097) })),
       );
+      await assertFails(setDoc(doc(asAlice(), 'activities/new'), sealedActivity({ sealed: 'x' })));
     });
 
-    it('reseals and moves a sealed activity', async () => {
+    it('reseals, requantifies and moves an activity with an envelope', async () => {
       const db = asAlice();
       await assertSucceeds(
         updateDoc(doc(db, 'activities/aliceSealedActivity'), {
-          sealed: 'v1.BBBB',
+          sealed: resealed,
+          quantity: 3,
           createdAt: Timestamp.fromDate(new Date('2026-01-03T08:30:00Z')),
         }),
       );
     });
 
-    it('converts a plaintext activity by sealing it and removing its quantity', async () => {
-      await assertSucceeds(
-        updateDoc(doc(asAlice(), 'activities/aliceActivity'), {
-          sealed: envelope,
-          quantity: deleteField(),
-        }),
-      );
-    });
-
-    it('refuses removing a quantity without sealing, or a quantity beside the envelope', async () => {
+    it('refuses removing the envelope or the quantity', async () => {
       const db = asAlice();
-      await assertFails(updateDoc(doc(db, 'activities/aliceActivity'), { quantity: deleteField() }));
-      await assertFails(updateDoc(doc(db, 'activities/aliceSealedActivity'), { quantity: 2 }));
       await assertFails(
         updateDoc(doc(db, 'activities/aliceSealedActivity'), { sealed: deleteField() }),
+      );
+      await assertFails(
+        updateDoc(doc(db, 'activities/aliceSealedActivity'), { quantity: deleteField() }),
       );
     });
 

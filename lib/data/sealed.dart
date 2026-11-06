@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/errors/report_error.dart';
 
@@ -7,6 +10,18 @@ import 'package:tracker/errors/report_error.dart';
 /// plaintext.
 const String sealedField = 'sealed';
 
+/// The content fields each collection seals. firestore.rules lists the same
+/// fields (`sealedAlone`, `changedContent`), and so must every content field
+/// added later (the triggers, decimal amount and category PRs): sealed beside
+/// plaintext would leave it readable.
+const List<String> viceContentFields = <String>['name', 'unit'];
+const List<String> activityContentFields = <String>['quantity'];
+
+const Map<String, List<String>> contentFields = <String, List<String>>{
+  'vices': viceContentFields,
+  'activities': activityContentFields,
+};
+
 /// Shown for a vice whose sealed fields this device cannot open.
 const String lockedViceName = 'Locked habit';
 
@@ -14,13 +29,19 @@ const String lockedViceName = 'Locked habit';
 /// [context] names the document (`vices/{id}`), so an envelope copied onto
 /// another document fails to open.
 abstract interface class FieldSealer {
-  Future<String> seal(Map<String, Object?> fields, {required String context});
+  Future<Uint8List> seal(
+    Map<String, Object?> fields, {
+    required String context,
+  });
 
-  Future<Map<String, Object?>> open(String envelope, {required String context});
+  Future<Map<String, Object?>> open(
+    Uint8List envelope, {
+    required String context,
+  });
 }
 
-/// Null while no key is available, and then writes stay plaintext. The key
-/// work (r2-e2ee-crypto-core) overrides this.
+/// Null while no key is available, and then writes stay plaintext. Only the
+/// key service overrides it, and only while `e2eeEnabled` is true.
 final sealerProvider = Provider<FieldSealer?>((ref) => null);
 
 String sealContext(String collection, String id) => '$collection/$id';
@@ -47,13 +68,13 @@ class SealedOpener {
     try {
       final Object? envelope = json[sealedField];
       final FieldSealer? sealer = this.sealer;
-      if (envelope is! String) {
-        throw const FormatException('the sealed field is not a string');
+      if (envelope is! Blob) {
+        throw const FormatException('the sealed field is not bytes');
       }
       if (sealer == null) {
         throw StateError('no key on this device');
       }
-      return await sealer.open(envelope, context: context);
+      return await sealer.open(envelope.bytes, context: context);
     } catch (e, stack) {
       if (_reported.add(context)) {
         reportError(e, stack, context: 'while opening $context');

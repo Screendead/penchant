@@ -38,11 +38,12 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
-    // An envelope from lib/data/sealed.dart. Its contents can't be checked
-    // here, so the Dart validators in lib/data/limits.dart are the only guard
-    // on a sealed name, unit or quantity. size() is in UTF-16 code units.
+    // An envelope from lib/crypto/sealer.dart: 29 bytes of version, nonce
+    // and tag around a plaintext padded to at most 4096 bytes. Its contents
+    // can't be checked here, so the Dart validators in lib/data/limits.dart
+    // are the only guard on a sealed name or unit.
     function validSealed(sealed) {
-      return sealed is string && sealed.size() > 0 && sealed.size() <= 2048;
+      return sealed is bytes && sealed.size() > 29 && sealed.size() <= 4125;
     }
 
     // A document holds its content either sealed or in plaintext, never both.
@@ -83,25 +84,27 @@ service cloud.firestore {
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
+      // The quantity stays plaintext beside any envelope (Jack, 2026-11-06),
+      // so a server-side job can sum it. No activity field is sealed yet: the
+      // triggers field joins sealedAlone's list when it lands.
       // ownsVice() last, so a request the other checks deny costs no read.
       allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'sealed'])
         && request.resource.data.viceID is string
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
-        && ((request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-            && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
-            && request.resource.data.quantity is int
-            && request.resource.data.quantity > 0)
-          || (request.resource.data.keys().hasAll(['viceID', 'sealed', 'ownerID', 'createdAt'])
-            && request.resource.data.keys().hasOnly(['viceID', 'sealed', 'ownerID', 'createdAt'])
-            && validSealed(request.resource.data.sealed)))
+        && (!('sealed' in request.resource.data) || validSealed(request.resource.data.sealed))
+        && sealedAlone(request.resource.data, [])
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
         && changedKeys().hasOnly(['quantity', 'createdAt', 'sealed'])
-        && changedContent('quantity', request.resource.data.get('quantity', null) is int
-          && request.resource.data.get('quantity', 0) > 0)
+        && (!('quantity' in changedKeys())
+          || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
-        && sealedAlone(request.resource.data, ['quantity'])
+        && sealedAlone(request.resource.data, [])
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
     }
   }
