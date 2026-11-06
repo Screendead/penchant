@@ -241,6 +241,38 @@ void main() {
       ]);
       expect(typical, <String, double>{'c': 20, 'l': 1});
     });
+
+    test('a stored typical replaces the day\'s median for its habit only', () {
+      final List<DialEntry> entries = <DialEntry>[
+        for (final int q in <int>[10, 20, 30])
+          DialEntry(
+            id: 'm$q',
+            vice: habits[0],
+            mark: const HabitMark(0),
+            quantity: q,
+            at: today,
+          ),
+        DialEntry(
+          id: 'n',
+          vice: habits[1],
+          mark: const HabitMark(1),
+          quantity: 4,
+          at: today,
+        ),
+      ];
+      expect(
+        DayDial.typicals(entries, stored: <String, double>{'c': 5, 'x': 9}),
+        <String, double>{'c': 5, 'l': 4},
+      );
+      expect(
+        DayDial.layout(
+          entries,
+          stored: <String, double>{'c': 5},
+        )['m20']!.radius,
+        beadRadius(20, 5),
+      );
+      expect(DayDial.layout(entries)['m20']!.radius, beadRadius(20, 20));
+    });
   });
 
   group('the Log fan', () {

@@ -140,8 +140,10 @@ void main() {
       requestedDays = <DateTime>[];
     });
 
-    List<Override> overrides() => [
-      ...habitOverrides(vices),
+    List<Override> overrides({
+      Map<String, double> storedTypicals = const <String, double>{},
+    }) => [
+      ...habitOverrides(vices, storedTypicals: storedTypicals),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         requestedDays.add(day);
         final int daysAgo = daysBetween(day, today);
@@ -159,6 +161,26 @@ void main() {
         ]);
       }),
     ];
+
+    testWidgets('the dial sizes beads against the stored typicals', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+      expect(
+        tester.widget<DayDial>(find.byType(DayDial)).storedTypicals,
+        isEmpty,
+      );
+
+      await _pumpApp(
+        tester,
+        overrides(storedTypicals: <String, double>{coffee.id: 3}),
+        const ViceTracker(),
+      );
+      expect(
+        tester.widget<DayDial>(find.byType(DayDial)).storedTypicals,
+        <String, double>{coffee.id: 3},
+      );
+    });
 
     testWidgets('arrows change the day; there is no day after today', (
       WidgetTester tester,

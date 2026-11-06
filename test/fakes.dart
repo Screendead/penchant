@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
@@ -47,7 +48,11 @@ ViceActivity fakeActivity(String viceID, int quantity, DateTime at) =>
 
 // Today colours each habit by its place among all of them, archived ones
 // included, so it reads the full list as well as the unarchived one.
-List<Override> habitOverrides(List<Vice> vices) => <Override>[
+List<Override> habitOverrides(
+  List<Vice> vices, {
+  Map<String, double> storedTypicals = const <String, double>{},
+}) => <Override>[
+  storedTypicalsProvider.overrideWithValue(storedTypicals),
   viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
   unarchivedViceListProvider.overrideWithValue(
     AsyncData<List<Vice>>(<Vice>[

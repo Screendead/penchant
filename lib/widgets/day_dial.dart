@@ -57,6 +57,7 @@ class DayDial extends ConsumerStatefulWidget {
     required this.entries,
     required this.semanticsLabel,
     this.offline = false,
+    this.storedTypicals = const <String, double>{},
     this.onBeadTap,
     this.onSwipe,
   });
@@ -67,6 +68,9 @@ class DayDial extends ConsumerStatefulWidget {
   final List<DialEntry>? entries;
   final String? semanticsLabel;
   final bool offline;
+  // Each habit's typical entry from the monthly summary, by vice ID; a habit
+  // missing from it is sized against the shown day's median.
+  final Map<String, double> storedTypicals;
   final void Function(DialEntry entry)? onBeadTap;
   // -1 for the day before, 1 for the day after.
   final void Function(int days)? onSwipe;
@@ -105,20 +109,26 @@ class DayDial extends ConsumerStatefulWidget {
       '${formatTime(entry.at, alwaysUse24HourFormat: alwaysUse24Hour)}'
       '${entry.pending ? ', not yet synced' : ''}';
 
-  // The radius each habit's beads are sized against.
-  static Map<String, double> typicals(Iterable<DialEntry> entries) {
+  // The quantity each habit's beads are sized against.
+  static Map<String, double> typicals(
+    Iterable<DialEntry> entries, {
+    Map<String, double> stored = const <String, double>{},
+  }) {
     final Map<String, List<int>> byHabit = <String, List<int>>{};
     for (final DialEntry e in entries) {
       (byHabit[e.vice.id] ??= <int>[]).add(e.quantity);
     }
     return <String, double>{
       for (final MapEntry<String, List<int>>(:key, :value) in byHabit.entries)
-        key: typicalQuantity(value),
+        key: stored[key] ?? typicalQuantity(value),
     };
   }
 
-  static Map<String, BeadPlacement> layout(List<DialEntry> entries) {
-    final Map<String, double> typical = typicals(entries);
+  static Map<String, BeadPlacement> layout(
+    List<DialEntry> entries, {
+    Map<String, double> stored = const <String, double>{},
+  }) {
+    final Map<String, double> typical = typicals(entries, stored: stored);
     return layoutBeads(<DialBeadInput>[
       for (final DialEntry e in entries)
         DialBeadInput(
@@ -190,7 +200,7 @@ class _DayDialState extends ConsumerState<DayDial>
     super.didUpdateWidget(old);
     if (old.day != widget.day) {
       _outgoing = old.entries ?? const <DialEntry>[];
-      _outgoingLayout = DayDial.layout(_outgoing);
+      _outgoingLayout = DayDial.layout(_outgoing, stored: old.storedTypicals);
       _known = <String>{};
       _popAt.clear();
       _landAt.clear();
@@ -372,7 +382,10 @@ class _DayDialState extends ConsumerState<DayDial>
       return;
     }
     final double scale = box.size.shortestSide / DialFace.side;
-    final BeadPlacement place = DayDial.layout(widget.entries!)[id]!;
+    final BeadPlacement place = DayDial.layout(
+      widget.entries!,
+      stored: widget.storedTypicals,
+    )[id]!;
     final Offset to = box.localToGlobal(
       box.size.center(Offset.zero) + place.position * scale,
     );
@@ -515,7 +528,10 @@ class _DayDialState extends ConsumerState<DayDial>
     if (entries == null || widget.onBeadTap == null) {
       return;
     }
-    final Map<String, BeadPlacement> layout = DayDial.layout(entries);
+    final Map<String, BeadPlacement> layout = DayDial.layout(
+      entries,
+      stored: widget.storedTypicals,
+    );
     final Offset local =
         (details.localPosition - size.center(Offset.zero)) / scale;
     DialEntry? nearest;
@@ -558,7 +574,7 @@ class _DayDialState extends ConsumerState<DayDial>
         : entries ?? const <DialEntry>[];
     final Map<String, BeadPlacement> layout = contracting
         ? _outgoingLayout
-        : DayDial.layout(shown);
+        : DayDial.layout(shown, stored: widget.storedTypicals);
     final double contract = contracting
         ? 1 -
               DialMotion.exit.transform(

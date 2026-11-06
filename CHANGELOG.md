@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- A monthly server job stores each habit's typical amount over the last three months, and the Day Dial sizes beads
+  against it, falling back to the shown day's median until it has run.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
