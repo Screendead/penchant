@@ -30,7 +30,8 @@ pull request titles (`gh pr list --state merged`).
   and pulls up over the dial. Pick a habit (archived ones last), 7, 30 or 90 days or a year, by day or by week, and
   how many days or weeks the average line spans; it gives the total, the average and the peak, and when in the day
   the habit happens. Drag across the chart to read a day, and tap one to open its dial. The Log button sits on the
-  sheet's edge. Chart dates are spaced to fit every month's name.
+  sheet's edge. Chart dates are spaced to fit every month's name. From a keyboard the arrow keys move along the chart
+  and Enter opens the day; VoiceOver reads the day under the cursor and swipes up or down to move it.
 - The app is called Penchant, and it says "habit" wherever it said "vice". Exports are named `penchant-…`.
 - Penchant installs as a new app (`com.screendead.penchant`) on iPhone and Mac: an earlier build stays beside it until
   you delete it, and you sign in again in the new one. Your data is unchanged.

@@ -322,8 +322,9 @@ it happens. That arithmetic and the chart's axis scale and label spacing are pur
 the archived ones, so the default is never archived. It reads the range through the graph query alone (the hour
 profile and stats come from the same entries), builds its panel only once it leaves the peek, and a tap on a day
 point opens that day's dial and read-only tallies inside the sheet (`TrendsDay`). The chart sits in one `Semantics`
-node labelled `TrendsChart.summary`, and fl_chart paints its titles outside the widget tree, so tests read them from
-the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as it opens.
+node labelled `TrendsChart.summary` whose value is the cursor's readout; the arrow keys and a screen reader's adjust
+move the cursor, and Enter or activate opens its day. fl_chart paints its titles outside the widget tree, so tests
+read them from the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as it opens.
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection when their widgets are
 rebuilt. Both read the current day from `todayProvider`, which moves on at local midnight and on app resume; Today
 follows it unless the user picked another day, and a log (always now) turns a past day back to today. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
