@@ -60,8 +60,10 @@ flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
+flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
-dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
+dart run flutter_launcher_icons  # macOS icons, after changing assets/icon-macos.png (rendered from the .svg beside it)
+cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # the single-size iOS icon; a test checks the copy
 ```
 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
@@ -155,17 +157,17 @@ suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos
 (`gh workflow run macos-build.yml`). A PR with no checks has nothing to wait for. `e2e.yml` never runs on a PR: on a
 non-prose push to `master` (or `gh workflow run e2e.yml`) it waits two minutes on Linux, then runs `tools/e2e.sh`
 over all of `integration_test/` on an iPhone simulator of a `macos-26` runner (about 75 minutes: flutter rebuilds
-the app for each file), and uploads the log if it fails. One
-concurrency group with `cancel-in-progress` means a newer merge cancels the older run, waiting or running, so a
-burst of merges tests only its last commit. There is no macOS e2e job: the runner has no Mac development profile
-(that would take signing secrets), and unsigned, every sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
+the app for each file), and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
+newer merge cancels the older run, waiting or running, so a burst of merges tests only its last commit. There is no
+macOS e2e job: the runner has no Mac development profile (that would take signing secrets), and unsigned, every
+sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
 indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
-define, on a `macos-26` runner, when run by hand. Nothing
-builds a release or deploys either app. Flutter is pinned in
+group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
+with the emulator define) on a `macos-26` runner, when run by hand. Nothing
+builds a release of the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
 `pubspec.yaml` dependency), pinned to 3.1.4: 3.1.6 to 3.1.8 resolve an `analysis_server_plugin` whose protocol the
@@ -215,16 +217,25 @@ data. `trackerWritesProvider` is a plain `Provider` that hands out the write lay
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
 `TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every write the
 screens make to a single document. It has one method
-per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
-`updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
-error messages and Undo stay in the widgets. Each widget hands the future to `settleWrite`
-(`lib/writes/settle_write.dart`), which waits ten seconds and then calls the write queued.
-It keeps listening, and a refusal after that goes to `onRejectedLater`: widgets pass
-`ref.read(rejectedWritesProvider.notifier).reporter('<what, named at write time>')`. That
-`NotifierProvider` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
+per write (`addVice`, `updateVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
+`updateActivity`, `deleteActivity`) and returns a `SentWrite`: the SDK's future unchanged, plus
+the document it writes and, for an update, the fields it sets. Timeouts, error messages and
+Undo stay in the widgets. Each widget hands it to
+`ref.read(rejectedWritesProvider.notifier).settle(write, '<what, named at write time>')`,
+which runs `settleWrite` (`lib/writes/settle_write.dart`): that waits ten seconds and then
+calls the write queued, and keeps listening, so a refusal after that reaches the banner.
+`RejectedWrites` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
 signed-in user, cleared when the uid changes, and `MaterialApp.builder`
 (`lib/widgets/rejected_writes_banner.dart`) shows them above every screen until dismissed.
-A write queued by an earlier launch has no future to listen to, so its refusal is not seen. The record dialog takes one id from
+The SDK keeps queued writes across launches but answers only the launch that made them, so
+`settle` also keeps each write in a journal on the device (`lib/writes/queued_write_journal.dart`,
+a JSON file per Firebase project in Application Support) until its future completes. On
+sign-in, a launch takes what earlier launches left for that user, waits for
+`waitForPendingWrites()` (it resolves after a refusal as after success), then reads each
+document's server copy with an `ownerID` query bounded to its id (the rules deny a get of a
+missing document) and names in the banner each write the server's copy does not show
+(`refusedAmong`). A check that fails keeps its writes for the next launch; sign-out and account
+deletion clear the journal with the cache. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
 document. The one-tap "log one" (`logOne`, `lib/writes/log_one.dart`: a tally's `+`, a tap on a Log-fan wedge) takes
 a new id per tap, so two taps are two entries; it shows its bar (`showUndoBar`, `lib/widgets/undo_bar.dart`) at once,
@@ -299,7 +310,7 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
-it and the Graph lists archived vices last, marked "(archived)", never as the default.
+it and Trends lists archived habits last, marked "· archived", never as the default.
 
 **Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
 stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
@@ -312,7 +323,10 @@ with the time it synced. Whether to trade that for server time is open (register
 `activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
-Firestore throws `failed-precondition` at runtime until the index is deployed.
+Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce
+indexes. `test/firestore_indexes_test.dart` parses every query built in one chain from `.collection(...)` in `lib/`
+and fails when one needs a composite index the file lacks, when a `where` with a Firestore filter argument or an
+`orderBy` sits outside such a chain, or when a chain uses `limitToLast` (whose reversed sorts it does not model).
 
 **Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error →
 `AuthStateFailure`, no event yet → `AuthStateLoading` (so a restored session never shows
@@ -322,7 +336,7 @@ anything else is `NotFound`. Only the forms (add or edit a vice, edit an activit
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
 swapping `home` alone would leave the old session's pages on the stack.
 
-**Two home tabs.** `ViceTracker` is Today: one day at a time as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`),
+**Today and Trends.** `ViceTracker` is Today: one day at a time as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`),
 a 24-hour face with a bead per entry at its local wall-clock time, a tally row per unarchived habit (`TallyRow`), and
 the Log button (`LogButton`, `lib/widgets/log_fan.dart`). The dial's geometry is pure functions in
 `lib/data/dial_layout.dart` (angle from the wall-clock minute, so a DST day's 15:00 sits at 15; bead radius
@@ -338,16 +352,31 @@ the `+` or wedge through `beadArrivalsProvider`; a pending bead's dashed rim tur
 pending entries cannot `pumpAndSettle` with animations on. Day navigation is `DayPicker` (`lib/widgets/day_picker.dart`):
 the arrows, a sideways swipe on the dial, and the date pill's `CalendarSheet`; there is no oldest day and no future
 one. Habits list oldest first, as their colours are given, and Today reads `viceListProvider` as well as the
-unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). `UsageGraphView` shows one
-vice over a date range as a line chart, bucketing activities by day or by week (counted back from today, so the newest
-week is whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic
-and the graph's axis scale and label spacing are pure functions in `lib/data/usage_series.dart` and
-`lib/data/chart_scale.dart`. The graph sits in one `Semantics` node labelled `UsageGraphView.summary`, and fl_chart
-paints its titles outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible
-tab; each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
-`todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the user picked
-another day, and a log (always now) turns a past day back to today. Today records through its Log button, the Graph
-tab through the app bar's Record. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
+unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). The Trends sheet (`TrendsSheet`,
+`lib/trends/`) is a `DraggableScrollableSheet` over Today that replaced the Graph tab: it peeks below the tallies with
+a sparkline of the chosen habit, and opens over the dial to that habit over a range (7, 30 or 90 days or a year), by
+day or by week (counted back from today, so the newest week is whole and the oldest bucket holds what is left of the
+range), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
+it happens. That arithmetic and the chart's axis scale and label spacing are pure functions in
+`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Its chips list the habits in use oldest first, then
+the archived ones, so the default is never archived. It reads the range through the graph query alone (the hour
+profile and stats come from the same entries), builds its panel only once it leaves the peek, and a tap on a day
+point opens that day's dial and read-only tallies inside the sheet (`TrendsDay`). The chart sits in one `Semantics`
+node labelled `TrendsChart.summary` whose value is the cursor's readout; the arrow keys and a screen reader's adjust
+move the cursor, and Enter or activate opens its day. fl_chart paints its titles outside the widget tree, so tests
+read them from the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as it opens.
+From `ViceTracker.splitWidth` (900 pt) wide, on any device, the same `ViceTracker` state lays out a split view instead:
+Today's column (`ViceTracker.splitColumnWidth`) with the Log button at its foot, and `TrendsSheet.pane`, the same panel
+always open with no peek or Close, whose day points call Today's day picker instead of opening `TrendsDay` (and,
+since a screen reader's focus stays on the chart, announce `TrendsSheet.shownOnDial`). Both
+forms keep the selection in the same `PageStorage` entry, so a resize across 900 pt keeps the day and the habit (the
+chart's cursor resets). Left and Right step Today's day (`_stepDay`, from state, so presses within one frame each
+count) from a `CallbackShortcuts` around the whole split view, or around Today alone under the sheet; the chart's own
+`Focus` takes them first. Widget tests run at 800×600 and so stay on the phone layout; `test/split_view_test.dart`
+and `integration_test/split_view_test.dart` set the view's size to reach the split.
+Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection when their widgets are
+rebuilt. Both read the current day from `todayProvider`, which moves on at local midnight and on app resume; Today
+follows it unless the user picked another day, and a log (always now) turns a past day back to today. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
 lock toggle, live clock and picker for the record dialog and the editor.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
@@ -366,7 +395,11 @@ is success, a timeout means the write is queued and the UI says it will sync, an
 `FirebaseException` is a failure. `ViceActivity.pending` carries `hasPendingWrites`; the day and history
 providers listen with `includeMetadataChanges: true` so the server's acknowledgement clears it.
 `offlineProvider` is true once a vices listener has answered from the cache for three seconds, which
-drives the offline banner and the offline wording of an empty day.
+drives the offline banner and the offline wording of an empty day. `syncStatusProvider` (`lib/providers/sync_status_provider.dart`) drives
+the header's Synced/Syncing pill and the menu's footer: `TrackerWrites` reports each write as it is issued, and the
+tracker calls `waitForPendingWrites()` again after each (a wait covers only writes issued before it, earlier
+sessions' included), so it says Synced only once every write has been acknowledged. The day's "not yet synced" note
+shows only offline.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against

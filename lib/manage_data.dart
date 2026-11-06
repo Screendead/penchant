@@ -46,16 +46,14 @@ class _ManageDataState extends ConsumerState<ManageData> {
 
     String? message;
     try {
-      if (!await settleWrite(
-        ref
-            .read(trackerWritesProvider)
-            .setViceArchived(vice.id, archived: archived),
-        onRejectedLater: ref
-            .read(rejectedWritesProvider.notifier)
-            .reporter(
-              '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
-            ),
-      )) {
+      if (!await ref
+          .read(rejectedWritesProvider.notifier)
+          .settle(
+            ref
+                .read(trackerWritesProvider)
+                .setViceArchived(vice.id, archived: archived),
+            '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
+          )) {
         message = queuedMessage;
       }
     } on FirebaseException catch (e, stack) {

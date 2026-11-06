@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/widgets/circle_button.dart';
 
 // The day navigation over the dial: the day before, the date pill that opens
 // the calendar, and the day after. There are no future days.
@@ -48,6 +50,54 @@ class DayPicker extends StatelessWidget {
     }
   }
 
+  Widget _pillContent(BuildContext context, DialColors colors, DialType type) {
+    final List<Widget> parts = <Widget>[
+      Text(dayWord(day, today), style: type.displayM.copyWith(height: 1.2)),
+      Text(
+        dayPillDate(day, today),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: DialTypeScale.bodyS.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: colors.muted,
+        ),
+      ),
+    ];
+    final Widget chevron = StrokeIcon(
+      DialGlyph.down,
+      size: 14,
+      color: colors.muted,
+    );
+    if (MediaQuery.textScalerOf(context).scale(1) > 1.3) {
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        children: <Widget>[...parts, chevron],
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: <Widget>[
+              parts[0],
+              const SizedBox(width: 8),
+              Flexible(child: parts[1]),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        chevron,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
@@ -57,8 +107,8 @@ class DayPicker extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        _CircleButton(
-          icon: Icons.chevron_left,
+        CircleButton(
+          icon: DialGlyph.left,
           tooltip: 'Previous day',
           onPressed: () => onSelect(addDays(day, -1)),
         ),
@@ -67,43 +117,29 @@ class DayPicker extends StatelessWidget {
           child: Center(
             child: Tooltip(
               message: chooseDay,
-              child: Material(
-                color: scheme.surfaceContainerLow,
-                shape: StadiumBorder(side: BorderSide(color: colors.line)),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => _openCalendar(context),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: DialSize.minTapTarget,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 6,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  shape: const StadiumBorder(),
+                  shadows: DialShadows.card(Theme.of(context).brightness),
+                ),
+                child: Material(
+                  color: scheme.surfaceContainerLow,
+                  shape: StadiumBorder(side: BorderSide(color: colors.line)),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _openCalendar(context),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: DialSize.minTapTarget,
                       ),
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        children: <Widget>[
-                          Text(dayWord(day, today), style: type.displayM),
-                          Text(
-                            dayPillDate(day, today),
-                            style: DialTypeScale.bodyS.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: colors.muted,
-                            ),
-                          ),
-                          ExcludeSemantics(
-                            child: Icon(
-                              Icons.expand_more,
-                              size: 16,
-                              color: colors.muted,
-                            ),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 6,
+                        ),
+                        // The day and the date share a baseline, as in the
+                        // mock-up; at large text they wrap instead.
+                        child: _pillContent(context, colors, type),
                       ),
                     ),
                   ),
@@ -113,49 +149,12 @@ class DayPicker extends StatelessWidget {
           ),
         ),
         const SizedBox(width: DialSpace.xs),
-        _CircleButton(
-          icon: Icons.chevron_right,
+        CircleButton(
+          icon: DialGlyph.right,
           tooltip: 'Next day',
           onPressed: isToday ? null : () => onSelect(addDays(day, 1)),
         ),
       ],
-    );
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final DialColors colors = DialColors.of(context);
-
-    return Opacity(
-      opacity: onPressed == null ? 0.35 : 1,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        style: IconButton.styleFrom(
-          fixedSize: const Size.square(DialSize.circleButton),
-          minimumSize: const Size.square(DialSize.circleButton),
-          tapTargetSize: MaterialTapTargetSize.padded,
-          backgroundColor: scheme.surfaceContainerLow,
-          disabledBackgroundColor: scheme.surfaceContainerLow,
-          foregroundColor: scheme.onSurface,
-          disabledForegroundColor: scheme.onSurface,
-          side: BorderSide(color: colors.line),
-        ),
-      ),
     );
   }
 }
@@ -307,8 +306,8 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              _CircleButton(
-                icon: Icons.chevron_left,
+              CircleButton(
+                icon: DialGlyph.left,
                 tooltip: 'Previous month',
                 onPressed: () => setState(
                   () => _month = DateTime(_month.year, _month.month - 1),
@@ -321,8 +320,8 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
                   style: theme.textTheme.titleLarge,
                 ),
               ),
-              _CircleButton(
-                icon: Icons.chevron_right,
+              CircleButton(
+                icon: DialGlyph.right,
                 tooltip: 'Next month',
                 onPressed: _isCurrentMonth
                     ? null

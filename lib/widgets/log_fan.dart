@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui' show ImageFilter;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:tracker/data/fan_layout.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -144,8 +146,15 @@ class _LogButtonState extends State<LogButton> {
                   width: 6,
                   strokeAlign: BorderSide.strokeAlignOutside,
                 ),
+                boxShadow: DialShadows.logButton(Theme.of(context).brightness),
               ),
-              child: Icon(Icons.add, size: 28, color: scheme.onPrimary),
+              child: Center(
+                child: StrokeIcon(
+                  DialGlyph.plus,
+                  size: 28,
+                  color: scheme.onPrimary,
+                ),
+              ),
             ),
           ),
         ),
@@ -343,7 +352,8 @@ class _FanPageState extends State<_FanPage>
               Positioned(
                 left: DialSpace.m,
                 right: DialSpace.m,
-                top: centre.dy - reach - 52,
+                // The mock-up's: 222 above the fan's centre at full size.
+                top: centre.dy - reach - 70,
                 child: Center(child: _Hint(scheme: scheme)),
               ),
               AnimatedBuilder(
@@ -397,17 +407,33 @@ class _FanPageState extends State<_FanPage>
                     button: true,
                     label: 'Close',
                     excludeSemantics: true,
-                    child: Material(
-                      color: scheme.surfaceContainerLow,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: close,
-                        customBorder: const CircleBorder(),
-                        child: Icon(
-                          Icons.close,
-                          size: 28,
-                          color: scheme.onSurface,
+                    // The Log button turned to paper: the same halo and drop.
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: scheme.surface,
+                          width: 6,
+                          strokeAlign: BorderSide.strokeAlignOutside,
+                        ),
+                        boxShadow: DialShadows.logButton(
+                          Theme.of(context).brightness,
+                        ),
+                      ),
+                      child: Material(
+                        color: scheme.surfaceContainerLow,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: close,
+                          customBorder: const CircleBorder(),
+                          child: Center(
+                            child: StrokeIcon(
+                              DialGlyph.close,
+                              size: 28,
+                              color: scheme.onSurface,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -536,102 +562,115 @@ class _WedgeState extends State<_Wedge> {
           onTap: onTap,
           onLongPress: onHold,
           excludeSemantics: true,
-          // Inside the clip, so the detector's mouse region takes no hits
-          // outside the wedge.
-          child: ClipPath(
-            clipper: _WedgeClipper(index, count, scale),
-            child: FocusableActionDetector(
-              actions: <Type, Action<Intent>>{
-                ActivateIntent: CallbackAction<ActivateIntent>(
-                  onInvoke: (_) {
-                    onTap();
-                    return null;
-                  },
-                ),
-              },
-              onShowFocusHighlight: (bool on) => setState(() => _focused = on),
-              child: RawGestureDetector(
-                behavior: HitTestBehavior.opaque,
-                gestures: <Type, GestureRecognizerFactory>{
-                  TapGestureRecognizer:
-                      GestureRecognizerFactoryWithHandlers<
-                        TapGestureRecognizer
-                      >(
-                        TapGestureRecognizer.new,
-                        (TapGestureRecognizer t) => t.onTap = onTap,
-                      ),
-                  LongPressGestureRecognizer:
-                      GestureRecognizerFactoryWithHandlers<
-                        LongPressGestureRecognizer
-                      >(
-                        () => LongPressGestureRecognizer(
-                          duration: DialMotion.holdForAmount,
-                        ),
-                        (LongPressGestureRecognizer l) =>
-                            l.onLongPress = onHold,
-                      ),
-                },
-                child: CustomPaint(
-                  painter: _WedgePainter(
-                    index: index,
-                    count: count,
-                    scale: scale,
-                    fill: habit == null
-                        ? scheme.surfaceContainerLow
-                        : colors.habit(habit.mark),
-                    rim: habit == null
-                        ? colors.line
-                        : colors
-                              .habitInk(habit.mark)
-                              .withValues(alpha: colors.bead.rimAlpha),
-                    rimWidth: habit == null ? 1 : colors.bead.rimWidth,
-                    gap: scheme.surface,
-                    focus: _focused ? scheme.primary : null,
+          // The mock-up outlines each wedge with a 3 pt stroke of the ground
+          // centred on its edge; this paints the half outside the wedge.
+          child: CustomPaint(
+            painter: _HaloPainter(
+              index: index,
+              count: count,
+              scale: scale,
+              color: scheme.surface,
+            ),
+            // Inside the clip, so the detector's mouse region takes no hits
+            // outside the wedge.
+            child: ClipPath(
+              clipper: _WedgeClipper(index, count, scale),
+              child: FocusableActionDetector(
+                actions: <Type, Action<Intent>>{
+                  ActivateIntent: CallbackAction<ActivateIntent>(
+                    onInvoke: (_) {
+                      onTap();
+                      return null;
+                    },
                   ),
-                  child: Stack(
-                    children: <Widget>[
-                      Positioned(
-                        left: label.dx - width / 2,
-                        top: label.dy - 18 * scale,
-                        width: width,
-                        child: MediaQuery(
-                          data: MediaQuery.of(
-                            context,
-                          ).copyWith(textScaler: labels),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: DialTypeScale.label.copyWith(
-                                  fontSize: 12.5,
-                                  height: 1.2,
-                                  color: habit == null
-                                      ? scheme.onSurface
-                                      : colors.wedgeInk,
+                },
+                onShowFocusHighlight: (bool on) =>
+                    setState(() => _focused = on),
+                child: RawGestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  gestures: <Type, GestureRecognizerFactory>{
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<
+                          TapGestureRecognizer
+                        >(
+                          TapGestureRecognizer.new,
+                          (TapGestureRecognizer t) => t.onTap = onTap,
+                        ),
+                    LongPressGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<
+                          LongPressGestureRecognizer
+                        >(
+                          () => LongPressGestureRecognizer(
+                            duration: DialMotion.holdForAmount,
+                          ),
+                          (LongPressGestureRecognizer l) =>
+                              l.onLongPress = onHold,
+                        ),
+                  },
+                  child: CustomPaint(
+                    painter: _WedgePainter(
+                      index: index,
+                      count: count,
+                      scale: scale,
+                      fill: habit == null
+                          ? scheme.surfaceContainerLow
+                          : colors.habit(habit.mark),
+                      rim: habit == null
+                          ? colors.line
+                          : colors
+                                .habitInk(habit.mark)
+                                .withValues(alpha: colors.bead.rimAlpha),
+                      rimWidth: habit == null ? 1 : colors.bead.rimWidth,
+                      gap: scheme.surface,
+                      focus: _focused ? scheme.primary : null,
+                    ),
+                    child: Stack(
+                      children: <Widget>[
+                        Positioned(
+                          left: label.dx - width / 2,
+                          top: label.dy - 18 * scale,
+                          width: width,
+                          child: MediaQuery(
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(textScaler: labels),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  // A long name steps down, as the mock-up's
+                                  // does past 11 characters.
+                                  style: DialTypeScale.label.copyWith(
+                                    fontSize: name.length > 11 ? 11 : 12.5,
+                                    height: 1.2,
+                                    color: habit == null
+                                        ? scheme.onSurface
+                                        : colors.wedgeInk,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                detail,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: DialTypeScale.monoM.copyWith(
-                                  fontSize: 11,
-                                  height: 1.3,
-                                  color: habit == null
-                                      ? colors.muted
-                                      : colors.wedgeInk,
+                                Text(
+                                  detail,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: DialTypeScale.monoM.copyWith(
+                                    fontSize: 11,
+                                    height: 1.3,
+                                    color: habit == null
+                                        ? colors.muted
+                                        : colors.wedgeInk,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -641,6 +680,42 @@ class _WedgeState extends State<_Wedge> {
       },
     );
   }
+}
+
+class _HaloPainter extends CustomPainter {
+  _HaloPainter({
+    required this.index,
+    required this.count,
+    required this.scale,
+    required this.color,
+  });
+
+  final int index;
+  final int count;
+  final double scale;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) => canvas.drawPath(
+    wedgePath(index, count, scale).shift(size.center(Offset.zero)),
+    Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 3
+      ..color = color,
+  );
+
+  // Every wedge's box covers the whole fan, so the halo takes no hits; the
+  // wedge under it would not get them.
+  @override
+  bool hitTest(Offset position) => false;
+
+  @override
+  bool shouldRepaint(_HaloPainter old) =>
+      old.color != color ||
+      old.scale != scale ||
+      old.index != index ||
+      old.count != count;
 }
 
 class _WedgeClipper extends CustomClipper<Path> {
@@ -807,7 +882,7 @@ class _FanHub extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              formatClock(DateTime.now()),
+              formatClock(clock.now()),
               style: DialTypeScale.monoM.copyWith(color: scheme.onSurface),
             ),
             Text(
@@ -836,6 +911,7 @@ class _Hint extends StatelessWidget {
       decoration: ShapeDecoration(
         color: scheme.surfaceContainerLow,
         shape: const StadiumBorder(),
+        shadows: DialShadows.pop(Theme.of(context).brightness),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),

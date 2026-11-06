@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -33,7 +34,7 @@ void main() {
       for (int i = 1; i <= 31; i++) 'Vice ${i.toString().padLeft(2, '0')}',
     ];
     for (final String name in names) {
-      await _writes.addVice(ownerID: _uid, name: name, unit: Unit.drink);
+      await _writes.addVice(ownerID: _uid, name: name, unit: Unit.drink).done;
     }
 
     await recordActivity(tester, names.last, 2);
@@ -54,21 +55,23 @@ void main() {
     // Two pages and two more, so the second page is full and still has older
     // entries.
     const int stored = 2 * pageSize + 2;
-    await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink);
+    await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink).done;
     final String viceID = await storedViceID('Coffee');
     final DateTime newest = DateTime(2026, 1, 31, 12);
     // Quantity n is the n-th newest, so the oldest is the last page's only row.
     for (int n = 1; n <= stored; n++) {
-      await _writes.recordActivity(
-        _writes.newActivityID(),
-        ownerID: _uid,
-        viceID: viceID,
-        quantity: n,
-        createdAt: newest.subtract(Duration(hours: n)),
-      );
+      await _writes
+          .recordActivity(
+            _writes.newActivityID(),
+            ownerID: _uid,
+            viceID: viceID,
+            quantity: n,
+            createdAt: newest.subtract(Duration(hours: n)),
+          )
+          .done;
     }
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('$stored activities'));
     await tap(tester, find.text('Coffee'));
     await pumpUntilRouteSettled(tester, find.text('Coffee history'));

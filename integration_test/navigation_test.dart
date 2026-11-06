@@ -8,11 +8,13 @@ import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'support.dart';
 
@@ -65,7 +67,7 @@ void main() {
     await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
     final Map<String, dynamic> before = (await stored.get(server)).data()!;
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, _rowButton('Coffee', 'Edit'));
     await pumpUntilRouteSettled(tester, find.text('Edit Habit'));
     expect(find.byType(NotFound), findsNothing);
@@ -86,7 +88,7 @@ void main() {
       'unit': 'hour',
     });
 
-    await closeDrawerPage(tester);
+    await closeMenuPage(tester);
     await expectTallies(tester, const <String>{
       'Espresso (2 hours)',
       'Tea (0 drinks)',
@@ -94,19 +96,20 @@ void main() {
     });
   });
 
-  testWidgets('Record works from the Graph tab', (WidgetTester tester) async {
+  testWidgets('Trends opens over Today, and Log comes back on its edge once '
+      'it closes', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await register(tester, 'e2e-graph-record@example.com');
+    await register(tester, 'e2e-trends-record@example.com');
     await addVicesThroughManageData(tester);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
+    await openTrends(tester);
+    expect(find.byType(LogButton).hitTestable(), findsNothing);
+    expect(find.byType(NavigationBar), findsNothing);
+    await closeTrends(tester);
+
     await recordActivity(tester, 'Tea', 3);
     await pumpUntil(tester, find.text('Activity recorded'));
-    expect(find.text('Usage Graph'), findsOneWidget);
     expect(await storedActivities('Tea'), hasLength(1));
-
-    await tap(tester, find.text('Today'));
     await expectTallies(tester, const <String>{
       'Coffee (0 drinks)',
       'Tea (3 drinks)',
@@ -119,7 +122,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-settings-nav@example.com');
 
-    await openFromDrawer(tester, 'Settings');
+    await openFromMenu(tester, Homepage.settingsItem);
     await pumpUntil(tester, find.text('Account'));
     expect(find.text('Notifications'), findsNothing);
     expect(find.text('Privacy'), findsNothing);
@@ -141,7 +144,7 @@ void main() {
     await register(tester, 'e2e-session-end@example.com');
     await addVicesThroughManageData(tester);
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
     await pumpUntilRouteSettled(tester, find.text('Coffee history'));
 

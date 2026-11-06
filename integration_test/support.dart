@@ -12,6 +12,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -194,11 +195,11 @@ Future<void> register(WidgetTester tester, String email) async {
   await pumpUntil(tester, find.byType(Homepage));
 }
 
-Future<void> openFromDrawer(WidgetTester tester, String title) async {
-  await tap(tester, find.byTooltip('Open navigation menu'));
-  // Let the drawer finish sliding in; its tiles are off-screen until then.
-  await pumpFor(tester, const Duration(seconds: 1));
-  await tap(tester, find.text(title));
+// Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.
+Future<void> openFromMenu(WidgetTester tester, String item) async {
+  await tap(tester, find.byKey(Homepage.menuKey));
+  await pumpUntil(tester, find.text(item).hitTestable());
+  await tap(tester, find.text(item));
 }
 
 // Three vices by default.
@@ -206,7 +207,7 @@ Future<void> addVicesThroughManageData(
   WidgetTester tester, [
   List<String> names = const <String>['Coffee', 'Tea', 'Water'],
 ]) async {
-  await openFromDrawer(tester, 'Manage Data');
+  await openFromMenu(tester, Homepage.habitsItem);
   await pumpUntil(tester, find.text('Your Habits'));
   for (final String name in names) {
     await tap(tester, find.byTooltip('Add habit'));
@@ -218,17 +219,14 @@ Future<void> addVicesThroughManageData(
     await pumpUntil(tester, find.text('Add Habit'), present: false);
     await pumpUntil(tester, find.text(name));
   }
-  await closeDrawerPage(tester);
+  await closeMenuPage(tester);
 }
 
-// Closes a page opened from the drawer with its back button. The drawer was
-// told to close when the page opened, but its animation is paused while the
-// page covers it, so it may still be finishing.
-Future<void> closeDrawerPage(WidgetTester tester) async {
+// Closes a page opened from the menu with its back button, back to Today.
+Future<void> closeMenuPage(WidgetTester tester) async {
   await tap(tester, find.byType(BackButton));
   await pumpUntil(tester, find.byType(BackButton), present: false);
-  await pumpUntil(tester, find.byType(Drawer), present: false);
-  await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
+  await pumpUntil(tester, find.byKey(Homepage.menuKey).hitTestable());
 }
 
 // A Log-fan wedge, by its habit's name: the fan names each by a label.
@@ -250,7 +248,6 @@ extension on Finder {
 
 // Records through Today's Log fan: a hold on the habit's wedge opens the
 // record dialog with it chosen, or More does when the fan has no room for it.
-// On the Graph tab it uses the app bar's Record.
 // With [at], unlocks the date field and types the time, as a user correcting
 // the clock would.
 Future<void> recordActivity(
@@ -259,30 +256,24 @@ Future<void> recordActivity(
   int quantity, {
   DateTime? at,
 }) async {
-  final Finder record = find.widgetWithText(TextButton, 'Record');
-  if (record.evaluate().isNotEmpty) {
-    // The Graph tab has no Log button; it records through its app bar.
-    await tap(tester, record);
+  await tap(tester, find.byType(LogButton));
+  final Finder wedge = fanWedge(viceName);
+  final Finder more = fanWedge('More');
+  await pumpUntilTrue(
+    tester,
+    () =>
+        wedge.hitTestable().evaluate().isNotEmpty ||
+        more.hitTestable().evaluate().isNotEmpty,
+    () => 'the Log fan to open',
+  );
+  // Let the wedges finish springing out before holding one.
+  await pumpFor(tester, const Duration(milliseconds: 800));
+  if (wedge.evaluate().isNotEmpty) {
+    await tester.longPress(wedge);
   } else {
-    await tap(tester, find.byType(LogButton));
-    final Finder wedge = fanWedge(viceName);
-    final Finder more = fanWedge('More');
-    await pumpUntilTrue(
-      tester,
-      () =>
-          wedge.hitTestable().evaluate().isNotEmpty ||
-          more.hitTestable().evaluate().isNotEmpty,
-      () => 'the Log fan to open',
-    );
-    // Let the wedges finish springing out before holding one.
-    await pumpFor(tester, const Duration(milliseconds: 800));
-    if (wedge.evaluate().isNotEmpty) {
-      await tester.longPress(wedge);
-    } else {
-      await tester.tap(more);
-    }
-    await tester.pump();
+    await tester.tap(more);
   }
+  await tester.pump();
   final Finder dialog = find.byType(AlertDialog);
   await pumpUntil(tester, dialog);
   final Finder chosen = find.descendant(
@@ -322,8 +313,8 @@ Future<void> logOne(WidgetTester tester, String viceName) async {
   await tap(tester, find.byTooltip(label));
 }
 
-// Scrolls Today until [finder] is in the middle of the screen, clear of the
-// Log button.
+// Scrolls Today, or the open Trends sheet, until [finder] is in the middle of
+// its view, clear of the Log button.
 Future<void> scrollIntoView(WidgetTester tester, Finder finder) async {
   await pumpUntilTrue(
     tester,
@@ -414,7 +405,13 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
 // Today's tallies, each as "Name (2 drinks)", or null while the day loads.
 Set<String>? todayTallies(WidgetTester tester) {
   final List<TallyRow> rows = tester
-      .widgetList<TallyRow>(find.byType(TallyRow, skipOffstage: false))
+      .widgetList<TallyRow>(
+        find.byWidgetPredicate(
+          // A day opened from Trends draws its tallies without a +.
+          (Widget w) => w is TallyRow && w.onLog != null,
+          skipOffstage: false,
+        ),
+      )
       .toList();
   if (rows.isEmpty || rows.any((TallyRow row) => row.total == null)) {
     return null;
@@ -462,11 +459,12 @@ String? dialSummary(WidgetTester tester) {
   final Finder dial = find.byType(DayDial, skipOffstage: false);
   return dial.evaluate().isEmpty
       ? null
-      : tester.widget<DayDial>(dial).semanticsLabel;
+      // Today's comes first; a day opened from Trends adds another.
+      : tester.widget<DayDial>(dial.first).semanticsLabel;
 }
 
 Future<void> signOutThroughSettings(WidgetTester tester) async {
-  await openFromDrawer(tester, 'Settings');
+  await openFromMenu(tester, Homepage.settingsItem);
   // Sign out pops Settings; popping while its push is still animating trips
   // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
   await pumpFor(tester, const Duration(seconds: 1));
@@ -513,4 +511,25 @@ Future<void> pumpUntilNeverShowing(
     check();
     return until.evaluate().isNotEmpty;
   }, () => '$until to appear');
+}
+
+// Opens the Trends sheet with a tap on its peek, and waits for it to settle.
+Future<void> openTrends(WidgetTester tester) async {
+  await tap(
+    tester,
+    find.descendant(
+      of: find.byType(TrendsSheet),
+      matching: find.text(TrendsSheet.title),
+    ),
+  );
+  await pumpUntil(tester, find.byTooltip(TrendsSheet.closeLabel).hitTestable());
+  await pumpFor(tester, const Duration(milliseconds: 500));
+}
+
+Future<void> closeTrends(WidgetTester tester) async {
+  // Close sits at the top of the sheet, which may have scrolled.
+  await scrollIntoView(tester, find.byTooltip(TrendsSheet.closeLabel));
+  await tap(tester, find.byTooltip(TrendsSheet.closeLabel));
+  await pumpUntil(tester, find.byType(LogButton).hitTestable());
+  await pumpFor(tester, const Duration(milliseconds: 500));
 }

@@ -7,6 +7,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -159,9 +160,9 @@ void main() {
     await expectTallies(tester, todayChart);
     _expectControlsEnabled(tester, onToday: true);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
-    await screenshot(tester, 'usage-graph-tab');
+    await openTrends(tester);
+    await screenshot(tester, 'trends-sheet');
+    await closeTrends(tester);
   });
 
   testWidgets('Undo on the record snackbar deletes the activity just recorded', (
@@ -306,7 +307,7 @@ void main() {
     );
     expect(await storedActivities('Coffee'), hasLength(3));
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('3 activities'));
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, find.text('Coffee history'));
@@ -408,7 +409,7 @@ void main() {
       );
     }
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, find.text('Coffee history'));
 

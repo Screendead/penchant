@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
@@ -24,7 +25,7 @@ class Today extends Notifier<DateTime> {
   }
 
   DateTime _arm() {
-    final DateTime now = DateTime.now();
+    final DateTime now = clock.now();
     final DateTime today = startOfDay(now);
     _midnight?.cancel();
     _midnight = Timer(addDays(today, 1).difference(now), _refresh);

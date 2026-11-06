@@ -90,11 +90,11 @@ class DialPalette {
       Color(0xFF1D5FC2),
     ],
     dataRim: <Color>[
-      Color(0xE68F5600),
-      Color(0xE6B03E1C),
-      Color(0xE6B42A37),
-      Color(0xE66A31B5),
-      Color(0xE61D5FC2),
+      Color(0xD98F5600),
+      Color(0xD9B03E1C),
+      Color(0xD9B42A37),
+      Color(0xD96A31B5),
+      Color(0xD91D5FC2),
     ],
     dataGlow: <Color>[
       Color(0x00FFB347),
@@ -145,11 +145,11 @@ class DialPalette {
       Color(0x004D96FF),
     ],
     dataGlow: <Color>[
-      Color(0x40FFB347),
-      Color(0x40FF7A59),
-      Color(0x40E95963),
-      Color(0x40A973E9),
-      Color(0x404D96FF),
+      Color(0x59FFB347),
+      Color(0x59FF7A59),
+      Color(0x59E95963),
+      Color(0x59A973E9),
+      Color(0x594D96FF),
     ],
     spoke: Color(0x80F3F0EA),
     clear: Color(0xFF15241B),
@@ -159,8 +159,10 @@ class DialPalette {
   );
 }
 
-// The bead treatment: an inner rim in the habit's ink at 90% in light, a glow
-// of the habit's own colour at 25% in dark (DialPalette.dataRim, dataGlow).
+// The bead treatment: an inner rim in the habit's ink at 85% in light, and in
+// dark a glow of the habit's own colour at 35%, blurred from the mark's edge as
+// the mock-up's drop-shadow(0 0 6px) is (DialPalette.dataRim, dataGlow).
+// glowBlur is the CSS blur; the Gaussian's sigma is half of it.
 class BeadTreatment {
   const BeadTreatment({
     required this.rimWidth,
@@ -178,7 +180,7 @@ class BeadTreatment {
 
   static const BeadTreatment light = BeadTreatment(
     rimWidth: 1.25,
-    rimAlpha: 0.9,
+    rimAlpha: 0.85,
     glowRadius: 0,
     glowBlur: 0,
     glowAlpha: 0,
@@ -187,10 +189,71 @@ class BeadTreatment {
   static const BeadTreatment dark = BeadTreatment(
     rimWidth: 0,
     rimAlpha: 0,
-    glowRadius: 8,
+    glowRadius: 0,
     glowBlur: 6,
-    glowAlpha: 0.25,
+    glowAlpha: 0.35,
   );
+}
+
+// The design system's shadow tokens (shadow-card, -sheet, -pop, -logButton).
+// Light lifts paper with a soft shadow; dark has none but the pop shadow and
+// the Log button's. CSS blur B is a Gaussian of sigma B/2, and Flutter's
+// blurRadius r one of sigma 0.57735 r + 0.5, so r = (B/2 - 0.5) / 0.57735.
+class DialShadows {
+  static double _blur(double css) => (css / 2 - 0.5) / 0.57735;
+
+  static List<BoxShadow> card(Brightness b) => b == Brightness.dark
+      ? const <BoxShadow>[]
+      : <BoxShadow>[
+          BoxShadow(
+            color: const Color(0x121D1C1A),
+            offset: const Offset(0, 2),
+            blurRadius: _blur(8),
+          ),
+        ];
+
+  // The dial disc's: shadow-card's colour at a 6 px blur.
+  static List<BoxShadow> disc(Brightness b) => b == Brightness.dark
+      ? const <BoxShadow>[]
+      : <BoxShadow>[
+          BoxShadow(
+            color: const Color(0x121D1C1A),
+            offset: const Offset(0, 2),
+            blurRadius: _blur(6),
+          ),
+        ];
+
+  static List<BoxShadow> sheet(Brightness b) => b == Brightness.dark
+      ? const <BoxShadow>[]
+      : <BoxShadow>[
+          BoxShadow(
+            color: const Color(0x1A1D1C1A),
+            offset: const Offset(0, -6),
+            blurRadius: _blur(24),
+          ),
+        ];
+
+  static List<BoxShadow> pop(Brightness b) => <BoxShadow>[
+    BoxShadow(
+      color: b == Brightness.dark
+          ? const Color(0x66000000)
+          : const Color(0x261D1C1A),
+      offset: const Offset(0, 10),
+      blurRadius: _blur(30),
+    ),
+  ];
+
+  // The Log button's drop, in accent at 60%; its 6 pt halo is a border.
+  static List<BoxShadow> logButton(Brightness b) => <BoxShadow>[
+    BoxShadow(
+      color: b == Brightness.dark
+          ? const Color(0x99F3F0EA)
+          : const Color(0x991D1C1A),
+      offset: const Offset(0, 8),
+      blurRadius: _blur(20),
+      spreadRadius: -6,
+    ),
+  ];
 }
 
 class DialFonts {
@@ -324,7 +387,7 @@ class DialSize {
   static const double circleButton = 40;
   static const double pillHeight = 52;
   static const double chipHeight = 34;
-  static const double tallyRow = 36;
+  static const double tallyRow = 38;
   static const double tallyPlus = 32;
   static const double minTapTarget = 44;
   static const double dialDiameter = 320;

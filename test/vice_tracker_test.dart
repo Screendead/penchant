@@ -86,10 +86,20 @@ List<Override> _today(
   userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
   offlineProvider.overrideWith((ref) => Stream.value(offline)),
   trackerWritesProvider.overrideWithValue(writes ?? FakeTrackerWrites()),
+  memoryJournal(),
   viceActivityDayProvider.overrideWith(
     (ref, DateTime day) => AsyncData(activities(day)),
   ),
 ];
+
+// Tall enough that every tally sits above the Trends peek.
+void _useTallView(WidgetTester tester) {
+  tester.view.physicalSize = Size(
+    tester.view.physicalSize.width,
+    1000 * tester.view.devicePixelRatio,
+  );
+  addTearDown(tester.view.resetPhysicalSize);
+}
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -97,6 +107,7 @@ Future<void> _pumpApp(
   Widget home, {
   RouteFactory? onGenerateRoute,
 }) async {
+  _useTallView(tester);
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
@@ -653,6 +664,7 @@ void main() {
       // A live day, so the logged entry arrives as it would from Firestore.
       final ValueNotifier<bool> shown = ValueNotifier<bool>(true);
       addTearDown(shown.dispose);
+      _useTallView(tester);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -660,6 +672,7 @@ void main() {
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
             offlineProvider.overrideWith((ref) => Stream.value(false)),
             trackerWritesProvider.overrideWithValue(writes),
+            memoryJournal(),
             viceActivityDayForUserProvider.overrideWith(
               (ref, key) => day.stream,
             ),

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
@@ -14,6 +16,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -24,15 +27,33 @@ import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/writes/log_one.dart';
 
 // Today: the day as a 24-hour dial, a tally for each habit with a + that logs
-// one now, and the Log button and its fan.
+// one now, the Trends sheet peeking below them, and the Log button and its fan
+// docked on the sheet's edge.
 class ViceTracker extends ConsumerStatefulWidget {
   const ViceTracker({super.key});
 
   static const String noHabits =
-      'No habits yet. Add one from Manage Data in the menu.';
+      'No habits yet. Add one from Habits in the menu.';
 
-  // Room below the content for the Log button, and for the bar above it.
-  static const double logClearance = DialSize.logButton + 6 + DialSpace.m;
+  // From this width Today and Trends sit side by side, Trends as a pane.
+  static const double splitWidth = 900;
+
+  // Room below a snackbar for the Log button: on the sheet's peek, or at the
+  // foot of Today's column in the split view.
+  static double logClearance(BuildContext context, {bool split = false}) =>
+      split
+      ? _splitLogInset(context) + DialSize.logButton + DialSpace.xs
+      : TrendsSheet.peekHeight(context) +
+            DialSize.logButton / 2 +
+            6 +
+            DialSpace.xs;
+
+  static double _splitLogInset(BuildContext context) =>
+      max(DialSpace.m, MediaQuery.paddingOf(context).bottom);
+
+  // Today's column in the split view.
+  static double splitColumnWidth(double width) =>
+      (width * 0.42).clamp(400.0, 560.0);
 
   @override
   ConsumerState<ViceTracker> createState() => _ViceTrackerState();
@@ -44,12 +65,25 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   // Null follows today, so the tab moves on at midnight.
   DateTime? pinnedDay;
 
+  // Whether the last layout was the split view.
+  bool _split = false;
+
+  final DraggableScrollableController _sheet = DraggableScrollableController();
+  late final SheetPosition _position = SheetPosition(_sheet);
+
   @override
   void initState() {
     super.initState();
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
+  }
+
+  @override
+  void dispose() {
+    _position.dispose();
+    _sheet.dispose();
+    super.dispose();
   }
 
   void _selectDay(DateTime day) {
@@ -63,6 +97,14 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     )?.writeState(context, pinned, identifier: _storageID);
   }
 
+  // From the day shown now, not the one last built, so keys pressed within a
+  // frame each count.
+  void _stepDay(int days) {
+    final DateTime today = ref.read(todayProvider);
+    final DateTime shown = pinnedDay ?? today;
+    _selectDay(addDays(shown.isAfter(today) ? today : shown, days));
+  }
+
   // A log is always now, so a past day gives way to today to show it.
   void _log(Vice vice, Offset from) {
     if (pinnedDay != null) {
@@ -74,7 +116,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       vice,
       from: from,
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-      bottomClearance: ViceTracker.logClearance,
+      bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
   }
 
@@ -83,7 +125,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       context: context,
       builder: (_) => RecordNewActivityDialog(
         initialViceID: vice?.id,
-        bottomClearance: ViceTracker.logClearance,
+        bottomClearance: ViceTracker.logClearance(context, split: _split),
       ),
     );
   }
@@ -109,8 +151,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     );
     final List<Vice>? listed = vicesValue.value;
 
-    // With no habits there is nothing to draw, whatever the day's query did.
-    if (!vicesValue.hasError && listed != null && listed.isEmpty) {
+    // With no habits there is nothing to draw, whatever the day's query did;
+    // archived ones still open in Trends.
+    final bool noHabits =
+        !vicesValue.hasError && listed != null && listed.isEmpty;
+    if (noHabits && (allVices == null || allVices.isEmpty)) {
       return const InfoBox(message: ViceTracker.noHabits);
     }
 
@@ -176,101 +221,276 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = min(constraints.maxWidth, 600.0);
+        final bool split = constraints.maxWidth >= ViceTracker.splitWidth;
+        _split = split;
+        final double column = split
+            ? ViceTracker.splitColumnWidth(constraints.maxWidth)
+            : constraints.maxWidth;
+        // A phone on its side keeps the notch's side of Today clear.
+        final double notch = split ? MediaQuery.paddingOf(context).left : 0;
+        final double width = min(column - notch, 600.0);
         final double side = min(
           DialSize.dialDiameter,
           width - 2 * DialSpace.gutter,
         );
 
-        return Stack(
-          children: <Widget>[
-            Center(
-              child: SizedBox(
-                width: width,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    DialSpace.m,
-                    DialSpace.xs,
-                    DialSpace.m,
-                    ViceTracker.logClearance + DialSpace.xl,
-                  ),
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DialSpace.gutter - DialSpace.m,
-                      ),
-                      child: DayPicker(
-                        day: day,
-                        today: today,
-                        onSelect: _selectDay,
-                        habits: vices ?? const <Vice>[],
-                        marks: marks,
-                      ),
+        final double height = constraints.maxHeight;
+        final double peek = TrendsSheet.peekHeight(context);
+        final double minSize = min(0.5, peek / height);
+        final double logInset = ViceTracker._splitLogInset(context);
+        final Widget page = noHabits
+            ? const Padding(
+                padding: EdgeInsets.all(DialSpace.m),
+                child: InfoBox(message: ViceTracker.noHabits),
+              )
+            : Center(
+                child: SizedBox(
+                  width: width,
+                  child: ListView(
+                    // The mock-up's spacing: 6 above the day row and the
+                    // dial, 10 above the tallies.
+                    padding: EdgeInsets.fromLTRB(
+                      DialSpace.m,
+                      6,
+                      DialSpace.m,
+                      split
+                          ? logInset + DialSize.logButton + DialSpace.m
+                          : DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
-                    const SizedBox(height: DialSpace.s),
-                    Center(
-                      child: SizedBox.square(
-                        dimension: side,
-                        child: DayDial(
+                    children: <Widget>[
+                      // The arrows' 40 pt circles sit 20 from the edges, their
+                      // 44 pt targets 18.
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: DayPicker(
                           day: day,
                           today: today,
-                          entries: entries,
-                          semanticsLabel: summary,
-                          offline: offline,
-                          onBeadTap: _openEntry,
-                          onSwipe: (int days) => _selectDay(addDays(day, days)),
+                          onSelect: _selectDay,
+                          habits: vices ?? const <Vice>[],
+                          marks: marks,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: SizedBox.square(
+                          dimension: side,
+                          child: DayDial(
+                            day: day,
+                            today: today,
+                            entries: entries,
+                            semanticsLabel: summary,
+                            offline: offline,
+                            onBeadTap: _openEntry,
+                            onSwipe: (int days) =>
+                                _selectDay(addDays(day, days)),
+                          ),
+                        ),
+                      ),
+                      if (offline && entries != null && entries.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: DialSpace.xs),
+                          child: Text(
+                            ClearDay.offlineBody,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.clearInk),
+                          ),
+                        ),
+                      PendingDayNote(selectedDate: day),
+                      const SizedBox(height: 10),
+                      if (vices == null)
+                        const Padding(
+                          padding: EdgeInsets.all(DialSpace.m),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        for (final Vice vice in vices)
+                          TallyRow(
+                            key: ValueKey<String>('tally-${vice.id}'),
+                            vice: vice,
+                            mark: markOf(vice),
+                            total: entries == null ? null : totals[vice.id],
+                            day: day,
+                            onLog: (Offset from) => _log(vice, from),
+                          ),
+                    ],
+                  ),
+                ),
+              );
+
+        // Left and Right step through days: anywhere in the split view but
+        // the chart, which takes them for its cursor, and on Today alone
+        // under the sheet. Nothing has focus at launch, so Today takes it.
+        final int back = Directionality.of(context) == TextDirection.rtl
+            ? 1
+            : -1;
+        Widget dayKeys(Widget child) => CallbackShortcuts(
+          bindings: <ShortcutActivator, VoidCallback>{
+            const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+                _stepDay(back),
+            const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+                _stepDay(-back),
+          },
+          child: Focus(
+            autofocus: true,
+            skipTraversal: true,
+            debugLabel: 'Today',
+            child: child,
+          ),
+        );
+        final Widget? logButton = vices == null || vices.isEmpty
+            ? null
+            : LogButton(
+                habits: <FanHabit>[
+                  for (final Vice vice in vices)
+                    (vice: vice, mark: markOf(vice)),
+                ],
+                onLog: _log,
+                onRecord: _record,
+              );
+
+        if (split) {
+          return dayKeys(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Container(
+                  width: column,
+                  padding: EdgeInsets.only(left: notch),
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(child: page),
+                      if (logButton != null)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: logInset,
+                          child: Center(child: logButton),
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: allVices == null || allVices.isEmpty
+                      ? const SizedBox.shrink()
+                      : TrendsSheet.pane(
+                          habits: trendsOrder(allVices, marks),
+                          marks: marks,
+                          onOpenDay: _selectDay,
+                        ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Stack(
+          children: <Widget>[
+            // Today ends where the peek starts, so nothing hides under it.
+            Positioned(
+              left: 0,
+              top: 0,
+              right: 0,
+              bottom: peek,
+              // Covered by the open sheet, Today takes no keyboard focus.
+              child: ListenableBuilder(
+                listenable: _position,
+                builder: (BuildContext context, Widget? child) => ExcludeFocus(
+                  excluding: TrendsSheet.openness(_sheet, minSize) > 0.9,
+                  child: child!,
+                ),
+                child: dayKeys(page),
+              ),
+            ),
+            ListenableBuilder(
+              listenable: _position,
+              builder: (BuildContext context, Widget? child) {
+                final double p = TrendsSheet.openness(_sheet, minSize);
+                if (p <= 0) {
+                  return const SizedBox.shrink();
+                }
+                return Positioned.fill(
+                  child: ExcludeSemantics(
+                    child: GestureDetector(
+                      onTap: () => unawaited(
+                        TrendsSheet.moveTo(context, _sheet, minSize),
+                      ),
+                      child: ColoredBox(
+                        color: colors.scrim.withValues(
+                          alpha: colors.scrim.a * p,
                         ),
                       ),
                     ),
-                    if (offline && entries != null && entries.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: DialSpace.xs),
-                        child: Text(
-                          ClearDay.offlineBody,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colors.clearInk),
-                        ),
-                      ),
-                    PendingDayNote(selectedDate: day),
-                    if (vices == null)
-                      const Padding(
-                        padding: EdgeInsets.all(DialSpace.m),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else
-                      for (final Vice vice in vices)
-                        TallyRow(
-                          key: ValueKey<String>('tally-${vice.id}'),
-                          vice: vice,
-                          mark: markOf(vice),
-                          total: entries == null ? null : totals[vice.id],
-                          day: day,
-                          onLog: (Offset from) => _log(vice, from),
-                        ),
-                  ],
+                  ),
+                );
+              },
+            ),
+            if (allVices != null && allVices.isNotEmpty)
+              ListenableBuilder(
+                listenable: _position,
+                builder: (BuildContext context, Widget? child) =>
+                    BlockSemantics(
+                      blocking: TrendsSheet.openness(_sheet, minSize) > 0.9,
+                      child: child,
+                    ),
+                child: TrendsSheet(
+                  controller: _sheet,
+                  minSize: minSize,
+                  habits: trendsOrder(allVices, marks),
+                  marks: marks,
                 ),
               ),
-            ),
-            if (vices != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: DialSpace.m,
-                child: Center(
-                  child: LogButton(
-                    habits: <FanHabit>[
-                      for (final Vice vice in vices)
-                        (vice: vice, mark: markOf(vice)),
-                    ],
-                    onLog: _log,
-                    onRecord: _record,
-                  ),
-                ),
+            if (logButton != null)
+              ListenableBuilder(
+                listenable: _position,
+                builder: (BuildContext context, Widget? child) {
+                  final double size = _sheet.isAttached ? _sheet.size : minSize;
+                  // The button rides the sheet's edge and shrinks away as it
+                  // opens, gone by a quarter of the way.
+                  final double shown =
+                      (1 - TrendsSheet.openness(_sheet, minSize) * 4).clamp(
+                        0.0,
+                        1.0,
+                      );
+                  return Positioned(
+                    left: 0,
+                    right: 0,
+                    top: height * (1 - size) - DialSize.logButton / 2,
+                    child: IgnorePointer(
+                      ignoring: shown < 0.5,
+                      child: ExcludeFocus(
+                        excluding: shown < 0.5,
+                        child: ExcludeSemantics(
+                          excluding: shown < 0.5,
+                          child: Opacity(
+                            opacity: shown,
+                            child: Transform.scale(
+                              scale: 0.6 + 0.4 * shown,
+                              child: child,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: Center(child: logButton),
               ),
           ],
         );
       },
     );
   }
+}
+
+// Trends lists the habits in use first, then the archived ones, each oldest
+// first, so the default (the first) is never archived while one is in use.
+List<Vice> trendsOrder(List<Vice> vices, Map<String, HabitMark> marks) {
+  int order(Vice a, Vice b) => (marks[a.id]?.creationIndex ?? 0).compareTo(
+    marks[b.id]?.creationIndex ?? 0,
+  );
+  return <Vice>[
+    ...vices.where((Vice v) => !v.archived).toList()..sort(order),
+    ...vices.where((Vice v) => v.archived).toList()..sort(order),
+  ];
 }
