@@ -59,9 +59,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.bySemanticsLabel(RegExp('^Tea, 1 drink at ')), findsOneWidget);
+    await screenshot(tester, 'a11y-today-dial');
+    // macOS's window can leave the last row below the fold.
+    await scrollIntoView(
+      tester,
+      find.byTooltip('Log 1 drink of Water', skipOffstage: false),
+    );
     expect(find.bySemanticsLabel('Water, 0 drinks'), findsOneWidget);
     expect(find.byTooltip('Log 1 drink of Water'), findsOneWidget);
-    await screenshot(tester, 'a11y-today-dial');
 
     await tap(tester, find.text('Graph'));
     await pumpUntil(tester, find.text('Usage Graph'));
