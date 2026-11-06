@@ -12,10 +12,11 @@ const String sealedField = 'sealed';
 
 /// The content fields each collection seals. firestore.rules lists the same
 /// fields (`sealedAlone`, `changedContent`), and so must every content field
-/// added later (the triggers, decimal amount and category PRs): sealed beside
-/// plaintext would leave it readable.
+/// added later: a vice's category, an activity's triggers. An activity's
+/// quantity and decimal amount stay plaintext (Jack, 2026-11-06), so a
+/// server-side job can aggregate them.
 const List<String> viceContentFields = <String>['name', 'unit'];
-const List<String> activityContentFields = <String>['quantity'];
+const List<String> activityContentFields = <String>[];
 
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,
