@@ -241,8 +241,8 @@ Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Fire
 
 Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
 presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, superseded by `r2-brand` and `r2-icon`). Ids `r2-presets`,
-`r2-triggers`; `r2-today` is settled by `r6-ui-direction`.
+icon (`mockup/brand-and-icon`, superseded by `r2-brand` and `r2-icon`). Id `r2-triggers`; `r2-today` is settled by
+`r6-ui-direction` and `r2-presets` was picked (round 2 above).
 
 Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
 `lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
