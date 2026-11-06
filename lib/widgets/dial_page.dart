@@ -34,7 +34,7 @@ class DialPage extends StatelessWidget {
         child: Column(
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 7, 16, 0),
               child: SizedBox(
                 height: DialSize.minTapTarget,
                 child: Row(

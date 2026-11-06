@@ -83,7 +83,11 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      container transform with the `animations` package (it fades in place). The weekly remainder stays as built
      (`r4-weekly`). The average now runs to 30 buckets, starting at 7 days or 4 weeks, as the mock-up has it.
    - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
-     with Undo, and editing reuses the amount sheet.
+     with Undo, and editing reuses the amount sheet. In review (`feat/overhaul-1d-habits`): Habits and the history page in
+     the card style, swipe-to-delete with Undo on history rows and Undo on the editor's delete (the register's
+     inconsistent-delete item is gone), Archive and Edit habit moved to the history page. Left: the amount sheet
+     (a held wedge still opens the record dialog, and the editor keeps its form), the history page's "Last 30 days"
+     summary card, and page transitions (1f).
    - **e. Auth and settings screens:** one sign-in screen with a segmented control and the password checklist;
      Settings and Account Settings in the card style. Copy stays as it is until `r3-delete-copy`.
    - **f. Motion polish:** bead travel, day sweep, springs, page transitions (the mock-up's notes add the

@@ -391,7 +391,7 @@ class _EntryBead extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
-    dimension: 18,
+    dimension: 13,
     child: CustomPaint(
       painter: _EntryBeadPainter(mark, DialColors.of(context), pending),
     ),

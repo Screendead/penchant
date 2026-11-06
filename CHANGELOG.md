@@ -26,6 +26,11 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
+  each habit's colour and entry count; a habit's history groups its entries by day with a daily total. Archive and
+  Edit habit live on the history page.
+- Deleting an entry is a swipe left on its history row, and every delete (history and editor alike) shows the bar
+  with an 8-second Undo that puts the entry back as it was.
 - Today matches its design: the Penchant icon and name at the top open a menu with Habits, Settings and whether
   your entries have synced, in place of the side drawer, and a pill beside them says Synced, Syncing or Offline. The
   dial, the five tallies, the Log button and the Trends peek all fit on one iPhone screen, the light theme lifts its
