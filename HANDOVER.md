@@ -107,7 +107,9 @@ suites, or wait for CI.
   dead scaffold assets.
 - **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently
   (PR #88 from `fix/rejected-write-earlier-launch`, reviewed: a journal on the device, checked on the next launch);
-  the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
+  the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries
+  (both done in PR #90 from `chore/minimatch-and-index-check`, stacked on #88: a range-keyed override, and
+  `test/firestore_indexes_test.dart`; no app change, so no e2e).
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
 **UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below), plus `r7-ci` (how to get CI back:
