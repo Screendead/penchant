@@ -1,5 +1,5 @@
 {
-  "about": "Every colour pair the Day Dial paints that must meet WCAG 2.2 AA, in both themes: 4.5:1 for text, 3:1 for icons, graphics that carry meaning, control boundaries and focus indicators (SC 1.4.3, 1.4.11). fg and bg are layers, topmost first; 'token@0.5' is the token at half its opacity, 'mix(token,18)' is CSS color-mix(in srgb, token 18%, <the layer below>). A pair with per_habit expands {n} to 1-5. 'was' is what the pair painted before the 2026-11-05 contrast pass, for the before-and-after report. Checked by tools/contrast-check.py and by test/contrast_test.dart in the app.",
+  "about": "Every colour pair the Day Dial paints that must meet WCAG 2.2 AA, in both themes: 4.5:1 for text, 3:1 for icons, graphics that carry meaning, control boundaries and focus indicators (SC 1.4.3, 1.4.11). fg and bg are layers, topmost first; 'token@0.5' is the token at half its opacity, 'mix(token,18)' is CSS color-mix(in srgb, token 18%, <the layer below>). A pair with per_habit expands {n} to 1-5. 'was' is what the pair painted before the 2026-11-05 contrast pass, for the before-and-after report. A pair of kind 'decoration' has no 'min': it is listed so the file names everything painted, and its ratio is reported but held to no floor. Checked by tools/contrast-check.py and by test/contrast_test.dart in the app.",
   "pairs": [
     { "fg": "text", "bg": "bg", "min": 4.5, "kind": "text", "purpose": "Primary text and icons on the ground: titles, tally names, the hub clock, the wordmark" },
     { "fg": "text", "bg": "surface", "min": 4.5, "kind": "text", "purpose": "Text and icons on cards, sheets, fields, menus, circle buttons, banners, the fan hub" },
@@ -51,8 +51,10 @@
     { "fg": "spoke", "bg": "surface", "min": 3, "kind": "graphic", "purpose": "The dial's major spokes (every 3 hours), the hour ring's ticks" },
     { "fg": "spoke", "bg": "surface2", "min": 3, "kind": "graphic", "purpose": "Major spokes on a day's dial opened from Trends (disc in surface2)" },
     { "fg": "spoke", "bg": "bg", "min": 3, "kind": "graphic", "purpose": "A major spoke past the disc's rim, radius 124 to 140" },
-    { "fg": "spoke", "bg": "clear", "min": 3, "kind": "graphic", "purpose": "A major spoke crossing the clear-day band; the majors stay at full strength on a clear day", "was": { "fg": "spoke@0.25" } },
-    { "fg": "spoke", "bg": "surface", "min": 3, "kind": "graphic", "purpose": "A major spoke on a clear day's disc", "was": { "fg": "spoke@0.25" } },
+    { "fg": "spoke@0.25", "bg": "clear", "kind": "decoration", "was": { "fg": "spoke", "min": 3, "kind": "graphic" }, "purpose": "A major spoke crossing the clear-day band. On a clear day the majors fade to the mock-up's 25% and are decoration, held to no minimum (Jack, r8-clear-spokes B, 2026-11-06): the 00/06/12/18 numerals give the time" },
+    { "fg": "spoke@0.25", "bg": "surface", "kind": "decoration", "was": { "fg": "spoke", "min": 3, "kind": "graphic" }, "purpose": "A major spoke on a clear day's disc, decoration as above" },
+    { "fg": "spoke@0.25", "bg": "surface2", "kind": "decoration", "purpose": "A major spoke on a clear day's dial opened from Trends, decoration as above" },
+    { "fg": "spoke@0.25", "bg": "bg", "kind": "decoration", "purpose": "A major spoke past a clear day's disc rim, decoration as above" },
     { "fg": "clearInk@0.72", "bg": "clear", "min": 3, "kind": "graphic", "themes": ["light"], "purpose": "The clear-day ring on its wash: the mock-up's 60% is 2.5:1 in light, so light draws it at 72%", "was": { "fg": "clearInk" } },
     { "fg": "clearInk@0.6", "bg": "clear", "min": 3, "kind": "graphic", "themes": ["dark"], "purpose": "The clear-day ring on its wash, at the mock-up's 60%", "was": { "fg": "clearInk" } },
     { "fg": "clearInk", "bg": "surface", "min": 3, "kind": "graphic", "purpose": "A met password rule's filled circle on the checklist card" },

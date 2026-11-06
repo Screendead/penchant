@@ -28,6 +28,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
+  quieter; the 00, 06, 12 and 18 labels still give the time.
 - Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
   each habit's colour and entry count; a habit's history groups its entries by day with a daily total. Archive and
   Edit habit live on the history page.
