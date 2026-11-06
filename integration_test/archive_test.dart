@@ -44,26 +44,16 @@ void main() {
     });
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('Your Habits'));
-    final Finder juiceRow = find.ancestor(
-      of: find.text('Juice'),
-      matching: find.byType(ListTile),
-    );
-    await tap(
-      tester,
-      find.descendant(of: juiceRow, matching: find.byTooltip('Archive')),
-    );
-    await pumpUntil(
-      tester,
-      find.text('${ManageData.archivedLabel}, 1 activity'),
-    );
-
+    await pumpUntil(tester, find.byType(ManageData));
     await tap(tester, find.text('Juice'));
-    await pumpUntilRouteSettled(tester, find.text('Juice history'));
-    await pumpUntil(tester, find.text('Quantity: 2'));
-    await tap(tester, find.byType(BackButton));
-    await pumpUntil(tester, find.text('Juice history'), present: false);
-    await pumpUntilRouteSettled(tester, find.text('Your Habits'));
+    await pumpUntilRouteSettled(tester, historyTitle('Juice'));
+    await tap(tester, find.byTooltip('Archive'));
+    await pumpUntil(tester, find.byTooltip('Unarchive'));
+    // An archived vice keeps its history.
+    await pumpUntil(tester, historyEntry(2));
+    await tap(tester, find.byTooltip('Back'));
+    await pumpUntil(tester, historyTitle('Juice'), present: false);
+    await pumpUntilRouteSettled(tester, find.byType(ManageData));
     await closeMenuPage(tester);
 
     await expectTallies(tester, <String>{

@@ -21,6 +21,8 @@ import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/manage_data.dart';
+import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -245,6 +247,7 @@ void main() {
     ('record', 'record', false, 0, false),
     ('fan', 'record', false, 0, true),
     ('menu', 'busy', false, 0, false),
+    ('sweep', 'busy', false, 0, false),
   ];
 
   for (final Brightness brightness in Brightness.values) {
@@ -339,6 +342,14 @@ void main() {
             await tester.tap(find.byKey(Homepage.menuKey));
             await tester.pumpAndSettle();
           }
+          // Half way round the sweep into the day before.
+          if (name == 'sweep') {
+            await tester.tap(find.byTooltip('Previous day'));
+            await tester.pump();
+            await tester.pump(DialMotion.dayContract);
+            await tester.pump();
+            await tester.pump(DialMotion.daySweep ~/ 2);
+          }
           if (name == 'busy' && brightness == Brightness.light) {
             void show(String what, Finder f) {
               for (final Element e in f.evaluate()) {
@@ -369,6 +380,106 @@ void main() {
             );
             await File(
               '$_dir/app-$name-${brightness.name}.png',
+            ).writeAsBytes(png!.buffer.asUint8List());
+          });
+          debugDisableShadows = true;
+        });
+      }, skip: _dir.isEmpty);
+    }
+  }
+
+  // Habits and Coffee's history, as frame 05 opens them: the busy world,
+  // today's latest coffee not yet synced, counts over 420 days.
+  for (final Brightness brightness in Brightness.values) {
+    for (final String page in <String>['habits', 'history']) {
+      testWidgets('fidelity $page ${brightness.name}', (
+        WidgetTester tester,
+      ) async {
+        await withClock(Clock.fixed(_now), () async {
+          debugDisableShadows = false;
+          tester.view.devicePixelRatio = 3;
+          tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+          tester.view.padding = const FakeViewPadding(
+            top: 47 * 3,
+            bottom: 34 * 3,
+          );
+          tester.platformDispatcher.platformBrightnessTestValue = brightness;
+          debugFormatLocales = const <Locale>[Locale('en', 'GB')];
+          addTearDown(() => debugFormatLocales = null);
+          addTearDown(tester.view.reset);
+          addTearDown(
+            tester.platformDispatcher.clearPlatformBrightnessTestValue,
+          );
+          final List<ViceActivity> all = <ViceActivity>[
+            for (int i = 0; i < 420; i++)
+              ..._dayEntries(
+                DateTime(_today.year, _today.month, _today.day - i),
+                'busy',
+                clearDay: false,
+              ).reversed,
+          ];
+          final ViceActivity latest = all.firstWhere(
+            (ViceActivity a) => a.viceID == 'coffee',
+          );
+          List<ViceActivity> of(String viceID) => <ViceActivity>[
+            for (final ViceActivity a in all)
+              if (a.viceID == viceID)
+                a == latest
+                    ? ViceActivity(
+                        id: a.id,
+                        viceID: a.viceID,
+                        quantity: a.quantity,
+                        ownerID: a.ownerID,
+                        createdAt: a.createdAt,
+                        pending: true,
+                      )
+                    : a,
+          ];
+          final GlobalKey frame = GlobalKey();
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                userProvider.overrideWith(
+                  (ref) => Stream.value(FakeUser(ownerID)),
+                ),
+                offlineProvider.overrideWith((ref) => Stream.value(false)),
+                trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+                viceListProvider.overrideWith((ref) => AsyncData(_habits)),
+                viceActivityCountProvider.overrideWith(
+                  (ref, String viceID) => AsyncData((
+                    count: of(viceID).length,
+                    source: CountSource.server,
+                  )),
+                ),
+                viceActivityHistoryProvider.overrideWith(
+                  (ref, ViceActivityHistoryQuery q) =>
+                      AsyncData(of(q.viceID).take(q.limit).toList()),
+                ),
+              ],
+              child: RepaintBoundary(
+                key: frame,
+                child: MaterialApp(
+                  debugShowCheckedModeBanner: false,
+                  theme: appTheme(Brightness.light),
+                  darkTheme: appTheme(Brightness.dark),
+                  home: page == 'habits'
+                      ? const ManageData()
+                      : const ViceActivityHistoryPage(viceID: 'coffee'),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.runAsync(() async {
+            final ui.Image image =
+                await (frame.currentContext!.findRenderObject()!
+                        as RenderRepaintBoundary)
+                    .toImage(pixelRatio: 3);
+            final ByteData? png = await image.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            await File(
+              '$_dir/app-$page-${brightness.name}.png',
             ).writeAsBytes(png!.buffer.asUint8List());
           });
           debugDisableShadows = true;

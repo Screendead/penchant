@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 
@@ -28,23 +29,19 @@ Future<Map<String, dynamic>> _storedVice(String name) async {
   return vices.docs.single.data();
 }
 
-Finder _rowButton(String viceName, String tooltip) => find.descendant(
-  of: find.ancestor(of: find.text(viceName), matching: find.byType(ListTile)),
-  matching: find.byTooltip(tooltip),
-);
-
 Future<void> _setArchived(
   WidgetTester tester,
   String viceName, {
   required bool archived,
 }) async {
   await openFromMenu(tester, Homepage.habitsItem);
-  await tap(tester, _rowButton(viceName, archived ? 'Archive' : 'Unarchive'));
-  await pumpUntil(
-    tester,
-    _rowButton(viceName, archived ? 'Unarchive' : 'Archive'),
-  );
+  await tap(tester, find.text(viceName));
+  await pumpUntilRouteSettled(tester, historyTitle(viceName));
+  await tap(tester, find.byTooltip(archived ? 'Archive' : 'Unarchive'));
+  await pumpUntil(tester, find.byTooltip(archived ? 'Unarchive' : 'Archive'));
   expect((await _storedVice(viceName))['archived'], archived);
+  await tap(tester, find.byTooltip('Back'));
+  await pumpUntilRouteSettled(tester, find.byType(ManageData));
   await closeMenuPage(tester);
 }
 
@@ -142,10 +139,10 @@ void main() {
     await recordActivity(tester, 'Coffee', 2);
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('1 activity'));
+    await pumpUntil(tester, habitsCount('1 entry'));
     await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, find.text('Coffee history'));
-    await tap(tester, find.text('Quantity: 2'));
+    await pumpUntil(tester, historyTitle('Coffee'));
+    await tap(tester, historyEntry(2));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     await enterText(tester, 'Quantity', '5');
     await tap(tester, find.widgetWithText(TextButton, 'Save'));
@@ -154,7 +151,7 @@ void main() {
       find.byType(ViceActivityEditorPage),
       present: false,
     );
-    await pumpUntil(tester, find.text('Quantity: 5'));
+    await pumpUntil(tester, historyEntry(5));
 
     await _waitForEmulator();
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =

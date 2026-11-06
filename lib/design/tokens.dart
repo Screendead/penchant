@@ -233,6 +233,17 @@ class DialShadows {
           ),
         ];
 
+  // A small raised thumb, as on the sign-in segmented control.
+  static List<BoxShadow> tiny(Brightness b) => b == Brightness.dark
+      ? const <BoxShadow>[]
+      : <BoxShadow>[
+          BoxShadow(
+            color: const Color(0x241D1C1A),
+            offset: const Offset(0, 1),
+            blurRadius: _blur(3),
+          ),
+        ];
+
   static List<BoxShadow> pop(Brightness b) => <BoxShadow>[
     BoxShadow(
       color: b == Brightness.dark

@@ -8,6 +8,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
@@ -144,8 +145,8 @@ void main() {
     expect(
       find.descendant(
         of: find.ancestor(
-          of: find.text('Quantity: 2'),
-          matching: find.byType(Card),
+          of: find.text(Unit.values.first.label(2)),
+          matching: find.byType(Dismissible),
         ),
         matching: find.text(NotSyncedMarker.defaultLabel),
       ),

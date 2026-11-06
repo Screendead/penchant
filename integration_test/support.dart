@@ -9,10 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -194,11 +197,11 @@ Future<void> register(WidgetTester tester, String email) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
-  await tap(tester, find.text('Register'));
+  await tap(tester, find.byKey(Authenticate.registerTab));
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
-  await enterText(tester, 'Confirm Password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Register'));
+  await enterText(tester, 'Confirm password', 'Passw0rdE2E');
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Create account'));
   await pumpUntil(tester, find.byType(Homepage));
 }
 
@@ -215,7 +218,7 @@ Future<void> addVicesThroughManageData(
   List<String> names = const <String>['Coffee', 'Tea', 'Water'],
 ]) async {
   await openFromMenu(tester, Homepage.habitsItem);
-  await pumpUntil(tester, find.text('Your Habits'));
+  await pumpUntil(tester, find.byType(ManageData));
   for (final String name in names) {
     await tap(tester, find.byTooltip('Add habit'));
     await pumpUntil(tester, find.text('Add Habit'));
@@ -229,10 +232,46 @@ Future<void> addVicesThroughManageData(
   await closeMenuPage(tester);
 }
 
+// The rows of the history page on top. A SnackBar is a Dismissible too, so
+// rows are looked for inside the page's scroll view.
+final Finder historyRows = find.descendant(
+  of: find.byType(SingleChildScrollView),
+  matching: find.byType(Dismissible),
+);
+
+// The history page's title, which is the habit's name.
+Finder historyTitle(String viceName) => find.descendant(
+  of: find.byType(ViceActivityHistoryPage),
+  matching: find.text(viceName),
+);
+
+// The history row whose quantity is [quantity], as "3 drinks".
+Finder historyEntry(int quantity) => find.descendant(
+  of: historyRows,
+  matching: find.byWidgetPredicate(
+    (Widget w) => w is Text && (w.data?.startsWith('$quantity ') ?? false),
+  ),
+);
+
+// The bar after a delete the server took; the queued one says "on this
+// device" instead.
+final Finder deletedBar = find.textContaining(RegExp(r'^Deleted \d'));
+
+// A Habits row's count, such as "1 entry".
+Finder habitsCount(String count) => find.textContaining(' · $count');
+
+Future<void> swipeToDelete(WidgetTester tester, Finder entry) async {
+  await tester.drag(
+    find.ancestor(of: entry, matching: find.byType(Dismissible)).first,
+    const Offset(-600, 0),
+  );
+  await tester.pump();
+}
+
 // Closes a page opened from the menu with its back button, back to Today.
 Future<void> closeMenuPage(WidgetTester tester) async {
-  await tap(tester, find.byType(BackButton));
-  await pumpUntil(tester, find.byType(BackButton), present: false);
+  await tap(tester, find.byTooltip('Back'));
+  await pumpUntil(tester, find.byTooltip('Back'), present: false);
   await pumpUntil(tester, find.byKey(Homepage.menuKey).hitTestable());
 }
 
@@ -480,10 +519,10 @@ Future<void> signOutThroughSettings(WidgetTester tester) async {
 }
 
 Future<void> signIn(WidgetTester tester, String email) async {
-  await pumpUntil(tester, find.text('Sign In to Your Account'));
+  await pumpUntil(tester, find.byKey(Authenticate.signInTab));
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign in'));
 }
 
 // Every string the app shows, offstage tabs, Today's tallies and the dial's

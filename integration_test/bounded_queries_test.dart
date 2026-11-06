@@ -72,15 +72,15 @@ void main() {
     }
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('$stored activities'));
+    await pumpUntil(tester, habitsCount('$stored entries'));
     await tap(tester, find.text('Coffee'));
-    await pumpUntilRouteSettled(tester, find.text('Coffee history'));
+    await pumpUntilRouteSettled(tester, historyTitle('Coffee'));
 
     final Finder list = find.byType(Scrollable).last;
     final Finder showOlder = find.text('Show older');
     await tester.scrollUntilVisible(showOlder, 400, scrollable: list);
-    expect(find.text('Quantity: $pageSize'), findsOneWidget);
-    expect(find.text('Quantity: ${pageSize + 1}'), findsNothing);
+    expect(historyEntry(pageSize), findsOneWidget);
+    expect(historyEntry(pageSize + 1), findsNothing);
 
     await tap(tester, showOlder);
     // Until the larger query delivers, the page shows the first query's
@@ -89,14 +89,12 @@ void main() {
     await pumpUntilTrue(
       tester,
       () =>
-          tester
-              .widget<ListView>(find.byType(ListView).last)
-              .semanticChildCount ==
-          2 * pageSize + 1,
+          historyRows.evaluate().length == 2 * pageSize &&
+          showOlder.evaluate().isNotEmpty,
       () => 'the history list to hold ${2 * pageSize} rows and "Show older"',
     );
     await tester.scrollUntilVisible(showOlder, 400, scrollable: list);
-    expect(find.text('Quantity: ${2 * pageSize}'), findsOneWidget);
-    expect(find.text('Quantity: ${2 * pageSize + 1}'), findsNothing);
+    expect(historyEntry(2 * pageSize), findsOneWidget);
+    expect(historyEntry(2 * pageSize + 1), findsNothing);
   });
 }

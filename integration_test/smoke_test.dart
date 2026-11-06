@@ -30,13 +30,13 @@ void main() {
     });
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('Your Habits'));
+    await pumpUntil(tester, find.byType(ManageData));
     // Each row's count is its own server request, so the rows fill in any order.
-    await pumpUntil(tester, find.text('1 activity'));
+    await pumpUntil(tester, habitsCount('1 entry'));
     await pumpUntilTrue(
       tester,
-      () => find.text('0 activities').evaluate().length == 2,
-      () => "two '0 activities' rows",
+      () => habitsCount('0 entries').evaluate().length == 2,
+      () => "two '0 entries' rows",
     );
     for (final String name in <String>['Coffee', 'Tea', 'Water']) {
       expect(

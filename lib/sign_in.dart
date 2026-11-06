@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
+import 'package:tracker/design/dial_icons.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
+import 'package:tracker/widgets/auth_parts.dart';
 
 class SignIn extends ConsumerStatefulWidget {
   const SignIn({super.key});
@@ -86,74 +89,66 @@ class _SignInState extends ConsumerState<SignIn> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sign In to Your Account')),
-      body: Form(
+    return AutofillGroup(
+      child: Form(
         key: formKey,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'john.doe@example.com',
-                  prefixIcon: Icon(Icons.email),
-                ),
-                onChanged: (String value) {
-                  setState(() {
-                    emailIsValid = value.isEmpty
-                        ? null
-                        : emailPattern.hasMatch(value.trim());
-                  });
-                },
-                validator: (String? value) => emailError(value?.trim()),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: passwordController,
-                obscureText: passwordIsObscured,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    tooltip: passwordIsObscured
-                        ? 'Show password'
-                        : 'Hide password',
-                    icon: Icon(
-                      passwordIsObscured
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        passwordIsObscured = !passwordIsObscured;
-                      });
-                    },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AuthField(
+              controller: emailController,
+              hint: 'Email',
+              glyph: DialGlyph.mail,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const <String>[AutofillHints.email],
+              textInputAction: TextInputAction.next,
+              onChanged: (String value) {
+                setState(() {
+                  emailIsValid = value.isEmpty
+                      ? null
+                      : emailPattern.hasMatch(value.trim());
+                });
+              },
+              validator: (String? value) => emailError(value?.trim()),
+            ),
+            const SizedBox(height: 10),
+            AuthField(
+              controller: passwordController,
+              hint: 'Password',
+              glyph: DialGlyph.lock,
+              obscurable: true,
+              autofillHints: const <String>[AutofillHints.password],
+              textInputAction: TextInputAction.done,
+              onChanged: (String value) {
+                setState(() => hasPassword = value.isNotEmpty);
+              },
+              onSubmitted: (_) {
+                if (isValid) {
+                  _signIn();
+                }
+              },
+            ),
+            if (error != null) AuthErrorPill(error!),
+            AuthPrimaryButton(
+              label: 'Sign in',
+              busy: busy,
+              onPressed: isValid ? _signIn : null,
+            ),
+            const SizedBox(height: DialSpace.xs),
+            Center(
+              child: TextButton(
+                onPressed: busy ? null : _resetPassword,
+                child: const Text(
+                  AccountCopy.forgotPassword,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    decoration: TextDecoration.underline,
                   ),
                 ),
-                onChanged: (String value) {
-                  setState(() {
-                    hasPassword = value.isNotEmpty;
-                  });
-                },
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: isValid ? _signIn : null,
-                child: const Text('Sign In'),
-              ),
-              if (error != null) Text(error!),
-              TextButton(
-                onPressed: busy ? null : _resetPassword,
-                child: const Text(AccountCopy.forgotPassword),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
