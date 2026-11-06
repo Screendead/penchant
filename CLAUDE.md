@@ -292,7 +292,8 @@ with the time it synced. Whether to trade that for server time is open (register
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce
 indexes. `test/firestore_indexes_test.dart` parses every query built in one chain from `.collection(...)` in `lib/`
-and fails when one needs a composite index the file lacks, or when a `where` or `orderBy` sits outside such a chain.
+and fails when one needs a composite index the file lacks, when a `where` with a Firestore filter argument or an
+`orderBy` sits outside such a chain, or when a chain uses `limitToLast` (whose reversed sorts it does not model).
 
 **Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error →
 `AuthStateFailure`, no event yet → `AuthStateLoading` (so a restored session never shows

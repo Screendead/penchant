@@ -433,8 +433,6 @@ void main() {
       expect(scan.unreadable, hasLength(2));
     });
 
-    // limitToLast reverses every sort before the query is sent, so the index
-    // it needs is not the one the chain spells.
     test('reports limitToLast', () {
       final QueryScan scan = scanSource('''
         f(db) => db.collection('vices')

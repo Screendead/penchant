@@ -11,9 +11,12 @@ import 'package:analyzer/dart/ast/visitor.dart';
 // single-field indexes serve equality-only queries, and anything else needs a
 // composite index whose fields are the equality fields, then the sort orders,
 // then range fields not already sorted on. Every index ends with an implicit
-// __name__ ascending. Where Firestore might combine several composites, this
-// asks for one, so it can demand an index Firestore would not, never the
-// reverse.
+// __name__ in the direction of its last sorted field (ascending when none),
+// and every query with an implicit __name__ sort in the direction of its last
+// orderBy, which also orders its unsorted range fields: the client SDK sends
+// these normalized sorts (queryNormalizedOrderBy in @firebase/firestore).
+// Where Firestore might combine several composites, this asks for one, so it
+// can demand an index Firestore would not, never the reverse.
 
 enum FilterKind { equality, contains, inequality }
 
@@ -67,8 +70,16 @@ class CompositeNeed {
   ].join(', ');
 }
 
-bool _isImplicitTail(Order order) =>
-    order.field == '__name__' && !order.descending;
+// Drops a trailing __name__ whose direction is the implicit one: that of the
+// sort before it, or ascending when nothing precedes it.
+void _dropImplicitTail(List<Order> orders) {
+  while (orders.isNotEmpty && orders.last.field == '__name__') {
+    final bool implicitDescending =
+        orders.length > 1 && orders[orders.length - 2].descending;
+    if (orders.last.descending != implicitDescending) return;
+    orders.removeLast();
+  }
+}
 
 // Null when automatic single-field indexes serve the shape.
 CompositeNeed? compositeNeed(QueryShape shape) {
@@ -85,17 +96,19 @@ CompositeNeed? compositeNeed(QueryShape shape) {
   };
   final List<String> unsortedRanges = <String>{
     for (final Filter f in shape.filters)
-      if (f.kind == FilterKind.inequality && !ordered.contains(f.field))
+      if (f.kind == FilterKind.inequality &&
+          f.field != '__name__' &&
+          !ordered.contains(f.field))
         f.field,
   }.toList()..sort();
+  final bool lastDescending =
+      shape.orders.isNotEmpty && shape.orders.last.descending;
   final List<Order> orders = <Order>[
     ...shape.orders,
     for (final String field in unsortedRanges)
-      (field: field, descending: false),
+      (field: field, descending: lastDescending),
   ];
-  while (orders.isNotEmpty && _isImplicitTail(orders.last)) {
-    orders.removeLast();
-  }
+  _dropImplicitTail(orders);
 
   final bool singleField = contains.isEmpty
       ? orders.isEmpty || (equality.isEmpty && orders.length == 1)
@@ -112,9 +125,12 @@ bool serves(Map<String, dynamic> index, String collection, CompositeNeed need) {
   final List<Map<String, dynamic>> fields = (index['fields'] as List<dynamic>)
       .cast<Map<String, dynamic>>()
       .toList();
-  while (fields.isNotEmpty &&
-      fields.last['fieldPath'] == '__name__' &&
-      fields.last['order'] == 'ASCENDING') {
+  while (fields.isNotEmpty && fields.last['fieldPath'] == '__name__') {
+    String implicit = 'ASCENDING';
+    for (final Map<String, dynamic> f in fields.take(fields.length - 1)) {
+      implicit = f['order'] as String? ?? implicit;
+    }
+    if (fields.last['order'] != implicit) break;
     fields.removeLast();
   }
   final int prefixLength = need.equality.length + need.contains.length;
@@ -276,6 +292,14 @@ class _QueryVisitor extends RecursiveAstVisitor<void> {
       if (next is! MethodInvocation || next.target != link) break;
       final String name = next.methodName.name;
       if (name == 'doc') return;
+      if (name == 'limitToLast') {
+        // The SDK reverses every sort before sending, so the index it needs
+        // is not the one the chain spells.
+        scan.unreadable.add(
+          '${locate(next)}: limitToLast, whose reversed sorts this check '
+          'does not model',
+        );
+      }
       if (name == 'where') {
         _read.add(next);
         filters.addAll(_readWhere(next));
