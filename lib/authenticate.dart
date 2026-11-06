@@ -34,96 +34,91 @@ class _AuthenticateState extends State<Authenticate> {
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints viewport) =>
               SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: viewport.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(26, 73, 26, 6),
-                        child: Column(
-                          // The privacy line sits at the foot of a tall
-                          // screen and after the form on a short one.
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Column(
-                              children: <Widget>[
-                                DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: DialShadows.pop(
-                                      theme.brightness,
-                                    ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: const PenchantMark(size: 92),
-                                  ),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 440,
+                      minHeight: viewport.maxHeight,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(26, 73, 26, 6),
+                      child: Column(
+                        // The privacy line sits at the foot of a tall
+                        // screen and after the form on a short one.
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          Column(
+                            children: <Widget>[
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: DialShadows.pop(theme.brightness),
                                 ),
-                                const SizedBox(height: 22),
-                                Semantics(
-                                  header: true,
-                                  child: Text(
-                                    'Penchant',
-                                    style: DialTypeScale.displayXL.copyWith(
-                                      fontSize: 42,
-                                      height: 1,
-                                      letterSpacing: -0.8,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
-                                  ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: const PenchantMark(size: 92),
                                 ),
-                                const SizedBox(height: DialSpace.xs),
-                                Text(
-                                  'A private journal of your days.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: DialFonts.text,
-                                    fontSize: 15.5,
-                                    height: 1.4,
-                                    color: muted,
+                              ),
+                              const SizedBox(height: 22),
+                              Semantics(
+                                header: true,
+                                child: Text(
+                                  'Penchant',
+                                  style: DialTypeScale.displayXL.copyWith(
+                                    fontSize: 42,
+                                    height: 1,
+                                    letterSpacing: -0.8,
+                                    color: theme.colorScheme.onSurface,
                                   ),
                                 ),
-                                const SizedBox(height: 28),
-                                _AuthSegments(
-                                  register: _register,
-                                  onChanged: (bool register) =>
-                                      setState(() => _register = register),
-                                ),
-                                const SizedBox(height: 18),
-                                AnimatedSwitcher(
-                                  duration: fade,
-                                  child: _register
-                                      ? const Register(
-                                          key: ValueKey<bool>(true),
-                                        )
-                                      : const SignIn(
-                                          key: ValueKey<bool>(false),
-                                        ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: DialSpace.xl),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                StrokeIcon(
-                                  DialGlyph.shield,
-                                  size: 14,
+                              ),
+                              const SizedBox(height: DialSpace.xs),
+                              Text(
+                                'A private journal of your days.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: DialFonts.text,
+                                  fontSize: 15.5,
+                                  height: 1.4,
                                   color: muted,
                                 ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    'Your journal is private to your account.',
-                                    textAlign: TextAlign.center,
-                                    style: CardStyles.foot(context),
-                                  ),
+                              ),
+                              const SizedBox(height: 28),
+                              _AuthSegments(
+                                register: _register,
+                                onChanged: (bool register) =>
+                                    setState(() => _register = register),
+                              ),
+                              const SizedBox(height: 18),
+                              AnimatedSwitcher(
+                                duration: fade,
+                                child: _register
+                                    ? const Register(key: ValueKey<bool>(true))
+                                    : const SignIn(key: ValueKey<bool>(false)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: DialSpace.xl),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              StrokeIcon(
+                                DialGlyph.shield,
+                                size: 14,
+                                color: muted,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Your journal is private to your account.',
+                                  textAlign: TextAlign.center,
+                                  style: CardStyles.foot(context),
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),

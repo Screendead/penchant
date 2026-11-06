@@ -26,7 +26,7 @@ void main() {
     expect(info.version, matches(RegExp(r'^\d+\.\d+\.\d+$')));
     await pumpUntil(
       tester,
-      find.text('Version ${info.version} (${info.buildNumber})'),
+      find.text('${info.version} (${info.buildNumber})'),
     );
   });
 }

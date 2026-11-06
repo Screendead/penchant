@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 
@@ -166,6 +167,11 @@ ThemeData appTheme(Brightness brightness) {
       selectionHandleColor: p.accent,
     ),
     iconTheme: IconThemeData(color: p.text),
+    // Every back button is the design's chevron, as on the back circle.
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (BuildContext context) =>
+          const StrokeIcon(DialGlyph.left, size: 20),
+    ),
     appBarTheme: AppBarTheme(
       backgroundColor: p.bg,
       foregroundColor: p.text,

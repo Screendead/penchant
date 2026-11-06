@@ -68,7 +68,11 @@ class _AuthFieldState extends State<AuthField> {
         contentPadding: const EdgeInsets.symmetric(vertical: 17),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 18, right: 10),
-          child: StrokeIcon(widget.glyph, size: 19, color: muted),
+          // The decorator stretches its prefix to the field's height.
+          child: Center(
+            widthFactor: 1,
+            child: StrokeIcon(widget.glyph, size: 19, color: muted),
+          ),
         ),
         prefixIconConstraints: const BoxConstraints(minHeight: 52),
         suffixIcon: widget.obscurable

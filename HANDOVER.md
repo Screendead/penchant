@@ -85,7 +85,12 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
      with Undo, and editing reuses the amount sheet.
    - **e. Auth and settings screens:** one sign-in screen with a segmented control and the password checklist;
-     Settings and Account Settings in the card style. Copy stays as it is until `r3-delete-copy`.
+     Settings and Account Settings in the card style. Copy stays as it is until `r3-delete-copy`. In review (`feat/overhaul-1e-account`): all of it, plus
+     the 3:1 keyboard focus ring on card rows, the sign-in segments and the slider (a 2 pt accent ring in place of
+     Material's 12% overlay); the unused navigation-bar themes are gone with the sign-in BottomNavigationBar. Left:
+     the Habits and history `ListTile`s (1d's files) still show only Material's overlay; Settings has no Export or
+     Reduce motion row (Export stays in Account Settings; nothing to set for motion yet). Side by side in
+     `fidelity/signin-*`, `signup-*`, `settings-*` (`test/fidelity_account_render_test.dart`).
    - **f. Motion polish:** bead travel, day sweep, springs, page transitions (the mock-up's notes add the
      `animations` package), and the reduce-motion fades.
    - **g. e2e rewrite:** rebuild `integration_test/` around the new flows (fan gestures, dial semantics, the sheets),

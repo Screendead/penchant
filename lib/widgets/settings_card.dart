@@ -16,7 +16,8 @@ class CardPage extends StatelessWidget {
     final NavigatorState? navigator = Navigator.maybeOf(context);
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 44,
+        // The mock-up's back circle is centred 29 pt below the status bar.
+        toolbarHeight: 58,
         leadingWidth: 56,
         automaticallyImplyLeading: false,
         leading: navigator != null && navigator.canPop()
@@ -29,7 +30,7 @@ class CardPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           DialSpace.gutter,
-          2,
+          1,
           DialSpace.gutter,
           50,
         ),

@@ -26,6 +26,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Sign-in and account creation are one screen with a Sign in / Create account switch, and the password rules tick
+  off as you type. Settings and Account Settings use the new card style with a round back button, and Settings
+  shows your email and the app's version at a glance. Moving through rows, the sign-in switch and sliders with a
+  keyboard now shows a clear ring around the one in focus.
 - Today matches its design: the Penchant icon and name at the top open a menu with Habits, Settings and whether
   your entries have synced, in place of the side drawer, and a pill beside them says Synced, Syncing or Offline. The
   dial, the five tallies, the Log button and the Trends peek all fit on one iPhone screen, the light theme lifts its
