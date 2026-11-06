@@ -83,6 +83,7 @@ Future<void> _pumpOpened(
     ProviderScope(
       overrides: [
         trackerWritesProvider.overrideWithValue(writes),
+        memoryJournal(),
         userProvider.overrideWith(
           (ref) => users ?? Stream.value(FakeUser(ownerID)),
         ),
@@ -146,7 +147,7 @@ void main() {
       await fillAndSave(tester);
 
       expect(writes.writes, [
-        const Write('addVice', '', <String, Object?>{
+        const Write('addVice', 'vice-1', <String, Object?>{
           'ownerID': ownerID,
           'name': 'Coffee',
           'unit': Unit.drink,
@@ -1239,6 +1240,7 @@ void main() {
       final ProviderContainer container = ProviderContainer(
         overrides: [
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          memoryJournal(),
         ],
       );
       addTearDown(container.dispose);

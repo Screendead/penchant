@@ -179,6 +179,7 @@ void main() {
               userProvider.overrideWith((ref) => Stream.value(user)),
               offlineProvider.overrideWith((ref) => Stream.value(false)),
               trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+              memoryJournal(),
               viceListProvider.overrideWith((ref) => AsyncData(_habits)),
               unarchivedViceListProvider.overrideWith(
                 (ref) => AsyncData(<Vice>[

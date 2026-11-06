@@ -50,12 +50,9 @@ class _ViceActivityHistoryPageState
     String? message;
     try {
       message =
-          await settleWrite(
+          await rejected.settle(
             ref.read(trackerWritesProvider).deleteActivity(activityID),
-            onRejectedLater: rejected.reporter(
-              'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate(), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
-              changes: activityID,
-            ),
+            'Not deleted: ${describeActivity(vice.name, vice.unit, activity.quantity, activity.createdAt.toDate(), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
           )
           ? 'Activity deleted'
           : queuedDeleteMessage;

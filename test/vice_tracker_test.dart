@@ -86,6 +86,7 @@ List<Override> _today(
   userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
   offlineProvider.overrideWith((ref) => Stream.value(offline)),
   trackerWritesProvider.overrideWithValue(writes ?? FakeTrackerWrites()),
+  memoryJournal(),
   viceActivityDayProvider.overrideWith(
     (ref, DateTime day) => AsyncData(activities(day)),
   ),
@@ -671,6 +672,7 @@ void main() {
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
             offlineProvider.overrideWith((ref) => Stream.value(false)),
             trackerWritesProvider.overrideWithValue(writes),
+            memoryJournal(),
             viceActivityDayForUserProvider.overrideWith(
               (ref, key) => day.stream,
             ),
