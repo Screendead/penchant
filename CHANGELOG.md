@@ -30,6 +30,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
+  quieter; the 00, 06, 12 and 18 labels still give the time.
 - Trends by week shows whole weeks only: the range rounds down to a whole number of weeks (30 days shows 28, 90 shows
   84, a year shows 364), so the oldest point no longer reads low from holding a few days.
 - Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
