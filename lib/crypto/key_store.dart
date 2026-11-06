@@ -69,14 +69,27 @@ class KeyStore {
 
   static const int _formatVersion = 1;
 
-  Future<StoredKey?> read(String uid) async {
-    final String? synced = await _storage.read(
-      key: itemName(uid),
-      iOptions: _syncedIOS,
-      mOptions: _syncedMac,
-    );
-    if (synced != null) {
-      return _decode(synced, KeyLocation.synced);
+  Future<StoredKey?> read(String uid) async => (await _read(uid)).stored;
+
+  // A keychain that refuses synced items refuses the synced lookup too
+  // (errSecMissingEntitlement), so that refusal must not hide the
+  // this-device item behind it.
+  Future<({StoredKey? stored, bool syncedRefused})> _read(String uid) async {
+    bool syncedRefused = false;
+    try {
+      final String? synced = await _storage.read(
+        key: itemName(uid),
+        iOptions: _syncedIOS,
+        mOptions: _syncedMac,
+      );
+      if (synced != null) {
+        return (
+          stored: _decode(synced, KeyLocation.synced),
+          syncedRefused: false,
+        );
+      }
+    } on PlatformException {
+      syncedRefused = true;
     }
 
     final String? local = await _storage.read(
@@ -84,7 +97,10 @@ class KeyStore {
       iOptions: _localIOS,
       mOptions: _localMac,
     );
-    return local == null ? null : _decode(local, KeyLocation.thisDevice);
+    return (
+      stored: local == null ? null : _decode(local, KeyLocation.thisDevice),
+      syncedRefused: syncedRefused,
+    );
   }
 
   /// Stores [journalKey] for [uid], with [recoveryKey] when given, and says
@@ -95,7 +111,8 @@ class KeyStore {
     required JournalKey journalKey,
     Uint8List? recoveryKey,
   }) async {
-    final StoredKey? existing = await read(uid);
+    final (:StoredKey? stored, :bool syncedRefused) = await _read(uid);
+    final StoredKey? existing = stored;
     if (existing != null && !existing.journalKey.sameAs(journalKey)) {
       throw KeyConflictException(uid);
     }
@@ -109,7 +126,9 @@ class KeyStore {
       },
     });
 
-    if (existing?.location != KeyLocation.thisDevice) {
+    // Writing synced after a refused synced lookup could replace a synced
+    // item that lookup failed to see.
+    if (!syncedRefused && existing?.location != KeyLocation.thisDevice) {
       try {
         await _storage.write(
           key: itemName(uid),
@@ -133,6 +152,7 @@ class KeyStore {
     return _decode(value, KeyLocation.thisDevice);
   }
 
+  /// Deleting the synced item deletes it from every device on the Apple ID.
   Future<void> delete(String uid) async {
     await _storage.delete(
       key: itemName(uid),

@@ -10,9 +10,12 @@ import 'package:tracker/crypto/recovery_key.dart';
 /// A keychain that keeps synced and this-device items apart, as the real one
 /// does, and can refuse synced items like a build without the entitlement.
 class FakeKeychain extends Fake implements FlutterSecureStorage {
-  FakeKeychain({this.refuseSynced = false});
+  FakeKeychain({this.refuseSynced = false, this.refuseSyncedReads = false});
 
   final bool refuseSynced;
+
+  /// The real keychain, refusing synced items, refuses the synced lookup too.
+  final bool refuseSyncedReads;
   final Map<(String, bool), String> items = <(String, bool), String>{};
 
   static bool _synced(AppleOptions? i, AppleOptions? m) {
@@ -29,7 +32,16 @@ class FakeKeychain extends Fake implements FlutterSecureStorage {
     WebOptions? webOptions,
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async => items[(key, _synced(iOptions, mOptions))];
+  }) async {
+    final bool synced = _synced(iOptions, mOptions);
+    if (synced && refuseSyncedReads) {
+      throw PlatformException(
+        code: '-34018',
+        message: 'errSecMissingEntitlement',
+      );
+    }
+    return items[(key, synced)];
+  }
 
   @override
   Future<void> write({
@@ -106,6 +118,40 @@ void main() {
       (KeyStore.itemName('u1'), false),
     ]);
     expect((await store.read('u1'))!.location, KeyLocation.thisDevice);
+  });
+
+  test(
+    'reaches the this-device item when synced lookups are refused too',
+    () async {
+      final FakeKeychain keychain = FakeKeychain(
+        refuseSynced: true,
+        refuseSyncedReads: true,
+      );
+      final KeyStore store = KeyStore(keychain);
+
+      expect(
+        (await store.save('u1', journalKey: key)).location,
+        KeyLocation.thisDevice,
+      );
+      final StoredKey read = (await store.read('u1'))!;
+      expect(read.journalKey.sameAs(key), isTrue);
+      expect(read.location, KeyLocation.thisDevice);
+      await expectLater(
+        store.save('u1', journalKey: JournalKey.generate(Random(5))),
+        throwsA(isA<KeyConflictException>()),
+      );
+    },
+  );
+
+  test('never writes synced after the synced lookup was refused', () async {
+    final FakeKeychain keychain = FakeKeychain(refuseSyncedReads: true);
+    keychain.items[(KeyStore.itemName('u1'), true)] = 'unseen';
+
+    final StoredKey saved = await KeyStore(
+      keychain,
+    ).save('u1', journalKey: key);
+    expect(saved.location, KeyLocation.thisDevice);
+    expect(keychain.items[(KeyStore.itemName('u1'), true)], 'unseen');
   });
 
   test('keeps one key per uid', () async {

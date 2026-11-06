@@ -9,8 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
-- Groundwork for end-to-end encryption: the app can make a key for your account, keep it in iCloud Keychain, seal and
-  open data with it, and write it out as a recovery key you can type back in. Nothing is encrypted with it yet.
+- Groundwork for end-to-end encryption: the code to make a key for your account, keep it in iCloud Keychain, seal and
+  open data with it, and write it out as a recovery key. The app does not use it yet, so nothing is encrypted.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
