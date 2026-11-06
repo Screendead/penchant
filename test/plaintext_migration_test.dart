@@ -8,32 +8,17 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/crypto/plaintext_migrator.dart';
-import 'package:tracker/crypto/sealer.dart';
+import 'package:tracker/data/sealed.dart';
+import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 
+import 'fake_sealer.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
-
-// Seals to the JSON of what it was given, so a test can read it back.
-class FakeSealer implements Sealer {
-  final List<({String collection, String docId, String? viceID})> calls =
-      <({String collection, String docId, String? viceID})>[];
-
-  @override
-  Future<Uint8List> seal({
-    required String collection,
-    required String docId,
-    required String ownerID,
-    String? viceID,
-    required Map<String, Object?> fields,
-  }) async {
-    calls.add((collection: collection, docId: docId, viceID: viceID));
-    return Uint8List.fromList(utf8.encode(jsonEncode(fields)));
-  }
-}
 
 // Firestore's collections as maps, with updates applied as the server would.
 class MemorySource implements MigrationSource {
@@ -122,16 +107,13 @@ class MemorySource implements MigrationSource {
     };
   }
 
-  int get plaintextLeft => <Map<String, dynamic>>[
-    ...collections['vices']!.values.where(
-      (d) =>
-          d['ownerID'] == ownerID &&
-          (d.containsKey('name') || d.containsKey('unit')),
-    ),
-    ...collections['activities']!.values.where(
-      (d) => d['ownerID'] == ownerID && d.containsKey('quantity'),
-    ),
-  ].length;
+  int get plaintextLeft => collections['vices']!.values
+      .where(
+        (d) =>
+            d['ownerID'] == ownerID &&
+            (d.containsKey('name') || d.containsKey('unit')),
+      )
+      .length;
 }
 
 String id(int n) => n.toString().padLeft(5, '0');
@@ -158,24 +140,63 @@ void main() {
       expect(update['name'], FieldValue.delete());
       expect(update['unit'], FieldValue.delete());
       expect(
-        jsonDecode(utf8.decode((update[sealedField]! as Blob).bytes)),
+        await sealer.open(
+          (update[sealedField]! as Blob).bytes,
+          context: 'vices/v1',
+        ),
         <String, Object>{'name': 'Tea', 'unit': 'drink'},
       );
     });
 
-    test('seals an activity\'s quantity, bound to its vice', () async {
-      final Map<String, Object>? update = await migrator.update(
-        'activities',
-        'a1',
-        {'quantity': 0, 'viceID': 'v1', 'ownerID': ownerID},
+    test('leaves an activity alone: its quantity stays plaintext', () async {
+      expect(
+        await migrator.update('activities', 'a1', {
+          'quantity': 0,
+          'viceID': 'v1',
+          'ownerID': ownerID,
+        }),
+        isNull,
       );
-      expect(update!.keys, unorderedEquals(<String>[sealedField, 'quantity']));
-      expect(sealer.calls.last, (
-        collection: 'activities',
-        docId: 'a1',
-        viceID: 'v1',
-      ));
     });
+
+    test(
+      'what it writes, the reader opens to the same vice, on that document only',
+      () async {
+        final Map<String, dynamic> stored = <String, dynamic>{
+          'name': 'Tea',
+          'unit': 'drink',
+          'ownerID': ownerID,
+          'createdAt': Timestamp.fromMillisecondsSinceEpoch(0),
+          'archived': false,
+        };
+        final Map<String, Object> update = (await migrator.update(
+          'vices',
+          'v1',
+          stored,
+        ))!;
+        for (final MapEntry<String, Object>(:key, :value) in update.entries) {
+          value == FieldValue.delete()
+              ? stored.remove(key)
+              : stored[key] = value;
+        }
+        expect(stored.keys, isNot(contains('name')));
+
+        final SealedOpener opener = SealedOpener(sealer);
+        final Vice vice = Vice.fromJson(
+          id: 'v1',
+          json: stored,
+          opened: await opener.open('vices', 'v1', stored),
+        );
+        expect((vice.name, vice.unit, vice.locked), ('Tea', Unit.drink, false));
+
+        final Vice copied = Vice.fromJson(
+          id: 'v2',
+          json: stored,
+          opened: await opener.open('vices', 'v2', stored),
+        );
+        expect(copied.locked, isTrue);
+      },
+    );
 
     test('deletes only the plaintext fields a legacy document has', () async {
       final Map<String, Object>? update = await migrator.update('vices', 'v1', {
@@ -206,14 +227,12 @@ void main() {
       'seals every plaintext document the user owns, 500 at most per batch',
       () async {
         final MemorySource source = MemorySource();
-        for (int n = 0; n < 3; n++) {
+        for (int n = 0; n < 1206; n++) {
           source.addVice(id(n));
         }
         source.addVice('sealed', sealed: true);
         source.addVice('other', owner: 'someone-else');
-        for (int n = 0; n < 1203; n++) {
-          source.addActivity(id(n));
-        }
+        source.addActivity('a0');
         final List<int> progress = <int>[];
 
         final int sealed = await PlaintextMigrator(
@@ -223,8 +242,9 @@ void main() {
 
         expect(sealed, 1206);
         expect(source.plaintextLeft, 0);
-        expect(source.batchSizes, <int>[3, 500, 500, 203]);
-        expect(progress, <int>[3, 503, 1003, 1206]);
+        expect(source.batchSizes, <int>[500, 500, 206]);
+        expect(progress, <int>[500, 1000, 1206]);
+        expect(source.collections['activities']!['a0']!['quantity'], 2);
         expect(source.collections['vices']!['other']!['name'], 'Tea other');
       },
     );
@@ -247,7 +267,7 @@ void main() {
     test('a run cut short is finished by the next', () async {
       final MemorySource source = MemorySource();
       for (int n = 0; n < 1100; n++) {
-        source.addActivity(id(n));
+        source.addVice(id(n));
       }
       source.failCommitNumber = 1;
       final PlaintextMigrator migrator = PlaintextMigrator(
@@ -335,7 +355,7 @@ void main() {
     ProviderContainer container({
       required MemorySource source,
       required MemoryJournalStore markers,
-      Sealer? sealer,
+      FieldSealer? sealer,
       bool offline = false,
       String build = '1',
     }) {
@@ -396,7 +416,7 @@ void main() {
       );
       expect(
         await settle(first),
-        const MigrationStatus(MigrationPhase.done, 2),
+        const MigrationStatus(MigrationPhase.done, 1),
       );
       expect(source.plaintextLeft, 0);
       expect(jsonDecode(markers.contents!), <String>['$ownerID 0.1.0+1']);

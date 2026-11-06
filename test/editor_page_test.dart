@@ -43,6 +43,40 @@ void main() {
     await tester.pump();
   }
 
+  testWidgets("a locked entry's quantity and delete are unavailable", (
+    tester,
+  ) async {
+    final ViceActivity locked = ViceActivity(
+      id: activity.id,
+      viceID: coffee.id,
+      quantity: 0,
+      ownerID: ownerID,
+      createdAt: activity.createdAt,
+      locked: true,
+    );
+    await pumpEditor(tester, AsyncData(locked));
+
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.delete_outline),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.widgetWithText(TextFormField, 'Quantity'),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .readOnly,
+      isTrue,
+    );
+  });
+
   testWidgets('edits the activity its route names', (tester) async {
     await pumpEditor(tester, AsyncData(activity));
 

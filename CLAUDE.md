@@ -307,10 +307,31 @@ must name a vice the writer owns, checked with one `get()` (a billed read, even 
 denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
-while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. The one update that may remove fields is the first-launch sealing
-(`lib/crypto/plaintext_migrator.dart`, rules `sealsPlaintext`): a document without `sealed` gains it as bytes and
-loses its plaintext fields (`name`/`unit`, or `quantity`) in the same write, run once per uid and app version once
-`sealerProvider` has a key and `offlineProvider` says online. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test.
+
+**Sealed fields** (`r2-e2ee`). A vice may instead hold its content fields (`name`, `unit`, and every later vice
+content field, such as a category) in one `sealed` field: bytes, the envelope of `lib/crypto/sealer.dart`
+(`version | nonce | ciphertext | tag` around JSON padded to 64/256/1024/4096 bytes), with the document path as
+associated data, so only the user's key opens it and only on that document. Activities keep `quantity`, a decimal
+amount, `createdAt`, `viceID` and `ownerID` plaintext (Jack, 2026-11-06: a server job may aggregate amounts); their
+later content fields (triggers) go in an activity's `sealed`. The field lists live in `contentFields`
+(`lib/data/sealed.dart`) and in the rules' `sealedAlone` calls, and a new content field joins both. Vices'
+`ownerID`, `createdAt` and `archived` stay plaintext, so every query, index and `count()` works unchanged. The rules
+accept either shape on create, never content beside `sealed`, bound `sealed` to bytes of 30 to 4125, refuse
+removing it, and let an update convert a plaintext vice by setting `sealed` and deleting the plaintext fields (a
+deleted field is an affected key). They cannot read a sealed name, so for sealed vices `lib/data/limits.dart` is
+the only guard. `lib/data/sealed.dart` holds `FieldSealer` (its one implementation is
+`lib/crypto/journal_field_sealer.dart`), `sealerProvider` (null while no key exists or while `e2eeEnabled` in
+`lib/crypto/e2ee_enabled.dart` is false, and then every write stays plaintext), and `SealedOpener`, which each query
+provider runs over its snapshots (`asyncMap`) and the export over what it reads. It never throws: a document that
+will not open parses with `locked` set, a placeholder name and default content, and is reported once per listener.
+`TrackerWrites` seals when it has a sealer: an update reseals the whole content (so `updateVice` takes the `Vice`,
+and refuses a locked one), and `SentWrite.fields` is then empty, since the envelope does not exist yet when the
+write is handed back. Tests override `sealerProvider` with `test/fake_sealer.dart`, the real envelope under a fixed
+key. The first-launch sealing (`lib/crypto/plaintext_migrator.dart`) uses the same conversion: it
+pages each collection with content fields from the server and seals every document without `sealed`, run once per
+uid and app version once `sealerProvider` has a key and `offlineProvider` says online; a document that already has
+`sealed` is skipped, so a run cut short is finished by the next. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.

@@ -235,9 +235,11 @@ class _ViceActivityHistoryPageState
           CircleButton(
             icon: DialGlyph.pencil,
             tooltip: 'Edit habit',
-            onPressed: () {
-              Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
-            },
+            onPressed: vice.locked
+                ? null
+                : () {
+                    Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
+                  },
           ),
         ],
       ),
@@ -289,7 +291,10 @@ class _ViceActivityHistoryPageState
 
     return Dismissible(
       key: ValueKey<(String, int)>((activity.id, revived[activity.id] ?? 0)),
-      direction: DismissDirection.endToStart,
+      // Undo could not write a locked entry's content back.
+      direction: activity.locked
+          ? DismissDirection.none
+          : DismissDirection.endToStart,
       onDismissed: (_) => _delete(vice, activity),
       background: ColoredBox(
         color: theme.colorScheme.error,

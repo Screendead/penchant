@@ -2,6 +2,10 @@
 
 **Priority:** release blocker
 
+**Decided:** Jack picked O1 (pitch option A) on 2026-11-06. Part 1, the crypto core in `lib/crypto/` with no data
+change, is built: AES-256-GCM sealing, one journal key per uid in the keychain (synced, or this device only where the
+keychain refuses a synced item), and the recovery key with the AES-128 wrap of the journal key.
+
 Why this stage (INFERENCE): by the README's own test, the app "should not reach strangers without it" if Jack wants
 it at all. Moving `name` and `quantity` into a sealed field changes the type of an existing field. Every build that
 predates the change then loses its whole vice list, and the migration has to run over strangers' data. Today the

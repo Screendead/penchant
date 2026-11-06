@@ -1,29 +1,14 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tracker/crypto/sealer.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 
+import '../test/fake_sealer.dart';
 import 'support.dart';
-
-// Stands in for the crypto core's sealer: what this test checks is that every
-// legacy document is rewritten, not the cipher.
-class _JsonSealer implements Sealer {
-  @override
-  Future<Uint8List> seal({
-    required String collection,
-    required String docId,
-    required String ownerID,
-    String? viceID,
-    required Map<String, Object?> fields,
-  }) async => Uint8List.fromList(utf8.encode(jsonEncode(fields)));
-}
 
 void main() {
   ensureE2EBinding();
@@ -34,7 +19,7 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('a launch with a key seals every legacy plaintext document', (
+  testWidgets('a launch with a key seals every legacy plaintext vice', (
     WidgetTester tester,
   ) async {
     final UserCredential credential = await FirebaseAuth.instance
@@ -46,8 +31,8 @@ void main() {
     final FirebaseFirestore db = FirebaseFirestore.instance;
     final Timestamp at = Timestamp.now();
 
-    // More activities than one page, so the run crosses a page boundary.
-    const int activityCount = 520;
+    // More vices than one page, so the run crosses a page boundary.
+    const int viceCount = 520;
     final DocumentReference<Map<String, dynamic>> coffee = db
         .collection('vices')
         .doc();
@@ -58,31 +43,30 @@ void main() {
       'createdAt': at,
       'archived': false,
     });
-    await db.collection('vices').add(<String, Object>{
-      'name': 'Tea',
-      'unit': 'drink',
-      'ownerID': uid,
-      'createdAt': at,
-      'archived': true,
-    });
-    for (int start = 0; start < activityCount; start += 400) {
+    for (int start = 1; start < viceCount; start += 400) {
       final WriteBatch batch = db.batch();
-      for (int n = start; n < activityCount && n < start + 400; n++) {
-        batch.set(db.collection('activities').doc(), <String, Object>{
-          'viceID': coffee.id,
-          'quantity': 1 + n % 3,
+      for (int n = start; n < viceCount && n < start + 400; n++) {
+        batch.set(db.collection('vices').doc(), <String, Object>{
+          'name': 'Habit $n',
+          'unit': 'item',
           'ownerID': uid,
-          'createdAt': Timestamp.fromMillisecondsSinceEpoch(
-            at.millisecondsSinceEpoch - n * 60000,
-          ),
+          'createdAt': at,
+          'archived': true,
         });
       }
       await batch.commit();
     }
+    await db.collection('activities').add(<String, Object>{
+      'viceID': coffee.id,
+      'quantity': 2,
+      'ownerID': uid,
+      'createdAt': at,
+    });
 
+    final FakeSealer sealer = FakeSealer();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sealerProvider.overrideWithValue(_JsonSealer())],
+        overrides: [sealerProvider.overrideWithValue(sealer)],
         child: const MyApp(),
       ),
     );
@@ -90,21 +74,16 @@ void main() {
 
     Future<int> plaintextLeft() async {
       final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs =
-          <QueryDocumentSnapshot<Map<String, dynamic>>>[
-            for (final String collection in plaintextFields.keys)
-              ...(await db
-                      .collection(collection)
-                      .where('ownerID', isEqualTo: uid)
-                      .get(const GetOptions(source: Source.server)))
-                  .docs,
-          ];
-      expect(docs, hasLength(2 + activityCount));
+          (await db
+                  .collection('vices')
+                  .where('ownerID', isEqualTo: uid)
+                  .get(const GetOptions(source: Source.server)))
+              .docs;
+      expect(docs, hasLength(viceCount));
       return docs.where((QueryDocumentSnapshot<Map<String, dynamic>> doc) {
         final Map<String, dynamic> data = doc.data();
         return !data.containsKey(sealedField) ||
-            plaintextFields.values.any(
-              (List<String> fields) => fields.any(data.containsKey),
-            );
+            viceContentFields.any(data.containsKey);
       }).length;
     }
 
@@ -114,15 +93,29 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       left = await plaintextLeft();
     }
-    expect(left, 0, reason: 'documents still holding plaintext');
+    expect(left, 0, reason: 'vices still holding plaintext');
 
     final Map<String, dynamic> sealedCoffee = (await coffee.get(
       const GetOptions(source: Source.server),
     )).data()!;
     expect(
-      jsonDecode(utf8.decode((sealedCoffee[sealedField] as Blob).bytes)),
+      await sealer.open(
+        (sealedCoffee[sealedField] as Blob).bytes,
+        context: sealContext('vices', coffee.id),
+      ),
       <String, Object>{'name': 'Coffee', 'unit': 'drink'},
     );
     expect(sealedCoffee['archived'], false);
+
+    final Map<String, dynamic> activity =
+        (await db
+                .collection('activities')
+                .where('ownerID', isEqualTo: uid)
+                .get(const GetOptions(source: Source.server)))
+            .docs
+            .single
+            .data();
+    expect(activity['quantity'], 2);
+    expect(activity.containsKey(sealedField), isFalse);
   });
 }

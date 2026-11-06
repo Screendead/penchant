@@ -50,6 +50,10 @@ Future<void> deleteWithUndo(
   VoidCallback? onRestored,
   VoidCallback? onFailed,
 }) async {
+  // Undo writes the parsed fields back, and a locked entry's are placeholders.
+  if (activity.locked) {
+    return;
+  }
   final User? user = ref.read(userProvider).value;
   final TrackerWrites writes = ref.read(trackerWritesProvider);
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);

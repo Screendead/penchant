@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/account/account.dart';
-import 'package:tracker/crypto/sealer.dart';
+import 'package:tracker/data/sealed.dart';
 
 /// Where the migrator reads the user's documents and writes their sealed
 /// form. [FirestoreMigrationSource] in the app; a map in tests.
@@ -94,7 +94,7 @@ class PlaintextMigrator {
   PlaintextMigrator({required this.source, required this.sealer});
 
   final MigrationSource source;
-  final Sealer sealer;
+  final FieldSealer sealer;
 
   /// Firestore's limit on writes in one batch, as Account.deleteAccount uses.
   static const int pageSize = Account.pageSize;
@@ -105,24 +105,17 @@ class PlaintextMigrator {
     String docId,
     Map<String, dynamic> data,
   ) async {
-    final List<String> fields = plaintextFields[collection]!;
+    final List<String> fields = contentFields[collection]!;
     if (data.containsKey(sealedField) ||
         !fields.any((String field) => data.containsKey(field))) {
       return null;
     }
-    final Object? viceID = data['viceID'];
     return <String, Object>{
       sealedField: Blob(
-        await sealer.seal(
-          collection: collection,
-          docId: docId,
-          ownerID: data['ownerID'] as String,
-          viceID: viceID is String ? viceID : null,
-          fields: <String, Object?>{
-            for (final String field in fields)
-              if (data.containsKey(field)) field: data[field],
-          },
-        ),
+        await sealer.seal(<String, Object?>{
+          for (final String field in fields)
+            if (data.containsKey(field)) field: data[field],
+        }, context: sealContext(collection, docId)),
       ),
       for (final String field in fields)
         if (data.containsKey(field)) field: FieldValue.delete(),
@@ -142,7 +135,11 @@ class PlaintextMigrator {
     // read; sealing the older value and deleting the field would then discard
     // the edit once it lands first.
     await source.settlePendingWrites();
-    for (final String collection in plaintextFields.keys) {
+    // A collection with no content fields (activities, until triggers land)
+    // has nothing to seal, so it is not read at all.
+    for (final String collection in contentFields.keys.where(
+      (String collection) => contentFields[collection]!.isNotEmpty,
+    )) {
       String? after;
       while (true) {
         if (stillWanted != null && !stillWanted()) {

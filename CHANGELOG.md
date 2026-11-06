@@ -9,7 +9,12 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
-- Once end-to-end encryption is on, the first launch with your key seals the habits and entries you logged before
+- Habits can be stored sealed: a habit's name and unit travel in one encrypted field, with dates, ids and entry
+  amounts left plain so every list and chart works as before. The rules accept both shapes; sealing stays off until
+  the encryption work is complete (until then everything is written as before).
+- Groundwork for end-to-end encryption: the code to make a key for your account, keep it in iCloud Keychain, seal and
+  open data with it, and write it out as a recovery key. The app does not use it yet, so nothing is encrypted.
+- Once end-to-end encryption is on, the first launch with your key seals the habits you logged before
   it, in the background, and removes their readable copies from the server. It waits for a connection, picks up
   where it left off if interrupted, and Settings shows its progress.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has

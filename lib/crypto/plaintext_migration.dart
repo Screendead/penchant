@@ -6,7 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:tracker/crypto/plaintext_migrator.dart';
-import 'package:tracker/crypto/sealer.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
@@ -110,7 +110,7 @@ class PlaintextMigration extends Notifier<MigrationStatus> {
   @override
   MigrationStatus build() {
     // The sealer first: without a key nothing else is read.
-    final Sealer? sealer = ref.watch(sealerProvider);
+    final FieldSealer? sealer = ref.watch(sealerProvider);
     if (sealer == null) {
       return MigrationStatus.idle;
     }

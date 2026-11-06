@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -75,8 +76,8 @@ class FakeTrackerWrites implements TrackerWrites {
   );
 
   @override
-  SentWrite updateVice(String viceID, {String? name, Unit? unit}) => _write(
-    Write('updateVice', viceID, <String, Object?>{
+  SentWrite updateVice(Vice vice, {String? name, Unit? unit}) => _write(
+    Write('updateVice', vice.id, <String, Object?>{
       'name': ?name,
       'unit': ?unit,
     }),
