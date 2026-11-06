@@ -216,6 +216,36 @@ void main() {
     expect(_chipSelected(tester, 'Sweets'), isTrue);
   });
 
+  testWidgets('an open sheet resized into the split view and back is at its '
+      'peek, with the Log button and the arrow keys working', (
+    WidgetTester tester,
+  ) async {
+    _useWindow(tester, 800);
+    await _pump(tester);
+    await openTrends(tester);
+
+    await _resize(tester, 1200);
+    await _resize(tester, 800);
+    final DraggableScrollableSheet sheet = tester
+        .widget<DraggableScrollableSheet>(
+          find.byType(DraggableScrollableSheet),
+        );
+    // The Log button rides the sheet's top edge.
+    final Rect today = _rectOf(tester, find.byType(ViceTracker));
+    expect(
+      tester.getCenter(find.byType(LogButton)).dy,
+      moreOrLessEquals(
+        today.top + today.height * (1 - sheet.minChildSize),
+        epsilon: 1,
+      ),
+    );
+    expect(find.byType(LogButton).hitTestable(), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(_todaysDay(tester), addDays(_today, -1));
+  });
+
   testWidgets('Left and Right step through days on Today, never past today', (
     WidgetTester tester,
   ) async {
