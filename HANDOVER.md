@@ -69,6 +69,13 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      hour's beads into one arc above about 48 entries, and docking the Log button on the Trends sheet (1c). Bead
      size is against the habit's median entry on the shown day, so it costs no extra read; the "your usual" ghost
      beads and a cross-day typical would cost a 7-day query. `r5-*` (the radar's key) are moot once this merges.
+     Fidelity pass (`feat/today-fidelity`, stacked on #89), after Jack found Today unlike the mock-up: the
+     Penchant wordmark menu (Habits, Settings, sync footer) replaces the drawer, the Synced pill is built on
+     `waitForPendingWrites` (`syncStatusProvider`), the mock-up's spacing fits five tallies above the Log button on a
+     390 x 844 phone, light shadows, stroke icons, dimmed zero pips. Side by side in
+     `docs/pitch/mockups/ui-overhaul/day-dial/fidelity/`; re-render with `tools/fidelity/`. Still different, by
+     the 3:1 floor: the clear day's major spokes, pip and wedge rims, the sparkline's daily line; and the coach pill
+     and bead size (median of the day) wait on Jack.
    - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
      Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial. In review in #89
      (`feat/trends-sheet`, stacked on #83): all of it, and the Log button docks on the sheet's edge. Left for 1f: the

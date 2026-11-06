@@ -155,30 +155,36 @@ class _TallyRowState extends State<TallyRow>
                     excludeSemantics: true,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: <Widget>[
-                          HabitPip(mark: widget.mark, dim: zero),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              widget.vice.name,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontSize: 15.5,
-                                color: zero ? colors.muted : null,
-                              ),
+                      child: LayoutBuilder(
+                        builder: (BuildContext context, BoxConstraints box) =>
+                            Row(
+                              children: <Widget>[
+                                HabitPip(mark: widget.mark, dim: zero),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    widget.vice.name,
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      fontSize: 15.5,
+                                      color: zero ? colors.muted : null,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                // At large text the total shrinks before it
+                                // crowds the name out.
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: box.maxWidth * 0.55,
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: totals,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          // At large text the total shrinks before it
-                          // crowds the name out.
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: AlignmentDirectional.centerEnd,
-                              child: totals,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
