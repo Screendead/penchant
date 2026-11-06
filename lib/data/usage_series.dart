@@ -120,10 +120,7 @@ DateTime hourProfileStart(UsageRange range) =>
 
 // When in the day [activities] happen, counting those from [start] to the
 // end of [range].
-HourProfile hourProfile(
-  UsageRange range,
-  Iterable<ViceActivity> activities,
-) {
+HourProfile hourProfile(UsageRange range, Iterable<ViceActivity> activities) {
   final DateTime start = hourProfileStart(range);
   final DateTime end = range.end;
   final List<double> hours = List<double>.filled(24, 0);

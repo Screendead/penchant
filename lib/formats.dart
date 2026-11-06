@@ -145,3 +145,7 @@ String formatWeekdayShort(DateTime day) =>
 
 String formatMonth(DateTime month) =>
     DateFormat.yMMMM(formatLocale).format(month);
+
+// An average, always to one decimal place, so 3 reads 3.0 beside 3.1.
+String formatAverage(double value) =>
+    NumberFormat('#,##0.0', formatLocale).format(value);

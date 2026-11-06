@@ -8,6 +8,7 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/widgets/circle_button.dart';
 
 // The day navigation over the dial: the day before, the date pill that opens
 // the calendar, and the day after. There are no future days.
@@ -57,7 +58,7 @@ class DayPicker extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        _CircleButton(
+        CircleButton(
           icon: Icons.chevron_left,
           tooltip: 'Previous day',
           onPressed: () => onSelect(addDays(day, -1)),
@@ -113,49 +114,12 @@ class DayPicker extends StatelessWidget {
           ),
         ),
         const SizedBox(width: DialSpace.xs),
-        _CircleButton(
+        CircleButton(
           icon: Icons.chevron_right,
           tooltip: 'Next day',
           onPressed: isToday ? null : () => onSelect(addDays(day, 1)),
         ),
       ],
-    );
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final DialColors colors = DialColors.of(context);
-
-    return Opacity(
-      opacity: onPressed == null ? 0.35 : 1,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        style: IconButton.styleFrom(
-          fixedSize: const Size.square(DialSize.circleButton),
-          minimumSize: const Size.square(DialSize.circleButton),
-          tapTargetSize: MaterialTapTargetSize.padded,
-          backgroundColor: scheme.surfaceContainerLow,
-          disabledBackgroundColor: scheme.surfaceContainerLow,
-          foregroundColor: scheme.onSurface,
-          disabledForegroundColor: scheme.onSurface,
-          side: BorderSide(color: colors.line),
-        ),
-      ),
     );
   }
 }
@@ -307,7 +271,7 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              _CircleButton(
+              CircleButton(
                 icon: Icons.chevron_left,
                 tooltip: 'Previous month',
                 onPressed: () => setState(
@@ -321,7 +285,7 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
                   style: theme.textTheme.titleLarge,
                 ),
               ),
-              _CircleButton(
+              CircleButton(
                 icon: Icons.chevron_right,
                 tooltip: 'Next month',
                 onPressed: _isCurrentMonth
