@@ -47,7 +47,14 @@ class _FramesWhileHidden with WidgetsBindingObserver {
   }
 }
 
+bool _bindingReady = false;
+
+// all_test.dart calls every file's main() in one process.
 void ensureE2EBinding() {
+  if (_bindingReady) {
+    return;
+  }
+  _bindingReady = true;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
     _FramesWhileHidden(),
   );
