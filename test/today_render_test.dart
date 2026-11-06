@@ -151,6 +151,7 @@ void main() {
           ('fan', _sparse),
           ('trends', _busy),
           ('trends-day', _busy),
+          ('trends-large', _busy),
         ]) {
       testWidgets('renders Today, $scene, ${brightness.name}', (
         WidgetTester tester,
@@ -160,6 +161,10 @@ void main() {
         tester.platformDispatcher.platformBrightnessTestValue = brightness;
         addTearDown(tester.view.reset);
         addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        if (scene.endsWith('-large')) {
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        }
         final User user = FakeUser(ownerID);
         final GlobalKey frame = GlobalKey();
 

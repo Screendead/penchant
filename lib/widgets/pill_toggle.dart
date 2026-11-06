@@ -95,28 +95,32 @@ class PillSegments<T> extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
 
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: colors.surface2,
-        shape: const StadiumBorder(),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (final ({T value, String label, String spoken}) s in segments)
-              PillToggle(
-                selected: s.value == selected,
-                onPressed: () => onChanged(s.value),
-                color: Colors.transparent,
-                selectedColor: scheme.surfaceContainerLow,
-                selectedSide: BorderSide(color: scheme.outline),
-                semanticsLabel: s.spoken,
-                minHeight: _segmentHeight,
-                child: Text(s.label),
-              ),
-          ],
+    // At large text sizes the track is wider than the screen; it scrolls.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: colors.surface2,
+          shape: const StadiumBorder(),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (final ({T value, String label, String spoken}) s in segments)
+                PillToggle(
+                  selected: s.value == selected,
+                  onPressed: () => onChanged(s.value),
+                  color: Colors.transparent,
+                  selectedColor: scheme.surfaceContainerLow,
+                  selectedSide: BorderSide(color: scheme.outline),
+                  semanticsLabel: s.spoken,
+                  minHeight: _segmentHeight,
+                  child: Text(s.label),
+                ),
+            ],
+          ),
         ),
       ),
     );

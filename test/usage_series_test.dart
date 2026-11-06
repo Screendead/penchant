@@ -231,14 +231,16 @@ void main() {
       expect(stats.peakIndex, 2);
     });
 
-    test('a weekly range averages per bucket, the short oldest one included',
-        () {
-      final UsageRange range = usageRange(_today, 30, 7);
-      final UsageStats stats = usageStats(range, [1, 0, 0, 4, 5]);
-      expect(stats.total, 10);
-      expect(stats.average, 2);
-      expect(stats.peakIndex, 4);
-    });
+    test(
+      'a weekly range averages per bucket, the short oldest one included',
+      () {
+        final UsageRange range = usageRange(_today, 30, 7);
+        final UsageStats stats = usageStats(range, [1, 0, 0, 4, 5]);
+        expect(stats.total, 10);
+        expect(stats.average, 2);
+        expect(stats.peakIndex, 4);
+      },
+    );
 
     test('an empty range has nothing in it', () {
       final UsageStats stats = usageStats(
