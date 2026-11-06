@@ -41,7 +41,7 @@ void main() {
     await pumpUntil(tester, find.byType(LineChart));
     await closeTrends(tester);
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('1 activity'));
+    await pumpUntil(tester, habitsCount('1 entry'));
     await closeMenuPage(tester);
 
     await signOutThroughSettings(tester);

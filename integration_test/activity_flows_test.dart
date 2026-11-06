@@ -308,10 +308,10 @@ void main() {
     expect(await storedActivities('Coffee'), hasLength(3));
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('3 activities'));
+    await pumpUntil(tester, habitsCount('3 entries'));
     await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, find.text('Coffee history'));
-    final Finder rows = find.byType(Card);
+    await pumpUntil(tester, historyTitle('Coffee'));
+    final Finder rows = historyRows;
     await pumpUntil(tester, rows);
     expect(rows, findsNWidgets(3));
     expect(
@@ -320,16 +320,9 @@ void main() {
     );
     await screenshot(tester, 'history-page');
 
-    final Finder threeDrinksRow = find.ancestor(
-      of: find.text('Quantity: 3'),
-      matching: find.byType(Card),
-    );
-    await tap(
-      tester,
-      find.descendant(of: threeDrinksRow, matching: find.byTooltip('Delete')),
-    );
-    await pumpUntil(tester, find.text('Activity deleted'));
-    await pumpUntil(tester, find.text('Quantity: 3'), present: false);
+    await swipeToDelete(tester, historyEntry(3));
+    await pumpUntil(tester, deletedBar);
+    await pumpUntil(tester, historyEntry(3), present: false);
     expect(rows, findsNWidgets(2));
     expect(
       (await storedActivities(
@@ -338,7 +331,7 @@ void main() {
       <int>{1, 2},
     );
 
-    await tap(tester, find.text('Quantity: 2'));
+    await tap(tester, historyEntry(2));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     await tap(
       tester,
@@ -348,15 +341,15 @@ void main() {
       ),
     );
     // The history page is off stage until the editor has popped.
-    await pumpUntil(tester, find.text('Coffee history').hitTestable());
+    await pumpUntil(tester, historyTitle('Coffee').hitTestable());
     await pumpUntil(
       tester,
       find.byType(ViceActivityEditorPage),
       present: false,
     );
-    await pumpUntil(tester, find.text('Quantity: 2'), present: false);
+    await pumpUntil(tester, historyEntry(2), present: false);
     expect(rows, findsOneWidget);
-    expect(find.text('Quantity: 1'), findsOneWidget);
+    expect(historyEntry(1), findsOneWidget);
     expect(
       (await storedActivities(
         'Coffee',
@@ -411,9 +404,9 @@ void main() {
 
     await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, find.text('Coffee history'));
+    await pumpUntil(tester, historyTitle('Coffee'));
 
-    await tap(tester, find.text('Quantity: 4'));
+    await tap(tester, historyEntry(4));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     expect(
       tester
@@ -434,8 +427,8 @@ void main() {
     });
 
     // 2.5 reads as 3.
-    await pumpUntil(tester, find.text('Quantity: 3').hitTestable());
-    await tap(tester, find.text('Quantity: 3'));
+    await pumpUntil(tester, historyEntry(3).hitTestable());
+    await tap(tester, historyEntry(3));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     final DateTime moved = addDays(today, -1).add(const Duration(hours: 9));
     await enterText(

@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**13 issues: 0 critical, 0 high, 6 medium, 7 low.**
+**12 issues: 0 critical, 0 high, 5 medium, 7 low.**
 
 ## Firebase Data Layer (5)
 
@@ -37,11 +37,10 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 
 - **medium** — [Errors reach only the device log; no crash report or usage data leaves the device](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (1)
+## Offline and Write Reliability (0)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
 ## Accessibility and Localization (1)
 

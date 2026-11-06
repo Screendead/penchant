@@ -28,6 +28,11 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
+  each habit's colour and entry count; a habit's history groups its entries by day with a daily total. Archive and
+  Edit habit live on the history page.
+- Deleting an entry is a swipe left on its history row, and every delete (history and editor alike) shows the bar
+  with an 8-second Undo that puts the entry back as it was.
 - Sign-in and account creation are one screen with a Sign in / Create account switch, and the password rules tick
   off as you type. Settings and Account Settings use the new card style with a round back button, and Settings
   shows your email and the app's version at a glance. Moving through rows, the sign-in switch and sliders with a

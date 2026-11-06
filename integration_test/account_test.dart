@@ -207,7 +207,7 @@ void main() {
     );
     await _get(Uri.parse(links.last['oobLink'] as String));
 
-    await tap(tester, find.byType(BackButton));
+    await tap(tester, find.byTooltip('Back'));
     await pumpUntil(tester, find.text(AccountCopy.dataSection), present: false);
     await tap(tester, find.text('Account'));
     await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
