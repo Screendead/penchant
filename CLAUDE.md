@@ -180,7 +180,10 @@ Each FlutterFire plugin's `Package.swift` pins `firebase-ios-sdk` `exact:`, so t
 with a pub upgrade of the Firebase plugins (12.19.3 now; keep 12.19.3 or later, the eMudhra CA fix). The transitive
 pins (gRPC, abseil, GoogleUtilities, ...) are in the tracked `Package.resolved` under
 `<platform>/Runner.xcworkspace/xcshareddata/swiftpm/` (what `flutter build` builds) and its twin under
-`Runner.xcodeproj/project.xcworkspace/` (what Flutter's package prefetch writes); they match.
+`Runner.xcodeproj/project.xcworkspace/` (what Flutter's package prefetch writes); they match, and
+`test/apple_dependencies_test.dart` checks that and the 12.19.3 floor. A plugin added later without a `Package.swift`
+makes Flutter fall back to CocoaPods for it and write a Podfile, which that test fails on: keep the Podfile, name the
+plugin here, and change the test.
 
 **Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
 hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
