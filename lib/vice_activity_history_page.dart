@@ -185,6 +185,11 @@ class _ViceActivityHistoryPageState
       return const DialPage(title: 'Habit not found', children: <Widget>[]);
     }
 
+    // Once a snapshot drops a dismissed entry it no longer needs hiding, so a
+    // delete the server refuses later, which puts it back, shows it again.
+    dismissed.removeWhere(
+      (String id) => !fetched.any((ViceActivity a) => a.id == id),
+    );
     final HabitMark mark = habitMarks(viceList)[vice.id] ?? const HabitMark(0);
     final bool hasOlder = fetched.length > shown;
     final List<ViceActivity> activityList =

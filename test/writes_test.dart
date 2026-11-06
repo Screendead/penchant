@@ -864,6 +864,33 @@ void main() {
       expect(find.textContaining('Deleted 3'), findsNothing);
     });
 
+    testWidgets('an entry the snapshot drops and then puts back shows again', (
+      WidgetTester tester,
+    ) async {
+      List<ViceActivity> current = <ViceActivity>[activity];
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData(current),
+        ),
+      ], ViceActivityHistoryPage(viceID: coffee.id));
+      await swipe(tester);
+      expect(row, findsNothing);
+
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(ViceActivityHistoryPage)),
+      );
+      // The local delete lands, then a late refusal rolls it back.
+      current = <ViceActivity>[];
+      container.invalidate(viceActivityHistoryProvider);
+      await tester.pump();
+      current = <ViceActivity>[activity];
+      container.invalidate(viceActivityHistoryProvider);
+      await tester.pump();
+
+      expect(row, findsOneWidget);
+    });
+
     testWidgets('a failed delete brings the row back and says why', (
       WidgetTester tester,
     ) async {
