@@ -279,9 +279,10 @@ draw. A `null` value means loading; an empty list means no data. Never gate UI o
 provider's stream, so the future never resolves. Render loading and error from the watched
 `AsyncValue` instead. A `User` is a snapshot that profile updates and `reload()` never
 change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
-So Account Settings alone watches `userProfileProvider`, and calls `Account.reloadUser()` on
-opening and on app resume to pick up a verification made elsewhere; the chain stays on
-`userProvider`.
+So only screens that show the profile watch `userProfileProvider`: Account Settings, which calls
+`Account.reloadUser()` on opening and on app resume to pick up a verification made elsewhere, and Settings, through a
+`select` on the email and guest status. Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
+on guest status asks `Account.isGuest`; the chain stays on `userProvider`.
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
 page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether

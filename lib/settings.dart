@@ -76,7 +76,7 @@ class _SettingsState extends ConsumerState<Settings> {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
       if (account.isGuest) {
-        if (!await _confirmGuestSignOut(context)) {
+        if (!await _confirmGuestSignOut(context) || !mounted) {
           return;
         }
         // Unsynced entries are lost with the rest, so there is nothing to
