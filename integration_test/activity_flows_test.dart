@@ -449,11 +449,11 @@ void main() {
     await pumpUntil(
       tester,
       find
-          .ancestor(
-            of: historyEntry(3),
-            matching: find.byWidgetPredicate(
+          .descendant(
+            of: find.byWidgetPredicate(
               (Widget w) => w is Semantics && w.properties.label == movedLabel,
             ),
+            matching: historyEntry(3),
           )
           .hitTestable(),
     );
