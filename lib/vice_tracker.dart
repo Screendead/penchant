@@ -33,7 +33,7 @@ class ViceTracker extends ConsumerStatefulWidget {
   static const String noHabits =
       'No habits yet. Add one from Manage Data in the menu.';
 
-  // Room below the content for the sheet's peek and the Log button on it.
+  // Room for the sheet's peek and the Log button on it, below a snackbar.
   static double logClearance(BuildContext context) =>
       TrendsSheet.peekHeight(context) +
       DialSize.logButton / 2 +
@@ -215,7 +215,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                       DialSpace.m,
                       DialSpace.xs,
                       DialSpace.m,
-                      peek + DialSize.logButton / 2 + 6 + DialSpace.m,
+                      DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
                     children: <Widget>[
                       Padding(
@@ -279,7 +279,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
         return Stack(
           children: <Widget>[
-            page,
+            // Today ends where the peek starts, so nothing hides under it.
+            Positioned(left: 0, top: 0, right: 0, bottom: peek, child: page),
             ListenableBuilder(
               listenable: _sheet,
               builder: (BuildContext context, Widget? child) {

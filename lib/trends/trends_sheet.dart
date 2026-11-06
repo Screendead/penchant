@@ -76,8 +76,10 @@ class TrendsSheet extends ConsumerStatefulWidget {
     final TextScaler scaler = MediaQuery.textScalerOf(context);
     final double bottom = MediaQuery.paddingOf(context).bottom;
     return _peekTop +
-        scaler.scale(22) +
+        // The taller column: the 17 pt number over a caption line.
+        scaler.scale(17 * 20 / 15) +
         scaler.scale(18) +
+        2 +
         _sparkGap +
         sparkHeight +
         max(DialSpace.s, bottom);
@@ -307,6 +309,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       builder: (BuildContext context, ScrollController scroll) {
         return DecoratedBox(
           decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(DialRadius.sheet),
+            ),
             boxShadow: scheme.brightness == Brightness.light
                 ? const <BoxShadow>[
                     BoxShadow(
@@ -341,6 +346,10 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                           controller,
                           widget.minSize,
                         );
+                        // Built only once the sheet moves off its peek.
+                        if (p <= 0) {
+                          return SizedBox(height: peek);
+                        }
                         final bool open = p > 0.9;
                         return Opacity(
                           opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
