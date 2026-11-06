@@ -53,7 +53,6 @@ class _HomepageState extends State<Homepage> {
   }
 }
 
-// The Penchant icon and wordmark, which open the menu, and the sync pill.
 class TodayHeader extends StatelessWidget {
   const TodayHeader({super.key});
 
@@ -99,9 +98,11 @@ class _AppMenu extends StatelessWidget {
     );
 
     return MenuAnchor(
-      // 2 under the bar, as the mock-up's; the panel's padding is room for
-      // the card's shadow, which the panel would clip.
-      alignmentOffset: const Offset(-24, 2 - 8),
+      // The card 15 from the screen's edge and 2 under the bar, as the
+      // mock-up's. The panel's padding is room for the card's shadow, which
+      // the panel would clip; the menu is kept on screen, so the left padding
+      // is the card's distance from the edge.
+      alignmentOffset: const Offset(-14, 2 - 8),
       style: const MenuStyle(
         // The panel is bare so the card inside it can carry the pop shadow.
         backgroundColor: WidgetStatePropertyAll<Color>(Colors.transparent),
@@ -109,7 +110,7 @@ class _AppMenu extends StatelessWidget {
         shadowColor: WidgetStatePropertyAll<Color>(Colors.transparent),
         elevation: WidgetStatePropertyAll<double>(0),
         padding: WidgetStatePropertyAll<EdgeInsets>(
-          EdgeInsets.fromLTRB(24, 8, 24, 40),
+          EdgeInsets.fromLTRB(15, 8, 24, 40),
         ),
         shape: WidgetStatePropertyAll<OutlinedBorder>(RoundedRectangleBorder()),
       ),
@@ -193,7 +194,6 @@ class _AppMenu extends StatelessWidget {
   }
 }
 
-// The menu's last line: what the sync status says, when it says anything.
 class SyncFooter extends ConsumerWidget {
   const SyncFooter({super.key});
 
@@ -260,8 +260,7 @@ class SyncFooter extends ConsumerWidget {
   }
 }
 
-// Synced, Syncing or Offline, muted, at the header's right. It shows nothing
-// until the app knows.
+// It shows nothing until the app knows.
 class SyncPill extends ConsumerWidget {
   const SyncPill({super.key});
 

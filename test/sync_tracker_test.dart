@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -105,6 +106,50 @@ void main() {
     expect(stateOf(c), SyncState.unknown);
     c.dispose();
   });
+
+  for (final bool fails in <bool>[false, true]) {
+    testWidgets('a wait from the previous user, '
+        '${fails ? 'rejected' : 'returning'} after a user change, says '
+        'nothing about the new user', (WidgetTester tester) async {
+      final StreamController<User?> users = StreamController<User?>();
+      addTearDown(users.close);
+      final List<Completer<void>> waits = <Completer<void>>[];
+      final ProviderContainer c = ProviderContainer(
+        overrides: [
+          userProvider.overrideWith((ref) => users.stream),
+          pendingWritesWaiterProvider.overrideWithValue(() {
+            final Completer<void> wait = Completer<void>();
+            waits.add(wait);
+            return wait.future;
+          }),
+        ],
+      );
+      c.listen(syncStatusProvider, (_, _) {});
+
+      users.add(FakeUser('a'));
+      await settle(tester, c);
+      waits.single.complete();
+      await tester.pump();
+      c.read(syncStatusProvider.notifier).track();
+      expect(waits, hasLength(2));
+
+      users.add(FakeUser('b'));
+      await settle(tester, c);
+      expect(waits, hasLength(3));
+      if (fails) {
+        waits[1].completeError(StateError('user changed'));
+      } else {
+        waits[1].complete();
+      }
+      await tester.pump();
+      expect(c.read(syncStatusProvider), const SyncStatus(SyncState.unknown));
+
+      waits[2].complete();
+      await tester.pump();
+      expect(c.read(syncStatusProvider), const SyncStatus(SyncState.synced));
+      c.dispose();
+    });
+  }
 
   group('the header pill', () {
     Future<void> pump(

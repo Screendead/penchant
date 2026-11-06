@@ -100,5 +100,14 @@ void main() {
       expect(tester.getRect(find.byWidget(e.widget)).height, 44);
     }
     expect(find.byType(MenuItemButton), findsNWidgets(2));
+    final Rect card = tester.getRect(
+      find
+          .ancestor(
+            of: find.byType(MenuItemButton).first,
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(card.topLeft, const Offset(15, 100));
   });
 }

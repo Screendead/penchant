@@ -8,7 +8,6 @@ class TrackerWrites {
     : _onWrite = onWrite;
 
   final FirebaseFirestore _firestore;
-  // Told of each write as it is issued, for the sync status.
   final void Function()? _onWrite;
 
   Future<void> _issued(Future<void> write) {
