@@ -55,6 +55,7 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 flutter pub get
 flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
+dart format --output=none --set-exit-if-changed lib test integration_test  # CI's format check; not `.`, since build/ holds plugin copies
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
@@ -107,7 +108,7 @@ rises with every merge and App Store Connect never sees a repeat. Build with the
 
 ```bash
 tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
-flags=$(tools/build-version.sh) && flutter build ipa $flags
+flags=$(tools/build-version.sh) && flutter build ipa $flags   # bash; zsh needs ${=flags}
 ```
 
 To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
@@ -174,6 +175,21 @@ It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's
 `firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
 (test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
 `macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
+
+**Native dependencies come from Swift Package Manager; there is no CocoaPods.** Every plugin with native code ships
+a `Package.swift`, so neither platform has a Podfile. `pubspec.yaml` sets `flutter: config:
+enable-swift-package-manager: true`, which beats a user-wide `flutter config --no-enable-swift-package-manager`
+(this machine has one) that would otherwise send the build back to CocoaPods. Flutter generates
+`<platform>/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage` (untracked) from the plugins, the Runner
+target links it, and the Runner scheme's "Run Prepare Flutter Framework Script" pre-action belongs to that wiring.
+Each FlutterFire plugin's `Package.swift` pins `firebase-ios-sdk` `exact:`, so the native Firebase version moves only
+with a pub upgrade of the Firebase plugins (12.19.3 now; keep 12.19.3 or later, the eMudhra CA fix). The transitive
+pins (gRPC, abseil, GoogleUtilities, ...) are in the tracked `Package.resolved` under
+`<platform>/Runner.xcworkspace/xcshareddata/swiftpm/` (what `flutter build` builds) and its twin under
+`Runner.xcodeproj/project.xcworkspace/` (what Flutter's package prefetch writes); they match, and
+`test/apple_dependencies_test.dart` checks that and the 12.19.3 floor. A plugin added later without a `Package.swift`
+makes Flutter fall back to CocoaPods for it and write a Podfile, which that test fails on: keep the Podfile, name the
+plugin here, and change the test.
 
 **Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
 hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and

@@ -105,9 +105,9 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   (with the amount sheet, swipe-to-delete with Undo, which also settles the register's inconsistent-delete item),
   1e auth and settings (with keyboard focus on list rows, navigation destinations and the slider, which #82 found at
   about 1.2:1), 1f motion polish, 1g e2e rewrite. One PR each, on top of the last.
-- **Track B, Apple platform debt, off `master`:** the CocoaPods sunset (move Firebase to Swift Package Manager, which
-  also retires the Podfile overrides), the failing `flutter build macos --release`, the legacy signing config and the
-  dead scaffold assets.
+- **Track B, Apple platform debt, off `master`:** ~~the CocoaPods sunset~~ (done in the PR from
+  `chore/swift-package-manager`: both platforms on Swift Package Manager, no Podfile left), the failing
+  `flutter build macos --release`, the legacy signing config and the dead scaffold assets.
 - **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently;
   the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
