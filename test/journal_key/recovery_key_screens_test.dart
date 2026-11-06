@@ -21,15 +21,21 @@ class _FakeToday extends Today {
 }
 
 class _FakeActions implements RecoveryKeyActions {
-  _FakeActions({this.outcome = const UnlockOpened()});
+  _FakeActions({this.outcome = const UnlockOpened(), this.fails = false});
 
   final UnlockOutcome outcome;
+  final bool fails;
   int saved = 0;
   int dismissed = 0;
   final List<Uint8List> unlocks = <Uint8List>[];
 
   @override
-  Future<void> markSaved() async => saved++;
+  Future<void> markSaved() async {
+    if (fails) {
+      throw StateError('keychain');
+    }
+    saved++;
+  }
 
   @override
   Future<void> dismissCard() async => dismissed++;
@@ -37,6 +43,9 @@ class _FakeActions implements RecoveryKeyActions {
   @override
   Future<UnlockOutcome> unlock(Uint8List recoveryKey) async {
     unlocks.add(recoveryKey);
+    if (fails) {
+      throw StateError('keychain');
+    }
     return outcome;
   }
 }
@@ -140,8 +149,11 @@ void main() {
   });
 
   group('the confirm step', () {
-    Future<_FakeActions> openConfirm(WidgetTester tester) async {
-      final _FakeActions actions = _FakeActions();
+    Future<_FakeActions> openConfirm(
+      WidgetTester tester, {
+      bool fails = false,
+    }) async {
+      final _FakeActions actions = _FakeActions(fails: fails);
       await tester.pumpWidget(
         _app(
           <Override>[
@@ -203,6 +215,19 @@ void main() {
       expect(find.text(RecoveryKeyCopy.checked), findsOneWidget);
     });
 
+    testWidgets('a failed save stays on the page and says so', (tester) async {
+      await openConfirm(tester, fails: true);
+      await tester.enterText(
+        find.byKey(RecoveryKeyPage.confirmField),
+        RecoveryKey.groupsOf(_formatted).last,
+      );
+      await tester.tap(find.text(RecoveryKeyCopy.confirm));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecoveryKeyPage), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.saveFailed), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.checked), findsNothing);
+    });
+
     testWidgets('Show the key again goes back to the groups', (tester) async {
       await openConfirm(tester);
       await tester.tap(find.text(RecoveryKeyCopy.showAgain));
@@ -216,8 +241,9 @@ void main() {
       WidgetTester tester, {
       UnlockOutcome outcome = const UnlockOpened(),
       bool locked = true,
+      bool fails = false,
     }) async {
-      final _FakeActions actions = _FakeActions(outcome: outcome);
+      final _FakeActions actions = _FakeActions(outcome: outcome, fails: fails);
       await tester.pumpWidget(
         _app(<Override>[
           journalNeedsRecoveryKeyProvider.overrideWithValue(locked),
@@ -258,7 +284,10 @@ void main() {
       await submit(tester, _formatted.substring(0, 20));
       expect(find.textContaining('this has'), findsOneWidget);
       await submit(tester, '${_formatted.substring(0, 38)}U');
-      expect(find.textContaining('"U"'), findsOneWidget);
+      expect(
+        find.text(RecoveryKeyCopy.badCharacter('U', 4, 8)),
+        findsOneWidget,
+      );
       expect(actions.unlocks, isEmpty);
     });
 
@@ -270,6 +299,14 @@ void main() {
       );
       expect(actions.unlocks.single, _key);
       expect(find.byType(InputDecorator), findsOneWidget);
+    });
+
+    testWidgets('an unlock that throws leaves Unlock usable', (tester) async {
+      final _FakeActions actions = await pumpEntry(tester, fails: true);
+      await submit(tester, _formatted);
+      expect(find.text(RecoveryKeyCopy.unlockFailed), findsOneWidget);
+      await submit(tester, _formatted);
+      expect(actions.unlocks, hasLength(2));
     });
 
     testWidgets('a key for another journal says so', (tester) async {

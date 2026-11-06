@@ -41,6 +41,10 @@ class RecoveryKeyCopy {
       "That doesn't match group $group. Check your saved copy.";
   static const String showAgain = 'Show the key again';
   static const String checked = 'Recovery key checked';
+  static const String saveFailed =
+      "Couldn't record that you saved the key. Try again.";
+  static const String unlockFailed =
+      "Couldn't open the journal with that key. Try again.";
   static const String entryTitle = 'Unlock your journal';
   static const String entryHeading = 'This device needs your journal key';
   static const String entryBody =
@@ -48,8 +52,9 @@ class RecoveryKeyCopy {
       'is signed in, enter the recovery key you saved.';
   static const String entryLabel = 'Recovery key';
   static const String unlock = 'Unlock';
-  static String badCharacter(String c, int position) =>
-      '"$c" at character $position is not used in recovery keys.';
+  static String badCharacter(String c, int inGroup, int group) =>
+      '"$c" (character $inGroup of group $group) is not used in recovery '
+      'keys.';
   static String wrongLength(int length) =>
       'A recovery key has ${RecoveryKey.characters} characters; this has '
       '$length.';
@@ -228,8 +233,15 @@ class _RecoveryKeyPageState extends ConsumerState<RecoveryKeyPage> {
     }
     final NavigatorState navigator = Navigator.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(recoveryKeyActionsProvider).markSaved();
+    } on Object {
+      if (mounted) {
+        setState(() => _error = RecoveryKeyCopy.saveFailed);
+      }
+      return;
+    }
     ref.read(recoveryCardHiddenProvider.notifier).hide();
-    await ref.read(recoveryKeyActionsProvider).markSaved();
     messenger.showSnackBar(
       const SnackBar(content: Text(RecoveryKeyCopy.checked)),
     );
@@ -386,7 +398,11 @@ class _RecoveryKeyPageState extends ConsumerState<RecoveryKeyPage> {
 String? recoveryKeyProblem(RecoveryKeyParse parse) => switch (parse) {
   RecoveryKeyOk() => null,
   RecoveryKeyBadCharacter(:final String character, :final int position) =>
-    RecoveryKeyCopy.badCharacter(character, position),
+    RecoveryKeyCopy.badCharacter(
+      character,
+      (position - 1) % RecoveryKey.groupSize + 1,
+      (position - 1) ~/ RecoveryKey.groupSize + 1,
+    ),
   RecoveryKeyWrongLength(:final int length) => RecoveryKeyCopy.wrongLength(
     length,
   ),
@@ -429,9 +445,13 @@ class _RecoveryKeyEntryPageState extends ConsumerState<RecoveryKeyEntryPage> {
       return;
     }
     setState(() => _busy = true);
-    final UnlockOutcome outcome = await ref
-        .read(recoveryKeyActionsProvider)
-        .unlock(parse.key);
+    UnlockOutcome outcome;
+    try {
+      outcome = await ref.read(recoveryKeyActionsProvider).unlock(parse.key);
+    } on Object {
+      // A throw must not leave Unlock disabled: this page is the only way in.
+      outcome = const UnlockFailed(RecoveryKeyCopy.unlockFailed);
+    }
     if (!mounted) {
       return;
     }

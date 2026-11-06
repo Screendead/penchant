@@ -92,7 +92,9 @@ class RecoveryKey {
     }
 
     // Two candidate positions would mean a guess, so only one is reported.
-    return RecoveryKeyTypo(position: suspects.length == 1 ? suspects.single : null);
+    return RecoveryKeyTypo(
+      position: suspects.length == 1 ? suspects.single : null,
+    );
   }
 
   static Uint8List? _verified(String plain) {

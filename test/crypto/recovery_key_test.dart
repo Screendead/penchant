@@ -9,7 +9,10 @@ void main() {
   final String formatted = RecoveryKey.format(key);
 
   test('formats as 8 groups of 4 Crockford characters', () {
-    expect(formatted, matches(RegExp(r'^([0-9A-HJKMNP-TV-Z]{4}-){7}[0-9A-HJKMNP-TV-Z]{4}$')));
+    expect(
+      formatted,
+      matches(RegExp(r'^([0-9A-HJKMNP-TV-Z]{4}-){7}[0-9A-HJKMNP-TV-Z]{4}$')),
+    );
   });
 
   test('round trips', () {
@@ -72,7 +75,40 @@ void main() {
   });
 
   test('a short key reports its length', () {
-    final RecoveryKeyParse parsed = RecoveryKey.parse(formatted.substring(0, 30));
+    final RecoveryKeyParse parsed = RecoveryKey.parse(
+      formatted.substring(0, 30),
+    );
     expect((parsed as RecoveryKeyWrongLength).length, 24);
+  });
+
+  test('round trips 1,000 random keys', () {
+    final Random random = Random(11);
+    for (int i = 0; i < 1000; i++) {
+      final Uint8List k = RecoveryKey.generate(random);
+      expect(
+        (RecoveryKey.parse(RecoveryKey.format(k)) as RecoveryKeyOk).key,
+        k,
+      );
+    }
+  });
+
+  test('no single substitution passes the checksum', () {
+    final String plain = RecoveryKey.normalise(formatted);
+    for (int i = 0; i < plain.length; i++) {
+      for (final String c in RecoveryKey.alphabet.split('')) {
+        if (c == plain[i]) {
+          continue;
+        }
+        expect(
+          RecoveryKey.parse(plain.replaceRange(i, i + 1, c)),
+          isA<RecoveryKeyTypo>(),
+          reason: 'position ${i + 1} as $c',
+        );
+      }
+    }
+  });
+
+  test('refuses to format a key of the wrong length', () {
+    expect(() => RecoveryKey.format(Uint8List(32)), throwsArgumentError);
   });
 }
