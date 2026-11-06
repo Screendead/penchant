@@ -159,19 +159,22 @@ Future<void> pumpFor(WidgetTester tester, Duration duration) async {
 // route transitions and overlays animating away. Only the hit-testable match is
 // tapped: a page pushed over Today leaves Today's tally names in the tree. A
 // target in a Scrollable is scrolled into view first: the keyboard can push a
-// form's button below the fold, where it is on screen but not hit-testable.
+// form's button below the fold, where it is on screen but not hit-testable,
+// and may still be rising when the wait starts, so the scroll is retried.
 Future<void> tap(WidgetTester tester, Finder finder) async {
-  await pumpUntil(tester, finder);
-  if (finder.hitTestable().evaluate().isEmpty) {
+  await pumpUntilTrue(tester, () {
+    if (finder.hitTestable().evaluate().isNotEmpty) {
+      return true;
+    }
     for (final Element e in finder.evaluate()) {
       if (Scrollable.maybeOf(e) != null) {
-        await Scrollable.ensureVisible(e);
-        await tester.pump(const Duration(milliseconds: 300));
+        // With no duration the scroll jumps; the next pump lays it out.
+        unawaited(Scrollable.ensureVisible(e));
         break;
       }
     }
-  }
-  await pumpUntil(tester, finder.hitTestable());
+    return false;
+  }, () => '${finder.hitTestable()} to appear');
   await tester.tap(finder.hitTestable());
   await tester.pump();
 }
