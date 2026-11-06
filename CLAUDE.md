@@ -241,7 +241,8 @@ document. The one-tap "log one" (`logOne`, `lib/writes/log_one.dart`: a tally's 
 a new id per tap, so two taps are two entries; it shows its bar (`showUndoBar`, `lib/widgets/undo_bar.dart`) at once,
 since the entry is on the device as soon as it is written, and says it is queued if the server has not answered in ten
 seconds. Both Undo through `undoLog`. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
-(`lib/account/account.dart`): sign-in, register (which also sends the verification email),
+(`lib/account/account.dart`): sign-in, register (which also sends the verification email), the anonymous guest
+start and linking a guest to an email and password (same uid, then the verification email),
 password reset, re-authentication, profile and email changes, sign-out, and the
 account-wide Firestore work: `fetchData` pages through the user's vices and activities for
 export, from the server so that offline it fails instead of returning a partial cache (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
