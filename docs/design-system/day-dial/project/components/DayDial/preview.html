@@ -1,0 +1,92 @@
+<!-- @dsCard group="Today" height=420 subtitle="A busy today with the now-hand, and a sparse past day with bead times" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .row { display: flex; gap: 64px; justify-content: center; padding: 24px var(--space-gutter); }
+  figure { margin: 0; width: var(--size-dial); }
+  figcaption { margin-top: var(--space-xs); text-align: center; font: 400 13px/18px var(--font-text); color: var(--muted); }
+  svg.dial { width: var(--size-dial); height: var(--size-dial); overflow: visible; display: block; }
+  .c1 { --c: var(--data1); --cr: var(--data1Rim); --cg: var(--data1Glow); }
+  .c2 { --c: var(--data2); --cr: var(--data2Rim); --cg: var(--data2Glow); }
+  .c3 { --c: var(--data3); --cr: var(--data3Rim); --cg: var(--data3Glow); }
+  .c4 { --c: var(--data4); --cr: var(--data4Rim); --cg: var(--data4Glow); }
+  .c5 { --c: var(--data5); --cr: var(--data5Rim); --cg: var(--data5Glow); }
+  .disc { fill: var(--surface); filter: drop-shadow(var(--shadow-card)); }
+  .rim { fill: none; stroke: var(--line); stroke-width: 1; }
+  .spoke { stroke: var(--spoke); stroke-width: 1; stroke-linecap: round; opacity: .45; }
+  .spoke.maj { stroke-width: 1.4; opacity: 1; }
+  .numeral { font: 700 12px/1 var(--font-display); letter-spacing: .6px; fill: var(--muted); }
+  .hub { fill: var(--bg); }
+  .hub-t1 { font: 500 21px/1 var(--font-mono); fill: var(--text); }
+  .hub-t2 { font: 500 12px/1 var(--font-text); fill: var(--muted); }
+  .elapsed { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: .22; }
+  .hand line { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+  .hand circle { fill: var(--accent); }
+  .hand circle.tip { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+  .bf { fill: var(--c); filter: drop-shadow(0 0 6px var(--cg)); }
+  .br { fill: none; stroke: var(--cr); stroke-width: 1.25; }
+  .blab { font: 500 11px/1 var(--font-mono); fill: var(--muted); stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; paint-order: stroke; }
+</style>
+</head>
+<body>
+<div id="root" class="row"></div>
+<script>
+  const TAU = Math.PI * 2, ang = m => m / 1440 * TAU - Math.PI / 2, pad = n => String(n).padStart(2, '0');
+  const hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+  const HABITS = [{ c: 1, typ: 1 }, { c: 2, typ: 2 }, { c: 3, typ: 1 }, { c: 4, typ: 1 }, { c: 5, typ: 20 }];
+  const TRACK = [100, 116, 84, 68];
+  const beadR = e => Math.max(5, Math.min(14, 7.5 * Math.sqrt(e.q / HABITS[e.h].typ)));
+  function layout(es) {
+    const groups = new Map(), pos = [];
+    es.slice().sort((a, b) => a.min - b.min).forEach(e => {
+      const k = e.h + ':' + Math.floor(e.min / 60), n = groups.get(k) || 0; groups.set(k, n + 1);
+      pos.push({ e, a: ang(e.min), R: TRACK[n % 4], r: beadR(e) });
+    });
+    for (const R of TRACK) {
+      const ps = pos.filter(p => p.R === R).sort((a, b) => a.a - b.a);
+      for (let pass = 0; pass < 8; pass++) for (let i = 0; i + 1 < ps.length; i++) {
+        const p = ps[i], q = ps[i + 1], need = p.r + q.r + 1.5, d = (q.a - p.a) * R;
+        if (d < need) { const s = (need - d) / R / 2; p.a -= s; q.a += s; }
+      }
+    }
+    return pos;
+  }
+  function dial({ entries, now, hub1 }) {
+    let s = '<svg class="dial" viewBox="-160 -160 320 320" role="img"><circle class="disc" r="124"/><circle class="rim" r="124"/>';
+    for (let i = 0; i < 24; i++) {
+      const maj = i % 3 === 0, a = ang(i * 60), r0 = maj ? 54 : 64, r1 = maj ? 140 : 132;
+      s += `<line class="spoke${maj ? ' maj' : ''}" x1="${r0 * Math.cos(a)}" y1="${r0 * Math.sin(a)}" x2="${r1 * Math.cos(a)}" y2="${r1 * Math.sin(a)}"/>`;
+    }
+    for (const h of [0, 6, 12, 18]) { const a = ang(h * 60); s += `<text class="numeral" x="${152 * Math.cos(a)}" y="${152 * Math.sin(a) + .5}" text-anchor="middle" dominant-baseline="central">${pad(h)}</text>`; }
+    if (now != null) {
+      const A = ang(now);
+      s += `<path class="elapsed" d="M0,-124 A124,124 0 ${now > 720 ? 1 : 0} 1 ${124 * Math.cos(A)},${124 * Math.sin(A)}"/>`;
+      s += `<g class="hand" transform="rotate(${now / 1440 * 360})"><line x1="0" y1="0" x2="0" y2="-140"/><circle r="3.2"/><circle class="tip" cy="-124" r="3.6"/></g>`;
+    }
+    const labels = entries.length <= 4;
+    for (const p of layout(entries)) {
+      const x = p.R * Math.cos(p.a), y = p.R * Math.sin(p.a), r = p.r;
+      let lab = '';
+      if (labels) {
+        const dx = -Math.cos(p.a) * (r + 8), dy = -Math.sin(p.a) * (r + 10);
+        lab = `<text class="blab" x="${dx}" y="${dy + 4}" text-anchor="${Math.abs(dx) < 5 ? 'middle' : dx > 0 ? 'start' : 'end'}">${hm(p.e.min)}</text>`;
+      }
+      s += `<g class="c${HABITS[p.e.h].c}" transform="translate(${x},${y})"><circle class="bf" r="${r}"/><circle class="br" r="${r - .5}"/>${lab}</g>`;
+    }
+    const n = entries.length;
+    s += `<circle class="hub" r="44"/><text class="hub-t1" text-anchor="middle" y="-1">${hub1}</text><text class="hub-t2" text-anchor="middle" y="17">${n} ${n === 1 ? 'entry' : 'entries'}</text></svg>`;
+    return s;
+  }
+  const E = a => a.map(([h, min, q]) => ({ h, min, q }));
+  const busy = E([[3, 40, 1], [0, 425, 1], [4, 440, 15], [0, 580, 1], [0, 595, 1], [4, 750, 20], [1, 770, 2], [0, 795, 1], [0, 950, 1], [4, 1005, 10], [2, 1120, 1], [1, 1160, 3], [2, 1170, 2], [4, 1205, 35], [2, 1250, 1]]);
+  const sparse = E([[0, 490, 1], [1, 1165, 1]]);
+  document.getElementById('root').innerHTML =
+    `<figure>${dial({ entries: busy, now: 1270, hub1: '21:10' })}<figcaption>Today at 21:10, 15 entries. The hand and elapsed arc show today only.</figcaption></figure>` +
+    `<figure>${dial({ entries: sparse, hub1: 'Tue' })}<figcaption>A past day with 2 entries. At 4 or fewer, each bead carries its time.</figcaption></figure>`;
+</script>
+</body>
+</html>

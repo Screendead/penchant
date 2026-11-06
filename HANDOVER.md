@@ -98,15 +98,29 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
 5. **The rest of the register**, medium then low, one class per PR.
 
-### This run (`/finish-and-pitch`, started 2026-11-03)
+### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
-Waves A to D are merged (the table above has each). Of round 2 only `r2-web-site`, `r2-icon` and `r2-brand` are
-picked, and `r2-today` is settled by `r6-ui-direction`. Left over:
+The first pass (waves A to D) is merged. CI was down on 2026-11-06 (Actions billing limit) until Jack made the repo
+public and renamed it `Screendead/penchant` the same day; public repos run standard Actions runners free. #83 merged.
 
-- Left for Jack's calls: telemetry, verified email, vice cap, other languages. The "log one" action
-  is decided by `r6-ui-direction` and lands in overhaul step 1b.
-- **Builds for the open calls**, beside the waves, on `mockup/*` branches: Today layout, onboarding presets, the
-  trigger tree, brand and icon candidates. They go on the pitch page with screenshots.
+**DECIDED** (in order; code PRs open and stack, and merge once CI is back or Jack waives it):
+
+- **Track A, the overhaul, stacked on #83:** 1c Trends sheet, then 2 macOS split view, then 1d Habits/history/editor
+  (with the amount sheet, swipe-to-delete with Undo, which also settles the register's inconsistent-delete item),
+  1e auth and settings (with keyboard focus on list rows, navigation destinations and the slider, which #82 found at
+  about 1.2:1), 1f motion polish, 1g e2e rewrite. One PR each, on top of the last.
+- **Track B, Apple platform debt, off `master`:** ~~the CocoaPods sunset~~ (done in the PR from
+  `chore/swift-package-manager`: both platforms on Swift Package Manager, no Podfile left), the failing
+  `flutter build macos --release`, the legacy signing config and the dead scaffold assets.
+- **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently;
+  the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
+- **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
+
+**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below),. `r7-ci` is moot (the repo is public) and so is round 5 (#83 merged). Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
+time, the weekly remainder (the Trends sheet keeps A as built), units and the data model.
+
+**Blocked on Jack, not decisions:** the domain variant (support and legal pages), the paid Apple team (App Attest,
+TestFlight), the privacy-policy details, `firebase use --clear` in the main checkout.
 
 Housekeeping that rides along with whatever PR touches it: delete each tech-debt file a PR fixes, and each idea file
 a PR ships, with its README line; run `tools/tech-debt-recount.py` to fix the counts. It resolves paths from its own
@@ -277,7 +291,7 @@ once it lands; they stay open until Jack says so:
   `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
   itself still answers "no such user" differently from "wrong password". Also check the password-reset and
   verification email templates read sensibly now that the app sends both.
-- **Clear the main checkout's active Firebase project** (from #68): in `/Users/jacklusher/development/tracker`, run
+- **Clear the main checkout's active Firebase project** (from #68): in `~/development/tracker`, run
   `firebase use --clear`. The CLI's configstore maps that directory to `screendead-vice-tracker`, and that entry wins
   over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
   edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
