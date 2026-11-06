@@ -35,7 +35,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
 | UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. The screens are unchanged in layout | `lib/design/`, `assets/fonts/` |
 | Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
-| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), in `feat/bundle-id-penchant` (2026-11-05); both development profiles exist, and a signed `flutter build ios --release` carries the new ID | `lib/firebase_options.dart`, `ios/`, `macos/` |
+| Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), in review from `feat/bundle-id-penchant` (2026-11-05); both development profiles exist, and a signed `flutter build ios --release` carries the new ID. Waits on a clean macOS e2e (queue item 3) | `lib/firebase_options.dart`, `ios/`, `macos/` |
 | Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 
@@ -74,10 +74,17 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      on iOS and `E2E_DEVICE=macos`.
 2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. After 1c; the
    mock-up does not show it.
-3. **Bundle IDs to `com.screendead.penchant`: done** (`feat/bundle-id-penchant`, 2026-11-05): iOS and macOS,
-   Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`, the
-   macOS keychain group. The idea file is deleted; what it had left (the domain variant, an App Store search on a
-   device) moved to the support-pages and TestFlight ideas and to For Jack to do.
+3. **Bundle IDs to `com.screendead.penchant`: in review** (PR from `feat/bundle-id-penchant`, 2026-11-05): iOS and
+   macOS, Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`,
+   the macOS keychain group. The idea file is deleted; what it had left (the domain variant, an App Store search on a
+   device) moved to the support-pages and TestFlight ideas and to For Jack to do. iOS e2e 31/31 and a signed release
+   build pass. **It merges only after a clean `E2E_DEVICE=macos tools/e2e.sh`**: on this branch macOS registration
+   hung in 3 of 70 `register()` calls across three runs (Homepage never appears, the Auth emulator logs no
+   verification email, so `createUser` never completed; a different file each time), against none in 140 calls in the
+   master-based macOS logs of the same evening. Direct `createUserWithEmailAndPassword` and the UI path each passed in
+   isolation, and master's `cold_start_test` passed between them. Cause unknown. The one ID-specific piece on Auth's
+   persistence path is the keychain access group (`macos/Runner/*.entitlements`); a bisect needs full runs, since the
+   rate is per call.
 4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
    call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
 5. **The rest of the register**, medium then low, one class per PR.
