@@ -168,9 +168,9 @@ String? migrationNote(MigrationStatus status) => switch (status.phase) {
   MigrationPhase.waiting => 'Sealing waits for a connection',
   MigrationPhase.sealing =>
     status.sealed == 0
-        ? 'Sealing entries'
-        : 'Sealing entries: ${status.sealed}',
+        ? 'Sealing habits'
+        : 'Sealing habits: ${status.sealed}',
   MigrationPhase.failed => 'Sealing will try again',
   MigrationPhase.done =>
-    status.sealed == 0 ? null : 'Entries sealed: ${status.sealed}',
+    status.sealed == 0 ? null : 'Habits sealed: ${status.sealed}',
 };

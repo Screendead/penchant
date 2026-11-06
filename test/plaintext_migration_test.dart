@@ -465,7 +465,7 @@ void main() {
     expect(migrationNote(const MigrationStatus(MigrationPhase.done)), isNull);
     expect(
       migrationNote(const MigrationStatus(MigrationPhase.sealing, 40)),
-      'Sealing entries: 40',
+      'Sealing habits: 40',
     );
     expect(
       migrationNote(const MigrationStatus(MigrationPhase.waiting)),
