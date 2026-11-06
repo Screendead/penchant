@@ -57,10 +57,22 @@ class TrackerWrites {
     Map<String, Object?> content,
     Future<void> Function(String envelope) write,
   ) async {
-    final String envelope = await sealer.seal(
-      content,
-      context: sealContext(doc.parent.id, doc.id),
-    );
+    final String envelope;
+    try {
+      envelope = await sealer.seal(
+        content,
+        context: sealContext(doc.parent.id, doc.id),
+      );
+    } on FirebaseException {
+      rethrow;
+    } catch (e) {
+      // settleWrite shows only a FirebaseException as a failed save.
+      throw FirebaseException(
+        plugin: 'sealer',
+        code: 'failed-precondition',
+        message: 'Could not seal the change: $e',
+      );
+    }
     return write(envelope);
   }
 

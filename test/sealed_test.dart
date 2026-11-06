@@ -88,6 +88,18 @@ class _Store {
   }
 }
 
+class _FailingSealer implements FieldSealer {
+  @override
+  Future<String> seal(Map<String, Object?> fields, {required String context}) =>
+      Future<String>.error(StateError('no key'));
+
+  @override
+  Future<Map<String, Object?>> open(
+    String envelope, {
+    required String context,
+  }) => Future<Map<String, Object?>>.error(StateError('no key'));
+}
+
 Vice _vice({bool locked = false}) => Vice(
   id: 'coffee',
   name: 'Coffee',
@@ -284,6 +296,23 @@ void main() {
       );
       expect(store.updates, isEmpty);
     });
+
+    test(
+      'a seal that fails is a FirebaseException, and writes nothing',
+      () async {
+        final TrackerWrites failing = TrackerWrites(
+          store.firestore,
+          sealer: _FailingSealer(),
+        );
+        await expectLater(
+          failing
+              .addVice(ownerID: 'owner', name: 'Coffee', unit: Unit.drink)
+              .done,
+          throwsA(isA<FirebaseException>()),
+        );
+        expect(store.sets, isEmpty);
+      },
+    );
 
     test('recordActivity seals the quantity', () async {
       await writes

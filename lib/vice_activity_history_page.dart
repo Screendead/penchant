@@ -235,9 +235,11 @@ class _ViceActivityHistoryPageState
           CircleButton(
             icon: DialGlyph.pencil,
             tooltip: 'Edit habit',
-            onPressed: () {
-              Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
-            },
+            onPressed: vice.locked
+                ? null
+                : () {
+                    Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
+                  },
           ),
         ],
       ),

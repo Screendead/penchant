@@ -42,7 +42,10 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   }
 
   Future<void> _save(User user) async {
-    if (!formKey.currentState!.validate() || unit == null) {
+    // A locked vice's name and unit are placeholders, never to be saved.
+    if (!formKey.currentState!.validate() ||
+        unit == null ||
+        (opened?.locked ?? false)) {
       return;
     }
 
