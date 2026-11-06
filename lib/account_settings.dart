@@ -337,7 +337,7 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     const CardSectionLabel(AccountCopy.guestTitle),
     Text(AccountCopy.guestBody, style: CardStyles.foot(context)),
     const SizedBox(height: DialSpace.m),
-    TextField(
+    TextFormField(
       controller: _linkEmail,
       keyboardType: TextInputType.emailAddress,
       autocorrect: false,
@@ -346,7 +346,7 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
       onChanged: (_) => setState(() {}),
     ),
     const SizedBox(height: DialSpace.m),
-    TextField(
+    TextFormField(
       controller: _linkPassword,
       obscureText: true,
       autofillHints: const <String>[AutofillHints.newPassword],
@@ -354,7 +354,7 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
       onChanged: (_) => setState(() {}),
     ),
     const SizedBox(height: DialSpace.m),
-    TextField(
+    TextFormField(
       controller: _linkConfirmation,
       obscureText: true,
       autofillHints: const <String>[AutofillHints.newPassword],
