@@ -1,5 +1,5 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart' as app;
 
 import 'support.dart';
@@ -22,7 +22,11 @@ void main() {
     await addVicesThroughManageData(tester);
 
     await recordActivity(tester, 'Coffee', 2);
-    await pumpUntil(tester, find.byType(RadarChart));
+    await expectTallies(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+      'Water (0 drinks)',
+    });
 
     await openFromDrawer(tester, 'Manage Data');
     await pumpUntil(tester, find.text('Your Habits'));
@@ -33,8 +37,11 @@ void main() {
       () => find.text('0 activities').evaluate().length == 2,
       () => "two '0 activities' rows",
     );
-    expect(find.text('Coffee'), findsOneWidget);
-    expect(find.text('Tea'), findsOneWidget);
-    expect(find.text('Water'), findsOneWidget);
+    for (final String name in <String>['Coffee', 'Tea', 'Water']) {
+      expect(
+        find.descendant(of: find.byType(ManageData), matching: find.text(name)),
+        findsOneWidget,
+      );
+    }
   });
 }

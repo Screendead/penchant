@@ -13,6 +13,10 @@ lock toggle, and a quantity field. Replace that, for the common case, with a til
 
 Undo stays 8 seconds (C4). The dialog stays for edits and backfill.
 
+**Shipped so far** (overhaul step 1b): the "log one" action. Each tally row's `+`, and a tap on a Log-fan wedge, logs
+the default quantity (1) now with the 8-second Undo; a held wedge opens the record dialog with that habit. What is
+left is the detail sheet after a tap, which waits on the trigger picker and the context fields.
+
 ## Why
 
 - INFERENCE: friction is what kills trackers, and in-the-moment logs are more accurate than ones rebuilt at bedtime.

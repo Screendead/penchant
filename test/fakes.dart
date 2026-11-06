@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 
 class FakeUser extends Mock implements User {
   FakeUser(
@@ -40,3 +44,15 @@ ViceActivity fakeActivity(String viceID, int quantity, DateTime at) =>
       ownerID: ownerID,
       createdAt: Timestamp.fromDate(at),
     );
+
+// Today colours each habit by its place among all of them, archived ones
+// included, so it reads the full list as well as the unarchived one.
+List<Override> habitOverrides(List<Vice> vices) => <Override>[
+  viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
+  unarchivedViceListProvider.overrideWithValue(
+    AsyncData<List<Vice>>(<Vice>[
+      for (final Vice v in vices)
+        if (!v.archived) v,
+    ]),
+  ),
+];

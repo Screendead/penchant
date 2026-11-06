@@ -22,14 +22,20 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Today is a 24-hour dial: each entry is a coloured bead at the time it happened, sized against your usual amount
+  that day, with the time beside it on a quiet day and the clock hand on today. Under it, a row per habit gives the
+  day's total and a + that logs one now, with eight seconds to Undo. The Log button opens a fan of your habits: tap
+  one to log it now, hold it for the amount and time. Tap a bead to edit its entry; change the day with the arrows, a
+  swipe across the dial or the calendar, which goes back as far as you like and marks the days each habit was
+  logged. The radar and bar charts are gone.
 - The app is called Penchant, and it says "habit" wherever it said "vice". Exports are named `penchant-…`.
 - Penchant installs as a new app (`com.screendead.penchant`) on iPhone and Mac: an earlier build stays beside it until
   you delete it, and you sign in again in the new one. Your data is unchanged.
 - A new look: paper and ink colours from the app icon, the Red Hat typefaces built into the app, and light and
   dark themes that follow your device's appearance setting (the app was dark only).
 - Every colour meets the WCAG 2.2 AA contrast minimum in both themes: text fields, outlined buttons, sheet handles
-  and the smoothing slider's track have a clearly visible edge, the usage graph's raw line and the Today chart's
-  rings are darker, and dark mode's secondary text is a little brighter. The time picker shows which of hour and
+  and the smoothing slider's track have a clearly visible edge, the usage graph's raw line is darker,
+  and dark mode's secondary text is a little brighter. The time picker shows which of hour and
   minute is selected and draws its typed-in fields with an edge, and a button focused from the keyboard has an ink
   ring (paper in dark).
 - A new app icon: the Today chart's shape, one colour per segment, on a light background.
@@ -50,6 +56,8 @@ pull request titles (`gh pr list --state merged`).
 - Today and the Graph move on at midnight, and on returning to the app the next day, instead of staying on yesterday.
 - The activity editor shows changes made elsewhere while it is open, until you edit that field.
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
+- The iPhone and Mac builds get Firebase through Swift Package Manager instead of CocoaPods, which Firebase no
+  longer publishes to. Nothing changes in the app.
 
 ### Fixed
 

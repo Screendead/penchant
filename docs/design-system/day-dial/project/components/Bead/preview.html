@@ -1,0 +1,45 @@
+<!-- @dsCard group="Today" height=250 subtitle="Five colours, size by amount, ring and dotted repeats, pending" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: var(--space-m); padding: 24px var(--space-gutter); }
+  .panel { flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--space-m); }
+  .panel h3 { margin: 0 0 var(--space-xs); font: 600 13px/18px var(--font-text); color: var(--muted); }
+  .beads { display: flex; align-items: flex-end; gap: var(--space-s); min-height: 96px; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .cell svg { width: 40px; height: 40px; overflow: visible; }
+  .cell span { font: 500 10px/12px var(--font-mono); color: var(--muted); white-space: nowrap; }
+  .c1 { --c: var(--data1); --ci: var(--data1Ink); --cr: var(--data1Rim); --cg: var(--data1Glow); }
+  .c2 { --c: var(--data2); --ci: var(--data2Ink); --cr: var(--data2Rim); --cg: var(--data2Glow); }
+  .c3 { --c: var(--data3); --ci: var(--data3Ink); --cr: var(--data3Rim); --cg: var(--data3Glow); }
+  .c4 { --c: var(--data4); --ci: var(--data4Ink); --cr: var(--data4Rim); --cg: var(--data4Glow); }
+  .c5 { --c: var(--data5); --ci: var(--data5Ink); --cr: var(--data5Rim); --cg: var(--data5Glow); }
+  .bf { fill: var(--c); filter: drop-shadow(0 0 6px var(--cg)); }
+  .br { fill: none; stroke: var(--cr); stroke-width: 1.25; }
+  .ring .bf { fill: none; stroke: var(--ci); stroke-width: 2.4; filter: none; }
+  .dots .bf { fill: none; stroke: var(--ci); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 0 4.2; filter: none; }
+  .ring .br, .dots .br { display: none; }
+  .bp { fill: none; stroke: var(--ci); stroke-width: 2; stroke-dasharray: 3.2 2.6; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const bead = (c, r, kind = '') => {
+    if (kind === 'pending') return `<svg viewBox="-20 -20 40 40"><g class="c${c}"><circle class="bp" r="${r - 1}"/></g></svg>`;
+    const fr = kind ? r - 1.2 : r;
+    return `<svg viewBox="-20 -20 40 40"><g class="c${c} ${kind}"><circle class="bf" r="${fr}"/><circle class="br" r="${r - .5}"/></g></svg>`;
+  };
+  const cell = (svg, label) => `<div class="cell">${svg}<span>${label}</span></div>`;
+  const sz = q => Math.max(5, Math.min(14, 7.5 * Math.sqrt(q)));
+  document.getElementById('root').innerHTML =
+    `<div class="panel"><h3>Habits 1 to 5, by creation order</h3><div class="beads">${['Coffee', 'Takeaway', 'Alcohol', 'Late nights', 'Doomscrolling'].map((n, i) => cell(bead(i + 1, 7.5), n)).join('')}</div></div>` +
+    `<div class="panel"><h3>Radius 7.5 × √(amount ÷ typical)</h3><div class="beads">${[[0.4, '0.4×, min 5'], [1, '1×'], [2, '2×'], [4, '4×, max 14']].map(([q, l]) => cell(bead(1, sz(q)), l)).join('')}</div></div>` +
+    `<div class="panel"><h3>Repeats and pending</h3><div class="beads">${cell(bead(1, 7.5), 'habit 1')}${cell(bead(1, 7.5, 'ring'), 'habit 6')}${cell(bead(1, 7.5, 'dots'), 'habit 11')}${cell(bead(3, 7.5, 'pending'), 'not synced')}</div></div>`;
+</script>
+</body>
+</html>

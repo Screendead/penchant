@@ -51,7 +51,7 @@ void main() {
     await register(tester, 'e2e-edit-vice@example.com');
     await addVicesThroughManageData(tester);
     await recordActivity(tester, 'Coffee', 2);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
@@ -87,7 +87,7 @@ void main() {
     });
 
     await closeDrawerPage(tester);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Espresso (2 hours)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
@@ -107,7 +107,7 @@ void main() {
     expect(await storedActivities('Tea'), hasLength(1));
 
     await tap(tester, find.text('Today'));
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (0 drinks)',
       'Tea (3 drinks)',
       'Water (0 drinks)',

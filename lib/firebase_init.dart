@@ -16,9 +16,12 @@ const String emulatorHost = 'localhost';
 const int authEmulatorPort = 9099;
 const int firestoreEmulatorPort = 8080;
 
-// The emulators accept any API key; FIROptions rejects a malformed app id.
-const FirebaseOptions _emulatorOptions = FirebaseOptions(
-  apiKey: 'demo-api-key',
+// The emulators accept any API key, but the native FirebaseInstallations,
+// which firebase_core's Swift package links, aborts the app at configure
+// unless the key is 39 URL-safe characters starting with A. FIROptions rejects
+// a malformed app id.
+const FirebaseOptions emulatorOptions = FirebaseOptions(
+  apiKey: 'A-demo-key-for-the-local-emulators-only',
   appId: '1:000000000000:ios:0000000000000000',
   messagingSenderId: '000000000000',
   projectId: emulatorProjectId,
@@ -59,7 +62,7 @@ Future<void> initializeFirebase() async {
   }
 
   final FirebaseApp app = await Firebase.initializeApp(
-    options: _emulatorOptions,
+    options: emulatorOptions,
   );
 
   // initializeApp returns an already-configured native default app when the

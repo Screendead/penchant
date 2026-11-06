@@ -79,6 +79,11 @@ flutter_launcher_icons:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Overrides a machine-wide `flutter config --no-enable-swift-package-manager`,
+  # which would otherwise bring CocoaPods back.
+  config:
+    enable-swift-package-manager: true
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

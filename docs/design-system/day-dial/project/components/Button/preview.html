@@ -1,0 +1,43 @@
+<!-- @dsCard group="Controls" height=330 subtitle="Primary, tonal, danger, circle and text buttons with their states" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: grid; grid-template-columns: 340px 1fr; gap: var(--space-xl) 48px; padding: 24px 40px; }
+  .col { display: flex; flex-direction: column; gap: var(--space-s); }
+  .cap { font: 600 13px/18px var(--font-text); color: var(--muted); }
+  .row { display: flex; gap: var(--space-s); align-items: center; flex-wrap: wrap; }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pbtn { height: var(--size-pillHeight); border-radius: var(--radius-pill); background: var(--accent); color: var(--onAccent); font: 600 16px/1 var(--font-text); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .pbtn .m { font: 500 17px/1 var(--font-mono); }
+  .pbtn.off { background: var(--surface2); color: var(--muted); }
+  .pbtn.focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .spin { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, var(--onAccent) 30%, transparent); border-top-color: var(--onAccent); box-sizing: border-box; }
+  .tbtn { height: 46px; padding: 0 18px; border-radius: var(--radius-pill); background: var(--surface2); font: 600 15px/1 var(--font-text); display: inline-flex; align-items: center; gap: 8px; }
+  .tbtn.danger { color: var(--danger); background: var(--dangerContainer); }
+  .cbtn { width: var(--size-circleButton); height: var(--size-circleButton); border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-card); box-sizing: border-box; }
+  .cbtn svg.i { width: 20px; height: 20px; }
+  .cbtn.off { opacity: .35; }
+  .cbtn.inset { width: 36px; height: 36px; background: var(--surface2); border: 0; box-shadow: none; }
+  .on-surface { background: var(--surface); border-radius: var(--radius-card); padding: var(--space-s); border: 1px solid var(--line); display: flex; gap: var(--space-s); align-items: center; }
+  .link { font: 600 14px/1 var(--font-text); color: var(--text); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+  .older { height: 44px; padding: 0 20px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--outline); font: 600 14px/1 var(--font-text); display: inline-flex; align-items: center; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const P = { left: '<path d="M15 18l-6-6 6-6"/>', right: '<path d="M9 18l6-6-6-6"/>', plus: '<path d="M12 5v14M5 12h14"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/>' };
+  const ic = n => `<svg class="i" viewBox="0 0 24 24">${P[n]}</svg>`;
+  document.getElementById('root').innerHTML =
+    `<div class="col"><div class="cap">Primary: one per screen</div><span class="pbtn">Sign in</span><span class="pbtn">Log <span class="m">2</span> drinks at <span class="m">18:30</span></span><span class="pbtn focus">Create account</span>
+      <div class="row" style="gap:var(--space-xs)"><span class="pbtn off" style="flex:1">Create account</span><span class="pbtn" style="flex:1"><span class="spin"></span></span></div></div>` +
+    `<div class="col"><div class="cap">Tonal and danger</div><div class="row"><span class="tbtn">${ic('pencil')}Edit</span><span class="tbtn danger">${ic('trash')}Delete</span></div>
+      <div class="cap">Circle: day arrows, back, add; forward disabled on today; close inside a sheet</div><div class="row"><span class="cbtn" aria-label="Previous day">${ic('left')}</span><span class="cbtn off" aria-label="Next day">${ic('right')}</span><span class="cbtn" aria-label="Add habit">${ic('plus')}</span><span class="on-surface"><span class="cbtn inset" aria-label="Close">${ic('x')}</span></span></div>
+      <div class="cap">Text and secondary</div><div class="row"><span class="link">Forgot password?</span><span class="older">Show older</span></div></div>`;
+</script>
+</body>
+</html>

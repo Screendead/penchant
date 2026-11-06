@@ -29,7 +29,8 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
@@ -420,29 +421,17 @@ void main() {
         });
       });
 
-      testWidgets('the clear day is the sage wash with readable copy', (
+      testWidgets('the clear day says so in the sage ink', (
         WidgetTester tester,
       ) async {
         await _pumpThemed(tester, brightness, '/', empty: true);
 
-        final Color background =
-            (tester
-                        .widget<DecoratedBox>(
-                          find
-                              .descendant(
-                                of: find.byType(CleanDay),
-                                matching: find.byType(DecoratedBox),
-                              )
-                              .first,
-                        )
-                        .decoration
-                    as BoxDecoration)
-                .color!;
-        expect(background, p.clear);
-        expect(
-          tester.widget<Text>(find.text('A clear day so far')).style!.color,
-          p.clearInk,
-        );
+        for (final String text in <String>[
+          ClearDay.headline,
+          ClearDay.subline(isToday: true),
+        ]) {
+          expect(tester.widget<Text>(find.text(text)).style!.color, p.clearInk);
+        }
       });
 
       // Each screen renders in Red Hat at the smallest phone size without an
@@ -478,7 +467,16 @@ void main() {
 
       testWidgets('renders the record dialog', (WidgetTester tester) async {
         await _pumpThemed(tester, brightness, '/');
-        await tester.tap(find.text('Record'));
+        await tester.tap(find.byType(LogButton));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull);
+        await tester.longPress(
+          find.descendant(
+            of: find.byKey(const ValueKey<String>('fan-wedge-coffee')),
+            matching: find.text('Coffee'),
+          ),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
