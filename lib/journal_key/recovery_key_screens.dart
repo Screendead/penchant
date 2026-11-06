@@ -123,9 +123,6 @@ class RecoveryKeyCard extends ConsumerWidget {
                       child: const Text(RecoveryKeyCopy.notNow),
                     ),
                     TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.primary,
-                      ),
                       onPressed: () => Navigator.of(
                         context,
                       ).pushNamed(RecoveryKeyPage.route),
@@ -147,6 +144,30 @@ class _KeyGroups extends StatelessWidget {
 
   final List<String> groups;
 
+  static const int _perRow = 4;
+
+  Widget _tile(String group, ThemeData theme, DialColors colors) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    decoration: BoxDecoration(
+      color: colors.surface2,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        group,
+        style: TextStyle(
+          fontFamily: DialFonts.mono,
+          fontFeatures: DialFonts.tabular,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.5,
+          color: theme.colorScheme.onSurface,
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -154,32 +175,23 @@ class _KeyGroups extends StatelessWidget {
     return Semantics(
       label: 'Recovery key: ${groups.join(', ')}',
       excludeSemantics: true,
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: DialSpace.xs,
-        runSpacing: DialSpace.xs,
+      child: Column(
         children: <Widget>[
-          for (final String group in groups)
-            Container(
-              width: 74,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: colors.surface2,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                group,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: DialFonts.mono,
-                  fontFeatures: DialFonts.tabular,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.5,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
+          for (int row = 0; row < groups.length; row += _perRow) ...<Widget>[
+            if (row > 0) const SizedBox(height: DialSpace.xs),
+            Row(
+              children: <Widget>[
+                for (int i = row; i < row + _perRow; i++) ...<Widget>[
+                  if (i > row) const SizedBox(width: DialSpace.xs),
+                  Expanded(
+                    child: i < groups.length
+                        ? _tile(groups[i], theme, colors)
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
             ),
+          ],
         ],
       ),
     );

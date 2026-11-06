@@ -4,6 +4,7 @@
 //   flutter test test/fidelity_render_test.dart --dart-define=RENDER_DIR=<dir>
 // It prints each block's rect for the busy light shot.
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
@@ -28,6 +29,8 @@ import 'package:tracker/providers/sync_status_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/crypto/recovery_key.dart';
+import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -248,6 +251,7 @@ void main() {
     ('fan', 'record', false, 0, true),
     ('menu', 'busy', false, 0, false),
     ('sweep', 'busy', false, 0, false),
+    ('recovery-card', 'busy', false, 0, false),
   ];
 
   for (final Brightness brightness in Brightness.values) {
@@ -282,6 +286,15 @@ void main() {
                 offlineProvider.overrideWith((ref) => Stream.value(false)),
                 trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
                 pendingWritesWaiterProvider.overrideWithValue(() async {}),
+                if (name == 'recovery-card')
+                  recoveryKeyStatusProvider.overrideWithValue(
+                    RecoveryKeyStatus(
+                      formatted: RecoveryKey.format(
+                        RecoveryKey.generate(Random(11)),
+                      ),
+                      keyCreatedAt: DateTime(2026, 10, 20),
+                    ),
+                  ),
                 viceListProvider.overrideWith((ref) => AsyncData(_habits)),
                 unarchivedViceListProvider.overrideWith(
                   (ref) => AsyncData(<Vice>[
