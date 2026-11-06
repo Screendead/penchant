@@ -101,8 +101,10 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      on iOS and `E2E_DEVICE=macos`.
 2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. In review in
    #92 (`feat/macos-split-view`): width-based, so an iPad on its side gets it too; the Log button
-   sits at the foot of Today's column, a chart day moves Today's dial, Left and Right step days. The Mac window still
-   opens at 800×600 (phone layout), so the macOS e2e suite keeps testing the sheet;
+   sits at the foot of Today's column, a chart day moves Today's dial, Left and Right step days. The Mac window
+   opens at 1200×780 (`r8-mac-window` B, Jack 2026-11-06), so it shows the split view; the minimum is 390×600 and
+   the frame is saved as `MainWindow` (`macos/Runner/MainFlutterWindow.swift`). The macOS e2e suite lays each test
+   out at the old 800×600 (`ensureE2EBinding` in `integration_test/support.dart`), so it keeps testing the sheet;
    `integration_test/split_view_test.dart` lays the app out at 900, 1200 and 1600 pt.
 3. **Bundle IDs to `com.screendead.penchant`: done** (#84, merged 2026-11-06): iOS and
    macOS, Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`,

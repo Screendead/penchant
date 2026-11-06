@@ -50,11 +50,23 @@ class _FramesWhileHidden with WidgetsBindingObserver {
   }
 }
 
+// The Mac window opens at 1200 x 780, past the split view's 900 pt, but the
+// suite's flows drive the phone layout's Trends sheet, so on macOS each test
+// lays out at the window's old 800 x 600. split_view_test.dart resizes itself.
+const Size _macOSTestWindow = Size(800, 600);
+
 void ensureE2EBinding() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
-    _FramesWhileHidden(),
-  );
+  final IntegrationTestWidgetsFlutterBinding binding =
+      IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  binding.addObserver(_FramesWhileHidden());
   WidgetController.hitTestWarningShouldBeFatal = true;
+  if (defaultTargetPlatform == TargetPlatform.macOS) {
+    setUp(() {
+      final TestFlutterView view = binding.platformDispatcher.implicitView!;
+      view.physicalSize = _macOSTestWindow * view.devicePixelRatio;
+      addTearDown(view.resetPhysicalSize);
+    });
+  }
 }
 
 void requireEmulators() {
