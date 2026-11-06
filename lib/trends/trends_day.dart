@@ -29,6 +29,7 @@ class TrendsDay extends ConsumerWidget {
     required this.habits,
     required this.marks,
     required this.onBack,
+    this.backFocus,
   });
 
   final DateTime day;
@@ -39,6 +40,7 @@ class TrendsDay extends ConsumerWidget {
   final List<Vice> habits;
   final Map<String, HabitMark> marks;
   final VoidCallback onBack;
+  final FocusNode? backFocus;
 
   static const String backLabel = 'Back to Trends';
 
@@ -94,6 +96,7 @@ class TrendsDay extends ConsumerWidget {
         CircleButton(
           icon: Icons.chevron_left,
           tooltip: backLabel,
+          focusNode: backFocus,
           onPressed: onBack,
         ),
         const SizedBox(width: DialSpace.s),

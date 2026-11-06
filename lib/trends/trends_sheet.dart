@@ -241,13 +241,32 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   );
   final FocusNode _peekFocus = FocusNode(debugLabel: 'Trends peek');
   final FocusNode _closeFocus = FocusNode(debugLabel: 'Close Trends');
+  // And between the chart and a day it opens.
+  final FocusNode _chartFocus = FocusNode(debugLabel: TrendsChart.focusLabel);
+  final FocusNode _backFocus = FocusNode(debugLabel: TrendsDay.backLabel);
 
   @override
   void dispose() {
     _sheetFocus.dispose();
     _peekFocus.dispose();
     _closeFocus.dispose();
+    _chartFocus.dispose();
+    _backFocus.dispose();
     super.dispose();
+  }
+
+  // Moves focus from [from] to [to] once [change] has built [to], if a
+  // keyboard had it on [from].
+  void _handOver(FocusNode from, FocusNode to, VoidCallback change) {
+    final bool fromKeys = from.hasFocus;
+    setState(change);
+    if (fromKeys) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          to.requestFocus();
+        }
+      });
+    }
   }
 
   Future<void> _open() async {
@@ -329,7 +348,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             vice: vice,
             habits: widget.habits,
             marks: widget.marks,
-            onBack: () => setState(() => openDay = null),
+            backFocus: _backFocus,
+            onBack: () =>
+                _handOver(_backFocus, _chartFocus, () => openDay = null),
           )
         : _TrendsPanel(
             key: const ValueKey<String>('panel'),
@@ -343,6 +364,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             cursor: cursor,
             onClose: _close,
             closeFocus: _closeFocus,
+            chartFocus: _chartFocus,
             onHabit: (Vice v) => _update(() {
               viceID = v.id;
               cursor = null;
@@ -361,8 +383,11 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             onWindow: (int window) => _update(() => pickedWindow = window),
             onCursor: (int index) => setState(() => cursor = index),
             onOpenDay: stepDays == 1
-                ? (int index) =>
-                      setState(() => openDay = range.bucketStart(index))
+                ? (int index) => _handOver(
+                    _chartFocus,
+                    _backFocus,
+                    () => openDay = range.bucketStart(index),
+                  )
                 : null,
             onRetry: () => ref.invalidate(
               viceActivityGraphForUserProvider,
@@ -702,6 +727,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.cursor,
     required this.onClose,
     required this.closeFocus,
+    required this.chartFocus,
     required this.onHabit,
     required this.onRange,
     required this.onStep,
@@ -721,6 +747,7 @@ class _TrendsPanel extends StatelessWidget {
   final int? cursor;
   final VoidCallback onClose;
   final FocusNode closeFocus;
+  final FocusNode chartFocus;
   final ValueChanged<Vice> onHabit;
   final ValueChanged<int> onRange;
   final ValueChanged<int> onStep;
@@ -781,6 +808,7 @@ class _TrendsPanel extends StatelessWidget {
             cursor: cursor ?? s.totals.length - 1,
             onCursor: onCursor,
             onOpenBucket: onOpenDay,
+            focusNode: chartFocus,
           ),
         const SizedBox(height: DialSpace.s),
         _AverageStepper(

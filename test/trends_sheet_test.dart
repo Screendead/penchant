@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -535,6 +536,96 @@ void main() {
       expect(find.byType(TrendsDay), findsNothing);
       expect(find.byType(LineChart), findsOneWidget);
       semantics.dispose();
+    });
+
+    testWidgets("a screen reader hears the cursor's day, moves it and opens "
+        'that day', (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 2), _daysAgo(1, 3)]);
+      final UsageRange range = usageRange(_today, 30, 1);
+      final FinderBase<SemanticsNode> chart = find.semantics.byLabel(
+        RegExp('^Daily totals of Coffee'),
+      );
+      SemanticsData data() => chart.evaluate().single.getSemanticsData();
+
+      expect(data().value, startsWith('Today, 2 drinks'));
+      expect(data().hasAction(SemanticsAction.increase), isFalse);
+      expect(data().hasAction(SemanticsAction.tap), isTrue);
+
+      tester.semantics.decrease(chart);
+      await tester.pumpAndSettle();
+      final String yesterday = TrendsChart.readoutLabel(range, 28, _today);
+      expect(data().value, startsWith('$yesterday, 3 drinks'));
+      expect(find.textContaining('$yesterday  3 drinks'), findsOneWidget);
+      expect(data().hasAction(SemanticsAction.increase), isTrue);
+
+      tester.semantics.tap(chart);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TrendsDay>(find.byType(TrendsDay)).day,
+        addDays(_today, -1),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('a keyboard moves the cursor with the arrows, opens its day '
+        'with Enter, and comes back to the chart', (WidgetTester tester) async {
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 2), _daysAgo(1, 3)]);
+      FocusNode? focused() => FocusManager.instance.primaryFocus;
+      bool onChart() => focused()?.debugLabel == TrendsChart.focusLabel;
+
+      for (int i = 0; i < 30 && !onChart(); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      expect(onChart(), isTrue);
+      final ShapeDecoration ring =
+          tester
+                  .widget<DecoratedBox>(
+                    find.ancestor(
+                      of: find.byType(LineChart),
+                      matching: find.byWidgetPredicate(
+                        (Widget w) =>
+                            w is DecoratedBox &&
+                            w.position == DecorationPosition.foreground,
+                      ),
+                    ),
+                  )
+                  .decoration
+              as ShapeDecoration;
+      expect(
+        (ring.shape as OutlinedBorder).side.color,
+        Theme.of(tester.element(find.byType(LineChart))).colorScheme.primary,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      final String yesterday = TrendsChart.readoutLabel(
+        usageRange(_today, 30, 1),
+        28,
+        _today,
+      );
+      expect(find.textContaining('$yesterday  3 drinks'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Today  2 drinks'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TrendsDay>(find.byType(TrendsDay)).day,
+        addDays(_today, -1),
+      );
+      expect(focused()?.debugLabel, TrendsDay.backLabel);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byType(TrendsDay), findsNothing);
+      expect(onChart(), isTrue);
     });
 
     testWidgets("a day's dial shows every habit's entries, read only", (
