@@ -14,6 +14,8 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/onboarding/onboarding.dart';
+import 'package:tracker/onboarding/presets.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -186,7 +188,14 @@ Future<void> screenshot(WidgetTester tester, String name) async {
   }
 }
 
-Future<void> register(WidgetTester tester, String email) async {
+// A new account starts on the onboarding, which this skips unless told not
+// to: a test that drives it, or one whose habit list fails to load, which
+// shows none.
+Future<void> register(
+  WidgetTester tester,
+  String email, {
+  bool skipOnboarding = true,
+}) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
@@ -196,6 +205,18 @@ Future<void> register(WidgetTester tester, String email) async {
   await enterText(tester, 'Confirm password', 'Passw0rdE2E');
   await tap(tester, find.widgetWithText(ElevatedButton, 'Create account'));
   await pumpUntil(tester, find.byType(Homepage));
+  if (skipOnboarding) {
+    await skipTheOnboarding(tester);
+  }
+}
+
+// Skip, then the disclaimer, to the empty Today.
+Future<void> skipTheOnboarding(WidgetTester tester) async {
+  await pumpUntil(tester, find.text(OnboardingCopy.introHeadline));
+  await tap(tester, find.byKey(Onboarding.skipKey));
+  await pumpUntil(tester, find.text(OnboardingCopy.acknowledge));
+  await tap(tester, find.text(OnboardingCopy.acknowledge));
+  await pumpUntil(tester, find.byType(Onboarding), present: false);
 }
 
 // Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.

@@ -175,7 +175,7 @@ void main() {
     await tester.tap(find.byTooltip('More Coffee'));
     await tester.pump();
     expect(find.text(Unit.drink.label(2)), findsOneWidget);
-    await tester.tap(find.text(OnboardingCopy.log));
+    await tester.tap(find.byKey(Onboarding.logKey('Coffee')));
     await tester.pumpAndSettle();
 
     final Write logged = writes.writes.last;

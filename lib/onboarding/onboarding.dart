@@ -35,6 +35,8 @@ class Onboarding extends ConsumerStatefulWidget {
   final Set<String> initialSelection;
 
   static const Key skipKey = ValueKey<String>('onboarding-skip');
+  static Key logKey(String habitName) =>
+      ValueKey<String>('onboarding-log-$habitName');
 
   @override
   ConsumerState<Onboarding> createState() => _OnboardingState();
@@ -658,6 +660,7 @@ class _FirstLogRow extends StatelessWidget {
             icon: const Icon(Icons.add),
           ),
           FilledButton(
+            key: Onboarding.logKey(vice.name),
             onPressed: onLog,
             style: FilledButton.styleFrom(
               minimumSize: const Size(64, DialSize.minTapTarget),
