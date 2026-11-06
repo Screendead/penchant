@@ -444,6 +444,31 @@ class _DayDialState extends ConsumerState<DayDial>
     );
   }
 
+  // The sweep's trace: its share of a turn and its opacity, held full once the
+  // hand has gone round and fading out after, or null when there is none.
+  // The mock-up fades it over 260 ms, which has no token; the ripple's 300 ms
+  // is the nearest.
+  ({double turn, double alpha})? _sweepTrace() {
+    if (_sweepTurn() case final double turn) {
+      return (turn: turn, alpha: 1);
+    }
+    if (_sweepStart == null) {
+      return null;
+    }
+    final Duration after = _t - _sweepStart! - DialMotion.daySweep;
+    if (after >= DialMotion.landingRipple) {
+      return null;
+    }
+    return (
+      turn: 1,
+      alpha:
+          1 -
+          DialMotion.enter.transform(
+            after.inMicroseconds / DialMotion.landingRipple.inMicroseconds,
+          ),
+    );
+  }
+
   double _beadScale(String id, double angle) {
     if (_flying.contains(id)) {
       return 0;
@@ -595,7 +620,7 @@ class _DayDialState extends ConsumerState<DayDial>
             accent: scheme.primary,
             text: scheme.onSurface,
             surface: scheme.surfaceContainerLow,
-            sweep: _sweepTurn(),
+            sweep: _sweepTrace(),
           ),
         );
 
@@ -960,8 +985,8 @@ class _HandPainter extends CustomPainter {
   final Color accent;
   final Color text;
   final Color surface;
-  // The sweeping hand's share of a turn on a day change.
-  final double? sweep;
+  // The sweeping hand's share of a turn on a day change, and its opacity.
+  final ({double turn, double alpha})? sweep;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -970,14 +995,14 @@ class _HandPainter extends CustomPainter {
     canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(scale);
 
-    if (sweep case final double turn) {
+    if (sweep case (turn: final double turn, alpha: final double alpha)) {
       final double a = -pi / 2 + 2 * pi * turn;
       canvas.drawArc(
         Rect.fromCircle(center: Offset.zero, radius: DialFace.disc),
         -pi / 2,
         2 * pi * turn,
         true,
-        Paint()..color = text.withValues(alpha: 0.05),
+        Paint()..color = text.withValues(alpha: 0.05 * alpha),
       );
       canvas.drawLine(
         Offset.zero,
@@ -985,7 +1010,7 @@ class _HandPainter extends CustomPainter {
         Paint()
           ..strokeWidth = 1.5
           ..strokeCap = StrokeCap.round
-          ..color = text.withValues(alpha: 0.5),
+          ..color = text.withValues(alpha: 0.5 * alpha),
       );
     }
 
