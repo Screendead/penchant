@@ -74,6 +74,26 @@ class Account {
     }
   }
 
+  // A guest's uid owns its data like any other, until it is linked to an
+  // email and password or lost by signing out.
+  Future<void> startAsGuest() => _auth.signInAnonymously();
+
+  // Linking keeps the uid, so the guest's entries stay theirs with nothing
+  // copied.
+  Future<void> linkEmail({
+    required String email,
+    required String password,
+  }) async {
+    final UserCredential credential = await _signedInUser().linkWithCredential(
+      EmailAuthProvider.credential(email: email, password: password),
+    );
+    try {
+      await credential.user?.sendEmailVerification();
+    } on FirebaseAuthException catch (e, stack) {
+      _report(e, stack, 'sending the verification email');
+    }
+  }
+
   Future<void> sendPasswordResetEmail(String email) {
     return _auth.sendPasswordResetEmail(email: email);
   }
@@ -141,8 +161,13 @@ class Account {
 
   // Data goes before the Auth user: Firebase never reissues a uid, so
   // documents left behind a deleted user could never be reached again.
-  Future<void> deleteAccount({required String password}) async {
-    await reauthenticate(password);
+  // A guest has no password to confirm with, so [password] is null for one.
+  Future<void> deleteAccount({String? password}) async {
+    if (password != null) {
+      await reauthenticate(password);
+    } else if (!_signedInUser().isAnonymous) {
+      throw StateError('Deleting an account with an email needs its password.');
+    }
     final User user = _signedInUser();
     bool removing = false;
     try {

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account.dart';
@@ -32,6 +33,31 @@ Future<bool> _confirmDiscard(BuildContext context) async {
   return discard ?? false;
 }
 
+// Nothing signs a guest back in, so their journal goes with the session.
+Future<bool> _confirmGuestSignOut(BuildContext context) async {
+  final bool? leave = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: const Text(AccountCopy.guestSignOutTitle),
+      content: const Text(AccountCopy.guestSignOutBody),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text(AccountCopy.cancel),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(AccountCopy.guestSignOutAction),
+        ),
+      ],
+    ),
+  );
+  return leave ?? false;
+}
+
 class Settings extends ConsumerStatefulWidget {
   const Settings({super.key});
 
@@ -49,6 +75,16 @@ class _SettingsState extends ConsumerState<Settings> {
     final NavigatorState navigator = Navigator.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
+      if (ref.read(userProvider).value?.isAnonymous ?? false) {
+        if (!await _confirmGuestSignOut(context)) {
+          return;
+        }
+        // Unsynced entries are lost with the rest, so there is nothing to
+        // wait for.
+        await _whileSigningOut(() => account.signOut(discardUnsynced: true));
+        navigator.popUntil((Route<dynamic> route) => route.isFirst);
+        return;
+      }
       try {
         await _whileSigningOut(account.signOut);
       } on UnsyncedEntriesException {
@@ -84,7 +120,10 @@ class _SettingsState extends ConsumerState<Settings> {
     final String? version = ref
         .watch(packageInfoProvider)
         .whenOrNull(data: (info) => '${info.version} (${info.buildNumber})');
-    final String? email = ref.watch(userProvider).value?.email;
+    final User? user = ref.watch(userProvider).value;
+    final String? email = (user?.isAnonymous ?? false)
+        ? AccountCopy.guest
+        : user?.email;
     return CardPage(
       title: 'Settings',
       children: <Widget>[

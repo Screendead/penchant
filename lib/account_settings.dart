@@ -12,6 +12,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/auth_parts.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -66,6 +67,9 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
   late final TextEditingController _photoURL = TextEditingController(
     text: widget.user.photoURL,
   );
+  final TextEditingController _linkEmail = TextEditingController();
+  final TextEditingController _linkPassword = TextEditingController();
+  final TextEditingController _linkConfirmation = TextEditingController();
   late final AppLifecycleListener _lifecycle;
   String? _busy;
 
@@ -84,6 +88,9 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     _displayName.dispose();
     _email.dispose();
     _photoURL.dispose();
+    _linkEmail.dispose();
+    _linkPassword.dispose();
+    _linkConfirmation.dispose();
     super.dispose();
   }
 
@@ -173,6 +180,34 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     }
   });
 
+  bool get _linkReady =>
+      emailError(_linkEmail.text.trim()) == null &&
+      PasswordRules.check(
+        _linkPassword.text,
+        _linkConfirmation.text,
+      ).values.every((bool met) => met);
+
+  Future<void> _link() => _run('Saving…', () async {
+    final String email = _linkEmail.text.trim();
+    try {
+      await _account.linkEmail(email: email, password: _linkPassword.text);
+      _email.text = email;
+      _linkPassword.clear();
+      _linkConfirmation.clear();
+      _show(AccountCopy.linked(email));
+    } on FirebaseAuthException catch (e, stack) {
+      reportError(e, stack, context: 'while adding an email to a guest');
+      _show(switch (e.code) {
+        'email-already-in-use' ||
+        'credential-already-in-use' => AccountCopy.linkEmailTaken,
+        _ => AccountCopy.linkFailed(authErrorMessage(e)),
+      });
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while adding an email to a guest');
+      _show(AccountCopy.linkFailed(authErrorMessage(e)));
+    }
+  });
+
   Rect? _exportOrigin() {
     final RenderObject? box = _exportTile.currentContext?.findRenderObject();
     if (box is! RenderBox || !box.hasSize) {
@@ -199,9 +234,10 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
   }
 
   Future<void> _delete() async {
+    final bool guest = widget.user.isAnonymous;
     final _DeleteChoice? choice = await showDialog<_DeleteChoice>(
       context: context,
-      builder: (BuildContext context) => const _DeleteConfirmation(),
+      builder: (BuildContext context) => _DeleteConfirmation(guest: guest),
     );
     if (!mounted) {
       return;
@@ -213,12 +249,14 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     if (choice != _DeleteChoice.proceed) {
       return;
     }
-    final String? password = await promptForPassword(
-      context,
-      message: AccountCopy.deletePasswordPrompt(widget.user.email ?? ''),
-      action: AccountCopy.deleteConfirmAction,
-    );
-    if (password == null || !mounted) {
+    final String? password = guest
+        ? null
+        : await promptForPassword(
+            context,
+            message: AccountCopy.deletePasswordPrompt(widget.user.email ?? ''),
+            action: AccountCopy.deleteConfirmAction,
+          );
+    if ((!guest && password == null) || !mounted) {
       return;
     }
     final NavigatorState navigator = Navigator.of(context);
@@ -242,6 +280,97 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     });
   }
 
+  List<Widget> _profile() => <Widget>[
+    const CardSectionLabel('Profile'),
+    Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TextFormField(
+            controller: _displayName,
+            decoration: const InputDecoration(labelText: 'Display Name'),
+          ),
+          const SizedBox(height: DialSpace.m),
+          TextFormField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            decoration: const InputDecoration(labelText: 'Email'),
+            validator: (String? value) => emailError(value?.trim()),
+          ),
+          const SizedBox(height: DialSpace.m),
+          TextFormField(
+            controller: _photoURL,
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            decoration: const InputDecoration(labelText: 'Photo URL'),
+          ),
+          const SizedBox(height: DialSpace.m),
+          ElevatedButton(
+            onPressed: _saveProfile,
+            child: const Text('Update Profile'),
+          ),
+        ],
+      ),
+    ),
+    DialCard(
+      top: DialSpace.xl,
+      children: <Widget>[
+        CardRow(
+          label: widget.user.emailVerified
+              ? AccountCopy.verified
+              : AccountCopy.notVerified,
+          trailing: widget.user.emailVerified
+              ? null
+              : TextButton(
+                  onPressed: _resendVerification,
+                  child: const Text(AccountCopy.resendVerification),
+                ),
+        ),
+      ],
+    ),
+  ];
+
+  // A guest has no address to show or verify; this replaces the profile.
+  List<Widget> _saveJournal() => <Widget>[
+    const CardSectionLabel(AccountCopy.guestTitle),
+    Text(AccountCopy.guestBody, style: CardStyles.foot(context)),
+    const SizedBox(height: DialSpace.m),
+    TextField(
+      controller: _linkEmail,
+      keyboardType: TextInputType.emailAddress,
+      autocorrect: false,
+      autofillHints: const <String>[AutofillHints.email],
+      decoration: const InputDecoration(labelText: 'Email'),
+      onChanged: (_) => setState(() {}),
+    ),
+    const SizedBox(height: DialSpace.m),
+    TextField(
+      controller: _linkPassword,
+      obscureText: true,
+      autofillHints: const <String>[AutofillHints.newPassword],
+      decoration: const InputDecoration(labelText: 'Password'),
+      onChanged: (_) => setState(() {}),
+    ),
+    const SizedBox(height: DialSpace.m),
+    TextField(
+      controller: _linkConfirmation,
+      obscureText: true,
+      autofillHints: const <String>[AutofillHints.newPassword],
+      decoration: const InputDecoration(labelText: 'Confirm password'),
+      onChanged: (_) => setState(() {}),
+    ),
+    PasswordChecklist(
+      checks: PasswordRules.check(_linkPassword.text, _linkConfirmation.text),
+    ),
+    const SizedBox(height: DialSpace.m),
+    ElevatedButton(
+      onPressed: _linkReady ? _link : null,
+      child: const Text(AccountCopy.linkAction),
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final String? busy = _busy;
@@ -261,55 +390,7 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const CardSectionLabel('Profile'),
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              TextFormField(
-                controller: _displayName,
-                decoration: const InputDecoration(labelText: 'Display Name'),
-              ),
-              const SizedBox(height: DialSpace.m),
-              TextFormField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (String? value) => emailError(value?.trim()),
-              ),
-              const SizedBox(height: DialSpace.m),
-              TextFormField(
-                controller: _photoURL,
-                keyboardType: TextInputType.url,
-                autocorrect: false,
-                decoration: const InputDecoration(labelText: 'Photo URL'),
-              ),
-              const SizedBox(height: DialSpace.m),
-              ElevatedButton(
-                onPressed: _saveProfile,
-                child: const Text('Update Profile'),
-              ),
-            ],
-          ),
-        ),
-        DialCard(
-          top: DialSpace.xl,
-          children: <Widget>[
-            CardRow(
-              label: widget.user.emailVerified
-                  ? AccountCopy.verified
-                  : AccountCopy.notVerified,
-              trailing: widget.user.emailVerified
-                  ? null
-                  : TextButton(
-                      onPressed: _resendVerification,
-                      child: const Text(AccountCopy.resendVerification),
-                    ),
-            ),
-          ],
-        ),
+        if (widget.user.isAnonymous) ..._saveJournal() else ..._profile(),
         const CardSectionLabel(AccountCopy.dataSection),
         DialCard(
           top: 0,
@@ -337,13 +418,19 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
 enum _DeleteChoice { exportFirst, proceed }
 
 class _DeleteConfirmation extends StatelessWidget {
-  const _DeleteConfirmation();
+  const _DeleteConfirmation({required this.guest});
+
+  final bool guest;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text(AccountCopy.deleteConfirmTitle),
-      content: const Text(AccountCopy.deleteConfirmBody),
+      content: Text(
+        guest
+            ? AccountCopy.guestDeleteConfirmBody
+            : AccountCopy.deleteConfirmBody,
+      ),
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
