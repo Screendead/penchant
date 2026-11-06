@@ -134,6 +134,29 @@ void main() {
     variant: TargetPlatformVariant.only(TargetPlatform.macOS),
   );
 
+  testWidgets(
+    'a held Cmd-1 logs once, and its repeats stop short of the native menu',
+    (WidgetTester tester) async {
+      final FakeTrackerWrites writes = await _pump(tester, _habits);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      expect(await tester.sendKeyDownEvent(LogicalKeyboardKey.digit1), isTrue);
+      for (int i = 0; i < 3; i++) {
+        expect(
+          await tester.sendKeyRepeatEvent(LogicalKeyboardKey.digit1),
+          isTrue,
+        );
+      }
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.digit1);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+
+      expect(writes.writes, hasLength(1));
+      await tester.pumpAndSettle();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
   testWidgets('iOS has no menu bar', (WidgetTester tester) async {
     await _pump(tester, _habits);
     expect(find.byType(PlatformMenuBar), findsNothing);

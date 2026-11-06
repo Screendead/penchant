@@ -745,6 +745,24 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('holding Cmd-1 down logs one entry, not one per repeat', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.digit1);
+      for (int i = 0; i < 3; i++) {
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.digit1);
+      }
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.digit1);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+
+      expect(writes.writes.single.fields['viceID'], coffee.id);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a key on a past day logs now and shows today', (
       WidgetTester tester,
     ) async {

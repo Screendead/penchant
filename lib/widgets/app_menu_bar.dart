@@ -23,8 +23,19 @@ const List<LogicalKeyboardKey> _digits = <LogicalKeyboardKey>[
 
 int get habitKeyCount => _digits.length;
 
+// Not on repeats: holding the key down would log an entry for each one, and
+// only the last could be undone.
 SingleActivator habitKey(int index) =>
-    SingleActivator(_digits[index], meta: true);
+    SingleActivator(_digits[index], meta: true, includeRepeats: false);
+
+// A key the framework leaves unhandled goes on to the native menu, which
+// would log on each repeat, so the repeats stop here.
+KeyEventResult _swallowHabitKeyRepeats(FocusNode node, KeyEvent event) =>
+    event is KeyRepeatEvent &&
+        HardwareKeyboard.instance.isMetaPressed &&
+        _digits.contains(event.logicalKey)
+    ? KeyEventResult.handled
+    : KeyEventResult.ignored;
 
 /// Today's tally order: the habits in use, oldest first, as their colours
 /// are given.
@@ -66,7 +77,15 @@ class AppMenuBar extends ConsumerWidget {
         ? const <Vice>[]
         : tallyOrder(listed, habitMarks(all ?? listed));
 
-    return PlatformMenuBar(menus: appMenus(ref, habits), child: child);
+    return PlatformMenuBar(
+      menus: appMenus(ref, habits),
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: _swallowHabitKeyRepeats,
+        child: child,
+      ),
+    );
   }
 }
 
