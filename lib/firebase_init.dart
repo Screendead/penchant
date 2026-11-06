@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_options.dart';
 
 const bool useFirebaseEmulators = bool.fromEnvironment(
@@ -43,11 +46,46 @@ void _configureFirestoreCache() {
 // SDK evicts any that no listener uses.
 const int _firestoreCacheBytes = 100 * 1024 * 1024;
 
+// Collection is set on every launch: the override persists, and an emulator
+// build of the same bundle ID on this device turned it off.
+Future<void> _reportToCrashlytics() async {
+  final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.instance;
+  await crashlytics.setCrashlyticsCollectionEnabled(true);
+  errorForwarder = crashlyticsForwarder(crashlytics.recordError);
+}
+
+typedef RecordError =
+    Future<void> Function(
+      dynamic exception,
+      StackTrace? stack, {
+      dynamic reason,
+      bool? printDetails,
+      bool fatal,
+    });
+
+// Sends the exception, stack and literal context only. FlutterErrorDetails'
+// informationCollector is left out: its diagnostics can describe widgets,
+// and a Text widget's description carries its string, a habit name.
+// recordFlutterError is avoided as it prints the error a second time. A
+// failed upload is dropped: reporting it would come back here.
+@visibleForTesting
+ErrorForwarder crashlyticsForwarder(RecordError record) =>
+    (FlutterErrorDetails details, {required bool fatal}) {
+      record(
+        details.exception,
+        details.stack,
+        reason: details.context?.toDescription(),
+        printDetails: false,
+        fatal: fatal,
+      ).ignore();
+    };
+
 Future<void> initializeFirebase() async {
   if (!useFirebaseEmulators) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    await _reportToCrashlytics();
     // App Attest yields no token App Check accepts until the Runner target
     // has the App Attest entitlement, which the current signing team cannot
     // sign (HANDOVER.md, "For Jack to do"). firebase_app_check 0.4.9 picks App
@@ -73,6 +111,11 @@ Future<void> initializeFirebase() async {
       '"${app.options.projectId}". Refusing to start.',
     );
   }
+
+  // Crashlytics has no emulator. The override persists across launches and
+  // takes effect from the next one; the emulator build's Info.plist
+  // (tools/strip-firebase-plist.sh) covers this launch.
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
 
   // The emulators ignore App Check. A debug token is a production credential
   // once registered in the console, so none is committed here.
