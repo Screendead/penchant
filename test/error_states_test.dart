@@ -22,7 +22,6 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_tracker.dart';
@@ -31,6 +30,7 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fake_account.dart';
 import 'fakes.dart';
+import 'trends_harness.dart';
 
 FirebaseException _firestoreError(String code) => FirebaseException(
   plugin: 'cloud_firestore',
@@ -244,43 +244,22 @@ void main() {
     });
   });
 
-  group('the usage graph', () {
-    testWidgets('a failed vice list shows the error and Retry recovers', (
-      WidgetTester tester,
-    ) async {
-      final _FailsOnce<List<Vice>> vices = _FailsOnce<List<Vice>>(
-        _denied,
-        <Vice>[],
-      );
-      await _pump(tester, [
-        viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
-      ], const Scaffold(body: UsageGraphView()));
-
-      expect(
-        find.text(loadErrorMessage('your habits', _denied)),
-        findsOneWidget,
-      );
-
-      await _tapRetry(tester);
-
-      expect(find.text('No habits available to graph'), findsOneWidget);
-    });
-
+  group('the Trends sheet', () {
     testWidgets("a failed range query shows the error in the chart's place", (
       WidgetTester tester,
     ) async {
       final _FailsOnce<List<ViceActivity>> range =
           _FailsOnce<List<ViceActivity>>(_denied, <ViceActivity>[]);
       await _pump(tester, [
-        viceListForUserProvider.overrideWith(
-          (ref, uid) => Stream.value([coffee]),
+        ...habitOverrides([coffee]),
+        viceActivityDayProvider.overrideWith(
+          (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
         ),
         viceActivityGraphForUserProvider.overrideWith(
           (ref, key) => range.listen(),
         ),
-      ], const Scaffold(body: UsageGraphView()));
-      // The range query starts only once the vice list has arrived.
-      await tester.pump();
+      ], const Scaffold(body: ViceTracker()));
+      await openTrends(tester);
 
       expect(
         find.text(loadErrorMessage('coffee for this range', _denied)),
@@ -291,10 +270,7 @@ void main() {
       await _tapRetry(tester);
 
       expect(range.listens, 2);
-      expect(
-        find.text('No activities found for coffee in the selected range'),
-        findsOneWidget,
-      );
+      expect(find.text('No entries for coffee in this range'), findsOneWidget);
     });
   });
 

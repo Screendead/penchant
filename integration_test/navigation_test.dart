@@ -13,6 +13,7 @@ import 'package:tracker/manage_data.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'support.dart';
 
@@ -94,19 +95,20 @@ void main() {
     });
   });
 
-  testWidgets('Record works from the Graph tab', (WidgetTester tester) async {
+  testWidgets('Trends opens over Today, and Log comes back on its edge once '
+      'it closes', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await register(tester, 'e2e-graph-record@example.com');
+    await register(tester, 'e2e-trends-record@example.com');
     await addVicesThroughManageData(tester);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
+    await openTrends(tester);
+    expect(find.byType(LogButton).hitTestable(), findsNothing);
+    expect(find.byType(NavigationBar), findsNothing);
+    await closeTrends(tester);
+
     await recordActivity(tester, 'Tea', 3);
     await pumpUntil(tester, find.text('Activity recorded'));
-    expect(find.text('Usage Graph'), findsOneWidget);
     expect(await storedActivities('Tea'), hasLength(1));
-
-    await tap(tester, find.text('Today'));
     await expectTallies(tester, const <String>{
       'Coffee (0 drinks)',
       'Tea (3 drinks)',

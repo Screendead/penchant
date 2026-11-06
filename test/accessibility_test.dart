@@ -13,8 +13,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/usage_graph_view.dart';
+import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -23,6 +22,7 @@ import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fakes.dart';
+import 'trends_harness.dart';
 
 final DateTime _today = startOfDay(DateTime.now());
 
@@ -118,8 +118,12 @@ void main() {
       expect(find.bySemanticsLabel('coffee, 2 items'), findsOneWidget);
       expect(find.bySemanticsLabel('beer, 0 items'), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('^2\$')), findsNothing);
+      // The last row can sit below the fold, above the Trends peek.
       for (final Vice vice in _three) {
-        expect(find.byTooltip(logOneLabel(vice)), findsOneWidget);
+        expect(
+          find.byTooltip(logOneLabel(vice), skipOffstage: false),
+          findsOneWidget,
+        );
       }
       expect(find.bySemanticsLabel(LogButton.label), findsOneWidget);
       semantics.dispose();
@@ -141,32 +145,36 @@ void main() {
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       final DateTime peakDay = addDays(_today, -3);
-      await _pump(tester, [
-        viceListProvider.overrideWith((ref) => AsyncData([_three.first])),
-        viceActivityGraphProvider.overrideWith(
-          (ref, ViceActivityGraphQuery query) => AsyncData(<ViceActivity>[
+      await _pump(
+        tester,
+        trendsOverrides(
+          [_three.first],
+          inRange(<ViceActivity>[
             fakeActivity('coffee', 4, peakDay.add(const Duration(hours: 9))),
             fakeActivity('coffee', 1, _today.add(const Duration(hours: 9))),
           ]),
         ),
-      ], const UsageGraphView());
+        const ViceTracker(),
+      );
+      await openTrends(tester);
 
       expect(
         find.bySemanticsLabel(
           'Daily totals of coffee over the last 30 days: 5 items in all. '
-          'The most was 4 items on ${formatShortDay(peakDay)}.',
+          'The most was 4 items on ${formatShortDay(peakDay)}. '
+          'Shown with a 7-day average.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Smoothing: 1 bucket for coffee'), findsOneWidget);
+      expect(find.text('Average over 7 days'), findsOneWidget);
       semantics.dispose();
     });
   });
 
   test('the graph says which series is which in words', () {
-    expect(UsageGraphView.seriesName(1), 'Daily total');
-    expect(UsageGraphView.averageName(1, 3), '3-day average');
-    expect(UsageGraphView.averageName(7, 2), '2-week average');
+    expect(TrendsChart.seriesName(1), 'Daily total');
+    expect(TrendsChart.averageName(1, 3), '3-day average');
+    expect(TrendsChart.averageName(7, 2), '2-week average');
   });
 
   for (final double textScale in [2.0, 3.0]) {
@@ -234,8 +242,8 @@ void main() {
 
         await tester.tap(find.text('Cancel'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Graph'));
-        await tester.pumpAndSettle();
+        await openTrends(tester);
+        expect(find.byType(LineChart), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -318,13 +326,16 @@ void main() {
         WidgetTester tester,
       ) async {
         _usePhone(tester, textScale: textScale);
-        await _pump(tester, [
-          viceListProvider.overrideWith((ref) => AsyncData([_three.first])),
-          viceActivityGraphProvider.overrideWith(
-            (ref, ViceActivityGraphQuery query) =>
+        await _pump(
+          tester,
+          trendsOverrides(
+            [_three.first],
+            (ViceActivityGraphQuery query) =>
                 AsyncData(<ViceActivity>[fakeActivity('coffee', 1200, _today)]),
           ),
-        ], const UsageGraphView());
+          const ViceTracker(),
+        );
+        await openTrends(tester);
         expect(tester.takeException(), isNull);
 
         final FlTitlesData titles = tester

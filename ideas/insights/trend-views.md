@@ -4,17 +4,17 @@
 
 ## What
 
-A Trends tab that grows the existing usage graph:
+Grow the Trends sheet (overhaul step 1c, which replaced the Graph tab):
 
-- **Free in 1.0:** each vice's daily and weekly totals over any range (the existing graph, fixed), and an
-  hour-of-day × weekday heatmap per vice.
+- **Free in 1.0:** each vice's daily and weekly totals over a range with a moving average, its stats and an
+  hour-of-day ring (shipped in the Trends sheet), and still to come an hour-of-day × weekday heatmap per vice.
 - **Pro in 1.1:** several vices overlaid on one time axis, Health outcomes drawn under the vice lines (for example
   nightly HRV under evening drinks), trigger breakdowns over time, and spend.
 
 ## Why
 
-- SOURCED (code): `UsageGraphView` already buckets by day or by week and overlays a moving average, with the
-  arithmetic in tested pure functions (`lib/data/usage_series.dart`).
+- SOURCED (code): `TrendsSheet` (`lib/trends/`) buckets by day or by week, overlays a moving average and draws when
+  in the day a habit happens, with the arithmetic in tested pure functions (`lib/data/usage_series.dart`).
 - INFERENCE: descriptive views need no statistics gate and give a new user something on day three, long before the
   [insights engine](insights-engine.md) has 21 days.
 

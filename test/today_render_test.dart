@@ -22,7 +22,10 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/trends/trends_chart.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/log_fan.dart';
 
 import 'fake_writes.dart';
@@ -84,6 +87,36 @@ List<ViceActivity> _day(DateTime day, List<(int, int, int)> scene) =>
         fakeActivity(_habits[h].id, q, day.add(Duration(minutes: minute))),
     ];
 
+// A year of one habit, a few entries a day at hours that drift, so the
+// chart, the stats and the hour ring all have something to show.
+List<ViceActivity> _history(String viceID, DateTime start, DateTime end) {
+  final List<ViceActivity> out = <ViceActivity>[];
+  int seed = viceID.hashCode & 0xffff;
+  int next(int bound) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed % bound;
+  }
+
+  for (
+    DateTime d = start;
+    d.isBefore(end);
+    d = DateTime(d.year, d.month, d.day + 1)
+  ) {
+    final int count = next(5);
+    for (int i = 0; i < count; i++) {
+      final int hour = (7 + next(4) + (i * 5)) % 24;
+      out.add(
+        fakeActivity(
+          viceID,
+          1 + next(2),
+          d.add(Duration(hours: hour, minutes: next(60))),
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 Future<void> _loadFonts() async {
   for (final (String family, String file) in <(String, String)>[
     (DialFonts.display, 'RedHatDisplay'),
@@ -116,15 +149,27 @@ void main() {
           ('sparse', _sparse),
           ('clear', const <(int, int, int)>[]),
           ('fan', _sparse),
+          ('trends', _busy),
+          ('trends-day', _busy),
+          ('trends-large', _busy),
         ]) {
       testWidgets('renders Today, $scene, ${brightness.name}', (
         WidgetTester tester,
       ) async {
         tester.view.devicePixelRatio = 3;
         tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+        // An iPhone's status bar and home indicator.
+        tester.view.padding = const FakeViewPadding(
+          top: 47 * 3,
+          bottom: 34 * 3,
+        );
         tester.platformDispatcher.platformBrightnessTestValue = brightness;
         addTearDown(tester.view.reset);
         addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        if (scene.endsWith('-large')) {
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        }
         final User user = FakeUser(ownerID);
         final GlobalKey frame = GlobalKey();
 
@@ -144,6 +189,10 @@ void main() {
               viceActivityDayProvider.overrideWith(
                 (ref, DateTime day) => AsyncData(_day(day, entries)),
               ),
+              viceActivityGraphProvider.overrideWith(
+                (ref, ViceActivityGraphQuery q) =>
+                    AsyncData(_history(q.viceID, q.start, q.end)),
+              ),
             ],
             child: RepaintBoundary(
               key: frame,
@@ -159,6 +208,15 @@ void main() {
         await tester.pumpAndSettle();
         if (scene == 'fan') {
           await tester.tap(find.byType(LogButton));
+          await tester.pumpAndSettle();
+        }
+        if (scene.startsWith('trends')) {
+          await tester.tap(find.text(TrendsSheet.title));
+          await tester.pumpAndSettle();
+        }
+        if (scene == 'trends-day') {
+          final Rect chart = tester.getRect(find.byType(TrendsChart));
+          await tester.tapAt(Offset(chart.right - 40, chart.bottom - 60));
           await tester.pumpAndSettle();
         }
 

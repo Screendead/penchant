@@ -2,15 +2,11 @@ import 'package:flutter/material.dart';
 
 TextPainter _layOut(
   BuildContext context,
-  String text,
-  TextStyle style, {
+  InlineSpan text, {
   int maxLines = 1,
   double maxWidth = double.infinity,
 }) => TextPainter(
-  text: TextSpan(
-    text: text,
-    style: DefaultTextStyle.of(context).style.merge(style),
-  ),
+  text: TextSpan(style: DefaultTextStyle.of(context).style, children: [text]),
   textDirection: TextDirection.ltr,
   textScaler: MediaQuery.textScalerOf(context),
   maxLines: maxLines,
@@ -19,7 +15,12 @@ TextPainter _layOut(
 // fl_chart reserves a fixed extent for axis titles; this measures what a
 // label needs at the device's text scale so it is not clipped.
 Size chartLabelSize(BuildContext context, String text, TextStyle style) {
-  final TextPainter painter = _layOut(context, text, style);
+  return chartSpanSize(context, TextSpan(text: text, style: style));
+}
+
+// The same for a span of several styles.
+Size chartSpanSize(BuildContext context, InlineSpan text) {
+  final TextPainter painter = _layOut(context, text);
   final Size size = painter.size;
   painter.dispose();
   return size;

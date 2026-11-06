@@ -159,9 +159,9 @@ void main() {
     await expectTallies(tester, todayChart);
     _expectControlsEnabled(tester, onToday: true);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
-    await screenshot(tester, 'usage-graph-tab');
+    await openTrends(tester);
+    await screenshot(tester, 'trends-sheet');
+    await closeTrends(tester);
   });
 
   testWidgets('Undo on the record snackbar deletes the activity just recorded', (

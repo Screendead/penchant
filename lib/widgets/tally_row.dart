@@ -23,8 +23,8 @@ class TallyRow extends StatefulWidget {
   // Null while the day loads.
   final int? total;
   final DateTime day;
-  // [from] is the + button's centre, in global coordinates.
-  final void Function(Offset from) onLog;
+  // [from] is the + button's centre, in global coordinates. Null shows no +.
+  final void Function(Offset from)? onLog;
 
   static String label(Vice vice, int total) =>
       '${vice.name}, ${vice.unit.label(total)}';
@@ -167,10 +167,10 @@ class _TallyRowState extends State<TallyRow>
                 ),
               ),
             ),
-            _PlusButton(
-              label: logOneLabel(widget.vice),
-              onPressed: widget.onLog,
-            ),
+            if (widget.onLog case final void Function(Offset) onLog)
+              _PlusButton(label: logOneLabel(widget.vice), onPressed: onLog)
+            else
+              const SizedBox(height: DialSize.minTapTarget),
           ],
         ),
       ),
