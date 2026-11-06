@@ -23,8 +23,15 @@ String get _uid => FirebaseAuth.instance.currentUser!.uid;
 Finder _inTrends(Finder finder) =>
     find.descendant(of: find.byType(TrendsSheet), matching: finder);
 
+// The sheet scrolls in a short window (macOS), so each control is brought
+// into view before it is used.
+Future<void> _use(WidgetTester tester, Finder finder) async {
+  await scrollIntoView(tester, finder);
+  await tap(tester, finder);
+}
+
 Future<void> _pick(WidgetTester tester, String label) async {
-  await tap(tester, _inTrends(find.text(label)));
+  await _use(tester, _inTrends(find.text(label)));
   await pumpFor(tester, const Duration(milliseconds: 600));
 }
 
@@ -112,7 +119,7 @@ void main() {
       ),
     );
     expect(_totals(tester), [1, 0, 0, 4, 5]);
-    await tap(tester, find.byTooltip(TrendsSheet.longerAverage));
+    await _use(tester, find.byTooltip(TrendsSheet.longerAverage));
     await pumpUntil(tester, find.text('Average over 5 weeks'));
     // Five buckets hold no longer average.
     expect(
@@ -131,6 +138,7 @@ void main() {
     // Day restarts at a week's average; a tap on today opens its dial.
     await _pick(tester, 'Day');
     await pumpUntil(tester, find.text('Average over 7 days'));
+    await scrollIntoView(tester, find.byType(LineChart));
     final Rect chart = tester.getRect(find.byType(LineChart));
     await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
     await pumpUntil(tester, find.byType(TrendsDay));
@@ -140,7 +148,7 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 800));
     await screenshot(tester, 'trends-day');
-    await tap(tester, find.byTooltip(TrendsDay.backLabel));
+    await _use(tester, find.byTooltip(TrendsDay.backLabel));
     await pumpUntil(tester, find.byType(LineChart));
 
     await closeTrends(tester);

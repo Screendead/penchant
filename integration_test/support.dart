@@ -316,8 +316,8 @@ Future<void> logOne(WidgetTester tester, String viceName) async {
   await tap(tester, find.byTooltip(label));
 }
 
-// Scrolls Today until [finder] is in the middle of the screen, clear of the
-// Log button.
+// Scrolls Today, or the open Trends sheet, until [finder] is in the middle of
+// its view, clear of the Log button.
 Future<void> scrollIntoView(WidgetTester tester, Finder finder) async {
   await pumpUntilTrue(
     tester,
@@ -530,6 +530,8 @@ Future<void> openTrends(WidgetTester tester) async {
 }
 
 Future<void> closeTrends(WidgetTester tester) async {
+  // Close sits at the top of the sheet, which may have scrolled.
+  await scrollIntoView(tester, find.byTooltip(TrendsSheet.closeLabel));
   await tap(tester, find.byTooltip(TrendsSheet.closeLabel));
   await pumpUntil(tester, find.byType(LogButton).hitTestable());
   await pumpFor(tester, const Duration(milliseconds: 500));
