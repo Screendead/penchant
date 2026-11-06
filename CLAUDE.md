@@ -306,7 +306,8 @@ Dart `String.length`); a quantity is an int of at least 1; an amount, when prese
 typed into the Quantity field is written as `amount` with `quantity` set to it rounded up (`storedMeasure` in
 `lib/data/vice_activity.dart`), so builds that read only `quantity` still count it; a whole number is written as
 `quantity` alone, unless the entry already has an amount. Charts, totals and labels count `ViceActivity.measure`:
-the amount when present, else the quantity. The amount is read in `ViceActivity.fromJson` and written only by
+the amount when present and `quantity` still equals its rounding up, else the quantity (an older build editing the
+entry changes `quantity` alone, and that edit wins). The amount is read in `ViceActivity.fromJson` and written only by
 `TrackerWrites`, so sealing it later (`r2-e2ee`) touches those two places. `parseAmount` (`lib/formats.dart`)
 reads the region's decimal mark or a point and refuses grouping. A new activity's `viceID`
 must name a vice the writer owns, checked with one `get()` (a billed read, even when

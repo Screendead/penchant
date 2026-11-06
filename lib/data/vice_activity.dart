@@ -36,8 +36,15 @@ class ViceActivity {
   // A local write the server has not acknowledged yet.
   final bool pending;
 
-  // What charts, totals and labels count.
-  num get measure => amount ?? quantity;
+  // What charts, totals and labels count. Every write of an amount sets
+  // quantity to storedMeasure's rounding of it, so a quantity that disagrees
+  // was edited later by a build that knows nothing of amount, and wins.
+  num get measure {
+    final double? amount = this.amount;
+    return amount != null && quantity == max(1, amount.ceil())
+        ? amount
+        : quantity;
+  }
 
   factory ViceActivity.fromJson({
     required String id,

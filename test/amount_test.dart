@@ -97,6 +97,27 @@ void main() {
     expect(mistyped.measure, 2);
   });
 
+  test('a quantity an older build changed after the amount wins', () {
+    final Timestamp at = Timestamp.fromDate(DateTime(2026, 11, 2));
+    ViceActivity read(int quantity, double amount) => ViceActivity.fromJson(
+      id: 'a',
+      json: <String, dynamic>{
+        'viceID': 'v',
+        'quantity': quantity,
+        'amount': amount,
+        'createdAt': at,
+      },
+    );
+    expect(read(1, 0.25).measure, 0.25);
+    expect(read(3, 3).measure, 3);
+    expect(read(5, 1.5).measure, 5);
+    expect(read(1, 1.5).measure, 1);
+    for (final num value in <num>[0.25, 1.5, 2, 7.01]) {
+      final StoredMeasure stored = storedMeasure(value, keepAmount: true);
+      expect(read(stored.quantity, stored.amount!).measure, value);
+    }
+  });
+
   test('storedMeasure keeps whole numbers as a quantity alone', () {
     expect(storedMeasure(3), (quantity: 3, amount: null));
     expect(storedMeasure(1.5), (quantity: 2, amount: 1.5));
