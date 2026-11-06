@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
@@ -39,6 +40,44 @@ typedef TrendsSeries = ({
   UsageStats stats,
   HourProfile hours,
 });
+
+// A sheet controller's moves, passed on outside a build. The sheet resets its
+// extent while it builds when its peek size changes (a resized window, a new
+// text size), and widgets beside or above it may not be marked dirty then.
+class SheetPosition extends ChangeNotifier {
+  SheetPosition(this.controller) {
+    controller.addListener(_moved);
+  }
+
+  final DraggableScrollableController controller;
+  bool _scheduled = false;
+  bool _disposed = false;
+
+  void _moved() {
+    final SchedulerBinding binding = SchedulerBinding.instance;
+    if (binding.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+      notifyListeners();
+      return;
+    }
+    if (_scheduled) {
+      return;
+    }
+    _scheduled = true;
+    binding.addPostFrameCallback((_) {
+      _scheduled = false;
+      if (!_disposed) {
+        notifyListeners();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    controller.removeListener(_moved);
+    super.dispose();
+  }
+}
 
 // Trends: a sheet over Today that peeks at the bottom with a sparkline of the
 // chosen habit, and opens over the dial to one habit's totals over a range.

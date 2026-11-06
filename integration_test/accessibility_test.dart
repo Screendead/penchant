@@ -85,7 +85,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.bySemanticsLabel(LogButton.label), findsNothing);
+    // The Log button stays in the widget tree, out of the semantics tree.
+    expect(find.semantics.byLabel(LogButton.label), findsNothing);
+    expect(find.byType(LogButton).hitTestable(), findsNothing);
     await closeTrends(tester);
     semantics.dispose();
   });

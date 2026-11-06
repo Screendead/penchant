@@ -52,6 +52,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   DateTime? pinnedDay;
 
   final DraggableScrollableController _sheet = DraggableScrollableController();
+  late final SheetPosition _position = SheetPosition(_sheet);
 
   @override
   void initState() {
@@ -63,6 +64,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
   @override
   void dispose() {
+    _position.dispose();
     _sheet.dispose();
     super.dispose();
   }
@@ -288,7 +290,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               bottom: peek,
               // Covered by the open sheet, Today takes no keyboard focus.
               child: ListenableBuilder(
-                listenable: _sheet,
+                listenable: _position,
                 builder: (BuildContext context, Widget? child) => ExcludeFocus(
                   excluding: TrendsSheet.openness(_sheet, minSize) > 0.9,
                   child: child!,
@@ -297,7 +299,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               ),
             ),
             ListenableBuilder(
-              listenable: _sheet,
+              listenable: _position,
               builder: (BuildContext context, Widget? child) {
                 final double p = TrendsSheet.openness(_sheet, minSize);
                 if (p <= 0) {
@@ -321,7 +323,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             ),
             if (allVices != null && allVices.isNotEmpty)
               ListenableBuilder(
-                listenable: _sheet,
+                listenable: _position,
                 builder: (BuildContext context, Widget? child) =>
                     BlockSemantics(
                       blocking: TrendsSheet.openness(_sheet, minSize) > 0.9,
@@ -336,7 +338,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               ),
             if (vices != null && vices.isNotEmpty)
               ListenableBuilder(
-                listenable: _sheet,
+                listenable: _position,
                 builder: (BuildContext context, Widget? child) {
                   final double size = _sheet.isAttached ? _sheet.size : minSize;
                   // The button rides the sheet's edge and shrinks away as it

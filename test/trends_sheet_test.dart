@@ -175,6 +175,26 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('a new text size or window height moves the peek without '
+        'an error, and Log stays on its edge', (WidgetTester tester) async {
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 1)], open: false);
+
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      tester.view.physicalSize = const Size(375 * 2, 800 * 2);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getCenter(find.byType(LogButton)).dy,
+        moreOrLessEquals(
+          tester.getTopLeft(inTrends(find.byType(Material)).first).dy,
+          epsilon: 1,
+        ),
+      );
+    });
+
     testWidgets('a drag up opens it', (WidgetTester tester) async {
       _usePhone(tester);
       await _pump(tester, <ViceActivity>[_daysAgo(0, 1)], open: false);

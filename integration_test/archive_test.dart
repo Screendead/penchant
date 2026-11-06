@@ -101,8 +101,10 @@ void main() {
     // Trends lists the habits in use first, so the archived Juice is never
     // the default, though it was the newest.
     await openTrends(tester);
-    String graphed() =>
-        tester.widget<TrendsChart>(find.byType(TrendsChart)).vice.name;
+    // The chart gives way to a spinner while a habit's range loads.
+    String? graphed() => find.byType(TrendsChart).evaluate().isEmpty
+        ? null
+        : tester.widget<TrendsChart>(find.byType(TrendsChart)).vice.name;
     await pumpUntil(tester, find.byType(TrendsChart));
     expect(graphed(), 'Coffee');
     // The chips come first among the sheet's toggles, before the segments.
