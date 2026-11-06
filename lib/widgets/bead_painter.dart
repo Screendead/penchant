@@ -7,8 +7,8 @@ import 'package:tracker/design/tokens.dart';
 
 // One habit mark: a filled disc for habits 1-5, a ring for 6-10 and a dotted
 // ring for 11-15, and a pending entry's a turning dashed rim. [fill] grows a
-// filled mark from its centre. A filled mark holds 3:1 against its ground by its inner rim
-// in light and by its own fill in dark, where it also glows.
+// filled mark from its centre. A filled mark holds 3:1 against its ground by
+// its inner rim in light and by its own fill in dark, where it also glows.
 void paintHabitMark(
   Canvas canvas,
   Offset centre,

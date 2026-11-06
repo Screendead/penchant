@@ -111,6 +111,24 @@ void main() {
       expect(p[1].angle, closeTo(dialAngle(601), 0.01));
     });
 
+    test('beads either side of midnight are pushed apart across 00', () {
+      final Map<String, BeadPlacement> layout = layoutBeads(<DialBeadInput>[
+        bead('late', 'nights', 23 * 60 + 58),
+        bead('early', 'nights', 2),
+      ]);
+      final BeadPlacement late = layout['late']!;
+      final BeadPlacement early = layout['early']!;
+      expect(late.track, early.track);
+      final double gap =
+          (late.position - early.position).distance -
+          late.radius -
+          early.radius;
+      expect(gap, greaterThan(DialFace.beadGap - 0.2));
+      // Each keeps its side of 00.
+      expect(late.position.dx, lessThan(0));
+      expect(early.position.dx, greaterThan(0));
+    });
+
     test('beads far apart stay exactly on their times', () {
       final Map<String, BeadPlacement> layout = layoutBeads(<DialBeadInput>[
         bead('a', 'coffee', 60),

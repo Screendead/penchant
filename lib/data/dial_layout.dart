@@ -122,17 +122,32 @@ Map<String, BeadPlacement> layoutBeads(Iterable<DialBeadInput> beads) {
   for (final MapEntry<double, List<_Slot>>(key: track, value: onTrack)
       in byTrack.entries) {
     onTrack.sort((_Slot a, _Slot b) => a.angle.compareTo(b.angle));
+    void separate(_Slot p, _Slot q, double angleGap) {
+      final double need = p.radius + q.radius + DialFace.beadGap;
+      final double gap = angleGap * track;
+      if (gap < need) {
+        final double push = (need - gap) / track / 2;
+        p.angle -= push;
+        q.angle += push;
+      }
+    }
+
     for (int pass = 0; pass < 8; pass++) {
       for (int i = 0; i + 1 < onTrack.length; i++) {
-        final _Slot p = onTrack[i];
-        final _Slot q = onTrack[i + 1];
-        final double need = p.radius + q.radius + DialFace.beadGap;
-        final double gap = (q.angle - p.angle) * track;
-        if (gap < need) {
-          final double push = (need - gap) / track / 2;
-          p.angle -= push;
-          q.angle += push;
-        }
+        separate(
+          onTrack[i],
+          onTrack[i + 1],
+          onTrack[i + 1].angle - onTrack[i].angle,
+        );
+      }
+      // The face is a circle: the day's last bead neighbours its first
+      // across 00.
+      if (onTrack.length > 1) {
+        separate(
+          onTrack.last,
+          onTrack.first,
+          onTrack.first.angle + 2 * pi - onTrack.last.angle,
+        );
       }
     }
   }

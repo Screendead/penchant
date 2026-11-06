@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -217,9 +218,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                           semanticsLabel: summary,
                           offline: offline,
                           onBeadTap: _openEntry,
-                          onSwipe: (int days) => _selectDay(
-                            DateTime(day.year, day.month, day.day + days),
-                          ),
+                          onSwipe: (int days) => _selectDay(addDays(day, days)),
                         ),
                       ),
                     ),
