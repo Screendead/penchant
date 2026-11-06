@@ -7,6 +7,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -306,7 +307,7 @@ void main() {
     );
     expect(await storedActivities('Coffee'), hasLength(3));
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('3 activities'));
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, find.text('Coffee history'));
@@ -408,7 +409,7 @@ void main() {
       );
     }
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, find.text('Coffee history'));
 

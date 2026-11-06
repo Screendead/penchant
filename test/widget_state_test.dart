@@ -99,6 +99,7 @@ void main() {
           overrides: [
             userProvider.overrideWith((ref) => auth.stream),
             accountProvider.overrideWithValue(FakeAccount()),
+            memoryJournal(),
           ],
           child: const MyApp(),
         ),
@@ -311,9 +312,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(graphed.last, coffee.id);
 
-      await tester.tap(find.byTooltip('Open navigation menu'));
+      await tester.tap(find.byKey(Homepage.menuKey));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.text(Homepage.settingsItem));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
@@ -344,6 +345,7 @@ void main() {
         viceListProvider.overrideWithValue(AsyncData([coffee])),
         viceActivityForUserProvider.overrideWith((ref, key) => activity.stream),
         if (writes != null) trackerWritesProvider.overrideWithValue(writes),
+        memoryJournal(),
       ], ViceActivityEditorPage(viceID: coffee.id, activityID: stored.id));
       activity.add(stored);
       await tester.pump();

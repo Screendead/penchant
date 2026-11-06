@@ -532,7 +532,7 @@ function callNode(c) {
   const shots = c.imgs ? el("div", { class: "shots" }, ...c.imgs.filter(([k]) => IMG[k]).map(([k, cap, cls]) =>
     el("figure", cls ? { class: cls } : {}, el("a", { href: IMG[k], target: "_blank", rel: "noopener" },
       el("img", { src: IMG[k], alt: cap, loading: "lazy" })), el("figcaption", { text: cap })))) : null;
-  if (c.link) ctx.append(" ", el("a", { class: "note", href: "https://github.com/Screendead/tracker/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
+  if (c.link) ctx.append(" ", el("a", { class: "note", href: "https://github.com/Screendead/penchant/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
   return el("div", { class: "call", id: "call-" + c.id },
     el("div", { class: "qrow" }, el("h3", { text: c.q }), status), ctx, shots, opts, why, ta);
 }

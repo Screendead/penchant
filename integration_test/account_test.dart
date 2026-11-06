@@ -110,7 +110,7 @@ Future<List<String>> _ownerIDs(String collection) async {
 }
 
 Future<void> _openAccountSettings(WidgetTester tester) async {
-  await openFromDrawer(tester, 'Settings');
+  await openFromMenu(tester, Homepage.settingsItem);
   await tap(tester, find.text('Account'));
   await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
 }

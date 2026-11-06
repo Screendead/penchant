@@ -10,6 +10,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -122,26 +123,31 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const List<int> ranges = <int>[7, 30, 90, 365];
   static const Duration _move = Duration(milliseconds: 320);
 
-  static const double _peekTop = DialSpace.m + DialSpace.xxs;
-  static const double _sparkGap = DialSpace.xs;
-  static const double sparkHeight = 40;
+  // The mock-up's peek: 127 pt at the default text size, padded 16 above and
+  // 22 at the sides, the sparkline 44 tall from 58 down, and 25 below it. The
+  // home indicator overlaps those 25, as it does in the mock-up.
+  static const double _peekTop = DialSpace.m;
+  static const double _peekSide = 22;
+  static const double _sparkGap = 1;
+  static const double sparkHeight = 44;
+  static const double _peekBottom = 25;
   // A wide pane centres its content at this width, so the chart's days stay
   // close enough to read across.
   static const double paneContentWidth = 720;
 
-  // The peek's height: its two lines of text at the device's text size, the
-  // sparkline under them, and the home indicator's inset.
+  // The peek's height: its two lines of text at the device's text size and
+  // the sparkline under them.
   static double peekHeight(BuildContext context) {
     final TextScaler scaler = MediaQuery.textScalerOf(context);
-    final double bottom = MediaQuery.paddingOf(context).bottom;
     return _peekTop +
-        // The taller column: the 17 pt number over a caption line.
-        scaler.scale(17 * 20 / 15) +
-        scaler.scale(18) +
-        2 +
+        // The taller column: the 17 pt number on a 25 pt line, 4, a 12 pt
+        // caption.
+        scaler.scale(25) +
+        4 +
+        scaler.scale(12) +
         _sparkGap +
         sparkHeight +
-        max(DialSpace.s, bottom);
+        _peekBottom;
   }
 
   // 0 at the peek, 1 fully open.
@@ -466,119 +472,127 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       maxChildSize: 1,
       snap: true,
       builder: (BuildContext context, ScrollController scroll) {
-        // The sheet's edge is its 1 px rim; tokens give sheets no shadow.
-        return Material(
-          color: scheme.surfaceContainerLow,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
+        // The sheet's edge is its 1 px rim, and in light shadow-sheet.
+        return DecoratedBox(
+          decoration: BoxDecoration(
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(DialRadius.sheet),
             ),
-            side: BorderSide(color: colors.line),
+            boxShadow: DialShadows.sheet(Theme.of(context).brightness),
           ),
-          child: CallbackShortcuts(
-            bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.escape): _close,
-            },
-            child: Focus(
-              focusNode: _sheetFocus,
-              child: SingleChildScrollView(
-                controller: scroll,
-                child: Stack(
-                  children: <Widget>[
-                    ListenableBuilder(
-                      listenable: controller,
-                      builder: (BuildContext context, Widget? child) {
-                        final double p = TrendsSheet.openness(
-                          controller,
-                          widget.minSize,
-                        );
-                        // Built only once the sheet moves off its peek.
-                        if (p <= 0) {
-                          return SizedBox(height: peek);
-                        }
-                        final bool open = p > 0.9;
-                        return Opacity(
-                          opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
-                          child: IgnorePointer(
-                            ignoring: !open,
-                            child: ExcludeFocus(
-                              excluding: !open,
-                              child: ExcludeSemantics(
-                                excluding: !open,
-                                child: child,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          DialSpace.gutter,
-                          DialSpace.xl,
-                          DialSpace.gutter,
-                          DialSpace.xl + bottomInset,
-                        ),
-                        child: AnimatedSwitcher(
-                          duration: MediaQuery.disableAnimationsOf(context)
-                              ? DialMotion.reducedFade
-                              : DialMotion.fadeThrough,
-                          child: content,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: peek,
-                      child: ListenableBuilder(
+          child: Material(
+            color: scheme.surfaceContainerLow,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(DialRadius.sheet),
+              ),
+              side: BorderSide(color: colors.line),
+            ),
+            child: CallbackShortcuts(
+              bindings: <ShortcutActivator, VoidCallback>{
+                const SingleActivator(LogicalKeyboardKey.escape): _close,
+              },
+              child: Focus(
+                focusNode: _sheetFocus,
+                child: SingleChildScrollView(
+                  controller: scroll,
+                  child: Stack(
+                    children: <Widget>[
+                      ListenableBuilder(
                         listenable: controller,
                         builder: (BuildContext context, Widget? child) {
                           final double p = TrendsSheet.openness(
                             controller,
                             widget.minSize,
                           );
+                          // Built only once the sheet moves off its peek.
+                          if (p <= 0) {
+                            return SizedBox(height: peek);
+                          }
+                          final bool open = p > 0.9;
                           return Opacity(
-                            opacity: (1 - p * 3).clamp(0.0, 1.0),
+                            opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
                             child: IgnorePointer(
-                              ignoring: p > 0.2,
+                              ignoring: !open,
                               child: ExcludeFocus(
-                                excluding: p > 0.2,
+                                excluding: !open,
                                 child: ExcludeSemantics(
-                                  excluding: p > 0.2,
+                                  excluding: !open,
                                   child: child,
                                 ),
                               ),
                             ),
                           );
                         },
-                        child: _Peek(
-                          vice: vice,
-                          mark: mark,
-                          rangeDays: rangeDays,
-                          series: series,
-                          focusNode: _peekFocus,
-                          onOpen: _open,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: DialSpace.xs,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          width: 38,
-                          height: 5,
-                          decoration: ShapeDecoration(
-                            color: scheme.outline,
-                            shape: const StadiumBorder(),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            DialSpace.gutter,
+                            DialSpace.xl,
+                            DialSpace.gutter,
+                            DialSpace.xl + bottomInset,
+                          ),
+                          child: AnimatedSwitcher(
+                            duration: MediaQuery.disableAnimationsOf(context)
+                                ? DialMotion.reducedFade
+                                : DialMotion.fadeThrough,
+                            child: content,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: peek,
+                        child: ListenableBuilder(
+                          listenable: controller,
+                          builder: (BuildContext context, Widget? child) {
+                            final double p = TrendsSheet.openness(
+                              controller,
+                              widget.minSize,
+                            );
+                            return Opacity(
+                              opacity: (1 - p * 3).clamp(0.0, 1.0),
+                              child: IgnorePointer(
+                                ignoring: p > 0.2,
+                                child: ExcludeFocus(
+                                  excluding: p > 0.2,
+                                  child: ExcludeSemantics(
+                                    excluding: p > 0.2,
+                                    child: child,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          child: _Peek(
+                            vice: vice,
+                            mark: mark,
+                            rangeDays: rangeDays,
+                            series: series,
+                            focusNode: _peekFocus,
+                            onOpen: _open,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: DialSpace.xs,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            width: 38,
+                            height: 5,
+                            decoration: ShapeDecoration(
+                              color: scheme.outline,
+                              shape: const StadiumBorder(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -612,7 +626,11 @@ class _Peek extends StatelessWidget {
     final DialType type = DialType.of(context);
     final TrendsSeries? s = series;
     final double? perDay = s == null ? null : s.stats.total / s.range.days;
-    final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    final TextStyle small = DialTypeScale.bodyS.copyWith(
+      color: colors.muted,
+      fontSize: 12,
+      height: 1,
+    );
 
     return MergeSemantics(
       child: Semantics(
@@ -622,11 +640,11 @@ class _Peek extends StatelessWidget {
           focusNode: focusNode,
           onPressed: onOpen,
           style: TextButton.styleFrom(
-            padding: EdgeInsets.fromLTRB(
-              DialSpace.gutter,
+            padding: const EdgeInsets.fromLTRB(
+              TrendsSheet._peekSide,
               TrendsSheet._peekTop,
-              DialSpace.gutter,
-              max(DialSpace.s, MediaQuery.paddingOf(context).bottom),
+              TrendsSheet._peekSide,
+              TrendsSheet._peekBottom,
             ),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(
@@ -649,13 +667,16 @@ class _Peek extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             TrendsSheet.title,
-                            style: type.displayM.copyWith(fontSize: 15),
+                            style: type.displayM.copyWith(
+                              fontSize: 15,
+                              height: 1,
+                            ),
                             maxLines: 1,
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 5),
                           Text(
                             '${vice.name} · last ${formatCount(rangeDays)} days',
-                            style: small,
+                            style: small.copyWith(fontSize: 12.5),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -676,10 +697,12 @@ class _Peek extends StatelessWidget {
                                 formatAverage(perDay),
                                 style: type.monoM.copyWith(
                                   fontSize: 17,
+                                  height: 25 / 17,
                                   color: colors.habitInk(mark),
                                 ),
                                 maxLines: 1,
                               ),
+                              const SizedBox(height: 4),
                               Text(
                                 '${vice.unit.plural} a day',
                                 style: small,
@@ -709,6 +732,7 @@ class _Peek extends StatelessWidget {
                               ),
                             ),
                             ink: colors.habitInk(mark),
+                            raw: sparkRaw(context, mark),
                           ),
                         ),
                 ),
@@ -721,16 +745,29 @@ class _Peek extends StatelessWidget {
   }
 }
 
+// The sparkline's daily series: lighter than its average, as in the
+// mock-up, but held to 3:1 on the sheet (contrast-pairs.json): the hue halfway
+// to its ink in light, the hue at 70% in dark.
+Color sparkRaw(BuildContext context, HabitMark mark) {
+  final DialColors colors = DialColors.of(context);
+  final Color hue = colors.habit(mark);
+  return Theme.of(context).brightness == Brightness.dark
+      ? hue.withValues(alpha: 0.7)
+      : Color.lerp(hue, colors.habitInk(mark), 0.5)!;
+}
+
 class _SparklinePainter extends CustomPainter {
   _SparklinePainter({
     required this.totals,
     required this.smoothed,
     required this.ink,
+    required this.raw,
   });
 
   final List<double> totals;
   final List<double> smoothed;
   final Color ink;
+  final Color raw;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -760,7 +797,7 @@ class _SparklinePainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5
           ..strokeJoin = StrokeJoin.round
-          ..color = ink,
+          ..color = raw,
       )
       ..drawPath(
         line(smoothed),
@@ -775,7 +812,10 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklinePainter old) =>
-      old.totals != totals || old.smoothed != smoothed || old.ink != ink;
+      old.totals != totals ||
+      old.smoothed != smoothed ||
+      old.ink != ink ||
+      old.raw != raw;
 }
 
 class _TrendsPanel extends StatelessWidget {
@@ -906,7 +946,7 @@ class _TrendsPanel extends StatelessWidget {
             ),
             if (onClose case final VoidCallback close)
               CircleButton(
-                icon: Icons.keyboard_arrow_down,
+                icon: DialGlyph.down,
                 tooltip: TrendsSheet.closeLabel,
                 focusNode: closeFocus,
                 onPressed: close,

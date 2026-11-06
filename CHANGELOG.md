@@ -13,6 +13,8 @@ pull request titles (`gh pr list --state merged`).
   and an empty day offline says the device may not have it rather than calling it clear.
 - A change saved offline that the server later refuses (for example, an entry for a vice deleted on another device)
   is named in a banner at the top of the screen until you dismiss it, instead of disappearing without a word.
+  That holds across a restart too: a change made offline and refused after you closed the app is named the next
+  time it opens and syncs.
 - Account Settings exports your data as CSV and JSON, deletes the account with everything in it, resends the
   verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
   device's copy of your data, and asks first if entries have not synced (#54).
@@ -24,6 +26,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Today matches its design: the Penchant icon and name at the top open a menu with Habits, Settings and whether
+  your entries have synced, in place of the side drawer, and a pill beside them says Synced, Syncing or Offline. The
+  dial, the five tallies, the Log button and the Trends peek all fit on one iPhone screen, the light theme lifts its
+  cards and sheets with soft shadows, a habit at zero fades in its row, and the icons are the design's line icons.
 - Today is a 24-hour dial: each entry is a coloured bead at the time it happened, sized against your usual amount
   that day, with the time beside it on a quiet day and the clock hand on today. Under it, a row per habit gives the
   day's total and a + that logs one now, with eight seconds to Undo. The Log button opens a fan of your habits: tap
@@ -64,6 +70,9 @@ pull request titles (`gh pr list --state merged`).
 - Today and the Graph move on at midnight, and on returning to the app the next day, instead of staying on yesterday.
 - The activity editor shows changes made elsewhere while it is open, until you edit that field.
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
+- The iPhone and Mac builds get Firebase through Swift Package Manager instead of CocoaPods, which Firebase no
+  longer publishes to. Nothing changes in the app.
+- On iPhone, the screen shown while the app opens is the app's paper colour, dark in dark mode, instead of white.
 
 ### Fixed
 
@@ -80,6 +89,10 @@ pull request titles (`gh pr list --state merged`).
 - Today shows every vice's amount: when a title has no room for its amount, the key below the chart lists every
   vice with its total, instead of that amount appearing nowhere. The radar's rings are labelled in whole numbers,
   without the "0.0" that sat at its centre.
+- The rules tests' firebase-tools install no longer breaks its own file-matching code: the minimatch override now
+  replaces only the versions the advisory names. A test checks every composite query in the app against
+  `firestore.indexes.json`, since the emulators never enforce indexes.
+- The Mac app builds for release, as one app for both Apple silicon and Intel Macs.
 
 ## [0.1.0] - Unreleased
 

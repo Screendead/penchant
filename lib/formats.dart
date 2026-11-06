@@ -1,5 +1,6 @@
 import 'dart:ui' show Locale, PlatformDispatcher;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:intl/date_symbol_data_custom.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/date_symbols.dart';
@@ -43,8 +44,13 @@ void _loadDateData() {
   _dateDataLoaded = true;
 }
 
-String get formatLocale =>
-    localeForFormatting(PlatformDispatcher.instance.locales);
+// A render test pins the region here; the device's always wins otherwise.
+@visibleForTesting
+List<Locale>? debugFormatLocales;
+
+String get formatLocale => localeForFormatting(
+  debugFormatLocales ?? PlatformDispatcher.instance.locales,
+);
 
 // English is the only language the app speaks, so the device supplies only
 // the regional conventions (day order, 12 or 24 hours, digit grouping): the

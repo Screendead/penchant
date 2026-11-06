@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/trends/trends_chart.dart';
@@ -42,7 +43,7 @@ void main() {
       'Juice (2 drinks)',
     });
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('Your Habits'));
     final Finder juiceRow = find.ancestor(
       of: find.text('Juice'),
@@ -63,7 +64,7 @@ void main() {
     await tap(tester, find.byType(BackButton));
     await pumpUntil(tester, find.text('Juice history'), present: false);
     await pumpUntilRouteSettled(tester, find.text('Your Habits'));
-    await closeDrawerPage(tester);
+    await closeMenuPage(tester);
 
     await expectTallies(tester, <String>{
       'Coffee (1 drink)',

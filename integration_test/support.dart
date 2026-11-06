@@ -195,11 +195,11 @@ Future<void> register(WidgetTester tester, String email) async {
   await pumpUntil(tester, find.byType(Homepage));
 }
 
-Future<void> openFromDrawer(WidgetTester tester, String title) async {
-  await tap(tester, find.byTooltip('Open navigation menu'));
-  // Let the drawer finish sliding in; its tiles are off-screen until then.
-  await pumpFor(tester, const Duration(seconds: 1));
-  await tap(tester, find.text(title));
+// Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.
+Future<void> openFromMenu(WidgetTester tester, String item) async {
+  await tap(tester, find.byKey(Homepage.menuKey));
+  await pumpUntil(tester, find.text(item).hitTestable());
+  await tap(tester, find.text(item));
 }
 
 // Three vices by default.
@@ -207,7 +207,7 @@ Future<void> addVicesThroughManageData(
   WidgetTester tester, [
   List<String> names = const <String>['Coffee', 'Tea', 'Water'],
 ]) async {
-  await openFromDrawer(tester, 'Manage Data');
+  await openFromMenu(tester, Homepage.habitsItem);
   await pumpUntil(tester, find.text('Your Habits'));
   for (final String name in names) {
     await tap(tester, find.byTooltip('Add habit'));
@@ -219,17 +219,14 @@ Future<void> addVicesThroughManageData(
     await pumpUntil(tester, find.text('Add Habit'), present: false);
     await pumpUntil(tester, find.text(name));
   }
-  await closeDrawerPage(tester);
+  await closeMenuPage(tester);
 }
 
-// Closes a page opened from the drawer with its back button. The drawer was
-// told to close when the page opened, but its animation is paused while the
-// page covers it, so it may still be finishing.
-Future<void> closeDrawerPage(WidgetTester tester) async {
+// Closes a page opened from the menu with its back button, back to Today.
+Future<void> closeMenuPage(WidgetTester tester) async {
   await tap(tester, find.byType(BackButton));
   await pumpUntil(tester, find.byType(BackButton), present: false);
-  await pumpUntil(tester, find.byType(Drawer), present: false);
-  await pumpUntil(tester, find.byTooltip('Open navigation menu').hitTestable());
+  await pumpUntil(tester, find.byKey(Homepage.menuKey).hitTestable());
 }
 
 // A Log-fan wedge, by its habit's name: the fan names each by a label.
@@ -467,7 +464,7 @@ String? dialSummary(WidgetTester tester) {
 }
 
 Future<void> signOutThroughSettings(WidgetTester tester) async {
-  await openFromDrawer(tester, 'Settings');
+  await openFromMenu(tester, Homepage.settingsItem);
   // Sign out pops Settings; popping while its push is still animating trips
   // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
   await pumpFor(tester, const Duration(seconds: 1));

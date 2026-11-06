@@ -46,15 +46,15 @@ class PendingDayNote extends ConsumerWidget {
         activities?.where((ViceActivity activity) => activity.pending).length ??
         0;
 
-    // A reserved height, so an online write's brief pending state does not
-    // resize the chart above. It grows only when large text wraps the note.
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.textScalerOf(context).scale(32),
-      ),
-      child: count == 0
-          ? null
-          : Center(child: NotSyncedMarker(label: text(count))),
+    // Offline only: online, an entry is pending for a moment, the header's
+    // pill says Syncing meanwhile, and a note here would shift the tallies
+    // twice for each entry logged.
+    if (count == 0 || ref.watch(offlineProvider).value != true) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Center(child: NotSyncedMarker(label: text(count))),
     );
   }
 }

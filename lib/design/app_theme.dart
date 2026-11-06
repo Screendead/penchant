@@ -387,12 +387,6 @@ ThemeData appTheme(Brightness brightness) {
         ),
       ),
     ),
-    drawerTheme: DrawerThemeData(
-      backgroundColor: p.bg,
-      surfaceTintColor: Colors.transparent,
-      scrimColor: p.scrim,
-      elevation: 0,
-    ),
     cardTheme: CardThemeData(
       color: p.surface,
       surfaceTintColor: Colors.transparent,

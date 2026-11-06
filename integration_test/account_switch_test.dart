@@ -40,9 +40,9 @@ void main() {
     await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
     await closeTrends(tester);
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('1 activity'));
-    await closeDrawerPage(tester);
+    await closeMenuPage(tester);
 
     await signOutThroughSettings(tester);
     await signIn(tester, second);
@@ -54,7 +54,7 @@ void main() {
     );
     // With no habits there is no Trends sheet to carry the first account's.
     expect(find.byType(TrendsSheet), findsNothing);
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntilNeverShowing(
       tester,
       find.text('No habits yet. Tap + to add one.'),

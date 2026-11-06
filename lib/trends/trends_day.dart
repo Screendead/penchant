@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -94,7 +95,7 @@ class TrendsDay extends ConsumerWidget {
     final Widget header = Row(
       children: <Widget>[
         CircleButton(
-          icon: Icons.chevron_left,
+          icon: DialGlyph.left,
           tooltip: backLabel,
           focusNode: backFocus,
           onPressed: onBack,

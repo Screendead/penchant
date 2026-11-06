@@ -1,13 +1,13 @@
 name: macOS build
 on:
-  # Run by hand only: macOS minutes bill at 10x Linux in a private repo, and the
+  # Run by hand only: macOS runners are the costliest when minutes are billed, and the
   # macOS end-to-end run before merge already builds the app.
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   build:
-    # macOS minutes bill at 10x Linux in a private repo, hence the path filter.
+    # macOS runners are the costliest when minutes are billed, so this job is manual-only.
     runs-on: macos-26
     timeout-minutes: 45
     concurrency:
@@ -24,6 +24,12 @@ jobs:
         env:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: flutter build macos --debug
+      # Universal (arm64 and x86_64), unlike a debug build; Flutter before
+      # 3.44.8 fails it under Xcode 27 (flutter/flutter#188346).
+      - name: Build (release, unsigned)
+        env:
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+        run: flutter build macos --release
       - name: Build with the emulator define (debug, unsigned)
         env:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"

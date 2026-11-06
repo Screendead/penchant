@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 
@@ -37,14 +38,14 @@ Future<void> _setArchived(
   String viceName, {
   required bool archived,
 }) async {
-  await openFromDrawer(tester, 'Manage Data');
+  await openFromMenu(tester, Homepage.habitsItem);
   await tap(tester, _rowButton(viceName, archived ? 'Archive' : 'Unarchive'));
   await pumpUntil(
     tester,
     _rowButton(viceName, archived ? 'Unarchive' : 'Archive'),
   );
   expect((await _storedVice(viceName))['archived'], archived);
-  await closeDrawerPage(tester);
+  await closeMenuPage(tester);
 }
 
 void main() {
@@ -140,7 +141,7 @@ void main() {
     await addVicesThroughManageData(tester);
     await recordActivity(tester, 'Coffee', 2);
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, find.text('1 activity'));
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, find.text('Coffee history'));

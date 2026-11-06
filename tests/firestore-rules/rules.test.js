@@ -23,7 +23,9 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  endAt,
   startAfter,
+  startAt,
   updateDoc,
   waitForPendingWrites,
   where,
@@ -523,6 +525,28 @@ describe('activities', () => {
         ),
       );
     });
+
+    // TrackerWrites.serverDocument: how a launch checks what became of a write
+    // an earlier launch queued, where a get of a missing document is denied.
+    for (const [path, id] of [
+      ['vices', 'aliceVice'],
+      ['activities', 'aliceActivity'],
+    ]) {
+      it(`allows the owner to look up one ${path} document by id, there or missing`, async () => {
+        const lookUp = (documentID) =>
+          getDocs(
+            query(
+              collection(asAlice(), path),
+              where('ownerID', '==', ALICE),
+              orderBy(documentId()),
+              startAt(documentID),
+              endAt(documentID),
+            ),
+          );
+        assert.equal((await assertSucceeds(lookUp(id))).size, 1);
+        assert.equal((await assertSucceeds(lookUp('missing'))).size, 0);
+      });
+    }
 
     it('denies a query not constrained to the caller', async () => {
       await assertFails(getDocs(collection(asAlice(), 'activities')));

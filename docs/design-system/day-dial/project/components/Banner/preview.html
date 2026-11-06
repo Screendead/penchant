@@ -1,0 +1,35 @@
+<!-- @dsCard group="Status" height=230 subtitle="Pills that drop from the top: offline, and a refused write collapsed and expanded" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .wrap { display: flex; gap: 40px; justify-content: center; padding: 24px var(--space-gutter); align-items: flex-start; }
+  .col { width: 358px; display: flex; flex-direction: column; gap: var(--space-xs); }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .pill { border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-pop); border: 1px solid var(--line); font: 500 13.5px/1.3 var(--font-text); overflow: hidden; }
+  .ph { display: flex; align-items: center; gap: 9px; padding: 10px 16px 10px 12px; min-height: 42px; box-sizing: border-box; }
+  .rej { background: var(--dangerContainer); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+  .rej .ph > svg.i:first-child { color: var(--danger); }
+  .chev { margin-left: auto; color: var(--muted); }
+  .ex .chev { transform: rotate(180deg); }
+  .pl { padding: 0 16px 14px 39px; font: 400 13px/1.4 var(--font-text); color: var(--muted); }
+  .pl b { font-weight: 600; color: var(--text); }
+  .pl .m { font-family: var(--font-mono); font-weight: 500; }
+  .pl .dis { display: inline-block; margin-top: 8px; font: 600 13px/1 var(--font-text); color: var(--danger); }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+  const P = { cloudoff: '<path d="M3 3l18 18"/><path d="M9.3 5.4A6 6 0 0118 9.5a4 4 0 012.3 7.2M17 18H7a4.5 4.5 0 01-1.7-8.66"/>', alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.2v.3"/>', down: '<path d="M6 9l6 6 6-6"/>' };
+  const ic = (n, c = '') => `<svg class="i ${c}" viewBox="0 0 24 24">${P[n]}</svg>`;
+  const rej = ex => `<div class="pill rej${ex ? ' ex' : ''}" role="alert"><div class="ph">${ic('alert')}<span>1 change was not saved</span>${ic('down', 'chev')}</div>${ex ? '<div class="pl"><b>Not saved: <span class="m">2</span> drinks of Alcohol on Thu 5 Nov at <span class="m">19:30</span></b><br>The habit was removed on another device.<br><span class="dis">Dismiss</span></div>' : ''}</div>`;
+  document.getElementById('root').innerHTML =
+    `<div class="col"><div class="pill" role="status"><div class="ph">${ic('cloudoff')}<span>Offline. New entries save on this device.</span></div></div>${rej(false)}</div>` +
+    `<div class="col">${rej(true)}</div>`;
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
+import 'package:tracker/writes/tracker_writes.dart';
 
 // Adds a vice, or with [vice] edits that one.
 class ViceForm extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     final String name = viceNameController.text;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
-    final Future<void>? write;
+    final SentWrite? write;
     if (vice == null) {
       write = ref
           .read(trackerWritesProvider)
@@ -74,16 +75,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
     try {
       if (write != null &&
-          !await settleWrite(
-            write,
-            onRejectedLater: ref
-                .read(rejectedWritesProvider.notifier)
-                .reporter(
-                  vice == null
-                      ? 'Not saved: the habit $name'
-                      : 'Change not saved: the habit ${vice.name}',
-                ),
-          )) {
+          !await ref
+              .read(rejectedWritesProvider.notifier)
+              .settle(
+                write,
+                vice == null
+                    ? 'Not saved: the habit $name'
+                    : 'Change not saved: the habit ${vice.name}',
+              )) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
       if (mounted) {

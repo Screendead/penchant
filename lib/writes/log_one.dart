@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,7 +67,7 @@ Future<void> logOne(
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
   final bool offline = ref.read(offlineProvider).value ?? false;
   final String activityID = writes.newActivityID();
-  final DateTime at = DateTime.now();
+  final DateTime at = clock.now();
   final String entry = describeActivity(
     vice.name,
     vice.unit,
@@ -97,7 +98,7 @@ Future<void> logOne(
   if (from != null) {
     ref.read(beadArrivalsProvider).launch(activityID, from);
   }
-  final Future<void> write = writes.recordActivity(
+  final SentWrite write = writes.recordActivity(
     activityID,
     ownerID: user.uid,
     viceID: vice.id,
@@ -116,13 +117,7 @@ Future<void> logOne(
   );
 
   try {
-    final bool synced = await settleWrite(
-      write,
-      onRejectedLater: rejected.reporter(
-        'Not saved: $entry',
-        creates: activityID,
-      ),
-    );
+    final bool synced = await rejected.settle(write, 'Not saved: $entry');
     if (!synced && !offline && !undone && log == _latestLog) {
       showBar(const TextSpan(text: queuedMessage));
     }
@@ -156,12 +151,9 @@ Future<void> undoLog(
 
   try {
     message =
-        await settleWrite(
+        await rejected.settle(
           writes.deleteActivity(activityID),
-          onRejectedLater: rejected.reporter(
-            'Not deleted: $entry',
-            changes: activityID,
-          ),
+          'Not deleted: $entry',
         )
         ? removedMessage
         : queuedDeleteMessage;
