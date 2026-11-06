@@ -12,6 +12,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -250,7 +251,6 @@ extension on Finder {
 
 // Records through Today's Log fan: a hold on the habit's wedge opens the
 // record dialog with it chosen, or More does when the fan has no room for it.
-// On the Graph tab it uses the app bar's Record.
 // With [at], unlocks the date field and types the time, as a user correcting
 // the clock would.
 Future<void> recordActivity(
@@ -259,30 +259,24 @@ Future<void> recordActivity(
   int quantity, {
   DateTime? at,
 }) async {
-  final Finder record = find.widgetWithText(TextButton, 'Record');
-  if (record.evaluate().isNotEmpty) {
-    // The Graph tab has no Log button; it records through its app bar.
-    await tap(tester, record);
+  await tap(tester, find.byType(LogButton));
+  final Finder wedge = fanWedge(viceName);
+  final Finder more = fanWedge('More');
+  await pumpUntilTrue(
+    tester,
+    () =>
+        wedge.hitTestable().evaluate().isNotEmpty ||
+        more.hitTestable().evaluate().isNotEmpty,
+    () => 'the Log fan to open',
+  );
+  // Let the wedges finish springing out before holding one.
+  await pumpFor(tester, const Duration(milliseconds: 800));
+  if (wedge.evaluate().isNotEmpty) {
+    await tester.longPress(wedge);
   } else {
-    await tap(tester, find.byType(LogButton));
-    final Finder wedge = fanWedge(viceName);
-    final Finder more = fanWedge('More');
-    await pumpUntilTrue(
-      tester,
-      () =>
-          wedge.hitTestable().evaluate().isNotEmpty ||
-          more.hitTestable().evaluate().isNotEmpty,
-      () => 'the Log fan to open',
-    );
-    // Let the wedges finish springing out before holding one.
-    await pumpFor(tester, const Duration(milliseconds: 800));
-    if (wedge.evaluate().isNotEmpty) {
-      await tester.longPress(wedge);
-    } else {
-      await tester.tap(more);
-    }
-    await tester.pump();
+    await tester.tap(more);
   }
+  await tester.pump();
   final Finder dialog = find.byType(AlertDialog);
   await pumpUntil(tester, dialog);
   final Finder chosen = find.descendant(
@@ -414,7 +408,13 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
 // Today's tallies, each as "Name (2 drinks)", or null while the day loads.
 Set<String>? todayTallies(WidgetTester tester) {
   final List<TallyRow> rows = tester
-      .widgetList<TallyRow>(find.byType(TallyRow, skipOffstage: false))
+      .widgetList<TallyRow>(
+        find.byWidgetPredicate(
+          // A day opened from Trends draws its tallies without a +.
+          (Widget w) => w is TallyRow && w.onLog != null,
+          skipOffstage: false,
+        ),
+      )
       .toList();
   if (rows.isEmpty || rows.any((TallyRow row) => row.total == null)) {
     return null;
@@ -462,7 +462,8 @@ String? dialSummary(WidgetTester tester) {
   final Finder dial = find.byType(DayDial, skipOffstage: false);
   return dial.evaluate().isEmpty
       ? null
-      : tester.widget<DayDial>(dial).semanticsLabel;
+      // Today's comes first; a day opened from Trends adds another.
+      : tester.widget<DayDial>(dial.first).semanticsLabel;
 }
 
 Future<void> signOutThroughSettings(WidgetTester tester) async {
@@ -513,4 +514,23 @@ Future<void> pumpUntilNeverShowing(
     check();
     return until.evaluate().isNotEmpty;
   }, () => '$until to appear');
+}
+
+// Opens the Trends sheet with a tap on its peek, and waits for it to settle.
+Future<void> openTrends(WidgetTester tester) async {
+  await tap(
+    tester,
+    find.descendant(
+      of: find.byType(TrendsSheet),
+      matching: find.text(TrendsSheet.title),
+    ),
+  );
+  await pumpUntil(tester, find.byTooltip(TrendsSheet.closeLabel).hitTestable());
+  await pumpFor(tester, const Duration(milliseconds: 500));
+}
+
+Future<void> closeTrends(WidgetTester tester) async {
+  await tap(tester, find.byTooltip(TrendsSheet.closeLabel));
+  await pumpUntil(tester, find.byType(LogButton).hitTestable());
+  await pumpFor(tester, const Duration(milliseconds: 500));
 }

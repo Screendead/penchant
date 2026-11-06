@@ -1,17 +1,16 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
-import 'package:tracker/usage_graph_view.dart';
+import 'package:tracker/trends/trends_chart.dart';
+import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/widgets/pill_toggle.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'support.dart';
-
-final Finder _graphTab = find.byIcon(Icons.show_chart_outlined);
 
 void main() {
   ensureE2EBinding();
@@ -23,7 +22,7 @@ void main() {
   });
 
   testWidgets('an archived vice leaves recording and Today, and keeps its '
-      'history in Manage Data and on the Graph', (WidgetTester tester) async {
+      'history in Manage Data and in Trends', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-archive@example.com');
     await addVicesThroughManageData(tester, <String>[
@@ -99,20 +98,33 @@ void main() {
     );
     await pumpUntil(tester, dialog, present: false);
 
-    // Vices list newest first, so Juice would be the default if archived
-    // vices were not listed after the rest.
-    await tap(tester, _graphTab);
-    await pumpUntil(tester, find.text('Smoothing: 1 bucket for Water'));
+    // Trends lists the habits in use first, so the archived Juice is never
+    // the default, though it was the newest.
+    await openTrends(tester);
+    String graphed() =>
+        tester.widget<TrendsChart>(find.byType(TrendsChart)).vice.name;
+    await pumpUntil(tester, find.byType(TrendsChart));
+    expect(graphed(), 'Coffee');
+    // The chips come first among the sheet's toggles, before the segments.
+    expect(
+      tester
+          .widgetList<PillToggle>(find.byType(PillToggle))
+          .take(4)
+          .map((PillToggle chip) => chip.semanticsLabel),
+      <String>['Coffee', 'Tea', 'Water', 'Juice, archived'],
+    );
     await tap(
       tester,
       find.descendant(
-        of: find.byType(UsageGraphView),
-        matching: find.byType(DropdownButtonFormField<String>),
+        of: find.byType(TrendsSheet),
+        matching: find.text('Juice'),
       ),
     );
-    await pumpFor(tester, const Duration(milliseconds: 500));
-    await tap(tester, find.text('Juice (archived)').last);
-    await pumpUntil(tester, find.text('Smoothing: 1 bucket for Juice'));
-    await pumpUntil(tester, find.byType(LineChart));
+    await pumpUntilTrue(
+      tester,
+      () => graphed() == 'Juice',
+      () => 'Trends to show Juice',
+    );
+    await closeTrends(tester);
   });
 }

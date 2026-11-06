@@ -9,7 +9,7 @@ const int maxSmoothingWindow = 30;
 // The window the average starts at: a week of days, or four weeks.
 int defaultWindow(int stepDays) => stepDays == 1 ? 7 : 4;
 
-// The [days] days the usage graph covers, from [start] to the end of today,
+// The [days] days the Trends chart covers, from [start] to the end of today,
 // in buckets of [stepDays] days.
 typedef UsageRange = ({DateTime start, int days, int stepDays});
 

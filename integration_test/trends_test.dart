@@ -6,9 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/trends/trends_day.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 import 'support.dart';
@@ -17,11 +20,16 @@ final TrackerWrites _writes = TrackerWrites(FirebaseFirestore.instance);
 
 String get _uid => FirebaseAuth.instance.currentUser!.uid;
 
-Future<void> _pickTimestep(WidgetTester tester, String label) async {
-  await tap(tester, find.byType(DropdownButtonFormField<int>).last);
-  await tap(tester, find.text(label).last);
-  await pumpFor(tester, const Duration(milliseconds: 500));
+Finder _inTrends(Finder finder) =>
+    find.descendant(of: find.byType(TrendsSheet), matching: finder);
+
+Future<void> _pick(WidgetTester tester, String label) async {
+  await tap(tester, _inTrends(find.text(label)));
+  await pumpFor(tester, const Duration(milliseconds: 600));
 }
+
+Vice _coffee(WidgetTester tester) =>
+    tester.widget<TrendsDay>(find.byType(TrendsDay)).vice;
 
 List<double> _totals(WidgetTester tester) => tester
     .widget<LineChart>(find.byType(LineChart))
@@ -41,13 +49,13 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('the graph buckets stored activities by day and by week, '
-      'and keeps its smoothing within the weeks shown', (
+  testWidgets('Trends buckets stored activities by day and by week, keeps '
+      'its average within the weeks shown, and opens a day', (
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await register(tester, 'e2e-usage-graph@example.com');
+    await register(tester, 'e2e-trends@example.com');
 
     await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink);
     final String viceID = await storedViceID('Coffee');
@@ -68,43 +76,75 @@ void main() {
       );
     }
 
-    await tap(tester, find.text('Graph'));
+    // The peek reads the same range before the sheet opens.
+    await pumpUntil(tester, find.text('Coffee · last 30 days'));
+    await pumpUntil(tester, find.text(formatAverage(10 / 30)));
+    await screenshot(tester, 'trends-peek');
+
+    await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
         'Daily totals of Coffee over the last 30 days: 10 drinks in all. '
         'The most was 4 drinks on '
-        '${formatShortDay(addDays(today, -10))}.',
+        '${formatShortDay(addDays(today, -10))}. '
+        'Shown with a 7-day average.',
       ),
     );
     final List<double> daily = _totals(tester);
     expect(daily, hasLength(30));
     expect([daily.first, daily[19], daily[28], daily[29]], [1, 4, 2, 3]);
-
-    await tester.drag(find.byType(Slider), const Offset(1000, 0));
-    await pumpFor(tester, const Duration(milliseconds: 500));
-    expect(find.text('Smoothing: 7 buckets for Coffee'), findsOneWidget);
+    expect(find.text('Average over 7 days'), findsOneWidget);
+    expect(find.textContaining('of it before noon'), findsOneWidget);
+    await screenshot(tester, 'trends-daily');
 
     // Four whole weeks back from today, then the two days left over, which
     // hold the activity 29 days ago.
-    await _pickTimestep(tester, 'Weekly');
+    await _pick(tester, 'Week');
     await pumpUntil(
       tester,
       find.bySemanticsLabel(
         'Weekly totals of Coffee over the last 30 days: 10 drinks in all. '
         'The most was 5 drinks in the week of '
         '${formatShortDay(addDays(today, -6))}. '
-        'Shown with a 5-week average.',
+        'Shown with a 4-week average.',
       ),
     );
     expect(_totals(tester), [1, 0, 0, 4, 5]);
-    expect(find.text('Smoothing: 5 buckets for Coffee'), findsOneWidget);
-    expect(tester.widget<Slider>(find.byType(Slider)).value, 5);
-    await screenshot(tester, 'usage-graph-weekly');
+    await tap(tester, find.byTooltip(TrendsSheet.longerAverage));
+    await pumpUntil(tester, find.text('Average over 5 weeks'));
+    // Five buckets hold no longer average.
+    expect(
+      tester
+          .widget<IconButton>(
+            find.ancestor(
+              of: find.byTooltip(TrendsSheet.longerAverage),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+    await screenshot(tester, 'trends-weekly');
 
-    await _pickTimestep(tester, 'Daily');
-    await pumpUntil(tester, find.text('Smoothing: 7 buckets for Coffee'));
+    // Day restarts at a week's average; a tap on today opens its dial.
+    await _pick(tester, 'Day');
+    await pumpUntil(tester, find.text('Average over 7 days'));
+    final Rect chart = tester.getRect(find.byType(LineChart));
+    await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
+    await pumpUntil(tester, find.byType(TrendsDay));
+    await pumpUntil(
+      tester,
+      find.text(TrendsDay.subtitle(1, _coffee(tester), 3)),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 800));
+    await screenshot(tester, 'trends-day');
+    await tap(tester, find.byTooltip(TrendsDay.backLabel));
+    await pumpUntil(tester, find.byType(LineChart));
+
+    await closeTrends(tester);
+    expect(find.byType(LineChart), findsNothing);
     semantics.dispose();
   });
 }

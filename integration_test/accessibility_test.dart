@@ -68,18 +68,25 @@ void main() {
     expect(find.bySemanticsLabel('Water, 0 drinks'), findsOneWidget);
     expect(find.byTooltip('Log 1 drink of Water'), findsOneWidget);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
-    await tap(tester, find.byType(DropdownButtonFormField<String>));
-    await tap(tester, find.text('Coffee').last);
+    // Coffee is the oldest habit, so Trends opens on it.
+    expect(
+      find.bySemanticsLabel(
+        'Trends. Coffee, last 30 days: ${formatAverage(2 / 30)} drinks a day',
+      ),
+      findsOneWidget,
+    );
+    await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
     expect(
       find.bySemanticsLabel(
         'Daily totals of Coffee over the last 30 days: 2 drinks in all. '
-        'The most was 2 drinks on ${formatShortDay(today)}.',
+        'The most was 2 drinks on ${formatShortDay(today)}. '
+        'Shown with a 7-day average.',
       ),
       findsOneWidget,
     );
+    expect(find.bySemanticsLabel(LogButton.label), findsNothing);
+    await closeTrends(tester);
     semantics.dispose();
   });
 
