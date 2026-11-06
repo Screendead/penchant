@@ -85,6 +85,14 @@ void main() {
       'unit': 'hour',
     });
 
+    // History opens from Habits, so its Back returns there first.
+    await tap(tester, find.byTooltip('Back'));
+    await pumpUntil(
+      tester,
+      find.byType(ViceActivityHistoryPage),
+      present: false,
+    );
+    await pumpUntil(tester, find.text('Espresso').hitTestable());
     await closeMenuPage(tester);
     await expectTallies(tester, const <String>{
       'Espresso (2 hours)',

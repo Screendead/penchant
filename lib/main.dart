@@ -18,6 +18,7 @@ import 'package:tracker/design/font_licence.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 
@@ -85,7 +86,8 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
-        builder: rejectedWritesBuilder,
+        builder: (BuildContext context, Widget? child) =>
+            AppMenuBar(child: rejectedWritesBuilder(context, child)),
       ),
     );
   }

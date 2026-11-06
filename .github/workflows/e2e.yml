@@ -28,7 +28,7 @@ jobs:
   ios:
     needs: debounce
     runs-on: macos-26
-    # The first green run took 74 minutes: flutter rebuilds the app for each of the 15 files.
+    # 74 minutes when flutter rebuilt the app for each file; all_test.dart builds it once.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,6 +49,22 @@ jobs:
         with:
           path: ~/.cache/firebase/emulators
           key: firebase-emulators-${{ runner.os }}-${{ hashFiles('tests/firestore-rules/package-lock.json') }}
+      # The pub cache is subosito's (setup-flutter, cache: true), keyed on pubspec.lock.
+      # Firebase's Swift packages, resolved by Package.resolved.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+      # Xcode's intermediates, mostly the compiled Firebase packages. Only an exact key is saved, so a newer image,
+      # Flutter or dependency set saves its own; a partial restore is rebuilt by Xcode where stale.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-
       # The firebase-tools the rules tests run with, pinned by that lockfile; tools/e2e.sh calls `firebase`.
       - name: Install firebase-tools
         run: |
@@ -77,7 +93,10 @@ jobs:
       - name: End to end (iOS Simulator)
         run: |
           set -o pipefail
-          tools/e2e.sh 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
+          tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
+      - name: Cache sizes
+        if: always()
+        run: du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.pub-cache build/ios 2>/dev/null || true
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

@@ -3,7 +3,7 @@
 # Auth and Firestore emulators under a demo-* project. Exits with the test
 # run's status.
 #
-#   tools/e2e.sh                 # every file in integration_test/
+#   tools/e2e.sh                 # every file in integration_test/, in one build (all_test.dart)
 #   tools/e2e.sh integration_test/smoke_test.dart
 #   E2E_DEVICE=<udid> tools/e2e.sh
 #   E2E_DEVICE=macos tools/e2e.sh   # one flutter test per file, one emulator session
@@ -20,7 +20,7 @@ if [ "$E2E_DEVICE" = macos ]; then
   fi
   script="tools/e2e-macos-each-file.sh$args"
 else
-  targets="${*:-integration_test}"
+  targets="${*:-integration_test/all_test.dart}"
   script="flutter test $targets -d $E2E_DEVICE --dart-define=USE_FIREBASE_EMULATORS=true"
 fi
 exec firebase emulators:exec \

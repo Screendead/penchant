@@ -15,7 +15,7 @@ for arg in "${@:-integration_test}"; do
   if [ -d "$arg" ]; then
     while IFS= read -r file; do
       files+=("$file")
-    done < <(find "$arg" -name '*_test.dart' | sort)
+    done < <(find "$arg" -name '*_test.dart' ! -name all_test.dart | sort)
   elif [ -f "$arg" ]; then
     files+=("$arg")
   else
