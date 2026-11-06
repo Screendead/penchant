@@ -9,11 +9,13 @@ class CircleButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.focusNode,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,7 @@ class CircleButton extends StatelessWidget {
       opacity: onPressed == null ? 0.35 : 1,
       child: IconButton(
         tooltip: tooltip,
+        focusNode: focusNode,
         onPressed: onPressed,
         icon: Icon(icon, size: 20),
         style: IconButton.styleFrom(

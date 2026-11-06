@@ -175,9 +175,7 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('Escape closes it, and a drag up opens it', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('a drag up opens it', (WidgetTester tester) async {
       _usePhone(tester);
       await _pump(tester, <ViceActivity>[_daysAgo(0, 1)], open: false);
 
@@ -188,19 +186,49 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byTooltip(TrendsSheet.closeLabel), findsOneWidget);
       expect(find.byType(LineChart), findsOneWidget);
+    });
 
-      Focus.of(
-        tester.element(
-          find.descendant(
-            of: find.byTooltip(TrendsSheet.closeLabel),
-            matching: find.byType(Icon),
-          ),
-        ),
-      ).requestFocus();
-      await tester.pump();
+    testWidgets('works from a keyboard: Enter on the peek opens it with focus '
+        'on Close, Escape closes it back to the peek, and Today takes no '
+        'focus meanwhile', (WidgetTester tester) async {
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 1)], open: false);
+      FocusNode? focused() => FocusManager.instance.primaryFocus;
+      bool inPeek() => focused()?.debugLabel == 'Trends peek';
+
+      for (int i = 0; i < 40 && !inPeek(); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      expect(inPeek(), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byType(LineChart), findsOneWidget);
+      expect(focused()?.debugLabel, TrendsSheet.closeLabel);
+
+      // Tab stays among the sheet's controls and the Log button is gone.
+      for (int i = 0; i < 30; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(
+          find
+              .ancestor(
+                of: find.byElementPredicate(
+                  (Element e) => identical(e, focused()!.context),
+                ),
+                matching: find.byType(TrendsSheet),
+              )
+              .evaluate(),
+          isNotEmpty,
+          reason: 'focus left the sheet at tab ${i + 1}',
+        );
+      }
+
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byType(LineChart), findsNothing);
+      expect(focused()?.debugLabel, 'Trends peek');
     });
   });
 

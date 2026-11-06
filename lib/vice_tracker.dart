@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -280,7 +281,21 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         return Stack(
           children: <Widget>[
             // Today ends where the peek starts, so nothing hides under it.
-            Positioned(left: 0, top: 0, right: 0, bottom: peek, child: page),
+            Positioned(
+              left: 0,
+              top: 0,
+              right: 0,
+              bottom: peek,
+              // Covered by the open sheet, Today takes no keyboard focus.
+              child: ListenableBuilder(
+                listenable: _sheet,
+                builder: (BuildContext context, Widget? child) => ExcludeFocus(
+                  excluding: TrendsSheet.openness(_sheet, minSize) > 0.9,
+                  child: child!,
+                ),
+                child: page,
+              ),
+            ),
             ListenableBuilder(
               listenable: _sheet,
               builder: (BuildContext context, Widget? child) {
@@ -291,7 +306,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 return Positioned.fill(
                   child: ExcludeSemantics(
                     child: GestureDetector(
-                      onTap: () => TrendsSheet.moveTo(context, _sheet, minSize),
+                      onTap: () => unawaited(
+                        TrendsSheet.moveTo(context, _sheet, minSize),
+                      ),
                       child: ColoredBox(
                         color: colors.scrim.withValues(
                           alpha: colors.scrim.a * p,
@@ -335,13 +352,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                     top: height * (1 - size) - DialSize.logButton / 2,
                     child: IgnorePointer(
                       ignoring: shown < 0.5,
-                      child: ExcludeSemantics(
+                      child: ExcludeFocus(
                         excluding: shown < 0.5,
-                        child: Opacity(
-                          opacity: shown,
-                          child: Transform.scale(
-                            scale: 0.6 + 0.4 * shown,
-                            child: child,
+                        child: ExcludeSemantics(
+                          excluding: shown < 0.5,
+                          child: Opacity(
+                            opacity: shown,
+                            child: Transform.scale(
+                              scale: 0.6 + 0.4 * shown,
+                              child: child,
+                            ),
                           ),
                         ),
                       ),

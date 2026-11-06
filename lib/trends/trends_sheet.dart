@@ -91,18 +91,19 @@ class TrendsSheet extends ConsumerStatefulWidget {
       ? ((c.size - minSize) / (1 - minSize)).clamp(0.0, 1.0)
       : 0;
 
-  static void moveTo(
+  static Future<void> moveTo(
     BuildContext context,
     DraggableScrollableController c,
     double size,
-  ) {
+  ) async {
     if (!c.isAttached) {
       return;
     }
     if (MediaQuery.disableAnimationsOf(context)) {
       c.jumpTo(size);
+      await WidgetsBinding.instance.endOfFrame;
     } else {
-      c.animateTo(size, duration: _move, curve: DialMotion.enter);
+      await c.animateTo(size, duration: _move, curve: DialMotion.enter);
     }
   }
 
@@ -192,10 +193,39 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     )?.writeState(context, selection, identifier: _storageID);
   }
 
-  void _open() => TrendsSheet.moveTo(context, widget.controller, 1);
+  // Keyboard focus follows the sheet: from the peek to Close as it opens, and
+  // back to the peek if it closes with focus inside.
+  final FocusNode _sheetFocus = FocusNode(
+    debugLabel: 'Trends sheet',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
+  final FocusNode _peekFocus = FocusNode(debugLabel: 'Trends peek');
+  final FocusNode _closeFocus = FocusNode(debugLabel: 'Close Trends');
 
-  void _close() =>
-      TrendsSheet.moveTo(context, widget.controller, widget.minSize);
+  @override
+  void dispose() {
+    _sheetFocus.dispose();
+    _peekFocus.dispose();
+    _closeFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _open() async {
+    final bool fromKeys = _peekFocus.hasFocus;
+    await TrendsSheet.moveTo(context, widget.controller, 1);
+    if (fromKeys && mounted) {
+      _closeFocus.requestFocus();
+    }
+  }
+
+  Future<void> _close() async {
+    final bool fromKeys = _sheetFocus.hasFocus;
+    await TrendsSheet.moveTo(context, widget.controller, widget.minSize);
+    if (fromKeys && mounted) {
+      _peekFocus.requestFocus();
+    }
+  }
 
   Vice _selected() {
     final List<Vice> habits = widget.habits;
@@ -273,6 +303,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             error: error,
             cursor: cursor,
             onClose: _close,
+            closeFocus: _closeFocus,
             onHabit: (Vice v) => _update(() {
               viceID = v.id;
               cursor = null;
@@ -321,96 +352,106 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             bindings: <ShortcutActivator, VoidCallback>{
               const SingleActivator(LogicalKeyboardKey.escape): _close,
             },
-            child: SingleChildScrollView(
-              controller: scroll,
-              child: Stack(
-                children: <Widget>[
-                  ListenableBuilder(
-                    listenable: controller,
-                    builder: (BuildContext context, Widget? child) {
-                      final double p = TrendsSheet.openness(
-                        controller,
-                        widget.minSize,
-                      );
-                      // Built only once the sheet moves off its peek.
-                      if (p <= 0) {
-                        return SizedBox(height: peek);
-                      }
-                      final bool open = p > 0.9;
-                      return Opacity(
-                        opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
-                        child: IgnorePointer(
-                          ignoring: !open,
-                          child: ExcludeSemantics(
-                            excluding: !open,
-                            child: child,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        DialSpace.gutter,
-                        DialSpace.xl,
-                        DialSpace.gutter,
-                        DialSpace.xl + bottomInset,
-                      ),
-                      child: AnimatedSwitcher(
-                        duration: MediaQuery.disableAnimationsOf(context)
-                            ? DialMotion.reducedFade
-                            : DialMotion.fadeThrough,
-                        child: content,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: peek,
-                    child: ListenableBuilder(
+            child: Focus(
+              focusNode: _sheetFocus,
+              child: SingleChildScrollView(
+                controller: scroll,
+                child: Stack(
+                  children: <Widget>[
+                    ListenableBuilder(
                       listenable: controller,
                       builder: (BuildContext context, Widget? child) {
                         final double p = TrendsSheet.openness(
                           controller,
                           widget.minSize,
                         );
+                        // Built only once the sheet moves off its peek.
+                        if (p <= 0) {
+                          return SizedBox(height: peek);
+                        }
+                        final bool open = p > 0.9;
                         return Opacity(
-                          opacity: (1 - p * 3).clamp(0.0, 1.0),
+                          opacity: ((p - 0.25) / 0.6).clamp(0.0, 1.0),
                           child: IgnorePointer(
-                            ignoring: p > 0.2,
-                            child: ExcludeSemantics(
-                              excluding: p > 0.2,
-                              child: child,
+                            ignoring: !open,
+                            child: ExcludeFocus(
+                              excluding: !open,
+                              child: ExcludeSemantics(
+                                excluding: !open,
+                                child: child,
+                              ),
                             ),
                           ),
                         );
                       },
-                      child: _Peek(
-                        vice: vice,
-                        mark: mark,
-                        rangeDays: rangeDays,
-                        series: series,
-                        onOpen: _open,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: DialSpace.xs,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        width: 38,
-                        height: 5,
-                        decoration: ShapeDecoration(
-                          color: scheme.outline,
-                          shape: const StadiumBorder(),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          DialSpace.gutter,
+                          DialSpace.xl,
+                          DialSpace.gutter,
+                          DialSpace.xl + bottomInset,
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: MediaQuery.disableAnimationsOf(context)
+                              ? DialMotion.reducedFade
+                              : DialMotion.fadeThrough,
+                          child: content,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: peek,
+                      child: ListenableBuilder(
+                        listenable: controller,
+                        builder: (BuildContext context, Widget? child) {
+                          final double p = TrendsSheet.openness(
+                            controller,
+                            widget.minSize,
+                          );
+                          return Opacity(
+                            opacity: (1 - p * 3).clamp(0.0, 1.0),
+                            child: IgnorePointer(
+                              ignoring: p > 0.2,
+                              child: ExcludeFocus(
+                                excluding: p > 0.2,
+                                child: ExcludeSemantics(
+                                  excluding: p > 0.2,
+                                  child: child,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        child: _Peek(
+                          vice: vice,
+                          mark: mark,
+                          rangeDays: rangeDays,
+                          series: series,
+                          focusNode: _peekFocus,
+                          onOpen: _open,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: DialSpace.xs,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          width: 38,
+                          height: 5,
+                          decoration: ShapeDecoration(
+                            color: scheme.outline,
+                            shape: const StadiumBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -426,6 +467,7 @@ class _Peek extends StatelessWidget {
     required this.mark,
     required this.rangeDays,
     required this.series,
+    required this.focusNode,
     required this.onOpen,
   });
 
@@ -433,6 +475,7 @@ class _Peek extends StatelessWidget {
   final HabitMark mark;
   final int rangeDays;
   final TrendsSeries? series;
+  final FocusNode focusNode;
   final VoidCallback onOpen;
 
   @override
@@ -448,6 +491,7 @@ class _Peek extends StatelessWidget {
         label: TrendsSheet.peekLabel(vice, rangeDays, perDay),
         hint: TrendsSheet.openHint,
         child: TextButton(
+          focusNode: focusNode,
           onPressed: onOpen,
           style: TextButton.styleFrom(
             padding: EdgeInsets.fromLTRB(
@@ -613,6 +657,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.error,
     required this.cursor,
     required this.onClose,
+    required this.closeFocus,
     required this.onHabit,
     required this.onRange,
     required this.onStep,
@@ -631,6 +676,7 @@ class _TrendsPanel extends StatelessWidget {
   final Object? error;
   final int? cursor;
   final VoidCallback onClose;
+  final FocusNode closeFocus;
   final ValueChanged<Vice> onHabit;
   final ValueChanged<int> onRange;
   final ValueChanged<int> onStep;
@@ -724,6 +770,7 @@ class _TrendsPanel extends StatelessWidget {
             CircleButton(
               icon: Icons.keyboard_arrow_down,
               tooltip: TrendsSheet.closeLabel,
+              focusNode: closeFocus,
               onPressed: onClose,
             ),
           ],
