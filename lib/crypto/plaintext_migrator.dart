@@ -112,12 +112,20 @@ class PlaintextMigrator {
   }
 
   /// Seals every plaintext document [uid] owns and returns how many it
-  /// sealed. [onProgress] hears the running total after each batch.
-  Future<int> run(String uid, {void Function(int sealed)? onProgress}) async {
+  /// sealed. [onProgress] hears the running total after each batch; once
+  /// [stillWanted] says false, it stops before the next page.
+  Future<int> run(
+    String uid, {
+    void Function(int sealed)? onProgress,
+    bool Function()? stillWanted,
+  }) async {
     int sealed = 0;
     for (final String collection in plaintextFields.keys) {
       String? after;
       while (true) {
+        if (stillWanted != null && !stillWanted()) {
+          return sealed;
+        }
         final List<StoredDocument> docs = await source.page(
           collection,
           uid,
