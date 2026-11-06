@@ -96,12 +96,8 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
-The first pass (waves A to D) is merged. **CI is down:** since 2026-11-06 Actions stopped starting jobs
-(billing limit), so no PR that changes code can
-show green CI, and nothing touching `firestore.rules` or `firestore.indexes.json` merges until it is back (merging
-deploys them, and the deploy job can't run). Docs-only PRs run no checks and still merge. #84 merged on its green CI
-(the last commit was docs only). #83 waits on Jack: merge on the review's local run of CI's commands plus both e2e
-suites, or wait for CI.
+The first pass (waves A to D) is merged. CI was down on 2026-11-06 (Actions billing limit) until Jack made the repo
+public and renamed it `Screendead/penchant` the same day; public repos run standard Actions runners free. #83 merged.
 
 **DECIDED** (in order; code PRs open and stack, and merge once CI is back or Jack waives it):
 
@@ -116,9 +112,7 @@ suites, or wait for CI.
   the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below), plus `r7-ci` (how to get CI back:
-restore Actions billing, wait for the reset, or a self-hosted runner on this Mac) and `#83`'s merge. Round 5 is moot
-once #83 merges. Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
+**UNDECIDED** (on the pitch page): the open round-2 to round-5 calls (below),. `r7-ci` is moot (the repo is public) and so is round 5 (#83 merged). Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
 time, the weekly remainder (the Trends sheet keeps A as built), units and the data model.
 
 **Blocked on Jack, not decisions:** the domain variant (support and legal pages), the paid Apple team (App Attest,
