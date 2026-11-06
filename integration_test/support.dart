@@ -198,6 +198,19 @@ Future<void> register(WidgetTester tester, String email) async {
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
   await tap(tester, find.byKey(Authenticate.registerTab));
+  // The tabs cross-fade, so both forms' Email fields are in the tree until
+  // sign-in's has gone.
+  final Finder emailField = find.widgetWithText(TextFormField, 'Email');
+  await pumpUntilTrue(
+    tester,
+    () =>
+        emailField.evaluate().length == 1 &&
+        find
+            .widgetWithText(TextFormField, 'Confirm password')
+            .evaluate()
+            .isNotEmpty,
+    () => 'the register form alone',
+  );
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
   await enterText(tester, 'Confirm password', 'Passw0rdE2E');
