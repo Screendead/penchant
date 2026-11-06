@@ -28,6 +28,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Trends by week shows whole weeks only: the range rounds down to a whole number of weeks (30 days shows 28, 90 shows
+  84, a year shows 364), so the oldest point no longer reads low from holding a few days.
 - Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
   each habit's colour and entry count; a habit's history groups its entries by day with a daily total. Archive and
   Edit habit live on the history page.
