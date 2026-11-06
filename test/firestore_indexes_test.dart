@@ -167,6 +167,42 @@ void main() {
       );
     });
 
+    test('an unsorted range field takes the last sort\'s direction', () {
+      expect(
+        compositeNeed(
+          _shape(
+            filters: <Filter>[_eq('a'), _range('c')],
+            orders: <Order>[_desc('b')],
+          ),
+        )?.orders,
+        <Order>[_desc('b'), _desc('c')],
+      );
+    });
+
+    test('a range on the document id adds no sort', () {
+      expect(
+        compositeNeed(
+          _shape(
+            filters: <Filter>[_eq('ownerID'), _range('__name__')],
+            orders: <Order>[_desc('createdAt')],
+          ),
+        )?.toString(),
+        'ownerID (any order), createdAt DESCENDING',
+      );
+    });
+
+    test('a document id sort in the last sort\'s direction is implicit', () {
+      expect(
+        compositeNeed(
+          _shape(
+            filters: <Filter>[_eq('ownerID')],
+            orders: <Order>[_desc('createdAt'), _desc('__name__')],
+          ),
+        )?.toString(),
+        'ownerID (any order), createdAt DESCENDING',
+      );
+    });
+
     test('array-contains alone needs no composite, with equality it does', () {
       expect(
         compositeNeed(_shape(filters: <Filter>[_contains('tags')])),
@@ -201,13 +237,60 @@ void main() {
       );
     });
 
-    test('a trailing __name__ ascending is the implicit one', () {
+    // The implicit __name__ takes the direction of the last sorted field, in
+    // an index and in a query alike.
+    test('a trailing __name__ in the last sort\'s direction is implicit', () {
       expect(
         uncoveredQueries(
           <QueryShape>[history],
           <Map<String, dynamic>>[
             _index('activities', <List<String>>[
               <String>['viceID', 'ASCENDING'],
+              <String>['ownerID', 'ASCENDING'],
+              <String>['createdAt', 'DESCENDING'],
+              <String>['__name__', 'DESCENDING'],
+            ]),
+          ],
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a trailing __name__ against the last sort is its own index', () {
+      expect(
+        uncoveredQueries(
+          <QueryShape>[history],
+          <Map<String, dynamic>>[
+            _index('activities', <List<String>>[
+              <String>['viceID', 'ASCENDING'],
+              <String>['ownerID', 'ASCENDING'],
+              <String>['createdAt', 'DESCENDING'],
+              <String>['__name__', 'ASCENDING'],
+            ]),
+          ],
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('a query sorting __name__ against its last sort needs that index', () {
+      final QueryShape paged = _shape(
+        filters: <Filter>[_eq('ownerID')],
+        orders: <Order>[_desc('createdAt'), _asc('__name__')],
+      );
+      final Map<String, dynamic> plain = _index('activities', <List<String>>[
+        <String>['ownerID', 'ASCENDING'],
+        <String>['createdAt', 'DESCENDING'],
+      ]);
+      expect(
+        uncoveredQueries(<QueryShape>[paged], <Map<String, dynamic>>[plain]),
+        hasLength(1),
+      );
+      expect(
+        uncoveredQueries(
+          <QueryShape>[paged],
+          <Map<String, dynamic>>[
+            _index('activities', <List<String>>[
               <String>['ownerID', 'ASCENDING'],
               <String>['createdAt', 'DESCENDING'],
               <String>['__name__', 'ASCENDING'],
@@ -348,6 +431,18 @@ void main() {
         }
       ''');
       expect(scan.unreadable, hasLength(2));
+    });
+
+    // limitToLast reverses every sort before the query is sent, so the index
+    // it needs is not the one the chain spells.
+    test('reports limitToLast', () {
+      final QueryScan scan = scanSource('''
+        f(db) => db.collection('vices')
+            .where('ownerID', isEqualTo: 1)
+            .orderBy('createdAt', descending: true)
+            .limitToLast(5);
+      ''');
+      expect(scan.unreadable.single, contains('limitToLast'));
     });
 
     test('reports a field or direction it cannot read', () {
