@@ -711,6 +711,76 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('Cmd-1 and Cmd-2 log one of the first and second habit', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
+      // Only two habits, so the third key logs nothing.
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        <(String, Object?, Object?)>[
+          for (final Write w in writes.writes)
+            (w.op, w.fields['viceID'], w.fields['quantity']),
+        ],
+        <(String, Object?, Object?)>[
+          ('recordActivity', coffee.id, defaultQuantity),
+          ('recordActivity', tea.id, defaultQuantity),
+        ],
+      );
+      expect(find.textContaining('Logged 1 time of Tea at'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 7));
+      await tester.tap(find.text('Undo'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(writes.writes.last, Write('deleteActivity', writes.writes[1].id));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('holding Cmd-1 down logs one entry, not one per repeat', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.digit1);
+      for (int i = 0; i < 3; i++) {
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.digit1);
+      }
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.digit1);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+
+      expect(writes.writes.single.fields['viceID'], coffee.id);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a key on a past day logs now and shows today', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(tester.widget<DayDial>(find.byType(DayDial)).day, isNot(today));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+
+      expect(writes.writes.single.fields['viceID'], coffee.id);
+      expect(tester.widget<DayDial>(find.byType(DayDial)).day, today);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('two taps are two entries', (WidgetTester tester) async {
       await _pumpApp(tester, overrides(), const ViceTracker());
 

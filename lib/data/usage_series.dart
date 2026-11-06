@@ -13,23 +13,24 @@ int defaultWindow(int stepDays) => stepDays == 1 ? 7 : 4;
 // in buckets of [stepDays] days.
 typedef UsageRange = ({DateTime start, int days, int stepDays});
 
-UsageRange usageRange(DateTime today, int rangeDays, int stepDays) => (
-  start: addDays(startOfDay(today), 1 - rangeDays),
-  days: rangeDays,
-  stepDays: stepDays,
-);
+// [rangeDays] rounded down to whole buckets (a 30-day weekly range covers 28),
+// so no bucket is short (Jack, 2026-11-06).
+UsageRange usageRange(DateTime today, int rangeDays, int stepDays) {
+  final int days = max(stepDays, rangeDays ~/ stepDays * stepDays);
+  return (
+    start: addDays(startOfDay(today), 1 - days),
+    days: days,
+    stepDays: stepDays,
+  );
+}
 
-// Buckets are counted back from today, so the newest is always a whole
-// [stepDays] long; when [days] is not a multiple of [stepDays], the oldest
-// bucket holds the remainder (2 days of a 30-day weekly range).
 extension UsageRangeDays on UsageRange {
-  int get bucketCount => max(1, (days + stepDays - 1) ~/ stepDays);
+  int get bucketCount => days ~/ stepDays;
 
   // Exclusive: midnight after the last day.
   DateTime get end => addDays(start, days);
 
-  DateTime bucketStart(int index) =>
-      addDays(start, max(0, days - (bucketCount - index) * stepDays));
+  DateTime bucketStart(int index) => addDays(start, index * stepDays);
 }
 
 // The total quantity recorded in each bucket of [range]. Activities outside
@@ -81,8 +82,8 @@ List<double> movingAverage(List<double> values, int window) {
 
 typedef UsageStats = ({double total, double average, int peakIndex});
 
-// The range's total, its average per day (daily) or per bucket (weekly, where
-// the oldest bucket may be short), and the first bucket holding the most.
+// The range's total, its average per day (daily) or per week (weekly), and
+// the first bucket holding the most.
 UsageStats usageStats(UsageRange range, List<double> totals) {
   double total = 0;
   int peakIndex = 0;
