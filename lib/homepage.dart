@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
+import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/penchant_mark.dart';
 import 'package:tracker/widgets/sync_status.dart';
 
-class Homepage extends StatefulWidget {
+class Homepage extends ConsumerStatefulWidget {
   const Homepage({super.key});
 
   static const String menuLabel = 'Penchant menu';
@@ -19,16 +23,34 @@ class Homepage extends StatefulWidget {
   static const String settingsItem = 'Settings';
 
   @override
-  State<Homepage> createState() => _HomepageState();
+  ConsumerState<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends ConsumerState<Homepage> {
   // Today's day and the Trends selection outlive their widgets here, as when
   // a load error replaces them. It lives and dies with the signed-in session.
   final PageStorageBucket tabState = PageStorageBucket();
 
+  // Decided by the first list that loads, and kept while the flow runs: its
+  // first step creates habits, which would otherwise swap Today in under it.
+  bool? onboarding;
+
   @override
   Widget build(BuildContext context) {
+    if (onboarding == null) {
+      final List<Vice>? all = ref.watch(viceListProvider).value;
+      final List<Vice>? unarchived = ref
+          .watch(unarchivedViceListProvider)
+          .value;
+      if (all != null && unarchived != null) {
+        // An account whose habits are all archived is not new.
+        onboarding = all.isEmpty && unarchived.isEmpty;
+      }
+    }
+    if (onboarding ?? false) {
+      return Onboarding(onDone: () => setState(() => onboarding = false));
+    }
+
     final double top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
