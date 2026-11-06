@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**20 issues: 0 critical, 0 high, 9 medium, 11 low.**
+**19 issues: 0 critical, 0 high, 8 medium, 11 low.**
 
 ## Firebase Data Layer (5)
 
@@ -22,7 +22,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
-- **low** — [Nothing checks the index file against the queries or the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
+- **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 - **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
@@ -56,11 +56,10 @@ Password reset, email verification, re-authentication, account deletion and expo
 
 - **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
 
-## Dependency and Tooling Drift (2)
+## Dependency and Tooling Drift (1)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
-- **medium** — [The minimatch 11 override breaks the firebase-tools paths that call minimatch as a function](dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md)
 - **medium** — [Firebase stops publishing to CocoaPods in October 2026, and both Apple builds depend on it](dependency-and-tooling-drift/cocoapods-sunset-ends-firebase-ios-publishing.md)
 
 ## Platform and Delivery Config (5)

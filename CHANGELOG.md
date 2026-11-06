@@ -66,6 +66,9 @@ pull request titles (`gh pr list --state merged`).
 - Today shows every vice's amount: when a title has no room for its amount, the key below the chart lists every
   vice with its total, instead of that amount appearing nowhere. The radar's rings are labelled in whole numbers,
   without the "0.0" that sat at its centre.
+- The rules tests' firebase-tools install no longer breaks its own file-matching code: the minimatch override now
+  replaces only the versions the advisory names. A test checks every composite query in the app against
+  `firestore.indexes.json`, since the emulators never enforce indexes.
 
 ## [0.1.0] - Unreleased
 
