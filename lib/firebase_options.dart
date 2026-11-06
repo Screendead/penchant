@@ -29,20 +29,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBpaWDbKfdikRFrvhJpnZPpR6104OpS2gw',
-    appId: '1:573818595550:ios:2a772edb7ec195d92cba4f',
+    apiKey: 'AIzaSyA-w7_zbbAaPccCmu38VljlvX1I00MIzc8',
+    appId: '1:573818595550:ios:0315b1c6651696bf2cba4f',
     messagingSenderId: '573818595550',
     projectId: 'screendead-vice-tracker',
     storageBucket: 'screendead-vice-tracker.appspot.com',
-    iosBundleId: 'com.screendead.tracker.tracker',
+    iosBundleId: 'com.screendead.penchant',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBpaWDbKfdikRFrvhJpnZPpR6104OpS2gw',
-    appId: '1:573818595550:ios:c170a56c255f4b002cba4f',
+    apiKey: 'AIzaSyA-w7_zbbAaPccCmu38VljlvX1I00MIzc8',
+    appId: '1:573818595550:ios:0315b1c6651696bf2cba4f',
     messagingSenderId: '573818595550',
     projectId: 'screendead-vice-tracker',
     storageBucket: 'screendead-vice-tracker.appspot.com',
-    iosBundleId: 'com.screendead.tracker.tracker.RunnerTests',
+    iosBundleId: 'com.screendead.penchant',
   );
 }

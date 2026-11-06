@@ -24,16 +24,15 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**29 ideas: 9 release blockers, 7 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 17 need a call from
+**28 ideas: 8 release blockers, 7 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 16 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
 Each list is in the recommended build order.
 
-## Release blockers (9)
+## Release blockers (8)
 
 - [Position the app as a neutral journal for learning about yourself](release-blockers/positioning-and-target-user.md). S. Decided (C15)
-- [Lock the bundle ID and clear the Penchant name before the first upload](release-blockers/name-and-bundle-id.md). S. Decided (C19, `r2-brand`: Penchant), Needs Jack (domain)
 - [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, Needs Jack (`vice-cap`); bounded activity queries and App Check wiring built in #55
 - [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, Needs Jack

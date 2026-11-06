@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBpaWDbKfdikRFrvhJpnZPpR6104OpS2gw</string>
+	<string>AIzaSyA-w7_zbbAaPccCmu38VljlvX1I00MIzc8</string>
 	<key>GCM_SENDER_ID</key>
 	<string>573818595550</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.screendead.tracker.tracker</string>
+	<string>com.screendead.penchant</string>
 	<key>PROJECT_ID</key>
 	<string>screendead-vice-tracker</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:573818595550:ios:2a772edb7ec195d92cba4f</string>
+	<string>1:573818595550:ios:0315b1c6651696bf2cba4f</string>
 </dict>
 </plist>
