@@ -162,8 +162,9 @@ void main() {
 
     // The launch ends with the entry still queued. Under the emulators the
     // cache is off, so terminating drops the queue: the next launch's server
-    // holds no such entry, as after a refusal. Its future never completes,
-    // so nothing in this launch removes it from the journal.
+    // holds no such entry, as after a refusal. Termination leaves the write's
+    // future unresolved, so nothing in this launch removes it from the
+    // journal.
     await FirebaseFirestore.instance.terminate();
     // A write whose answer the earlier launch missed, but the server took.
     final QueuedWriteJournal earlier = QueuedWriteJournal(file);
@@ -182,7 +183,6 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await pumpUntil(tester, rejected);
     expect(inBanner('The server refused this change.'), findsOneWidget);
-    expect(inBanner('the habit Coffee'), findsNothing);
     await screenshot(tester, 'rejected-write-earlier-launch');
     final DateTime deadline = DateTime.now().add(timeout);
     while ((await file.read())?.contains('Coffee') ?? false) {
@@ -193,6 +193,8 @@ void main() {
       }
       await pumpFor(tester, const Duration(milliseconds: 100));
     }
+    // Both entries are checked by now, so the vice's would be showing.
+    expect(inBanner('the habit Coffee'), findsNothing);
 
     await tap(
       tester,
