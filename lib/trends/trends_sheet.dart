@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
@@ -82,21 +84,36 @@ class SheetPosition extends ChangeNotifier {
 
 // Trends: a sheet over Today that peeks at the bottom with a sparkline of the
 // chosen habit, and opens over the dial to one habit's totals over a range.
+// Beside Today in the split view it is a pane, always open, and a day picked
+// on its chart goes to Today's dial instead of opening in the pane. Both keep
+// their selection in the same page storage, so a resize across the split
+// keeps it.
 class TrendsSheet extends ConsumerStatefulWidget {
   const TrendsSheet({
     super.key,
-    required this.controller,
+    required DraggableScrollableController this.controller,
     required this.minSize,
     required this.habits,
     required this.marks,
-  });
+  }) : onOpenDay = null;
 
-  final DraggableScrollableController controller;
+  const TrendsSheet.pane({
+    super.key,
+    required this.habits,
+    required this.marks,
+    required ValueChanged<DateTime> this.onOpenDay,
+  }) : controller = null,
+       minSize = 1;
+
+  // Null for the pane.
+  final DraggableScrollableController? controller;
   // The peek, as a share of the height the sheet can take.
   final double minSize;
   // Every habit in chip order: in use first, then archived, each oldest first.
   final List<Vice> habits;
   final Map<String, HabitMark> marks;
+  // The pane's way to show a day.
+  final ValueChanged<DateTime>? onOpenDay;
 
   static const String title = 'Trends';
   static const String openHint = 'Opens Trends';
@@ -114,6 +131,9 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const double _sparkGap = 1;
   static const double sparkHeight = 44;
   static const double _peekBottom = 25;
+  // A wide pane centres its content at this width, so the chart's days stay
+  // close enough to read across.
+  static const double paneContentWidth = 720;
 
   // The peek's height: its two lines of text at the device's text size and
   // the sparkline under them.
@@ -169,9 +189,16 @@ class TrendsSheet extends ConsumerStatefulWidget {
       '$title. ${vice.name}, last ${formatCount(rangeDays)} days'
       '${perDay == null ? '' : ': ${formatAverage(perDay)} ${vice.unit.plural} a day'}';
 
-  static String hint(int stepDays) => stepDays == 1
-      ? 'Drag across the chart to read a day. Tap a day to open its dial.'
-      : 'Drag across the chart to read a week.';
+  // In the pane a tapped day moves Today's dial beside it.
+  static String hint(int stepDays, {bool pane = false}) => stepDays != 1
+      ? 'Drag across the chart to read a week.'
+      : pane
+      ? 'Drag across the chart to read a day. Tap a day to show it on the dial.'
+      : 'Drag across the chart to read a day. Tap a day to open its dial.';
+
+  // Said when the pane hands a day to Today's dial, which a screen reader's
+  // focus on the chart does not reach.
+  static String shownOnDial(DateTime day) => 'The dial shows ${formatDay(day)}';
 
   static String whenTitle(
     HourProfile p, {
@@ -277,7 +304,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
 
   Future<void> _open() async {
     final bool fromKeys = _peekFocus.hasFocus;
-    await TrendsSheet.moveTo(context, widget.controller, 1);
+    await TrendsSheet.moveTo(context, widget.controller!, 1);
     if (fromKeys && mounted) {
       _closeFocus.requestFocus();
     }
@@ -285,7 +312,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
 
   Future<void> _close() async {
     final bool fromKeys = _sheetFocus.hasFocus;
-    await TrendsSheet.moveTo(context, widget.controller, widget.minSize);
+    await TrendsSheet.moveTo(context, widget.controller!, widget.minSize);
     if (fromKeys && mounted) {
       _peekFocus.requestFocus();
     }
@@ -343,8 +370,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     final DialColors colors = DialColors.of(context);
     final double peek = TrendsSheet.peekHeight(context);
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
-    final DraggableScrollableController controller = widget.controller;
-    final DateTime? day = openDay;
+    final DraggableScrollableController? controller = widget.controller;
+    final ValueChanged<DateTime>? showDay = widget.onOpenDay;
+    final DateTime? day = controller == null ? null : openDay;
 
     final Widget content = day != null
         ? TrendsDay(
@@ -368,7 +396,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             series: series,
             error: error,
             cursor: cursor,
-            onClose: _close,
+            onClose: controller == null ? null : _close,
             closeFocus: _closeFocus,
             chartFocus: _chartFocus,
             onHabit: (Vice v) => _update(() {
@@ -388,18 +416,54 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             }),
             onWindow: (int window) => _update(() => pickedWindow = window),
             onCursor: (int index) => setState(() => cursor = index),
-            onOpenDay: stepDays == 1
-                ? (int index) => _handOver(
+            onOpenDay: stepDays != 1
+                ? null
+                : showDay != null
+                ? (int index) {
+                    final DateTime picked = range.bucketStart(index);
+                    showDay(picked);
+                    unawaited(
+                      SemanticsService.sendAnnouncement(
+                        View.of(context),
+                        TrendsSheet.shownOnDial(picked),
+                        Directionality.of(context),
+                      ),
+                    );
+                  }
+                : (int index) => _handOver(
                     _chartFocus,
                     _backFocus,
                     () => openDay = range.bucketStart(index),
-                  )
-                : null,
+                  ),
             onRetry: () => ref.invalidate(
               viceActivityGraphForUserProvider,
               asReload: true,
             ),
           );
+
+    if (controller == null) {
+      return Material(
+        color: scheme.surfaceContainerLow,
+        shape: BorderDirectional(start: BorderSide(color: colors.line)),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            DialSpace.gutter,
+            DialSpace.xl,
+            DialSpace.gutter + MediaQuery.paddingOf(context).right,
+            DialSpace.xl + bottomInset,
+          ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: TrendsSheet.paneContentWidth,
+              ),
+              child: content,
+            ),
+          ),
+        ),
+      );
+    }
 
     return DraggableScrollableSheet(
       controller: controller,
@@ -785,7 +849,8 @@ class _TrendsPanel extends StatelessWidget {
   final TrendsSeries? series;
   final Object? error;
   final int? cursor;
-  final VoidCallback onClose;
+  // Null in the pane, which has no Close.
+  final VoidCallback? onClose;
   final FocusNode closeFocus;
   final FocusNode chartFocus;
   final ValueChanged<Vice> onHabit;
@@ -861,7 +926,7 @@ class _TrendsPanel extends StatelessWidget {
         _WhenCard(vice: vice, mark: mark, range: range, profile: s.hours),
         const SizedBox(height: DialSpace.s),
         Text(
-          TrendsSheet.hint(range.stepDays),
+          TrendsSheet.hint(range.stepDays, pane: onClose == null),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(color: colors.muted),
         ),
@@ -879,12 +944,13 @@ class _TrendsPanel extends StatelessWidget {
                 child: Text(TrendsSheet.title, style: type.displayL),
               ),
             ),
-            CircleButton(
-              icon: DialGlyph.down,
-              tooltip: TrendsSheet.closeLabel,
-              focusNode: closeFocus,
-              onPressed: onClose,
-            ),
+            if (onClose case final VoidCallback close)
+              CircleButton(
+                icon: DialGlyph.down,
+                tooltip: TrendsSheet.closeLabel,
+                focusNode: closeFocus,
+                onPressed: close,
+              ),
           ],
         ),
         const SizedBox(height: DialSpace.s),

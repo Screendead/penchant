@@ -19,6 +19,10 @@ pull request titles (`gh pr list --state merged`).
   verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
   device's copy of your data, and asks first if entries have not synced (#54).
 - The app builds for the Mac, on macOS 12 Monterey or later (#47).
+- On a window 900 pt wide or more (a Mac, or an iPad on its side), Trends sits beside Today as a pane instead of a
+  sheet: the dial and tallies on the left, with the Log button under them, and the chart on the right. A day picked on
+  the chart moves Today's dial to it. Resizing across 900 pt keeps the day and habit you picked. The left and right
+  arrow keys step through days, except on the chart, where they move its cursor.
 
 ### Changed
 

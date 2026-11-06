@@ -360,6 +360,15 @@ point opens that day's dial and read-only tallies inside the sheet (`TrendsDay`)
 node labelled `TrendsChart.summary` whose value is the cursor's readout; the arrow keys and a screen reader's adjust
 move the cursor, and Enter or activate opens its day. fl_chart paints its titles outside the widget tree, so tests
 read them from the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as it opens.
+From `ViceTracker.splitWidth` (900 pt) wide, on any device, the same `ViceTracker` state lays out a split view instead:
+Today's column (`ViceTracker.splitColumnWidth`) with the Log button at its foot, and `TrendsSheet.pane`, the same panel
+always open with no peek or Close, whose day points call Today's day picker instead of opening `TrendsDay` (and,
+since a screen reader's focus stays on the chart, announce `TrendsSheet.shownOnDial`). Both
+forms keep the selection in the same `PageStorage` entry, so a resize across 900 pt keeps the day and the habit (the
+chart's cursor resets). Left and Right step Today's day (`_stepDay`, from state, so presses within one frame each
+count) from a `CallbackShortcuts` around the whole split view, or around Today alone under the sheet; the chart's own
+`Focus` takes them first. Widget tests run at 800×600 and so stay on the phone layout; `test/split_view_test.dart`
+and `integration_test/split_view_test.dart` set the view's size to reach the split.
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection when their widgets are
 rebuilt. Both read the current day from `todayProvider`, which moves on at local midnight and on app resume; Today
 follows it unless the user picked another day, and a log (always now) turns a past day back to today. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,

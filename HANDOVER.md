@@ -90,8 +90,11 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      `animations` package), and the reduce-motion fades.
    - **g. e2e rewrite:** rebuild `integration_test/` around the new flows (fan gestures, dial semantics, the sheets),
      on iOS and `E2E_DEVICE=macos`.
-2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. After 1c; the
-   mock-up does not show it.
+2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. In review in
+   #92 (`feat/macos-split-view`): width-based, so an iPad on its side gets it too; the Log button
+   sits at the foot of Today's column, a chart day moves Today's dial, Left and Right step days. The Mac window still
+   opens at 800×600 (phone layout), so the macOS e2e suite keeps testing the sheet;
+   `integration_test/split_view_test.dart` lays the app out at 900, 1200 and 1600 pt.
 3. **Bundle IDs to `com.screendead.penchant`: done** (#84, merged 2026-11-06): iOS and
    macOS, Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`,
    the macOS keychain group. The idea file is deleted; what it had left (the domain variant, an App Store search on a
