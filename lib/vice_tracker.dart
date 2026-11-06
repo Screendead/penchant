@@ -97,6 +97,14 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     )?.writeState(context, pinned, identifier: _storageID);
   }
 
+  // From the day shown now, not the one last built, so keys pressed within a
+  // frame each count.
+  void _stepDay(int days) {
+    final DateTime today = ref.read(todayProvider);
+    final DateTime shown = pinnedDay ?? today;
+    _selectDay(addDays(shown.isAfter(today) ? today : shown, days));
+  }
+
   // A log is always now, so a past day gives way to today to show it.
   void _log(Vice vice, Offset from) {
     if (pinnedDay != null) {
@@ -305,24 +313,24 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 ),
               );
 
-        // Left and Right step through days anywhere on Today but the chart,
-        // which takes them for its cursor; nothing has focus at launch, so
-        // Today takes it.
+        // Left and Right step through days: anywhere in the split view but
+        // the chart, which takes them for its cursor, and on Today alone
+        // under the sheet. Nothing has focus at launch, so Today takes it.
         final int back = Directionality.of(context) == TextDirection.rtl
             ? 1
             : -1;
-        final Widget todayPage = CallbackShortcuts(
+        Widget dayKeys(Widget child) => CallbackShortcuts(
           bindings: <ShortcutActivator, VoidCallback>{
             const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
-                _selectDay(addDays(day, back)),
+                _stepDay(back),
             const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
-                _selectDay(addDays(day, -back)),
+                _stepDay(-back),
           },
           child: Focus(
             autofocus: true,
             skipTraversal: true,
             debugLabel: 'Today',
-            child: page,
+            child: child,
           ),
         );
         final Widget? logButton = vices == null || vices.isEmpty
@@ -337,34 +345,36 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               );
 
         if (split) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              SizedBox(
-                width: column,
-                child: Stack(
-                  children: <Widget>[
-                    Positioned.fill(child: todayPage),
-                    if (logButton != null)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: logInset,
-                        child: Center(child: logButton),
-                      ),
-                  ],
+          return dayKeys(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SizedBox(
+                  width: column,
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(child: page),
+                      if (logButton != null)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: logInset,
+                          child: Center(child: logButton),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: allVices == null || allVices.isEmpty
-                    ? const SizedBox.shrink()
-                    : TrendsSheet.pane(
-                        habits: trendsOrder(allVices, marks),
-                        marks: marks,
-                        onOpenDay: _selectDay,
-                      ),
-              ),
-            ],
+                Expanded(
+                  child: allVices == null || allVices.isEmpty
+                      ? const SizedBox.shrink()
+                      : TrendsSheet.pane(
+                          habits: trendsOrder(allVices, marks),
+                          marks: marks,
+                          onOpenDay: _selectDay,
+                        ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -383,7 +393,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   excluding: TrendsSheet.openness(_sheet, minSize) > 0.9,
                   child: child!,
                 ),
-                child: todayPage,
+                child: dayKeys(page),
               ),
             ),
             ListenableBuilder(

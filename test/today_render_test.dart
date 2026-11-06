@@ -1,5 +1,5 @@
-// Renders Today at 390x844 in light and dark to PNGs, for a look at the real
-// fonts and colours. Skipped unless a directory is given:
+// Renders Today at 390x844, and the Mac's split view at 900, 1200 and 1600 pt
+// wide, in light and dark to PNGs, for a look at the real fonts and colours. Skipped unless a directory is given:
 //   flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -152,17 +152,28 @@ void main() {
           ('trends', _busy),
           ('trends-day', _busy),
           ('trends-large', _busy),
+          ('split-900', _busy),
+          ('split-1200', _busy),
+          ('split-1600', _busy),
+          ('split-900-large', _busy),
         ]) {
       testWidgets('renders Today, $scene, ${brightness.name}', (
         WidgetTester tester,
       ) async {
-        tester.view.devicePixelRatio = 3;
-        tester.view.physicalSize = const Size(390 * 3, 844 * 3);
-        // An iPhone's status bar and home indicator.
-        tester.view.padding = const FakeViewPadding(
-          top: 47 * 3,
-          bottom: 34 * 3,
-        );
+        final double ratio = scene.startsWith('split') ? 2 : 3;
+        tester.view.devicePixelRatio = ratio;
+        if (scene.startsWith('split-')) {
+          // A Mac window, which has no insets.
+          final double width = double.parse(scene.split('-')[1]);
+          tester.view.physicalSize = Size(width * 2, 800 * 2);
+        } else {
+          tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+          // An iPhone's status bar and home indicator.
+          tester.view.padding = const FakeViewPadding(
+            top: 47 * 3,
+            bottom: 34 * 3,
+          );
+        }
         tester.platformDispatcher.platformBrightnessTestValue = brightness;
         addTearDown(tester.view.reset);
         addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
@@ -210,6 +221,11 @@ void main() {
           await tester.tap(find.byType(LogButton));
           await tester.pumpAndSettle();
         }
+        if (scene.startsWith('split')) {
+          // Yesterday, picked with the keyboard.
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pumpAndSettle();
+        }
         if (scene.startsWith('trends')) {
           await tester.tap(find.text(TrendsSheet.title));
           await tester.pumpAndSettle();
@@ -224,7 +240,7 @@ void main() {
           final ui.Image image =
               await (frame.currentContext!.findRenderObject()!
                       as RenderRepaintBoundary)
-                  .toImage(pixelRatio: 3);
+                  .toImage(pixelRatio: ratio);
           final ByteData? png = await image.toByteData(
             format: ui.ImageByteFormat.png,
           );
