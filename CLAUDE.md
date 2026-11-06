@@ -307,7 +307,10 @@ must name a vice the writer owns, checked with one `get()` (a billed read, even 
 denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
-while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. The one update that may remove fields is the first-launch sealing
+(`lib/crypto/plaintext_migrator.dart`, rules `sealsPlaintext`): a document without `sealed` gains it as bytes and
+loses its plaintext fields (`name`/`unit`, or `quantity`) in the same write, run once per uid and app version once
+`sealerProvider` has a key and `offlineProvider` says online. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.

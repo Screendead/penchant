@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Once end-to-end encryption is on, the first launch with your key seals the habits and entries you logged before
+  it, in the background, and removes their readable copies from the server. It waits for a connection, picks up
+  where it left off if interrupted, and Settings shows its progress.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
