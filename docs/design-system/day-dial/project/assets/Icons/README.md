@@ -1,0 +1,1 @@
+The app's line icons, copied from the Day Dial mock-up: a 24×24 grid, 2px stroke, round caps and joins, no fill. Each file is drawn in light-theme ink `#1d1c1a` (the `text` token). Inline the paths and set `stroke` to `text` or `muted` to use one in either theme; an `<img>` cannot recolour it.
