@@ -27,7 +27,7 @@ pull request titles (`gh pr list --state merged`).
   and the smoothing slider's track have a clearly visible edge, the usage graph's raw line and the Today chart's
   rings are darker, and dark mode's secondary text is a little brighter. The time picker shows which of hour and
   minute is selected and draws its typed-in fields with an edge, and a button focused from the keyboard has an ink
-  ring.
+  ring (paper in dark).
 - A new app icon: the Today chart's shape, one colour per segment, on a light background.
 - The history list opens an entry by tapping the row only; the separate pencil button is gone.
 - A screen that cannot load its data says why and offers Retry, instead of spinning forever; so does the app when it
