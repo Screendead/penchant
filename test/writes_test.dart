@@ -21,6 +21,7 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
+import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -424,14 +425,16 @@ void main() {
       expect(writes.writes, hasLength(1));
       expect(
         tester
-            .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.archive))
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.archive_outlined),
+            )
             .onPressed,
         isNull,
       );
       expect(
         tester
             .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.unarchive),
+              find.widgetWithIcon(IconButton, Icons.unarchive_outlined),
             )
             .onPressed,
         isNotNull,
@@ -473,18 +476,21 @@ void main() {
         ),
       ], const ManageData());
 
-      expect(find.text('1 activity'), findsOneWidget);
+      expect(find.textContaining(' · 1 entry'), findsOneWidget);
       expect(
-        find.text(
-          '${ManageData.archivedLabel}, 3 activities on this device (offline)',
+        find.textContaining(' · 3 entries on this device (offline)'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          ' · 2 entries on this device (server count unavailable)',
         ),
         findsOneWidget,
       );
       expect(
-        find.text('2 activities on this device (server count unavailable)'),
+        find.textContaining(' · ${ManageData.countUnavailable}'),
         findsOneWidget,
       );
-      expect(find.text(ManageData.countUnavailable), findsOneWidget);
     });
 
     testWidgets('shows the error when archiving fails', (
@@ -712,48 +718,43 @@ void main() {
       expect(find.text('Request timed out'), findsNothing);
     });
 
-    testWidgets('a delete in flight disables both actions, and one that '
-        'outlasts the timeout closes and says it will sync', (
+    testWidgets('deletes the activity, closes, and Undo writes it back', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(writes.writes, [Write('deleteActivity', activity.id)]);
+      expect(editor, findsNothing);
+      expect(find.textContaining('Deleted 3'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.id, activity.id);
+      expect(find.text(restoredMessage), findsOneWidget);
+    });
+
+    testWidgets('a delete that outlasts the timeout says it will sync', (
       WidgetTester tester,
     ) async {
       writes.respond = _never;
       await open(tester);
       await tester.tap(find.byTooltip('Delete'));
-      await tester.pump();
-
-      expect(
-        tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.delete_outline),
-            )
-            .onPressed,
-        isNull,
-      );
-      expect(
-        tester
-            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
-            .onPressed,
-        isNull,
-      );
+      await tester.pumpAndSettle();
+      expect(editor, findsNothing);
 
       await tester.pump(writeTimeout);
       await tester.pumpAndSettle();
 
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(editor, findsNothing);
       expect(find.text(queuedDeleteMessage), findsOneWidget);
     });
 
-    testWidgets('deletes the activity and closes', (WidgetTester tester) async {
-      await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pumpAndSettle();
-
-      expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(editor, findsNothing);
-    });
-
-    testWidgets('stays open and shows the error when the delete fails', (
+    testWidgets('shows the error when the delete fails', (
       WidgetTester tester,
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
@@ -761,7 +762,6 @@ void main() {
       await tester.tap(find.byTooltip('Delete'));
       await tester.pumpAndSettle();
 
-      expect(editor, findsOneWidget);
       expect(
         find.text('Could not delete this activity. $_offline'),
         findsOneWidget,
@@ -784,22 +784,50 @@ void main() {
       ),
     ];
 
-    testWidgets('deletes a row and says so', (WidgetTester tester) async {
+    final Finder row = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(Dismissible),
+    );
+
+    Future<void> swipe(WidgetTester tester) async {
+      await tester.drag(row, const Offset(-500, 0));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a swipe deletes a row, and Undo writes it back', (
+      WidgetTester tester,
+    ) async {
       await _pumpOpened(
         tester,
         writes,
         overrides(),
         ViceActivityHistoryPage(viceID: coffee.id),
       );
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pumpAndSettle();
+      await swipe(tester);
 
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(find.text('Activity deleted'), findsOneWidget);
+      expect(find.textContaining('Deleted 3'), findsOneWidget);
+      // The fake's list still holds it; the page hides it until Undo.
+      expect(row, findsNothing);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, hasLength(2));
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.id, activity.id);
+      expect(writes.writes.last.fields, <String, Object?>{
+        'ownerID': ownerID,
+        'viceID': coffee.id,
+        'quantity': 3,
+        'createdAt': activity.createdAt.toDate(),
+      });
+      expect(row, findsOneWidget);
     });
 
-    testWidgets('a delete in flight disables its button, and one that '
-        'outlasts the timeout says it will sync', (WidgetTester tester) async {
+    testWidgets('a delete that outlasts the timeout says it will sync', (
+      WidgetTester tester,
+    ) async {
       writes.respond = _never;
       await _pumpOpened(
         tester,
@@ -807,27 +835,17 @@ void main() {
         overrides(),
         ViceActivityHistoryPage(viceID: coffee.id),
       );
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pump();
-
+      await swipe(tester);
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(
-        tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.delete_outline),
-            )
-            .onPressed,
-        isNull,
-      );
 
       await tester.pump(writeTimeout);
       await tester.pumpAndSettle();
 
       expect(find.text(queuedDeleteMessage), findsOneWidget);
-      expect(find.text('Activity deleted'), findsNothing);
+      expect(find.textContaining('Deleted 3'), findsNothing);
     });
 
-    testWidgets('shows the error when the delete fails', (
+    testWidgets('a failed delete brings the row back and says why', (
       WidgetTester tester,
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
@@ -837,14 +855,13 @@ void main() {
         overrides(),
         ViceActivityHistoryPage(viceID: coffee.id),
       );
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pumpAndSettle();
+      await swipe(tester);
 
       expect(
         find.text('Could not delete this activity. $_offline'),
         findsOneWidget,
       );
-      expect(find.text('Activity deleted'), findsNothing);
+      expect(row, findsOneWidget);
     });
   });
 
@@ -1035,7 +1052,8 @@ void main() {
           (ref, ViceActivityHistoryQuery query) => AsyncData([activity]),
         ),
       ], ViceActivityHistoryPage(viceID: coffee.id));
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
       await tester.pump();
 
       ProviderScope.containerOf(
@@ -1159,7 +1177,8 @@ void main() {
             widget is FocusScope && widget.debugLabel == 'Navigator Scope',
       );
       final State scope = tester.state(navigatorScope);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
       await tester.pump();
       await waitOutTimeout(tester);
       await refusal.refuse(tester);
