@@ -28,7 +28,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/vice_chart.dart';
+import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
@@ -118,9 +118,7 @@ void main() {
 
     List<Override> todayOverrides(_FakeToday clock) => [
       todayProvider.overrideWith(() => clock),
-      unarchivedViceListProvider.overrideWithValue(
-        AsyncData([coffee, fakeVice('beer'), fakeVice('wine')]),
-      ),
+      ...habitOverrides([coffee, fakeVice('beer'), fakeVice('wine')]),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         requestedDays.add(day);
         return AsyncData(<ViceActivity>[]);
@@ -146,10 +144,7 @@ void main() {
 
       expect(find.text('Today'), findsOneWidget);
       expect(find.text('Yesterday'), findsNothing);
-      expect(
-        tester.widget<ViceChart>(find.byType(ViceChart)).selectedDate,
-        today,
-      );
+      expect(tester.widget<DayDial>(find.byType(DayDial)).day, today);
       expect(requestedDays.last, today);
     });
 
@@ -169,9 +164,12 @@ void main() {
       clock.moveTo(addDays(today, 1));
       await tester.pump();
 
-      expect(find.text('2 days ago'), findsOneWidget);
       expect(
-        tester.widget<ViceChart>(find.byType(ViceChart)).selectedDate,
+        find.text(dayWord(addDays(today, -1), addDays(today, 1))),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<DayDial>(find.byType(DayDial)).day,
         addDays(today, -1),
       );
     });

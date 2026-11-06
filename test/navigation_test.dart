@@ -8,14 +8,13 @@ import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
-import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_button.dart';
 
 import 'fakes.dart';
@@ -61,15 +60,15 @@ void main() {
   });
 
   group('the home screen', () {
-    Future<void> pumpHome(WidgetTester tester) async {
+    Future<void> pumpHome(
+      WidgetTester tester, [
+      List<Vice> vices = const <Vice>[],
+    ]) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-            viceListProvider.overrideWith((ref) => AsyncData(<Vice>[])),
-            unarchivedViceListProvider.overrideWith(
-              (ref) => AsyncData(<Vice>[]),
-            ),
+            ...habitOverrides(vices),
             viceActivityDayProvider.overrideWith(
               (ref, DateTime day) => AsyncData(<ViceActivity>[]),
             ),
@@ -83,9 +82,11 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('offers Record on both tabs', (WidgetTester tester) async {
-      await pumpHome(tester);
-      expect(find.byType(RecordNewActivityButton), findsOneWidget);
+    testWidgets('records through the Log button on Today and Record on the '
+        'Graph tab', (WidgetTester tester) async {
+      await pumpHome(tester, [fakeVice('coffee')]);
+      expect(find.byType(LogButton), findsOneWidget);
+      expect(find.byType(RecordNewActivityButton), findsNothing);
 
       await tester.tap(find.text('Graph'));
       await tester.pumpAndSettle();

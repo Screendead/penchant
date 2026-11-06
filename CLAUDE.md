@@ -52,6 +52,7 @@ flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
+flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
 dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
@@ -199,7 +200,10 @@ signed-in user, cleared when the uid changes, and `MaterialApp.builder`
 (`lib/widgets/rejected_writes_banner.dart`) shows them above every screen until dismissed.
 A write queued by an earlier launch has no future to listen to, so its refusal is not seen. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
-document. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
+document. The one-tap "log one" (`logOne`, `lib/writes/log_one.dart`: a tally's `+`, a tap on a Log-fan wedge) takes
+a new id per tap, so two taps are two entries; it shows its bar (`showUndoBar`, `lib/widgets/undo_bar.dart`) at once,
+since the entry is on the device as soon as it is written, and says it is queued if the server has not answered in ten
+seconds. Both Undo through `undoLog`. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
 (`lib/account/account.dart`): sign-in, register (which also sends the verification email),
 password reset, re-authentication, profile and email changes, sign-out, and the
 account-wide Firestore work: `fetchData` pages through the user's vices and activities for
@@ -231,7 +235,7 @@ a wrapper nothing watches would keep its family's listener open, and once sign-o
 terminated Firestore that listener hears nothing, so the same user signing back in would
 see a frozen list. No activity provider
 depends on the vice list: the day query filters on `ownerID` and `createdAt` alone (an `in`
-filter on vice IDs takes at most 30) and the chart drops activities of vices it does not
+filter on vice IDs takes at most 30) and Today drops activities of vices it does not
 draw. A `null` value means loading; an empty list means no data. Never gate UI on
 `ref.read(provider.future)`: in riverpod 3 a read with no other listener pauses the
 provider's stream, so the future never resolves. Render loading and error from the watched
@@ -243,7 +247,8 @@ opening and on app resume to pick up a verification made elsewhere; the chain st
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
 page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether
-older entries exist), the editor listens to its one document, and Manage Data counts each
+older entries exist), the calendar sheet reads one calendar month for its dots (the day query's shape, so the same
+index), the editor listens to its one document, and Manage Data counts each
 vice's activities with a server-side `count()` aggregation, which is not live, ignores
 writes still queued on the device, and fails offline. The vice lists have no limit, and
 nothing caps how many vices a user creates; whether to add a cap is undecided (register,
@@ -267,7 +272,7 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 (empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
-from the today chart but keeps its history, which stays reachable: Manage Data still opens
+from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and the Graph lists archived vices last, marked "(archived)", never as the default.
 
 **Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
@@ -291,20 +296,33 @@ anything else is `NotFound`. Only the forms (add or edit a vice, edit an activit
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
 swapping `home` alone would leave the old session's pages on the stack.
 
-**Two home tabs.** `ViceTracker` shows one day at a time as an `fl_chart` radar chart
-(`vice_chart.dart`), one axis per unarchived vice. `UsageGraphView` shows one vice over a
-date range as a line chart, bucketing activities by day or by week (counted back from today, so the newest week is
-whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic and both charts' axis scales and label spacing are pure functions in
-`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Below three vices Today draws bars instead (fl_chart's
-radar needs three axes). The radar carries
-a second, invisible data set that pins its centre to 0 and its outer ring to a round number, since fl_chart
-centres on the smallest entry of all data sets. Each chart sits in one `Semantics` node whose label is a
-text summary of the data (`ViceChart.summary`, `UsageGraphView.summary`), and fl_chart paints its titles
-outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible tab;
-each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
-`todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the
-user picked another day. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one
-format, lock toggle, live clock and picker for the record dialog and the editor.
+**Two home tabs.** `ViceTracker` is Today: one day at a time as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`),
+a 24-hour face with a bead per entry at its local wall-clock time, a tally row per unarchived habit (`TallyRow`), and
+the Log button (`LogButton`, `lib/widgets/log_fan.dart`). The dial's geometry is pure functions in
+`lib/data/dial_layout.dart` (angle from the wall-clock minute, so a DST day's 15:00 sits at 15; bead radius
+7.5·√(quantity ÷ typical) clamped to 5–14, where typical is the median of that habit's entries on the shown day, so it
+costs no extra read; a habit's later entries in one hour step out to the other tracks; neighbours on a track pushed
+apart along the arc, never off it), and the fan's in `lib/data/fan_layout.dart` (up to eight wedges, then seven and
+More). The face, hand and beads are `CustomPainter`s; each bead is also its own `Semantics` button opening its entry's
+editor, and a pointer tap goes to the nearest bead within a 44 pt target. The dial is one `Semantics` node labelled
+`DayDial.summary` (the day, each total, the first and last entry times). Motion follows `DialMotion`: the day change
+contracts the beads, then sweeps a hand round with each bead springing in as it passes; a logged bead flies in from
+the `+` or wedge through `beadArrivalsProvider`; a pending bead's dashed rim turns until it syncs; under
+`MediaQuery.disableAnimations` all of it is a 150 ms fade and the clock ticks once a minute, so widget tests of
+pending entries cannot `pumpAndSettle` with animations on. Day navigation is `DayPicker` (`lib/widgets/day_picker.dart`):
+the arrows, a sideways swipe on the dial, and the date pill's `CalendarSheet`; there is no oldest day and no future
+one. Habits list oldest first, as their colours are given, and Today reads `viceListProvider` as well as the
+unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). `UsageGraphView` shows one
+vice over a date range as a line chart, bucketing activities by day or by week (counted back from today, so the newest
+week is whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic
+and the graph's axis scale and label spacing are pure functions in `lib/data/usage_series.dart` and
+`lib/data/chart_scale.dart`. The graph sits in one `Semantics` node labelled `UsageGraphView.summary`, and fl_chart
+paints its titles outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible
+tab; each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
+`todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the user picked
+another day, and a log (always now) turns a past day back to today. Today records through its Log button, the Graph
+tab through the app bar's Record. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
+lock toggle, live clock and picker for the record dialog and the editor.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked

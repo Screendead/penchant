@@ -9,7 +9,6 @@ import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
-import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
@@ -26,7 +25,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/vice_chart.dart';
+import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
@@ -209,7 +208,7 @@ void main() {
         viceActivityDayForUserProvider.overrideWith(
           (ref, key) => Stream.value(<ViceActivity>[]),
         ),
-      ], ViceChart(selectedDate: startOfDay(DateTime.now())));
+      ], const Scaffold(body: ViceTracker()));
 
       expect(find.text(loadErrorMessage('this day', _denied)), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -234,7 +233,7 @@ void main() {
           (ref, uid) => Stream.value([coffee]),
         ),
         viceActivityDayForUserProvider.overrideWith((ref, key) => day.listen()),
-      ], ViceChart(selectedDate: startOfDay(DateTime.now())));
+      ], const Scaffold(body: ViceTracker()));
 
       expect(find.text(loadErrorMessage('this day', _denied)), findsOneWidget);
 

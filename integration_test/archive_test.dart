@@ -6,6 +6,7 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/usage_graph_view.dart';
+import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'support.dart';
@@ -35,7 +36,7 @@ void main() {
     // Without an entry for a vice still in use, the day would read as clean
     // once Juice is archived, and show no radar.
     await recordActivity(tester, 'Coffee', 1);
-    await expectRadar(tester, <String>{
+    await expectTallies(tester, <String>{
       'Coffee (1 drink)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
@@ -65,14 +66,20 @@ void main() {
     await pumpUntilRouteSettled(tester, find.text('Your Habits'));
     await closeDrawerPage(tester);
 
-    await expectRadar(tester, <String>{
+    await expectTallies(tester, <String>{
       'Coffee (1 drink)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
     });
 
-    await tap(tester, find.widgetWithText(TextButton, 'Record'));
+    // The fan offers no wedge for an archived habit.
+    await tap(tester, find.byType(LogButton));
+    await pumpFor(tester, const Duration(milliseconds: 800));
+    expect(fanWedge('Water'), findsOneWidget);
+    expect(fanWedge('Juice'), findsNothing);
+    await tester.longPress(fanWedge('Water'));
     final Finder dialog = find.byType(RecordNewActivityDialog);
+    await pumpUntil(tester, dialog);
     await tap(
       tester,
       find.descendant(

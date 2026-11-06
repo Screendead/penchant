@@ -34,12 +34,12 @@
     { "fg": "clearInk", "bg": "clear", "min": 4.5, "kind": "text", "purpose": "Clear-day copy on the wash" },
     { "fg": "wedgeInk", "bg": "data{n}", "per_habit": true, "min": 4.5, "kind": "text", "purpose": "A Log fan wedge's name and amount" },
 
-    { "fg": "accent", "bg": "bg", "min": 3, "kind": "focus", "purpose": "Focus outline, the Log button against its halo, selection on the ground" },
+    { "fg": "accent", "bg": "bg", "min": 3, "kind": "focus", "purpose": "Focus outline, the Log button against its halo, a focused Log fan wedge's ring beside the ground-coloured gap between wedges, selection on the ground" },
     { "fg": "accent", "bg": "surface", "min": 3, "kind": "focus", "purpose": "Focus outline and focused field border on surface, the now-hand, the scrub knob, today's ring, the selected day, the ink thumb" },
     { "fg": "accent", "bg": "surface2", "min": 3, "kind": "focus", "purpose": "Focus outline on a recessed fill, progress on its track" },
     { "fg": "onAccent", "bg": ["mix(onAccent,30)", "accent"], "min": 3, "kind": "graphic", "purpose": "A busy button's spinner arc on its track" },
 
-    { "fg": "outline", "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or outlined button's border against the ground; a slider's track; in the app's current charts, the raw series and the radar's rings", "was": { "fg": "line" } },
+    { "fg": "outline", "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or outlined button's border against the ground; a slider's track; the usage graph's raw series", "was": { "fg": "line" } },
     { "fg": "outline", "bg": "surface", "min": 3, "kind": "boundary", "purpose": "A text field's border against its own fill; an outlined button on a card or sheet", "was": { "fg": "line" } },
     { "fg": "outline", "bg": "surface2", "min": 3, "kind": "boundary", "purpose": "The small segmented thumb's border against its track", "was": { "fg": "surface" } },
     { "fg": ["outline", "surface"], "bg": "bg", "min": 3, "kind": "boundary", "purpose": "A text field's or secondary button's border as painted, over its own surface fill, against the ground outside it" },
@@ -73,8 +73,6 @@
     { "fg": "data{n}Ink", "bg": "bg", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ring pip in a tally row", "was": { "fg": "data{n}" } },
     { "fg": "data{n}Ink", "bg": ["mix(data{n},10)", "surface"], "per_habit": true, "min": 3, "kind": "graphic", "purpose": "The chart's raw series and dots crossing the average's area", "was": { "fg": "data{n}@0.5" } },
     { "fg": ["data{n}Ink", "data{n}@0.4"], "bg": "surface", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ghost bead on the amount sheet's mini dial: fill at 40%, edge in data{n}Ink at full strength", "was": { "fg": ["data{n}Rim@0.4", "data{n}@0.4"] } },
-    { "fg": ["data{n}Ink", "data{n}@0.4"], "bg": "surface2", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ghost bead on a mini dial whose disc is surface2", "was": { "fg": ["data{n}Rim@0.4", "data{n}@0.4"] } },
-    { "fg": "outline", "bg": ["accent@0.1", "bg"], "min": 3, "kind": "graphic", "purpose": "The app's current radar chart (until the dial replaces it): a ring inside the data's 10% fill", "was": { "bg": ["accent@0.2", "bg"] } },
-    { "fg": "muted", "bg": ["accent@0.1", "bg"], "min": 4.5, "kind": "text", "purpose": "The app's current radar chart: a ring's value label and the spokes inside the data's 10% fill", "was": { "bg": ["accent@0.2", "bg"] } }
+    { "fg": ["data{n}Ink", "data{n}@0.4"], "bg": "surface2", "per_habit": true, "min": 3, "kind": "graphic", "purpose": "A ghost bead on a mini dial whose disc is surface2", "was": { "fg": ["data{n}Rim@0.4", "data{n}@0.4"] } }
   ]
 }

@@ -7,7 +7,7 @@ import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
-import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -38,22 +38,32 @@ void main() {
       await pumpUntil(tester, banner);
       // An empty day offline may be one this device never fetched.
       await tap(tester, find.byTooltip('Previous day'));
-      await pumpUntil(tester, find.text(CleanDay.offlineHeadline));
-      await tap(tester, find.text('Jump to Today'));
+      await pumpUntil(tester, find.text(ClearDay.offlineHeadline));
+      expect(
+        find.text(ClearDay.offlineBody, skipOffstage: false),
+        findsOneWidget,
+      );
+      await tap(tester, find.byTooltip('Next day'));
 
       await recordActivity(tester, 'Coffee', 2);
       await pumpUntil(tester, find.text(queuedMessage));
       expect(find.text('Request timed out'), findsNothing);
-      await expectChart(tester, const <String>{
+      await expectTallies(tester, const <String>{
         'Coffee (2 drinks)',
         'Tea (0 drinks)',
         'Water (0 drinks)',
       });
-      await pumpUntil(tester, find.text(PendingDayNote.text(1)));
+      await pumpUntil(
+        tester,
+        find.text(PendingDayNote.text(1), skipOffstage: false),
+      );
       await screenshot(tester, 'record-queued-offline');
       await recordActivity(tester, 'Coffee', 5);
       await recordActivity(tester, 'Coffee', 7);
-      await pumpUntil(tester, find.text(PendingDayNote.text(3)));
+      await pumpUntil(
+        tester,
+        find.text(PendingDayNote.text(3), skipOffstage: false),
+      );
 
       await openFromDrawer(tester, 'Manage Data');
       // count() runs only on the server; offline the row counts what this

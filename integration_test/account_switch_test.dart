@@ -35,7 +35,7 @@ void main() {
     // The graph opens on the newest vice, so the activity goes on that one
     // for the graph to draw a line.
     await recordActivity(tester, 'Water', 2);
-    await expectRadar(tester, <String>{
+    await expectTallies(tester, <String>{
       'Coffee (0 drinks)',
       'Tea (0 drinks)',
       'Water (2 drinks)',
