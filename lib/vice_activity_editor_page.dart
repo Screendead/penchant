@@ -1,18 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/limits.dart';
+import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -47,6 +52,9 @@ class _ViceActivityEditorPageState
   String storedDateText = '';
   String storedQuantityText = '';
   ViceActivity? shown;
+  // Null until the user changes the triggers; until then they follow the
+  // stored ones.
+  List<String>? editedTriggers;
 
   @override
   void initState() {
@@ -135,6 +143,9 @@ class _ViceActivityEditorPageState
         'createdAt': dateFormat.parse(dateController.text),
       if (quantityController.text != storedQuantityText)
         'quantity': int.parse(quantityController.text),
+      if (editedTriggers case final List<String> picked
+          when !listEquals(picked, activity.triggers))
+        'triggers': picked,
     };
 
     if (changes.isEmpty) {
@@ -158,9 +169,13 @@ class _ViceActivityEditorPageState
               widget.activityID,
               quantity: changes['quantity'] as int?,
               createdAt: changes['createdAt'] as DateTime?,
+              triggers: changes['triggers'] as List<String>?,
             ),
         'Change not saved: ${_describe(vice, activity)}',
       );
+      if (changes['triggers'] case final List<String> picked) {
+        _countFreeText(picked.where((t) => !activity.triggers.contains(t)));
+      }
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
@@ -183,6 +198,17 @@ class _ViceActivityEditorPageState
       });
       _followRolledBack();
     }
+  }
+
+  void _countFreeText(Iterable<String> added) {
+    final String? uid = ref.read(userProvider).value?.uid;
+    if (uid == null) return;
+    ref
+        .read(freeTextTriggersProvider)
+        .recordUses(uid, added.where(isFreeTextTrigger))
+        .catchError((Object e, StackTrace stack) {
+          reportError(e, stack, context: 'while counting free-text triggers');
+        });
   }
 
   @override
@@ -263,7 +289,7 @@ class _ViceActivityEditorPageState
                 ),
               ],
             ),
-            body: Padding(
+            body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: formKey,
@@ -292,6 +318,18 @@ class _ViceActivityEditorPageState
                       ),
                       validator: (String? value) =>
                           quantityError(value, unchanged: activity.quantity),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TriggersField(
+                        value: editedTriggers ?? activity.triggers,
+                        onChanged: (List<String> picked) =>
+                            setState(() => editedTriggers = picked),
+                        viceID: vice.id,
+                        viceName: vice.name,
+                        enabled: !loading,
+                      ),
                     ),
                     if (error != null) ...[
                       const SizedBox(height: 16),
