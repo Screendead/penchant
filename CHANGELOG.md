@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
+  gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
   and an empty day offline says the device may not have it rather than calling it clear.
 - A change saved offline that the server later refuses (for example, an entry for a vice deleted on another device)
@@ -31,6 +33,10 @@ pull request titles (`gh pr list --state merged`).
   Edit habit live on the history page.
 - Deleting an entry is a swipe left on its history row, and every delete (history and editor alike) shows the bar
   with an 8-second Undo that puts the entry back as it was.
+- Sign-in and account creation are one screen with a Sign in / Create account switch, and the password rules tick
+  off as you type. Settings and Account Settings use the new card style with a round back button, and Settings
+  shows your email and the app's version at a glance. Moving through rows, the sign-in switch and sliders with a
+  keyboard now shows a clear ring around the one in focus.
 - Today matches its design: the Penchant icon and name at the top open a menu with Habits, Settings and whether
   your entries have synced, in place of the side drawer, and a pill beside them says Synced, Syncing or Offline. The
   dial, the five tallies, the Log button and the Trends peek all fit on one iPhone screen, the light theme lifts its
@@ -98,6 +104,11 @@ pull request titles (`gh pr list --state merged`).
   replaces only the versions the advisory names. A test checks every composite query in the app against
   `firestore.indexes.json`, since the emulators never enforce indexes.
 - The Mac app builds for release, as one app for both Apple silicon and Intel Macs.
+
+### Internal
+
+- The decisions page asks round 8: six calls from the Day Dial and the Mac split view, each with the mock-up beside
+  the built app; the round-5 radar calls and the settled e2e-in-CI call are gone.
 
 ## [0.1.0] - Unreleased
 

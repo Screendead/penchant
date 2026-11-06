@@ -247,6 +247,7 @@ void main() {
     ('record', 'record', false, 0, false),
     ('fan', 'record', false, 0, true),
     ('menu', 'busy', false, 0, false),
+    ('sweep', 'busy', false, 0, false),
   ];
 
   for (final Brightness brightness in Brightness.values) {
@@ -340,6 +341,14 @@ void main() {
           if (name == 'menu') {
             await tester.tap(find.byKey(Homepage.menuKey));
             await tester.pumpAndSettle();
+          }
+          // Half way round the sweep into the day before.
+          if (name == 'sweep') {
+            await tester.tap(find.byTooltip('Previous day'));
+            await tester.pump();
+            await tester.pump(DialMotion.dayContract);
+            await tester.pump();
+            await tester.pump(DialMotion.daySweep ~/ 2);
           }
           if (name == 'busy' && brightness == Brightness.light) {
             void show(String what, Finder f) {

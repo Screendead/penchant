@@ -8,9 +8,9 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
+import 'package:tracker/authenticate.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/register.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/sign_in.dart';
 
@@ -78,10 +78,10 @@ void main() {
         "never shows Firebase's message", (tester) async {
       final FakeAccount account = FakeAccount()
         ..respond = (_) async => throw _authError('user-not-found');
-      await _pump(tester, account, const SignIn());
+      await _pump(tester, account, const Authenticate());
       await _enter(tester, 'Email', _email);
       await _enter(tester, 'Password', 'wrong');
-      await _tapText(tester, 'Sign In');
+      await _tapText(tester, 'Sign in');
 
       expect(account.calls.single.fields, <String, Object?>{
         'email': _email,
@@ -98,7 +98,7 @@ void main() {
         'and says the same whether or not it has an account', (tester) async {
       final FakeAccount account = FakeAccount()
         ..respond = (_) async => throw _authError('user-not-found');
-      await _pump(tester, account, const SignIn());
+      await _pump(tester, account, const Authenticate());
       await _enter(tester, 'Email', _email);
       await _tapText(tester, AccountCopy.forgotPassword);
 
@@ -122,7 +122,7 @@ void main() {
     testWidgets('a failed reset for another reason says so', (tester) async {
       final FakeAccount account = FakeAccount()
         ..respond = (_) async => throw _authError('network-request-failed');
-      await _pump(tester, account, const SignIn());
+      await _pump(tester, account, const Authenticate());
       await _tapText(tester, AccountCopy.forgotPassword);
       await tester.enterText(
         find.descendant(
@@ -142,11 +142,13 @@ void main() {
   testWidgets('a registration Firebase refuses says why', (tester) async {
     final FakeAccount account = FakeAccount()
       ..respond = (_) async => throw _authError('email-already-in-use');
-    await _pump(tester, account, const Register());
+    await _pump(tester, account, const Authenticate());
+    await tester.tap(find.byKey(Authenticate.registerTab));
+    await tester.pumpAndSettle();
     await _enter(tester, 'Email', _email);
     await _enter(tester, 'Password', 'Passw0rdTest');
-    await _enter(tester, 'Confirm Password', 'Passw0rdTest');
-    await _tapText(tester, 'Register');
+    await _enter(tester, 'Confirm password', 'Passw0rdTest');
+    await _tapText(tester, 'Create account');
 
     expect(account.ops, <String>['register']);
     expect(

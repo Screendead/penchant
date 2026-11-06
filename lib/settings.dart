@@ -5,7 +5,11 @@ import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
+import 'package:tracker/design/dial_icons.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/providers/package_info_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/settings_card.dart';
 
 Future<bool> _confirmDiscard(BuildContext context) async {
   final bool? discard = await showDialog<bool>(
@@ -79,37 +83,63 @@ class _SettingsState extends ConsumerState<Settings> {
   Widget build(BuildContext context) {
     final String? version = ref
         .watch(packageInfoProvider)
-        .whenOrNull(
-          data: (info) => 'Version ${info.version} (${info.buildNumber})',
-        );
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
+        .whenOrNull(data: (info) => '${info.version} (${info.buildNumber})');
+    final String? email = ref.watch(userProvider).value?.email;
+    return CardPage(
+      title: 'Settings',
+      children: <Widget>[
+        DialCard(
           children: <Widget>[
-            ListTile(
-              title: const Text('Account'),
-              leading: const Icon(Icons.account_circle),
+            CardRow(
+              label: 'Account',
+              value: email == null || email.isEmpty
+                  ? null
+                  : Text(email, overflow: TextOverflow.ellipsis),
+              glyph: DialGlyph.right,
               onTap: () {
                 Navigator.of(context).pushNamed('/settings/account');
               },
             ),
-            ListTile(
-              title: const Text('About'),
-              subtitle: version == null ? null : Text(version),
-              leading: const Icon(Icons.info),
+          ],
+        ),
+        const CardSectionLabel('App'),
+        DialCard(
+          top: 0,
+          children: <Widget>[
+            const CardRow(label: 'Appearance', value: Text('Match system')),
+            CardRow(
+              label: 'About',
+              value: version == null
+                  ? null
+                  : Text(
+                      version,
+                      style: const TextStyle(
+                        fontFamily: DialFonts.mono,
+                        fontFeatures: DialFonts.tabular,
+                      ),
+                    ),
+              glyph: DialGlyph.right,
               onTap: () {
-                showAboutDialog(context: context, applicationVersion: version);
+                showAboutDialog(
+                  context: context,
+                  applicationVersion: version == null
+                      ? null
+                      : 'Version $version',
+                );
               },
             ),
-            ListTile(
-              title: const Text('Sign out'),
-              leading: const Icon(Icons.exit_to_app),
+          ],
+        ),
+        DialCard(
+          top: DialSpace.xl,
+          children: <Widget>[
+            CardRow(
+              label: 'Sign out',
+              danger: true,
               enabled: !_signingOut,
               trailing: _signingOut
                   ? const SizedBox.square(
-                      dimension: 24,
+                      dimension: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : null,
@@ -117,7 +147,10 @@ class _SettingsState extends ConsumerState<Settings> {
             ),
           ],
         ),
-      ),
+        const CardFoot(
+          'Your journal is private to your account. Nothing is shared.',
+        ),
+      ],
     );
   }
 }

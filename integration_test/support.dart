@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -189,11 +190,11 @@ Future<void> register(WidgetTester tester, String email) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
-  await tap(tester, find.text('Register'));
+  await tap(tester, find.byKey(Authenticate.registerTab));
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
-  await enterText(tester, 'Confirm Password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Register'));
+  await enterText(tester, 'Confirm password', 'Passw0rdE2E');
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Create account'));
   await pumpUntil(tester, find.byType(Homepage));
 }
 
@@ -511,10 +512,10 @@ Future<void> signOutThroughSettings(WidgetTester tester) async {
 }
 
 Future<void> signIn(WidgetTester tester, String email) async {
-  await pumpUntil(tester, find.text('Sign In to Your Account'));
+  await pumpUntil(tester, find.byKey(Authenticate.signInTab));
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign in'));
 }
 
 // Every string the app shows, offstage tabs, Today's tallies and the dial's

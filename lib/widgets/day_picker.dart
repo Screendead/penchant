@@ -139,7 +139,10 @@ class DayPicker extends StatelessWidget {
                         ),
                         // The day and the date share a baseline, as in the
                         // mock-up; at large text they wrap instead.
-                        child: _pillContent(context, colors, type),
+                        child: _DaySlide(
+                          day: day,
+                          child: _pillContent(context, colors, type),
+                        ),
                       ),
                     ),
                   ),
@@ -157,6 +160,66 @@ class DayPicker extends StatelessWidget {
       ],
     );
   }
+}
+
+// On a day change the pill's text slides in from the side the new day lies
+// on, as the mock-up's day label does; under reduce motion it just changes.
+class _DaySlide extends StatefulWidget {
+  const _DaySlide({required this.day, required this.child});
+
+  final DateTime day;
+  final Widget child;
+
+  @override
+  State<_DaySlide> createState() => _DaySlideState();
+}
+
+class _DaySlideState extends State<_DaySlide>
+    with SingleTickerProviderStateMixin {
+  static const double _travel = 18;
+
+  late final AnimationController _in = AnimationController(
+    vsync: this,
+    duration: DialMotion.tallyRoll,
+    value: 1,
+  );
+  double _from = 1;
+
+  @override
+  void didUpdateWidget(_DaySlide old) {
+    super.didUpdateWidget(old);
+    if (old.day == widget.day) {
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _in.value = 1;
+      return;
+    }
+    _from = widget.day.isAfter(old.day) ? 1 : -1;
+    _in.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _in.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _in,
+    child: widget.child,
+    builder: (BuildContext context, Widget? child) {
+      final double k = DialMotion.enter.transform(_in.value);
+      return Opacity(
+        opacity: k,
+        child: Transform.translate(
+          offset: Offset(_from * _travel * (1 - k), 0),
+          child: child,
+        ),
+      );
+    },
+  );
 }
 
 // A month of days, Monday first, with a dot under each day for each habit

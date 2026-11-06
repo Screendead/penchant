@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 
@@ -166,6 +167,11 @@ ThemeData appTheme(Brightness brightness) {
       selectionHandleColor: p.accent,
     ),
     iconTheme: IconThemeData(color: p.text),
+    // Every back button is the design's chevron, as on the back circle.
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (BuildContext context) =>
+          const StrokeIcon(DialGlyph.left, size: 20),
+    ),
     appBarTheme: AppBarTheme(
       backgroundColor: p.bg,
       foregroundColor: p.text,
@@ -311,36 +317,6 @@ ThemeData appTheme(Brightness brightness) {
       shape: pill,
       padding: const EdgeInsets.symmetric(horizontal: DialSpace.xxs),
     ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: p.surface,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      indicatorColor: p.accent,
-      indicatorShape: pill,
-      iconTheme: WidgetStateProperty.resolveWith(
-        (Set<WidgetState> s) => IconThemeData(
-          color: s.contains(WidgetState.selected) ? p.onAccent : p.muted,
-        ),
-      ),
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (Set<WidgetState> s) => textTheme.labelMedium!.copyWith(
-          fontSize: 12,
-          color: s.contains(WidgetState.selected) ? p.text : p.muted,
-        ),
-      ),
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: p.surface,
-      elevation: 0,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: p.text,
-      unselectedItemColor: p.muted,
-      selectedLabelStyle: textTheme.labelMedium!.copyWith(fontSize: 12),
-      unselectedLabelStyle: textTheme.labelMedium!.copyWith(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: p.text,
@@ -411,7 +387,8 @@ ThemeData appTheme(Brightness brightness) {
       activeTrackColor: p.accent,
       inactiveTrackColor: p.outline,
       thumbColor: p.accent,
-      overlayColor: p.accent.withValues(alpha: 0.12),
+      overlayColor: p.accent,
+      overlayShape: const SliderRingOverlay(),
       valueIndicatorColor: p.text,
       valueIndicatorTextStyle: textTheme.labelMedium!.copyWith(color: p.bg),
     ),
@@ -444,4 +421,46 @@ ThemeData appTheme(Brightness brightness) {
       ),
     ),
   );
+}
+
+// The slider's hover, focus and drag halo as a 2 pt accent ring round the
+// thumb, not Material's 12% disc, which is about 1.2:1 against the ground.
+class SliderRingOverlay extends SliderComponentShape {
+  const SliderRingOverlay({this.radius = 16});
+
+  final double radius;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      Size.fromRadius(radius + 2);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final double t = activationAnimation.value;
+    if (t == 0) {
+      return;
+    }
+    final Color color = sliderTheme.overlayColor ?? const Color(0xFF000000);
+    context.canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = color.withValues(alpha: color.a * t),
+    );
+  }
 }
