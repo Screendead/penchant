@@ -56,7 +56,8 @@ flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
 flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
-dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
+dart run flutter_launcher_icons  # macOS icons, after changing assets/icon-macos.png (rendered from the .svg beside it)
+cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # the single-size iOS icon; a test checks the copy
 ```
 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):

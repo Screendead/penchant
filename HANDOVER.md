@@ -103,8 +103,12 @@ suites, or wait for CI.
   1e auth and settings (with keyboard focus on list rows, navigation destinations and the slider, which #82 found at
   about 1.2:1), 1f motion polish, 1g e2e rewrite. One PR each, on top of the last.
 - **Track B, Apple platform debt, off `master`:** ~~the CocoaPods sunset~~ (done in the PR from
-  `chore/swift-package-manager`: both platforms on Swift Package Manager, no Podfile left), the failing
-  `flutter build macos --release`, the legacy signing config and the dead scaffold assets.
+  `chore/swift-package-manager`: both platforms on Swift Package Manager, no Podfile left), ~~the failing
+  `flutter build macos --release`, the legacy signing config and the dead scaffold assets~~ (done in the PR from
+  `chore/apple-build-config`, stacked on #87). The release build needs Flutter 3.44.8 or later (flutter/flutter#188346,
+  Xcode 27's `lipo`): CI's pin is 3.44.9, and the machine's Homebrew Flutter (3.44.7) moves to 3.44.9 when no agent
+  is mid-build; 3.44.9 sits at `~/development/tracker-tools/flutter-3.44.9` meanwhile. 3.47 (Dart 3.13, riverpod_lint
+  3.1.9) is a separate step.
 - **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently;
   the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries.
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.

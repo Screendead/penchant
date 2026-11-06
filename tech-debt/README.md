@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**19 issues: 0 critical, 0 high, 9 medium, 10 low.**
+**16 issues: 0 critical, 0 high, 8 medium, 8 low.**
 
 ## Firebase Data Layer (5)
 
@@ -63,14 +63,11 @@ Version lag and resolver locks across Dart, Node and Gradle, dead or incompatibl
 
 - **medium** — [The minimatch 11 override breaks the firebase-tools paths that call minimatch as a function](dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md)
 
-## Platform and Delivery Config (4)
+## Platform and Delivery Config (1)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
 - **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
-- **low** — [Legacy iOS icons the generator recreates, and a 1x1 launch image placeholder](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
-- **low** — [Both platforms hardcode a development team, and macOS mixes provisioning styles](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
-- **medium** — [`flutter build macos --release` fails in Flutter's framework unpack step](platform-and-delivery-config/macos-release-build-fails-in-flutter-unpack.md)
 
 ## CI and Quality Gates (1)
 
