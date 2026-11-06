@@ -79,10 +79,21 @@ rather than the stock binding call: it forces frames while macOS reports the app
 another Space), when the framework schedules none and every pump would wait forever.
 
 A signed macOS build (`flutter build macos`, `-d macos`, `E2E_DEVICE=macos`) needs a Mac App Development
-provisioning profile for `com.screendead.tracker.tracker` on team `8N575942RT`. Firebase Auth on macOS keeps the
-user in the keychain, which needs the Keychain Sharing entitlement, which needs that profile; ad-hoc signed, sign-in
-fails with `keychain-error`. Flutter does not pass `-allowProvisioningUpdates`, so the profile comes from building
-once in Xcode (`macos/Runner.xcworkspace`, Runner, Signing & Capabilities) with Jack's account. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
+provisioning profile for `com.screendead.penchant` on team `8N575942RT`, and a device build for iOS an iOS one.
+Firebase Auth on macOS keeps the user in the keychain, which needs the Keychain Sharing entitlement, which needs that
+profile; ad-hoc signed, sign-in fails with `keychain-error`. Flutter does not pass `-allowProvisioningUpdates`, so a
+missing profile comes from one `xcodebuild` that does, with the Xcode account signed in (both were made this way on
+2026-11-05):
+
+```bash
+flutter build macos --debug --config-only && (cd macos && xcodebuild -workspace Runner.xcworkspace -scheme Runner \
+  -configuration Debug -allowProvisioningUpdates -derivedDataPath ../build/xcode-prov build)
+flutter build ios --release --config-only && (cd ios && xcodebuild -workspace Runner.xcworkspace -scheme Runner \
+  -configuration Release -sdk iphoneos -destination generic/platform=iOS -allowProvisioningUpdates \
+  -derivedDataPath ../build/xcode-prov build)
+```
+
+`flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
 Versions and releases. `version:` in `pubspec.yaml` is the user-facing semantic version (0.x until the first App
@@ -155,7 +166,9 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
-`firebase_options.dart` throws on any other platform.
+`firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
+(test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
+`macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
 **Riverpod without codegen.** No code generation: every provider in `lib/providers/` is
 hand-written, and nothing in `pubspec.yaml` generates them. `userProvider` is a plain `StreamProvider` over `authStateChanges()`, and
