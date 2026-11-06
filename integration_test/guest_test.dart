@@ -19,6 +19,35 @@ void main() {
     await clearEmulators();
   });
 
+  testWidgets('a guest who signs out erases their journal from the server', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    // Auth keeps the signed-in user in the iOS keychain across runs.
+    await FirebaseAuth.instance.signOut();
+    await tap(tester, find.byKey(Authenticate.guestStart));
+    await pumpUntil(tester, find.byType(Homepage));
+    expect(FirebaseAuth.instance.currentUser!.isAnonymous, isTrue);
+
+    await addVicesThroughManageData(tester, <String>['Coffee']);
+    await logOne(tester, 'Coffee');
+    await expectTallies(tester, <String>{'Coffee (1 drink)'});
+    final String viceID = await storedViceID('Coffee');
+    final String activityID = (await storedActivities('Coffee')).single.id;
+
+    await openFromMenu(tester, Homepage.settingsItem);
+    // Sign out pops Settings; popping while its push is still animating trips
+    // a framework Hero assertion.
+    await pumpFor(tester, const Duration(seconds: 1));
+    await tap(tester, find.text('Sign out'));
+    await pumpUntil(tester, find.text(AccountCopy.guestSignOutTitle));
+    await tap(tester, find.text(AccountCopy.guestSignOutAction));
+    await pumpUntil(tester, find.byType(Homepage), present: false);
+    expect(FirebaseAuth.instance.currentUser, isNull);
+    expect(await existsBypassingRules('vices', viceID), isFalse);
+    expect(await existsBypassingRules('activities', activityID), isFalse);
+  });
+
   testWidgets('a guest who adds an email keeps their entries after signing '
       'back in with it', (WidgetTester tester) async {
     const String email = 'e2e-guest@example.com';

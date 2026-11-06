@@ -33,7 +33,8 @@ Future<bool> _confirmDiscard(BuildContext context) async {
   return discard ?? false;
 }
 
-// Nothing signs a guest back in, so their journal goes with the session.
+// Nothing signs a guest back in, so signing out erases their journal rather
+// than leave it on the server under a uid nothing can reach.
 Future<bool> _confirmGuestSignOut(BuildContext context) async {
   final bool? leave = await showDialog<bool>(
     context: context,
@@ -76,13 +77,7 @@ class _SettingsState extends ConsumerState<Settings> {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
       if (account.isGuest) {
-        if (!await _confirmGuestSignOut(context) || !mounted) {
-          return;
-        }
-        // Unsynced entries are lost with the rest, so there is nothing to
-        // wait for.
-        await _whileSigningOut(() => account.signOut(discardUnsynced: true));
-        navigator.popUntil((Route<dynamic> route) => route.isFirst);
+        await _eraseGuest(account, navigator, messenger);
         return;
       }
       try {
@@ -100,6 +95,43 @@ class _SettingsState extends ConsumerState<Settings> {
         SnackBar(content: Text(AccountCopy.signOutFailed(authErrorMessage(e)))),
       );
     }
+  }
+
+  // Deleting the guest's Auth user signs it out. A failure leaves it signed in,
+  // so whatever remains stays reachable for another try.
+  Future<void> _eraseGuest(
+    Account account,
+    NavigatorState navigator,
+    ScaffoldMessengerState messenger,
+  ) async {
+    if (!await _confirmGuestSignOut(context) || !mounted) {
+      return;
+    }
+    try {
+      await _whileSigningOut(account.deleteAccount);
+    } on DeletionIncompleteException catch (e, stack) {
+      reportError(e.cause, stack, context: 'while erasing a guest journal');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            AccountCopy.guestSignOutIncomplete(authErrorMessage(e.cause)),
+          ),
+        ),
+      );
+      return;
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while erasing a guest journal');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(AccountCopy.guestSignOutFailed(authErrorMessage(e))),
+        ),
+      );
+      return;
+    }
+    navigator.popUntil((Route<dynamic> route) => route.isFirst);
+    messenger.showSnackBar(
+      const SnackBar(content: Text(AccountCopy.guestErased)),
+    );
   }
 
   // Waiting for unsynced entries can take seconds; the tile stays disabled

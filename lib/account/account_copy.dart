@@ -66,12 +66,19 @@ abstract final class AccountCopy {
       'It cannot be undone, and we cannot recover anything afterwards. If you '
       'want a copy, export your data first.';
 
-  static const String guestSignOutTitle = 'Sign out of your guest journal?';
+  static const String guestSignOutTitle = 'Erase your guest journal?';
   static const String guestSignOutBody =
       'You have no email or password, so nothing can sign you back in to this '
-      'journal. Signing out loses every habit and entry in it for good. Add an '
-      'email and password in Account Settings to keep it.';
-  static const String guestSignOutAction = 'Sign out and lose it';
+      'journal. Signing out erases every habit and entry in it, from our '
+      'servers and from this device, and needs a connection. It cannot be '
+      'undone. Add an email and password in Account Settings to keep it.';
+  static const String guestSignOutAction = 'Erase and sign out';
+  static const String guestErased = 'Your guest journal is erased.';
+  static String guestSignOutFailed(String reason) =>
+      'You are still signed in. $reason Nothing was erased.';
+  static String guestSignOutIncomplete(String reason) =>
+      'You are still signed in. $reason Some entries may already be erased; '
+      'sign out again to finish.';
 
   static const String cancel = 'Cancel';
   static const String password = 'Password';

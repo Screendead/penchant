@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account_settings.dart';
@@ -197,16 +198,80 @@ void main() {
       expect(find.byType(Settings), findsOneWidget);
     });
 
-    testWidgets('confirming signs out without waiting for unsynced entries', (
+    testWidgets('confirming erases the journal through account deletion', (
       tester,
     ) async {
       final FakeAccount account = await openSettings(tester);
       await _tapText(tester, 'Sign out');
       await _tapText(tester, AccountCopy.guestSignOutAction);
       expect(account.calls, <Write>[
-        const Write('signOut', '', {'discardUnsynced': true}),
+        const Write('deleteAccount', '', {'password': null}),
       ]);
       expect(find.text('root'), findsOneWidget);
+      expect(find.text(AccountCopy.guestErased), findsOneWidget);
+    });
+
+    Future<void> expectStillSignedIn(
+      WidgetTester tester,
+      FakeAccount account,
+      String message,
+    ) async {
+      expect(account.ops, <String>['deleteAccount']);
+      expect(find.byType(Settings), findsOneWidget);
+      expect(find.text(message), findsOneWidget);
+    }
+
+    testWidgets('offline, it refuses and keeps the guest signed in', (
+      tester,
+    ) async {
+      final FakeAccount account = await openSettings(tester);
+      account.respond = (_) async => throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+      await _tapText(tester, 'Sign out');
+      await _tapText(tester, AccountCopy.guestSignOutAction);
+      await expectStillSignedIn(
+        tester,
+        account,
+        AccountCopy.guestSignOutFailed(
+          authErrorMessage(
+            FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
+          ),
+        ),
+      );
+    });
+
+    testWidgets('with entries not yet synced, it refuses', (tester) async {
+      final FakeAccount account = await openSettings(tester);
+      account.respond = (_) async => throw const UnsyncedEntriesException();
+      await _tapText(tester, 'Sign out');
+      await _tapText(tester, AccountCopy.guestSignOutAction);
+      await expectStillSignedIn(
+        tester,
+        account,
+        AccountCopy.guestSignOutFailed(
+          authErrorMessage(const UnsyncedEntriesException()),
+        ),
+      );
+    });
+
+    testWidgets('a deletion cut short says so and keeps the guest signed in', (
+      tester,
+    ) async {
+      final FakeAccount account = await openSettings(tester);
+      final FirebaseException cause = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+      account.respond = (_) async => throw DeletionIncompleteException(cause);
+      await _tapText(tester, 'Sign out');
+      await _tapText(tester, AccountCopy.guestSignOutAction);
+      await expectStillSignedIn(
+        tester,
+        account,
+        AccountCopy.guestSignOutIncomplete(authErrorMessage(cause)),
+      );
     });
   });
 }

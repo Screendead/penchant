@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tracker/account/account.dart';
 
 // Firebase's own messages can say whether an address has an account, so none
 // reaches the screen; a wrong address and a wrong password read the same.
@@ -31,6 +32,10 @@ String authErrorMessage(Object error) {
       case 'network-request-failed':
         return 'No connection. Check your internet and try again.';
     }
+  }
+  if (error is UnsyncedEntriesException) {
+    return 'Some entries have not reached the server yet. Connect to the '
+        'internet and try again.';
   }
   if (error is FirebaseException && error.code == 'unavailable') {
     return 'No connection. Check your internet and try again.';

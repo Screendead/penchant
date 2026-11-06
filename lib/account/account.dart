@@ -16,8 +16,9 @@ class AccountData {
   final List<StoredDocument> activities;
 }
 
-// Thrown by signOut when entries recorded on this device have not reached the
-// server: clearing the cache would discard them.
+// Thrown by signOut and deleteAccount when entries recorded on this device
+// have not reached the server: clearing the cache would discard them, and a
+// deletion could miss them.
 class UnsyncedEntriesException implements Exception {
   const UnsyncedEntriesException();
 }
@@ -176,6 +177,13 @@ class Account {
       throw StateError('Deleting an account with an email needs its password.');
     }
     final User user = _signedInUser();
+    // An entry still queued here could reach the server after the sweep below
+    // and outlive its owner. Offline this refuses before anything is removed.
+    try {
+      await _firestore.waitForPendingWrites().timeout(_syncWait);
+    } on TimeoutException {
+      throw const UnsyncedEntriesException();
+    }
     bool removing = false;
     try {
       for (final String collection in _ownedCollections) {

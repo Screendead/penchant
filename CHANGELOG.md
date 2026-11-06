@@ -10,7 +10,8 @@ pull request titles (`gh pr list --state merged`).
 ### Added
 
 - Start without an account: the sign-in screen opens a guest journal, and Account Settings saves it to an email and
-  password later with every entry kept. Signing out of or deleting a guest journal warns first that it is lost.
+  password later with every entry kept. Signing out of a guest journal erases it
+  from the server and the device, after a warning, and refuses offline rather than leave part of it behind.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
   gone round instead of vanishing.
 - Logging works with no signal: an offline banner, a "Not yet synced" mark on entries the server has not received,
