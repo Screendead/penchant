@@ -69,7 +69,16 @@ void main() {
       await _resize(tester, width);
       expect(find.byType(DraggableScrollableSheet), findsNothing);
       expect(find.byTooltip(TrendsSheet.closeLabel), findsNothing);
-      await pumpUntil(tester, find.byType(LineChart).hitTestable());
+      // Open without a tap; nothing is logged yet, so no chart line.
+      await pumpUntil(
+        tester,
+        find
+            .descendant(
+              of: find.byType(TrendsSheet),
+              matching: find.text('Total'),
+            )
+            .hitTestable(),
+      );
       final Rect pane = tester.getRect(find.byType(TrendsSheet));
       expect(pane.left, ViceTracker.splitColumnWidth(width));
       expect(
@@ -91,7 +100,9 @@ void main() {
     });
     await pumpUntilTrue(
       tester,
-      () => _totals(tester).last == 1,
+      () =>
+          find.byType(LineChart).evaluate().isNotEmpty &&
+          _totals(tester).last == 1,
       () => "Trends to count today's Coffee",
     );
 
@@ -117,7 +128,15 @@ void main() {
     expect(_todaysDay(tester), addDays(today, -1));
     expect(_chipSelected(tester, 'Tea'), isTrue);
 
-    // Today's point on the chart brings Today's dial back to today.
+    // Today's point on Coffee's chart brings Today's dial back to today.
+    await tap(
+      tester,
+      find.descendant(
+        of: find.byType(TrendsSheet),
+        matching: find.text('Coffee'),
+      ),
+    );
+    await pumpUntil(tester, find.byType(LineChart));
     await scrollIntoView(tester, find.byType(LineChart));
     final Rect chart = tester.getRect(find.byType(LineChart));
     await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
