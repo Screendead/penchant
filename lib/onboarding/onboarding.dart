@@ -473,9 +473,9 @@ class PresetTile extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 96),
+              constraints: const BoxConstraints(minHeight: 84),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -488,7 +488,7 @@ class PresetTile extends StatelessWidget {
                           Icon(Icons.check_circle, size: 20, color: foreground),
                       ],
                     ),
-                    const SizedBox(height: DialSpace.s),
+                    const SizedBox(height: DialSpace.xxs),
                     Text(
                       title,
                       style: DialTypeScale.label.copyWith(color: foreground),
@@ -616,8 +616,13 @@ class _FirstLogRow extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
 
+    final IconData? icon = presetIcon(vice.name);
     return Row(
       children: <Widget>[
+        if (icon != null) ...<Widget>[
+          Icon(icon, color: scheme.onSurface),
+          const SizedBox(width: 14),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

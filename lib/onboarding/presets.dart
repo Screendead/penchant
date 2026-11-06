@@ -21,6 +21,15 @@ const List<HabitPreset> habitPresets = <HabitPreset>[
   HabitPreset('Gambling', Unit.time, Icons.casino_outlined),
 ];
 
+IconData? presetIcon(String habitName) {
+  for (final HabitPreset p in habitPresets) {
+    if (p.name == habitName) {
+      return p.icon;
+    }
+  }
+  return null;
+}
+
 class OnboardingCopy {
   static const String introHeadline = 'A journal for your habits';
   static const String introBody =
