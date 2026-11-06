@@ -156,7 +156,8 @@ suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos
 non-prose push to `master` (or `gh workflow run e2e.yml`) it waits two minutes on Linux, then runs `tools/e2e.sh`
 over all of `integration_test/` on an iPhone simulator of a `macos-26` runner, and uploads the log if it fails. One
 concurrency group with `cancel-in-progress` means a newer merge cancels the older run, waiting or running, so a
-burst of merges tests only its last commit. MACOS_SENTENCE On a push to `master` that touches the rules,
+burst of merges tests only its last commit. There is no macOS e2e job: the runner has no Mac development profile
+(that would take signing secrets), and unsigned, every sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
 indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
