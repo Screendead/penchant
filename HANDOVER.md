@@ -138,7 +138,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 - **C7. `functions/`** (`functions`): **delete it** and close its Dependabot PRs.
 - **C8. Licence** (`licence`): **proprietary, all rights reserved.**
 - **C9. Stale git state** (`git-cleanup`): **archive the stashes, then clean**; keep `copilot/fix-9`.
-- **C10. E2E in CI** (`e2e-ci`): **local only**; Claude runs `tools/e2e.sh` before each merge.
+- **C10. E2E in CI** (`e2e-ci`): **in CI on `master` after merge, debounced** (Jack, 2026-11-06, superseding "local
+  only"): `e2e.yml` (#96); PRs merge on the PR checks, and a red run on `master` is fixed forward first.
 - **C11. PR previews** (`pr-previews`): **drop them.** Moot once web goes (C6).
 - **C12. Quantity** (`quantity`): **greater than 0** on a new activity. So a free day is not logged as a zero entry.
 - **C13. Vice name length** (`name-length`): **60 characters at most.**
