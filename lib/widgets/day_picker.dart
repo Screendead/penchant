@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tracker/design/dial_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -50,6 +50,54 @@ class DayPicker extends StatelessWidget {
     }
   }
 
+  Widget _pillContent(BuildContext context, DialColors colors, DialType type) {
+    final List<Widget> parts = <Widget>[
+      Text(dayWord(day, today), style: type.displayM.copyWith(height: 1.2)),
+      Text(
+        dayPillDate(day, today),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: DialTypeScale.bodyS.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: colors.muted,
+        ),
+      ),
+    ];
+    final Widget chevron = StrokeIcon(
+      DialGlyph.down,
+      size: 14,
+      color: colors.muted,
+    );
+    if (MediaQuery.textScalerOf(context).scale(1) > 1.3) {
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        children: <Widget>[...parts, chevron],
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: <Widget>[
+              parts[0],
+              const SizedBox(width: 8),
+              Flexible(child: parts[1]),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        chevron,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
@@ -89,40 +137,9 @@ class DayPicker extends StatelessWidget {
                           horizontal: 18,
                           vertical: 6,
                         ),
-                        // One paragraph, so the day and the date share a
-                        // baseline and wrap together at large text.
-                        child: Center(
-                          widthFactor: 1,
-                          child: Text.rich(
-                            TextSpan(
-                              children: <InlineSpan>[
-                                TextSpan(
-                                  text: dayWord(day, today),
-                                  style: type.displayM.copyWith(height: 1.2),
-                                ),
-                                const WidgetSpan(child: SizedBox(width: 8)),
-                                TextSpan(
-                                  text: dayPillDate(day, today),
-                                  style: DialTypeScale.bodyS.copyWith(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: colors.muted,
-                                  ),
-                                ),
-                                const WidgetSpan(child: SizedBox(width: 8)),
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: StrokeIcon(
-                                    DialGlyph.down,
-                                    size: 14,
-                                    color: colors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                        // The day and the date share a baseline, as in the
+                        // mock-up; at large text they wrap instead.
+                        child: _pillContent(context, colors, type),
                       ),
                     ),
                   ),

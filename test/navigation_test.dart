@@ -106,21 +106,47 @@ void main() {
       expect(find.byTooltip(TrendsSheet.closeLabel), findsOneWidget);
     });
 
-    testWidgets('a page opened from the drawer returns to a closed drawer', (
+    testWidgets('the Penchant menu reaches Habits and Settings, and a page '
+        'opened from it returns to Today with the menu shut', (
       WidgetTester tester,
     ) async {
       await pumpHome(tester);
 
-      await tester.tap(find.byTooltip('Open navigation menu'));
+      await tester.tap(find.byKey(Homepage.menuKey));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Manage Data'));
+      expect(find.text(Homepage.settingsItem), findsOneWidget);
+      await tester.tap(find.text(Homepage.habitsItem));
       await tester.pumpAndSettle();
       expect(find.text('Your Habits'), findsOneWidget);
 
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(find.byType(ManageData), findsNothing);
-      expect(find.byType(Drawer), findsNothing);
+      expect(find.text(Homepage.habitsItem), findsNothing);
+
+      await tester.tap(find.byKey(Homepage.menuKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Homepage.settingsItem));
+      await tester.pumpAndSettle();
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+
+    testWidgets('the menu button is one labelled, 44 pt screen-reader stop', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      expect(
+        tester.getSemantics(find.byKey(Homepage.menuKey)),
+        containsSemantics(
+          label: Homepage.menuLabel,
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSize(find.byKey(Homepage.menuKey)).height,
+        greaterThanOrEqualTo(44),
+      );
     });
   });
 }

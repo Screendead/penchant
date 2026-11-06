@@ -40,7 +40,7 @@ void main() {
     expect(PendingDayNote.text(1500), '1,500 entries not yet synced');
   });
 
-  testWidgets('Today counts the day\'s entries the server has not '
+  testWidgets('offline, Today counts the day\'s entries the server has not '
       'acknowledged', (WidgetTester tester) async {
     final StreamController<List<ViceActivity>> day =
         StreamController<List<ViceActivity>>();
@@ -51,6 +51,7 @@ void main() {
         overrides: [
           ...habitOverrides([fakeVice('coffee')]),
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          offlineProvider.overrideWith((ref) => Stream.value(true)),
           viceActivityDayForUserProvider.overrideWith((ref, key) => day.stream),
         ],
         child: const MaterialApp(home: Scaffold(body: ViceTracker())),
@@ -68,6 +69,24 @@ void main() {
     expect(find.textContaining('not yet synced'), findsNothing);
   });
 
+  testWidgets('online, a pending entry adds no note that would move the '
+      'tallies', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...habitOverrides([fakeVice('coffee')]),
+          offlineProvider.overrideWith((ref) => Stream.value(false)),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime selected) => AsyncData([pending]),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ViceTracker())),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('not yet synced'), findsNothing);
+  });
+
   testWidgets('at text scale 3 on a small phone the pending note wraps '
       'rather than overflowing', (WidgetTester tester) async {
     tester.view.devicePixelRatio = 2;
@@ -79,6 +98,7 @@ void main() {
       ProviderScope(
         overrides: [
           ...habitOverrides([fakeVice('coffee')]),
+          offlineProvider.overrideWith((ref) => Stream.value(true)),
           viceActivityDayProvider.overrideWith(
             (ref, DateTime selected) => AsyncData([pending]),
           ),

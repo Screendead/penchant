@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,7 +67,7 @@ Future<void> logOne(
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
   final bool offline = ref.read(offlineProvider).value ?? false;
   final String activityID = writes.newActivityID();
-  final DateTime at = DateTime.now();
+  final DateTime at = clock.now();
   final String entry = describeActivity(
     vice.name,
     vice.unit,
