@@ -234,7 +234,8 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
   }
 
   Future<void> _delete() async {
-    final bool guest = widget.user.isAnonymous;
+    // Live: right after linking, the snapshot can still read anonymous.
+    final bool guest = _account.isGuest;
     final _DeleteChoice? choice = await showDialog<_DeleteChoice>(
       context: context,
       builder: (BuildContext context) => _DeleteConfirmation(guest: guest),

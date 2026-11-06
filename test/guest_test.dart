@@ -148,7 +148,7 @@ void main() {
     testWidgets('deletion warns, asks no password, and deletes', (
       tester,
     ) async {
-      final FakeAccount account = FakeAccount();
+      final FakeAccount account = FakeAccount()..isGuest = true;
       await _pump(
         tester,
         account,
