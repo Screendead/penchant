@@ -39,6 +39,7 @@ dependencies:
   firebase_core: ^4.12.1
   cloud_firestore: ^6.10.1
   firebase_auth: ^6.5.6
+  firebase_crashlytics: ^5.4.1
   fl_chart: ^1.2.0
   # flutter_localizations pins intl to the version the Flutter SDK ships.
   intl: ^0.20.2

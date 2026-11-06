@@ -123,5 +123,21 @@ void main() {
       }
       expect(File(pbxproj).readAsStringSync(), isNot(contains('Manual')));
     });
+
+    // Crashlytics processes dSYMs only from the target's last build phase.
+    test('the $platform Runner uploads Crashlytics symbols last', () {
+      final String source = File(
+        '$platform/Runner.xcodeproj/project.pbxproj',
+      ).readAsStringSync();
+      final String runner = RegExp(
+        r'/\* Runner \*/ = \{\s*isa = PBXNativeTarget;.*?buildPhases = \((.*?)\);',
+        dotAll: true,
+      ).firstMatch(source)!.group(1)!;
+      expect(
+        runner.trim().split('\n').last.trim(),
+        endsWith('/* Upload Crashlytics symbols */,'),
+      );
+      expect(source, contains('tools/crashlytics-upload-symbols.sh'));
+    });
   }
 }

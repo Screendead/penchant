@@ -414,7 +414,12 @@ App Attest entitlement, which the current signing team cannot sign (HANDOVER.md)
 macOS, firebase_core configures the native default app from the bundled
 `GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
 Firebase plist for emulators" build phase (`tools/strip-firebase-plist.sh`) that moves it out
-of the bundle for flagged builds.
+of the bundle for flagged builds and sets `FirebaseCrashlyticsCollectionEnabled` false in the
+built `Info.plist`. Crashlytics has no emulator: production turns collection on and points
+`errorForwarder` (`lib/errors/report_error.dart`, where every reported error goes after the device
+log) at it, uncaught errors as fatal and caught ones as non-fatal, with the literal context and
+nothing the user typed; flagged builds turn it off and forward nothing, and each Runner's last
+build phase (`tools/crashlytics-upload-symbols.sh`) uploads dSYMs for production release builds only.
 
 ## Design
 

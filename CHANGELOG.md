@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Crashes and errors are reported to the developer through Firebase Crashlytics, with the error and where it
+  happened, never your habits or amounts.
 - On the Mac, Cmd-1 to Cmd-9 log one of the first nine habits in Today's order, with the same Undo as the +; a Log
   menu in the menu bar lists them by name. A hardware keyboard on an iPad gets the same keys on Today.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
