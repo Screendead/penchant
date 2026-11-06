@@ -586,7 +586,7 @@ class _WedgeState extends State<_Wedge> {
                               .withValues(alpha: colors.bead.rimAlpha),
                     rimWidth: habit == null ? 1 : colors.bead.rimWidth,
                     gap: scheme.surface,
-                    focus: _focused ? scheme.onSurface : null,
+                    focus: _focused ? scheme.primary : null,
                   ),
                   child: Stack(
                     children: <Widget>[

@@ -284,6 +284,92 @@ void main() {
         );
       });
 
+      test('draws the edges that identify a control in outline', () {
+        expect(scheme.outline, p.outline);
+        expect(theme.inputDecorationTheme.border!.borderSide.color, p.outline);
+        expect(
+          theme.inputDecorationTheme.enabledBorder!.borderSide.color,
+          p.outline,
+        );
+        expect(
+          theme.outlinedButtonTheme.style!.side!
+              .resolve(<WidgetState>{})!
+              .color,
+          p.outline,
+        );
+        expect(theme.bottomSheetTheme.dragHandleColor, p.outline);
+        expect(theme.sliderTheme.inactiveTrackColor, p.outline);
+      });
+
+      test('rings a focused button in accent', () {
+        const Set<WidgetState> focused = <WidgetState>{WidgetState.focused};
+        final BorderSide ring = theme.filledButtonTheme.style!.side!.resolve(
+          focused,
+        )!;
+        expect(ring.color, p.accent);
+        expect(ring.width, 2);
+        // A 2px stroke centred 3px outside: the system's 2px offset.
+        expect(ring.strokeOffset / 2, 3);
+        expect(
+          theme.filledButtonTheme.style!.side!.resolve(<WidgetState>{}),
+          isNull,
+        );
+        for (final ButtonStyle style in <ButtonStyle>[
+          theme.outlinedButtonTheme.style!,
+          theme.textButtonTheme.style!,
+          theme.iconButtonTheme.style!,
+        ]) {
+          expect(style.side!.resolve(focused)!.color, p.accent);
+          expect(style.side!.resolve(focused)!.width, 2);
+        }
+        expect(_contrast(p.accent, p.bg), greaterThanOrEqualTo(3));
+        expect(_contrast(p.accent, p.surface), greaterThanOrEqualTo(3));
+      });
+
+      test("marks the time picker's selection in accent", () {
+        final TimePickerThemeData t = theme.timePickerTheme;
+        // Material's pickers sit on surfaceContainerHigh.
+        final Color dialog = scheme.surfaceContainerHigh;
+        const Set<WidgetState> selected = <WidgetState>{WidgetState.selected};
+        Color resolve(Color c, Set<WidgetState> s) =>
+            WidgetStateProperty.resolveAs(c, s);
+        final Color on = resolve(t.hourMinuteColor!, selected);
+        final Color off = resolve(t.hourMinuteColor!, <WidgetState>{});
+        expect(on, p.accent);
+        expect(_contrast(on, off), greaterThanOrEqualTo(3));
+        expect(_contrast(on, dialog), greaterThanOrEqualTo(3));
+        expect(
+          _contrast(resolve(t.hourMinuteTextColor!, selected), on),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrast(resolve(t.hourMinuteTextColor!, <WidgetState>{}), off),
+          greaterThanOrEqualTo(4.5),
+        );
+        // A focused input field keeps its surface fill, so the cursor shows.
+        expect(
+          resolve(t.hourMinuteColor!, <WidgetState>{
+            WidgetState.selected,
+            WidgetState.focused,
+          }),
+          p.surface,
+        );
+        expect(resolve(t.dayPeriodColor!, selected), p.accent);
+        expect(
+          _contrast(resolve(t.dayPeriodTextColor!, <WidgetState>{}), dialog),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          t.inputDecorationTheme!.enabledBorder!.borderSide.color,
+          p.outline,
+        );
+        expect(t.inputDecorationTheme!.hintStyle!.color, p.muted);
+        expect(
+          _contrast(theme.datePickerTheme.subHeaderForegroundColor!, dialog),
+          greaterThanOrEqualTo(4.5),
+        );
+      });
+
       test('gives no ColorScheme role a habit colour', () {
         final Set<Color> roles = <Color>{
           scheme.primary,

@@ -868,7 +868,9 @@ class _FacePainter extends CustomPainter {
       );
     }
 
-    final double spokeAlpha = 1 - 0.75 * clear;
+    // The majors mark the face's quarters and thirds, so they keep the 3:1 of
+    // contrast-pairs.json on a clear day; only the minors dim.
+    final double minorAlpha = 0.45 * (1 - 0.75 * clear);
     for (int i = 0; i < 24; i++) {
       final bool major = i % 3 == 0;
       final double a = dialAngle(i * 60.0);
@@ -876,7 +878,7 @@ class _FacePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeWidth = major ? 1.4 : 1
         ..color = colors.spoke.withValues(
-          alpha: colors.spoke.a * spokeAlpha * (major ? 1 : 0.45),
+          alpha: colors.spoke.a * (major ? 1 : minorAlpha),
         );
       canvas.drawLine(
         dialPoint(
