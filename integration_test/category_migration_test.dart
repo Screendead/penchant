@@ -124,7 +124,9 @@ Map<String, Object> _fields(_Seed seed, String uid) => <String, Object>{
   'name': <String, Object>{'stringValue': seed.name},
   'unit': <String, Object>{'stringValue': seed.unit.name},
   'ownerID': <String, Object>{'stringValue': uid},
-  'createdAt': <String, Object>{'timestampValue': _createdAt.toIso8601String()},
+  'createdAt': <String, Object>{
+    'timestampValue': seed.createdAt.toIso8601String(),
+  },
   if (seed.archived != null)
     'archived': <String, Object>{'booleanValue': seed.archived!},
   if (seed.category != null)
