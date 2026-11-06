@@ -11,9 +11,6 @@ on:
       - "ideas/**"
       - "tech-debt/**"
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/e2e.yml"
 permissions:
   contents: read
 concurrency:
