@@ -106,7 +106,7 @@ class _RecordNewActivityDialogState
     final bool synced;
 
     try {
-      synced = await settleWrite(
+      synced = await rejected.settle(
         writes.recordActivity(
           activityID,
           ownerID: user.uid,
@@ -114,10 +114,7 @@ class _RecordNewActivityDialogState
           quantity: quantity,
           createdAt: date,
         ),
-        onRejectedLater: rejected.reporter(
-          'Not saved: $entry',
-          creates: activityID,
-        ),
+        'Not saved: $entry',
       );
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while recording an activity');

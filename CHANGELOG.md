@@ -13,6 +13,8 @@ pull request titles (`gh pr list --state merged`).
   and an empty day offline says the device may not have it rather than calling it clear.
 - A change saved offline that the server later refuses (for example, an entry for a vice deleted on another device)
   is named in a banner at the top of the screen until you dismiss it, instead of disappearing without a word.
+  That holds across a restart too: a change made offline and refused after you closed the app is named the next
+  time it opens and syncs.
 - Account Settings exports your data as CSV and JSON, deletes the account with everything in it, resends the
   verification email and changes the email address; sign-in has a password-reset link. Signing out clears this
   device's copy of your data, and asks first if entries have not synced (#54).
@@ -66,6 +68,7 @@ pull request titles (`gh pr list --state merged`).
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
 - The iPhone and Mac builds get Firebase through Swift Package Manager instead of CocoaPods, which Firebase no
   longer publishes to. Nothing changes in the app.
+- On iPhone, the screen shown while the app opens is the app's paper colour, dark in dark mode, instead of white.
 
 ### Fixed
 
@@ -82,6 +85,10 @@ pull request titles (`gh pr list --state merged`).
 - Today shows every vice's amount: when a title has no room for its amount, the key below the chart lists every
   vice with its total, instead of that amount appearing nowhere. The radar's rings are labelled in whole numbers,
   without the "0.0" that sat at its centre.
+- The rules tests' firebase-tools install no longer breaks its own file-matching code: the minimatch override now
+  replaces only the versions the advisory names. A test checks every composite query in the app against
+  `firestore.indexes.json`, since the emulators never enforce indexes.
+- The Mac app builds for release, as one app for both Apple silicon and Intel Macs.
 
 ## [0.1.0] - Unreleased
 

@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**18 issues: 0 critical, 0 high, 9 medium, 9 low.**
+**13 issues: 0 critical, 0 high, 6 medium, 7 low.**
 
 ## Firebase Data Layer (5)
 
@@ -22,7 +22,7 @@ Firestore security rules, index and query shapes, the document schema contract, 
 
 - **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
-- **low** — [Nothing checks the index file against the queries or the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
+- **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 - **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
@@ -37,11 +37,10 @@ Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing,
 
 - **medium** — [Errors reach only the device log; no crash report or usage data leaves the device](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (2)
+## Offline and Write Reliability (1)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **medium** — [A queued change the server refuses after the app restarts vanishes without a word](offline-and-write-reliability/rejected-write-from-an-earlier-launch-is-dropped-silently.md)
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
 ## Accessibility and Localization (1)
@@ -56,20 +55,16 @@ Password reset, email verification, re-authentication, account deletion and expo
 
 - **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
 
-## Dependency and Tooling Drift (1)
+## Dependency and Tooling Drift (0)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
-- **medium** — [The minimatch 11 override breaks the firebase-tools paths that call minimatch as a function](dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md)
 
-## Platform and Delivery Config (4)
+## Platform and Delivery Config (1)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
 - **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
-- **low** — [Legacy iOS icons the generator recreates, and a 1x1 launch image placeholder](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
-- **low** — [Both platforms hardcode a development team, and macOS mixes provisioning styles](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
-- **medium** — [`flutter build macos --release` fails in Flutter's framework unpack step](platform-and-delivery-config/macos-release-build-fails-in-flutter-unpack.md)
 
 ## CI and Quality Gates (1)
 

@@ -120,12 +120,9 @@ class _ViceActivityEditorPageState
 
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
-      final bool synced = await settleWrite(
+      final bool synced = await rejected.settle(
         ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
-        onRejectedLater: rejected.reporter(
-          'Not deleted: ${_describe(vice, activity)}',
-          changes: widget.activityID,
-        ),
+        'Not deleted: ${_describe(vice, activity)}',
       );
       if (!synced) {
         messenger.showSnackBar(
@@ -181,7 +178,7 @@ class _ViceActivityEditorPageState
 
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
     try {
-      final bool synced = await settleWrite(
+      final bool synced = await rejected.settle(
         ref
             .read(trackerWritesProvider)
             .updateActivity(
@@ -189,10 +186,7 @@ class _ViceActivityEditorPageState
               quantity: changes['quantity'] as int?,
               createdAt: changes['createdAt'] as DateTime?,
             ),
-        onRejectedLater: rejected.reporter(
-          'Change not saved: ${_describe(vice, activity)}',
-          changes: widget.activityID,
-        ),
+        'Change not saved: ${_describe(vice, activity)}',
       );
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));

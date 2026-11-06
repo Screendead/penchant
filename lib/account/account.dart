@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/writes/queued_write_journal.dart';
 
 typedef StoredDocument = ({String id, Map<String, dynamic> data});
 
@@ -33,10 +34,11 @@ class DeletionIncompleteException implements Exception {
 // Every Firebase Auth call the app makes, and the account-wide Firestore work
 // that goes with them: export, deletion and clearing the on-device cache.
 class Account {
-  Account(this._auth, this._firestore);
+  Account(this._auth, this._firestore, this._queuedWrites);
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final QueuedWriteJournal _queuedWrites;
 
   // The quotas page sets no per-batch write count, only a 10 MiB request
   // limit; 500 deletes stay far below it.
@@ -219,10 +221,12 @@ class Account {
   // clearPersistence only runs on a terminated instance. The plugin builds a
   // fresh native instance, with the same settings, on the next call.
   // A failure leaves the cache behind but must not undo the sign-out.
+  // The journal goes with the cache: the writes it names are no longer queued.
   Future<void> _clearLocalCache() async {
     try {
       await _firestore.terminate();
       await _firestore.clearPersistence();
+      await _queuedWrites.clear();
     } on FirebaseException catch (e, stack) {
       _report(e, stack, 'clearing the on-device Firestore cache');
     }

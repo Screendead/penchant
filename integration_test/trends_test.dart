@@ -64,7 +64,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-trends@example.com');
 
-    await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink);
+    await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink).done;
     final String viceID = await storedViceID('Coffee');
     final DateTime today = startOfDay(DateTime.now());
     // Just after midnight, where a day counted in hours would slip a bucket.
@@ -74,13 +74,18 @@ void main() {
       (10, 4),
       (29, 1),
     ]) {
-      await _writes.recordActivity(
-        _writes.newActivityID(),
-        ownerID: _uid,
-        viceID: viceID,
-        quantity: quantity,
-        createdAt: addDays(today, -daysAgo).add(const Duration(minutes: 30)),
-      );
+      await _writes
+          .recordActivity(
+            _writes.newActivityID(),
+            ownerID: _uid,
+            viceID: viceID,
+            quantity: quantity,
+            createdAt: addDays(
+              today,
+              -daysAgo,
+            ).add(const Duration(minutes: 30)),
+          )
+          .done;
     }
 
     // The peek reads the same range before the sheet opens.

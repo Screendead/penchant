@@ -60,8 +60,10 @@ flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
+flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
-dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
+dart run flutter_launcher_icons  # macOS icons, after changing assets/icon-macos.png (rendered from the .svg beside it)
+cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # the single-size iOS icon; a test checks the copy
 ```
 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
@@ -158,8 +160,8 @@ indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
-define, on a `macos-26` runner, when run by hand. Nothing
+group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
+with the emulator define) on a `macos-26` runner, when run by hand. Nothing
 builds the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
@@ -210,16 +212,25 @@ data. `trackerWritesProvider` is a plain `Provider` that hands out the write lay
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
 `TrackerWrites` (`lib/writes/tracker_writes.dart`), which makes every write the
 screens make to a single document. It has one method
-per write (`addVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
-`updateActivity`, `deleteActivity`) and returns the SDK's future unchanged; timeouts,
-error messages and Undo stay in the widgets. Each widget hands the future to `settleWrite`
-(`lib/writes/settle_write.dart`), which waits ten seconds and then calls the write queued.
-It keeps listening, and a refusal after that goes to `onRejectedLater`: widgets pass
-`ref.read(rejectedWritesProvider.notifier).reporter('<what, named at write time>')`. That
-`NotifierProvider` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
+per write (`addVice`, `updateVice`, `setViceArchived`, `newActivityID`, `recordActivity`,
+`updateActivity`, `deleteActivity`) and returns a `SentWrite`: the SDK's future unchanged, plus
+the document it writes and, for an update, the fields it sets. Timeouts, error messages and
+Undo stay in the widgets. Each widget hands it to
+`ref.read(rejectedWritesProvider.notifier).settle(write, '<what, named at write time>')`,
+which runs `settleWrite` (`lib/writes/settle_write.dart`): that waits ten seconds and then
+calls the write queued, and keeps listening, so a refusal after that reaches the banner.
+`RejectedWrites` (`lib/writes/rejected_writes.dart`) holds the refused changes of the
 signed-in user, cleared when the uid changes, and `MaterialApp.builder`
 (`lib/widgets/rejected_writes_banner.dart`) shows them above every screen until dismissed.
-A write queued by an earlier launch has no future to listen to, so its refusal is not seen. The record dialog takes one id from
+The SDK keeps queued writes across launches but answers only the launch that made them, so
+`settle` also keeps each write in a journal on the device (`lib/writes/queued_write_journal.dart`,
+a JSON file per Firebase project in Application Support) until its future completes. On
+sign-in, a launch takes what earlier launches left for that user, waits for
+`waitForPendingWrites()` (it resolves after a refusal as after success), then reads each
+document's server copy with an `ownerID` query bounded to its id (the rules deny a get of a
+missing document) and names in the banner each write the server's copy does not show
+(`refusedAmong`). A check that fails keeps its writes for the next launch; sign-out and account
+deletion clear the journal with the cache. The record dialog takes one id from
 `newActivityID()` per dialog, so a second press after a failed save writes the same
 document. The one-tap "log one" (`logOne`, `lib/writes/log_one.dart`: a tally's `+`, a tap on a Log-fan wedge) takes
 a new id per tap, so two taps are two entries; it shows its bar (`showUndoBar`, `lib/widgets/undo_bar.dart`) at once,
@@ -307,7 +318,10 @@ with the time it synced. Whether to trade that for server time is open (register
 `activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
-Firestore throws `failed-precondition` at runtime until the index is deployed.
+Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce
+indexes. `test/firestore_indexes_test.dart` parses every query built in one chain from `.collection(...)` in `lib/`
+and fails when one needs a composite index the file lacks, when a `where` with a Firestore filter argument or an
+`orderBy` sits outside such a chain, or when a chain uses `limitToLast` (whose reversed sorts it does not model).
 
 **Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error →
 `AuthStateFailure`, no event yet → `AuthStateLoading` (so a restored session never shows

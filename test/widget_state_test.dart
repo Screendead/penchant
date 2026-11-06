@@ -99,6 +99,7 @@ void main() {
           overrides: [
             userProvider.overrideWith((ref) => auth.stream),
             accountProvider.overrideWithValue(FakeAccount()),
+            memoryJournal(),
           ],
           child: const MyApp(),
         ),
@@ -344,6 +345,7 @@ void main() {
         viceListProvider.overrideWithValue(AsyncData([coffee])),
         viceActivityForUserProvider.overrideWith((ref, key) => activity.stream),
         if (writes != null) trackerWritesProvider.overrideWithValue(writes),
+        memoryJournal(),
       ], ViceActivityEditorPage(viceID: coffee.id, activityID: stored.id));
       activity.add(stored);
       await tester.pump();
