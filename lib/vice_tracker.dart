@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -258,6 +259,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                           : DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
                     children: <Widget>[
+                      const RecoveryKeyCard(),
                       // The arrows' 40 pt circles sit 20 from the edges, their
                       // 44 pt targets 18.
                       Padding(
