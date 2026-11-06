@@ -15,6 +15,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -186,6 +187,111 @@ void main() {
       // An auto-dispose day may be re-requested on return; how soon it is
       // disposed is Riverpod's scheduling, not this widget's.
       expect(requestedDays.toSet(), {today, addDays(today, -1)});
+      await tester.pumpAndSettle();
+    });
+
+    Opacity labelOpacity(WidgetTester tester, String word) =>
+        tester.widget<Opacity>(
+          find
+              .ancestor(of: find.text(word), matching: find.byType(Opacity))
+              .first,
+        );
+    Offset labelShift(WidgetTester tester, String word) => Offset(
+      tester
+          .widget<Transform>(
+            find
+                .ancestor(of: find.text(word), matching: find.byType(Transform))
+                .first,
+          )
+          .transform
+          .getTranslation()
+          .x,
+      0,
+    );
+
+    testWidgets('the day label slides in from the side of the new day', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+      expect(labelOpacity(tester, 'Today').opacity, 1);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump(DialMotion.tallyRoll ~/ 3);
+      expect(labelOpacity(tester, 'Yesterday').opacity, inExclusiveRange(0, 1));
+      expect(labelShift(tester, 'Yesterday').dx, lessThan(0));
+
+      await tester.pump(DialMotion.tallyRoll);
+      expect(labelOpacity(tester, 'Yesterday').opacity, 1);
+      expect(labelShift(tester, 'Yesterday').dx, 0);
+
+      await tester.tap(_button('Next day'));
+      await tester.pump();
+      await tester.pump(DialMotion.tallyRoll ~/ 3);
+      expect(labelShift(tester, 'Today').dx, greaterThan(0));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets("the sweep's trace fades once the hand has gone round", (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+      await tester.pumpAndSettle();
+      ({double turn, double alpha})? trace() =>
+          (tester
+                          .widget<CustomPaint>(
+                            find.byWidgetPredicate(
+                              (Widget w) =>
+                                  w is CustomPaint &&
+                                  w.painter.runtimeType.toString() ==
+                                      '_HandPainter',
+                            ),
+                          )
+                          .painter!
+                      as dynamic)
+                  .sweep
+              as ({double turn, double alpha})?;
+      expect(trace(), isNull);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump(DialMotion.dayContract);
+      await tester.pump();
+      await tester.pump(DialMotion.daySweep ~/ 2);
+      expect(trace()!.alpha, 1);
+      expect(trace()!.turn, inExclusiveRange(0, 1));
+
+      await tester.pump(
+        DialMotion.daySweep ~/ 2 + DialMotion.landingRipple ~/ 2,
+      );
+      expect(trace()!.turn, 1);
+      expect(trace()!.alpha, inExclusiveRange(0, 1));
+
+      await tester.pump(DialMotion.landingRipple);
+      expect(trace(), isNull);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('under reduce motion the day label changes in place', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: overrides(),
+          child: const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: MaterialApp(home: Scaffold(body: ViceTracker())),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump();
+      expect(labelOpacity(tester, 'Yesterday').opacity, 1);
+      expect(labelShift(tester, 'Yesterday').dx, 0);
       await tester.pumpAndSettle();
     });
 
