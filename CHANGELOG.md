@@ -64,6 +64,8 @@ pull request titles (`gh pr list --state merged`).
 - Today and the Graph move on at midnight, and on returning to the app the next day, instead of staying on yesterday.
 - The activity editor shows changes made elsewhere while it is open, until you edit that field.
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
+- The iPhone and Mac builds get Firebase through Swift Package Manager instead of CocoaPods, which Firebase no
+  longer publishes to. Nothing changes in the app.
 
 ### Fixed
 

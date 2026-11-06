@@ -10,9 +10,11 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  # firebase-tools ships Dart template files that do not compile.
+  # firebase-tools ships Dart template files that do not compile, and an Apple build copies some plugins
+  # (Dart tests included) into build/<platform>/SourcePackages.
   exclude:
     - "**/node_modules/**"
+    - "build/**"
 
 plugins:
   # Exact: 3.1.6 and later need analyzer 13, which resolves analysis_server_plugin 0.3.16 or later, whose

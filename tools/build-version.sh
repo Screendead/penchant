@@ -2,6 +2,7 @@
 # Prints the flutter build flags for the current commit: the version from
 # pubspec.yaml and the number of commits on HEAD as the build number.
 # Usage: flags=$(tools/build-version.sh) && flutter build ipa $flags
+# In zsh, ${=flags}: zsh does not word-split $flags, and Flutter takes the pair as one build name.
 # Not `flutter build ipa $(tools/build-version.sh)`: a failed substitution expands to nothing and the build still runs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
