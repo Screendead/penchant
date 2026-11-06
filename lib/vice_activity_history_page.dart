@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
@@ -8,16 +9,22 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/bead_painter.dart';
+import 'package:tracker/widgets/circle_button.dart';
 import 'package:tracker/widgets/dial_page.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
+import 'package:tracker/writes/rejected_writes.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 class ViceActivityHistoryPage extends ConsumerStatefulWidget {
   const ViceActivityHistoryPage({super.key, required this.viceID});
@@ -56,6 +63,43 @@ class _ViceActivityHistoryPageState
   final Map<String, int> revived = <String, int>{};
 
   String get viceID => widget.viceID;
+
+  final Set<String> archiving = <String>{};
+
+  Future<void> _setArchived(Vice vice, {required bool archived}) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      archiving.add(vice.id);
+    });
+
+    String? message;
+    try {
+      if (!await ref
+          .read(rejectedWritesProvider.notifier)
+          .settle(
+            ref
+                .read(trackerWritesProvider)
+                .setViceArchived(vice.id, archived: archived),
+            '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
+          )) {
+        message = queuedMessage;
+      }
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while archiving or unarchiving a habit');
+      message =
+          '${archived ? 'Could not archive' : 'Could not unarchive'} '
+          '${vice.name}. ${firestoreErrorMessage(e)}';
+    }
+
+    if (mounted) {
+      setState(() {
+        archiving.remove(vice.id);
+      });
+    }
+    if (message != null && messenger.mounted) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
 
   // The messenger is taken from this State, not the row, which is gone by
   // the time the server answers.
@@ -160,13 +204,38 @@ class _ViceActivityHistoryPageState
       days.last.$2.add(activity);
     }
 
+    final ActivityCount? count = ref
+        .watch(viceActivityCountProvider(vice.id))
+        .value;
+
     return DialPage(
       title: vice.name,
       leading: HabitPip(mark: mark, size: 16),
       subtitle: <String>[
         vice.unit.nameFor(2),
+        if (count != null) ManageData.countText(count),
         if (vice.archived) 'archived',
       ].join(' · '),
+      action: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          CircleButton(
+            icon: vice.archived ? DialGlyph.unarchive : DialGlyph.archive,
+            tooltip: vice.archived ? 'Unarchive' : 'Archive',
+            onPressed: archiving.contains(vice.id)
+                ? null
+                : () => _setArchived(vice, archived: !vice.archived),
+          ),
+          const SizedBox(width: DialSpace.xs),
+          CircleButton(
+            icon: DialGlyph.pencil,
+            tooltip: 'Edit habit',
+            onPressed: () {
+              Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
+            },
+          ),
+        ],
+      ),
       children: <Widget>[
         if (activityList.isEmpty)
           const PageFootnote(ViceActivityHistoryPage.empty)

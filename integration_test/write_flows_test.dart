@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 
@@ -28,25 +29,19 @@ Future<Map<String, dynamic>> _storedVice(String name) async {
   return vices.docs.single.data();
 }
 
-Finder _rowButton(String viceName, String tooltip) => find.descendant(
-  of: find
-      .ancestor(of: find.text(viceName), matching: find.byType(InkWell))
-      .first,
-  matching: find.byTooltip(tooltip),
-);
-
 Future<void> _setArchived(
   WidgetTester tester,
   String viceName, {
   required bool archived,
 }) async {
   await openFromMenu(tester, Homepage.habitsItem);
-  await tap(tester, _rowButton(viceName, archived ? 'Archive' : 'Unarchive'));
-  await pumpUntil(
-    tester,
-    _rowButton(viceName, archived ? 'Unarchive' : 'Archive'),
-  );
+  await tap(tester, find.text(viceName));
+  await pumpUntilRouteSettled(tester, historyTitle(viceName));
+  await tap(tester, find.byTooltip(archived ? 'Archive' : 'Unarchive'));
+  await pumpUntil(tester, find.byTooltip(archived ? 'Unarchive' : 'Archive'));
   expect((await _storedVice(viceName))['archived'], archived);
+  await tap(tester, find.byTooltip('Back'));
+  await pumpUntilRouteSettled(tester, find.byType(ManageData));
   await closeMenuPage(tester);
 }
 

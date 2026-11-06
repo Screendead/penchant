@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
@@ -7,17 +6,13 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
-import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/circle_button.dart';
 import 'package:tracker/widgets/dial_page.dart';
 import 'package:tracker/widgets/info_box.dart';
-import 'package:tracker/writes/rejected_writes.dart';
-import 'package:tracker/writes/settle_write.dart';
 
 class ManageData extends ConsumerStatefulWidget {
   const ManageData({super.key});
@@ -46,43 +41,6 @@ class ManageData extends ConsumerStatefulWidget {
 }
 
 class _ManageDataState extends ConsumerState<ManageData> {
-  final Set<String> archiving = <String>{};
-
-  Future<void> _setArchived(Vice vice, {required bool archived}) async {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    setState(() {
-      archiving.add(vice.id);
-    });
-
-    String? message;
-    try {
-      if (!await ref
-          .read(rejectedWritesProvider.notifier)
-          .settle(
-            ref
-                .read(trackerWritesProvider)
-                .setViceArchived(vice.id, archived: archived),
-            '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
-          )) {
-        message = queuedMessage;
-      }
-    } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while archiving or unarchiving a habit');
-      message =
-          '${archived ? 'Could not archive' : 'Could not unarchive'} '
-          '${vice.name}. ${firestoreErrorMessage(e)}';
-    }
-
-    if (mounted) {
-      setState(() {
-        archiving.remove(vice.id);
-      });
-    }
-    if (message != null && messenger.mounted) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
@@ -150,7 +108,6 @@ class _ManageDataState extends ConsumerState<ManageData> {
 
   Widget _row(Vice vice, HabitMark mark) {
     final DialColors colors = DialColors.of(context);
-    final bool busy = archiving.contains(vice.id);
 
     // An archived vice keeps its history, so its row still opens it.
     return InkWell(
@@ -210,26 +167,13 @@ class _ManageDataState extends ConsumerState<ManageData> {
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'Edit',
-                icon: const Icon(Icons.edit_outlined, size: 20),
-                color: colors.muted,
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
-                },
-              ),
-              IconButton(
-                tooltip: vice.archived ? 'Unarchive' : 'Archive',
-                icon: Icon(
-                  vice.archived
-                      ? Icons.unarchive_outlined
-                      : Icons.archive_outlined,
-                  size: 20,
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: StrokeIcon(
+                  DialGlyph.right,
+                  size: 18,
+                  color: colors.muted,
                 ),
-                color: colors.muted,
-                onPressed: busy
-                    ? null
-                    : () => _setArchived(vice, archived: !vice.archived),
               ),
             ],
           ),

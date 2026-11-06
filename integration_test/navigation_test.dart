@@ -18,13 +18,6 @@ import 'package:tracker/widgets/log_fan.dart';
 
 import 'support.dart';
 
-Finder _rowButton(String viceName, String tooltip) => find.descendant(
-  of: find
-      .ancestor(of: find.text(viceName), matching: find.byType(InkWell))
-      .first,
-  matching: find.byTooltip(tooltip),
-);
-
 Future<void> _expectSignedOutWithNothingAbove(WidgetTester tester) async {
   await pumpUntil(tester, find.text('Register').hitTestable());
   expect(find.byType(Authenticate), findsOneWidget);
@@ -70,7 +63,9 @@ void main() {
     final Map<String, dynamic> before = (await stored.get(server)).data()!;
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await tap(tester, _rowButton('Coffee', 'Edit'));
+    await tap(tester, find.text('Coffee'));
+    await pumpUntilRouteSettled(tester, historyTitle('Coffee'));
+    await tap(tester, find.byTooltip('Edit habit'));
     await pumpUntilRouteSettled(tester, find.text('Edit Habit'));
     expect(find.byType(NotFound), findsNothing);
     expect(find.byType(CloseButton), findsOneWidget);

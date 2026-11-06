@@ -388,6 +388,9 @@ void main() {
 
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([active, archived])),
+      viceActivityHistoryProvider.overrideWith(
+        (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
+      ),
       viceActivityCountProvider.overrideWith(
         (ref, String viceID) =>
             const AsyncData((count: 0, source: CountSource.server)),
@@ -397,10 +400,21 @@ void main() {
     testWidgets('archives an active vice and unarchives an archived one', (
       WidgetTester tester,
     ) async {
-      await _pumpOpened(tester, writes, overrides(), const ManageData());
-
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: active.id),
+      );
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
+      await tester.pumpWidget(const SizedBox());
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: archived.id),
+      );
       await tester.tap(find.byTooltip('Unarchive'));
       await tester.pump();
 
@@ -417,7 +431,12 @@ void main() {
     testWidgets('an archive in flight disables that row, and one that '
         'outlasts the timeout says it will sync', (WidgetTester tester) async {
       writes.respond = _never;
-      await _pumpOpened(tester, writes, overrides(), const ManageData());
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: active.id),
+      );
 
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
@@ -426,18 +445,13 @@ void main() {
       expect(
         tester
             .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.archive_outlined),
+              find.ancestor(
+                of: find.byTooltip('Archive'),
+                matching: find.byType(IconButton),
+              ),
             )
             .onPressed,
         isNull,
-      );
-      expect(
-        tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.unarchive_outlined),
-            )
-            .onPressed,
-        isNotNull,
       );
 
       await tester.pump(writeTimeout);
@@ -497,7 +511,12 @@ void main() {
       WidgetTester tester,
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('permission-denied'));
-      await _pumpOpened(tester, writes, overrides(), const ManageData());
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: active.id),
+      );
 
       await tester.tap(find.byTooltip('Archive'));
       await tester.pumpAndSettle();
@@ -1218,7 +1237,10 @@ void main() {
           (ref, String viceID) =>
               const AsyncData((count: 0, source: CountSource.server)),
         ),
-      ], const ManageData());
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
+        ),
+      ], const ViceActivityHistoryPage(viceID: 'coffee'));
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
       await waitOutTimeout(tester);
@@ -1234,13 +1256,23 @@ void main() {
       final StreamController<User?> users = StreamController<User?>();
       addTearDown(() => unawaited(users.close()));
       users.add(FakeUser(ownerID));
-      await _pumpOpened(tester, writes, users: users.stream, [
-        viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
-        viceActivityCountProvider.overrideWith(
-          (ref, String viceID) =>
-              const AsyncData((count: 0, source: CountSource.server)),
-        ),
-      ], const ManageData());
+      await _pumpOpened(
+        tester,
+        writes,
+        users: users.stream,
+        [
+          viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+          viceActivityCountProvider.overrideWith(
+            (ref, String viceID) =>
+                const AsyncData((count: 0, source: CountSource.server)),
+          ),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, ViceActivityHistoryQuery query) =>
+                AsyncData(<ViceActivity>[]),
+          ),
+        ],
+        const ViceActivityHistoryPage(viceID: 'coffee'),
+      );
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
       await waitOutTimeout(tester);
