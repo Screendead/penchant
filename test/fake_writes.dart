@@ -99,6 +99,23 @@ class FakeTrackerWrites implements TrackerWrites {
   );
 
   @override
+  Future<bool> fillViceCategory(String viceID, ViceCategory category) {
+    writes.add(
+      Write('fillViceCategory', viceID, <String, Object?>{
+        'category': category,
+      }),
+    );
+    final Map<String, Object?>? copy = server['vices/$viceID'];
+    if (copy != null && copy.containsKey('category')) {
+      return Future<bool>.value(false);
+    }
+    return (respond?.call(writes.last) ?? Future<void>.value()).then((_) {
+      copy?['category'] = category.name;
+      return true;
+    });
+  }
+
+  @override
   SentWrite setViceArchived(String viceID, {required bool archived}) => _write(
     Write('setViceArchived', viceID, <String, Object?>{'archived': archived}),
     collection: 'vices',

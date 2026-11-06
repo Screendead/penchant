@@ -313,7 +313,9 @@ Flutter's foundation exports) is stored by name too; the rules check it against 
 create, since app versions before it create without it. The parser reads a missing one as `other` and sets
 `Vice.categoryStored` false, and `categoryMigrationProvider` (`lib/writes/category_migration.dart`, kept alive by
 `MyApp`) writes `guessCategory(name)` to each such vice in the signed-in user's live vice list, once per vice per
-launch, through `updateVice`; offline the write queues, and the local snapshot then holds the field. Archiving a vice hides it from recording and
+launch, through `fillViceCategory`: a transaction that writes only if the server's copy has no category, since a
+launch's first snapshot comes from the cache, which on a second device can predate a category picked elsewhere.
+Offline the transaction fails and a later snapshot or launch retries; nothing queues. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.
 

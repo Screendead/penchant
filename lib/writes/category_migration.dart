@@ -10,11 +10,13 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
 // Gives each of the signed-in user's vices written before `category` existed
-// a category guessed from its name. It reads the vice list the screens already
-// listen to, so it costs no reads and works from the cache offline, where the
-// writes queue. A queued write shows on the local snapshot at once, so a vice
-// is written once; [_issued] covers the moment before that snapshot, and a
-// refusal, which would otherwise be retried on every snapshot.
+// a category guessed from its name. The vice list the screens already listen
+// to picks the candidates; each write is a transaction that checks the
+// server's copy first, since the first snapshot of a launch comes from the
+// cache, which on a second device can predate a category chosen elsewhere.
+// Offline the transaction fails and a later snapshot or launch tries again.
+// [_issued] keeps a vice to one attempt at a time, and a refusal to one per
+// launch.
 class CategoryMigration extends Notifier<void> {
   final Set<String> _issued = <String>{};
 
@@ -39,19 +41,23 @@ class CategoryMigration extends Notifier<void> {
       if (vice.categoryStored || !_issued.add(vice.id)) {
         continue;
       }
-      try {
-        unawaited(
-          ref
-              .read(trackerWritesProvider)
-              .updateVice(vice.id, category: guessCategory(vice.name))
-              .done
-              .catchError((Object e, StackTrace stack) {
-                reportError(e, stack, context: 'while adding a category');
-              }),
-        );
-      } catch (e, stack) {
-        reportError(e, stack, context: 'while adding a category');
+      unawaited(_fill(vice));
+    }
+  }
+
+  Future<void> _fill(Vice vice) async {
+    try {
+      await ref
+          .read(trackerWritesProvider)
+          .fillViceCategory(vice.id, guessCategory(vice.name));
+    } on FirebaseException catch (e) {
+      if (e.code == 'unavailable') {
+        _issued.remove(vice.id);
+      } else {
+        reportError(e, e.stackTrace, context: 'while adding a category');
       }
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while adding a category');
     }
   }
 }

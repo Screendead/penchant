@@ -141,18 +141,18 @@ void main() {
       ]);
 
       expect(writes.writes, <Write>[
-        const Write('updateVice', 'beer', <String, Object?>{
+        const Write('fillViceCategory', 'beer', <String, Object?>{
           'category': ViceCategory.alcohol,
         }),
-        const Write('updateVice', 'games', <String, Object?>{
+        const Write('fillViceCategory', 'games', <String, Object?>{
           'category': ViceCategory.other,
         }),
       ]);
     });
 
-    testWidgets('writes each vice once, though later snapshots still lack '
-        'the field', (WidgetTester tester) async {
-      // The write never settles, as when it is queued offline.
+    testWidgets('tries each vice once at a time, though later snapshots '
+        'still lack the field', (WidgetTester tester) async {
+      // The transaction has not answered yet.
       writes.respond = (_) => Completer<void>().future;
       await pump(tester);
       await show(tester, <Vice>[_vice('beer', 'Beer')]);
@@ -160,6 +160,29 @@ void main() {
       await show(tester, <Vice>[_vice('beer', 'Beer'), _vice('vape', 'Vape')]);
 
       expect(writes.writes.map((Write w) => w.id), <String>['beer', 'vape']);
+    });
+
+    testWidgets('tries again on a later snapshot after failing offline', (
+      WidgetTester tester,
+    ) async {
+      int attempts = 0;
+      writes.respond = (_) => ++attempts == 1
+          ? Future<void>.error(
+              FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
+            )
+          : Future<void>.value();
+      writes.server['vices/beer'] = <String, Object?>{};
+      await pump(tester);
+      await show(tester, <Vice>[_vice('beer', 'Beer')]);
+      await tester.pump();
+      await show(tester, <Vice>[_vice('beer', 'Beer')]);
+      await tester.pump();
+
+      expect(writes.writes, hasLength(2));
+      expect(writes.server['vices/beer'], <String, Object?>{
+        'category': 'alcohol',
+      });
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('writes nothing once every vice has a category', (

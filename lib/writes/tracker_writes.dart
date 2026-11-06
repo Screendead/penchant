@@ -92,6 +92,23 @@ class TrackerWrites {
     });
   }
 
+  // Sets [category] only if the server's copy still has none, so a stale
+  // cache cannot overwrite a category chosen on another device. A transaction
+  // needs the server, so offline this fails rather than queues; true when it
+  // wrote.
+  Future<bool> fillViceCategory(String viceID, ViceCategory category) {
+    final DocumentReference<Map<String, dynamic>> vice = _vices.doc(viceID);
+    return _firestore.runTransaction<bool>((Transaction transaction) async {
+      final DocumentSnapshot<Map<String, dynamic>> current = await transaction
+          .get(vice);
+      if (current.data()?.containsKey('category') ?? true) {
+        return false;
+      }
+      transaction.update(vice, {'category': category.name});
+      return true;
+    });
+  }
+
   SentWrite setViceArchived(String viceID, {required bool archived}) {
     return _update(_vices, viceID, {'archived': archived});
   }
