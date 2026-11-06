@@ -5,55 +5,97 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/design/tokens.dart';
 
-// The Dart tokens against the mock-up's export they mirror.
+import 'palette_names.dart';
+
+// The Dart tokens against what they mirror: the colours against the design
+// system's tokens.json, the rest against lib/design/tokens.json.
 final Map<String, dynamic> _json =
     jsonDecode(File('lib/design/tokens.json').readAsStringSync())
         as Map<String, dynamic>;
 
-// tokens.json writes #RRGGBB or #RRGGBBAA.
-Color _hex(String hex) {
-  final String digits = hex.substring(1);
-  final int rgb = int.parse(digits.substring(0, 6), radix: 16);
-  final int alpha = digits.length == 8
-      ? int.parse(digits.substring(6), radix: 16)
-      : 0xFF;
-  return Color((alpha << 24) | rgb);
-}
+final Map<String, dynamic> _system =
+    jsonDecode(
+          File(
+            'docs/design-system/day-dial/project/tokens.json',
+          ).readAsStringSync(),
+        )
+        as Map<String, dynamic>;
+
+// The system's colours for one theme, by token name.
+Map<String, Color> _systemColours(String theme) => <String, Color>{
+  for (final dynamic token
+      in (_system['color'] as Map<String, dynamic>)['tokens'] as List<dynamic>)
+    (token as Map<String, dynamic>)['name'] as String: hexColor(
+      (token['value'] as Map<String, dynamic>)[theme] as String,
+    ),
+};
 
 void main() {
-  for (final (String name, DialPalette palette) in [
-    ('light', DialPalette.light),
-    ('dark', DialPalette.dark),
+  test('the design system has a light and a dark theme', () {
+    expect(
+      <String>[
+        for (final dynamic t
+            in (_system['color'] as Map<String, dynamic>)['themes']
+                as List<dynamic>)
+          (t as Map<String, dynamic>)['id'] as String,
+      ],
+      <String>['light', 'dark'],
+    );
+  });
+
+  for (final (String name, DialPalette palette, BeadTreatment bead) in [
+    ('light', DialPalette.light, BeadTreatment.light),
+    ('dark', DialPalette.dark, BeadTreatment.dark),
   ]) {
-    test('the $name palette matches tokens.json', () {
-      final Map<String, dynamic> c =
+    test('the $name palette matches the design system', () {
+      final Map<String, Color> system = _systemColours(name);
+      final Map<String, Color> dart = paletteByName(palette);
+      expect(dart.keys.toSet(), system.keys.toSet());
+      for (final MapEntry<String, Color> entry in dart.entries) {
+        expect(entry.value, system[entry.key], reason: '$name ${entry.key}');
+      }
+    });
+
+    test('lib/design/tokens.json carries the system\'s $name colours', () {
+      final Map<String, Color> system = _systemColours(name);
+      final Map<String, dynamic> app =
           (_json['color'] as Map<String, dynamic>)[name]
               as Map<String, dynamic>;
-      final Map<String, Color> dart = <String, Color>{
-        'bg': palette.bg,
-        'surface': palette.surface,
-        'surface2': palette.surface2,
-        'text': palette.text,
-        'muted': palette.muted,
-        'line': palette.line,
-        'accent': palette.accent,
-        'onAccent': palette.onAccent,
-        'danger': palette.danger,
-        'dangerContainer': palette.dangerContainer,
-        for (int i = 0; i < 5; i++) 'data${i + 1}': palette.data[i],
-        for (int i = 0; i < 5; i++) 'data${i + 1}Ink': palette.dataInk[i],
-        'spoke': palette.spoke,
-        'clear': palette.clear,
-        'clearInk': palette.clearInk,
-        'scrim': palette.scrim,
-        'wedgeInk': palette.wedgeInk,
-      };
-      expect(dart.keys.toSet(), c.keys.toSet());
-      for (final MapEntry<String, Color> entry in dart.entries) {
+      expect(system.keys, containsAll(app.keys));
+      for (final MapEntry<String, dynamic> entry in app.entries) {
         expect(
-          entry.value,
-          _hex(c[entry.key] as String),
+          hexColor(entry.value as String),
+          system[entry.key],
           reason: '$name ${entry.key}',
+        );
+      }
+    });
+
+    test('the $name bead treatment matches its rim and glow colours', () {
+      for (int i = 0; i < 5; i++) {
+        final Color rim = palette.dataRim[i];
+        final Color glow = palette.dataGlow[i];
+        if (bead.rimAlpha > 0) {
+          expect(
+            rim.withValues(alpha: 1),
+            palette.dataInk[i].withValues(alpha: 1),
+          );
+        }
+        if (bead.glowAlpha > 0) {
+          expect(
+            glow.withValues(alpha: 1),
+            palette.data[i].withValues(alpha: 1),
+          );
+        }
+        expect(
+          rim.a,
+          closeTo(bead.rimAlpha, 0.5 / 255),
+          reason: 'data${i + 1}Rim',
+        );
+        expect(
+          glow.a,
+          closeTo(bead.glowAlpha, 0.5 / 255),
+          reason: 'data${i + 1}Glow',
         );
       }
     });

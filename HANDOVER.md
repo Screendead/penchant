@@ -162,6 +162,11 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   A habit's colour is its creation order (archived included) mod 5, rings from the sixth, dotted rings from the
   eleventh; computed on the device, no stored field. Units stay the existing enum; new units are `r2-data-model`.
   Built as the queue's item 1.
+- **Contrast** (2026-11-05, in chat): **every colour pair meets the accepted accessibility minimum in both themes**,
+  WCAG 2.2 AA: 4.5:1 for text, 3:1 for icons, meaningful graphics, control edges and focus. Fix, never flag; the
+  habit colours keep the icon's five hues (lightness, rims and inks may change). The pairs are
+  `docs/design-system/day-dial/project/contrast-pairs.json`, checked by `tools/contrast-check.py` and
+  `test/contrast_test.dart`; a new use of a colour adds its pair there.
 
 ## Calls waiting on Jack (UNDECIDED)
 

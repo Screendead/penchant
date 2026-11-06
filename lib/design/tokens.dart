@@ -3,8 +3,10 @@ import 'dart:ui';
 import 'package:flutter/animation.dart';
 import 'package:flutter/painting.dart';
 
-// The Day Dial design tokens, mirrored from lib/design/tokens.json (the
-// mock-up's export); test/design_tokens_test.dart holds the two in step.
+// The Day Dial design tokens. The colours mirror the design system's
+// docs/design-system/day-dial/project/tokens.json, the rest lib/design/tokens.json;
+// test/design_tokens_test.dart holds them in step and test/contrast_test.dart
+// checks every colour pair the system lists.
 
 class DialPalette {
   const DialPalette({
@@ -15,12 +17,15 @@ class DialPalette {
     required this.text,
     required this.muted,
     required this.line,
+    required this.outline,
     required this.accent,
     required this.onAccent,
     required this.danger,
     required this.dangerContainer,
     required this.data,
     required this.dataInk,
+    required this.dataRim,
+    required this.dataGlow,
     required this.spoke,
     required this.clear,
     required this.clearInk,
@@ -35,6 +40,8 @@ class DialPalette {
   final Color text;
   final Color muted;
   final Color line;
+  // Edges that identify a control or a state; line is decorative only.
+  final Color outline;
   final Color accent;
   final Color onAccent;
   final Color danger;
@@ -42,6 +49,10 @@ class DialPalette {
   // The five habit colours, data1 to data5, and the text colour for each.
   final List<Color> data;
   final List<Color> dataInk;
+  // A filled habit mark's inner rim (light) and a bead's glow (dark); each is
+  // transparent in the other theme.
+  final List<Color> dataRim;
+  final List<Color> dataGlow;
   final Color spoke;
   final Color clear;
   final Color clearInk;
@@ -59,6 +70,7 @@ class DialPalette {
     text: Color(0xFF1D1C1A),
     muted: Color(0xFF635E56),
     line: Color(0x1A1D1C1A),
+    outline: Color(0x8C1D1C1A),
     accent: Color(0xFF1D1C1A),
     onAccent: Color(0xFFF6F4EF),
     danger: Color(0xFFB42A37),
@@ -77,7 +89,21 @@ class DialPalette {
       Color(0xFF6A31B5),
       Color(0xFF1D5FC2),
     ],
-    spoke: Color(0x731D1C1A),
+    dataRim: <Color>[
+      Color(0xE68F5600),
+      Color(0xE6B03E1C),
+      Color(0xE6B42A37),
+      Color(0xE66A31B5),
+      Color(0xE61D5FC2),
+    ],
+    dataGlow: <Color>[
+      Color(0x00FFB347),
+      Color(0x00FF7A59),
+      Color(0x00E95963),
+      Color(0x00A973E9),
+      Color(0x004D96FF),
+    ],
+    spoke: Color(0x801D1C1A),
     clear: Color(0xFFE3EFE4),
     clearInk: Color(0xFF276B43),
     scrim: Color(0x331D1C1A),
@@ -90,8 +116,9 @@ class DialPalette {
     surface: Color(0xFF1F1D1B),
     surface2: Color(0xFF2A2825),
     text: Color(0xFFF3F0EA),
-    muted: Color(0xFFA39E94),
+    muted: Color(0xFFACA79D),
     line: Color(0x1FF3F0EA),
+    outline: Color(0x66F3F0EA),
     accent: Color(0xFFF3F0EA),
     onAccent: Color(0xFF1D1C1A),
     danger: Color(0xFFFF8A8F),
@@ -99,8 +126,8 @@ class DialPalette {
     data: <Color>[
       Color(0xFFFFB347),
       Color(0xFFFF7A59),
-      Color(0xFFE8505B),
-      Color(0xFF9B5DE5),
+      Color(0xFFE95963),
+      Color(0xFFA973E9),
       Color(0xFF4D96FF),
     ],
     dataInk: <Color>[
@@ -110,6 +137,20 @@ class DialPalette {
       Color(0xFFB48AF0),
       Color(0xFF4D96FF),
     ],
+    dataRim: <Color>[
+      Color(0x00FFB347),
+      Color(0x00FF7A59),
+      Color(0x00E95963),
+      Color(0x00A973E9),
+      Color(0x004D96FF),
+    ],
+    dataGlow: <Color>[
+      Color(0x40FFB347),
+      Color(0x40FF7A59),
+      Color(0x40E95963),
+      Color(0x40A973E9),
+      Color(0x404D96FF),
+    ],
     spoke: Color(0x80F3F0EA),
     clear: Color(0xFF15241B),
     clearInk: Color(0xFF9ED8B0),
@@ -118,8 +159,8 @@ class DialPalette {
   );
 }
 
-// The bead treatment of tokens.json: an inner rim in the habit's ink in light,
-// a glow of the habit's own colour in dark.
+// The bead treatment: an inner rim in the habit's ink at 90% in light, a glow
+// of the habit's own colour at 25% in dark (DialPalette.dataRim, dataGlow).
 class BeadTreatment {
   const BeadTreatment({
     required this.rimWidth,
@@ -137,7 +178,7 @@ class BeadTreatment {
 
   static const BeadTreatment light = BeadTreatment(
     rimWidth: 1.25,
-    rimAlpha: 0.85,
+    rimAlpha: 0.9,
     glowRadius: 0,
     glowBlur: 0,
     glowAlpha: 0,
@@ -148,7 +189,7 @@ class BeadTreatment {
     rimAlpha: 0,
     glowRadius: 8,
     glowBlur: 6,
-    glowAlpha: 0.35,
+    glowAlpha: 0.25,
   );
 }
 

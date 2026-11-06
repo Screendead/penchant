@@ -384,7 +384,7 @@ class _UsageChart extends StatelessWidget {
                 runSpacing: 4,
                 children: [
                   _LegendEntry(
-                    color: scheme.primary.withValues(alpha: 0.5),
+                    color: scheme.outline,
                     dashed: true,
                     label: UsageGraphView.seriesName(stepDays),
                   ),
@@ -535,7 +535,7 @@ class _UsageChart extends StatelessWidget {
           spots: rawSpots,
           isCurved: true,
           preventCurveOverShooting: true,
-          color: scheme.primary.withValues(alpha: 0.5),
+          color: scheme.outline,
           barWidth: 2,
           dashArray: const [4, 4],
           dotData: const FlDotData(show: false),
