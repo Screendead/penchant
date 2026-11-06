@@ -1,14 +1,17 @@
 # Handover — Tracker
 
-*Updated 2026-11-05. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-06. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
 ## The goal
 
-Release the app on the App Store and make money from it. The road there runs in this order: make what exists work
-(the bugs Jack hit), make it safe to change (emulators, end-to-end tests, CI gates), burn down the debt that blocks a
-release, then build the release prerequisites and the paid product from `ideas/`.
+A production-quality habit journal for Jack's own use (`r2-privacy`, Jack, 2026-11-06): "I'm not actually going to
+put it on the App Store; it's just for me." Build it with release polish, but leave the store, legal and payment work
+(privacy policy details, App Store listing, Pro and billing, TestFlight) undone until and unless he decides to sell
+it. No paid Apple Developer account for now (Jack, 2026-11-06), so App Attest, TestFlight, the App Store and Sign in
+with Apple wait; the domain waits until a release. The order stays: make what exists work, keep it safe to change,
+burn down the debt, then build the journal and insights from `ideas/`.
 
 ## "Do the next thing"
 
@@ -34,7 +37,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
 | UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, merged in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. Step 1b, Today, in review in #83 (`feat/today-day-dial`): the dial, tallies with one-tap log, the Log fan, day picker and calendar; the radar and bars are gone | `lib/design/`, `assets/fonts/`, `lib/widgets/day_dial.dart` |
-| Round-2 calls (16, plus `r2-e2ee` and `r2-mac-config` added later), round 3 (`r3-*`, 4 calls), round 4 (`r4-*`, 3 calls) and round 5 (`r5-*`, 3 calls) | Open on the pitch page; rounds 2 and 3 since 2026-11-03, 4 and 5 since 2026-11-04 | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
+| Rounds 2, 3, 4 and 8 on the pitch page | All picked by Jack 2026-11-06 and recorded below; round 5 is moot (the radar left Today in #83). Three calls from 1d/1e are not on the page yet (Calls waiting on Jack) | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
 | Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), merged in #84 (2026-11-06); both development profiles exist, and a signed `flutter build ios --release` carries the new ID | `lib/firebase_options.dart`, `ios/`, `macos/` |
 | Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
@@ -74,14 +77,14 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      `waitForPendingWrites` (`syncStatusProvider`), the mock-up's spacing fits five tallies above the Log button on a
      390 x 844 phone, light shadows, stroke icons, dimmed zero pips. Side by side in
      `docs/pitch/mockups/ui-overhaul/day-dial/fidelity/`; re-render with `tools/fidelity/`. Still different, by
-     the 3:1 floor: the clear day's major spokes, pip and wedge rims, the sparkline's daily line; and the coach pill
-     and bead size (median of the day) wait on Jack.
+     the 3:1 floor: the clear day's major spokes, pip and wedge rims, the sparkline's daily line; Jack's round 8: no coach pill, the
+     clear day's majors at 25%, and bead size against a stored typical (`r8-bead-size`, open on how it is computed).
    - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
      Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial. In review in #89
      (`feat/trends-sheet`, stacked on #83): all of it, and the Log button docks on the sheet's edge. Left for 1f: the
      chart's morph between ranges (fl_chart tweens only equal-length series, so a range change snaps) and the day's
-     container transform with the `animations` package (it fades in place). The weekly remainder stays as built
-     (`r4-weekly`). The average now runs to 30 buckets, starting at 7 days or 4 weeks, as the mock-up has it.
+     container transform with the `animations` package (it fades in place). The weekly remainder changes:
+     `r4-weekly` is B, round the range down to whole weeks (item 4). The average now runs to 30 buckets, starting at 7 days or 4 weeks, as the mock-up has it.
    - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
      with Undo, and editing reuses the amount sheet. In review (`feat/overhaul-1d-habits`): Habits and the history page in
      the card style, swipe-to-delete with Undo on history rows and Undo on the editor's delete (the register's
@@ -113,8 +116,15 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    appeared), beside other 30 s timeouts that touch no Auth code (a server count, a dialog close); a load effect, not
    a keychain one, is the likelier reading. If the hang comes back on a quiet machine, the macOS keychain access group
    (`macos/Runner/*.entitlements`) is the one ID-specific piece on Auth's persistence path.
-4. **Round-2 calls, once picked**: record each below with the date, then queue its work. Build nothing on an unpicked
-   call. Read the picks with `ArtifactData` `list` on collection `picks` of the pitch page (ids start `r2-`).
+4. **The work from the 2026-11-06 picks** (rounds 2 to 4 and 8, below). Small ones first: `r8-clear-spokes` B (major
+   spokes to 25% on a clear day, classed as decoration in `contrast-pairs.json`), `r4-weekly` B (round down to whole
+   weeks; deletes the register's oldest-weekly-bucket item), `r8-mac-keys` B (Cmd-1 to Cmd-9 log one, in the menu
+   bar), `r8-mac-window` B (about 1200 x 780, with 1g), Crashlytics (`r2-crash` A), guest start with linking an email
+   later (`r2-signin`, the part that needs no paid Apple team), onboarding with the plain-name presets (`r2-presets`
+   A), the data model's decimal amount and vice category with its first-launch migrator (`r2-data-model` B), trigger
+   tagging with the Areas of life tree (`r2-triggers` A), and end-to-end encryption (`r2-e2ee` A, `r2-e2ee-key` A).
+   Waiting on Jack before any build: the precomputed per-user summary that `r8-bead-size` asks for (no server code
+   exists; see the call) and Sign in with Apple (the paid team).
 5. **The rest of the register**, medium then low, one class per PR.
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
@@ -142,11 +152,13 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   `test/firestore_indexes_test.dart`; no app change, so no e2e).
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED** (on the pitch page): the open round-2 to round-4 calls (below), and round 8 (2026-11-06, from #83, #92 and #94; recommendations, not decisions): `r8-clear-spokes` (A, majors at full strength), `r8-coach` (A, the "Tap Log" pill until the first entry), `r8-bead-size` (B, the 7-day usual), `r8-tally-target` (A, 44 x 38), `r8-mac-window` (B, about 1200 x 780, with 1g), `r8-mac-keys` (B, Cmd-1 to Cmd-9). `r7-ci` is moot (the repo is public) and so is round 5 (#83 merged); both are off the page, as is the settled e2e-in-CI call. Left for Jack's calls and not built on: telemetry, verified email, vice cap, other languages, server
-time, the weekly remainder (the Trends sheet keeps A as built), units and the data model.
+**UNDECIDED:** the three calls 1d and 1e raised (Calls waiting on Jack, below), and the design of `r8-bead-size`'s
+precomputed summary. Every call on the pitch page is picked (2026-11-06). `r7-ci` and round 5 are moot and off the
+page. Other languages are still unasked.
 
-**Blocked on Jack, not decisions:** the domain variant (support and legal pages), the paid Apple team (App Attest,
-TestFlight), the privacy-policy details, `firebase use --clear` in the main checkout.
+**Blocked on Jack, not decisions:** none while there is no paid Apple team and no release (Jack, 2026-11-06): App
+Attest, TestFlight, the App Store, Sign in with Apple and the domain wait on those, and the privacy-policy details are
+skipped (`r2-privacy`).
 
 Housekeeping that rides along with whatever PR touches it: delete each tech-debt file a PR fixes, and each idea file
 a PR ships, with its README line; run `tools/tech-debt-recount.py` to fix the counts. It resolves paths from its own
@@ -182,8 +194,8 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   historical data, disambiguating which vice a health effect correlates with over time). Maximum granularity.
   Privacy is not a concern as long as sensitive processing and storage stay on the device; it can all be regenerated
   from the raw data.
-- **C16. Framing** (`framing`): **neutral, rated 17+**, with a disclaimer. Apple retired 17+ in July 2025; round 2
-  (`r2-age`) asks Jack to confirm 18+.
+- **C16. Framing** (`framing`): **neutral, rated 17+**, with a disclaimer. Apple retired 17+ in July 2025; Jack confirmed
+  18+ (`r2-age`, 2026-11-06).
 - **C17. Business model** (`business`): **free 1.0, then a one-time Pro unlock in 1.1.**
 - **C18. New fields on vices** (`goals-fields`): **yes.** Optional fields are fine. Mandatory fields are allowed too,
   but only with a migrator that runs on first launch and adds them to existing records.
@@ -229,117 +241,89 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   `docs/design-system/day-dial/project/contrast-pairs.json`, checked by `tools/contrast-check.py` and
   `test/contrast_test.dart`; a new use of a colour adds its pair there.
 
+## Jack's calls, rounds 2 to 4 and 8 (2026-11-06)
+
+Picked on the pitch page (https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs); the page keeps the options and costs.
+Notes are Jack's, condensed.
+
+- **`r2-privacy`**: **no privacy policy for now.** Not going on the App Store; it is just for him. Treat it as a
+  production project and give it the polish, but the legal details stay undone until and unless he decides to sell.
+- **No paid Apple Developer account for now** (Jack, 2026-11-06): no TestFlight, App Store or App Attest yet; the
+  domain variant waits until a release.
+- **`r2-testflight`**: **Production** (no separate beta project). "Just Do It Right." Moot until there is a paid team.
+- **`r2-signin`**: **guest start, link an account later, plus Sign in with Apple.** Jack's production data sits under
+  an email-and-password account and has to end up on his Apple ID (Sign in with Apple). Linking the Apple credential
+  to the signed-in email user keeps the uid, so the data needs no copy. Sign in with Apple needs the paid team; guest
+  start and linking an email do not.
+- **`r2-e2ee`**: **yes, before 1.0**: names, units, amounts and later notes sealed on the device (AES-256-GCM); dates,
+  IDs and the owner stay plaintext. Key in iCloud Keychain plus a printable recovery key.
+- **`r2-e2ee-key`**: **a Today card after a week, and Settings any time.**
+- **`r2-data-model`**: **optional fields, plus a first-launch migrator (for a vice category) and a decimal amount**
+  next to the whole-number quantity.
+- **`r2-days`**: no option picked; the call: **if nothing is logged, treat the day as clean.** No check-in and no
+  days collection.
+- **`r2-presets`**: **plain names** (Alcohol, Coffee, Cigarettes, Vape, Cannabis, Energy drinks, Sweets, Gambling).
+- **`r2-triggers`**: **Areas of life** (Social, Feeling, Work, Body, Routine, Place, Craving), against the
+  recommended B.
+- **`r2-today`**: A (the journal layout), superseded by `r6-ui-direction`: Today is the Day Dial. No work.
+- **`r2-brand`**: **Penchant** (already applied). **`r2-brand-icon`**: "We already have a brand I like": the icon
+  stays `r2-icon`'s candidate 38. No work.
+- **`r2-age`**: **18+**. **`r2-mac`**: **the Mac ships with iOS 1.0 if its e2e is green.** Both moot until a release.
+- **`r2-pro`**: **the analysis layer, $24.99**. **`r2-billing`**: **StoreKit 2 directly.** **`r2-applock`**: **app
+  lock and discreet mode both free.** Parked with the store work; nothing to build now.
+- **`r2-crash`**: **Crashlytics only.**
+- **`r2-cli`**: **upgrade the global Firebase CLI** (`npm install -g firebase-tools@latest`).
+- **`r3-delete-copy`**: **ship the deletion wording as written.** **`r3-verify`**: **nothing requires a verified
+  email.** **`r3-cache`**: **keep the on-device cache.** **`r3-attest`**: **App Attest with DeviceCheck fallback, as
+  built.** All as built; no work.
+- **`r4-server-time`**: **the phone's clock, as built.** **`r4-vice-cap`**: **no cap for 1.0.** No work.
+- **`r4-weekly`**: **round the range down to whole weeks** (30 days shows 28), against the recommended A. Queued.
+- **`r8-clear-spokes`**: **25%, as the mock-up**, against the recommended A: on a clear day the major spokes are
+  decoration (the 00/06/12/18 labels give the time), an exception to the contrast rule for that state only. Queued.
+- **`r8-coach`**: **don't build the "Tap Log" pill.**
+- **`r8-bead-size`**: C, **a typical amount stored per habit**, on Jack's terms: not editable, populated by a
+  scheduled job each month over the last 3 months only. More generally, precompute wherever possible into a single
+  document per user, to cut reads and load times, especially for the graph and calendar. The app has no server code
+  (`functions/` was deleted by C7), so how the job runs is open (below); nothing is built until then.
+- **`r8-tally-target`**: **44 x 38, as built.** No work.
+- **`r8-mac-window`**: **about 1200 x 780, the split view by default**; lands with 1g.
+- **`r8-mac-keys`**: **Cmd-1 to Cmd-9 log one of the Nth habit now**, listed in the menu bar. Queued.
+
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 2 is on the pitch page, https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs, each with options and one
-recommendation. Ids: `r2-e2ee` (end-to-end encryption of what each entry says; `ideas/release-blockers/end-to-end-encryption.md`,
-prototype on `mockup/e2e-encryption`; Jack's steer 2026-11-03: encrypt names and quantities, dates may stay plaintext),
-`r2-age` (18+ in
-place of the retired 17+), `r2-data-model` (fields on activities, decimals, new collections), `r2-days`, `r2-mac`,
-`r2-pro` (the free/Pro line and price), `r2-billing`, `r2-signin`, `r2-crash`, `r2-testflight` (a separate beta
-Firebase project), `r2-privacy`, `r2-applock`, `r2-cli` (upgrade the global Firebase CLI).
+Not on the pitch page yet; each is built one way and waits on a pick.
 
-Built as mock-ups on branches and pitched with screenshots: the Today layout (`mockup/today-layout`), the onboarding
-presets and wording (`mockup/onboarding-presets`), the starter trigger tree (`mockup/trigger-tree`), and brand plus
-icon (`mockup/brand-and-icon`, superseded by `r2-brand` and `r2-icon`). Id `r2-triggers`; `r2-today` is settled by
-`r6-ui-direction` and `r2-presets` was picked (round 2 above).
+- **Archive placement** (from 1d): Archive moved from Manage Data to a button on the habit's history page (as built).
+- **Appearance** (from 1e): Settings has a fixed "Match system" row; the theme follows the system with no light or
+  dark override (as built).
+- **Export** (from 1e): Export lives in Account Settings only; Settings has no Export row (as built).
+- **How `r8-bead-size`'s summary is computed**: a scheduled server job needs Cloud Functions back (C7 deleted them),
+  the Blaze plan and a CI deploy path for functions, and it cannot read amounts once `r2-e2ee` seals them. The
+  smallest alternative is the app refreshing the user's summary document itself on launch when it is over a month
+  old (no UI, so not editable; the rules fix its fields).
 
-Round 3 (2026-11-03, raised by wave B): `r3-delete-copy` (the deletion and export wording in
-`lib/account/account_copy.dart`), `r3-verify` (whether anything requires a verified email), `r3-cache` (keep the
-on-device cache for offline logging, which Firebase says is not securely wiped), `r3-attest` (App Attest with
-DeviceCheck fallback, as built, or DeviceCheck only).
-
-On the pitch page as `r4-vice-cap`: **`vice-cap`** (from backend hardening, PR #55): cap the number of vices per user, with a
-guard in Add Vice and the rules, or leave the vice lists unbounded. Claude's recommendation: **leave them unbounded
-for 1.0**: vices are created by hand, and since the day query dropped its `in` filter the number of vices limits no
-query. A bare `limit` is not an option: it would hide the oldest vices without saying so. Register:
-`tech-debt/firebase-data-layer/vice-lists-are-unbounded.md`; idea: `ideas/release-blockers/backend-hardening.md`.
-
-On the pitch page as `r4-weekly`: **`weekly-remainder`** (from the usage graph fix, PR #69): Weekly view covers every day
-the Range menu names, counted back from today, so the newest point is a whole week and, when the range is not a
-whole number of weeks, the oldest point sums only the days left over (2 at 30 days, 6 at 90, 5 at 180, 1 at 365)
-and reads low. On master the short bucket was the newest one. Options:
-- **A** keep the partial oldest bucket, labelled as partial on the axis and in the summary;
-- **B** round the range down to whole weeks (drops up to 6 days of the named range);
-- **C** round it up to whole weeks (shows up to 6 days more than the menu says);
-- **D** scale the partial bucket to a weekly rate (marked as estimated).
-
-PR #69 ships the unlabelled form of A. Claude's recommendation: **A** (keep the short oldest week, labelled as
-partial). Register:
-`tech-debt/widget-state-and-view-logic/oldest-weekly-bucket-holds-the-remainder.md`.
-
-On the pitch page as `r4-server-time`: **`server-time`** (from the data-layer PR, #68): stamp "now" entries with
-`FieldValue.serverTimestamp()`, or keep the device clock. The queued item asked for server time; #68 kept the device
-clock. A pending server timestamp matches no `createdAt` range query, so an entry logged offline is missing from Today
-until it syncs, and the server stamps the sync time, so it can land on another day. Claude's recommendation: **keep
-the device clock**, since offline logging (#53) is shipped; the cost is that a skewed or hand-set clock places an
-entry anywhere, which the rules don't bound. Register:
-`tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md`; rule: `CLAUDE.md` **Days**.
-
-Round 5 (2026-11-04, from the Today chart fix, PR #74; on the pitch page, each built the first way). Recommendations,
-not decisions. All three concern the radar's key, which leaves Today in overhaul step 1b, so they are likely moot
-once it lands; they stay open until Jack says so:
-- **`r5-radar-inset`**: radar inset by one title line on every side at all text sizes (recommended, as built) vs only
-  when the key shows.
-- **`r5-key-height`**: the key takes the height it needs and the chart is left out below four title lines of room
-  (recommended, as built) vs a half-height cap with scrolling vs bars instead of the radar at large text sizes, with
-  the key when bar names still don't fit (bars also need a name per bar, so the largest size still falls back to the
-  key; a day's work).
-- **`r5-key-always`**: also show the key whenever amounts are dropped from titles (**yes**, recommended) vs only when
-  a name is cut.
+Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 
 ## For Jack to do (not decisions)
 
-- **Web site taken down** (`r2-web-site`): done; the site URL returns 404 (checked 2026-11-04). The deployed
-  releases stay in the console, so this can be undone.
-- **Mac development profile**: done by Jack 2026-11-05; the macOS e2e passes on #47. The `com.screendead.penchant`
-  profiles (iOS and Mac) were made by Claude with `xcodebuild -allowProvisioningUpdates` (`CLAUDE.md`), no clicks. The main checkout may still
-  hold an uncommitted `macos/Runner.xcodeproj/project.pbxproj` from the 2026-11-04 attempt; #47 carries the team, so
-  `git checkout -- macos/Runner.xcodeproj/project.pbxproj` there discards it.
-- **Close Dependabot PRs #22 and #42** if Dependabot hasn't: #44 supersedes them, and closing them was refused to
-  Claude (`gh pr close 22 42`).
-- **The activities index is deployed** (Claude, 2026-11-03, with Jack's leave to deploy indexes only, never
-  `--force`). Before installing a build from #55 on, confirm Firestore > Indexes shows `activities (ownerID ASC,
-  createdAt DESC)` **Enabled**. Production also holds 4 indexes that `firestore.indexes.json` doesn't list; they were
-  left in place (the register's index-drift item).
-- **App Attest needs a paid Apple Developer Program team.** Adding the App Attest entitlement to Runner broke
-  `flutter build ios --release`: Xcode said "Personal development teams, including "Jack Lusher", do not support the
-  App Attest capability" for team 8N575942RT, so the backend-hardening PR ships App Check without it, and App Attest
-  yields no accepted token until it is added. TestFlight needs the paid membership anyway. Once the team has it, tell
-  Claude: it adds the capability (`com.apple.developer.devicecheck.appattest-environment` = `production`) and proves the
-  release build still signs.
-- **Register the iOS app with App Check** (waits on the paid Apple team; Jack: "can wait") (Firebase console > Security > App Check > Apps): App Attest (needs the
-  Team ID) and DeviceCheck (needs a DeviceCheck key from the developer portal: the .p8 file, its Key ID, the Team ID).
-  Enforce nothing yet.
-- **Enforce App Check on Firestore only after every installed copy has it:** your iPhone and every TestFlight
-  tester on a build from the backend-hardening PR or later, the App Attest entitlement in place, and Security >
-  App Check > APIs showing nearly all Firestore requests verified. An older build is refused once you click
-  Enforce; enforcement takes up to 15 minutes, and turning it off undoes it.
-- **Set budget alerts** on `screendead-vice-tracker` (Google Cloud console > Billing > Budgets & alerts, or the
-  prompt when upgrading to Blaze). Alerts only email; they don't pause Firestore.
-- **Check Email Enumeration Protection is on** (Firebase console > Authentication > Settings > User actions, for
-  `screendead-vice-tracker`). The app no longer shows Firebase's error text, but with protection off the Auth API
-  itself still answers "no such user" differently from "wrong password". Also check the password-reset and
-  verification email templates read sensibly now that the app sends both.
-- **Clear the main checkout's active Firebase project** (from #68): in `~/development/tracker`, run
-  `firebase use --clear`. The CLI's configstore maps that directory to `screendead-vice-tracker`, and that entry wins
-  over `.firebaserc`, so until it is cleared a bare `firebase deploy` or `firestore:*` there reaches production. It
-  edits only the local configstore and calls nothing in any project; afterwards `firebase use` there prints
-  `demo-tracker`. Register: `tech-debt/firebase-data-layer/every-firebase-command-targets-production.md`.
-- **Firebase registration: done** (2026-11-05). Jack registered the iOS app `com.screendead.penchant` in
-  `screendead-vice-tracker` and supplied its `GoogleService-Info.plist` (copy in
-  `~/development/tracker-tools/firebase-config/`). The console offers no separate macOS app, so the Mac shares that
-  registration and file, which settles `r2-mac-config` on its recommended side. Both bundle IDs and configs are
-  switched (queue item 3). The phone sees Penchant as a new app: the build installed under the old ID
-  (`com.screendead.tracker.tracker`) stays beside it until deleted, and the new one starts signed out. The two old
-  iOS registrations in the console (`com.screendead.tracker.tracker` and `…tracker.RunnerTests`) serve only that old
-  install; remove them once it is deleted, if wanted.
-- **Choose the domain variant** before the first upload: `penchant.com` is held (MarkMonitor, owner unknown) and
-  `penchant.app` is parked, so a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. It sets the
-  support and legal-page addresses (`ideas/release-blockers/support-about-and-legal-pages.md`). Also before the first
-  upload: search the App Store for Penchant on a device.
-- **Send Claude in chat:** the privacy policy's legal entity, contact address and data-controller details; the
-  support email; the TestFlight testers. They stay out of the repo.
+Jack reported the page's list done on 2026-11-06. Checked from here: Dependabot PRs #22 and #42 are closed, and the
+CLI's configstore no longer maps the main checkout to production (`firebase use --clear` done). The console steps
+(Email Enumeration Protection, the email templates, a budget alert) can't be seen from here; taken as done on his word.
+
+- **Still open:** the main checkout still shows `macos/Runner.xcodeproj/project.pbxproj` modified (the 2026-11-04
+  signing attempt; #47 carries the team). `git checkout -- macos/Runner.xcodeproj/project.pbxproj` in
+  `~/development/tracker` discards it; Claude leaves it, as it is Jack's working tree.
+- **Waits on a paid Apple Developer Program team, which Jack is not getting for now** (2026-11-06): the App Attest
+  entitlement (a personal team can't sign it; once there is a team Claude adds
+  `com.apple.developer.devicecheck.appattest-environment` = `production` and proves the release build signs),
+  registering the app with App Check (Team ID, a DeviceCheck key) and then enforcing it on Firestore, TestFlight, Sign
+  in with Apple, and the App Store.
+- **Waits on a release:** the domain variant (`penchant.com` is held, `penchant.app` parked) and the support and legal
+  pages it addresses, an App Store search for Penchant, and the privacy-policy and support details (`r2-privacy`).
+- **The old app install:** the build under `com.screendead.tracker.tracker` stays on the phone beside Penchant until
+  deleted; its two iOS registrations in the console can go once it is.
+- **Indexes:** the activities index is deployed; production also holds 4 indexes `firestore.indexes.json` doesn't
+  list, left in place (the register's index-drift item).
 
 ## How to test here
 
