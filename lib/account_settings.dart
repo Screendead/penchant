@@ -7,10 +7,13 @@ import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/password_prompt.dart';
+import 'package:tracker/design/dial_icons.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/settings_card.dart';
 
 class AccountSettings extends ConsumerWidget {
   const AccountSettings({super.key});
@@ -19,19 +22,24 @@ class AccountSettings extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<User?> userValue = ref.watch(userProfileProvider);
     final User? user = userValue.value;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Account Settings')),
-      body: switch ((user, userValue.error)) {
-        (final User user, _) => _AccountSettingsBody(
-          key: ValueKey<String>(user.uid),
-          user: user,
-        ),
-        (null, final Object _) => ErrorView(
-          message: AccountCopy.profileLoadFailed,
-          onRetry: () => ref.invalidate(userProfileProvider, asReload: true),
-        ),
-        (null, null) => const Center(child: CircularProgressIndicator()),
-      },
+    return CardPage(
+      title: 'Account Settings',
+      children: <Widget>[
+        switch ((user, userValue.error)) {
+          (final User user, _) => _AccountSettingsBody(
+            key: ValueKey<String>(user.uid),
+            user: user,
+          ),
+          (null, final Object _) => ErrorView(
+            message: AccountCopy.profileLoadFailed,
+            onRetry: () => ref.invalidate(userProfileProvider, asReload: true),
+          ),
+          (null, null) => const Padding(
+            padding: EdgeInsets.only(top: DialSpace.xxxl),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        },
+      ],
     );
   }
 }
@@ -238,7 +246,8 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
   Widget build(BuildContext context) {
     final String? busy = _busy;
     if (busy != null) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.only(top: DialSpace.xxxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -249,10 +258,10 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
         ),
       );
     }
-    final ThemeData theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        const CardSectionLabel('Profile'),
         Form(
           key: _formKey,
           child: Column(
@@ -262,7 +271,7 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
                 controller: _displayName,
                 decoration: const InputDecoration(labelText: 'Display Name'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DialSpace.m),
               TextFormField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
@@ -270,14 +279,14 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
                 decoration: const InputDecoration(labelText: 'Email'),
                 validator: (String? value) => emailError(value?.trim()),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DialSpace.m),
               TextFormField(
                 controller: _photoURL,
                 keyboardType: TextInputType.url,
                 autocorrect: false,
                 decoration: const InputDecoration(labelText: 'Photo URL'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DialSpace.m),
               ElevatedButton(
                 onPressed: _saveProfile,
                 child: const Text('Update Profile'),
@@ -285,42 +294,40 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        ListTile(
-          leading: Icon(
-            widget.user.emailVerified
-                ? Icons.verified
-                : Icons.mark_email_unread,
-          ),
-          title: Text(
-            widget.user.emailVerified
-                ? AccountCopy.verified
-                : AccountCopy.notVerified,
-          ),
-          trailing: widget.user.emailVerified
-              ? null
-              : TextButton(
-                  onPressed: _resendVerification,
-                  child: const Text(AccountCopy.resendVerification),
-                ),
+        DialCard(
+          top: DialSpace.xl,
+          children: <Widget>[
+            CardRow(
+              label: widget.user.emailVerified
+                  ? AccountCopy.verified
+                  : AccountCopy.notVerified,
+              trailing: widget.user.emailVerified
+                  ? null
+                  : TextButton(
+                      onPressed: _resendVerification,
+                      child: const Text(AccountCopy.resendVerification),
+                    ),
+            ),
+          ],
         ),
-        const Divider(height: 32),
-        Text(AccountCopy.dataSection, style: theme.textTheme.titleMedium),
-        ListTile(
-          key: _exportTile,
-          leading: const Icon(Icons.ios_share),
-          title: const Text(AccountCopy.exportTitle),
-          subtitle: const Text(AccountCopy.exportSubtitle),
-          onTap: _export,
-        ),
-        ListTile(
-          leading: Icon(Icons.delete_forever, color: theme.colorScheme.error),
-          title: Text(
-            AccountCopy.deleteTitle,
-            style: TextStyle(color: theme.colorScheme.error),
-          ),
-          subtitle: const Text(AccountCopy.deleteSubtitle),
-          onTap: _delete,
+        const CardSectionLabel(AccountCopy.dataSection),
+        DialCard(
+          top: 0,
+          children: <Widget>[
+            CardRow(
+              key: _exportTile,
+              label: AccountCopy.exportTitle,
+              subtitle: AccountCopy.exportSubtitle,
+              glyph: DialGlyph.share,
+              onTap: _export,
+            ),
+            CardRow(
+              label: AccountCopy.deleteTitle,
+              subtitle: AccountCopy.deleteSubtitle,
+              danger: true,
+              onTap: _delete,
+            ),
+          ],
         ),
       ],
     );
