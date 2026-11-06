@@ -381,7 +381,11 @@ is success, a timeout means the write is queued and the UI says it will sync, an
 `FirebaseException` is a failure. `ViceActivity.pending` carries `hasPendingWrites`; the day and history
 providers listen with `includeMetadataChanges: true` so the server's acknowledgement clears it.
 `offlineProvider` is true once a vices listener has answered from the cache for three seconds, which
-drives the offline banner and the offline wording of an empty day.
+drives the offline banner and the offline wording of an empty day. `syncStatusProvider` (`lib/providers/sync_status_provider.dart`) drives
+the header's Synced/Syncing pill and the menu's footer: `TrackerWrites` reports each write as it is issued, and the
+tracker calls `waitForPendingWrites()` again after each (a wait covers only writes issued before it, earlier
+sessions' included), so it says Synced only once every write has been acknowledged. The day's "not yet synced" note
+shows only offline.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against

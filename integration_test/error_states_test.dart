@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -43,7 +44,7 @@ void main() {
     );
     await register(tester, 'e2e-denied-read@example.com');
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     final String denied = loadErrorMessage(
       'your habits',
       FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied'),

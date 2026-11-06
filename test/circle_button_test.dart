@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/widgets/circle_button.dart';
 
@@ -16,7 +17,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: CircleButton(
-                icon: Icons.keyboard_arrow_down,
+                icon: DialGlyph.down,
                 tooltip: 'Close',
                 focusNode: focus,
                 onPressed: () {},

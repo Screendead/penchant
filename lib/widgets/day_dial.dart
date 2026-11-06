@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
@@ -161,9 +162,7 @@ class _DayDialState extends ConsumerState<DayDial>
   Duration? _clearStart;
   double _clearFrom = 0;
 
-  final ValueNotifier<DateTime> _clock = ValueNotifier<DateTime>(
-    DateTime.now(),
-  );
+  final ValueNotifier<DateTime> _clock = ValueNotifier<DateTime>(clock.now());
   Timer? _clockTimer;
   double _drag = 0;
   final ValueNotifier<double> _spin = ValueNotifier<double>(0);
@@ -228,10 +227,10 @@ class _DayDialState extends ConsumerState<DayDial>
     if (!_isToday) {
       return;
     }
-    _clock.value = DateTime.now();
+    _clock.value = clock.now();
     _clockTimer = Timer.periodic(
       _reduced ? const Duration(minutes: 1) : const Duration(seconds: 1),
-      (_) => _clock.value = DateTime.now(),
+      (_) => _clock.value = clock.now(),
     );
   }
 
@@ -579,6 +578,11 @@ class _DayDialState extends ConsumerState<DayDial>
               numeralStyle: type.dialNumeral,
               textScaler: textScaler,
               clear: clear,
+              shadows: DialShadows.disc(Theme.of(context).brightness),
+              // The mock-up's 60% is under 3:1 on the light wash.
+              ringAlpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.6
+                  : 0.72,
             ),
           ),
         );
@@ -764,13 +768,18 @@ class _DayDialState extends ConsumerState<DayDial>
           if (_isToday)
             ValueListenableBuilder<DateTime>(
               valueListenable: _clock,
-              builder: (BuildContext context, DateTime now, _) =>
-                  Text(formatClock(now), style: type.monoL),
+              builder: (BuildContext context, DateTime now, _) => Text(
+                formatClock(now),
+                style: type.monoL.copyWith(fontSize: 21),
+              ),
             )
           else
             Text(
               formatWeekdayShort(widget.day),
-              style: type.monoL.copyWith(fontFamily: DialFonts.text),
+              style: type.monoL.copyWith(
+                fontFamily: DialFonts.text,
+                fontSize: 21,
+              ),
             ),
           Text(count, style: second),
         ],
@@ -782,7 +791,10 @@ class _DayDialState extends ConsumerState<DayDial>
         data: MediaQuery.of(context).copyWith(textScaler: textScaler),
         child: Padding(
           padding: const EdgeInsets.all(6),
-          child: Center(
+          // The text may run past the hub, as "nothing logged" does in the
+          // mock-up, but stays inside the innermost bead track (radius 68).
+          child: OverflowBox(
+            maxWidth: 120,
             child: FittedBox(fit: BoxFit.scaleDown, child: content),
           ),
         ),
@@ -818,8 +830,12 @@ class _FacePainter extends CustomPainter {
     required this.numeralStyle,
     required this.textScaler,
     required this.clear,
+    required this.shadows,
+    required this.ringAlpha,
   });
 
+  final List<BoxShadow> shadows;
+  final double ringAlpha;
   final DialColors colors;
   final Color surface;
   final TextStyle numeralStyle;
@@ -834,6 +850,13 @@ class _FacePainter extends CustomPainter {
     canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(scale);
 
+    for (final BoxShadow shadow in shadows) {
+      canvas.drawCircle(
+        shadow.offset,
+        DialFace.disc + shadow.spreadRadius,
+        shadow.toPaint(),
+      );
+    }
     canvas.drawCircle(Offset.zero, DialFace.disc, Paint()..color = surface);
     canvas.drawCircle(
       Offset.zero,
@@ -864,13 +887,14 @@ class _FacePainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
           ..strokeCap = StrokeCap.round
-          ..color = colors.clearInk,
+          ..color = colors.clearInk.withValues(alpha: ringAlpha),
       );
     }
 
     // The majors mark the face's quarters and thirds, so they keep the 3:1 of
-    // contrast-pairs.json on a clear day; only the minors dim.
-    final double minorAlpha = 0.45 * (1 - 0.75 * clear);
+    // contrast-pairs.json on a clear day; the minors fade to the mock-up's
+    // 25%.
+    final double minorAlpha = 0.45 - 0.2 * clear;
     for (int i = 0; i < 24; i++) {
       final bool major = i % 3 == 0;
       final double a = dialAngle(i * 60.0);
@@ -913,6 +937,8 @@ class _FacePainter extends CustomPainter {
   @override
   bool shouldRepaint(_FacePainter old) =>
       old.clear != clear ||
+      old.ringAlpha != ringAlpha ||
+      !listEquals(old.shadows, shadows) ||
       old.colors != colors ||
       old.surface != surface ||
       old.numeralStyle != numeralStyle ||

@@ -1,5 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -122,59 +126,105 @@ class _TallyRowState extends State<TallyRow>
       ],
     );
 
-    return AnimatedBuilder(
-      animation: _flash,
-      builder: (BuildContext context, Widget? child) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: hue.withValues(
-            alpha:
-                0.16 *
-                (1 - Curves.easeIn.transform(_flash.value)) *
-                (_flash.isAnimating ? 1 : 0),
+    return _TallSemantics(
+      child: AnimatedBuilder(
+        animation: _flash,
+        builder: (BuildContext context, Widget? child) => DecoratedBox(
+          decoration: BoxDecoration(
+            color: hue.withValues(
+              alpha:
+                  0.16 *
+                  (1 - Curves.easeIn.transform(_flash.value)) *
+                  (_flash.isAnimating ? 1 : 0),
+            ),
+            borderRadius: BorderRadius.circular(14),
           ),
-          borderRadius: BorderRadius.circular(14),
+          child: child,
         ),
-        child: child,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 10, right: 4),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Semantics(
-                label: total == null
-                    ? widget.vice.name
-                    : TallyRow.label(widget.vice, total),
-                excludeSemantics: true,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: <Widget>[
-                      HabitPip(mark: widget.mark),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.vice.name,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: zero ? colors.muted : null,
-                          ),
-                        ),
+        child: Padding(
+          padding: const EdgeInsets.only(left: 10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: DialSize.tallyRow),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Semantics(
+                    label: total == null
+                        ? widget.vice.name
+                        : TallyRow.label(widget.vice, total),
+                    excludeSemantics: true,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: LayoutBuilder(
+                        builder: (BuildContext context, BoxConstraints box) =>
+                            Row(
+                              children: <Widget>[
+                                HabitPip(mark: widget.mark, dim: zero),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    widget.vice.name,
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      fontSize: 15.5,
+                                      color: zero ? colors.muted : null,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                // At large text the total shrinks before it
+                                // crowds the name out.
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: box.maxWidth * 0.55,
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: totals,
+                                  ),
+                                ),
+                              ],
+                            ),
                       ),
-                      const SizedBox(width: 10),
-                      totals,
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 4),
+                if (widget.onLog case final void Function(Offset) onLog)
+                  _PlusButton(label: logOneLabel(widget.vice), onPressed: onLog)
+                else
+                  const SizedBox(width: DialSize.minTapTarget),
+              ],
             ),
-            if (widget.onLog case final void Function(Offset) onLog)
-              _PlusButton(label: logOneLabel(widget.vice), onPressed: onLog)
-            else
-              const SizedBox(height: DialSize.minTapTarget),
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+// The row is one screen-reader stop, its name and total with the + as its
+// tap. The row is 38 pt, so the stop's frame is stretched to 44 pt about its
+// middle, overlapping its neighbours' by 3 pt, as the +'s ink does.
+class _TallSemantics extends SingleChildRenderObjectWidget {
+  const _TallSemantics({required Widget super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderTallSemantics();
+}
+
+class _RenderTallSemantics extends RenderProxyBox {
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    config.isSemanticBoundary = true;
+  }
+
+  @override
+  Rect get semanticBounds {
+    final double extra = max(0, DialSize.minTapTarget - size.height) / 2;
+    return Rect.fromLTRB(0, -extra, size.width, size.height + extra);
   }
 }
 
@@ -189,27 +239,44 @@ class _PlusButton extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
 
-    return Tooltip(
-      message: label,
-      child: SizedBox.square(
-        dimension: DialSize.minTapTarget,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkResponse(
-            radius: DialSize.minTapTarget / 2,
-            onTap: () {
-              final RenderBox box = context.findRenderObject()! as RenderBox;
-              onPressed(box.localToGlobal(box.size.center(Offset.zero)));
-            },
-            child: Center(
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  color: scheme.surfaceContainerLow,
-                  shape: CircleBorder(side: BorderSide(color: colors.line)),
-                ),
-                child: SizedBox.square(
-                  dimension: DialSize.tallyPlus,
-                  child: Icon(Icons.add, size: 16, color: scheme.onSurface),
+    // 32 pt drawn in a 38 pt row, as the mock-up has it. The ink is 44 pt
+    // square, but hit testing stops at the row's bounds, so a touch lands on
+    // a 44 x 38 target; the rows' targets meet with no gap between them.
+    return SizedBox(
+      width: DialSize.minTapTarget,
+      height: DialSize.tallyRow,
+      child: OverflowBox(
+        maxHeight: DialSize.minTapTarget,
+        child: Tooltip(
+          message: label,
+          child: SizedBox.square(
+            dimension: DialSize.minTapTarget,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkResponse(
+                radius: DialSize.minTapTarget / 2,
+                onTap: () {
+                  final RenderBox box =
+                      context.findRenderObject()! as RenderBox;
+                  onPressed(box.localToGlobal(box.size.center(Offset.zero)));
+                },
+                child: Center(
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      color: scheme.surfaceContainerLow,
+                      shape: CircleBorder(side: BorderSide(color: colors.line)),
+                    ),
+                    child: SizedBox.square(
+                      dimension: DialSize.tallyPlus,
+                      child: Center(
+                        child: StrokeIcon(
+                          DialGlyph.plus,
+                          size: 16,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

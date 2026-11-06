@@ -8,7 +8,9 @@ import 'package:tracker/design/tokens.dart';
 // One habit mark: a filled disc for habits 1-5, a ring for 6-10 and a dotted
 // ring for 11-15, and a pending entry's a turning dashed rim. [fill] grows a
 // filled mark from its centre. A filled mark holds 3:1 against its ground by
-// its inner rim in light and by its own fill in dark, where it also glows.
+// its inner rim in light and by its own fill in dark, where it also glows. A
+// [dim] filled mark (a zero tally's pip) is its fill at 40% inside a 1 pt rim
+// of its ink at 70%, which holds 3:1 in both themes (contrast-pairs.json).
 void paintHabitMark(
   Canvas canvas,
   Offset centre,
@@ -18,6 +20,8 @@ void paintHabitMark(
   double fill = 1,
   bool pending = false,
   double rotation = 0,
+  double? rimWidth,
+  bool dim = false,
 }) {
   final Color hue = colors.habit(mark);
   final Color ink = colors.habitInk(mark);
@@ -53,7 +57,28 @@ void paintHabitMark(
     }
     return;
   }
-  _paintFilled(canvas, centre, radius * fill, hue, ink, bead);
+  if (dim) {
+    canvas
+      ..drawCircle(centre, radius, Paint()..color = hue.withValues(alpha: 0.4))
+      ..drawCircle(
+        centre,
+        radius - 0.5,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = ink.withValues(alpha: 0.7),
+      );
+    return;
+  }
+  _paintFilled(
+    canvas,
+    centre,
+    radius * fill,
+    hue,
+    ink,
+    bead,
+    rimWidth ?? bead.rimWidth,
+  );
 }
 
 void _paintFilled(
@@ -63,6 +88,7 @@ void _paintFilled(
   Color hue,
   Color ink,
   BeadTreatment bead,
+  double rimWidth,
 ) {
   if (bead.glowAlpha > 0 && radius > 0) {
     canvas.drawCircle(
@@ -74,13 +100,13 @@ void _paintFilled(
     );
   }
   canvas.drawCircle(centre, radius, Paint()..color = hue);
-  if (bead.rimWidth > 0 && radius > bead.rimWidth) {
+  if (rimWidth > 0 && radius > rimWidth) {
     canvas.drawCircle(
       centre,
-      radius - bead.rimWidth / 2,
+      radius - rimWidth / 2,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = bead.rimWidth
+        ..strokeWidth = rimWidth
         ..color = ink.withValues(alpha: bead.rimAlpha),
     );
   }
@@ -108,25 +134,35 @@ void _paintDashed(
   }
 }
 
-// A pip: the habit's mark at a fixed size, for rows and keys.
+// A pip: the habit's mark at a fixed size, for rows and keys. Its rim is
+// 1 pt, so a 10 pt pip reads as a solid dot. [dim] fades a zero row's.
 class HabitPip extends StatelessWidget {
-  const HabitPip({super.key, required this.mark, this.size = 10});
+  const HabitPip({
+    super.key,
+    required this.mark,
+    this.size = 10,
+    this.dim = false,
+  });
 
   final HabitMark mark;
   final double size;
+  final bool dim;
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
     dimension: size,
-    child: CustomPaint(painter: _PipPainter(mark, DialColors.of(context))),
+    child: CustomPaint(
+      painter: _PipPainter(mark, DialColors.of(context), dim: dim),
+    ),
   );
 }
 
 class _PipPainter extends CustomPainter {
-  _PipPainter(this.mark, this.colors);
+  _PipPainter(this.mark, this.colors, {required this.dim});
 
   final HabitMark mark;
   final DialColors colors;
+  final bool dim;
 
   @override
   void paint(Canvas canvas, Size size) => paintHabitMark(
@@ -135,9 +171,11 @@ class _PipPainter extends CustomPainter {
     size.shortestSide / 2,
     mark,
     colors,
+    rimWidth: 1,
+    dim: dim,
   );
 
   @override
   bool shouldRepaint(_PipPainter old) =>
-      old.mark != mark || old.colors != colors;
+      old.mark != mark || old.colors != colors || old.dim != dim;
 }

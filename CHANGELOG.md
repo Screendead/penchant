@@ -22,6 +22,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Today matches its design: the Penchant icon and name at the top open a menu with Habits, Settings and whether
+  your entries have synced, in place of the side drawer, and a pill beside them says Synced, Syncing or Offline. The
+  dial, the five tallies, the Log button and the Trends peek all fit on one iPhone screen, the light theme lifts its
+  cards and sheets with soft shadows, a habit at zero fades in its row, and the icons are the design's line icons.
 - Today is a 24-hour dial: each entry is a coloured bead at the time it happened, sized against your usual amount
   that day, with the time beside it on a quiet day and the clock hand on today. Under it, a row per habit gives the
   day's total and a + that logs one now, with eight seconds to Undo. The Log button opens a fan of your habits: tap

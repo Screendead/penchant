@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -36,6 +37,7 @@ void main() {
     await FirebaseFirestore.instance.disableNetwork();
     try {
       await pumpUntil(tester, banner);
+      await pumpUntil(tester, find.text(SyncPill.offlineLabel));
       // An empty day offline may be one this device never fetched.
       await tap(tester, find.byTooltip('Previous day'));
       await pumpUntil(tester, find.text(ClearDay.offlineHeadline));
@@ -65,7 +67,7 @@ void main() {
         find.text(PendingDayNote.text(3), skipOffstage: false),
       );
 
-      await openFromDrawer(tester, 'Manage Data');
+      await openFromMenu(tester, Homepage.habitsItem);
       // count() runs only on the server; offline the row counts what this
       // device holds. Each row resolves on its own.
       await pumpUntil(
@@ -143,6 +145,8 @@ void main() {
     // A get() merges unacknowledged writes even from the server, so wait for
     // the queue to drain before reading what the emulator holds.
     await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
+    // Today's pill, under the history page, has seen the same.
+    await pumpUntil(tester, find.text(SyncPill.synced, skipOffstage: false));
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
         await storedActivities('Coffee');
     expect(stored, hasLength(1));

@@ -312,9 +312,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(graphed.last, coffee.id);
 
-      await tester.tap(find.byTooltip('Open navigation menu'));
+      await tester.tap(find.byKey(Homepage.menuKey));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.text(Homepage.settingsItem));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();

@@ -32,7 +32,7 @@ class ViceTracker extends ConsumerStatefulWidget {
   const ViceTracker({super.key});
 
   static const String noHabits =
-      'No habits yet. Add one from Manage Data in the menu.';
+      'No habits yet. Add one from Habits in the menu.';
 
   // Room for the sheet's peek and the Log button on it, below a snackbar.
   static double logClearance(BuildContext context) =>
@@ -214,17 +214,19 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 child: SizedBox(
                   width: width,
                   child: ListView(
+                    // The mock-up's spacing: 6 above the day row and the
+                    // dial, 10 above the tallies.
                     padding: EdgeInsets.fromLTRB(
                       DialSpace.m,
-                      DialSpace.xs,
+                      6,
                       DialSpace.m,
                       DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
                     children: <Widget>[
+                      // The arrows' 40 pt circles sit 20 from the edges, their
+                      // 44 pt targets 18.
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: DialSpace.gutter - DialSpace.m,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: DayPicker(
                           day: day,
                           today: today,
@@ -233,7 +235,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                           marks: marks,
                         ),
                       ),
-                      const SizedBox(height: DialSpace.s),
+                      const SizedBox(height: 6),
                       Center(
                         child: SizedBox.square(
                           dimension: side,
@@ -260,6 +262,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                           ),
                         ),
                       PendingDayNote(selectedDate: day),
+                      const SizedBox(height: 10),
                       if (vices == null)
                         const Padding(
                           padding: EdgeInsets.all(DialSpace.m),

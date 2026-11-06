@@ -35,9 +35,16 @@ Object? comparableValue(Object? value) => switch (value) {
 // Every write the app makes. The field sets must match what firestore.rules
 // accepts on create and update.
 class TrackerWrites {
-  TrackerWrites(this._firestore);
+  TrackerWrites(this._firestore, {void Function()? onWrite})
+    : _onWrite = onWrite;
 
   final FirebaseFirestore _firestore;
+  final void Function()? _onWrite;
+
+  SentWrite _issued(SentWrite write) {
+    _onWrite?.call();
+    return write;
+  }
 
   CollectionReference<Map<String, dynamic>> get _vices =>
       _firestore.collection('vices');
@@ -53,17 +60,19 @@ class TrackerWrites {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
     final DocumentReference<Map<String, dynamic>> vice = _vices.doc();
-    return SentWrite(
-      vice.set({
-        'name': name,
-        'unit': unit.name,
-        'ownerID': ownerID,
-        'createdAt': FieldValue.serverTimestamp(),
-        'archived': false,
-      }),
-      collection: _vices.id,
-      id: vice.id,
-      op: WriteOp.create,
+    return _issued(
+      SentWrite(
+        vice.set({
+          'name': name,
+          'unit': unit.name,
+          'ownerID': ownerID,
+          'createdAt': FieldValue.serverTimestamp(),
+          'archived': false,
+        }),
+        collection: _vices.id,
+        id: vice.id,
+        op: WriteOp.create,
+      ),
     );
   }
 
@@ -86,16 +95,18 @@ class TrackerWrites {
     required int quantity,
     required DateTime createdAt,
   }) {
-    return SentWrite(
-      _activities.doc(activityID).set({
-        'createdAt': createdAt,
-        'ownerID': ownerID,
-        'quantity': quantity,
-        'viceID': viceID,
-      }),
-      collection: _activities.id,
-      id: activityID,
-      op: WriteOp.create,
+    return _issued(
+      SentWrite(
+        _activities.doc(activityID).set({
+          'createdAt': createdAt,
+          'ownerID': ownerID,
+          'quantity': quantity,
+          'viceID': viceID,
+        }),
+        collection: _activities.id,
+        id: activityID,
+        op: WriteOp.create,
+      ),
     );
   }
 
@@ -113,11 +124,13 @@ class TrackerWrites {
   }
 
   SentWrite deleteActivity(String activityID) {
-    return SentWrite(
-      _activities.doc(activityID).delete(),
-      collection: _activities.id,
-      id: activityID,
-      op: WriteOp.delete,
+    return _issued(
+      SentWrite(
+        _activities.doc(activityID).delete(),
+        collection: _activities.id,
+        id: activityID,
+        op: WriteOp.delete,
+      ),
     );
   }
 
@@ -126,15 +139,17 @@ class TrackerWrites {
     String id,
     Map<String, Object> fields,
   ) {
-    return SentWrite(
-      collection.doc(id).update(fields),
-      collection: collection.id,
-      id: id,
-      op: WriteOp.update,
-      fields: <String, Object>{
-        for (final MapEntry<String, Object>(:key, :value) in fields.entries)
-          key: comparableValue(value)!,
-      },
+    return _issued(
+      SentWrite(
+        collection.doc(id).update(fields),
+        collection: collection.id,
+        id: id,
+        op: WriteOp.update,
+        fields: <String, Object>{
+          for (final MapEntry<String, Object>(:key, :value) in fields.entries)
+            key: comparableValue(value)!,
+        },
+      ),
     );
   }
 

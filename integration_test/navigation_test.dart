@@ -8,6 +8,7 @@ import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/settings.dart';
@@ -66,7 +67,7 @@ void main() {
     await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
     final Map<String, dynamic> before = (await stored.get(server)).data()!;
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, _rowButton('Coffee', 'Edit'));
     await pumpUntilRouteSettled(tester, find.text('Edit Habit'));
     expect(find.byType(NotFound), findsNothing);
@@ -87,7 +88,7 @@ void main() {
       'unit': 'hour',
     });
 
-    await closeDrawerPage(tester);
+    await closeMenuPage(tester);
     await expectTallies(tester, const <String>{
       'Espresso (2 hours)',
       'Tea (0 drinks)',
@@ -121,7 +122,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-settings-nav@example.com');
 
-    await openFromDrawer(tester, 'Settings');
+    await openFromMenu(tester, Homepage.settingsItem);
     await pumpUntil(tester, find.text('Account'));
     expect(find.text('Notifications'), findsNothing);
     expect(find.text('Privacy'), findsNothing);
@@ -143,7 +144,7 @@ void main() {
     await register(tester, 'e2e-session-end@example.com');
     await addVicesThroughManageData(tester);
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
     await pumpUntilRouteSettled(tester, find.text('Coffee history'));
 
