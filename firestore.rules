@@ -38,40 +38,70 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
+    // An envelope from lib/data/sealed.dart. Its contents can't be checked
+    // here, so the Dart validators in lib/data/limits.dart are the only guard
+    // on a sealed name, unit or quantity. size() is in UTF-16 code units.
+    function validSealed(sealed) {
+      return sealed is string && sealed.size() > 0 && sealed.size() <= 2048;
+    }
+
+    // A document holds its content either sealed or in plaintext, never both.
+    function sealedAlone(data, contentFields) {
+      return !('sealed' in data) || !data.keys().hasAny(contentFields);
+    }
+
+    // A changed content field is either valid or removed in favour of the
+    // envelope. Removing a field makes it an affected key.
+    function changedContent(field, valid) {
+      return !(field in changedKeys())
+        || (field in request.resource.data ? valid : 'sealed' in request.resource.data);
+    }
+
     match /vices/{viceID} {
       allow read, delete: if ownsExisting();
 
       allow create: if createsOwn()
-        && request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-        && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-        && validName(request.resource.data.name)
-        && validUnit(request.resource.data.unit)
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.archived is bool;
+        && request.resource.data.archived is bool
+        && ((request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+            && validName(request.resource.data.name)
+            && validUnit(request.resource.data.unit))
+          || (request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt', 'archived'])
+            && validSealed(request.resource.data.sealed)));
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived'])
-        && (!('name' in changedKeys()) || validName(request.resource.data.name))
-        && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
+        && changedKeys().hasOnly(['name', 'unit', 'archived', 'sealed'])
+        && changedContent('name', validName(request.resource.data.get('name', null)))
+        && changedContent('unit', validUnit(request.resource.data.get('unit', null)))
+        && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
+        && sealedAlone(request.resource.data, ['name', 'unit'])
         && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
     }
 
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
+      // ownsVice() last, so a request the other checks deny costs no read.
       allow create: if createsOwn()
-        && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
         && request.resource.data.viceID is string
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
+        && ((request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
+            && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt'])
+            && request.resource.data.quantity is int
+            && request.resource.data.quantity > 0)
+          || (request.resource.data.keys().hasAll(['viceID', 'sealed', 'ownerID', 'createdAt'])
+            && request.resource.data.keys().hasOnly(['viceID', 'sealed', 'ownerID', 'createdAt'])
+            && validSealed(request.resource.data.sealed)))
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt'])
-        && (!('quantity' in changedKeys())
-          || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
+        && changedKeys().hasOnly(['quantity', 'createdAt', 'sealed'])
+        && changedContent('quantity', request.resource.data.get('quantity', null) is int
+          && request.resource.data.get('quantity', 0) > 0)
+        && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
+        && sealedAlone(request.resource.data, ['quantity'])
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
     }
   }
