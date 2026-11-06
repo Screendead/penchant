@@ -31,8 +31,11 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
   `~/.config/configstore/firebase-tools.json`), so never run `firebase use screendead-vice-tracker`.
 - **Firebase docs first.** Before changing `firestore.rules`, `firestore.indexes.json`, a query, or anything about the
   emulators, read the current Firebase documentation for it (firebase.google.com/docs) and cite the page in the PR.
-- **End-to-end before merge.** A change that touches app behaviour merges only after it has run end to end on an iOS
-  Simulator against the Firebase emulators (`tools/e2e.sh`, see HANDOVER.md), and the PR says what was exercised.
+- **End-to-end before merge, targeted.** A change that touches app behaviour merges only after the integration tests
+  that exercise it, and could fail because of it, have run on an iOS Simulator against the Firebase emulators
+  (`tools/e2e.sh integration_test/<file>`, see HANDOVER.md), and the PR says what was exercised. Never run the whole
+  suite by default, rerun everything after a fix, or add the macOS run unless the change is platform-specific (Jack,
+  2026-11-06): this Mac is Jack's machine, and each full run takes about 18 minutes. CI runs the unit and rules tests.
 
 ## Git, pull requests and merging
 
@@ -109,7 +112,7 @@ flags=$(tools/build-version.sh) && flutter build ipa $flags
 
 To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
 rename that section to `## [X.Y.Z] - <date>`, and merge. Then run the Release workflow
-(`gh workflow run release.yml --repo Screendead/tracker`) on `master`: it re-runs the checks, tags `vX.Y.Z` and
+(`gh workflow run release.yml --repo Screendead/penchant`) on `master`: it re-runs the checks, tags `vX.Y.Z` and
 publishes that changelog section as the release notes (`tools/changelog-section.sh X.Y.Z` prints it). It refuses a
 version that already has a release. The app shows `version (build)` under Settings > About.
 
