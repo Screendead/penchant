@@ -60,8 +60,10 @@ flutter test
 flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
+flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
-dart run flutter_launcher_icons  # after changing assets/icon.png or icon-macos.png (rendered from the .svg beside each)
+dart run flutter_launcher_icons  # macOS icons, after changing assets/icon-macos.png (rendered from the .svg beside it)
+cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # the single-size iOS icon; a test checks the copy
 ```
 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
@@ -158,8 +160,8 @@ indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned, with and without the emulator
-define, on a `macos-26` runner, when run by hand. Nothing
+group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
+with the emulator define) on a `macos-26` runner, when run by hand. Nothing
 builds the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
 changes. riverpod_lint runs as an analyzer plugin (top-level `plugins:` in `analysis_options.yaml`, not a
@@ -303,7 +305,7 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
-it and the Graph lists archived vices last, marked "(archived)", never as the default.
+it and Trends lists archived habits last, marked "· archived", never as the default.
 
 **Days.** An entry counts on the local calendar day, in the viewing device's current time zone, of the instant
 stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
@@ -329,7 +331,7 @@ anything else is `NotFound`. Only the forms (add or edit a vice, edit an activit
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
 swapping `home` alone would leave the old session's pages on the stack.
 
-**Two home tabs.** `ViceTracker` is Today: one day at a time as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`),
+**Today and Trends.** `ViceTracker` is Today: one day at a time as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`),
 a 24-hour face with a bead per entry at its local wall-clock time, a tally row per unarchived habit (`TallyRow`), and
 the Log button (`LogButton`, `lib/widgets/log_fan.dart`). The dial's geometry is pure functions in
 `lib/data/dial_layout.dart` (angle from the wall-clock minute, so a DST day's 15:00 sits at 15; bead radius
@@ -345,16 +347,22 @@ the `+` or wedge through `beadArrivalsProvider`; a pending bead's dashed rim tur
 pending entries cannot `pumpAndSettle` with animations on. Day navigation is `DayPicker` (`lib/widgets/day_picker.dart`):
 the arrows, a sideways swipe on the dial, and the date pill's `CalendarSheet`; there is no oldest day and no future
 one. Habits list oldest first, as their colours are given, and Today reads `viceListProvider` as well as the
-unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). `UsageGraphView` shows one
-vice over a date range as a line chart, bucketing activities by day or by week (counted back from today, so the newest
-week is whole and the oldest bucket holds what is left of the range) and overlaying a moving average; that arithmetic
-and the graph's axis scale and label spacing are pure functions in `lib/data/usage_series.dart` and
-`lib/data/chart_scale.dart`. The graph sits in one `Semantics` node labelled `UsageGraphView.summary`, and fl_chart
-paints its titles outside the widget tree, so tests read them from the chart's data. Homepage builds only the visible
-tab; each tab keeps its selections in Homepage's `PageStorage` bucket. Both read the current day from
-`todayProvider`, which moves on at local midnight and on app resume; the Today tab follows it unless the user picked
-another day, and a log (always now) turns a past day back to today. Today records through its Log button, the Graph
-tab through the app bar's Record. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
+unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). The Trends sheet (`TrendsSheet`,
+`lib/trends/`) is a `DraggableScrollableSheet` over Today that replaced the Graph tab: it peeks below the tallies with
+a sparkline of the chosen habit, and opens over the dial to that habit over a range (7, 30 or 90 days or a year), by
+day or by week (counted back from today, so the newest week is whole and the oldest bucket holds what is left of the
+range), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
+it happens. That arithmetic and the chart's axis scale and label spacing are pure functions in
+`lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Its chips list the habits in use oldest first, then
+the archived ones, so the default is never archived. It reads the range through the graph query alone (the hour
+profile and stats come from the same entries), builds its panel only once it leaves the peek, and a tap on a day
+point opens that day's dial and read-only tallies inside the sheet (`TrendsDay`). The chart sits in one `Semantics`
+node labelled `TrendsChart.summary` whose value is the cursor's readout; the arrow keys and a screen reader's adjust
+move the cursor, and Enter or activate opens its day. fl_chart paints its titles outside the widget tree, so tests
+read them from the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as it opens.
+Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection when their widgets are
+rebuilt. Both read the current day from `todayProvider`, which moves on at local midnight and on app resume; Today
+follows it unless the user picked another day, and a log (always now) turns a past day back to today. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
 lock toggle, live clock and picker for the record dialog and the editor.
 
 There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a

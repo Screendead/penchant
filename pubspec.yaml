@@ -66,10 +66,11 @@ dev_dependencies:
   test: ^1.31.0
   flutter_launcher_icons: ^0.14.4
 
+# iOS is off: this generator writes six iOS 6 icon sizes unless given a dark or
+# tinted image. The iOS catalog holds one 1024 pt icon, a copy of
+# assets/icon.png, from which Xcode derives every size.
 flutter_launcher_icons:
-  ios: true
-  image_path: "assets/icon.png"
-  remove_alpha_ios: true
+  ios: false
   macos:
     generate: true
     image_path: "assets/icon-macos.png"

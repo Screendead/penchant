@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_tracker.dart';
-import 'package:tracker/widgets/record_new_activity_button.dart';
 import 'package:tracker/widgets/sync_status.dart';
 
 class Homepage extends StatefulWidget {
@@ -12,9 +10,8 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  int selectedTabIndex = 0;
-  // Only the visible tab is built, so each tab keeps its selections here
-  // across a switch. It lives and dies with the signed-in session.
+  // Today's day and the Trends selection outlive their widgets here, as when
+  // a load error replaces them. It lives and dies with the signed-in session.
   final PageStorageBucket tabState = PageStorageBucket();
 
   @override
@@ -22,13 +19,7 @@ class _HomepageState extends State<Homepage> {
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(selectedTabIndex == 0 ? 'Penchant' : 'Usage Graph'),
-        // Today records through its Log button.
-        actions: <Widget>[
-          if (selectedTabIndex != 0) const RecordNewActivityButton(),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Penchant')),
       drawer: Drawer(
         child: ListView(
           children: [
@@ -69,32 +60,7 @@ class _HomepageState extends State<Homepage> {
         children: [
           const OfflineBanner(),
           Expanded(
-            child: PageStorage(
-              bucket: tabState,
-              child: selectedTabIndex == 0
-                  ? const ViceTracker()
-                  : const UsageGraphView(),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedTabIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            selectedTabIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.show_chart_outlined),
-            selectedIcon: Icon(Icons.show_chart),
-            label: 'Graph',
+            child: PageStorage(bucket: tabState, child: const ViceTracker()),
           ),
         ],
       ),

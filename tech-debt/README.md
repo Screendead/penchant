@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**17 issues: 0 critical, 0 high, 7 medium, 10 low.**
+**13 issues: 0 critical, 0 high, 6 medium, 7 low.**
 
 ## Firebase Data Layer (5)
 
@@ -43,12 +43,11 @@ Firestore persistence configuration, write timeouts and in-flight UI state, dest
 
 - **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
 
-## Accessibility and Localization (2)
+## Accessibility and Localization (1)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
-- **low** — [The usage graph sizes its date labels from one sample date](accessibility-and-localization/date-axis-sizes-labels-from-one-sample-month.md)
 
 ## Auth and Account Lifecycle (1)
 
@@ -61,14 +60,11 @@ Password reset, email verification, re-authentication, account deletion and expo
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
 
-## Platform and Delivery Config (4)
+## Platform and Delivery Config (1)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
 - **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
-- **low** — [Legacy iOS icons the generator recreates, and a 1x1 launch image placeholder](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
-- **low** — [Both platforms hardcode a development team, and macOS mixes provisioning styles](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
-- **medium** — [`flutter build macos --release` fails in Flutter's framework unpack step](platform-and-delivery-config/macos-release-build-fails-in-flutter-unpack.md)
 
 ## CI and Quality Gates (1)
 

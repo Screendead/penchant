@@ -321,7 +321,9 @@ void main() {
     );
     await pumpUntil(tester, find.text(AccountCopy.deleted));
     await pumpUntil(tester, find.byType(SignIn));
-    expect(find.byType(AccountSettings), findsNothing);
+    // The popped page may still be sliding away when sign-in appears; it
+    // must not stay.
+    await pumpUntil(tester, find.byType(AccountSettings), present: false);
 
     expect(await _ownerIDs('vices'), <String>[bystander]);
     expect(await _ownerIDs('activities'), isEmpty);

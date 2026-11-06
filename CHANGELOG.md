@@ -28,6 +28,12 @@ pull request titles (`gh pr list --state merged`).
   one to log it now, hold it for the amount and time. Tap a bead to edit its entry; change the day with the arrows, a
   swipe across the dial or the calendar, which goes back as far as you like and marks the days each habit was
   logged. The radar and bar charts are gone.
+- Trends replaces the Graph tab: a sheet that peeks under Today with a sparkline of a habit and its daily average,
+  and pulls up over the dial. Pick a habit (archived ones last), 7, 30 or 90 days or a year, by day or by week, and
+  how many days or weeks the average line spans; it gives the total, the average and the peak, and when in the day
+  the habit happens. Drag across the chart to read a day, and tap one to open its dial. The Log button sits on the
+  sheet's edge. Chart dates are spaced to fit every month's name. From a keyboard the arrow keys move along the chart
+  and Enter opens the day; VoiceOver reads the day under the cursor and swipes up or down to move it.
 - The app is called Penchant, and it says "habit" wherever it said "vice". Exports are named `penchant-…`.
 - Penchant installs as a new app (`com.screendead.penchant`) on iPhone and Mac: an earlier build stays beside it until
   you delete it, and you sign in again in the new one. Your data is unchanged.
@@ -58,6 +64,7 @@ pull request titles (`gh pr list --state merged`).
 - The Graph keeps its vice, range and smoothing when you switch tabs, and loads only while it is showing.
 - The iPhone and Mac builds get Firebase through Swift Package Manager instead of CocoaPods, which Firebase no
   longer publishes to. Nothing changes in the app.
+- On iPhone, the screen shown while the app opens is the app's paper colour, dark in dark mode, instead of white.
 
 ### Fixed
 
@@ -77,6 +84,7 @@ pull request titles (`gh pr list --state merged`).
 - The rules tests' firebase-tools install no longer breaks its own file-matching code: the minimatch override now
   replaces only the versions the advisory names. A test checks every composite query in the app against
   `firestore.indexes.json`, since the emulators never enforce indexes.
+- The Mac app builds for release, as one app for both Apple silicon and Intel Macs.
 
 ## [0.1.0] - Unreleased
 

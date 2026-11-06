@@ -70,7 +70,11 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      size is against the habit's median entry on the shown day, so it costs no extra read; the "your usual" ghost
      beads and a cross-day typical would cost a 7-day query. `r5-*` (the radar's key) are moot once this merges.
    - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
-     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial.
+     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial. In review in #89
+     (`feat/trends-sheet`, stacked on #83): all of it, and the Log button docks on the sheet's edge. Left for 1f: the
+     chart's morph between ranges (fl_chart tweens only equal-length series, so a range change snaps) and the day's
+     container transform with the `animations` package (it fades in place). The weekly remainder stays as built
+     (`r4-weekly`). The average now runs to 30 buckets, starting at 7 days or 4 weeks, as the mock-up has it.
    - **d. Habits, history and the entry editor:** Manage Data becomes Habits, the history list gets swipe-to-delete
      with Undo, and editing reuses the amount sheet.
    - **e. Auth and settings screens:** one sign-in screen with a segmented control and the password checklist;
@@ -106,8 +110,12 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   1e auth and settings (with keyboard focus on list rows, navigation destinations and the slider, which #82 found at
   about 1.2:1), 1f motion polish, 1g e2e rewrite. One PR each, on top of the last.
 - **Track B, Apple platform debt, off `master`:** ~~the CocoaPods sunset~~ (done in the PR from
-  `chore/swift-package-manager`: both platforms on Swift Package Manager, no Podfile left), the failing
-  `flutter build macos --release`, the legacy signing config and the dead scaffold assets.
+  `chore/swift-package-manager`: both platforms on Swift Package Manager, no Podfile left), ~~the failing
+  `flutter build macos --release`, the legacy signing config and the dead scaffold assets~~ (done in the PR from
+  `chore/apple-build-config`, stacked on #87). The release build needs Flutter 3.44.8 or later (flutter/flutter#188346,
+  Xcode 27's `lipo`): CI's pin is 3.44.9, and the machine's Homebrew Flutter (3.44.7) moves to 3.44.9 when no agent
+  is mid-build; 3.44.9 sits at `~/development/tracker-tools/flutter-3.44.9` meanwhile. 3.47 (Dart 3.13, riverpod_lint
+  3.1.9) is a separate step.
 - **Track C, reliability and tooling, off `master`:** a refused write queued by an earlier launch is dropped silently
   (PR #88 from `fix/rejected-write-earlier-launch`, reviewed: a journal on the device, checked on the next launch);
   the minimatch override breaks firebase-tools glob paths; nothing checks the index file against the queries
