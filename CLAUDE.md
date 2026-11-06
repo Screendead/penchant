@@ -290,7 +290,9 @@ with the time it synced. Whether to trade that for server time is open (register
 `activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
-Firestore throws `failed-precondition` at runtime until the index is deployed.
+Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce
+indexes. `test/firestore_indexes_test.dart` parses every query built in one chain from `.collection(...)` in `lib/`
+and fails when one needs a composite index the file lacks, or when a `where` or `orderBy` sits outside such a chain.
 
 **Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error →
 `AuthStateFailure`, no event yet → `AuthStateLoading` (so a restored session never shows
