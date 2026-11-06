@@ -24,9 +24,6 @@ void main() {
     await openFromMenu(tester, Homepage.settingsItem);
     final PackageInfo info = await PackageInfo.fromPlatform();
     expect(info.version, matches(RegExp(r'^\d+\.\d+\.\d+$')));
-    await pumpUntil(
-      tester,
-      find.text('${info.version} (${info.buildNumber})'),
-    );
+    await pumpUntil(tester, find.text('${info.version} (${info.buildNumber})'));
   });
 }
