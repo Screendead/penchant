@@ -214,7 +214,16 @@ Future<void> register(WidgetTester tester, String email) async {
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
   await enterText(tester, 'Confirm password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Create account'));
+  // The keyboard and the password checklist can push the button below the
+  // fold, where it is not hit-testable.
+  final Finder createAccount = find.widgetWithText(
+    ElevatedButton,
+    'Create account',
+  );
+  await pumpUntil(tester, createAccount);
+  await tester.ensureVisible(createAccount);
+  await tester.pump(const Duration(milliseconds: 300));
+  await tap(tester, createAccount);
   await pumpUntil(tester, find.byType(Homepage));
 }
 
