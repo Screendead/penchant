@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -119,6 +120,7 @@ void main() {
     expect(find.byType(LineChart), findsNothing);
     await openTrends(tester);
     expect(find.byTooltip(TrendsSheet.closeLabel), findsOneWidget);
+    expect(find.text(TrendsSheet.hint(1)), findsOneWidget);
   });
 
   for (final double width in <double>[900, 1200, 1600]) {
@@ -130,6 +132,9 @@ void main() {
       expect(find.byType(DraggableScrollableSheet), findsNothing);
       expect(find.byTooltip(TrendsSheet.closeLabel), findsNothing);
       expect(find.byType(LineChart).hitTestable(), findsOneWidget);
+      // A tapped day shows on Today's dial, not in the pane.
+      expect(find.text(TrendsSheet.hint(1, pane: true)), findsOneWidget);
+      expect(find.text(TrendsSheet.hint(1)), findsNothing);
 
       final Rect pane = _rectOf(tester, find.byType(TrendsSheet));
       final Rect dial = _rectOf(tester, find.byType(DayDial));
@@ -273,5 +278,52 @@ void main() {
     expect(daysBetween(_todaysDay(tester), _today), greaterThan(20));
     expect(find.byType(TrendsDay), findsNothing);
     expect(find.byType(LineChart), findsOneWidget);
+  });
+
+  testWidgets('a screen reader hears where a day activated on the chart '
+      'went', (WidgetTester tester) async {
+    _useWindow(tester, 1200);
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final List<Map<Object?, Object?>> announced = <Map<Object?, Object?>>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+      SystemChannels.accessibility,
+      (Object? message) async {
+        final Map<Object?, Object?> event = message! as Map<Object?, Object?>;
+        if (event['type'] == 'announce') {
+          announced.add(event['data']! as Map<Object?, Object?>);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            null,
+          ),
+    );
+    await _pump(tester);
+
+    Future<void> act(SemanticsAction action) async {
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: action,
+          viewId: tester.view.viewId,
+          nodeId: tester.getSemantics(find.byType(TrendsChart)).id,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await act(SemanticsAction.decrease);
+    await act(SemanticsAction.decrease);
+    await act(SemanticsAction.tap);
+
+    final DateTime twoAgo = addDays(_today, -2);
+    expect(_todaysDay(tester), twoAgo);
+    expect(announced.map((Map<Object?, Object?> e) => e['message']), <String>[
+      TrendsSheet.shownOnDial(twoAgo),
+    ]);
+    semantics.dispose();
   });
 }

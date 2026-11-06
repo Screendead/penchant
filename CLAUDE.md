@@ -327,7 +327,8 @@ move the cursor, and Enter or activate opens its day. fl_chart paints its titles
 read them from the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as it opens.
 From `ViceTracker.splitWidth` (900 pt) wide, on any device, the same `ViceTracker` state lays out a split view instead:
 Today's column (`ViceTracker.splitColumnWidth`) with the Log button at its foot, and `TrendsSheet.pane`, the same panel
-always open with no peek or Close, whose day points call Today's day picker instead of opening `TrendsDay`. Both
+always open with no peek or Close, whose day points call Today's day picker instead of opening `TrendsDay` (and,
+since a screen reader's focus stays on the chart, announce `TrendsSheet.shownOnDial`). Both
 forms keep the selection in the same `PageStorage` entry, so a resize across 900 pt keeps the day and the habit (the
 chart's cursor resets). Left and Right step Today's day (`_stepDay`, from state, so presses within one frame each
 count) from a `CallbackShortcuts` around the whole split view, or around Today alone under the sheet; the chart's own

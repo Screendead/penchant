@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
@@ -181,9 +183,16 @@ class TrendsSheet extends ConsumerStatefulWidget {
       '$title. ${vice.name}, last ${formatCount(rangeDays)} days'
       '${perDay == null ? '' : ': ${formatAverage(perDay)} ${vice.unit.plural} a day'}';
 
-  static String hint(int stepDays) => stepDays == 1
-      ? 'Drag across the chart to read a day. Tap a day to open its dial.'
-      : 'Drag across the chart to read a week.';
+  // In the pane a tapped day moves Today's dial beside it.
+  static String hint(int stepDays, {bool pane = false}) => stepDays != 1
+      ? 'Drag across the chart to read a week.'
+      : pane
+      ? 'Drag across the chart to read a day. Tap a day to show it on the dial.'
+      : 'Drag across the chart to read a day. Tap a day to open its dial.';
+
+  // Said when the pane hands a day to Today's dial, which a screen reader's
+  // focus on the chart does not reach.
+  static String shownOnDial(DateTime day) => 'The dial shows ${formatDay(day)}';
 
   static String whenTitle(
     HourProfile p, {
@@ -404,7 +413,17 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             onOpenDay: stepDays != 1
                 ? null
                 : showDay != null
-                ? (int index) => showDay(range.bucketStart(index))
+                ? (int index) {
+                    final DateTime picked = range.bucketStart(index);
+                    showDay(picked);
+                    unawaited(
+                      SemanticsService.sendAnnouncement(
+                        View.of(context),
+                        TrendsSheet.shownOnDial(picked),
+                        Directionality.of(context),
+                      ),
+                    );
+                  }
                 : (int index) => _handOver(
                     _chartFocus,
                     _backFocus,
@@ -867,7 +886,7 @@ class _TrendsPanel extends StatelessWidget {
         _WhenCard(vice: vice, mark: mark, range: range, profile: s.hours),
         const SizedBox(height: DialSpace.s),
         Text(
-          TrendsSheet.hint(range.stepDays),
+          TrendsSheet.hint(range.stepDays, pane: onClose == null),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(color: colors.muted),
         ),
