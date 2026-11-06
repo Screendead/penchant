@@ -92,6 +92,14 @@ void main() {
       for (final String settings in configs) {
         expect(settings, contains('CODE_SIGN_STYLE = Automatic;'));
         expect(settings, contains('DEVELOPMENT_TEAM = $_team;'));
+        // Runner and RunnerTests, not Flutter Assemble, which builds no
+        // bundle. The macOS project-level default is "-", ad hoc, no team.
+        if (platform == 'macos' && settings.contains('INFOPLIST_FILE')) {
+          expect(
+            settings,
+            contains('CODE_SIGN_IDENTITY = "Apple Development";'),
+          );
+        }
       }
       expect(File(pbxproj).readAsStringSync(), isNot(contains('Manual')));
     });
