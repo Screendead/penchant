@@ -70,7 +70,7 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      size is against the habit's median entry on the shown day, so it costs no extra read; the "your usual" ghost
      beads and a cross-day typical would cost a 7-day query. `r5-*` (the radar's key) are moot once this merges.
    - **c. Trends sheet:** a `DraggableScrollableSheet` over Today that replaces the Graph tab: habit chips, range and
-     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial. In review
+     Day/Week segments, the average stepper, stats, "when it happens", and a day point opening its dial. In review in #89
      (`feat/trends-sheet`, stacked on #83): all of it, and the Log button docks on the sheet's edge. Left for 1f: the
      chart's morph between ranges (fl_chart tweens only equal-length series, so a range change snaps) and the day's
      container transform with the `animations` package (it fades in place). The weekly remainder stays as built
