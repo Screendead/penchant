@@ -5,6 +5,10 @@ import 'package:tracker/crypto/sealer.dart';
 /// Where the migrator reads the user's documents and writes their sealed
 /// form. [FirestoreMigrationSource] in the app; a map in tests.
 abstract interface class MigrationSource {
+  /// Completes once this device's queued writes have reached the server, so
+  /// a page read after it holds them. Fails rather than wait past a bound.
+  Future<void> settlePendingWrites();
+
   /// Up to [limit] of [uid]'s documents in [collection], in document id
   /// order, after the one with id [after]. From the server, so that offline
   /// it fails rather than answer from a partial cache.
@@ -26,6 +30,20 @@ class FirestoreMigrationSource implements MigrationSource {
   FirestoreMigrationSource(this._firestore);
 
   final FirebaseFirestore _firestore;
+
+  static const Duration pendingWritesTimeout = Duration(seconds: 30);
+
+  // Unbounded, a connection lost mid-wait would hold the run's lock forever.
+  @override
+  Future<void> settlePendingWrites() =>
+      _firestore.waitForPendingWrites().timeout(
+        pendingWritesTimeout,
+        onTimeout: () => throw FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'unavailable',
+          message: 'Queued writes did not reach the server',
+        ),
+      );
 
   // Equality on ownerID ordered by document id is served by the automatic
   // single-field index, as Account._readOwned is.
@@ -120,6 +138,10 @@ class PlaintextMigrator {
     bool Function()? stillWanted,
   }) async {
     int sealed = 0;
+    // A queued edit the server has not yet applied is missing from the server
+    // read; sealing the older value and deleting the field would then discard
+    // the edit once it lands first.
+    await source.settlePendingWrites();
     for (final String collection in plaintextFields.keys) {
       String? after;
       while (true) {

@@ -44,8 +44,18 @@ class MemorySource implements MigrationSource {
       };
   final List<int> batchSizes = <int>[];
   int pages = 0;
+  int settles = 0;
   Object? failPage;
+  Object? failSettle;
   int? failCommitNumber;
+
+  @override
+  Future<void> settlePendingWrites() async {
+    settles++;
+    if (failSettle != null) {
+      throw failSettle!;
+    }
+  }
 
   @override
   Future<List<StoredDocument>> page(
@@ -269,6 +279,34 @@ void main() {
       );
       expect(source.batchSizes, isEmpty);
     });
+
+    test(
+      'queued writes that never reach the server stop it before any read',
+      () async {
+        final MemorySource source = MemorySource()..addVice('v0');
+        source.failSettle = FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'unavailable',
+        );
+
+        await expectLater(
+          PlaintextMigrator(source: source, sealer: FakeSealer()).run(ownerID),
+          throwsA(isA<FirebaseException>()),
+        );
+        expect(source.pages, 0);
+        expect(source.batchSizes, isEmpty);
+
+        source.failSettle = null;
+        expect(
+          await PlaintextMigrator(
+            source: source,
+            sealer: FakeSealer(),
+          ).run(ownerID),
+          1,
+        );
+        expect(source.settles, 2);
+      },
+    );
 
     test('stops before the next page once no longer wanted', () async {
       final MemorySource source = MemorySource()
