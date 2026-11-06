@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -248,7 +249,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final BuildContext context = tester.element(find.text('Sign In').last);
+        final BuildContext context = tester.element(find.text('Sign in').last);
         expect(Theme.of(context).brightness, brightness);
         expect(
           tester
@@ -509,7 +510,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 
-        await tester.tap(find.text('Register').last);
+        await tester.tap(find.byKey(Authenticate.registerTab));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       });

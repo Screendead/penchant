@@ -24,7 +24,7 @@ Finder _rowButton(String viceName, String tooltip) => find.descendant(
 );
 
 Future<void> _expectSignedOutWithNothingAbove(WidgetTester tester) async {
-  await pumpUntil(tester, find.text('Register').hitTestable());
+  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
   expect(find.byType(Authenticate), findsOneWidget);
   // Sign-in is hit-testable while the popped pages are still animating out.
   for (final Finder page in <Finder>[

@@ -31,7 +31,7 @@ void main() {
     await _relaunch(tester);
     expect(find.byType(Authenticate), findsNothing);
     await pumpUntilNeverShowing(tester, find.byType(Homepage), <String>[
-      'Sign In to Your Account',
+      'A private journal of your days.',
     ]);
 
     await FirebaseAuth.instance.signOut();
