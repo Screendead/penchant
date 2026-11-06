@@ -19,7 +19,9 @@ import 'package:tracker/widgets/log_fan.dart';
 import 'support.dart';
 
 Finder _rowButton(String viceName, String tooltip) => find.descendant(
-  of: find.ancestor(of: find.text(viceName), matching: find.byType(ListTile)),
+  of: find
+      .ancestor(of: find.text(viceName), matching: find.byType(InkWell))
+      .first,
   matching: find.byTooltip(tooltip),
 );
 
@@ -130,7 +132,7 @@ void main() {
     await tap(tester, find.text('Account'));
     await pumpUntilRouteSettled(tester, find.text('Account Settings'));
     expect(find.byType(AccountSettings), findsOneWidget);
-    await tap(tester, find.byType(BackButton));
+    await tap(tester, find.byTooltip('Back'));
     await pumpUntil(tester, find.byType(AccountSettings), present: false);
 
     await tap(tester, find.text('Sign out'));
@@ -146,7 +148,7 @@ void main() {
 
     await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
-    await pumpUntilRouteSettled(tester, find.text('Coffee history'));
+    await pumpUntilRouteSettled(tester, historyTitle('Coffee'));
 
     await FirebaseAuth.instance.signOut();
     await _expectSignedOutWithNothingAbove(tester);

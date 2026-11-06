@@ -29,7 +29,9 @@ Future<Map<String, dynamic>> _storedVice(String name) async {
 }
 
 Finder _rowButton(String viceName, String tooltip) => find.descendant(
-  of: find.ancestor(of: find.text(viceName), matching: find.byType(ListTile)),
+  of: find
+      .ancestor(of: find.text(viceName), matching: find.byType(InkWell))
+      .first,
   matching: find.byTooltip(tooltip),
 );
 
@@ -142,10 +144,10 @@ void main() {
     await recordActivity(tester, 'Coffee', 2);
 
     await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, find.text('1 activity'));
+    await pumpUntil(tester, habitsCount('1 entry'));
     await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, find.text('Coffee history'));
-    await tap(tester, find.text('Quantity: 2'));
+    await pumpUntil(tester, historyTitle('Coffee'));
+    await tap(tester, historyEntry(2));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     await enterText(tester, 'Quantity', '5');
     await tap(tester, find.widgetWithText(TextButton, 'Save'));
@@ -154,7 +156,7 @@ void main() {
       find.byType(ViceActivityEditorPage),
       present: false,
     );
-    await pumpUntil(tester, find.text('Quantity: 5'));
+    await pumpUntil(tester, historyEntry(5));
 
     await _waitForEmulator();
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =

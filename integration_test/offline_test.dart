@@ -72,11 +72,11 @@ void main() {
       // device holds. Each row resolves on its own.
       await pumpUntil(
         tester,
-        find.text(
+        habitsCount(
           ManageData.countText((count: 3, source: CountSource.deviceOffline)),
         ),
       );
-      final Finder noneOnDevice = find.text(
+      final Finder noneOnDevice = habitsCount(
         ManageData.countText((count: 0, source: CountSource.deviceOffline)),
       );
       await pumpUntilTrue(
@@ -85,24 +85,17 @@ void main() {
         () => 'two rows of $noneOnDevice',
       );
       await tap(tester, find.text('Coffee'));
-      await pumpUntil(tester, find.text('Coffee history'));
+      await pumpUntil(tester, historyTitle('Coffee'));
       await pumpUntil(tester, notSynced);
       expect(notSynced, findsNWidgets(3));
       await pumpUntil(tester, banner);
 
-      final Finder fiveRow = find.ancestor(
-        of: find.text('Quantity: 5'),
-        matching: find.byType(Card),
-      );
-      await tap(
-        tester,
-        find.descendant(of: fiveRow, matching: find.byTooltip('Delete')),
-      );
-      await pumpUntil(tester, find.text('Quantity: 5'), present: false);
+      await swipeToDelete(tester, historyEntry(5));
+      await pumpUntil(tester, historyEntry(5), present: false);
       await pumpUntil(tester, find.text(queuedDeleteMessage));
-      expect(find.text('Activity deleted'), findsNothing);
+      expect(deletedBar, findsNothing);
 
-      await tap(tester, find.text('Quantity: 2'));
+      await tap(tester, historyEntry(2));
       await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
       await enterText(tester, 'Quantity', '3');
       await tap(tester, find.widgetWithText(TextButton, 'Save'));
@@ -112,9 +105,9 @@ void main() {
         present: false,
       );
       await pumpUntil(tester, find.text(queuedMessage));
-      await pumpUntil(tester, find.text('Quantity: 3'));
+      await pumpUntil(tester, historyEntry(3));
 
-      await tap(tester, find.text('Quantity: 7'));
+      await tap(tester, historyEntry(7));
       await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
       await tap(
         tester,
@@ -124,15 +117,15 @@ void main() {
         ),
       );
       // The history page is off stage until the editor has popped.
-      await pumpUntil(tester, find.text('Coffee history').hitTestable());
+      await pumpUntil(tester, historyTitle('Coffee').hitTestable());
       await pumpUntil(
         tester,
         find.byType(ViceActivityEditorPage),
         present: false,
       );
       await pumpUntil(tester, find.text(queuedDeleteMessage));
-      await pumpUntil(tester, find.text('Quantity: 7'), present: false);
-      expect(find.byType(Card), findsOneWidget);
+      await pumpUntil(tester, historyEntry(7), present: false);
+      expect(historyRows, findsOneWidget);
       expect(notSynced, findsOneWidget);
       await screenshot(tester, 'history-not-yet-synced');
     } finally {
