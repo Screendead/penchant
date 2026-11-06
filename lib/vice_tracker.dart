@@ -226,7 +226,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         final double column = split
             ? ViceTracker.splitColumnWidth(constraints.maxWidth)
             : constraints.maxWidth;
-        final double width = min(column, 600.0);
+        // A phone on its side keeps the notch's side of Today clear.
+        final double notch = split ? MediaQuery.paddingOf(context).left : 0;
+        final double width = min(column - notch, 600.0);
         final double side = min(
           DialSize.dialDiameter,
           width - 2 * DialSpace.gutter,
@@ -349,8 +351,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                SizedBox(
+                Container(
                   width: column,
+                  padding: EdgeInsets.only(left: notch),
                   child: Stack(
                     children: <Widget>[
                       Positioned.fill(child: page),

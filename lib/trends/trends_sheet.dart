@@ -424,7 +424,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
           padding: EdgeInsets.fromLTRB(
             DialSpace.gutter,
             DialSpace.xl,
-            DialSpace.gutter,
+            DialSpace.gutter + MediaQuery.paddingOf(context).right,
             DialSpace.xl + bottomInset,
           ),
           child: Align(

@@ -159,6 +159,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a Pro Max iPhone on its side, the shortest split, lays out '
+      'both panes without overflow', (WidgetTester tester) async {
+    tester.view.devicePixelRatio = 3;
+    tester.view.physicalSize = const Size(956 * 3, 440 * 3);
+    tester.view.padding = const FakeViewPadding(
+      left: 62 * 3,
+      right: 62 * 3,
+      bottom: 21 * 3,
+    );
+    addTearDown(tester.view.reset);
+    await _pump(tester);
+
+    expect(find.byType(DraggableScrollableSheet), findsNothing);
+    expect(find.byType(DayDial), findsOneWidget);
+    expect(find.byType(TrendsChart), findsOneWidget);
+    expect(find.byType(LogButton).hitTestable(), findsOneWidget);
+    // Clear of the notch on the left and the camera on the right.
+    expect(tester.getRect(find.text('Sweets').first).left, greaterThan(62));
+    expect(
+      tester.getRect(find.byType(TrendsChart)).right,
+      lessThanOrEqualTo(956 - 62),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('resizing across 900 pt keeps the day and the habit', (
     WidgetTester tester,
   ) async {
