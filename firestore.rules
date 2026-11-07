@@ -150,6 +150,22 @@ service cloud.firestore {
         && sealedAlone(request.resource.data, ['triggers']);
     }
 
+    // The journal key's id and its copy wrapped under the recovery key; never
+    // the key itself. The wrap is Sealer's envelope around 32 bytes: 61.
+    match /keys/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['keyID', 'wrapped', 'createdAt', 'saved', 'cardDismissed'])
+        && request.resource.data.keys().hasOnly(['keyID', 'wrapped', 'createdAt', 'saved', 'cardDismissed'])
+        && request.resource.data.keyID is string
+        && request.resource.data.keyID.size() == 24
+        && request.resource.data.wrapped is bytes
+        && request.resource.data.wrapped.size() == 61
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.saved is bool
+        && request.resource.data.cardDismissed is bool;
+    }
+
     // Written only by the monthly summaries function, whose Admin SDK bypasses
     // these rules; nobody edits a typical by hand.
     match /summaries/{uid} {
