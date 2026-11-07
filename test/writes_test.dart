@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -152,9 +153,30 @@ void main() {
           'ownerID': ownerID,
           'name': 'Coffee',
           'unit': Unit.drink,
+          'category': ViceCategory.other,
         }),
       ]);
       expect(find.byType(ViceForm), findsNothing);
+    });
+
+    testWidgets('saves the picked category', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, const [], const ViceForm());
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Habit Name'),
+        'Coffee',
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Unit.drink.plural).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ViceCategory.caffeine.label).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.single.fields['category'], ViceCategory.caffeine);
     });
 
     testWidgets('a save in flight disables Save, and one that outlasts the '
@@ -258,6 +280,48 @@ void main() {
       expect(writes.writes, [
         const Write('updateVice', 'coffee', <String, Object?>{
           'name': 'Espresso',
+        }),
+      ]);
+    });
+
+    testWidgets('writes only a changed category', (WidgetTester tester) async {
+      await open(tester);
+      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ViceCategory.food.label).last);
+      await tester.pumpAndSettle();
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'category': ViceCategory.food,
+        }),
+      ]);
+    });
+
+    testWidgets('a vice written before categories opens on the guess and '
+        'saves it', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith(
+          (ref) => AsyncData([
+            Vice(
+              id: 'beer',
+              name: 'Beer',
+              unit: Unit.drink,
+              ownerID: ownerID,
+              createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+              archived: false,
+              categoryStored: false,
+            ),
+          ]),
+        ),
+      ], const EditVice(viceID: 'beer'));
+      expect(find.text(ViceCategory.alcohol.label), findsOneWidget);
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'beer', <String, Object?>{
+          'category': ViceCategory.alcohol,
         }),
       ]);
     });

@@ -57,6 +57,7 @@ const vice = (overrides = {}) => ({
   ownerID: ALICE,
   createdAt: serverTimestamp(),
   archived: false,
+  category: 'caffeine',
   ...overrides,
 });
 
@@ -139,6 +140,22 @@ describe('vices', () => {
     it('allows every unit in the Unit enum', async () => {
       for (const unit of ['item', 'time', 'puff', 'drink', 'minute', 'hour']) {
         await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ unit })));
+      }
+    });
+
+    it('allows every category in the ViceCategory enum', async () => {
+      for (const category of ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other']) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ category })));
+      }
+    });
+
+    it('allows a legacy create without a category', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), without(vice(), 'category')));
+    });
+
+    it('denies a category outside the enum or of the wrong type', async () => {
+      for (const category of ['sugar', '', 3, null]) {
+        await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ category })));
       }
     });
 
@@ -274,6 +291,22 @@ describe('vices', () => {
 
     it('denies a non-bool archived', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: 'yes' }));
+    });
+
+    it('allows adding a category to a legacy vice and changing it', async () => {
+      const ref = doc(asAlice(), 'vices/aliceLegacyVice');
+      await assertSucceeds(updateDoc(ref, { category: 'alcohol' }));
+      await assertSucceeds(updateDoc(ref, { category: 'other' }));
+      await assertSucceeds(
+        updateDoc(doc(asAlice(), 'vices/aliceUnknownUnitVice'), { category: 'nicotine' }),
+      );
+    });
+
+    it('denies an invalid category on update', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertFails(updateDoc(ref, { category: 'sugar' }));
+      await assertFails(updateDoc(ref, { category: 1 }));
+      await assertFails(updateDoc(doc(asBob(), 'vices/aliceVice'), { category: 'food' }));
     });
 
     it('denies an invalid rename', async () => {

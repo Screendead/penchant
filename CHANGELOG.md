@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Each habit has a category (alcohol, caffeine, nicotine, cannabis, food, gambling or other), picked in the habit
+  editor. Habits made before this get one guessed from their name the first time the app opens, which you can change.
 - A new account starts with a short welcome: pick the habits to keep a journal of from a list (Alcohol, Coffee,
   Cigarettes, Vape, Cannabis, Energy drinks, Sweets, Gambling, or one you name yourself), read the one-line
   disclaimer, and log a first entry if you like. An account that already has habits never sees it.

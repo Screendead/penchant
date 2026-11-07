@@ -21,6 +21,7 @@ import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
+import 'package:tracker/writes/category_migration.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     final AsyncValue<User?> userValue = ref.watch(userProvider);
     final User? user = userValue.value;
+    ref.watch(categoryMigrationProvider);
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen. The root messenger

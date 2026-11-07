@@ -38,6 +38,11 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
+    // Must match the names of the ViceCategory enum in lib/data/category.dart.
+    function validCategory(category) {
+      return category in ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other'];
+    }
+
     // Rules cannot loop, so each of the 10 allowed entries is checked by index;
     // an index past the end is skipped. Must match lib/data/limits.dart.
     function validTrigger(triggers, i) {
@@ -65,17 +70,20 @@ service cloud.firestore {
 
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-        && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+        && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived', 'category'])
         && validName(request.resource.data.name)
         && validUnit(request.resource.data.unit)
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.archived is bool;
+        && request.resource.data.archived is bool
+        // Optional: app versions before the field still create without it.
+        && validCategory(request.resource.data.get('category', 'other'));
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived'])
+        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category'])
         && (!('name' in changedKeys()) || validName(request.resource.data.name))
         && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
-        && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
+        && (!('archived' in changedKeys()) || request.resource.data.archived is bool)
+        && (!('category' in changedKeys()) || validCategory(request.resource.data.category));
     }
 
     // `amount` is optional: documents without it, and clients that never

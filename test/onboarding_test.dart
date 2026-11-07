@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -173,11 +174,13 @@ void main() {
         'ownerID': ownerID,
         'name': 'Coffee',
         'unit': Unit.drink,
+        'category': ViceCategory.caffeine,
       }),
       Write('addVice', 'vice-2', <String, Object?>{
         'ownerID': ownerID,
         'name': 'Vape',
         'unit': Unit.puff,
+        'category': ViceCategory.nicotine,
       }),
     ]);
     expect(find.text(OnboardingCopy.disclaimer), findsOneWidget);

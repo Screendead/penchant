@@ -309,7 +309,7 @@ nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack,
 **Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
 flat top-level collections joined by `viceID`: `vices`
-(`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
+(`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`) and `activities` (`viceID`,
 `quantity`, `ownerID`, `createdAt`, and the optional `amount` and `triggers`). `triggers` is a list of at most 10
 strings of 1 to 60 UTF-16 code units, each a path of node ids in the starter tree (`lib/data/trigger_tree.dart`,
 such as `work/meeting`) or a free-text label; a node's id never changes once shipped. Every read and write of it goes
@@ -318,7 +318,7 @@ or mistyped list as empty, the record write omits an empty list, and the export 
 loop, so `validTriggers` in `firestore.rules` checks each of the 10 indexes. Both collections carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
 one on create. The rules also fix each collection's field set and types on create, allow
-updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`/`amount`/`triggers`
+updates only to `name`/`unit`/`archived`/`category` (vices) and `quantity`/`createdAt`/`amount`/`triggers`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
 stay readable and editable. A third collection, `summaries`, is server-written (Server side, below). A vice name is 1 to 60 UTF-16 code units (rules `size()`,
@@ -336,7 +336,14 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 (empty string, `false`, 0, the nearest int for a double, null for an amount that is not a positive number,
 `Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
-supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
+supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
+Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on
+create, since app versions before it create without it. The parser reads a missing one as `other` and sets
+`Vice.categoryStored` false, and `categoryMigrationProvider` (`lib/writes/category_migration.dart`, kept alive by
+`MyApp`) writes `guessCategory(name)` to each such vice in the signed-in user's live vice list, once per vice per
+launch, through `fillViceCategory`: a transaction that writes only if the server's copy has no category, since a
+launch's first snapshot comes from the cache, which on a second device can predate a category picked elsewhere.
+Offline the transaction fails and a later snapshot or launch retries; nothing queues. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.
 
