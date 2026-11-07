@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/guest_expiry.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
@@ -22,6 +23,7 @@ import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
+import 'package:tracker/widgets/guest_expiry_banner.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
@@ -83,6 +85,29 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
+    ref.listenManual<int?>(
+      guestDaysLeftProvider,
+      (int? _, int? days) => _warnGuest(days),
+      fireImmediately: true,
+    );
+  }
+
+  // After the frame: it may fire from initState, where no provider may change.
+  void _warnGuest(int? days) {
+    if (days == null || days > GuestExpiry.sheetDays) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final DateTime today = ref.read(todayProvider);
+      if (ref.read(guestSheetShownProvider) == today) {
+        return;
+      }
+      ref.read(guestSheetShownProvider.notifier).shownOn(today);
+      unawaited(showGuestExpirySheet(context, days));
+    });
   }
 
   @override
@@ -213,6 +238,14 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       totals[e.vice.id] = totals[e.vice.id]! + e.quantity;
     }
     final bool offline = ref.watch(offlineProvider).value ?? false;
+    final int? guestDaysLeft = ref.watch(guestDaysLeftProvider);
+    final Widget? guestBanner =
+        guestDaysLeft == null || guestDaysLeft > GuestExpiry.bannerDays
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(bottom: DialSpace.xs),
+            child: GuestExpiryBanner(daysLeft: guestDaysLeft),
+          );
     final Map<String, double> storedTypicals = ref.watch(
       storedTypicalsProvider,
     );
@@ -248,9 +281,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         final double minSize = min(0.5, peek / height);
         final double logInset = ViceTracker._splitLogInset(context);
         final Widget page = noHabits
-            ? const Padding(
-                padding: EdgeInsets.all(DialSpace.m),
-                child: InfoBox(message: ViceTracker.noHabits),
+            ? Padding(
+                padding: const EdgeInsets.all(DialSpace.m),
+                child: Column(
+                  children: <Widget>[
+                    ?guestBanner,
+                    const Expanded(
+                      child: InfoBox(message: ViceTracker.noHabits),
+                    ),
+                  ],
+                ),
               )
             : Center(
                 child: SizedBox(
@@ -267,6 +307,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                           : DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
                     children: <Widget>[
+                      ?guestBanner,
                       const RecoveryKeyCard(),
                       // The arrows' 40 pt circles sit 20 from the edges, their
                       // 44 pt targets 18.
