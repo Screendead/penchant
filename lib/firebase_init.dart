@@ -147,8 +147,7 @@ Future<void> _initializeFirebase() async {
   // (tools/strip-firebase-plist.sh) covers this launch.
   _setCrashlyticsCollection(false);
 
-  // No App Check: the emulators do not check its tokens, and an activated
-  // provider would still ask Google's App Check service for one.
+  // No App Check: the emulators check no App Check token.
 
   // The emulators lose their data on shutdown; an on-device cache would
   // outlive it.
