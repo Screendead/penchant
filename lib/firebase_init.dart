@@ -147,11 +147,8 @@ Future<void> _initializeFirebase() async {
   // (tools/strip-firebase-plist.sh) covers this launch.
   _setCrashlyticsCollection(false);
 
-  // The emulators ignore App Check. A debug token is a production credential
-  // once registered in the console, so none is committed here.
-  await FirebaseAppCheck.instance.activate(
-    providerApple: const AppleDebugProvider(),
-  );
+  // No App Check: the emulators do not check its tokens, and an activated
+  // provider would still ask Google's App Check service for one.
 
   // The emulators lose their data on shutdown; an on-device cache would
   // outlive it.
