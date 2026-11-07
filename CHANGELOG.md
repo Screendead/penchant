@@ -15,8 +15,8 @@ pull request titles (`gh pr list --state merged`).
 - Groundwork for end-to-end encryption: the code to make a key for your account, keep it in iCloud Keychain, seal and
   open data with it, and write it out as a recovery key. The app does not use it yet, so nothing is encrypted.
 - Once end-to-end encryption is on, the first launch with your key seals the habits, and the triggers of
-  entries, you created before it, in the background, and removes their readable copies from the server. It waits for a connection, picks up
-  where it left off if interrupted, and Settings shows its progress.
+  entries, you created before it, in the background, and removes their readable copies from the server. It waits
+  for a connection, picks up where it left off if interrupted, and Settings shows its progress.
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
   life with more specific options inside, or your own words, which become a choice once used three times. It is
   optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.
