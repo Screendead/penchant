@@ -12,6 +12,8 @@ pull request titles (`gh pr list --state merged`).
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
   life with more specific options inside, or your own words, which become a choice once used three times. It is
   optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.
+- Crashes and errors are reported to the developer through Firebase Crashlytics, with the error and where it
+  happened, never your habits or amounts.
 - On the Mac, Cmd-1 to Cmd-9 log one of the first nine habits in Today's order, with the same Undo as the +; a Log
   menu in the menu bar lists them by name. A hardware keyboard on an iPad gets the same keys on Today.
 - Changing day slides the day's name in from the side it lies on, and the dial's sweep fades out once the hand has
@@ -34,7 +36,9 @@ pull request titles (`gh pr list --state merged`).
 ### Changed
 
 - An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
-  Craving) or typed in. Nothing picks them yet; exports include them as a "triggers" column.
+  Craving) or typed in; exports include them as a "triggers" column.
+- On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
+  quieter; the 00, 06, 12 and 18 labels still give the time.
 - Trends by week shows whole weeks only: the range rounds down to a whole number of weeks (30 days shows 28, 90 shows
   84, a year shows 364), so the oldest point no longer reads low from holding a few days.
 - Habits and each habit's history are in the Day Dial style: Habits lists active habits, then archived ones, with
