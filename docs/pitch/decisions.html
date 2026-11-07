@@ -73,7 +73,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 <div class="wrap">
   <header>
     <h1>Tracker: calls for Jack</h1>
-    <p class="lede">Round 8 is new today: six calls from building the Day Dial and the Mac split view, each with the mock-up beside the built app. Rounds 2 to 4 are still open (round 2 holds what 1.0 hangs on); round 1 is decided and built. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
+    <p class="lede">Round 9 is new today: three calls from the Habits, Settings and Account screens, each built one way, with the mock-up beside the built app. Every call in rounds 1 to 8 is picked; they stay below with your picks. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
     <div class="tally" id="tally"></div>
     <p class="banner" id="banner">Connecting to saved picks…</p>
   </header>
@@ -100,6 +100,32 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 
 <script>
 const GROUPS = [
+  { title: "Round 9 (7 November): Habits, Settings and Account against the mock-up", sub: "Raised by PRs #99 and #100. Each is built the first way; a pick changes a little code. Screenshots put the mock-up on the left.", calls: [
+    { id: "r9-archive", q: "Where does a habit's Archive control live?",
+      ctx: "Archiving hides a habit from Today and the Log fan and keeps its history, listed under Habits › Archived. Built (PR #100): a round archive button beside the pencil at the top of the habit's history page; one tap archives, the same button unarchives, no confirm. The mock-up has no archive control anywhere: its history page shows only the pencil. On that page, swiping an entry left already deletes it.",
+      imgs: [["r9-history", "History: mock-up (pencil only) and built (archive and pencil)", "wide"], ["r9-habits", "Habits: the rows a swipe would act on", "wide"]],
+      opts: [
+        { k: "A", t: "A button on the history page (as built)", c: "No work. Visible, one tap from the habit, undone with the same button. One more button than the mock-up's header." },
+        { k: "B", t: "Swipe or long-press a Habits row", c: "Archives without opening the habit, and the history header matches the mock-up. Hidden: needs Undo and a VoiceOver action, and swipe-left would archive on Habits but delete one screen deeper. Half a day plus tests." },
+        { k: "C", t: "A row at the foot of the habit editor", c: "The history header matches the mock-up exactly; archiving takes two taps (pencil, then Archive). About two hours; the archive tests move to the editor." } ],
+      rec: "A", why: "The mock-up gives Archive no home, and A is the only place someone finds it without being told. A swipe that archives on Habits and deletes on history teaches one gesture two meanings. If the mock-up's header matters more to you, C is the cheap way to get it." },
+    { id: "r9-appearance", q: "Can you choose light or dark, or does the app always match the phone?",
+      ctx: "Built (PR #99): Settings › App shows “Appearance · Match system” as a fixed row, with no chevron and nothing on tap; the app follows the phone's light or dark setting. The mock-up draws the same row with a chevron, so it implies a picker. Both themes are built and contrast-checked.",
+      imgs: [["r9-settings", "Settings: mock-up (chevron) and built (fixed)", "wide"]],
+      opts: [
+        { k: "A", t: "Match system only (as built)", c: "No work. The row looks like a setting but does nothing on tap." },
+        { k: "B", t: "A Light / Dark / Match system picker, saved on the device", c: "Matches the mock-up's chevron. Saved with shared_preferences, already a dependency; each device keeps its own choice; no data-model or rules change. Half a day." },
+        { k: "C", t: "Drop the row", c: "One line. Honest, and the app still follows the phone, but it departs from the mock-up." } ],
+      rec: "B", why: "The mock-up you picked promises a choice, and it costs half a day with no data change. Someone logging late at night may want dark whatever the phone is set to; a per-device choice is the usual iOS pattern and keeps it out of the account." },
+    { id: "r9-export", q: "Where does Export my data live?",
+      ctx: "Built (PR #99): only in Account Settings › Your data, beside Delete account, so it takes Settings › Account › Export. The delete dialog's “Export first” button runs it there. The mock-up puts “Export my data · CSV, JSON” in Settings' first card, under Account. Export is free under every Pro option.",
+      imgs: [["r9-settings", "Settings: the mock-up has an Export row, the build doesn't", "wide"], ["r9-account", "Built: Account Settings › Your data"]],
+      opts: [
+        { k: "A", t: "Account Settings only (as built)", c: "No work. Reached only through Settings › Account, one screen deeper than the mock-up." },
+        { k: "B", t: "Also a row in Settings, as the mock-up", c: "One tap from Settings, and Account Settings keeps it beside Delete. The export code moves out of Account Settings so both rows share it. About two hours." },
+        { k: "C", t: "Settings only", c: "Matches the mock-up with one entry point; the delete dialog's Export first still works, and Account Settings' Your data card holds only Delete. About two hours." } ],
+      rec: "B", why: "It matches the mock-up you picked, puts the free export one tap from Settings, and leaves it where someone about to delete their account looks." } ] },
+
   { title: "Round 8 (6 November): the Day Dial against its mock-up", sub: "Raised by PRs #83, #92 and #94. Each is built the first way; a pick changes a little code. Screenshots put the mock-up on the left.", calls: [
     { id: "r8-clear-spokes", q: "On a clear day, do the dial's major spokes stay at full strength?",
       ctx: "With nothing logged, the minor spokes fade to 25% and the sage ring draws on. The mock-up fades the major spokes to 25% as well. The build keeps them at full strength: in light they already sit at the 3:1 floor for meaningful graphics that your contrast rule sets, so a 25% major spoke falls below it.",
@@ -488,7 +514,9 @@ const IMG = {
   "trig-b2": "/_blob/0944df869a2cf6421d2cea80e4b7137b", "trig-b3": "/_blob/1208657076a0b972ad882ad44666b602",
   "brand-overview": "/_blob/9681985e021bcb5048c8bffc1d046bfe", "brand-penchant": "/_blob/864af59e45732ce7e68fa6b4f2bf2c2c", "brand-kenning": "/_blob/2bcc243eb323908882b0528883bb8c7d", "brand-sounding": "/_blob/5b0ce6ca2f371b3c0d9a0f697c90f1a6",
   "r8-clear-dark": "/_blob/98a17336cac52a189d104d2ff8eb68ac", "r8-clear-light": "/_blob/2208967c6bd55ea459f254eab5ce55a5", "r8-coach": "/_blob/457c0aed13607a68e1a2fb0cd5c82937",
-  "r8-sparse-light": "/_blob/9f99f2f8b4ca726a465c298d76aad0d3", "r8-split-1200": "/_blob/d6d729bcbee5d622ea56d43e6c9657e4", "busy-light": "/_blob/b5606c820793dba92e36c8d9378b45bb" };
+  "r8-sparse-light": "/_blob/9f99f2f8b4ca726a465c298d76aad0d3", "r8-split-1200": "/_blob/d6d729bcbee5d622ea56d43e6c9657e4", "busy-light": "/_blob/b5606c820793dba92e36c8d9378b45bb",
+  "r9-history": "/_blob/e834caffca3464acbdaea5081a9e1d4e", "r9-habits": "/_blob/db1cbfa016e54aea13e8314e1f220374", "r9-settings": "/_blob/f4c309b1fddc6f6c101018ad3e058a70",
+  "r9-account": "/_blob/bc85246e9a5766907328758dab415084" };
 const ALL = GROUPS.flatMap(g => g.calls);
 const picks = {};
 let db = null;
