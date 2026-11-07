@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Quantities can be decimals, such as 1.5 drinks or 0.25 hours, in the record dialog and the entry editor, written
+  with your region's decimal mark. Totals, charts and the CSV export (a new `amount` column) count them exactly.
 - Start without an account: the sign-in screen opens a guest journal, and Account Settings saves it to an email and
   password later with every entry kept. Signing out of a guest journal erases it
   from the server and the device, after a warning, and refuses offline rather than leave part of it behind.

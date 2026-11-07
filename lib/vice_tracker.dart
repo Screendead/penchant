@@ -199,12 +199,12 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   id: a.id,
                   vice: vice,
                   mark: markOf(vice),
-                  quantity: a.quantity,
+                  quantity: a.measure,
                   at: a.createdAt.toDate(),
                   pending: a.pending,
                 ),
           ];
-    final Map<String, int> totals = <String, int>{
+    final Map<String, num> totals = <String, num>{
       for (final Vice vice in vices ?? const <Vice>[]) vice.id: 0,
     };
     for (final DialEntry e in entries ?? const <DialEntry>[]) {
@@ -217,7 +217,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             day,
             today,
             vices!,
-            <int>[for (final Vice v in vices) totals[v.id]!],
+            <num>[for (final Vice v in vices) totals[v.id]!],
             <DateTime>[for (final DialEntry e in entries) e.at],
             alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
           );

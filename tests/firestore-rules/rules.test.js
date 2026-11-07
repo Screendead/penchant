@@ -12,6 +12,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   documentId,
   getCountFromServer,
@@ -402,6 +403,20 @@ describe('activities', () => {
       await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ note: 'hi' })));
     });
 
+    it('allows an optional positive amount, whole or decimal', async () => {
+      for (const amount of [1.5, 0.25, 2]) {
+        await assertSucceeds(
+          addDoc(collection(asAlice(), 'activities'), activity({ amount, quantity: Math.ceil(amount) })),
+        );
+      }
+    });
+
+    it('denies a zero, negative or non-number amount', async () => {
+      for (const amount of [0, -1.5, '1.5', null, true]) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ amount })));
+      }
+    });
+
     it('denies wrong types', async () => {
       const bad = [
         { quantity: 2.5 },
@@ -646,6 +661,26 @@ describe('activities', () => {
       await assertFails(updateDoc(ref, { quantity: 0 }));
       await assertFails(updateDoc(ref, { quantity: -1 }));
       await assertFails(updateDoc(doc(asAlice(), 'activities/aliceZeroActivity'), { quantity: -1 }));
+    });
+
+    it('allows adding, changing or removing an amount', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertSucceeds(updateDoc(ref, { amount: 1.5, quantity: 2 }));
+      await assertSucceeds(updateDoc(ref, { amount: 0.75 }));
+      await assertSucceeds(updateDoc(ref, { amount: deleteField() }));
+    });
+
+    it('allows adding an amount to a legacy activity', async () => {
+      for (const id of ['aliceZeroActivity', 'aliceLegacyActivity', 'aliceOrphanActivity']) {
+        await assertSucceeds(updateDoc(doc(asAlice(), `activities/${id}`), { amount: 2.5 }));
+      }
+    });
+
+    it('denies changing an amount to zero, below or a non-number', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      for (const amount of [0, -0.5, '2', null]) {
+        await assertFails(updateDoc(ref, { amount }));
+      }
     });
 
     it('denies wrong types', async () => {

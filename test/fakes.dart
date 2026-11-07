@@ -42,11 +42,13 @@ ViceActivity fakeActivity(
   String viceID,
   int quantity,
   DateTime at, {
+  double? amount,
   List<String> triggers = const <String>[],
 }) => ViceActivity(
   id: '$viceID-$quantity-${at.toIso8601String()}',
   viceID: viceID,
   quantity: quantity,
+  amount: amount,
   ownerID: ownerID,
   createdAt: Timestamp.fromDate(at),
   triggers: triggers,
