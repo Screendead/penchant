@@ -1,4 +1,4 @@
-// Renders sign-in, sign-up, Settings and Account Settings at the Day Dial mock-up's size and
+// Renders sign-in, sign-up, Settings, Appearance and Account Settings at the Day Dial mock-up's size and
 // text, for side-by-side comparison with it (tools/fidelity/README.md):
 //   flutter test test/fidelity_account_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
@@ -11,7 +11,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account_settings.dart';
+import 'package:tracker/appearance_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
@@ -49,12 +51,14 @@ Future<void> _loadFonts() async {
 
 void main() {
   setUpAll(_loadFonts);
+  setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
   for (final Brightness brightness in Brightness.values) {
     for (final String name in <String>[
       'signin',
       'signup',
       'settings',
       'account',
+      'appearance',
     ]) {
       testWidgets('fidelity $name ${brightness.name}', (
         WidgetTester tester,
@@ -95,7 +99,12 @@ void main() {
                 debugShowCheckedModeBanner: false,
                 theme: appTheme(Brightness.light),
                 darkTheme: appTheme(Brightness.dark),
-                home: name == 'settings' || name == 'account'
+                home:
+                    const <String>{
+                      'settings',
+                      'account',
+                      'appearance',
+                    }.contains(name)
                     ? const Scaffold()
                     : const Authenticate(),
               ),
@@ -103,12 +112,18 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        if (name == 'settings' || name == 'account') {
+        if (const <String>{
+          'settings',
+          'account',
+          'appearance',
+        }.contains(name)) {
           navigator.currentState!.push(
             MaterialPageRoute<void>(
-              builder: (_) => name == 'settings'
-                  ? const Settings()
-                  : const AccountSettings(),
+              builder: (_) => switch (name) {
+                'settings' => const Settings(),
+                'appearance' => const AppearanceSettings(),
+                _ => const AccountSettings(),
+              },
             ),
           );
           await tester.pumpAndSettle();

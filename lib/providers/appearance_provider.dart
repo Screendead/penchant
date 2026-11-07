@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/errors/report_error.dart';
 
 /// Light, dark or the phone's setting, chosen in Settings and kept on this
 /// device only, for whoever is signed in.
@@ -19,9 +20,16 @@ class Appearance extends Notifier<ThemeMode> {
     return ThemeMode.system;
   }
 
+  // A failed read leaves the app following the phone.
   Future<void> _load() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final ThemeMode? saved = parse(prefs.getString(key));
+    final ThemeMode? saved;
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      saved = parse(prefs.getString(key));
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while reading the appearance choice');
+      return;
+    }
     // A choice made while the read was in flight is newer than what it read.
     if (saved != null && !_chosen) {
       state = saved;
@@ -31,8 +39,13 @@ class Appearance extends Notifier<ThemeMode> {
   Future<void> choose(ThemeMode mode) async {
     _chosen = true;
     state = mode;
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, mode.name);
+    // A failed save still applies the choice until the app closes.
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, mode.name);
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while saving the appearance choice');
+    }
   }
 
   static ThemeMode? parse(String? name) {

@@ -138,10 +138,12 @@ class _SegmentState extends State<_Segment> {
               ? ShapeDecoration(
                   shape: StadiumBorder(
                     side: BorderSide(
-                    // The selected thumb is accent, which primary matches.
-                    color: widget.selected ? scheme.onPrimary : scheme.primary,
-                    width: 2,
-                  ),
+                      // The selected thumb is accent, which primary matches.
+                      color: widget.selected
+                          ? scheme.onPrimary
+                          : scheme.primary,
+                      width: 2,
+                    ),
                   ),
                 )
               : null,
