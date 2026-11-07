@@ -127,6 +127,23 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    scheduled function, and the dial sizes beads against its typicals; it runs only once Jack does the steps under
    For Jack to do. Waiting on Jack before any build: Sign in with Apple (the paid team).
 5. **The rest of the register**, medium then low, one class per PR.
+6. **Soon: iPhone widgets, Control Centre controls and a Mac menu bar app** (Jack, 2026-11-07). Build all of these:
+   - **Home and Lock Screen widgets** in every size WidgetKit offers (small, medium, large, extra large on iPad, and
+     the Lock Screen's circular, rectangular and inline). One kind shows **last week's usage of every habit**; the
+     other **records one usage of one of the top 1, 3 or 8 habits** (the size picks how many).
+   - **Control Centre controls** (iOS 18 `ControlWidget`), one button that logs one usage of a chosen habit.
+   - **A macOS menu bar app**: the dial at the top and the habits listed below it. Clicking a habit logs one usage
+     at the current date and time.
+
+   Constraints, from the code as it stands: these are native Swift targets (WidgetKit, App Intents) because Flutter
+   does not run in an extension. Writing an activity needs no key (`viceID`, `quantity`, `amount`, `createdAt` and
+   `ownerID` are plaintext under `r2-e2ee`), but showing habit names does, so the extension needs the app's Firebase
+   Auth session and the E2EE key through a shared Keychain access group and an App Group. Check whether the free
+   signing team can sign App Groups and extensions before building. Read Apple's current WidgetKit, App Intents and
+   ControlWidget docs first. Open for Jack once scoped (recommendations, not calls): what "top" means (Claude:
+   most logged in the last 30 days, overridable in the widget's settings); Undo after a widget or menu bar tap;
+   Siri, Shortcuts and the Action button through the same App Intent; macOS desktop widgets from the same code.
+   The idea file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
