@@ -24,7 +24,7 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**27 ideas: 8 release blockers, 6 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 16 need a call from
+**26 ideas: 8 release blockers, 5 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 15 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
@@ -47,7 +47,6 @@ Each list is in the recommended build order.
 - [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S, Needs Jack
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
-- [Get a new user from install to a first log in under a minute](v1-must-haves/first-run-onboarding.md). M, Needs Jack
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6), Needs Jack
 
 ## Insights (7)

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/onboarding/presets.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 
 import 'support.dart';
@@ -47,6 +48,13 @@ void main() {
     await signOutThroughSettings(tester);
     await signIn(tester, second);
 
+    // The second account has no habits, so it starts on the onboarding.
+    await pumpUntilNeverShowing(
+      tester,
+      find.text(OnboardingCopy.introHeadline),
+      firstVices,
+    );
+    await skipTheOnboarding(tester);
     await pumpUntilNeverShowing(
       tester,
       find.textContaining('No habits yet. Add one'),

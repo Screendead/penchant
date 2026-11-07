@@ -57,6 +57,7 @@ const vice = (overrides = {}) => ({
   ownerID: ALICE,
   createdAt: serverTimestamp(),
   archived: false,
+  category: 'caffeine',
   ...overrides,
 });
 
@@ -139,6 +140,22 @@ describe('vices', () => {
     it('allows every unit in the Unit enum', async () => {
       for (const unit of ['item', 'time', 'puff', 'drink', 'minute', 'hour']) {
         await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ unit })));
+      }
+    });
+
+    it('allows every category in the ViceCategory enum', async () => {
+      for (const category of ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other']) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ category })));
+      }
+    });
+
+    it('allows a legacy create without a category', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), without(vice(), 'category')));
+    });
+
+    it('denies a category outside the enum or of the wrong type', async () => {
+      for (const category of ['sugar', '', 3, null]) {
+        await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ category })));
       }
     });
 
@@ -274,6 +291,22 @@ describe('vices', () => {
 
     it('denies a non-bool archived', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: 'yes' }));
+    });
+
+    it('allows adding a category to a legacy vice and changing it', async () => {
+      const ref = doc(asAlice(), 'vices/aliceLegacyVice');
+      await assertSucceeds(updateDoc(ref, { category: 'alcohol' }));
+      await assertSucceeds(updateDoc(ref, { category: 'other' }));
+      await assertSucceeds(
+        updateDoc(doc(asAlice(), 'vices/aliceUnknownUnitVice'), { category: 'nicotine' }),
+      );
+    });
+
+    it('denies an invalid category on update', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertFails(updateDoc(ref, { category: 'sugar' }));
+      await assertFails(updateDoc(ref, { category: 1 }));
+      await assertFails(updateDoc(doc(asBob(), 'vices/aliceVice'), { category: 'food' }));
     });
 
     it('denies an invalid rename', async () => {
@@ -825,6 +858,55 @@ describe('account export and deletion', () => {
     batch.delete(doc(db, 'vices/aliceVice'));
     batch.delete(doc(db, 'vices/bobVice'));
     await assertFails(batch.commit());
+  });
+});
+
+describe('summaries', () => {
+  const summary = {
+    computedAt: createdAt,
+    windowDays: 90,
+    vices: { aliceVice: { typical: 2, count: 14 } },
+  };
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, `summaries/${ALICE}`), summary);
+      await setDoc(doc(db, `summaries/${BOB}`), { ...summary, vices: {} });
+    });
+  });
+
+  it('lets the owner read their summary', async () => {
+    const snapshot = await assertSucceeds(getDoc(doc(asAlice(), `summaries/${ALICE}`)));
+    assert.equal(snapshot.get('vices.aliceVice.typical'), 2);
+  });
+
+  it('lets the owner read a summary not yet written', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
+    });
+    const snapshot = await assertSucceeds(getDoc(doc(asAlice(), `summaries/${ALICE}`)));
+    assert.equal(snapshot.exists(), false);
+  });
+
+  it('denies reading another user\'s summary, signed in or not', async () => {
+    await assertFails(getDoc(doc(asAlice(), `summaries/${BOB}`)));
+    await assertFails(getDoc(doc(asGuest(), `summaries/${ALICE}`)));
+  });
+
+  it('denies listing summaries', async () => {
+    await assertFails(getDocs(collection(asAlice(), 'summaries')));
+  });
+
+  it('denies the owner creating, changing or deleting their summary', async () => {
+    const db = asAlice();
+    await assertFails(updateDoc(doc(db, `summaries/${ALICE}`), { 'vices.aliceVice.typical': 9 }));
+    await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
+    await assertFails(deleteDoc(doc(db, `summaries/${ALICE}`)));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
+    });
+    await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
   });
 });
 

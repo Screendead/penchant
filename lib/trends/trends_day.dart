@@ -12,6 +12,7 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/widgets/circle_button.dart';
@@ -63,6 +64,9 @@ class TrendsDay extends ConsumerWidget {
       viceActivityDayProvider(day),
     );
     final bool offline = ref.watch(offlineProvider).value ?? false;
+    final Map<String, double> storedTypicals = ref.watch(
+      storedTypicalsProvider,
+    );
     HabitMark markOf(Vice v) => marks[v.id] ?? const HabitMark(0);
 
     final Map<String, Vice> byID = <String, Vice>{
@@ -162,6 +166,7 @@ class TrendsDay extends ConsumerWidget {
                     day: day,
                     today: today,
                     entries: entries,
+                    storedTypicals: storedTypicals,
                     semanticsLabel: entries == null
                         ? null
                         : DayDial.summary(

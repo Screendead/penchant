@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Settings;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +15,9 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/onboarding/onboarding.dart';
+import 'package:tracker/onboarding/presets.dart';
+import 'package:tracker/settings.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -210,7 +213,14 @@ Future<void> screenshot(WidgetTester tester, String name) async {
   }
 }
 
-Future<void> register(WidgetTester tester, String email) async {
+// A new account starts on the onboarding, which this skips unless told not
+// to: a test that drives it, or one whose habit list fails to load, which
+// shows none.
+Future<void> register(
+  WidgetTester tester,
+  String email, {
+  bool skipOnboarding = true,
+}) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
@@ -239,6 +249,18 @@ Future<void> register(WidgetTester tester, String email) async {
   );
   await tap(tester, createAccount);
   await pumpUntil(tester, find.byType(Homepage));
+  if (skipOnboarding) {
+    await skipTheOnboarding(tester);
+  }
+}
+
+// Skip, then the disclaimer, to the empty Today.
+Future<void> skipTheOnboarding(WidgetTester tester) async {
+  await pumpUntil(tester, find.text(OnboardingCopy.introHeadline));
+  await tap(tester, find.byKey(Onboarding.skipKey));
+  await pumpUntil(tester, find.text(OnboardingCopy.acknowledge));
+  await tap(tester, find.text(OnboardingCopy.acknowledge));
+  await pumpUntil(tester, find.byType(Onboarding), present: false);
 }
 
 // Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.
@@ -343,6 +365,10 @@ Future<void> recordActivity(
   DateTime? at,
   List<String> triggerTaps = const <String>[],
 }) async {
+  // Frames draw only on a pump here, and the fan keeps the habits the button
+  // held when it opened: a write made outside the tree since the last frame
+  // would be missing from it.
+  await tester.pump();
   await tap(tester, find.byType(LogButton));
   final Finder wedge = fanWedge(viceName);
   final Finder more = fanWedge('More');
@@ -600,7 +626,23 @@ Future<void> signOutThroughSettings(WidgetTester tester) async {
   // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
   await pumpFor(tester, const Duration(seconds: 1));
   await tap(tester, find.text('Sign out'));
-  await pumpUntil(tester, find.byType(Homepage), present: false);
+  await expectSignInWithNothingAbove(tester);
+}
+
+// Settings hides Homepage offstage, so Homepage vanishing does not mean the
+// sign-out has finished.
+Future<void> expectSignInWithNothingAbove(WidgetTester tester) async {
+  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
+  await pumpUntil(
+    tester,
+    find.byType(Settings, skipOffstage: false),
+    present: false,
+  );
+  await pumpUntil(
+    tester,
+    find.byType(Homepage, skipOffstage: false),
+    present: false,
+  );
 }
 
 Future<void> signIn(WidgetTester tester, String email) async {

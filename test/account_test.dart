@@ -195,6 +195,34 @@ void main() {
       expect(find.text('root'), findsOneWidget);
     });
 
+    testWidgets('leaves alone what opened after MyApp popped Settings', (
+      tester,
+    ) async {
+      final Completer<void> signedOut = Completer<void>();
+      final FakeAccount account = FakeAccount()
+        ..respond = (_) => signedOut.future;
+      await openSettings(tester, account);
+      await tester.tap(find.text('Sign out'));
+      await tester.pump();
+
+      // As MyApp does once the uid changes, before the cache is cleared.
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .popUntil((Route<dynamic> r) => r.isFirst);
+      await tester.pumpAndSettle();
+      unawaited(
+        showDialog<void>(
+          context: tester.element(find.text('root')),
+          builder: (_) => const AlertDialog(title: Text('reset')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      signedOut.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('reset'), findsOneWidget);
+    });
+
     testWidgets('asks before discarding entries that have not synced', (
       tester,
     ) async {
