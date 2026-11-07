@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
@@ -101,8 +102,12 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
-        builder: (BuildContext context, Widget? child) =>
-            AppMenuBar(child: rejectedWritesBuilder(context, child)),
+        builder: (BuildContext context, Widget? child) => AppMenuBar(
+          child: rejectedWritesBuilder(
+            context,
+            RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+          ),
+        ),
       ),
     );
   }
@@ -165,6 +170,8 @@ Widget routePage(String? name) {
       return const Settings();
     case ['settings', 'account']:
       return const AccountSettings();
+    case ['settings', 'recovery-key']:
+      return const RecoveryKeyPage();
     default:
       return const NotFound();
   }

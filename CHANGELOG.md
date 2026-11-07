@@ -22,6 +22,10 @@ pull request titles (`gh pr list --state merged`).
 - Once end-to-end encryption is on, the first launch with your key seals the habits, and the triggers of
   entries, you created before it, in the background, and removes their readable copies from the server. It waits
   for a connection, picks up where it left off if interrupted, and Settings shows its progress.
+- A recovery key screen, under Account settings and offered on Today a week in: the key in large groups with Copy
+  and Share, then a check that you typed its last group back. A device without the journal key will ask for it before
+  any screen opens, the entry field points to a mistyped character, and the page offers Sign out and a lost-key path
+  to a new journal. Switched off until the whole encryption stack and the key service land.
 - A guest journal is erased 30 days after it starts unless it is saved to an email. From day 20 Today says how many
   days are left, and in the last 3 days a sheet asks once a day; both lead to saving it to an email.
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of

@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
+import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
@@ -402,6 +404,14 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
         DialCard(
           top: 0,
           children: <Widget>[
+            if (ref.watch(e2eeEnabledProvider))
+              CardRow(
+                label: RecoveryKeyCopy.settingsRow,
+                subtitle: RecoveryKeyCopy.settingsSubtitle,
+                glyph: DialGlyph.right,
+                onTap: () =>
+                    Navigator.of(context).pushNamed(RecoveryKeyPage.route),
+              ),
             CardRow(
               key: _exportTile,
               label: AccountCopy.exportTitle,

@@ -1,10 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
+import 'package:tracker/account/sign_out.dart';
+import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -12,27 +13,6 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
-
-Future<bool> _confirmDiscard(BuildContext context) async {
-  final bool? discard = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) => AlertDialog(
-      title: const Text(AccountCopy.signOutUnsyncedTitle),
-      content: const Text(AccountCopy.signOutUnsyncedBody),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text(AccountCopy.cancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text(AccountCopy.signOutAnyway),
-        ),
-      ],
-    ),
-  );
-  return discard ?? false;
-}
 
 // Nothing signs a guest back in, so signing out erases their journal rather
 // than leave it on the server under a uid nothing can reach.
@@ -71,29 +51,20 @@ class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
 
   Future<void> _signOut() async {
-    final Account account = ref.read(accountProvider);
     final NavigatorState navigator = Navigator.of(context);
+    final Account account = ref.read(accountProvider);
     final ModalRoute<dynamic>? route = ModalRoute.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    try {
-      if (account.isGuest) {
-        await _eraseGuest(account, navigator, route, messenger);
-        return;
-      }
-      try {
-        await _whileSigningOut(account.signOut);
-      } on UnsyncedEntriesException {
-        if (!mounted || !await _confirmDiscard(context)) {
-          return;
-        }
-        await _whileSigningOut(() => account.signOut(discardUnsynced: true));
-      }
-      _popToHome(navigator, route);
-    } catch (e, stack) {
-      reportError(e, stack, context: 'while signing out');
-      messenger.showSnackBar(
-        SnackBar(content: Text(AccountCopy.signOutFailed(authErrorMessage(e)))),
+    if (account.isGuest) {
+      await _eraseGuest(
+        account,
+        navigator,
+        route,
+        ScaffoldMessenger.of(context),
       );
+      return;
+    }
+    if (await signOutAsking(context, account, busy: _whileSigningOut)) {
+      _popToHome(navigator, route);
     }
   }
 
