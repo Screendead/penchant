@@ -30,7 +30,7 @@ import 'package:tracker/writes/category_migration.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (keychainProbe) {
-    runApp(const KeychainProbeApp());
+    runApp(const ProviderScope(child: KeychainProbeApp()));
     return;
   }
   installErrorHandlers();

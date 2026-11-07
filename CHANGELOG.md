@@ -7,6 +7,11 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Added
+
+- A keychain sync probe build (`--dart-define=KEYCHAIN_PROBE=true`) that stores one test code in iCloud Keychain
+  and shows it, to check that the journal key reaches your other Apple devices. Normal builds leave it out.
+
 ### Fixed
 
 - iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and
