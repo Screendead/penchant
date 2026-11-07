@@ -44,14 +44,14 @@ Each list is in the recommended build order.
 ## v1 must-haves (6)
 
 - [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
-- [Let people start without an account, and finish the basic sign-in flows](v1-must-haves/guest-mode-and-sign-in.md). M, Needs Jack
+- [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S, Needs Jack
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6), Needs Jack
 
 ## Insights (7)
 
-- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Vice fields decided (C18), Needs Jack
+- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount` shipped
 - [Tag what led to each entry, from a tree that learns your common triggers](insights/trigger-tagging.md). M, 1.0, Needs Jack
 - [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
@@ -103,7 +103,6 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 - **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
   recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
   the visible "when"?
-- **Data model:** extend C18 to fields on `activities`, the `days` and `triggerNodes` collections, and decimals through a separate `amount` field?
 - **Age rating:** confirm 18+, since Apple retired 17+ in 2025.
 - **Mac:** ship in 1.0 or 1.0.x, and confirm Health results never sync to the Mac?
 - **Pro line and price:** the analysis layer as Pro at USD 24.99 (recommended), or a different line?

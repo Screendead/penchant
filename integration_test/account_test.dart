@@ -252,14 +252,17 @@ void main() {
 
     final List<ExportFile> files = share.shared.single;
     final List<String> rows = files.first.contents.trim().split('\r\n');
-    expect(rows.first, 'time,vice,quantity,unit,vice_id,entry_id,triggers');
+    expect(
+      rows.first,
+      'time,vice,quantity,amount,unit,vice_id,entry_id,triggers',
+    );
     expect(rows, hasLength(3));
     expect(
-      rows.where((String row) => row.contains(',Coffee,2,drink,')),
+      rows.where((String row) => row.contains(',Coffee,2,,drink,')),
       hasLength(1),
     );
     expect(
-      rows.where((String row) => row.contains(',Tea,1,drink,')),
+      rows.where((String row) => row.contains(',Tea,1,,drink,')),
       hasLength(1),
     );
 

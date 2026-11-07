@@ -78,24 +78,32 @@ service cloud.firestore {
         && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
     }
 
+    // `amount` is optional: documents without it, and clients that never
+    // write it, stay valid. A missing amount reads as the default 1.
+    function validAmount(data) {
+      return data.get('amount', 1) is number && data.get('amount', 1) > 0;
+    }
+
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'triggers'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'triggers'])
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
+        && validAmount(request.resource.data)
         && (!('triggers' in request.resource.data) || validTriggers(request.resource.data.triggers))
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt', 'triggers'])
+        && changedKeys().hasOnly(['quantity', 'createdAt', 'amount', 'triggers'])
         && (!('quantity' in changedKeys())
           || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp)
+        && (!('amount' in changedKeys()) || validAmount(request.resource.data))
         && (!('triggers' in changedKeys())
           || !('triggers' in request.resource.data)
           || validTriggers(request.resource.data.triggers));

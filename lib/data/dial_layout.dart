@@ -52,8 +52,8 @@ Offset dialPoint(double angle, double radius) =>
 
 // The middle of a habit's entries, so one unusual entry does not move it. A
 // habit with no positive entry counts each as its own size.
-double typicalQuantity(Iterable<int> quantities) {
-  final List<int> sorted = quantities.where((int q) => q > 0).toList()..sort();
+double typicalQuantity(Iterable<num> quantities) {
+  final List<num> sorted = quantities.where((num q) => q > 0).toList()..sort();
   if (sorted.isEmpty) {
     return 1;
   }
@@ -64,7 +64,7 @@ double typicalQuantity(Iterable<int> quantities) {
 }
 
 // A bead's area grows with its quantity against the habit's typical entry.
-double beadRadius(int quantity, double typical) {
+double beadRadius(num quantity, double typical) {
   final double ratio = typical > 0 ? max(0, quantity) / typical : 1;
   return (DialFace.beadBase * sqrt(ratio)).clamp(
     DialFace.beadMin,

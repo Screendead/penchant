@@ -66,7 +66,7 @@ class TrendsChart extends StatelessWidget {
   }) {
     final int stepDays = range.stepDays;
     final UsageStats stats = usageStats(range, totals);
-    final int total = stats.total.round();
+    final double total = stats.total;
     final String peakDate = formatShortDay(range.bucketStart(stats.peakIndex));
     final String average = smoothingWindow > 1
         ? ' Shown with a ${averageName(stepDays, smoothingWindow)}.'
@@ -74,7 +74,7 @@ class TrendsChart extends StatelessWidget {
 
     return '${seriesName(stepDays)}s of ${vice.name} over the last '
         '${formatCount(range.days)} days: ${vice.unit.label(total)} in all. The most was '
-        '${vice.unit.label(totals[stats.peakIndex].round())} '
+        '${vice.unit.label(totals[stats.peakIndex])} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average';
   }
 
@@ -111,7 +111,7 @@ class TrendsChart extends StatelessWidget {
     required int index,
   }) {
     final String date = readoutLabel(range, index, addDays(range.end, -1));
-    final String amount = vice.unit.label(totals[index].round());
+    final String amount = vice.unit.label(totals[index]);
     return window > 1
         ? '$date, $amount, average ${formatAverage(smoothed[index])}'
         : '$date, $amount';
@@ -454,7 +454,7 @@ class TrendsChart extends StatelessWidget {
       fontSize: 13,
       color: Theme.of(context).colorScheme.onSurface,
     );
-    final int value = totals[index].round();
+    final double value = totals[index];
     final TextSpan text = TextSpan(
       style: words,
       children: <InlineSpan>[

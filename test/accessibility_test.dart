@@ -202,7 +202,7 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.ensureVisible(find.text('Please select a habit'));
         expect(find.text('Please select a habit'), findsOneWidget);
-        expect(find.text('Please enter at least 1'), findsOneWidget);
+        expect(find.text('Please enter more than 0'), findsOneWidget);
       });
 
       testWidgets('the home screen opens the record dialog without '

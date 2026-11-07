@@ -593,6 +593,29 @@ void main() {
       expect(find.text('Activity removed'), findsOneWidget);
     });
 
+    testWidgets('records a decimal as its amount, with the quantity rounded '
+        'up', (WidgetTester tester) async {
+      await fill(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '1.5',
+      );
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      final Write write = writes.writes.single;
+      expect(write.fields['quantity'], 2);
+      expect(write.fields['amount'], 1.5);
+    });
+
+    testWidgets('a whole number writes no amount', (WidgetTester tester) async {
+      await fill(tester);
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.single.fields.containsKey('amount'), isFalse);
+    });
+
     testWidgets('a second press after a failure writes the same document', (
       WidgetTester tester,
     ) async {
@@ -679,6 +702,67 @@ void main() {
     });
   });
 
+  group('the activity editor on an entry with an amount', () {
+    final Vice coffee = fakeVice('coffee');
+    final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
+    final ViceActivity activity = fakeActivity(coffee.id, 2, at, amount: 1.5);
+
+    Future<void> open(WidgetTester tester) => _pumpOpened(
+      tester,
+      writes,
+      [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(activity),
+        ),
+      ],
+      ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
+    );
+
+    String quantityText(WidgetTester tester) => tester
+        .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
+        .controller!
+        .text;
+
+    testWidgets('shows the amount, and a whole number replaces it', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      expect(quantityText(tester), '1.5');
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '3',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [
+        Write('updateActivity', activity.id, <String, Object?>{
+          'quantity': 3,
+          'amount': 3.0,
+        }),
+      ]);
+    });
+
+    testWidgets('Undo after a delete writes the amount back', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('Deleted 1.5'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.fields['quantity'], 2);
+      expect(writes.writes.last.fields['amount'], 1.5);
+    });
+  });
+
   group('the activity editor', () {
     final Vice coffee = fakeVice('coffee');
     final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
@@ -720,6 +804,25 @@ void main() {
         Write('updateActivity', activity.id, <String, Object?>{'quantity': 5}),
       ]);
       expect(editor, findsNothing);
+    });
+
+    testWidgets('saves a decimal as its amount, with the quantity rounded up', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '0.25',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [
+        Write('updateActivity', activity.id, <String, Object?>{
+          'quantity': 1,
+          'amount': 0.25,
+        }),
+      ]);
     });
 
     testWidgets('a save that outlasts the timeout closes and says it will '

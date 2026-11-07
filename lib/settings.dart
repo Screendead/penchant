@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account.dart';
@@ -32,6 +33,32 @@ Future<bool> _confirmDiscard(BuildContext context) async {
   return discard ?? false;
 }
 
+// Nothing signs a guest back in, so signing out erases their journal rather
+// than leave it on the server under a uid nothing can reach.
+Future<bool> _confirmGuestSignOut(BuildContext context) async {
+  final bool? leave = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: const Text(AccountCopy.guestSignOutTitle),
+      content: const Text(AccountCopy.guestSignOutBody),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text(AccountCopy.cancel),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(AccountCopy.guestSignOutAction),
+        ),
+      ],
+    ),
+  );
+  return leave ?? false;
+}
+
 class Settings extends ConsumerStatefulWidget {
   const Settings({super.key});
 
@@ -49,6 +76,10 @@ class _SettingsState extends ConsumerState<Settings> {
     final NavigatorState navigator = Navigator.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
+      if (account.isGuest) {
+        await _eraseGuest(account, navigator, messenger);
+        return;
+      }
       try {
         await _whileSigningOut(account.signOut);
       } on UnsyncedEntriesException {
@@ -64,6 +95,43 @@ class _SettingsState extends ConsumerState<Settings> {
         SnackBar(content: Text(AccountCopy.signOutFailed(authErrorMessage(e)))),
       );
     }
+  }
+
+  // Deleting the guest's Auth user signs it out. A failure leaves it signed in,
+  // so whatever remains stays reachable for another try.
+  Future<void> _eraseGuest(
+    Account account,
+    NavigatorState navigator,
+    ScaffoldMessengerState messenger,
+  ) async {
+    if (!await _confirmGuestSignOut(context) || !mounted) {
+      return;
+    }
+    try {
+      await _whileSigningOut(account.deleteAccount);
+    } on DeletionIncompleteException catch (e, stack) {
+      reportError(e.cause, stack, context: 'while erasing a guest journal');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            AccountCopy.guestSignOutIncomplete(authErrorMessage(e.cause)),
+          ),
+        ),
+      );
+      return;
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while erasing a guest journal');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(AccountCopy.guestSignOutFailed(authErrorMessage(e))),
+        ),
+      );
+      return;
+    }
+    navigator.popUntil((Route<dynamic> route) => route.isFirst);
+    messenger.showSnackBar(
+      const SnackBar(content: Text(AccountCopy.guestErased)),
+    );
   }
 
   // Waiting for unsynced entries can take seconds; the tile stays disabled
@@ -84,7 +152,15 @@ class _SettingsState extends ConsumerState<Settings> {
     final String? version = ref
         .watch(packageInfoProvider)
         .whenOrNull(data: (info) => '${info.version} (${info.buildNumber})');
-    final String? email = ref.watch(userProvider).value?.email;
+    // The profile stream, since linking a guest or changing the address
+    // leaves the auth-state User as it was.
+    final String? email = ref.watch(
+      userProfileProvider.select(
+        (AsyncValue<User?> user) => (user.value?.isAnonymous ?? false)
+            ? AccountCopy.guest
+            : user.value?.email,
+      ),
+    );
     return CardPage(
       title: 'Settings',
       children: <Widget>[
