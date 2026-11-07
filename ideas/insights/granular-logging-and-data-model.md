@@ -26,6 +26,10 @@ The [check-in](../v1-must-haves/evening-check-in-and-reminders.md) adds a per-da
 
 ## Decision so far
 
+Decided by Jack 2026-11-06 (`r2-data-model`): **B**, optional fields plus a first-launch migrator, with decimals
+through a separate optional `amount` beside `quantity`. The `amount` field has shipped (rules, parser, record dialog,
+editor, export); the other fields and the migrator have not.
+
 Decided by Jack 2026-11-03 (C18): **new fields on vices are allowed**; optional ones freely, mandatory ones only with
 a migrator that runs on first launch and adds them to existing records. C18 does not cover fields on `activities` or
 new collections (`days`, `triggerNodes`), which most of the table needs.
@@ -73,5 +77,4 @@ everything optional in the rules until the web site is down and no pre-1.0 build
 - [`activity-timestamps-come-from-the-device-clock`](../../tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
 - the day rule (`CLAUDE.md`, **Days**): an entry counts on the viewing device's local day, and its zone is not stored
 
-**Needs Jack:** yes — Extend C18 to fields on `activities` and to the new `days` and `triggerNodes` collections, and
-allow decimals through a separate `amount` field?
+**Needs Jack:** no (decided 2026-11-06, above).

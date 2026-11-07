@@ -15,7 +15,7 @@ import 'package:tracker/writes/tracker_writes.dart';
 String describeActivity(
   String viceName,
   Unit unit,
-  int quantity,
+  num quantity,
   DateTime at, {
   required bool alwaysUse24HourFormat,
 }) =>

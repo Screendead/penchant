@@ -12,6 +12,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   documentId,
   getCountFromServer,
@@ -402,6 +403,20 @@ describe('activities', () => {
       await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ note: 'hi' })));
     });
 
+    it('allows an optional positive amount, whole or decimal', async () => {
+      for (const amount of [1.5, 0.25, 2]) {
+        await assertSucceeds(
+          addDoc(collection(asAlice(), 'activities'), activity({ amount, quantity: Math.ceil(amount) })),
+        );
+      }
+    });
+
+    it('denies a zero, negative or non-number amount', async () => {
+      for (const amount of [0, -1.5, '1.5', null, true]) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ amount })));
+      }
+    });
+
     it('denies wrong types', async () => {
       const bad = [
         { quantity: 2.5 },
@@ -648,6 +663,26 @@ describe('activities', () => {
       await assertFails(updateDoc(doc(asAlice(), 'activities/aliceZeroActivity'), { quantity: -1 }));
     });
 
+    it('allows adding, changing or removing an amount', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertSucceeds(updateDoc(ref, { amount: 1.5, quantity: 2 }));
+      await assertSucceeds(updateDoc(ref, { amount: 0.75 }));
+      await assertSucceeds(updateDoc(ref, { amount: deleteField() }));
+    });
+
+    it('allows adding an amount to a legacy activity', async () => {
+      for (const id of ['aliceZeroActivity', 'aliceLegacyActivity', 'aliceOrphanActivity']) {
+        await assertSucceeds(updateDoc(doc(asAlice(), `activities/${id}`), { amount: 2.5 }));
+      }
+    });
+
+    it('denies changing an amount to zero, below or a non-number', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      for (const amount of [0, -0.5, '2', null]) {
+        await assertFails(updateDoc(ref, { amount }));
+      }
+    });
+
     it('denies wrong types', async () => {
       const ref = doc(asAlice(), 'activities/aliceActivity');
       await assertFails(updateDoc(ref, { quantity: '3' }));
@@ -839,5 +874,55 @@ describe('summaries', () => {
       await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
     });
     await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
+  });
+});
+
+// Account.startAsGuest: an anonymous Firebase Auth user has a uid like any
+// other, and the ownerID checks apply to it unchanged.
+describe('a guest signed in anonymously', () => {
+  const GUEST = 'guest';
+  const asAnonymous = () =>
+    testEnv
+      .authenticatedContext(GUEST, { firebase: { sign_in_provider: 'anonymous' } })
+      .firestore();
+
+  it('creates, reads, edits and deletes its own vice and activity', async () => {
+    const db = asAnonymous();
+    await assertSucceeds(setDoc(doc(db, 'vices/guestVice'), vice({ ownerID: GUEST })));
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'activities/guestActivity'),
+        activity({ ownerID: GUEST, viceID: 'guestVice' }),
+      ),
+    );
+    const mine = await assertSucceeds(
+      getDocs(query(collection(db, 'activities'), where('ownerID', '==', GUEST))),
+    );
+    assert.deepEqual(mine.docs.map((d) => d.id), ['guestActivity']);
+    await assertSucceeds(updateDoc(doc(db, 'activities/guestActivity'), { quantity: 3 }));
+    await assertSucceeds(deleteDoc(doc(db, 'activities/guestActivity')));
+    await assertSucceeds(deleteDoc(doc(db, 'vices/guestVice')));
+  });
+
+  it('cannot write as another owner or read another owner\'s data', async () => {
+    const db = asAnonymous();
+    await assertFails(addDoc(collection(db, 'vices'), vice()));
+    await assertFails(getDoc(doc(db, 'vices/aliceVice')));
+    await assertFails(
+      getDocs(query(collection(db, 'activities'), where('ownerID', '==', ALICE))),
+    );
+  });
+
+  it('keeps its data once linked, since linking keeps the uid', async () => {
+    await assertSucceeds(
+      setDoc(doc(asAnonymous(), 'vices/guestVice'), vice({ ownerID: GUEST })),
+    );
+    const linked = testEnv
+      .authenticatedContext(GUEST, {
+        email: 'sam@example.com',
+        firebase: { sign_in_provider: 'password' },
+      })
+      .firestore();
+    await assertSucceeds(getDoc(doc(linked, 'vices/guestVice')));
   });
 });

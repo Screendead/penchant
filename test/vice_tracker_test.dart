@@ -53,7 +53,7 @@ bool _enabled(WidgetTester tester, String tooltip) =>
     null;
 
 // Each habit's total as its tally row shows it, by name.
-Map<String, int?> _tallies(WidgetTester tester) => <String, int?>{
+Map<String, num?> _tallies(WidgetTester tester) => <String, num?>{
   for (final TallyRow row in tester.widgetList<TallyRow>(find.byType(TallyRow)))
     row.vice.name: row.total,
 };

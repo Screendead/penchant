@@ -32,7 +32,7 @@ class DialEntry {
   final String id;
   final Vice vice;
   final HabitMark mark;
-  final int quantity;
+  final num quantity;
   final DateTime at;
   final bool pending;
 }
@@ -81,7 +81,7 @@ class DayDial extends ConsumerStatefulWidget {
     DateTime day,
     DateTime today,
     List<Vice> habits,
-    List<int> totals,
+    List<num> totals,
     List<DateTime> times, {
     required bool alwaysUse24HourFormat,
   }) {
@@ -114,12 +114,12 @@ class DayDial extends ConsumerStatefulWidget {
     Iterable<DialEntry> entries, {
     Map<String, double> stored = const <String, double>{},
   }) {
-    final Map<String, List<int>> byHabit = <String, List<int>>{};
+    final Map<String, List<num>> byHabit = <String, List<num>>{};
     for (final DialEntry e in entries) {
-      (byHabit[e.vice.id] ??= <int>[]).add(e.quantity);
+      (byHabit[e.vice.id] ??= <num>[]).add(e.quantity);
     }
     return <String, double>{
-      for (final MapEntry<String, List<int>>(:key, :value) in byHabit.entries)
+      for (final MapEntry<String, List<num>>(:key, :value) in byHabit.entries)
         key: stored[key] ?? typicalQuantity(value),
     };
   }

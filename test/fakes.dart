@@ -17,12 +17,14 @@ class FakeUser extends Mock implements User {
     String? displayName,
     String? photoURL,
     bool emailVerified = false,
+    bool isAnonymous = false,
   }) {
     when(() => this.uid).thenReturn(uid);
     when(() => this.email).thenReturn(email);
     when(() => this.displayName).thenReturn(displayName);
     when(() => this.photoURL).thenReturn(photoURL);
     when(() => this.emailVerified).thenReturn(emailVerified);
+    when(() => this.isAnonymous).thenReturn(isAnonymous);
   }
 }
 
@@ -41,11 +43,13 @@ ViceActivity fakeActivity(
   String viceID,
   int quantity,
   DateTime at, {
+  double? amount,
   List<String> triggers = const <String>[],
 }) => ViceActivity(
   id: '$viceID-$quantity-${at.toIso8601String()}',
   viceID: viceID,
   quantity: quantity,
+  amount: amount,
   ownerID: ownerID,
   createdAt: Timestamp.fromDate(at),
   triggers: triggers,

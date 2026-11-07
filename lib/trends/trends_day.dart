@@ -51,7 +51,7 @@ class TrendsDay extends ConsumerWidget {
       ? 'Today'
       : DateFormat.MMMEd(formatLocale).format(day);
 
-  static String subtitle(int entries, Vice vice, int total) =>
+  static String subtitle(int entries, Vice vice, num total) =>
       '${formatCount(entries)} ${pluralWord(entries, one: 'entry', other: 'entries')}'
       ' · ${vice.name} ${vice.unit.label(total)}';
 
@@ -82,12 +82,12 @@ class TrendsDay extends ConsumerWidget {
                   id: a.id,
                   vice: v,
                   mark: markOf(v),
-                  quantity: a.quantity,
+                  quantity: a.measure,
                   at: a.createdAt.toDate(),
                   pending: a.pending,
                 ),
           ];
-    final Map<String, int> totals = <String, int>{};
+    final Map<String, num> totals = <String, num>{};
     for (final DialEntry e in entries ?? const <DialEntry>[]) {
       totals[e.vice.id] = (totals[e.vice.id] ?? 0) + e.quantity;
     }
@@ -173,7 +173,7 @@ class TrendsDay extends ConsumerWidget {
                             day,
                             today,
                             shown,
-                            <int>[
+                            <num>[
                               for (final Vice v in shown) totals[v.id] ?? 0,
                             ],
                             <DateTime>[for (final DialEntry e in entries) e.at],

@@ -12,6 +12,7 @@ import 'archive_test.dart' as archive_test;
 import 'bounded_queries_test.dart' as bounded_queries_test;
 import 'cold_start_test.dart' as cold_start_test;
 import 'error_states_test.dart' as error_states_test;
+import 'guest_test.dart' as guest_test;
 import 'navigation_test.dart' as navigation_test;
 import 'offline_test.dart' as offline_test;
 import 'rejected_write_test.dart' as rejected_write_test;
@@ -30,6 +31,7 @@ void main() {
   group('bounded_queries_test', bounded_queries_test.main);
   group('cold_start_test', cold_start_test.main);
   group('error_states_test', error_states_test.main);
+  group('guest_test', guest_test.main);
   group('navigation_test', navigation_test.main);
   group('offline_test', offline_test.main);
   group('rejected_write_test', rejected_write_test.main);
