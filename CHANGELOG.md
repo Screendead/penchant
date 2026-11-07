@@ -137,6 +137,8 @@ pull request titles (`gh pr list --state merged`).
 
 - The decisions page asks round 8: six calls from the Day Dial and the Mac split view, each with the mock-up beside
   the built app; the round-5 radar calls and the settled e2e-in-CI call are gone.
+- The Cloud Functions dev toolchain no longer pulls in the vulnerable `glob` and `minimatch` (an npm override moves the
+  unused `rimraf` dependency of `google-gax` to 6.1.4).
 
 ## [0.1.0] - Unreleased
 
