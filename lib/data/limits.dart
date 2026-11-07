@@ -40,3 +40,24 @@ String? quantityError(String? value, {int? unchanged}) {
 
   return null;
 }
+
+// An activity's triggers: at most [maxTriggers] entries, each 1 to
+// [maxTriggerLength] UTF-16 code units.
+const int maxTriggers = 10;
+const int maxTriggerLength = 60;
+
+String? triggersError(List<String> triggers) {
+  if (triggers.length > maxTriggers) {
+    return 'Pick $maxTriggers triggers or fewer';
+  }
+
+  if (triggers.any((String t) => t.isEmpty)) {
+    return 'A trigger needs a name';
+  }
+
+  if (triggers.any((String t) => t.length > maxTriggerLength)) {
+    return 'Keep each trigger to $maxTriggerLength characters or fewer';
+  }
+
+  return null;
+}

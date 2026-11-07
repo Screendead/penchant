@@ -43,7 +43,7 @@ Each list is in the recommended build order.
 
 ## v1 must-haves (6)
 
-- [Add crash reporting before TestFlight, and only content-free analytics](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
+- [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
 - [Let people start without an account, and finish the basic sign-in flows](v1-must-haves/guest-mode-and-sign-in.md). M, Needs Jack
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
@@ -112,7 +112,7 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 - **Privacy policy:** legal entity, contact and data-controller details, and a paid legal review before 1.1?
 - **Support:** the support address, and Firebase Hosting or the brand domain for the legal pages?
 - **Icon:** Jack, a commissioned designer, or generated candidates?
-- **Crash reporting and analytics:** Crashlytics alone at launch, and how much analytics "on your device" can carry later?
+- **Analytics:** how much content-free analytics "on your device" can carry, decided at 1.1? (Crashlytics shipped.)
 - **Guests:** allow anonymous start in 1.0, accepting that an unlinked guest who deletes the app loses their data?
 - **Check-in:** record "nothing logged today" in a new `days` collection?
 - **Onboarding presets:** which starter vices, worded how?
