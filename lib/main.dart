@@ -12,6 +12,7 @@ import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/keychain_probe.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
@@ -28,6 +29,10 @@ import 'package:tracker/writes/category_migration.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (keychainProbe) {
+    runApp(const KeychainProbeApp());
+    return;
+  }
   installErrorHandlers();
   registerFontLicence();
   startApp();

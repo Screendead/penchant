@@ -50,18 +50,18 @@ class KeyStore {
   // A read, write or delete must pass the attributes the item was written
   // with, or the keychain query misses it. Synced items cannot use a
   // this-device-only accessibility.
-  static const IOSOptions _syncedIOS = IOSOptions(
+  static const IOSOptions syncedIOS = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock,
     synchronizable: true,
   );
-  static const MacOsOptions _syncedMac = MacOsOptions(
+  static const MacOsOptions syncedMac = MacOsOptions(
     accessibility: KeychainAccessibility.first_unlock,
     synchronizable: true,
   );
-  static const IOSOptions _localIOS = IOSOptions(
+  static const IOSOptions localIOS = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
   );
-  static const MacOsOptions _localMac = MacOsOptions(
+  static const MacOsOptions localMac = MacOsOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
   );
 
@@ -79,8 +79,8 @@ class KeyStore {
     try {
       final String? synced = await _storage.read(
         key: itemName(uid),
-        iOptions: _syncedIOS,
-        mOptions: _syncedMac,
+        iOptions: syncedIOS,
+        mOptions: syncedMac,
       );
       if (synced != null) {
         return (
@@ -94,8 +94,8 @@ class KeyStore {
 
     final String? local = await _storage.read(
       key: itemName(uid),
-      iOptions: _localIOS,
-      mOptions: _localMac,
+      iOptions: localIOS,
+      mOptions: localMac,
     );
     return (
       stored: local == null ? null : _decode(local, KeyLocation.thisDevice),
@@ -133,8 +133,8 @@ class KeyStore {
         await _storage.write(
           key: itemName(uid),
           value: value,
-          iOptions: _syncedIOS,
-          mOptions: _syncedMac,
+          iOptions: syncedIOS,
+          mOptions: syncedMac,
         );
         return _decode(value, KeyLocation.synced);
       } on PlatformException {
@@ -146,8 +146,8 @@ class KeyStore {
     await _storage.write(
       key: itemName(uid),
       value: value,
-      iOptions: _localIOS,
-      mOptions: _localMac,
+      iOptions: localIOS,
+      mOptions: localMac,
     );
     return _decode(value, KeyLocation.thisDevice);
   }
@@ -156,13 +156,13 @@ class KeyStore {
   Future<void> delete(String uid) async {
     await _storage.delete(
       key: itemName(uid),
-      iOptions: _syncedIOS,
-      mOptions: _syncedMac,
+      iOptions: syncedIOS,
+      mOptions: syncedMac,
     );
     await _storage.delete(
       key: itemName(uid),
-      iOptions: _localIOS,
-      mOptions: _localMac,
+      iOptions: localIOS,
+      mOptions: localMac,
     );
   }
 
