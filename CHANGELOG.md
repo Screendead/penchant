@@ -7,6 +7,11 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Fixed
+
+- iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and
+  password after you sign in, so a changed email reaches the saved password.
+
 ### Added
 
 - A guest journal is erased 30 days after it starts unless it is saved to an email. From day 20 Today says how many
