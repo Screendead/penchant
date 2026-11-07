@@ -188,7 +188,9 @@ class KeyService {
       if (stored == null) yield const KeyUnknown();
       return;
     } on FirebaseException catch (e) {
-      if (e.code != 'unavailable') rethrow;
+      // Denied: the user signed out while the read was on its way, and this
+      // provider is being thrown away.
+      if (e.code != 'unavailable' && e.code != 'permission-denied') rethrow;
       if (stored == null) yield const KeyUnknown();
       return;
     }

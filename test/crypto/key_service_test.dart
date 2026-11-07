@@ -46,14 +46,18 @@ class FakeKeyStore extends Fake implements KeyStore {
 class FakeKeyDirectory implements KeyDirectory {
   final Map<String, KeyRecord> records = <String, KeyRecord>{};
   bool offline = false;
+  bool denied = false;
 
   /// Lands just before this device's create, as from another device.
   KeyRecord? racing;
 
   @override
   Future<KeyRecord?> fetch(String uid) async {
-    if (offline) {
-      throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+    if (offline || denied) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: offline ? 'unavailable' : 'permission-denied',
+      );
     }
     return records[uid];
   }
@@ -227,6 +231,15 @@ void main() {
     expect(states.single, isA<KeyUnknown>());
     expect(store.keys, isEmpty);
     expect(directory.records, isEmpty);
+  });
+
+  test('a read denied after sign-out ends quietly and makes nothing', () async {
+    directory.denied = true;
+
+    final List<JournalKeyState> states = await service.resolve(uid).toList();
+
+    expect(states.single, isA<KeyUnknown>());
+    expect(store.keys, isEmpty);
   });
 
   test('offline with a key here, it is used unchecked', () async {
