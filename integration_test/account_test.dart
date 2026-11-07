@@ -250,7 +250,7 @@ void main() {
 
     final List<ExportFile> files = share.shared.single;
     final List<String> rows = files.first.contents.trim().split('\r\n');
-    expect(rows.first, 'time,vice,quantity,unit,vice_id,entry_id');
+    expect(rows.first, 'time,vice,quantity,unit,vice_id,entry_id,triggers');
     expect(rows, hasLength(3));
     expect(
       rows.where((String row) => row.contains(',Coffee,2,drink,')),

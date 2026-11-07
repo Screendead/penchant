@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/json_fields.dart';
 
 class ViceActivity {
@@ -8,6 +9,7 @@ class ViceActivity {
     required this.quantity,
     required this.ownerID,
     required this.createdAt,
+    this.triggers = const <String>[],
     this.pending = false,
   });
 
@@ -16,6 +18,9 @@ class ViceActivity {
   final int quantity;
   final String ownerID;
   final Timestamp createdAt;
+  // Paths in lib/data/trigger_tree.dart or free-text labels; empty for an
+  // activity logged without any.
+  final List<String> triggers;
   // A local write the server has not acknowledged yet.
   final bool pending;
 
@@ -29,6 +34,7 @@ class ViceActivity {
     quantity: readInt(json['quantity']),
     ownerID: readString(json['ownerID']),
     createdAt: readTimestamp(json['createdAt'], pending: pending),
+    triggers: readTriggers(json[triggersField]),
     pending: pending,
   );
 

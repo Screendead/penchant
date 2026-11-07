@@ -446,6 +446,38 @@ describe('activities', () => {
         await assertFails(addDoc(collection(asAlice(), 'activities'), activity(overrides)));
       }
     });
+
+    it('allows triggers: tree paths and free text, up to 10, each 1 to 60 long', async () => {
+      const valid = [
+        [],
+        ['work/meeting'],
+        ['feeling/stressed', 'Late train'],
+        Array.from({ length: 10 }, (_, i) => `custom ${i}`),
+        ['x'.repeat(60)],
+      ];
+      for (const triggers of valid) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+      }
+    });
+
+    it('denies more than 10 triggers, or one empty or over 60 long', async () => {
+      const invalid = [
+        Array.from({ length: 11 }, (_, i) => `t${i}`),
+        [''],
+        ['x'.repeat(61)],
+        ['work', 'x'.repeat(61)],
+        [...Array.from({ length: 9 }, (_, i) => `t${i}`), 'x'.repeat(61)],
+      ];
+      for (const triggers of invalid) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+      }
+    });
+
+    it('denies triggers of the wrong type', async () => {
+      for (const triggers of ['work/meeting', 7, { work: true }, [7], ['work', null], [{ path: 'work' }]]) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+      }
+    });
   });
 
   describe('read', () => {
@@ -654,6 +686,34 @@ describe('activities', () => {
       await assertFails(updateDoc(ref, { quantity: '3' }));
       await assertFails(updateDoc(ref, { quantity: 1.5 }));
       await assertFails(updateDoc(ref, { createdAt: 'yesterday' }));
+    });
+
+    it('allows setting, changing and clearing triggers', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertSucceeds(updateDoc(ref, { triggers: ['work/meeting', 'Late train'] }));
+      await assertSucceeds(updateDoc(ref, { triggers: ['body/tired'], quantity: 3 }));
+      await assertSucceeds(updateDoc(ref, { triggers: [] }));
+    });
+
+    it('allows adding triggers to legacy activities that never had them', async () => {
+      for (const id of ['aliceLegacyActivity', 'aliceZeroActivity', 'aliceOrphanActivity']) {
+        await assertSucceeds(
+          updateDoc(doc(asAlice(), `activities/${id}`), { triggers: ['routine/morning'] }),
+        );
+      }
+    });
+
+    it('denies invalid triggers on update', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      for (const triggers of [
+        'work',
+        [7],
+        [''],
+        ['x'.repeat(61)],
+        Array.from({ length: 11 }, (_, i) => `t${i}`),
+      ]) {
+        await assertFails(updateDoc(ref, { triggers }));
+      }
     });
 
     it('denies moving the activity to another vice', async () => {
