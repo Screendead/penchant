@@ -8,6 +8,7 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/vice_form.dart';
 
 import '../test/fake_sealer.dart';
@@ -125,6 +126,8 @@ void main() {
       expect(vice.data().containsKey('name'), isFalse);
     }
 
+    await tap(tester, find.byTooltip('Back'));
+    await pumpUntilRouteSettled(tester, find.byType(ManageData));
     await closeMenuPage(tester);
     await expectTallies(tester, const <String>{
       'Espresso (2 hours)',
