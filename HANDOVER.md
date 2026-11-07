@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-06. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-07. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -39,6 +39,7 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, merged in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. Step 1b, Today, in review in #83 (`feat/today-day-dial`): the dial, tallies with one-tap log, the Log fan, day picker and calendar; the radar and bars are gone | `lib/design/`, `assets/fonts/`, `lib/widgets/day_dial.dart` |
 | Rounds 2, 3, 4 and 8 on the pitch page | All picked by Jack 2026-11-06 and recorded below; round 5 is moot (the radar left Today in #83). Three calls from 1d/1e are not on the page yet (Calls waiting on Jack) | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
 | Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), merged in #84 (2026-11-06); both development profiles exist, and a signed `flutter build ios --release` carries the new ID | `lib/firebase_options.dart`, `ios/`, `macos/` |
+| End-to-end encryption on (`r2-e2ee`, `r2-e2ee-key`) | `e2eeEnabled` flipped to true in the PR from `feat/e2ee-on` (2026-11-07), after the iCloud Keychain probe (#128) showed a synced item crossing iPhone to Mac under the free team. Full iOS e2e green on the branch; a local replay of Jack's export shape sealed every vice, left entries without triggers untouched and unlocked a fresh keychain with the recovery key. In review | `lib/crypto/` |
 | Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
 | Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
 

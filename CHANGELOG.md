@@ -9,6 +9,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- End-to-end encryption is on. The first launch makes your journal key, keeps it in iCloud Keychain, and seals your
+  habits' names, units and categories, and any entry triggers, in the background; dates and amounts stay readable
+  to the server. Save the recovery key (Settings › Account, or the card Today shows a week in): a device without
+  the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
 
