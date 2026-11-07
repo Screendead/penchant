@@ -12,12 +12,14 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -72,9 +74,12 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   final DraggableScrollableController _sheet = DraggableScrollableController();
   late final SheetPosition _position = SheetPosition(_sheet);
 
+  late final TodayLogTarget _logTarget = ref.read(todayLogTargetProvider);
+
   @override
   void initState() {
     super.initState();
+    _logTarget.log = _logNow;
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
@@ -82,6 +87,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
   @override
   void dispose() {
+    if (_logTarget.log == _logNow) {
+      _logTarget.log = null;
+    }
     _position.dispose();
     _sheet.dispose();
     super.dispose();
@@ -107,7 +115,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   }
 
   // A log is always now, so a past day gives way to today to show it.
-  void _log(Vice vice, Offset from) {
+  void _log(Vice vice, Offset? from) {
     if (pinnedDay != null) {
       _selectDay(ref.read(todayProvider));
     }
@@ -120,6 +128,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
   }
+
+  // From a key or the menu bar, which have no bead to fly in.
+  void _logNow(Vice vice) => _log(vice, null);
 
   void _record(Vice? vice) {
     showDialog<void>(
@@ -175,13 +186,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       allVices ?? listed ?? const <Vice>[],
     );
     HabitMark markOf(Vice vice) => marks[vice.id] ?? const HabitMark(0);
-    // Oldest first, as their colours are given; the list comes newest first.
-    final List<Vice>? vices = listed == null
-        ? null
-        : ([...listed]..sort(
-            (Vice a, Vice b) =>
-                markOf(a).creationIndex.compareTo(markOf(b).creationIndex),
-          ));
+    final List<Vice>? vices = listed == null ? null : tallyOrder(listed, marks);
     final List<ViceActivity>? activities = activitiesValue.value;
     final Map<String, Vice> byID = <String, Vice>{
       for (final Vice vice in vices ?? const <Vice>[]) vice.id: vice,
@@ -196,25 +201,28 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   id: a.id,
                   vice: vice,
                   mark: markOf(vice),
-                  quantity: a.quantity,
+                  quantity: a.measure,
                   at: a.createdAt.toDate(),
                   pending: a.pending,
                 ),
           ];
-    final Map<String, int> totals = <String, int>{
+    final Map<String, num> totals = <String, num>{
       for (final Vice vice in vices ?? const <Vice>[]) vice.id: 0,
     };
     for (final DialEntry e in entries ?? const <DialEntry>[]) {
       totals[e.vice.id] = totals[e.vice.id]! + e.quantity;
     }
     final bool offline = ref.watch(offlineProvider).value ?? false;
+    final Map<String, double> storedTypicals = ref.watch(
+      storedTypicalsProvider,
+    );
     final String? summary = entries == null
         ? null
         : DayDial.summary(
             day,
             today,
             vices!,
-            <int>[for (final Vice v in vices) totals[v.id]!],
+            <num>[for (final Vice v in vices) totals[v.id]!],
             <DateTime>[for (final DialEntry e in entries) e.at],
             alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
           );
@@ -282,6 +290,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                             entries: entries,
                             semanticsLabel: summary,
                             offline: offline,
+                            storedTypicals: storedTypicals,
                             onBeadTap: _openEntry,
                             onSwipe: (int days) =>
                                 _selectDay(addDays(day, days)),
@@ -323,6 +332,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         // Left and Right step through days: anywhere in the split view but
         // the chart, which takes them for its cursor, and on Today alone
         // under the sheet. Nothing has focus at launch, so Today takes it.
+        // Cmd-1 to Cmd-9 log one of the habit in that place; on macOS the Log
+        // menu has the same keys, and takes them when focus is elsewhere.
         final int back = Directionality.of(context) == TextDirection.rtl
             ? 1
             : -1;
@@ -332,6 +343,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 _stepDay(back),
             const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
                 _stepDay(-back),
+            for (final (int i, Vice vice)
+                in (vices ?? const <Vice>[]).indexed.take(habitKeyCount))
+              habitKey(i): () => _logNow(vice),
           },
           child: Focus(
             autofocus: true,

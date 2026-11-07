@@ -42,6 +42,7 @@ void main() {
       'ownerID': uid,
       'createdAt': at,
       'archived': false,
+      'category': 'caffeine',
     });
     for (int start = 1; start < viceCount; start += 400) {
       final WriteBatch batch = db.batch();
@@ -52,16 +53,29 @@ void main() {
           'ownerID': uid,
           'createdAt': at,
           'archived': true,
+          'category': 'other',
         });
       }
       await batch.commit();
     }
-    await db.collection('activities').add(<String, Object>{
-      'viceID': coffee.id,
-      'quantity': 2,
-      'ownerID': uid,
-      'createdAt': at,
-    });
+    final DocumentReference<Map<String, dynamic>> plain = await db
+        .collection('activities')
+        .add(<String, Object>{
+          'viceID': coffee.id,
+          'quantity': 2,
+          'ownerID': uid,
+          'createdAt': at,
+        });
+    final DocumentReference<Map<String, dynamic>> triggered = await db
+        .collection('activities')
+        .add(<String, Object>{
+          'viceID': coffee.id,
+          'quantity': 3,
+          'amount': 2.5,
+          'ownerID': uid,
+          'createdAt': at,
+          'triggers': <String>['social'],
+        });
 
     final FakeSealer sealer = FakeSealer();
     await tester.pumpWidget(
@@ -103,18 +117,40 @@ void main() {
         (sealedCoffee[sealedField] as Blob).bytes,
         context: sealContext('vices', coffee.id),
       ),
-      <String, Object>{'name': 'Coffee', 'unit': 'drink'},
+      <String, Object>{
+        'name': 'Coffee',
+        'unit': 'drink',
+        'category': 'caffeine',
+      },
     );
     expect(sealedCoffee['archived'], false);
 
-    final Map<String, dynamic> activity =
-        (await db
-                .collection('activities')
-                .where('ownerID', isEqualTo: uid)
-                .get(const GetOptions(source: Source.server)))
-            .docs
-            .single
-            .data();
+    // Activities run after vices, so wait for the triggered one too.
+    Map<String, dynamic> sealedEntry = (await triggered.get(
+      const GetOptions(source: Source.server),
+    )).data()!;
+    while (!sealedEntry.containsKey(sealedField) &&
+        DateTime.now().isBefore(deadline)) {
+      await tester.pump(const Duration(milliseconds: 500));
+      sealedEntry = (await triggered.get(
+        const GetOptions(source: Source.server),
+      )).data()!;
+    }
+    expect(sealedEntry.containsKey('triggers'), isFalse);
+    expect((sealedEntry['quantity'], sealedEntry['amount']), (3, 2.5));
+    expect(
+      await sealer.open(
+        (sealedEntry[sealedField] as Blob).bytes,
+        context: sealContext('activities', triggered.id),
+      ),
+      <String, Object>{
+        'triggers': <Object?>['social'],
+      },
+    );
+
+    final Map<String, dynamic> activity = (await plain.get(
+      const GetOptions(source: Source.server),
+    )).data()!;
     expect(activity['quantity'], 2);
     expect(activity.containsKey(sealedField), isFalse);
   });

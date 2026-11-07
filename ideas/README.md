@@ -24,7 +24,7 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**27 ideas: 8 release blockers, 6 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 16 need a call from
+**26 ideas: 8 release blockers, 5 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 15 need a call from
 Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
@@ -43,16 +43,15 @@ Each list is in the recommended build order.
 
 ## v1 must-haves (6)
 
-- [Add crash reporting before TestFlight, and only content-free analytics](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
-- [Let people start without an account, and finish the basic sign-in flows](v1-must-haves/guest-mode-and-sign-in.md). M, Needs Jack
+- [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
+- [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S, Needs Jack
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
-- [Get a new user from install to a first log in under a minute](v1-must-haves/first-run-onboarding.md). M, Needs Jack
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6), Needs Jack
 
 ## Insights (7)
 
-- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Vice fields decided (C18), Needs Jack
+- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount` shipped
 - [Tag what led to each entry, from a tree that learns your common triggers](insights/trigger-tagging.md). M, 1.0, Needs Jack
 - [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
@@ -104,7 +103,6 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 - **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
   recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
   the visible "when"?
-- **Data model:** extend C18 to fields on `activities`, the `days` and `triggerNodes` collections, and decimals through a separate `amount` field?
 - **Age rating:** confirm 18+, since Apple retired 17+ in 2025.
 - **Mac:** ship in 1.0 or 1.0.x, and confirm Health results never sync to the Mac?
 - **Pro line and price:** the analysis layer as Pro at USD 24.99 (recommended), or a different line?
@@ -113,7 +111,7 @@ Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Ne
 - **Privacy policy:** legal entity, contact and data-controller details, and a paid legal review before 1.1?
 - **Support:** the support address, and Firebase Hosting or the brand domain for the legal pages?
 - **Icon:** Jack, a commissioned designer, or generated candidates?
-- **Crash reporting and analytics:** Crashlytics alone at launch, and how much analytics "on your device" can carry later?
+- **Analytics:** how much content-free analytics "on your device" can carry, decided at 1.1? (Crashlytics shipped.)
 - **Guests:** allow anonymous start in 1.0, accepting that an unlinked guest who deletes the app loses their data?
 - **Check-in:** record "nothing logged today" in a new `days` collection?
 - **Onboarding presets:** which starter vices, worded how?

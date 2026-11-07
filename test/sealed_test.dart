@@ -280,7 +280,11 @@ void main() {
             (stored[sealedField]! as Blob).bytes,
             context: 'vices/${write.id}',
           ),
-          <String, Object?>{'name': 'Coffee', 'unit': 'drink'},
+          <String, Object?>{
+            'name': 'Coffee',
+            'unit': 'drink',
+            'category': 'other',
+          },
         );
       },
     );
@@ -291,12 +295,17 @@ void main() {
 
       expect(update['name'], FieldValue.delete());
       expect(update['unit'], FieldValue.delete());
+      expect(update['category'], FieldValue.delete());
       expect(
         await sealer.open(
           (update[sealedField]! as Blob).bytes,
           context: 'vices/coffee',
         ),
-        <String, Object?>{'name': 'Espresso', 'unit': 'drink'},
+        <String, Object?>{
+          'name': 'Espresso',
+          'unit': 'drink',
+          'category': 'other',
+        },
       );
     });
 
@@ -325,8 +334,41 @@ void main() {
       },
     );
 
-    test('activities stay plaintext: the quantity is not sealed', () async {
-      final DateTime moved = DateTime(2026, 1, 3);
+    test('an activity seals its triggers alone', () async {
+      await writes
+          .recordActivity(
+            'a',
+            ownerID: 'owner',
+            viceID: 'coffee',
+            quantity: 2,
+            amount: 1.5,
+            createdAt: _at.toDate(),
+            triggers: const <String>['social'],
+          )
+          .done;
+      final Map<String, Object?> stored = store.sets['activities/a']!;
+      expect(stored.keys.toSet(), <String>{
+        sealedField,
+        'amount',
+        'createdAt',
+        'ownerID',
+        'quantity',
+        'viceID',
+      });
+      expect(stored['quantity'], 2);
+      expect(stored['amount'], 1.5);
+      expect(
+        await sealer.open(
+          (stored[sealedField]! as Blob).bytes,
+          context: 'activities/a',
+        ),
+        <String, Object?>{
+          'triggers': <Object?>['social'],
+        },
+      );
+    });
+
+    test('an activity without triggers is sealed too', () async {
       await writes
           .recordActivity(
             'a',
@@ -336,19 +378,79 @@ void main() {
             createdAt: _at.toDate(),
           )
           .done;
-      await writes.updateActivity('a', quantity: 4, createdAt: moved).done;
+      final Map<String, Object?> stored = store.sets['activities/a']!;
+      expect(stored.containsKey('triggers'), isFalse);
+      expect(
+        await sealer.open(
+          (stored[sealedField]! as Blob).bytes,
+          context: 'activities/a',
+        ),
+        <String, Object?>{'triggers': <Object?>[]},
+      );
+    });
 
-      expect(store.sets['activities/a'], <String, Object?>{
-        'createdAt': _at.toDate(),
-        'ownerID': 'owner',
-        'quantity': 2,
-        'viceID': 'coffee',
-      });
+    test('updateActivity reseals only for new triggers', () async {
+      final DateTime moved = DateTime(2026, 1, 3);
+      await writes.updateActivity('a', quantity: 4, createdAt: moved).done;
       expect(store.updates['activities/a'], <Object, Object?>{
         'createdAt': moved,
         'quantity': 4,
       });
+
+      final SentWrite write = writes.updateActivity(
+        'b',
+        quantity: 3,
+        triggers: const <String>['Long day'],
+      );
+      await write.done;
+      final Map<Object, Object?> update = store.updates['activities/b']!;
+      expect(update['quantity'], 3);
+      expect(update['triggers'], FieldValue.delete());
+      expect(write.fields, <String, Object>{'quantity': 3});
+      expect(
+        await sealer.open(
+          (update[sealedField]! as Blob).bytes,
+          context: 'activities/b',
+        ),
+        <String, Object?>{
+          'triggers': <Object?>['Long day'],
+        },
+      );
     });
+
+    test(
+      'a sealed activity parses its triggers, or none when locked',
+      () async {
+        final Map<String, dynamic> json = <String, dynamic>{
+          'viceID': 'coffee',
+          'quantity': 2,
+          'ownerID': 'owner',
+          'createdAt': _at,
+          sealedField: Blob(
+            await sealer.seal(<String, Object?>{
+              'triggers': <String>['social'],
+            }, context: 'activities/a'),
+          ),
+        };
+        final ViceActivity opened = ViceActivity.fromJson(
+          id: 'a',
+          json: json,
+          opened: await SealedOpener(sealer).open('activities', 'a', json),
+        );
+        expect(opened.triggers, <String>['social']);
+        expect(opened.quantity, 2);
+        expect(opened.locked, isFalse);
+
+        final ViceActivity locked = ViceActivity.fromJson(
+          id: 'x',
+          json: json,
+          opened: await SealedOpener(sealer).open('activities', 'x', json),
+        );
+        expect(locked.locked, isTrue);
+        expect(locked.triggers, isEmpty);
+        expect(locked.quantity, 2);
+      },
+    );
   });
 
   test('without a sealer the writes stay plaintext', () async {

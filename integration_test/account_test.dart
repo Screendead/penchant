@@ -181,6 +181,8 @@ void main() {
     );
 
     await _signInThroughForm(tester, email, newPassword);
+    // The account still has no habits, so signing in starts the onboarding.
+    await skipTheOnboarding(tester);
     await addVicesThroughManageData(tester, const <String>['Coffee']);
     expect(await _ownerIDs('vices'), <String>[
       FirebaseAuth.instance.currentUser!.uid,
@@ -250,14 +252,17 @@ void main() {
 
     final List<ExportFile> files = share.shared.single;
     final List<String> rows = files.first.contents.trim().split('\r\n');
-    expect(rows.first, 'time,vice,quantity,unit,vice_id,entry_id');
+    expect(
+      rows.first,
+      'time,vice,quantity,amount,unit,vice_id,entry_id,triggers',
+    );
     expect(rows, hasLength(3));
     expect(
-      rows.where((String row) => row.contains(',Coffee,2,drink,')),
+      rows.where((String row) => row.contains(',Coffee,2,,drink,')),
       hasLength(1),
     );
     expect(
-      rows.where((String row) => row.contains(',Tea,1,drink,')),
+      rows.where((String row) => row.contains(',Tea,1,,drink,')),
       hasLength(1),
     );
 

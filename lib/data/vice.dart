@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -12,6 +13,8 @@ class Vice {
     required this.createdAt,
     required this.archived,
     this.locked = false,
+    this.category = ViceCategory.fallback,
+    this.categoryStored = true,
   });
 
   final String id;
@@ -20,9 +23,14 @@ class Vice {
   final String ownerID;
   final Timestamp createdAt;
   final bool archived;
-  // Sealed fields this device could not open: [name] and [unit] are
-  // placeholders, and must never be written back.
+  // Sealed fields this device could not open: [name], [unit] and [category]
+  // are placeholders, and must never be written back.
   final bool locked;
+  final ViceCategory category;
+  // False for a document written before the field, which the category
+  // migration fills in. An unknown name counts as stored: a later version
+  // wrote it. A locked vice counts as stored, so nothing writes to it.
+  final bool categoryStored;
 
   factory Vice.fromJson({
     required String id,
@@ -40,6 +48,8 @@ class Vice {
       createdAt: readTimestamp(json['createdAt'], pending: pending),
       archived: readBool(json['archived'], fallback: false),
       locked: locked,
+      category: ViceCategory.fromString(content['category']),
+      categoryStored: locked || content['category'] is String,
     );
   }
 

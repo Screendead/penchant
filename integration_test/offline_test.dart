@@ -7,6 +7,7 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
+import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/sync_status.dart';
@@ -138,8 +139,15 @@ void main() {
     // A get() merges unacknowledged writes even from the server, so wait for
     // the queue to drain before reading what the emulator holds.
     await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
-    // Today's pill, under the history page, has seen the same.
-    await pumpUntil(tester, find.text(SyncPill.synced, skipOffstage: false));
+    // Today's pill has seen the same: back from history, then Habits.
+    await tap(tester, find.byTooltip('Back'));
+    await pumpUntil(
+      tester,
+      find.byType(ViceActivityHistoryPage),
+      present: false,
+    );
+    await closeMenuPage(tester);
+    await pumpUntil(tester, find.text(SyncPill.synced).hitTestable());
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
         await storedActivities('Coffee');
     expect(stored, hasLength(1));

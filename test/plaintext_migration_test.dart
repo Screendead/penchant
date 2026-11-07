@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/crypto/plaintext_migrator.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -144,11 +145,32 @@ void main() {
           (update[sealedField]! as Blob).bytes,
           context: 'vices/v1',
         ),
-        <String, Object>{'name': 'Tea', 'unit': 'drink'},
+        <String, Object>{
+          'name': 'Tea',
+          'unit': 'drink',
+          'category': guessCategory('Tea').name,
+        },
       );
     });
 
-    test('leaves an activity alone: its quantity stays plaintext', () async {
+    test('seals a stored category, and deletes it', () async {
+      final Map<String, Object>? update = await migrator.update('vices', 'v1', {
+        'name': 'Tea',
+        'unit': 'drink',
+        'category': 'food',
+        'ownerID': ownerID,
+      });
+      expect(update!['category'], FieldValue.delete());
+      expect(
+        (await sealer.open(
+          (update[sealedField]! as Blob).bytes,
+          context: 'vices/v1',
+        ))['category'],
+        'food',
+      );
+    });
+
+    test('leaves an activity without triggers alone', () async {
       expect(
         await migrator.update('activities', 'a1', {
           'quantity': 0,
@@ -156,6 +178,30 @@ void main() {
           'ownerID': ownerID,
         }),
         isNull,
+      );
+    });
+
+    test('seals an activity\'s triggers, leaving its quantity', () async {
+      final Map<String, Object>? update = await migrator.update(
+        'activities',
+        'a1',
+        {
+          'quantity': 2,
+          'amount': 1.5,
+          'viceID': 'v1',
+          'ownerID': ownerID,
+          'triggers': <Object?>['social'],
+        },
+      );
+      expect(update!.keys, unorderedEquals(<String>[sealedField, 'triggers']));
+      expect(
+        await sealer.open(
+          (update[sealedField]! as Blob).bytes,
+          context: 'activities/a1',
+        ),
+        <String, Object>{
+          'triggers': <Object?>['social'],
+        },
       );
     });
 

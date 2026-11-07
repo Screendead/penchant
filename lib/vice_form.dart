@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -33,6 +34,12 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     text: opened?.name,
   );
   late Unit? unit = opened?.unit;
+  // A vice written before categories opens on the guess the migration makes.
+  late ViceCategory category = switch (opened) {
+    null => ViceCategory.fallback,
+    final Vice vice when !vice.categoryStored => guessCategory(vice.name),
+    final Vice vice => vice.category,
+  };
   bool saving = false;
 
   @override
@@ -57,8 +64,16 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     if (vice == null) {
       write = ref
           .read(trackerWritesProvider)
-          .addVice(ownerID: user.uid, name: name, unit: unit!);
-    } else if (name != vice.name || unit != vice.unit) {
+          .addVice(
+            ownerID: user.uid,
+            name: name,
+            unit: unit!,
+            category: category,
+          );
+    } else if (name != vice.name ||
+        unit != vice.unit ||
+        !vice.categoryStored ||
+        category != vice.category) {
       // Only the changed fields are written: an untouched unit may be a
       // legacy value the parser shows as the fallback.
       write = ref
@@ -67,6 +82,9 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             vice,
             name: name == vice.name ? null : name,
             unit: unit == vice.unit ? null : unit,
+            category: vice.categoryStored && category == vice.category
+                ? null
+                : category,
           );
     } else {
       write = null;
@@ -169,6 +187,26 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<ViceCategory>(
+                initialValue: category,
+                items: ViceCategory.values
+                    .map(
+                      (ViceCategory category) => DropdownMenuItem<ViceCategory>(
+                        value: category,
+                        child: Text(category.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (ViceCategory? value) {
+                  if (value != null) {
+                    setState(() {
+                      category = value;
+                    });
+                  }
+                },
+                decoration: const InputDecoration(labelText: 'Category'),
               ),
             ],
           ),

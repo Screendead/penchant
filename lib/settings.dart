@@ -1,13 +1,44 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/account.dart';
+import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/sign_out.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
+
+// Nothing signs a guest back in, so signing out erases their journal rather
+// than leave it on the server under a uid nothing can reach.
+Future<bool> _confirmGuestSignOut(BuildContext context) async {
+  final bool? leave = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: const Text(AccountCopy.guestSignOutTitle),
+      content: const Text(AccountCopy.guestSignOutBody),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text(AccountCopy.cancel),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(AccountCopy.guestSignOutAction),
+        ),
+      ],
+    ),
+  );
+  return leave ?? false;
+}
 
 class Settings extends ConsumerStatefulWidget {
   const Settings({super.key});
@@ -19,16 +50,69 @@ class Settings extends ConsumerStatefulWidget {
 class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
 
-  // MyApp also pops every page once the uid changes; this pop does not wait
-  // for that event.
   Future<void> _signOut() async {
     final NavigatorState navigator = Navigator.of(context);
-    if (await signOutAsking(
-      context,
-      ref.read(accountProvider),
-      busy: _whileSigningOut,
-    )) {
-      navigator.popUntil((Route<dynamic> route) => route.isFirst);
+    final Account account = ref.read(accountProvider);
+    final ModalRoute<dynamic>? route = ModalRoute.of(context);
+    if (account.isGuest) {
+      await _eraseGuest(
+        account,
+        navigator,
+        route,
+        ScaffoldMessenger.of(context),
+      );
+      return;
+    }
+    if (await signOutAsking(context, account, busy: _whileSigningOut)) {
+      _popToHome(navigator, route);
+    }
+  }
+
+  // Deleting the guest's Auth user signs it out. A failure leaves it signed in,
+  // so whatever remains stays reachable for another try.
+  Future<void> _eraseGuest(
+    Account account,
+    NavigatorState navigator,
+    ModalRoute<dynamic>? route,
+    ScaffoldMessengerState messenger,
+  ) async {
+    if (!await _confirmGuestSignOut(context) || !mounted) {
+      return;
+    }
+    try {
+      await _whileSigningOut(account.deleteAccount);
+    } on DeletionIncompleteException catch (e, stack) {
+      reportError(e.cause, stack, context: 'while erasing a guest journal');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            AccountCopy.guestSignOutIncomplete(authErrorMessage(e.cause)),
+          ),
+        ),
+      );
+      return;
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while erasing a guest journal');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(AccountCopy.guestSignOutFailed(authErrorMessage(e))),
+        ),
+      );
+      return;
+    }
+    _popToHome(navigator, route);
+    messenger.showSnackBar(
+      const SnackBar(content: Text(AccountCopy.guestErased)),
+    );
+  }
+
+  // MyApp pops every page once the uid changes, which is usually before the
+  // sign-out returns (it clears the cache after Auth signs out). A pop after
+  // that would close whatever the sign-in screen has opened since, such as
+  // the reset-password dialog.
+  void _popToHome(NavigatorState navigator, ModalRoute<dynamic>? route) {
+    if (route?.isActive ?? false) {
+      navigator.popUntil((Route<dynamic> r) => r.isFirst);
     }
   }
 
@@ -50,7 +134,15 @@ class _SettingsState extends ConsumerState<Settings> {
     final String? version = ref
         .watch(packageInfoProvider)
         .whenOrNull(data: (info) => '${info.version} (${info.buildNumber})');
-    final String? email = ref.watch(userProvider).value?.email;
+    // The profile stream, since linking a guest or changing the address
+    // leaves the auth-state User as it was.
+    final String? email = ref.watch(
+      userProfileProvider.select(
+        (AsyncValue<User?> user) => (user.value?.isAnonymous ?? false)
+            ? AccountCopy.guest
+            : user.value?.email,
+      ),
+    );
     final String? sealing = migrationNote(
       ref.watch(plaintextMigrationProvider),
     );

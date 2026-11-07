@@ -9,8 +9,8 @@ Today `Unit` is a closed six-value enum serialised by name. This adds, on each v
 - a custom unit label (cups, mg, sessions, standard drinks), with the enum kept as presets;
 - an optional cost per unit, giving "spent this week" and spend trends. An entry's own `cost` overrides it.
 
-Decimal quantities go through the separate `amount` field in
-[granular logging](../insights/granular-logging-and-data-model.md).
+Decimal quantities go through the separate optional `amount` field on activities, which has shipped
+([granular logging](../insights/granular-logging-and-data-model.md)).
 
 ## Why
 

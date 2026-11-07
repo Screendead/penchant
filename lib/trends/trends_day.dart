@@ -12,6 +12,7 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/widgets/circle_button.dart';
@@ -50,7 +51,7 @@ class TrendsDay extends ConsumerWidget {
       ? 'Today'
       : DateFormat.MMMEd(formatLocale).format(day);
 
-  static String subtitle(int entries, Vice vice, int total) =>
+  static String subtitle(int entries, Vice vice, num total) =>
       '${formatCount(entries)} ${pluralWord(entries, one: 'entry', other: 'entries')}'
       ' · ${vice.name} ${vice.unit.label(total)}';
 
@@ -63,6 +64,9 @@ class TrendsDay extends ConsumerWidget {
       viceActivityDayProvider(day),
     );
     final bool offline = ref.watch(offlineProvider).value ?? false;
+    final Map<String, double> storedTypicals = ref.watch(
+      storedTypicalsProvider,
+    );
     HabitMark markOf(Vice v) => marks[v.id] ?? const HabitMark(0);
 
     final Map<String, Vice> byID = <String, Vice>{
@@ -78,12 +82,12 @@ class TrendsDay extends ConsumerWidget {
                   id: a.id,
                   vice: v,
                   mark: markOf(v),
-                  quantity: a.quantity,
+                  quantity: a.measure,
                   at: a.createdAt.toDate(),
                   pending: a.pending,
                 ),
           ];
-    final Map<String, int> totals = <String, int>{};
+    final Map<String, num> totals = <String, num>{};
     for (final DialEntry e in entries ?? const <DialEntry>[]) {
       totals[e.vice.id] = (totals[e.vice.id] ?? 0) + e.quantity;
     }
@@ -162,13 +166,14 @@ class TrendsDay extends ConsumerWidget {
                     day: day,
                     today: today,
                     entries: entries,
+                    storedTypicals: storedTypicals,
                     semanticsLabel: entries == null
                         ? null
                         : DayDial.summary(
                             day,
                             today,
                             shown,
-                            <int>[
+                            <num>[
                               for (final Vice v in shown) totals[v.id] ?? 0,
                             ],
                             <DateTime>[for (final DialEntry e in entries) e.at],

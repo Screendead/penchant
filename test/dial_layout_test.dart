@@ -14,6 +14,23 @@ import 'dst.dart';
 import 'fakes.dart';
 
 void main() {
+  group('spokes', () {
+    test('majors are full strength with entries, minors at 45%', () {
+      expect(spokeOpacity(major: true, clear: 0), 1);
+      expect(spokeOpacity(major: false, clear: 0), closeTo(0.45, 1e-9));
+    });
+
+    test('both fade to the mock-up\'s 25% on a clear day', () {
+      expect(spokeOpacity(major: true, clear: 1), closeTo(0.25, 1e-9));
+      expect(spokeOpacity(major: false, clear: 1), closeTo(0.25, 1e-9));
+    });
+
+    test('fade with the clear ring as it draws on', () {
+      expect(spokeOpacity(major: true, clear: 0.5), closeTo(0.625, 1e-9));
+      expect(spokeOpacity(major: false, clear: 0.5), closeTo(0.35, 1e-9));
+    });
+  });
+
   group('time on the face', () {
     test('runs clockwise from 00 at the top', () {
       Offset at(int hour) => dialPoint(dialAngle(hour * 60.0), 100);
@@ -240,6 +257,38 @@ void main() {
         ),
       ]);
       expect(typical, <String, double>{'c': 20, 'l': 1});
+    });
+
+    test('a stored typical replaces the day\'s median for its habit only', () {
+      final List<DialEntry> entries = <DialEntry>[
+        for (final int q in <int>[10, 20, 30])
+          DialEntry(
+            id: 'm$q',
+            vice: habits[0],
+            mark: const HabitMark(0),
+            quantity: q,
+            at: today,
+          ),
+        DialEntry(
+          id: 'n',
+          vice: habits[1],
+          mark: const HabitMark(1),
+          quantity: 4,
+          at: today,
+        ),
+      ];
+      expect(
+        DayDial.typicals(entries, stored: <String, double>{'c': 5, 'x': 9}),
+        <String, double>{'c': 5, 'l': 4},
+      );
+      expect(
+        DayDial.layout(
+          entries,
+          stored: <String, double>{'c': 5},
+        )['m20']!.radius,
+        beadRadius(20, 5),
+      );
+      expect(DayDial.layout(entries)['m20']!.radius, beadRadius(20, 20));
     });
   });
 

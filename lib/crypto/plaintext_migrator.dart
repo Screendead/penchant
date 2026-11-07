@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/sealed.dart';
 
 /// Where the migrator reads the user's documents and writes their sealed
@@ -110,11 +111,18 @@ class PlaintextMigrator {
         !fields.any((String field) => data.containsKey(field))) {
       return null;
     }
+    final Object? name = data['name'];
     return <String, Object>{
       sealedField: Blob(
         await sealer.seal(<String, Object?>{
           for (final String field in fields)
             if (data.containsKey(field)) field: data[field],
+          // A sealed vice is left alone by fillViceCategory, so one written
+          // before categories gets its guess here.
+          if (collection == 'vices' &&
+              !data.containsKey('category') &&
+              name is String)
+            'category': guessCategory(name).name,
         }, context: sealContext(collection, docId)),
       ),
       for (final String field in fields)
@@ -135,8 +143,8 @@ class PlaintextMigrator {
     // read; sealing the older value and deleting the field would then discard
     // the edit once it lands first.
     await source.settlePendingWrites();
-    // A collection with no content fields (activities, until triggers land)
-    // has nothing to seal, so it is not read at all.
+    // A collection with no content fields has nothing to seal, so it is not
+    // read at all.
     for (final String collection in contentFields.keys.where(
       (String collection) => contentFields[collection]!.isNotEmpty,
     )) {

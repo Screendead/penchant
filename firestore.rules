@@ -58,6 +58,33 @@ service cloud.firestore {
         || (field in request.resource.data ? valid : 'sealed' in request.resource.data);
     }
 
+    // Must match the names of the ViceCategory enum in lib/data/category.dart.
+    function validCategory(category) {
+      return category in ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other'];
+    }
+
+    // Rules cannot loop, so each of the 10 allowed entries is checked by index;
+    // an index past the end is skipped. Must match lib/data/limits.dart.
+    function validTrigger(triggers, i) {
+      return triggers.size() <= i
+        || (triggers[i] is string && triggers[i].size() > 0 && triggers[i].size() <= 60);
+    }
+
+    function validTriggers(triggers) {
+      return triggers is list
+        && triggers.size() <= 10
+        && validTrigger(triggers, 0)
+        && validTrigger(triggers, 1)
+        && validTrigger(triggers, 2)
+        && validTrigger(triggers, 3)
+        && validTrigger(triggers, 4)
+        && validTrigger(triggers, 5)
+        && validTrigger(triggers, 6)
+        && validTrigger(triggers, 7)
+        && validTrigger(triggers, 8)
+        && validTrigger(triggers, 9);
+    }
+
     match /vices/{viceID} {
       allow read, delete: if ownsExisting();
 
@@ -65,46 +92,69 @@ service cloud.firestore {
         && request.resource.data.createdAt is timestamp
         && request.resource.data.archived is bool
         && ((request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-            && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived', 'category'])
             && validName(request.resource.data.name)
-            && validUnit(request.resource.data.unit))
+            && validUnit(request.resource.data.unit)
+            // Optional: app versions before the field still create without it.
+            && validCategory(request.resource.data.get('category', 'other')))
           || (request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt', 'archived'])
             && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt', 'archived'])
             && validSealed(request.resource.data.sealed)));
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived', 'sealed'])
+        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'sealed'])
         && changedContent('name', validName(request.resource.data.get('name', null)))
         && changedContent('unit', validUnit(request.resource.data.get('unit', null)))
+        && changedContent('category', validCategory(request.resource.data.get('category', null)))
         && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
-        && sealedAlone(request.resource.data, ['name', 'unit'])
+        && sealedAlone(request.resource.data, ['name', 'unit', 'category'])
         && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
+    }
+
+    // `amount` is optional: documents without it, and clients that never
+    // write it, stay valid. A missing amount reads as the default 1.
+    function validAmount(data) {
+      return data.get('amount', 1) is number && data.get('amount', 1) > 0;
     }
 
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
-      // The quantity stays plaintext beside any envelope (Jack, 2026-11-06),
-      // so a server-side job can sum it. No activity field is sealed yet: when
-      // the triggers field lands, create and update gain
-      // sealedAlone(request.resource.data, ['triggers']).
-      // ownsVice() last, so a request the other checks deny costs no read.
+      // The quantity and amount stay plaintext beside any envelope (Jack,
+      // 2026-11-06), so a server-side job can sum them; the triggers are
+      // sealed. ownsVice() last, so a request the other checks deny costs no
+      // read.
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'sealed'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'triggers', 'sealed'])
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
+        && validAmount(request.resource.data)
+        && (!('triggers' in request.resource.data) || validTriggers(request.resource.data.triggers))
         && (!('sealed' in request.resource.data) || validSealed(request.resource.data.sealed))
+        && sealedAlone(request.resource.data, ['triggers'])
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt', 'sealed'])
+        && changedKeys().hasOnly(['quantity', 'createdAt', 'amount', 'triggers', 'sealed'])
         && (!('quantity' in changedKeys())
           || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
+        && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp)
+        && (!('amount' in changedKeys()) || validAmount(request.resource.data))
+        && (!('triggers' in changedKeys())
+          || !('triggers' in request.resource.data)
+          || validTriggers(request.resource.data.triggers))
         && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
-        && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp);
+        && sealedAlone(request.resource.data, ['triggers']);
+    }
+
+    // Written only by the monthly summaries function, whose Admin SDK bypasses
+    // these rules; nobody edits a typical by hand.
+    match /summaries/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
     }
   }
 }
