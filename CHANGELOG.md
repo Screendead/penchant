@@ -14,6 +14,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- A daily server check for data left behind by guest accounts that expired: Firebase removes an unused guest account
+  after 30 days but not its habits and entries. For now the check only records what it would remove; nothing is
+  deleted.
 - Habits can be stored sealed: a habit's name and unit travel in one encrypted field, with dates, ids and entry
   amounts left plain so every list and chart works as before. The rules accept both shapes; sealing stays off until
   the encryption work is complete (until then everything is written as before).
