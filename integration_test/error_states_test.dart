@@ -42,7 +42,12 @@ void main() {
         child: const MyApp(),
       ),
     );
-    await register(tester, 'e2e-denied-read@example.com');
+    // A list that fails to load shows no onboarding.
+    await register(
+      tester,
+      'e2e-denied-read@example.com',
+      skipOnboarding: false,
+    );
 
     await openFromMenu(tester, Homepage.habitsItem);
     final String denied = loadErrorMessage(

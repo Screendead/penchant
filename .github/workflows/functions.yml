@@ -1,0 +1,74 @@
+name: Cloud Functions
+on:
+  pull_request:
+    paths:
+      - "functions/**"
+      - "firebase.json"
+      - ".github/workflows/functions.yml"
+  # Only a change that can alter what reaches production deploys.
+  push:
+    branches:
+      - master
+    paths:
+      - "functions/**"
+      - "firebase.json"
+      - "tests/firestore-rules/package-lock.json"
+      - ".github/workflows/functions.yml"
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: functions-test-${{ github.head_ref || github.run_id }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.1'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm ci
+      - run: npm test
+  deploy:
+    needs: test
+    # Skipped, not failed, until the project is on Blaze, the APIs are on, the service account holds the
+    # functions deploy roles and the variable is set.
+    if: ${{ github.event_name == 'push' && vars.DEPLOY_FUNCTIONS == 'true' }}
+    # The service-account secret lives only in this environment, which admits master alone.
+    environment: firestore-production
+    runs-on: ubuntu-24.04
+    concurrency:
+      # Queued, not cancelled, so the newest commit deploys last.
+      group: functions-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.1'
+          cache: npm
+          cache-dependency-path: |
+            functions/package-lock.json
+            tests/firestore-rules/package-lock.json
+      # The CLI loads the functions locally to find their triggers, so their dependencies must be installed.
+      - run: npm --prefix functions ci
+      # Installs the firebase-tools the rules tests ran with, pinned by that lockfile.
+      - run: npm --prefix tests/firestore-rules ci
+      - name: Deploy
+        env:
+          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER }}
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
+          (umask 077 && printf '%s' "$SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS")
+          # Functions only; rules and indexes deploy from deploy-firestore.yml.
+          tests/firestore-rules/node_modules/.bin/firebase deploy --only functions \
+            --project screendead-vice-tracker --non-interactive

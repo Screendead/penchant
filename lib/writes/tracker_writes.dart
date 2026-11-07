@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 
 enum WriteOp { create, update, delete }
@@ -25,10 +29,12 @@ class SentWrite {
 }
 
 // The form a field value takes in [SentWrite.fields]: JSON-safe, and equal
-// for a DateTime written and the Timestamp read back.
+// for a DateTime written and the Timestamp read back, and for a list written
+// and the list read back (Dart lists compare by identity).
 Object? comparableValue(Object? value) => switch (value) {
   Timestamp() => value.microsecondsSinceEpoch,
   DateTime() => value.microsecondsSinceEpoch,
+  List<Object?>() => jsonEncode(value),
   _ => value,
 };
 
@@ -56,6 +62,7 @@ class TrackerWrites {
     required String ownerID,
     required String name,
     required Unit unit,
+    ViceCategory category = ViceCategory.fallback,
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
@@ -68,6 +75,7 @@ class TrackerWrites {
           'ownerID': ownerID,
           'createdAt': FieldValue.serverTimestamp(),
           'archived': false,
+          'category': category.name,
         }),
         collection: _vices.id,
         id: vice.id,
@@ -76,8 +84,34 @@ class TrackerWrites {
     );
   }
 
-  SentWrite updateVice(String viceID, {String? name, Unit? unit}) {
-    return _update(_vices, viceID, {'name': ?name, 'unit': ?unit?.name});
+  SentWrite updateVice(
+    String viceID, {
+    String? name,
+    Unit? unit,
+    ViceCategory? category,
+  }) {
+    return _update(_vices, viceID, {
+      'name': ?name,
+      'unit': ?unit?.name,
+      'category': ?category?.name,
+    });
+  }
+
+  // Sets [category] only if the server's copy still has none, so a stale
+  // cache cannot overwrite a category chosen on another device. A transaction
+  // needs the server, so offline this fails rather than queues; true when it
+  // wrote.
+  Future<bool> fillViceCategory(String viceID, ViceCategory category) {
+    final DocumentReference<Map<String, dynamic>> vice = _vices.doc(viceID);
+    return _firestore.runTransaction<bool>((Transaction transaction) async {
+      final DocumentSnapshot<Map<String, dynamic>> current = await transaction
+          .get(vice);
+      if (current.data()?.containsKey('category') ?? true) {
+        return false;
+      }
+      transaction.update(vice, {'category': category.name});
+      return true;
+    });
   }
 
   SentWrite setViceArchived(String viceID, {required bool archived}) {
@@ -93,15 +127,19 @@ class TrackerWrites {
     required String ownerID,
     required String viceID,
     required int quantity,
+    double? amount,
     required DateTime createdAt,
+    List<String> triggers = const <String>[],
   }) {
     return _issued(
       SentWrite(
         _activities.doc(activityID).set({
+          'amount': ?amount,
           'createdAt': createdAt,
           'ownerID': ownerID,
           'quantity': quantity,
           'viceID': viceID,
+          if (triggers.isNotEmpty) triggersField: writeTriggers(triggers),
         }),
         collection: _activities.id,
         id: activityID,
@@ -115,11 +153,15 @@ class TrackerWrites {
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
+    double? amount,
     DateTime? createdAt,
+    List<String>? triggers,
   }) {
     return _update(_activities, activityID, {
+      'amount': ?amount,
       'createdAt': ?createdAt,
       'quantity': ?quantity,
+      if (triggers != null) triggersField: writeTriggers(triggers),
     });
   }
 

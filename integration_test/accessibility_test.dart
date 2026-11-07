@@ -176,6 +176,7 @@ void main() {
     }
 
     tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await pumpFor(tester, const Duration(seconds: 1));
     expect(tester.takeException(), isNull);
     await screenshot(tester, 'a11y-today-text-2x');

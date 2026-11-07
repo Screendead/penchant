@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/unit.dart';
 
@@ -10,6 +11,8 @@ class Vice {
     required this.ownerID,
     required this.createdAt,
     required this.archived,
+    this.category = ViceCategory.fallback,
+    this.categoryStored = true,
   });
 
   final String id;
@@ -18,6 +21,11 @@ class Vice {
   final String ownerID;
   final Timestamp createdAt;
   final bool archived;
+  final ViceCategory category;
+  // False for a document written before the field, which the category
+  // migration fills in. An unknown name counts as stored: a later version
+  // wrote it.
+  final bool categoryStored;
 
   factory Vice.fromJson({
     required String id,
@@ -31,6 +39,8 @@ class Vice {
       ownerID: readString(json['ownerID']),
       createdAt: readTimestamp(json['createdAt'], pending: pending),
       archived: readBool(json['archived'], fallback: false),
+      category: ViceCategory.fromString(json['category']),
+      categoryStored: json['category'] is String,
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/data/activity_triggers.dart';
 
 @immutable
 class ExportFile {
@@ -40,13 +41,16 @@ const List<String> csvHeader = <String>[
   'time',
   'vice',
   'quantity',
+  'amount',
   'unit',
   'vice_id',
   'entry_id',
+  'triggers',
 ];
 
 // One row per activity, oldest first. An activity whose vice is gone keeps
-// its vice id and leaves the name and unit blank.
+// its vice id and leaves the name and unit blank. Triggers are joined with
+// "; ", as stored: tree paths or free text.
 String exportCsv(AccountData data) {
   final Map<String, Map<String, dynamic>> vices =
       <String, Map<String, dynamic>>{
@@ -65,9 +69,11 @@ String exportCsv(AccountData data) {
         _plain(activity.data['createdAt']),
         vice?['name'],
         activity.data['quantity'],
+        activity.data['amount'],
         vice?['unit'],
         viceID,
         activity.id,
+        readTriggers(activity.data[triggersField]).join('; '),
       ]),
     );
   }

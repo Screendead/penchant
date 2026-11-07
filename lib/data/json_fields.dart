@@ -18,6 +18,11 @@ int readInt(Object? value) {
   return 0;
 }
 
+// An activity's optional decimal amount: null when missing, mistyped or not
+// above zero, so the caller falls back to the whole-number quantity.
+double? readAmount(Object? value) =>
+    value is num && value.isFinite && value > 0 ? value.toDouble() : null;
+
 final Timestamp epoch = Timestamp(0, 0);
 
 /// [pending] is true for a latency-compensated local snapshot, where an
