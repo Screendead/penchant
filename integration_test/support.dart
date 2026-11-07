@@ -10,6 +10,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tracker/authenticate.dart';
+import 'package:tracker/crypto/journal_field_sealer.dart';
+import 'package:tracker/crypto/key_store.dart';
+import 'package:tracker/crypto/native_aes.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
@@ -456,15 +460,33 @@ Future<void> scrollIntoView(WidgetTester tester, Finder finder) async {
   await tester.pump();
 }
 
+// A launch through startApp seals with the keychain's key, so a sealed vice's
+// name is matched by opening it with that key.
 Future<String> storedViceID(String viceName) async {
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
   final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
       .instance
       .collection('vices')
-      .where('ownerID', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-      .where('name', isEqualTo: viceName)
+      .where('ownerID', isEqualTo: uid)
       .get();
-  expect(vices.docs, hasLength(1), reason: 'vice $viceName');
-  return vices.docs.single.id;
+  final StoredKey? stored = await KeyStore().read(uid);
+  final FieldSealer? sealer = stored == null
+      ? null
+      : JournalFieldSealer(
+          stored.journalKey.sealer(nativeAesGcm(secretKeyLength: 32)),
+        );
+  final SealedOpener opener = SealedOpener(sealer);
+  final List<String> matches = <String>[
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in vices.docs)
+      if (contentOf(
+            doc.data(),
+            await opener.open('vices', doc.id, doc.data()),
+          )['name'] ==
+          viceName)
+        doc.id,
+  ];
+  expect(matches, hasLength(1), reason: 'vice $viceName');
+  return matches.single;
 }
 
 // What the signed-in user's account holds in Firestore for one vice.

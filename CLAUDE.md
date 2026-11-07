@@ -376,8 +376,8 @@ whose `keyID` differs from the keychain's (or with no key here) locks the journa
 gate also holds every route while `journalKeyPendingProvider` says no key is here and the server has not answered.
 Offline with no key, the state is `KeyUnknown`: no gate, writes stay plaintext. `deleteAccount` deletes the record.
 Most of `integration_test/` pumps `ProviderScope(child: MyApp())` without `keyServiceOverrides`, so it runs with no
-key and writes plaintext; `key_service_test.dart`, `sealed_fields_test.dart` and `sealing_migration_test.dart` are
-the ones that seal.
+key and writes plaintext; the files that launch through `startApp`, and `key_service_test.dart`, seal with the real
+key, so `storedViceID` opens sealed vices with the keychain's key to match a name.
 `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
 Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on
