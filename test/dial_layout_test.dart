@@ -14,6 +14,23 @@ import 'dst.dart';
 import 'fakes.dart';
 
 void main() {
+  group('spokes', () {
+    test('majors are full strength with entries, minors at 45%', () {
+      expect(spokeOpacity(major: true, clear: 0), 1);
+      expect(spokeOpacity(major: false, clear: 0), closeTo(0.45, 1e-9));
+    });
+
+    test('both fade to the mock-up\'s 25% on a clear day', () {
+      expect(spokeOpacity(major: true, clear: 1), closeTo(0.25, 1e-9));
+      expect(spokeOpacity(major: false, clear: 1), closeTo(0.25, 1e-9));
+    });
+
+    test('fade with the clear ring as it draws on', () {
+      expect(spokeOpacity(major: true, clear: 0.5), closeTo(0.625, 1e-9));
+      expect(spokeOpacity(major: false, clear: 0.5), closeTo(0.35, 1e-9));
+    });
+  });
+
   group('time on the face', () {
     test('runs clockwise from 00 at the top', () {
       Offset at(int hour) => dialPoint(dialAngle(hour * 60.0), 100);

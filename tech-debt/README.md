@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**11 issues: 0 critical, 0 high, 5 medium, 6 low.**
+**10 issues: 0 critical, 0 high, 4 medium, 6 low.**
 
 ## Firebase Data Layer (5)
 
@@ -30,11 +30,10 @@ Firestore security rules, index and query shapes, the document schema contract, 
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
-## Error Handling and Observability (1)
+## Error Handling and Observability (0)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
-- **medium** — [Errors reach only the device log; no crash report or usage data leaves the device](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
 ## Offline and Write Reliability (0)
 

@@ -306,10 +306,15 @@ nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack,
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
 flat top-level collections joined by `viceID`: `vices`
 (`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
-`quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
+`quantity`, `ownerID`, `createdAt`, and an optional `triggers`). `triggers` is a list of at most 10
+strings of 1 to 60 UTF-16 code units, each a path of node ids in the starter tree (`lib/data/trigger_tree.dart`,
+such as `work/meeting`) or a free-text label; a node's id never changes once shipped. Every read and write of it goes
+through `lib/data/activity_triggers.dart`, so sealing it (`r2-e2ee`) touches one file; the parser reads a missing
+or mistyped list as empty, the record write omits an empty list, and the export joins it with `; `. Rules cannot
+loop, so `validTriggers` in `firestore.rules` checks each of the 10 indexes. Both collections carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
 one on create. The rules also fix each collection's field set and types on create, allow
-updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`/`triggers`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
 stay readable and editable. A third collection, `summaries`, is server-written (Server side, below). A vice name is 1 to 60 UTF-16 code units (rules `size()`,
@@ -437,7 +442,12 @@ App Attest entitlement, which the current signing team cannot sign (HANDOVER.md)
 macOS, firebase_core configures the native default app from the bundled
 `GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
 Firebase plist for emulators" build phase (`tools/strip-firebase-plist.sh`) that moves it out
-of the bundle for flagged builds.
+of the bundle for flagged builds and sets `FirebaseCrashlyticsCollectionEnabled` false in the
+built `Info.plist`. Crashlytics has no emulator: production turns collection on and points
+`errorForwarder` (`lib/errors/report_error.dart`, where every reported error goes after the device
+log) at it, uncaught errors as fatal and caught ones as non-fatal, with the literal context and
+nothing the user typed; flagged builds turn it off and forward nothing, and each Runner's last
+build phase (`tools/crashlytics-upload-symbols.sh`) uploads dSYMs for production release builds only.
 
 ## Design
 

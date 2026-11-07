@@ -15,7 +15,8 @@ The fg layers are painted over the bg layers; the bottom bg layer must be
 opaque. A pair may name "themes" to limit it to some of them. A pair with
 "per_habit": true stands for five, with {n} in its layers read as 1 to 5. A
 pair's optional "was" ({"fg", "bg"}) is what it painted before a change;
---was checks those instead, for a before-and-after report.
+--was checks those instead, for a before-and-after report. A pair of kind
+"decoration" has no "min": its ratio is reported and never fails.
 
 Compositing is source-over in gamma-encoded sRGB, the way browsers and Flutter
 paint. Each pair is scored at the worse of the exact blend and the blend
@@ -141,7 +142,12 @@ def main():
     for pair in pairs:
         for theme in pair.get("themes", themes):
             r = contrast(pair, tokens, theme)
-            ok = r >= pair["min"]
+            if pair.get("kind") == "decoration":
+                if "min" in pair:
+                    raise ValueError(f"a decoration pair has no minimum: {pair['purpose']}")
+                ok = True
+            else:
+                ok = r >= pair["min"]
             failures += not ok
             rows.append((theme, pair, r, ok))
 
@@ -153,10 +159,11 @@ def main():
                 continue
             mark = "" if ok else " FAIL"
             print(
-                f"| {theme} | {label(pair['fg'])} | {label(pair['bg'])} | {r:.2f}{mark} | {pair['min']} "
+                f"| {theme} | {label(pair['fg'])} | {label(pair['bg'])} | {r:.2f}{mark} | {pair.get('min', '-')} "
                 f"| {pair.get('kind', '')} | {pair.get('purpose', '')} |"
             )
-    print(f"{len(rows)} checks, {failures} under the minimum", file=sys.stderr)
+    decorative = sum(pair.get("kind") == "decoration" for _, pair, _, _ in rows)
+    print(f"{len(rows) - decorative} checks, {failures} under the minimum; {decorative} decoration, unchecked", file=sys.stderr)
     return 1 if failures else 0
 
 
