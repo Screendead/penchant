@@ -200,6 +200,8 @@ class Account {
           beforeCommit: () => removing = true,
         );
       }
+      // The journal key's record; a keychain copy is useless without it.
+      await _firestore.collection('keys').doc(user.uid).delete();
       await _deleteUser(user);
     } catch (e, stack) {
       if (!removing) {

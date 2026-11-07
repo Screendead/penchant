@@ -1291,6 +1291,59 @@ describe('summaries', () => {
   });
 });
 
+describe('keys', () => {
+  const record = (overrides = {}) => ({
+    keyID: 'AAAAAAAAAAAAAAAAAAAAAA==',
+    wrapped: Bytes.fromUint8Array(new Uint8Array(61)),
+    createdAt,
+    saved: false,
+    cardDismissed: false,
+    ...overrides,
+  });
+
+  it('lets the owner create, read, flag, replace and delete their record', async () => {
+    const db = asAlice();
+    const ref = doc(db, `keys/${ALICE}`);
+    await assertSucceeds(setDoc(ref, record()));
+    await assertSucceeds(getDoc(ref));
+    await assertSucceeds(updateDoc(ref, { saved: true }));
+    await assertSucceeds(updateDoc(ref, { cardDismissed: true }));
+    await assertSucceeds(setDoc(ref, record({ keyID: 'BBBBBBBBBBBBBBBBBBBBBB==' })));
+    await assertSucceeds(deleteDoc(ref));
+  });
+
+  it('denies another user, signed in or not, any access', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `keys/${ALICE}`), record());
+    });
+    await assertFails(getDoc(doc(asBob(), `keys/${ALICE}`)));
+    await assertFails(getDoc(doc(asGuest(), `keys/${ALICE}`)));
+    await assertFails(updateDoc(doc(asBob(), `keys/${ALICE}`), { saved: true }));
+    await assertFails(deleteDoc(doc(asBob(), `keys/${ALICE}`)));
+    await assertFails(setDoc(doc(asBob(), `keys/${ALICE}`), record()));
+    await assertFails(getDocs(collection(asAlice(), 'keys')));
+  });
+
+  it('denies a record with a missing, extra or mistyped field', async () => {
+    const ref = doc(asAlice(), `keys/${ALICE}`);
+    const { saved, ...withoutSaved } = record();
+    await assertFails(setDoc(ref, withoutSaved));
+    await assertFails(setDoc(ref, record({ key: 'the raw key' })));
+    await assertFails(setDoc(ref, record({ keyID: 'short' })));
+    await assertFails(setDoc(ref, record({ wrapped: Bytes.fromUint8Array(new Uint8Array(32)) })));
+    await assertFails(setDoc(ref, record({ wrapped: 'not bytes' })));
+    await assertFails(setDoc(ref, record({ createdAt: 'yesterday' })));
+    await assertFails(setDoc(ref, record({ saved: 'yes' })));
+  });
+
+  it('denies an update that removes a field or adds one', async () => {
+    const ref = doc(asAlice(), `keys/${ALICE}`);
+    await assertSucceeds(setDoc(ref, record()));
+    await assertFails(updateDoc(ref, { wrapped: deleteField() }));
+    await assertFails(updateDoc(ref, { note: 'x' }));
+  });
+});
+
 // Account.startAsGuest: an anonymous Firebase Auth user has a uid like any
 // other, and the ownerID checks apply to it unchanged.
 describe('a guest signed in anonymously', () => {

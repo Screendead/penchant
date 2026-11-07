@@ -74,7 +74,7 @@ class _NoKeyActions implements RecoveryKeyActions {
       Future<void>.error(StateError('This build has no journal key service.'));
 }
 
-// The key service overrides these three. Until it does there is no key: the
+// The key service (`keyServiceOverrides`) overrides these. Until it does there is no key: the
 // card and the gate stay out of the way and the screen says so.
 final recoveryKeyStatusProvider = Provider<RecoveryKeyStatus?>((ref) => null);
 
@@ -85,6 +85,10 @@ final recoveryKeyActionsProvider = Provider<RecoveryKeyActions>(
 /// True when the server holds a journal key this device lacks, so nothing
 /// opens until the recovery key is entered.
 final journalNeedsRecoveryKeyProvider = Provider<bool>((ref) => false);
+
+/// True while whether this device holds the journal's key is not yet known,
+/// so nothing is written until it is.
+final journalKeyPendingProvider = Provider<bool>((ref) => false);
 
 /// Hides the card at once on a tap, before the stored flag comes back.
 final recoveryCardHiddenProvider = NotifierProvider<RecoveryCardHidden, bool>(

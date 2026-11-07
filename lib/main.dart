@@ -22,6 +22,7 @@ import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/crypto/key_wiring.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/writes/category_migration.dart';
 
@@ -35,11 +36,12 @@ void main() {
 // main() without the global error handlers, which flutter_test owns.
 void startApp() {
   runApp(
-    const ProviderScope(
-      observers: [ReportProviderErrors()],
+    ProviderScope(
+      observers: const [ReportProviderErrors()],
+      overrides: keyServiceOverrides,
       // Every provider reaches Firebase when first read, and nothing reads one
       // until MyApp builds, after Firebase has started.
-      child: Bootstrap(initialize: initializeFirebase, child: MyApp()),
+      child: const Bootstrap(initialize: initializeFirebase, child: MyApp()),
     ),
   );
 }

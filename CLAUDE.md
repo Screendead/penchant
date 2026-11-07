@@ -363,6 +363,17 @@ The first-launch sealing (`lib/crypto/plaintext_migrator.dart`) uses the same co
 pages each collection with content fields from the server and seals every document without `sealed`, run once per
 uid and app version once `sealerProvider` has a key and `offlineProvider` says online; a document that already has
 `sealed` is skipped, so a run cut short is finished by the next.
+The key service (`lib/crypto/key_service.dart`, wired by `keyServiceOverrides` in `lib/crypto/key_wiring.dart`, which
+`startApp` passes to its `ProviderScope`) supplies `sealerProvider` and the three recovery-key providers, each of
+which returns the inert default while `e2eeEnabledProvider` is false. `KeyService.resolve(uid)` yields the keychain
+key at once (`KeyStore`, synchronizable, with a this-device fallback), then checks it against `keys/{uid}`, read from
+the server: `keyID` (16 bytes of SHA-256 over the key, base64url), `wrapped` (the key sealed under the recovery key,
+61 bytes), `createdAt`, and the account-wide `saved` and `cardDismissed` flags. The rules let only the owner touch
+it and fix that field set. No key anywhere: it makes one, saves it to the keychain, then creates the record in a
+transaction, so of two devices racing the loser adopts the winner's record and asks for its recovery key. A record
+whose `keyID` differs from the keychain's (or with no key here) locks the journal behind `RecoveryKeyGate`; the
+gate also holds every route while `journalKeyPendingProvider` says no key is here and the server has not answered.
+Offline with no key, the state is `KeyUnknown`: no gate, writes stay plaintext. `deleteAccount` deletes the record.
 `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
 Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on

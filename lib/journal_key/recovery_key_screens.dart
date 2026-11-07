@@ -680,11 +680,12 @@ class RecoveryKeyGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool locked =
-        ref.watch(e2eeEnabledProvider) &&
-        ref.watch(userProvider).value != null &&
-        ref.watch(journalNeedsRecoveryKeyProvider);
-    if (!locked) {
+    final bool applies =
+        ref.watch(e2eeEnabledProvider) && ref.watch(userProvider).value != null;
+    if (applies && ref.watch(journalKeyPendingProvider)) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!applies || !ref.watch(journalNeedsRecoveryKeyProvider)) {
       return child;
     }
     // Above the app's navigator: the entry page needs one of its own for its
