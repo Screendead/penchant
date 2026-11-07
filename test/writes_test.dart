@@ -766,7 +766,12 @@ void main() {
   group('the activity editor', () {
     final Vice coffee = fakeVice('coffee');
     final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
-    final ViceActivity activity = fakeActivity(coffee.id, 3, at);
+    final ViceActivity activity = fakeActivity(
+      coffee.id,
+      3,
+      at,
+      triggers: <String>['work/meeting', 'Late train'],
+    );
 
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([coffee])),
@@ -840,9 +845,8 @@ void main() {
       expect(find.text('Request timed out'), findsNothing);
     });
 
-    testWidgets('deletes the activity, closes, and Undo writes it back', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('deletes the activity, closes, and Undo writes it back, '
+        'triggers included', (WidgetTester tester) async {
       await open(tester);
       await tester.tap(find.byTooltip('Delete'));
       await tester.pump();
@@ -857,6 +861,10 @@ void main() {
 
       expect(writes.writes.last.op, 'recordActivity');
       expect(writes.writes.last.id, activity.id);
+      expect(writes.writes.last.fields['triggers'], [
+        'work/meeting',
+        'Late train',
+      ]);
       expect(find.text(restoredMessage), findsOneWidget);
     });
 

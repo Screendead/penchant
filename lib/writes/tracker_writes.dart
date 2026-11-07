@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/unit.dart';
 
 enum WriteOp { create, update, delete }
@@ -25,10 +28,12 @@ class SentWrite {
 }
 
 // The form a field value takes in [SentWrite.fields]: JSON-safe, and equal
-// for a DateTime written and the Timestamp read back.
+// for a DateTime written and the Timestamp read back, and for a list written
+// and the list read back (Dart lists compare by identity).
 Object? comparableValue(Object? value) => switch (value) {
   Timestamp() => value.microsecondsSinceEpoch,
   DateTime() => value.microsecondsSinceEpoch,
+  List<Object?>() => jsonEncode(value),
   _ => value,
 };
 
@@ -95,6 +100,7 @@ class TrackerWrites {
     required int quantity,
     double? amount,
     required DateTime createdAt,
+    List<String> triggers = const <String>[],
   }) {
     return _issued(
       SentWrite(
@@ -104,6 +110,7 @@ class TrackerWrites {
           'ownerID': ownerID,
           'quantity': quantity,
           'viceID': viceID,
+          if (triggers.isNotEmpty) triggersField: writeTriggers(triggers),
         }),
         collection: _activities.id,
         id: activityID,
@@ -119,11 +126,13 @@ class TrackerWrites {
     int? quantity,
     double? amount,
     DateTime? createdAt,
+    List<String>? triggers,
   }) {
     return _update(_activities, activityID, {
       'amount': ?amount,
       'createdAt': ?createdAt,
       'quantity': ?quantity,
+      if (triggers != null) triggersField: writeTriggers(triggers),
     });
   }
 

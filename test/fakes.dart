@@ -41,6 +41,7 @@ ViceActivity fakeActivity(
   int quantity,
   DateTime at, {
   double? amount,
+  List<String> triggers = const <String>[],
 }) => ViceActivity(
   id: '$viceID-$quantity-${at.toIso8601String()}',
   viceID: viceID,
@@ -48,6 +49,7 @@ ViceActivity fakeActivity(
   amount: amount,
   ownerID: ownerID,
   createdAt: Timestamp.fromDate(at),
+  triggers: triggers,
 );
 
 // Today colours each habit by its place among all of them, archived ones

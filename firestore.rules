@@ -38,6 +38,28 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
+    // Rules cannot loop, so each of the 10 allowed entries is checked by index;
+    // an index past the end is skipped. Must match lib/data/limits.dart.
+    function validTrigger(triggers, i) {
+      return triggers.size() <= i
+        || (triggers[i] is string && triggers[i].size() > 0 && triggers[i].size() <= 60);
+    }
+
+    function validTriggers(triggers) {
+      return triggers is list
+        && triggers.size() <= 10
+        && validTrigger(triggers, 0)
+        && validTrigger(triggers, 1)
+        && validTrigger(triggers, 2)
+        && validTrigger(triggers, 3)
+        && validTrigger(triggers, 4)
+        && validTrigger(triggers, 5)
+        && validTrigger(triggers, 6)
+        && validTrigger(triggers, 7)
+        && validTrigger(triggers, 8)
+        && validTrigger(triggers, 9);
+    }
+
     match /vices/{viceID} {
       allow read, delete: if ownsExisting();
 
@@ -67,20 +89,24 @@ service cloud.firestore {
 
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'triggers'])
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
         && validAmount(request.resource.data)
+        && (!('triggers' in request.resource.data) || validTriggers(request.resource.data.triggers))
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt', 'amount'])
+        && changedKeys().hasOnly(['quantity', 'createdAt', 'amount', 'triggers'])
         && (!('quantity' in changedKeys())
           || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp)
-        && (!('amount' in changedKeys()) || validAmount(request.resource.data));
+        && (!('amount' in changedKeys()) || validAmount(request.resource.data))
+        && (!('triggers' in changedKeys())
+          || !('triggers' in request.resource.data)
+          || validTriggers(request.resource.data.triggers));
     }
   }
 }

@@ -12,7 +12,8 @@ import 'palette_names.dart';
 // tools/contrast-check.py checks the same file against the system's
 // tokens.json; the arithmetic here is the same: source-over in gamma-encoded
 // sRGB, scored at the worse of the exact and the 8-bit blend, WCAG 2.2
-// luminance, unrounded.
+// luminance, unrounded. A pair of kind decoration has no minimum: its layers
+// must still resolve, and its ratio is never asserted.
 
 final List<dynamic> _pairs =
     (jsonDecode(
@@ -108,6 +109,22 @@ void main() {
     );
   });
 
+  test('the clear-day major spokes are the only decoration', () {
+    expect(
+      <String>[
+        for (final dynamic raw in _pairs)
+          if ((raw as Map<String, dynamic>)['kind'] == 'decoration')
+            '${raw['fg']} on ${raw['bg']}',
+      ],
+      unorderedEquals(<String>[
+        'spoke@0.25 on clear',
+        'spoke@0.25 on surface',
+        'spoke@0.25 on surface2',
+        'spoke@0.25 on bg',
+      ]),
+    );
+  });
+
   for (final (String theme, DialPalette p) in [
     ('light', DialPalette.light),
     ('dark', DialPalette.dark),
@@ -126,6 +143,14 @@ void main() {
             n == null ? l : l.replaceAll('{n}', '$n'),
         ];
         final List<String> fg = sub(pair['fg']), bg = sub(pair['bg']);
+        if (pair['kind'] == 'decoration') {
+          test('$theme: ${fg.join(' over ')} on ${bg.join(' over ')} '
+              'is decoration (${pair['purpose']})', () {
+            expect(pair.containsKey('min'), isFalse, reason: pair['purpose']);
+            _flatten(<String>[...fg, ...bg], palette, rounded: true);
+          });
+          continue;
+        }
         final double min = (pair['min'] as num).toDouble();
         test('$theme: ${fg.join(' over ')} on ${bg.join(' over ')} '
             'meets $min:1 (${pair['purpose']})', () {

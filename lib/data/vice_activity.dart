@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/json_fields.dart';
 
 typedef StoredMeasure = ({int quantity, double? amount});
@@ -22,6 +23,7 @@ class ViceActivity {
     required this.ownerID,
     required this.createdAt,
     this.amount,
+    this.triggers = const <String>[],
     this.pending = false,
   });
 
@@ -33,6 +35,9 @@ class ViceActivity {
   final double? amount;
   final String ownerID;
   final Timestamp createdAt;
+  // Paths in lib/data/trigger_tree.dart or free-text labels; empty for an
+  // activity logged without any.
+  final List<String> triggers;
   // A local write the server has not acknowledged yet.
   final bool pending;
 
@@ -57,6 +62,7 @@ class ViceActivity {
     amount: readAmount(json['amount']),
     ownerID: readString(json['ownerID']),
     createdAt: readTimestamp(json['createdAt'], pending: pending),
+    triggers: readTriggers(json[triggersField]),
     pending: pending,
   );
 
