@@ -294,7 +294,8 @@ provider's stream, so the future never resolves. Render loading and error from t
 change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
 So only screens that show the profile watch `userProfileProvider`: Account Settings, which calls
 `Account.reloadUser()` on opening and on app resume to pick up a verification made elsewhere, and Settings, through a
-`select` on the email and guest status. Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
+`select` on the email and guest status, and Today's `guestDaysLeftProvider` (`lib/account/guest_expiry.dart`, the
+warning before Firebase's 30-day clean-up deletes a guest account). Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
 on guest status asks `Account.isGuest`; the chain stays on `userProvider`.
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
