@@ -150,6 +150,13 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
+Cloud Functions (`functions/`, plain CommonJS on Node 22, firebase-functions v2):
+
+```bash
+npm --prefix functions ci
+npm --prefix functions test               # node --test over the pure summary arithmetic; no emulator
+```
+
 CI (`.github/workflows/`) runs on standard GitHub-hosted runners, free while the repo is public.
 `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings` and `flutter test` on every PR to `master`
 except prose-only ones (Markdown, `docs/`, `ideas/`, `tech-debt/`). `rules-tests.yml` runs the Firestore rules
@@ -166,7 +173,10 @@ indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
+group so the newest commit lands last. `functions.yml` runs `npm --prefix functions test` on PRs that touch
+`functions/`, `firebase.json` or itself, and on such a push to `master` deploys the functions
+(`firebase deploy --only functions`, same pinned firebase-tools, `firestore-production` environment) only while the
+repository variable `DEPLOY_FUNCTIONS` is `true`; unset, the job is skipped. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
 with the emulator define) on a `macos-26` runner, when run by hand. Nothing
 builds a release of the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
@@ -311,7 +321,7 @@ one on create. The rules also fix each collection's field set and types on creat
 updates only to `name`/`unit`/`archived`/`category` (vices) and `quantity`/`createdAt`/`amount`/`triggers`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
-stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
+stay readable and editable. A third collection, `summaries`, is server-written (Server side, below). A vice name is 1 to 60 UTF-16 code units (rules `size()`,
 Dart `String.length`); a quantity is an int of at least 1; an amount, when present, is any number above 0. A decimal
 typed into the Quantity field is written as `amount` with `quantity` set to it rounded up (`storedMeasure` in
 `lib/data/vice_activity.dart`), so builds that read only `quantity` still count it; a whole number is written as
@@ -404,7 +414,20 @@ rebuilt. Both read the current day from `todayProvider`, which moves on at local
 follows it unless the user picked another day, and a log (always now) turns a past day back to today. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
 lock toggle, live clock and picker for the record dialog and the editor.
 
-There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
+**Server side.** One scheduled function, `monthlySummaries` (`functions/index.js`, 03:00 UTC on the 1st), writes
+`summaries/{uid}` for every user who owns a vice: `{computedAt, windowDays: 90, vices: {viceID: {typical, count}}}`,
+the median positive quantity of the user's activities over the last 90 days and how many entries it covers
+(`functions/summary.js`, the same median as `typicalQuantity` in `lib/data/dial_layout.dart`). It reads `viceID` and
+`quantity` only, never a name or unit, since `r2-e2ee` seals those and leaves amounts and times open for this. Per
+user it is one paged query on the existing (`ownerID`, `createdAt` desc) index, capped at 20,000 entries; writes go
+in batches of 400, and it deletes the summary of any uid that owns no vice (a deleted account keeps its summary until
+the next run). The rules let the owner read `summaries/{uid}` and nobody write it; the Admin SDK bypasses them.
+`habitSummaryProvider` (`lib/providers/habit_summary_provider.dart`) follows the provider chain, and
+`storedTypicalsProvider` hands Today's and Trends' `DayDial` each habit's typical, or none while it loads, fails or
+was never written; a habit without one is sized against the shown day's median. Precompute further per-user reads
+(the graph, the calendar) into documents like this one (Jack, 2026-11-06).
+
+Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
 `User`; `test/fake_writes.dart` is a `TrackerWrites` that records each write, for
 `trackerWritesProvider.overrideWithValue`; `test/fake_account.dart` does the same for

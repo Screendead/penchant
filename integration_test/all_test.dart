@@ -16,6 +16,7 @@ import 'error_states_test.dart' as error_states_test;
 import 'guest_test.dart' as guest_test;
 import 'navigation_test.dart' as navigation_test;
 import 'offline_test.dart' as offline_test;
+import 'onboarding_test.dart' as onboarding_test;
 import 'rejected_write_test.dart' as rejected_write_test;
 import 'smoke_test.dart' as smoke_test;
 import 'split_view_test.dart' as split_view_test;
@@ -36,6 +37,7 @@ void main() {
   group('guest_test', guest_test.main);
   group('navigation_test', navigation_test.main);
   group('offline_test', offline_test.main);
+  group('onboarding_test', onboarding_test.main);
   group('rejected_write_test', rejected_write_test.main);
   group('smoke_test', smoke_test.main);
   group('split_view_test', split_view_test.main);

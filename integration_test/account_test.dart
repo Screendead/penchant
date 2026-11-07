@@ -181,6 +181,8 @@ void main() {
     );
 
     await _signInThroughForm(tester, email, newPassword);
+    // The account still has no habits, so signing in starts the onboarding.
+    await skipTheOnboarding(tester);
     await addVicesThroughManageData(tester, const <String>['Coffee']);
     expect(await _ownerIDs('vices'), <String>[
       FirebaseAuth.instance.currentUser!.uid,

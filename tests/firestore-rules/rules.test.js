@@ -861,6 +861,55 @@ describe('account export and deletion', () => {
   });
 });
 
+describe('summaries', () => {
+  const summary = {
+    computedAt: createdAt,
+    windowDays: 90,
+    vices: { aliceVice: { typical: 2, count: 14 } },
+  };
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, `summaries/${ALICE}`), summary);
+      await setDoc(doc(db, `summaries/${BOB}`), { ...summary, vices: {} });
+    });
+  });
+
+  it('lets the owner read their summary', async () => {
+    const snapshot = await assertSucceeds(getDoc(doc(asAlice(), `summaries/${ALICE}`)));
+    assert.equal(snapshot.get('vices.aliceVice.typical'), 2);
+  });
+
+  it('lets the owner read a summary not yet written', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
+    });
+    const snapshot = await assertSucceeds(getDoc(doc(asAlice(), `summaries/${ALICE}`)));
+    assert.equal(snapshot.exists(), false);
+  });
+
+  it('denies reading another user\'s summary, signed in or not', async () => {
+    await assertFails(getDoc(doc(asAlice(), `summaries/${BOB}`)));
+    await assertFails(getDoc(doc(asGuest(), `summaries/${ALICE}`)));
+  });
+
+  it('denies listing summaries', async () => {
+    await assertFails(getDocs(collection(asAlice(), 'summaries')));
+  });
+
+  it('denies the owner creating, changing or deleting their summary', async () => {
+    const db = asAlice();
+    await assertFails(updateDoc(doc(db, `summaries/${ALICE}`), { 'vices.aliceVice.typical': 9 }));
+    await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
+    await assertFails(deleteDoc(doc(db, `summaries/${ALICE}`)));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
+    });
+    await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
+  });
+});
+
 // Account.startAsGuest: an anonymous Firebase Auth user has a uid like any
 // other, and the ownerID checks apply to it unchanged.
 describe('a guest signed in anonymously', () => {
