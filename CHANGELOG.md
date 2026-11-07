@@ -7,6 +7,11 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Fixed
+
+- iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and
+  password after you sign in, so a changed email reaches the saved password.
+
 ### Added
 
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
