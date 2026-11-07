@@ -44,7 +44,7 @@ Each list is in the recommended build order.
 ## v1 must-haves (6)
 
 - [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
-- [Let people start without an account, and finish the basic sign-in flows](v1-must-haves/guest-mode-and-sign-in.md). M, Needs Jack
+- [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S, Needs Jack
 - [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
 - [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
 - [Get a new user from install to a first log in under a minute](v1-must-haves/first-run-onboarding.md). M, Needs Jack

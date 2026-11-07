@@ -16,12 +16,14 @@ class FakeUser extends Mock implements User {
     String? displayName,
     String? photoURL,
     bool emailVerified = false,
+    bool isAnonymous = false,
   }) {
     when(() => this.uid).thenReturn(uid);
     when(() => this.email).thenReturn(email);
     when(() => this.displayName).thenReturn(displayName);
     when(() => this.photoURL).thenReturn(photoURL);
     when(() => this.emailVerified).thenReturn(emailVerified);
+    when(() => this.isAnonymous).thenReturn(isAnonymous);
   }
 }
 
