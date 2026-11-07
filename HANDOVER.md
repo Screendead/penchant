@@ -215,6 +215,9 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
 - **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
   **Penchant**, with the recommended App Store subtitle **"Habit journal & sleep insights"**. Applied to every
   identity string by #81; the bundle IDs followed in `feat/bundle-id-penchant`. Backups if the name proves unusable: Kenning, then Sounding.
+- **`r2-presets`** (2026-11-06): **A, the plain names** (Alcohol, Coffee, Cigarettes, Vape, Cannabis, Energy drinks,
+  Sweets, Gambling) in a first-run flow for an account with no habits: intro, presets plus "Something else", the
+  disclaimer, an optional first log. Built in the PR from `feat/onboarding-presets` (`lib/onboarding/`).
 - **`r2-mac-config`** (2026-11-05): the Mac shares the iOS app's Firebase registration and config file (the
   recommended side); the console offered no separate macOS app.
 - **No trademark search** (2026-11-05, Jack): none will be done, professional or otherwise. Don't raise it again.

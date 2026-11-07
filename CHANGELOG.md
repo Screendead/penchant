@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- A new account starts with a short welcome: pick the habits to keep a journal of from a list (Alcohol, Coffee,
+  Cigarettes, Vape, Cannabis, Energy drinks, Sweets, Gambling, or one you name yourself), read the one-line
+  disclaimer, and log a first entry if you like. An account that already has habits never sees it.
 - A monthly server job stores each habit's typical amount over the last three months, and the Day Dial sizes beads
   against it, falling back to the shown day's median until it has run.
 - Quantities can be decimals, such as 1.5 drinks or 0.25 hours, in the record dialog and the entry editor, written
