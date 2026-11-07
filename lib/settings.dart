@@ -69,15 +69,14 @@ class Settings extends ConsumerStatefulWidget {
 class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
 
-  // MyApp also pops every page once the uid changes; this pop does not wait
-  // for that event.
   Future<void> _signOut() async {
     final Account account = ref.read(accountProvider);
     final NavigatorState navigator = Navigator.of(context);
+    final ModalRoute<dynamic>? route = ModalRoute.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
       if (account.isGuest) {
-        await _eraseGuest(account, navigator, messenger);
+        await _eraseGuest(account, navigator, route, messenger);
         return;
       }
       try {
@@ -88,7 +87,7 @@ class _SettingsState extends ConsumerState<Settings> {
         }
         await _whileSigningOut(() => account.signOut(discardUnsynced: true));
       }
-      navigator.popUntil((Route<dynamic> route) => route.isFirst);
+      _popToHome(navigator, route);
     } catch (e, stack) {
       reportError(e, stack, context: 'while signing out');
       messenger.showSnackBar(
@@ -102,6 +101,7 @@ class _SettingsState extends ConsumerState<Settings> {
   Future<void> _eraseGuest(
     Account account,
     NavigatorState navigator,
+    ModalRoute<dynamic>? route,
     ScaffoldMessengerState messenger,
   ) async {
     if (!await _confirmGuestSignOut(context) || !mounted) {
@@ -128,10 +128,20 @@ class _SettingsState extends ConsumerState<Settings> {
       );
       return;
     }
-    navigator.popUntil((Route<dynamic> route) => route.isFirst);
+    _popToHome(navigator, route);
     messenger.showSnackBar(
       const SnackBar(content: Text(AccountCopy.guestErased)),
     );
+  }
+
+  // MyApp pops every page once the uid changes, which is usually before the
+  // sign-out returns (it clears the cache after Auth signs out). A pop after
+  // that would close whatever the sign-in screen has opened since, such as
+  // the reset-password dialog.
+  void _popToHome(NavigatorState navigator, ModalRoute<dynamic>? route) {
+    if (route?.isActive ?? false) {
+      navigator.popUntil((Route<dynamic> r) => r.isFirst);
+    }
   }
 
   // Waiting for unsynced entries can take seconds; the tile stays disabled

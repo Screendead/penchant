@@ -7,25 +7,8 @@ import 'package:tracker/authenticate.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
-import 'package:tracker/settings.dart';
 
 import 'support.dart';
-
-// Settings hides Homepage offstage, so Homepage vanishing does not mean the
-// sign-out has finished.
-Future<void> expectSignInWithNothingAbove(WidgetTester tester) async {
-  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
-  await pumpUntil(
-    tester,
-    find.byType(Settings, skipOffstage: false),
-    present: false,
-  );
-  await pumpUntil(
-    tester,
-    find.byType(Homepage, skipOffstage: false),
-    present: false,
-  );
-}
 
 void main() {
   ensureE2EBinding();
@@ -44,6 +27,8 @@ void main() {
     await FirebaseAuth.instance.signOut();
     await tap(tester, find.byKey(Authenticate.guestStart));
     await pumpUntil(tester, find.byType(Homepage));
+    // A guest starts with no habits, so on the onboarding.
+    await skipTheOnboarding(tester);
     expect(FirebaseAuth.instance.currentUser!.isAnonymous, isTrue);
 
     await addVicesThroughManageData(tester, <String>['Coffee']);
@@ -74,6 +59,8 @@ void main() {
     await FirebaseAuth.instance.signOut();
     await tap(tester, find.byKey(Authenticate.guestStart));
     await pumpUntil(tester, find.byType(Homepage));
+    // A guest starts with no habits, so on the onboarding.
+    await skipTheOnboarding(tester);
     final String guestUID = FirebaseAuth.instance.currentUser!.uid;
     expect(FirebaseAuth.instance.currentUser!.isAnonymous, isTrue);
 

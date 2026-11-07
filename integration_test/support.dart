@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Settings;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +17,7 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/onboarding/presets.dart';
+import 'package:tracker/settings.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -605,7 +606,23 @@ Future<void> signOutThroughSettings(WidgetTester tester) async {
   // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
   await pumpFor(tester, const Duration(seconds: 1));
   await tap(tester, find.text('Sign out'));
-  await pumpUntil(tester, find.byType(Homepage), present: false);
+  await expectSignInWithNothingAbove(tester);
+}
+
+// Settings hides Homepage offstage, so Homepage vanishing does not mean the
+// sign-out has finished.
+Future<void> expectSignInWithNothingAbove(WidgetTester tester) async {
+  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
+  await pumpUntil(
+    tester,
+    find.byType(Settings, skipOffstage: false),
+    present: false,
+  );
+  await pumpUntil(
+    tester,
+    find.byType(Homepage, skipOffstage: false),
+    present: false,
+  );
 }
 
 Future<void> signIn(WidgetTester tester, String email) async {
