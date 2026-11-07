@@ -86,7 +86,10 @@ class _RegisterState extends ConsumerState<Register> {
               hint: 'Email',
               glyph: DialGlyph.mail,
               keyboardType: TextInputType.emailAddress,
-              autofillHints: const <String>[AutofillHints.email],
+              autofillHints: const <String>[
+                AutofillHints.username,
+                AutofillHints.email,
+              ],
               textInputAction: TextInputAction.next,
               onChanged: (String value) {
                 setState(() {
