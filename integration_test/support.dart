@@ -360,6 +360,10 @@ Future<void> recordActivity(
   int quantity, {
   DateTime? at,
 }) async {
+  // Frames draw only on a pump here, and the fan keeps the habits the button
+  // held when it opened: a write made outside the tree since the last frame
+  // would be missing from it.
+  await tester.pump();
   await tap(tester, find.byType(LogButton));
   final Finder wedge = fanWedge(viceName);
   final Finder more = fanWedge('More');
