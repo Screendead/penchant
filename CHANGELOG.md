@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- A guest journal is erased 30 days after it starts unless it is saved to an email. From day 20 Today says how many
+  days are left, and in the last 3 days a sheet asks once a day; both lead to saving it to an email.
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
   life with more specific options inside, or your own words, which become a choice once used three times. It is
   optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.

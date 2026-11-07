@@ -18,6 +18,7 @@ class FakeUser extends Mock implements User {
     String? photoURL,
     bool emailVerified = false,
     bool isAnonymous = false,
+    DateTime? created,
   }) {
     when(() => this.uid).thenReturn(uid);
     when(() => this.email).thenReturn(email);
@@ -25,6 +26,9 @@ class FakeUser extends Mock implements User {
     when(() => this.photoURL).thenReturn(photoURL);
     when(() => this.emailVerified).thenReturn(emailVerified);
     when(() => this.isAnonymous).thenReturn(isAnonymous);
+    when(
+      () => metadata,
+    ).thenReturn(UserMetadata(created?.millisecondsSinceEpoch, null));
   }
 }
 
