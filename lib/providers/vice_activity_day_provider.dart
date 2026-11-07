@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/firestore_retry.dart';
 import 'package:tracker/providers/signed_in_user.dart';
@@ -23,6 +24,7 @@ final viceActivityDayForUserProvider = StreamProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, DateTime day})>(
       retry: firestoreRetry,
       (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         final DateTime startOfSelectedDay = startOfDay(key.day);
 
         return _activitiesBetween(
@@ -33,7 +35,9 @@ final viceActivityDayForUserProvider = StreamProvider.autoDispose
             // The server's acknowledgement of a local write changes only
             // metadata, and clears an entry's not-yet-synced mark.
             .snapshots(includeMetadataChanges: true)
-            .map(ViceActivity.fromQuerySnapshot);
+            .asyncMap(
+              (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+            );
       },
     );
 
@@ -49,11 +53,16 @@ final viceActivityDayProvider = Provider.autoDispose
 final viceActivityMonthForUserProvider = StreamProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, DateTime month})>(
       retry: firestoreRetry,
-      (ref, key) => _activitiesBetween(
-        key.uid,
-        DateTime(key.month.year, key.month.month),
-        DateTime(key.month.year, key.month.month + 1),
-      ).snapshots().map(ViceActivity.fromQuerySnapshot),
+      (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
+        return _activitiesBetween(
+          key.uid,
+          DateTime(key.month.year, key.month.month),
+          DateTime(key.month.year, key.month.month + 1),
+        ).snapshots().asyncMap(
+          (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+        );
+      },
     );
 
 final viceActivityMonthProvider = Provider.autoDispose

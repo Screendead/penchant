@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/json_fields.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 
 class Vice {
@@ -11,6 +12,7 @@ class Vice {
     required this.ownerID,
     required this.createdAt,
     required this.archived,
+    this.locked = false,
     this.category = ViceCategory.fallback,
     this.categoryStored = true,
   });
@@ -21,26 +23,50 @@ class Vice {
   final String ownerID;
   final Timestamp createdAt;
   final bool archived;
+  // Sealed fields this device could not open: [name], [unit] and [category]
+  // are placeholders, and must never be written back.
+  final bool locked;
   final ViceCategory category;
   // False for a document written before the field, which the category
   // migration fills in. An unknown name counts as stored: a later version
-  // wrote it.
+  // wrote it. A locked vice counts as stored, so nothing writes to it.
   final bool categoryStored;
 
   factory Vice.fromJson({
     required String id,
     required Map<String, dynamic> json,
     bool pending = false,
+    Map<String, Object?>? opened,
   }) {
+    final bool locked = isSealed(json) && opened == null;
+    final Map<String, Object?> content = contentOf(json, opened);
     return Vice(
       id: id,
-      name: readString(json['name']),
-      unit: Unit.fromString(json['unit']),
+      name: locked ? lockedViceName : readString(content['name']),
+      unit: Unit.fromString(content['unit']),
       ownerID: readString(json['ownerID']),
       createdAt: readTimestamp(json['createdAt'], pending: pending),
       archived: readBool(json['archived'], fallback: false),
-      category: ViceCategory.fromString(json['category']),
-      categoryStored: json['category'] is String,
+      locked: locked,
+      category: ViceCategory.fromString(content['category']),
+      categoryStored: locked || content['category'] is String,
+    );
+  }
+
+  static Future<List<Vice>> openQuerySnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+    SealedOpener opener,
+  ) {
+    return Future.wait(
+      snapshot.docs.map((doc) async {
+        final Map<String, dynamic> json = doc.data();
+        return Vice.fromJson(
+          id: doc.id,
+          json: json,
+          pending: doc.metadata.hasPendingWrites,
+          opened: await opener.open('vices', doc.id, json),
+        );
+      }),
     );
   }
 

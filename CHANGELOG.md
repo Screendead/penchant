@@ -14,6 +14,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Habits can be stored sealed: a habit's name and unit travel in one encrypted field, with dates, ids and entry
+  amounts left plain so every list and chart works as before. The rules accept both shapes; sealing stays off until
+  the encryption work is complete (until then everything is written as before).
 - Groundwork for end-to-end encryption: the code to make a key for your account, keep it in iCloud Keychain, seal and
   open data with it, and write it out as a recovery key. The app does not use it yet, so nothing is encrypted.
 - A guest journal is erased 30 days after it starts unless it is saved to an email. From day 20 Today says how many

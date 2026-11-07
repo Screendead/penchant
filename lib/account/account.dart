@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tracker/errors/report_error.dart';
@@ -35,11 +36,17 @@ class DeletionIncompleteException implements Exception {
 // Every Firebase Auth call the app makes, and the account-wide Firestore work
 // that goes with them: export, deletion and clearing the on-device cache.
 class Account {
-  Account(this._auth, this._firestore, this._queuedWrites);
+  Account(
+    this._auth,
+    this._firestore,
+    this._queuedWrites, {
+    FieldSealer? sealer,
+  }) : _sealer = sealer;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final QueuedWriteJournal _queuedWrites;
+  final FieldSealer? _sealer;
 
   // The quotas page sets no per-batch write count, only a 10 MiB request
   // limit; 500 deletes stay far below it.
@@ -222,7 +229,10 @@ class Account {
   // single-field index, so this needs no entry in firestore.indexes.json.
   // Reads from the server: the cache holds only what screens have loaded, so
   // an offline export would be partial with nothing to say so.
+  // Sealed fields are opened, since the export is the one copy that needs no
+  // key; a document that will not open keeps its envelope.
   Future<List<StoredDocument>> _readOwned(String collection, String uid) async {
+    final SealedOpener opener = SealedOpener(_sealer);
     final List<StoredDocument> documents = <StoredDocument>[];
     Query<Map<String, dynamic>> page = _firestore
         .collection(collection)
@@ -233,11 +243,14 @@ class Account {
       final QuerySnapshot<Map<String, dynamic>> snapshot = await page.get(
         const GetOptions(source: Source.server),
       );
-      documents.addAll(<StoredDocument>[
-        for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
-            in snapshot.docs)
-          (id: doc.id, data: doc.data()),
-      ]);
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
+          in snapshot.docs) {
+        final Map<String, dynamic> json = doc.data();
+        documents.add((
+          id: doc.id,
+          data: unsealed(json, await opener.open(collection, doc.id, json)),
+        ));
+      }
       if (snapshot.docs.length < pageSize) {
         return documents;
       }

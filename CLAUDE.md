@@ -336,7 +336,30 @@ denied). `lib/data/limits.dart` holds the form validators that mirror these. The
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
 (empty string, `false`, 0, the nearest int for a double, null for an amount that is not a positive number,
 `Unit.item`, and for `createdAt` the epoch, or now
-while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
+while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test.
+
+**Sealed fields** (`r2-e2ee`). A vice may instead hold its content fields (`name`, `unit`, `category`) in one
+`sealed` field: bytes, the envelope of `lib/crypto/sealer.dart` (`version | nonce | ciphertext | tag` around JSON
+padded to 64/256/1024/4096 bytes), with the document path as associated data, so only the user's key opens it and
+only on that document. An activity seals only its `triggers`; `quantity`, `amount`, `createdAt`, `viceID` and
+`ownerID` stay plaintext (Jack, 2026-11-06: a server job aggregates amounts). The field lists live in
+`contentFields` (`lib/data/sealed.dart`) and in the rules' `sealedAlone` and `changedContent` calls, and a new
+content field joins both. Vices' `ownerID`, `createdAt` and `archived` stay plaintext, so every query, index and
+`count()` works unchanged. The rules accept either shape on create, never content beside `sealed`, bound `sealed`
+to bytes of 30 to 4125, refuse removing it, and let an update convert a plaintext document by setting `sealed` and
+deleting the plaintext fields (a deleted field is an affected key). They cannot read sealed content, so for sealed
+documents `lib/data/limits.dart` is the only guard. `lib/data/sealed.dart` holds `FieldSealer` (its one
+implementation is `lib/crypto/journal_field_sealer.dart`), `sealerProvider` (null while no key exists or while
+`e2eeEnabled` in `lib/crypto/e2ee_enabled.dart` is false, and then every write stays plaintext), and
+`SealedOpener`, which each query provider runs over its snapshots (`asyncMap`) and the export over what it reads.
+It never throws: a document that will not open parses with `locked` set, a placeholder name and default content,
+and is reported once per listener. `TrackerWrites` seals when it has a sealer: a vice update reseals the whole
+content (so `updateVice` takes the `Vice`, and refuses a locked one), an activity is sealed on create even with no
+triggers, and an activity update reseals only when it changes the triggers (the editor never sends a locked entry's
+triggers). A locked vice counts as `categoryStored`, and `fillViceCategory` leaves a sealed vice alone.
+`SentWrite.fields` then holds only the plaintext fields, since the envelope does not exist yet when the write is
+handed back. Tests override `sealerProvider` with `test/fake_sealer.dart`, the real envelope under a fixed key.
+`Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
 Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on
 create, since app versions before it create without it. The parser reads a missing one as `other` and sets

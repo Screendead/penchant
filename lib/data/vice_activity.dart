@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/json_fields.dart';
+import 'package:tracker/data/sealed.dart';
 
 typedef StoredMeasure = ({int quantity, double? amount});
 
@@ -25,6 +26,7 @@ class ViceActivity {
     this.amount,
     this.triggers = const <String>[],
     this.pending = false,
+    this.locked = false,
   });
 
   final String id;
@@ -40,6 +42,9 @@ class ViceActivity {
   final List<String> triggers;
   // A local write the server has not acknowledged yet.
   final bool pending;
+  // Sealed fields this device could not open, which must never be written
+  // back. The quantity stays plaintext (Jack, 2026-11-06), so it is real.
+  final bool locked;
 
   // What charts, totals and labels count. Every write of an amount sets
   // quantity to storedMeasure's rounding of it, so a quantity that disagrees
@@ -55,15 +60,38 @@ class ViceActivity {
     required String id,
     required Map<String, dynamic> json,
     bool pending = false,
-  }) => ViceActivity(
-    id: id,
-    viceID: readString(json['viceID']),
-    quantity: readInt(json['quantity']),
-    amount: readAmount(json['amount']),
-    ownerID: readString(json['ownerID']),
-    createdAt: readTimestamp(json['createdAt'], pending: pending),
-    triggers: readTriggers(json[triggersField]),
-    pending: pending,
+    Map<String, Object?>? opened,
+  }) {
+    final bool locked = isSealed(json) && opened == null;
+    return ViceActivity(
+      id: id,
+      viceID: readString(json['viceID']),
+      quantity: readInt(json['quantity']),
+      amount: readAmount(json['amount']),
+      ownerID: readString(json['ownerID']),
+      createdAt: readTimestamp(json['createdAt'], pending: pending),
+      triggers: readTriggers(contentOf(json, opened)[triggersField]),
+      pending: pending,
+      locked: locked,
+    );
+  }
+
+  static Future<ViceActivity> open(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    Map<String, dynamic> json,
+    SealedOpener opener,
+  ) async => ViceActivity.fromJson(
+    id: doc.id,
+    json: json,
+    pending: doc.metadata.hasPendingWrites,
+    opened: await opener.open('activities', doc.id, json),
+  );
+
+  static Future<List<ViceActivity>> openQuerySnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+    SealedOpener opener,
+  ) => Future.wait(
+    snapshot.docs.map((doc) => ViceActivity.open(doc, doc.data(), opener)),
   );
 
   static List<ViceActivity> fromQuerySnapshot(

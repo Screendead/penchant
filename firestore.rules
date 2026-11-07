@@ -38,6 +38,26 @@ service cloud.firestore {
       return unit in ['item', 'time', 'puff', 'drink', 'minute', 'hour'];
     }
 
+    // An envelope from lib/crypto/sealer.dart: 29 bytes of version, nonce
+    // and tag around a plaintext padded to at most 4096 bytes. Its contents
+    // can't be checked here, so the Dart validators in lib/data/limits.dart
+    // are the only guard on a sealed name or unit.
+    function validSealed(sealed) {
+      return sealed is bytes && sealed.size() > 29 && sealed.size() <= 4125;
+    }
+
+    // A document holds its content either sealed or in plaintext, never both.
+    function sealedAlone(data, contentFields) {
+      return !('sealed' in data) || !data.keys().hasAny(contentFields);
+    }
+
+    // A changed content field is either valid or removed in favour of the
+    // envelope. Removing a field makes it an affected key.
+    function changedContent(field, valid) {
+      return !(field in changedKeys())
+        || (field in request.resource.data ? valid : 'sealed' in request.resource.data);
+    }
+
     // Must match the names of the ViceCategory enum in lib/data/category.dart.
     function validCategory(category) {
       return category in ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other'];
@@ -69,21 +89,26 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
 
       allow create: if createsOwn()
-        && request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-        && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived', 'category'])
-        && validName(request.resource.data.name)
-        && validUnit(request.resource.data.unit)
         && request.resource.data.createdAt is timestamp
         && request.resource.data.archived is bool
-        // Optional: app versions before the field still create without it.
-        && validCategory(request.resource.data.get('category', 'other'));
+        && ((request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived', 'category'])
+            && validName(request.resource.data.name)
+            && validUnit(request.resource.data.unit)
+            // Optional: app versions before the field still create without it.
+            && validCategory(request.resource.data.get('category', 'other')))
+          || (request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt', 'archived'])
+            && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt', 'archived'])
+            && validSealed(request.resource.data.sealed)));
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category'])
-        && (!('name' in changedKeys()) || validName(request.resource.data.name))
-        && (!('unit' in changedKeys()) || validUnit(request.resource.data.unit))
-        && (!('archived' in changedKeys()) || request.resource.data.archived is bool)
-        && (!('category' in changedKeys()) || validCategory(request.resource.data.category));
+        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'sealed'])
+        && changedContent('name', validName(request.resource.data.get('name', null)))
+        && changedContent('unit', validUnit(request.resource.data.get('unit', null)))
+        && changedContent('category', validCategory(request.resource.data.get('category', null)))
+        && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
+        && sealedAlone(request.resource.data, ['name', 'unit', 'category'])
+        && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
     }
 
     // `amount` is optional: documents without it, and clients that never
@@ -95,26 +120,34 @@ service cloud.firestore {
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
+      // The quantity and amount stay plaintext beside any envelope (Jack,
+      // 2026-11-06), so a server-side job can sum them; the triggers are
+      // sealed. ownsVice() last, so a request the other checks deny costs no
+      // read.
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'triggers'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'triggers', 'sealed'])
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
         && validAmount(request.resource.data)
         && (!('triggers' in request.resource.data) || validTriggers(request.resource.data.triggers))
+        && (!('sealed' in request.resource.data) || validSealed(request.resource.data.sealed))
+        && sealedAlone(request.resource.data, ['triggers'])
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['quantity', 'createdAt', 'amount', 'triggers'])
+        && changedKeys().hasOnly(['quantity', 'createdAt', 'amount', 'triggers', 'sealed'])
         && (!('quantity' in changedKeys())
           || (request.resource.data.quantity is int && request.resource.data.quantity > 0))
         && (!('createdAt' in changedKeys()) || request.resource.data.createdAt is timestamp)
         && (!('amount' in changedKeys()) || validAmount(request.resource.data))
         && (!('triggers' in changedKeys())
           || !('triggers' in request.resource.data)
-          || validTriggers(request.resource.data.triggers));
+          || validTriggers(request.resource.data.triggers))
+        && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
+        && sealedAlone(request.resource.data, ['triggers']);
     }
 
     // Written only by the monthly summaries function, whose Admin SDK bypasses

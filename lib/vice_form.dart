@@ -49,7 +49,10 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   }
 
   Future<void> _save(User user) async {
-    if (!formKey.currentState!.validate() || unit == null) {
+    // A locked vice's name and unit are placeholders, never to be saved.
+    if (!formKey.currentState!.validate() ||
+        unit == null ||
+        (opened?.locked ?? false)) {
       return;
     }
 
@@ -76,7 +79,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
       write = ref
           .read(trackerWritesProvider)
           .updateVice(
-            vice.id,
+            vice,
             name: name == vice.name ? null : name,
             unit: unit == vice.unit ? null : unit,
             category: vice.categoryStored && category == vice.category

@@ -148,7 +148,9 @@ class _ViceActivityEditorPageState
           )
         : null;
     final List<String>? triggers = switch (editedTriggers) {
-      final List<String> picked when !listEquals(picked, activity.triggers) =>
+      // A locked entry's triggers are placeholders, never to be saved.
+      final List<String> picked
+          when !activity.locked && !listEquals(picked, activity.triggers) =>
         picked,
       _ => null,
     };
@@ -286,7 +288,8 @@ class _ViceActivityEditorPageState
                 IconButton(
                   tooltip: 'Delete',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: loading
+                  // Undo could not write a locked entry's content back.
+                  onPressed: loading || activity.locked
                       ? null
                       : () => _deleteActivity(vice, activity),
                 ),
