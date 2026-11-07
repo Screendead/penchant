@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
@@ -97,7 +98,12 @@ class _OnboardingState extends ConsumerState<Onboarding> {
       for (final HabitPreset p in habitPresets)
         if (selected.contains(p.name) && !existing.contains(p.name))
           (
-            writes.addVice(ownerID: user.uid, name: p.name, unit: p.unit),
+            writes.addVice(
+              ownerID: user.uid,
+              name: p.name,
+              unit: p.unit,
+              category: guessCategory(p.name),
+            ),
             'Not saved: the habit ${p.name}',
           ),
     ];
