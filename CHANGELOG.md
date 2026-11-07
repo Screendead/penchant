@@ -100,6 +100,7 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Today's sync pill no longer breaks the screen when writes settle and start again faster than its fade.
 - Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
 - The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.
 - The usage graph: weekly view counts weeks back from today, so the newest point is a whole week rather than a
