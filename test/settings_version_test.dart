@@ -12,6 +12,7 @@ void main() {
       ProviderScope(
         overrides: [
           userProvider.overrideWith((ref) => Stream.value(null)),
+          userProfileProvider.overrideWith((ref) => Stream.value(null)),
           packageInfoProvider.overrideWith(
             (ref) async => PackageInfo(
               appName: 'tracker',

@@ -261,7 +261,7 @@ class SyncFooter extends ConsumerWidget {
 }
 
 // It shows nothing until the app knows.
-class SyncPill extends ConsumerWidget {
+class SyncPill extends ConsumerStatefulWidget {
   const SyncPill({super.key});
 
   static const String synced = 'Synced';
@@ -275,16 +275,31 @@ class SyncPill extends ConsumerWidget {
       : DialGlyph.cloudOk;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SyncPill> createState() => _SyncPillState();
+}
+
+class _SyncPillState extends ConsumerState<SyncPill> {
+  // AnimatedSwitcher keeps each outgoing label until its fade ends and
+  // only drops one keyed like the incoming label, so a label that comes back
+  // twice within the fade would put two children with one key in its Stack.
+  String? _label;
+  int _appearance = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final bool offline = ref.watch(offlineProvider).value ?? false;
     final SyncState state = ref.watch(syncStatusProvider).state;
     final String? label = offline
-        ? offlineLabel
+        ? SyncPill.offlineLabel
         : switch (state) {
             SyncState.unknown => null,
-            SyncState.pending => syncing,
-            SyncState.synced => synced,
+            SyncState.pending => SyncPill.syncing,
+            SyncState.synced => SyncPill.synced,
           };
+    if (label != _label) {
+      _label = label;
+      _appearance++;
+    }
     final DialColors colors = DialColors.of(context);
 
     return AnimatedSwitcher(
@@ -292,7 +307,7 @@ class SyncPill extends ConsumerWidget {
       child: label == null
           ? const SizedBox.shrink()
           : Semantics(
-              key: ValueKey<String>(label),
+              key: ValueKey<(String, int)>((label, _appearance)),
               container: true,
               child: Container(
                 height: 32,
@@ -302,7 +317,7 @@ class SyncPill extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     StrokeIcon(
-                      glyph(state, offline: offline),
+                      SyncPill.glyph(state, offline: offline),
                       size: 18,
                       color: colors.muted,
                     ),

@@ -127,12 +127,14 @@ class TrackerWrites {
     required String ownerID,
     required String viceID,
     required int quantity,
+    double? amount,
     required DateTime createdAt,
     List<String> triggers = const <String>[],
   }) {
     return _issued(
       SentWrite(
         _activities.doc(activityID).set({
+          'amount': ?amount,
           'createdAt': createdAt,
           'ownerID': ownerID,
           'quantity': quantity,
@@ -151,10 +153,12 @@ class TrackerWrites {
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
+    double? amount,
     DateTime? createdAt,
     List<String>? triggers,
   }) {
     return _update(_activities, activityID, {
+      'amount': ?amount,
       'createdAt': ?createdAt,
       'quantity': ?quantity,
       if (triggers != null) triggersField: writeTriggers(triggers),
