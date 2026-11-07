@@ -285,7 +285,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 child: Column(
                   children: <Widget>[
                     ?guestBanner,
-                    const InfoBox(message: ViceTracker.noHabits),
+                    const Expanded(
+                      child: InfoBox(message: ViceTracker.noHabits),
+                    ),
                   ],
                 ),
               )
