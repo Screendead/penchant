@@ -7,7 +7,7 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
-import 'package:tracker/account/export.dart';
+import 'package:tracker/account/export_action.dart';
 import 'package:tracker/account/password_prompt.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -211,27 +211,12 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     }
   });
 
-  Rect? _exportOrigin() {
-    final RenderObject? box = _exportTile.currentContext?.findRenderObject();
-    if (box is! RenderBox || !box.hasSize) {
-      return null;
-    }
-    return box.localToGlobal(Offset.zero) & box.size;
-  }
-
-  // The origin is read before the busy view replaces the tile; the iPad share
-  // sheet needs it as its anchor.
   Future<void> _export() {
-    final Rect? origin = _exportOrigin();
+    final Rect? origin = exportOrigin(_exportTile);
     return _run('Preparing your export…', () async {
-      try {
-        final AccountData data = await _account.fetchData();
-        await ref
-            .read(exportShareProvider)
-            .share(exportFiles(data, DateTime.now()), origin: origin);
-      } catch (e, stack) {
-        reportError(e, stack, context: 'while exporting account data');
-        _show(AccountCopy.exportFailed(authErrorMessage(e)));
+      final String? failure = await shareAccountExport(ref, origin: origin);
+      if (failure != null) {
+        _show(failure);
       }
     });
   }

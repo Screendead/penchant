@@ -10,6 +10,7 @@ abstract final class AccountCopy {
   static const String exportSubtitle =
       'A spreadsheet of every entry and a full copy of your account, '
       'through the share sheet.';
+  static const String exportFormats = 'CSV, JSON';
   static const String exportSubject = 'Penchant data export';
   static String exportFailed(String reason) =>
       "Couldn't export your data. $reason";
