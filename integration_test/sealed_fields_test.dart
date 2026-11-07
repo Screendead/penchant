@@ -66,12 +66,21 @@ void main() {
     }
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> activities =
         await _owned('activities');
+    // Only the triggers are sealed; the quantity stays plaintext.
     expect(activities.single.data().keys.toSet(), <String>{
+      sealedField,
       'quantity',
       'ownerID',
       'viceID',
       'createdAt',
     });
+    expect(
+      await sealer.open(
+        (activities.single.data()[sealedField] as Blob).bytes,
+        context: sealContext('activities', activities.single.id),
+      ),
+      <String, Object?>{'triggers': <Object?>[]},
+    );
     expect(
       activities.single.data()['viceID'],
       isIn(vices.map((QueryDocumentSnapshot<Object?> v) => v.id)),
@@ -99,12 +108,17 @@ void main() {
             ),
         };
     expect(
-      opened.values,
-      unorderedEquals(<Map<String, Object?>>[
-        <String, Object?>{'name': 'Espresso', 'unit': 'hour'},
-        <String, Object?>{'name': 'Tea', 'unit': 'drink'},
+      opened.values.map(
+        (Map<String, Object?> fields) => (fields['name'], fields['unit']),
+      ),
+      unorderedEquals(<(Object?, Object?)>[
+        ('Espresso', 'hour'),
+        ('Tea', 'drink'),
       ]),
     );
+    for (final Map<String, Object?> fields in opened.values) {
+      expect(fields['category'], isA<String>());
+    }
     for (final QueryDocumentSnapshot<Map<String, dynamic>> vice in await _owned(
       'vices',
     )) {
