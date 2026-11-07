@@ -7,6 +7,7 @@ import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/email.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/password_prompt.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
@@ -262,9 +263,14 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
     }
     final NavigatorState navigator = Navigator.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
+    final String uid = widget.user.uid;
     await _run(AccountCopy.deleting, () async {
       try {
         await _account.deleteAccount(password: password);
+        freeText.forget(uid).catchError((Object e, StackTrace stack) {
+          reportError(e, stack, context: 'while forgetting free-text triggers');
+        });
       } on DeletionIncompleteException catch (e, stack) {
         reportError(e.cause, stack, context: 'while deleting the account');
         _show(AccountCopy.deleteIncomplete(authErrorMessage(e.cause)));

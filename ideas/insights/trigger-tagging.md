@@ -31,6 +31,12 @@ After a log, the detail sheet offers triggers:
 Shipped (r2-triggers A, part 1): the optional `triggers` field, its rules and parser, and the starter tree in
 `lib/data/trigger_tree.dart`. Free text is stored as the label itself for now; `triggerNodes` is not built.
 
+Shipped (part 2): the picker (`lib/widgets/trigger_picker.dart`) in the record dialog and the activity editor, and
+triggers on history rows. The usual chips rank the triggers on the habit's newest 50 entries by count, then by
+recency (no time-of-day weighting yet). A free-text trigger saved three times is offered as a chip under "Your
+own"; the count lives in shared_preferences per uid, on the device only, so it does not follow the user to another
+device until `triggerNodes` exists. Left: `triggerNodes`, the urge entry, and the analysis.
+
 - On `activities`: `triggers`, an array of path strings (`"work/meeting/1:1"`, `"custom/<id>"`), optional.
 - Custom nodes: a per-user `triggerNodes` collection (`ownerID`, `parentPath`, `label`, `createdAt`), so a renamed
   label renames everywhere. The built-in tree ships in the app and is versioned there.

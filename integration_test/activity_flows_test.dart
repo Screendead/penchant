@@ -287,6 +287,30 @@ void main() {
     await screenshot(tester, 'today-three-habits');
   });
 
+  testWidgets('a trigger picked while recording is stored and shown on the '
+      'history row', (WidgetTester tester) async {
+    await _startApp(tester, 'e2e-triggers@example.com');
+
+    await recordActivity(
+      tester,
+      'Coffee',
+      1,
+      triggerTaps: const <String>['Work', 'Meeting'],
+    );
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
+        await storedActivities('Coffee');
+    expect(stored.single.data()['triggers'], <String>['work/meeting']);
+
+    await openFromMenu(tester, Homepage.habitsItem);
+    await pumpUntil(tester, habitsCount('1 entry'));
+    await tap(tester, find.text('Coffee'));
+    await pumpUntil(tester, historyTitle('Coffee'));
+    await pumpUntil(
+      tester,
+      find.descendant(of: historyRows, matching: find.text('Meeting')),
+    );
+  });
+
   testWidgets('an activity can be deleted from the history page and from the '
       'editor', (WidgetTester tester) async {
     await _startApp(tester, 'e2e-delete@example.com');

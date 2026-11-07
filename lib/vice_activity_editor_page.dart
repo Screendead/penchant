@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/limits.dart';
+import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -14,6 +17,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -48,6 +52,9 @@ class _ViceActivityEditorPageState
   String storedDateText = '';
   String storedQuantityText = '';
   ViceActivity? shown;
+  // Null until the user changes the triggers; until then they follow the
+  // stored ones.
+  List<String>? editedTriggers;
 
   @override
   void initState() {
@@ -140,8 +147,13 @@ class _ViceActivityEditorPageState
             keepAmount: activity.amount != null,
           )
         : null;
+    final List<String>? triggers = switch (editedTriggers) {
+      final List<String> picked when !listEquals(picked, activity.triggers) =>
+        picked,
+      _ => null,
+    };
 
-    if (createdAt == null && measure == null) {
+    if (createdAt == null && measure == null && triggers == null) {
       Navigator.of(context).pop();
       return;
     }
@@ -154,6 +166,7 @@ class _ViceActivityEditorPageState
     });
 
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
     try {
       final bool synced = await rejected.settle(
         ref
@@ -163,9 +176,26 @@ class _ViceActivityEditorPageState
               quantity: measure?.quantity,
               amount: measure?.amount,
               createdAt: createdAt,
+              triggers: triggers,
             ),
         'Change not saved: ${_describe(vice, activity)}',
       );
+      if (triggers case final List<String> picked) {
+        freeText
+            .recordUses(
+              activity.ownerID,
+              picked.where(
+                (t) => isFreeTextTrigger(t) && !activity.triggers.contains(t),
+              ),
+            )
+            .catchError((Object e, StackTrace stack) {
+              reportError(
+                e,
+                stack,
+                context: 'while counting free-text triggers',
+              );
+            });
+      }
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
@@ -268,7 +298,7 @@ class _ViceActivityEditorPageState
                 ),
               ],
             ),
-            body: Padding(
+            body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: formKey,
@@ -299,6 +329,18 @@ class _ViceActivityEditorPageState
                       ),
                       validator: (String? value) =>
                           quantityError(value, unchanged: activity.measure),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TriggersField(
+                        value: editedTriggers ?? activity.triggers,
+                        onChanged: (List<String> picked) =>
+                            setState(() => editedTriggers = picked),
+                        viceID: vice.id,
+                        viceName: vice.name,
+                        enabled: !loading,
+                      ),
                     ),
                     if (error != null) ...[
                       const SizedBox(height: 16),

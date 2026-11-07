@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
+  life with more specific options inside, or your own words, which become a choice once used three times. It is
+  optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.
 - Each habit has a category (alcohol, caffeine, nicotine, cannabis, food, gambling or other), picked in the habit
   editor. Habits made before this get one guessed from their name the first time the app opens, which you can change.
 - A new account starts with a short welcome: pick the habits to keep a journal of from a list (Alcohol, Coffee,
@@ -45,7 +48,7 @@ pull request titles (`gh pr list --state merged`).
 ### Changed
 
 - An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
-  Craving) or typed in. Nothing picks them yet; exports include them as a "triggers" column.
+  Craving) or typed in; exports include them as a "triggers" column.
 - On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
   quieter; the 00, 06, 12 and 18 labels still give the time.
 - Trends by week shows whole weeks only: the range rounds down to a whole number of weeks (30 days shows 28, 90 shows

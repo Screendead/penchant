@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -314,7 +315,10 @@ class _ViceActivityHistoryPageState
             ).pushNamed('/vices/$viceID/activities/${activity.id}');
           },
           child: Semantics(
-            label: formatDayAndTime(createdAt, alwaysUse24HourFormat: h24),
+            label: <String>[
+              formatDayAndTime(createdAt, alwaysUse24HourFormat: h24),
+              ...activity.triggers.map(triggerDisplay),
+            ].join(', '),
             excludeSemantics: false,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 56),
@@ -332,15 +336,39 @@ class _ViceActivityHistoryPageState
                       ),
                     ),
                     const SizedBox(width: 12),
-                    ExcludeSemantics(
-                      child: Text(
-                        formatTime(createdAt, alwaysUse24HourFormat: h24),
-                        style: DialTypeScale.monoM.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          ExcludeSemantics(
+                            child: Text(
+                              formatTime(createdAt, alwaysUse24HourFormat: h24),
+                              style: DialTypeScale.monoM.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (activity.triggers.isNotEmpty)
+                            ExcludeSemantics(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  activity.triggers
+                                      .map(triggerShortDisplay)
+                                      .join(' · '),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DialTypeScale.bodyS.copyWith(
+                                    color: colors.muted,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,

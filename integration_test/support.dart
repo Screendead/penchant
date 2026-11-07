@@ -25,6 +25,7 @@ import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/trigger_picker.dart';
 
 const Duration timeout = Duration(seconds: 30);
 
@@ -362,6 +363,7 @@ Future<void> recordActivity(
   String viceName,
   num quantity, {
   DateTime? at,
+  List<String> triggerTaps = const <String>[],
 }) async {
   // Frames draw only on a pump here, and the fan keeps the habits the button
   // held when it opened: a write made outside the tree since the last frame
@@ -407,6 +409,24 @@ Future<void> recordActivity(
     );
   }
   await enterText(tester, 'Quantity', formatAmount(quantity));
+  if (triggerTaps.isNotEmpty) {
+    // Each label in [triggerTaps] is tapped in the picker in turn.
+    final Finder open = find.text('What was going on? (optional)');
+    await scrollIntoView(tester, open);
+    await tap(tester, open);
+    final Finder sheet = find.byType(TriggerPickerSheet);
+    await pumpUntilRouteSettled(tester, sheet);
+    for (final String label in triggerTaps) {
+      final Finder target = find.descendant(
+        of: sheet,
+        matching: find.text(label),
+      );
+      await scrollIntoView(tester, target);
+      await tap(tester, target);
+    }
+    await tap(tester, find.descendant(of: sheet, matching: find.text('Done')));
+    await pumpUntil(tester, sheet, present: false);
+  }
   await tap(tester, find.descendant(of: dialog, matching: find.text('Record')));
   await pumpUntil(tester, dialog, present: false);
 }
