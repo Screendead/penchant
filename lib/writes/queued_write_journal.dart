@@ -121,13 +121,14 @@ abstract interface class JournalStore {
 // One file per Firebase project, so a run against the emulators never
 // touches the journal of the app on the same device.
 class FileJournalStore implements JournalStore {
-  const FileJournalStore(this.projectID);
+  const FileJournalStore(this.projectID, {this.name = 'queued-writes'});
 
   final String projectID;
+  final String name;
 
   Future<File> _file() async => File(
     '${(await getApplicationSupportDirectory()).path}/'
-    'queued-writes-$projectID.json',
+    '$name-$projectID.json',
   );
 
   @override

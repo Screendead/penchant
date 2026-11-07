@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
@@ -171,6 +172,9 @@ class _SettingsState extends ConsumerState<Settings> {
             : user.value?.email,
       ),
     );
+    final String? sealing = migrationNote(
+      ref.watch(plaintextMigrationProvider),
+    );
     return CardPage(
       title: 'Settings',
       children: <Widget>[
@@ -193,6 +197,8 @@ class _SettingsState extends ConsumerState<Settings> {
           top: 0,
           children: <Widget>[
             const CardRow(label: 'Appearance', value: Text('Match system')),
+            if (sealing != null)
+              CardRow(label: 'Encryption', value: Text(sealing)),
             CardRow(
               label: 'About',
               value: version == null
@@ -240,3 +246,15 @@ class _SettingsState extends ConsumerState<Settings> {
     );
   }
 }
+
+/// Settings' one-line note on sealing existing entries, or null when there is
+/// nothing to say.
+String? migrationNote(MigrationStatus status) => switch (status.phase) {
+  MigrationPhase.idle => null,
+  MigrationPhase.waiting => 'Sealing waits for a connection',
+  MigrationPhase.sealing =>
+    status.sealed == 0 ? 'Sealing habits' : 'Sealing habits: ${status.sealed}',
+  MigrationPhase.failed => 'Sealing will try again',
+  MigrationPhase.done =>
+    status.sealed == 0 ? null : 'Habits sealed: ${status.sealed}',
+};

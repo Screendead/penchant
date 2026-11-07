@@ -359,6 +359,10 @@ triggers, and an activity update reseals only when it changes the triggers (the 
 triggers). A locked vice counts as `categoryStored`, and `fillViceCategory` leaves a sealed vice alone.
 `SentWrite.fields` then holds only the plaintext fields, since the envelope does not exist yet when the write is
 handed back. Tests override `sealerProvider` with `test/fake_sealer.dart`, the real envelope under a fixed key.
+The first-launch sealing (`lib/crypto/plaintext_migrator.dart`) uses the same conversion: it
+pages each collection with content fields from the server and seals every document without `sealed`, run once per
+uid and app version once `sealerProvider` has a key and `offlineProvider` says online; a document that already has
+`sealed` is skipped, so a run cut short is finished by the next.
 `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
 Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on

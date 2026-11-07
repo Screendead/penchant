@@ -862,6 +862,132 @@ describe('account export and deletion', () => {
   });
 });
 
+// lib/crypto/plaintext_migrator.dart's one update per legacy document. An
+// activity seals only its triggers; its quantity and amount stay plaintext.
+describe('sealing plaintext on first launch', () => {
+  const sealed = (fill = 1) => Bytes.fromUint8Array(new Uint8Array(29 + 64).fill(fill));
+  // Deleting a field the document lacks changes nothing, as the migrator's
+  // update for a vice without a category does not delete one.
+  const sealVice = (extra = {}) => ({
+    sealed: sealed(),
+    name: deleteField(),
+    unit: deleteField(),
+    category: deleteField(),
+    ...extra,
+  });
+
+  it('seals a legacy activity\'s triggers, keeping its quantity and amount', async () => {
+    await testEnv.withSecurityRulesDisabled((context) =>
+      setDoc(doc(context.firestore(), 'activities/aliceLegacyTriggered'), {
+        viceID: 'aliceVice',
+        quantity: 0,
+        amount: 0.5,
+        ownerID: ALICE,
+        createdAt,
+        triggers: ['social'],
+      }),
+    );
+    const ref = doc(asAlice(), 'activities/aliceLegacyTriggered');
+    await assertFails(updateDoc(ref, { sealed: sealed() }));
+    await assertSucceeds(updateDoc(ref, { sealed: sealed(), triggers: deleteField() }));
+    const stored = (await getDoc(ref)).data();
+    assert.deepEqual(Object.keys(stored).sort(), [
+      'amount',
+      'createdAt',
+      'ownerID',
+      'quantity',
+      'sealed',
+      'viceID',
+    ]);
+  });
+
+  it('allows the owner to seal a vice, removing name, unit and category', async () => {
+    const ref = doc(asAlice(), 'vices/aliceVice');
+    await assertSucceeds(updateDoc(ref, sealVice()));
+    const stored = (await getDoc(ref)).data();
+    assert.deepEqual(Object.keys(stored).sort(), ['archived', 'createdAt', 'ownerID', 'sealed']);
+  });
+
+  it('allows sealing legacy vices: no `archived`, a unit outside the enum, a long name', async () => {
+    for (const id of ['aliceLegacyVice', 'aliceUnknownUnitVice', 'aliceLongNameVice']) {
+      await assertSucceeds(updateDoc(doc(asAlice(), `vices/${id}`), sealVice()));
+    }
+  });
+
+  it('allows sealing a vice that has no unit', async () => {
+    await testEnv.withSecurityRulesDisabled((context) =>
+      setDoc(doc(context.firestore(), 'vices/aliceNoUnit'), {
+        name: 'Tea',
+        ownerID: ALICE,
+        createdAt,
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(asAlice(), 'vices/aliceNoUnit'), { sealed: sealed(), name: deleteField() }),
+    );
+  });
+
+  it('allows sealing in a batch, as the migrator commits', async () => {
+    const db = asAlice();
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'vices/aliceVice'), sealVice());
+    batch.update(doc(db, 'vices/aliceLegacyVice'), sealVice());
+    await assertSucceeds(batch.commit());
+  });
+
+  it('keeps a plaintext and a sealed vice of one user readable side by side', async () => {
+    await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice()));
+    await assertSucceeds(getDoc(doc(asAlice(), 'vices/aliceVice')));
+    await assertSucceeds(getDoc(doc(asAlice(), 'vices/aliceLegacyVice')));
+    await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceLegacyVice'), { name: 'Tea' }));
+  });
+
+  it('denies sealing that keeps any plaintext', async () => {
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: sealed(), unit: deleteField() }),
+    );
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: sealed(), name: deleteField() }),
+    );
+  });
+
+  it('denies removing plaintext without adding sealed', async () => {
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: deleteField(), unit: deleteField() }),
+    );
+    await assertFails(
+      updateDoc(doc(asAlice(), 'activities/aliceActivity'), { quantity: deleteField() }),
+    );
+  });
+
+  it('denies a sealed value that is not bytes', async () => {
+    await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice({ sealed: 'AQID' })));
+  });
+
+  it('denies changing a structural field while sealing', async () => {
+    const vices = [
+      { ownerID: BOB },
+      { createdAt: Timestamp.fromDate(new Date('2025-01-01T00:00:00Z')) },
+      { note: 'x' },
+    ];
+    for (const extra of vices) {
+      await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice(extra)));
+    }
+  });
+
+  it('denies removing sealed once it is there', async () => {
+    const ref = doc(asAlice(), 'vices/aliceVice');
+    await assertSucceeds(updateDoc(ref, sealVice()));
+    await assertFails(updateDoc(ref, { sealed: deleteField() }));
+    await assertFails(updateDoc(ref, { sealed: deleteField(), name: 'Tea', unit: 'drink' }));
+  });
+
+  it("denies sealing another user's documents", async () => {
+    await assertFails(updateDoc(doc(asAlice(), 'vices/bobVice'), sealVice()));
+    await assertFails(updateDoc(doc(asGuest(), 'vices/aliceVice'), sealVice()));
+  });
+});
+
 // New documents may hold their content in one `sealed` envelope instead
 // (lib/data/sealed.dart); the structural fields stay plaintext. An envelope is
 // bytes: 29 bytes of version, nonce and tag around a padded plaintext of at
