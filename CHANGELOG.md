@@ -32,6 +32,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
+  Craving) or typed in. Nothing picks them yet; exports include them as a "triggers" column.
 - On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
   quieter; the 00, 06, 12 and 18 labels still give the time.
 - Trends by week shows whole weeks only: the range rounds down to a whole number of weeks (30 days shows 28, 90 shows

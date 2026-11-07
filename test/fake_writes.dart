@@ -103,12 +103,14 @@ class FakeTrackerWrites implements TrackerWrites {
     required String viceID,
     required int quantity,
     required DateTime createdAt,
+    List<String> triggers = const <String>[],
   }) => _write(
     Write('recordActivity', activityID, <String, Object?>{
       'ownerID': ownerID,
       'viceID': viceID,
       'quantity': quantity,
       'createdAt': createdAt,
+      if (triggers.isNotEmpty) 'triggers': triggers,
     }),
     collection: 'activities',
     op: WriteOp.create,
@@ -119,14 +121,20 @@ class FakeTrackerWrites implements TrackerWrites {
     String activityID, {
     int? quantity,
     DateTime? createdAt,
+    List<String>? triggers,
   }) => _write(
     Write('updateActivity', activityID, <String, Object?>{
       'quantity': ?quantity,
       'createdAt': ?createdAt,
+      'triggers': ?triggers,
     }),
     collection: 'activities',
     op: WriteOp.update,
-    fields: <String, Object>{'quantity': ?quantity, 'createdAt': ?createdAt},
+    fields: <String, Object>{
+      'quantity': ?quantity,
+      'createdAt': ?createdAt,
+      'triggers': ?triggers,
+    },
   );
 
   @override

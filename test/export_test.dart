@@ -38,6 +38,7 @@ AccountData _data() => AccountData(
         'ownerID': 'owner',
         'createdAt': Timestamp.fromDate(_monday),
         'note': 'kept although no field list names it',
+        'triggers': <String>['work/meeting', 'Late, "very"'],
       },
     ),
   ],
@@ -45,13 +46,13 @@ AccountData _data() => AccountData(
 
 void main() {
   test('the CSV has one row per activity, oldest first, quoted per RFC 4180, '
-      'and keeps an activity whose vice is gone', () {
+      'keeps an activity whose vice is gone, and joins triggers', () {
     expect(
       exportCsv(_data()),
-      'time,vice,quantity,unit,vice_id,entry_id\r\n'
-      '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,drink,v1,a1'
-      '\r\n'
-      '2026-11-02T11:30:00.000Z,,1,,gone,a2\r\n',
+      'time,vice,quantity,unit,vice_id,entry_id,triggers\r\n'
+      '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,drink,v1,a1,'
+      '"work/meeting; Late, ""very"""\r\n'
+      '2026-11-02T11:30:00.000Z,,1,,gone,a2,\r\n',
     );
   });
 
