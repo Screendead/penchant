@@ -487,6 +487,32 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
   }
 }
 
+// Whether a document exists, read with the emulators' admin "owner" token so
+// it works with nobody signed in.
+Future<bool> existsBypassingRules(String collection, String documentID) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection/'
+      '$documentID',
+    );
+    final HttpClientRequest request = await client.getUrl(uri);
+    request.headers.set(HttpHeaders.authorizationHeader, 'Bearer owner');
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        return true;
+      case HttpStatus.notFound:
+        return false;
+    }
+    throw StateError('GET $uri returned ${response.statusCode}: $body');
+  } finally {
+    client.close();
+  }
+}
+
 // Today's tallies, each as "Name (2 drinks)", or null while the day loads.
 Set<String>? todayTallies(WidgetTester tester) {
   final List<TallyRow> rows = tester

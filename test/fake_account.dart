@@ -38,6 +38,19 @@ class FakeAccount implements Account {
       });
 
   @override
+  bool isGuest = false;
+
+  @override
+  Future<void> startAsGuest() => _call('startAsGuest');
+
+  @override
+  Future<void> linkEmail({required String email, required String password}) =>
+      _call('linkEmail', <String, Object?>{
+        'email': email,
+        'password': password,
+      });
+
+  @override
   Future<void> sendPasswordResetEmail(String email) =>
       _call('sendPasswordResetEmail', <String, Object?>{'email': email});
 
@@ -78,7 +91,7 @@ class FakeAccount implements Account {
   }
 
   @override
-  Future<void> deleteAccount({required String password}) =>
+  Future<void> deleteAccount({String? password}) =>
       _call('deleteAccount', <String, Object?>{'password': password});
 }
 

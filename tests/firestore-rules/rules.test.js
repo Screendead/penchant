@@ -827,3 +827,53 @@ describe('account export and deletion', () => {
     await assertFails(batch.commit());
   });
 });
+
+// Account.startAsGuest: an anonymous Firebase Auth user has a uid like any
+// other, and the ownerID checks apply to it unchanged.
+describe('a guest signed in anonymously', () => {
+  const GUEST = 'guest';
+  const asAnonymous = () =>
+    testEnv
+      .authenticatedContext(GUEST, { firebase: { sign_in_provider: 'anonymous' } })
+      .firestore();
+
+  it('creates, reads, edits and deletes its own vice and activity', async () => {
+    const db = asAnonymous();
+    await assertSucceeds(setDoc(doc(db, 'vices/guestVice'), vice({ ownerID: GUEST })));
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'activities/guestActivity'),
+        activity({ ownerID: GUEST, viceID: 'guestVice' }),
+      ),
+    );
+    const mine = await assertSucceeds(
+      getDocs(query(collection(db, 'activities'), where('ownerID', '==', GUEST))),
+    );
+    assert.deepEqual(mine.docs.map((d) => d.id), ['guestActivity']);
+    await assertSucceeds(updateDoc(doc(db, 'activities/guestActivity'), { quantity: 3 }));
+    await assertSucceeds(deleteDoc(doc(db, 'activities/guestActivity')));
+    await assertSucceeds(deleteDoc(doc(db, 'vices/guestVice')));
+  });
+
+  it('cannot write as another owner or read another owner\'s data', async () => {
+    const db = asAnonymous();
+    await assertFails(addDoc(collection(db, 'vices'), vice()));
+    await assertFails(getDoc(doc(db, 'vices/aliceVice')));
+    await assertFails(
+      getDocs(query(collection(db, 'activities'), where('ownerID', '==', ALICE))),
+    );
+  });
+
+  it('keeps its data once linked, since linking keeps the uid', async () => {
+    await assertSucceeds(
+      setDoc(doc(asAnonymous(), 'vices/guestVice'), vice({ ownerID: GUEST })),
+    );
+    const linked = testEnv
+      .authenticatedContext(GUEST, {
+        email: 'sam@example.com',
+        firebase: { sign_in_provider: 'password' },
+      })
+      .firestore();
+    await assertSucceeds(getDoc(doc(linked, 'vices/guestVice')));
+  });
+});

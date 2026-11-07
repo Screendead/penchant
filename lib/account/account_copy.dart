@@ -43,6 +43,43 @@ abstract final class AccountCopy {
       'Your account is not deleted. $reason Some entries may already be gone; '
       'try again to finish.';
 
+  static const String startAsGuest = 'Start without an account';
+  static String startAsGuestFailed(String reason) =>
+      "Couldn't start without an account. $reason";
+
+  static const String guest = 'Guest';
+  static const String guestTitle = 'Save your journal';
+  static const String guestBody =
+      'You are using Penchant without an account. Add an email and password '
+      'to keep your journal if you sign out, lose this device or reinstall.';
+  static const String linkAction = 'Add email and password';
+  static String linked(String email) =>
+      'Your journal is saved to $email. We sent a link to verify it.';
+  static const String linkEmailTaken =
+      'That email already has an account. Signing in to it would leave this '
+      'journal behind, so choose another email.';
+  static String linkFailed(String reason) => 'Not saved. $reason';
+
+  static const String guestDeleteConfirmBody =
+      'This permanently deletes your guest journal: every habit and every '
+      'entry you have logged, from our servers and from this device.\n\n'
+      'It cannot be undone, and we cannot recover anything afterwards. If you '
+      'want a copy, export your data first.';
+
+  static const String guestSignOutTitle = 'Erase your guest journal?';
+  static const String guestSignOutBody =
+      'You have no email or password, so nothing can sign you back in to this '
+      'journal. Signing out erases every habit and entry in it, from our '
+      'servers and from this device, and needs a connection. It cannot be '
+      'undone. Add an email and password in Account Settings to keep it.';
+  static const String guestSignOutAction = 'Erase and sign out';
+  static const String guestErased = 'Your guest journal is erased.';
+  static String guestSignOutFailed(String reason) =>
+      'You are still signed in. $reason Nothing was erased.';
+  static String guestSignOutIncomplete(String reason) =>
+      'You are still signed in. $reason Some entries may already be erased; '
+      'sign out again to finish.';
+
   static const String cancel = 'Cancel';
   static const String password = 'Password';
 

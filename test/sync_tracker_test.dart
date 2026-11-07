@@ -194,6 +194,29 @@ void main() {
       await pump(tester, offline: false, state: SyncState.unknown);
       expect(find.byType(Text), findsNothing);
     });
+
+    testWidgets('labels that come back while still fading out are shown once', (
+      WidgetTester tester,
+    ) async {
+      await pump(tester, offline: false, state: SyncState.pending);
+      final _Fixed tracker =
+          ProviderScope.containerOf(
+                tester.element(find.byType(SyncPill)),
+              ).read(syncStatusProvider.notifier)
+              as _Fixed;
+      for (final SyncState next in <SyncState>[
+        SyncState.synced,
+        SyncState.pending,
+        SyncState.synced,
+      ]) {
+        tracker.set(next);
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(tester.takeException(), isNull);
+      }
+      await tester.pumpAndSettle();
+      expect(find.text(SyncPill.synced), findsOneWidget);
+      expect(find.text(SyncPill.syncing), findsNothing);
+    });
   });
 
   test('the menu footer gives the last sync time only when it knows it', () {
@@ -226,4 +249,6 @@ class _Fixed extends SyncTracker {
 
   @override
   SyncStatus build() => SyncStatus(fixed);
+
+  void set(SyncState next) => state = SyncStatus(next);
 }

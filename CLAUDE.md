@@ -242,17 +242,20 @@ document. The one-tap "log one" (`logOne`, `lib/writes/log_one.dart`: a tally's 
 a new id per tap, so two taps are two entries; it shows its bar (`showUndoBar`, `lib/widgets/undo_bar.dart`) at once,
 since the entry is on the device as soon as it is written, and says it is queued if the server has not answered in ten
 seconds. Both Undo through `undoLog`. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
-(`lib/account/account.dart`): sign-in, register (which also sends the verification email),
+(`lib/account/account.dart`): sign-in, register (which also sends the verification email), the anonymous guest
+start and linking a guest to an email and password (same uid, then the verification email),
 password reset, re-authentication, profile and email changes, sign-out, and the
 account-wide Firestore work: `fetchData` pages through the user's vices and activities for
 export, from the server so that offline it fails instead of returning a partial cache (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
-to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
-batches of 500, then the Auth user; a failure after the first batch is a
-`DeletionIncompleteException`, and any other failure removed nothing. Sign-out and deletion then `terminate()` Firestore and
+to the share sheet), and `deleteAccount` re-authenticates (a guest has no password, so it skips that), deletes every
+owned document in batches of 500, then the Auth user; a failure after the first batch is a
+`DeletionIncompleteException`, and any other failure removed nothing. A guest's sign-out is that deletion (Jack,
+2026-11-06): nothing could sign back in to the guest's uid, so its documents would otherwise stay on the server for
+good. Offline it fails before removing anything, and the guest stays signed in. Sign-out and deletion then `terminate()` Firestore and
 `clearPersistence()`; the Dart instance keeps the settings `firebase_init.dart` gave it (the
 cache, or the emulator host), and the plugin builds a fresh native instance from them on the
-next call. Sign-out first waits up to 5 s for pending writes and throws
-`UnsyncedEntriesException` rather than discard them silently. Auth error text shown to the
+next call. Sign-out and deletion first wait up to 5 s for pending writes and throw
+`UnsyncedEntriesException` rather than discard them silently or let one land after the deletion swept. Auth error text shown to the
 user comes from `authErrorMessage` (`lib/account/auth_errors.dart`), never Firebase's own
 message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 
@@ -279,9 +282,10 @@ draw. A `null` value means loading; an empty list means no data. Never gate UI o
 provider's stream, so the future never resolves. Render loading and error from the watched
 `AsyncValue` instead. A `User` is a snapshot that profile updates and `reload()` never
 change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
-So Account Settings alone watches `userProfileProvider`, and calls `Account.reloadUser()` on
-opening and on app resume to pick up a verification made elsewhere; the chain stays on
-`userProvider`.
+So only screens that show the profile watch `userProfileProvider`: Account Settings, which calls
+`Account.reloadUser()` on opening and on app resume to pick up a verification made elsewhere, and Settings, through a
+`select` on the email and guest status. Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
+on guest status asks `Account.isGuest`; the chain stays on `userProvider`.
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
 page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether
