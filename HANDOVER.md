@@ -153,8 +153,8 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   `test/firestore_indexes_test.dart`; no app change, so no e2e).
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED:** round 9 on the pitch page, the three calls 1d and 1e raised (Calls waiting on Jack, below). Every earlier call on the pitch page is picked (2026-11-06). `r7-ci` and round 5 are moot and off the
-page. Other languages are still unasked.
+**UNDECIDED:** none on the pitch page: round 9 is picked (2026-11-07), as is every earlier call (2026-11-06). `r7-ci`
+and round 5 are moot and off the page. Other languages are still unasked.
 
 **Blocked on Jack, not decisions:** none while there is no paid Apple team and no release (Jack, 2026-11-06): App
 Attest, TestFlight, the App Store, Sign in with Apple and the domain wait on those, and the privacy-policy details are
@@ -291,16 +291,19 @@ Notes are Jack's, condensed.
 - **`r8-mac-window`**: **about 1200 x 780, the split view by default**; lands with 1g.
 - **`r8-mac-keys`**: **Cmd-1 to Cmd-9 log one of the Nth habit now**, listed in the menu bar. Queued.
 
+## Jack's calls, round 9 (2026-11-07)
+
+Picked on the pitch page, each as recommended:
+
+- **`r9-archive`**: A, **the archive button on the habit's history page, as built.** No work.
+- **`r9-appearance`**: B, **a Match system / Light / Dark choice, saved on the device** with shared_preferences
+  (each device keeps its own; no data-model or rules change). Built in the PR from `feat/r9-picks`.
+- **`r9-export`**: B, **also an Export row in Settings, as the mock-up**; Account Settings keeps its row beside
+  Delete, and both share one export action. Built in the PR from `feat/r9-picks`.
+
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 9 on the pitch page (2026-11-07); each is built one way and waits on a pick. Recommendations, not decisions:
-
-- **`r9-archive`** (from 1d, PR #100): Archive is a button on the habit's history page (as built). Recommend A, keep
-  it; C (a row in the habit editor) is the cheap way to match the mock-up's header.
-- **`r9-appearance`** (from 1e, PR #99): Settings has a fixed "Match system" row (as built). Recommend B, a
-  Light / Dark / Match system picker saved on the device with shared_preferences.
-- **`r9-export`** (from 1e, PR #99): Export lives in Account Settings only (as built). Recommend B, also a row in
-  Settings as the mock-up shows.
+None. Round 9 is picked (Jack's calls, round 9, above).
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 

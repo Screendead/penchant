@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
+import 'package:tracker/appearance_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
@@ -13,6 +14,7 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -90,7 +92,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         title: 'Penchant',
         theme: appTheme(Brightness.light),
         darkTheme: appTheme(Brightness.dark),
-        themeMode: ThemeMode.system,
+        themeMode: ref.watch(appearanceProvider),
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: appLocales,
         localeListResolutionCallback: resolveAppLocale,
@@ -172,6 +174,8 @@ Widget routePage(String? name) {
       return const Settings();
     case ['settings', 'account']:
       return const AccountSettings();
+    case ['settings', 'appearance']:
+      return const AppearanceSettings();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
     default:

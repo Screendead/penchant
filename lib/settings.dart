@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
+import 'package:tracker/account/export_action.dart';
+import 'package:tracker/appearance_settings.dart';
 import 'package:tracker/account/sign_out.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
@@ -49,6 +52,27 @@ class Settings extends ConsumerStatefulWidget {
 
 class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
+  bool _exporting = false;
+  final GlobalKey _exportRow = GlobalKey();
+
+  Future<void> _export() async {
+    if (_exporting) {
+      return;
+    }
+    final Rect? origin = exportOrigin(_exportRow);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    setState(() => _exporting = true);
+    try {
+      final String? failure = await shareAccountExport(ref, origin: origin);
+      if (failure != null) {
+        messenger.showSnackBar(SnackBar(content: Text(failure)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
+    }
+  }
 
   Future<void> _signOut() async {
     final NavigatorState navigator = Navigator.of(context);
@@ -161,13 +185,34 @@ class _SettingsState extends ConsumerState<Settings> {
                 Navigator.of(context).pushNamed('/settings/account');
               },
             ),
+            CardRow(
+              key: _exportRow,
+              label: AccountCopy.exportTitle,
+              value: const Text(AccountCopy.exportFormats),
+              enabled: !_exporting,
+              glyph: _exporting ? null : DialGlyph.share,
+              trailing: _exporting
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+              onTap: _export,
+            ),
           ],
         ),
         const CardSectionLabel('App'),
         DialCard(
           top: 0,
           children: <Widget>[
-            const CardRow(label: 'Appearance', value: Text('Match system')),
+            CardRow(
+              label: 'Appearance',
+              value: Text(appearanceLabel(ref.watch(appearanceProvider))),
+              glyph: DialGlyph.right,
+              onTap: () {
+                Navigator.of(context).pushNamed(AppearanceSettings.route);
+              },
+            ),
             if (sealing != null)
               CardRow(label: 'Encryption', value: Text(sealing)),
             CardRow(

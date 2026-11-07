@@ -7,6 +7,11 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Added
+
+- Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
+  choice. Export my data is now one tap from Settings, as well as under Account.
+
 ### Fixed
 
 - iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and

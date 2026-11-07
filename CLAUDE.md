@@ -222,7 +222,8 @@ query provider that watches `userProvider` itself: that shape leaked the previou
 data. `trackerWritesProvider` is a plain `Provider` that hands out the write layer
 (below), and `packageInfoProvider` is a `FutureProvider` over
 `PackageInfo.fromPlatform()`, for the version under Settings > About. `todayProvider` is a
-`NotifierProvider` holding the start of the current local day. Match that style.
+`NotifierProvider` holding the start of the current local day, and `appearanceProvider` one holding the
+Light / Dark / Match system choice, kept per device in shared_preferences. Match that style.
 
 **Reads and writes both go through providers.** Widgets read via `ref.watch(...)` on a
 provider of `AsyncValue` and write via `ref.read(trackerWritesProvider)`, which hands out one
