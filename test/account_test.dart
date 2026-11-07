@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,7 @@ import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/register.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/sign_in.dart';
 
@@ -69,6 +71,35 @@ Future<void> _tapText(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
+Iterable<String>? _hints(WidgetTester tester, Type form, int index) => tester
+    .widget<TextField>(
+      find
+          .descendant(of: find.byType(form), matching: find.byType(TextField))
+          .at(index),
+    )
+    .autofillHints;
+
+// The finishAutofillContext calls the form sends, by their shouldSave.
+List<bool> _recordAutofillFinishes(WidgetTester tester) {
+  final List<bool> finishes = <bool>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.textInput,
+    (MethodCall call) async {
+      if (call.method == 'TextInput.finishAutofillContext') {
+        finishes.add(call.arguments as bool);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.textInput,
+      null,
+    ),
+  );
+  return finishes;
+}
+
 FirebaseAuthException _authError(String code) => FirebaseAuthException(
   code: code,
   message: 'There is no user record corresponding to this identifier.',
@@ -76,6 +107,42 @@ FirebaseAuthException _authError(String code) => FirebaseAuthException(
 
 void main() {
   group('sign in', () {
+    // iOS reads only the first hint, and pairs a saved password with the
+    // field whose content type is username, not emailAddress.
+    testWidgets('the email field is the credential username for AutoFill', (
+      tester,
+    ) async {
+      await _pump(tester, FakeAccount(), const Authenticate());
+      expect(_hints(tester, SignIn, 0), <String>[
+        AutofillHints.username,
+        AutofillHints.email,
+      ]);
+      expect(_hints(tester, SignIn, 1), <String>[AutofillHints.password]);
+    });
+
+    testWidgets('a successful sign-in commits the AutoFill context so iOS '
+        'offers to save the credential', (tester) async {
+      final List<bool> finishes = _recordAutofillFinishes(tester);
+      await _pump(tester, FakeAccount(), const Authenticate());
+      await _enter(tester, 'Email', _email);
+      await _enter(tester, 'Password', 'right');
+      await _tapText(tester, 'Sign in');
+      expect(finishes, <bool>[true]);
+    });
+
+    testWidgets('a failed sign-in leaves the AutoFill context open', (
+      tester,
+    ) async {
+      final List<bool> finishes = _recordAutofillFinishes(tester);
+      final FakeAccount account = FakeAccount()
+        ..respond = (_) async => throw _authError('wrong-password');
+      await _pump(tester, account, const Authenticate());
+      await _enter(tester, 'Email', _email);
+      await _enter(tester, 'Password', 'wrong');
+      await _tapText(tester, 'Sign in');
+      expect(finishes, isEmpty);
+    });
+
     testWidgets('a wrong password reads the same as an unknown address and '
         "never shows Firebase's message", (tester) async {
       final FakeAccount account = FakeAccount()
@@ -112,6 +179,17 @@ void main() {
         tester.widget<TextFormField>(dialogEmail).controller!.text,
         _email,
       );
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: dialogEmail,
+                matching: find.byType(TextField),
+              ),
+            )
+            .autofillHints,
+        <String>[AutofillHints.email],
+      );
       await _tapText(tester, AccountCopy.resetSend);
 
       expect(
@@ -139,6 +217,19 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  testWidgets('registering offers the email as the username of a new '
+      'password for AutoFill', (tester) async {
+    await _pump(tester, FakeAccount(), const Authenticate());
+    await tester.tap(find.byKey(Authenticate.registerTab));
+    await tester.pumpAndSettle();
+    expect(_hints(tester, Register, 0), <String>[
+      AutofillHints.username,
+      AutofillHints.email,
+    ]);
+    expect(_hints(tester, Register, 1), <String>[AutofillHints.newPassword]);
+    expect(_hints(tester, Register, 2), <String>[AutofillHints.newPassword]);
   });
 
   testWidgets('a registration Firebase refuses says why', (tester) async {

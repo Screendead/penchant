@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
@@ -52,6 +53,7 @@ class _SignInState extends ConsumerState<SignIn> {
             email: emailController.text.trim(),
             password: passwordController.text,
           );
+      TextInput.finishAutofillContext();
     } catch (e, stack) {
       reportError(e, stack, context: 'while signing in');
       if (mounted) {
@@ -100,7 +102,10 @@ class _SignInState extends ConsumerState<SignIn> {
               hint: 'Email',
               glyph: DialGlyph.mail,
               keyboardType: TextInputType.emailAddress,
-              autofillHints: const <String>[AutofillHints.email],
+              autofillHints: const <String>[
+                AutofillHints.username,
+                AutofillHints.email,
+              ],
               textInputAction: TextInputAction.next,
               onChanged: (String value) {
                 setState(() {
@@ -198,6 +203,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
+              autofillHints: const <String>[AutofillHints.email],
               autocorrect: false,
               decoration: const InputDecoration(labelText: 'Email'),
               validator: (String? value) => emailError(value?.trim()),
