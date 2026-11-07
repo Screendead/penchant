@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -152,9 +153,30 @@ void main() {
           'ownerID': ownerID,
           'name': 'Coffee',
           'unit': Unit.drink,
+          'category': ViceCategory.other,
         }),
       ]);
       expect(find.byType(ViceForm), findsNothing);
+    });
+
+    testWidgets('saves the picked category', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, const [], const ViceForm());
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Habit Name'),
+        'Coffee',
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Unit.drink.plural).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ViceCategory.caffeine.label).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.single.fields['category'], ViceCategory.caffeine);
     });
 
     testWidgets('a save in flight disables Save, and one that outlasts the '
@@ -258,6 +280,48 @@ void main() {
       expect(writes.writes, [
         const Write('updateVice', 'coffee', <String, Object?>{
           'name': 'Espresso',
+        }),
+      ]);
+    });
+
+    testWidgets('writes only a changed category', (WidgetTester tester) async {
+      await open(tester);
+      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ViceCategory.food.label).last);
+      await tester.pumpAndSettle();
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'category': ViceCategory.food,
+        }),
+      ]);
+    });
+
+    testWidgets('a vice written before categories opens on the guess and '
+        'saves it', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith(
+          (ref) => AsyncData([
+            Vice(
+              id: 'beer',
+              name: 'Beer',
+              unit: Unit.drink,
+              ownerID: ownerID,
+              createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+              archived: false,
+              categoryStored: false,
+            ),
+          ]),
+        ),
+      ], const EditVice(viceID: 'beer'));
+      expect(find.text(ViceCategory.alcohol.label), findsOneWidget);
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'beer', <String, Object?>{
+          'category': ViceCategory.alcohol,
         }),
       ]);
     });
@@ -593,6 +657,29 @@ void main() {
       expect(find.text('Activity removed'), findsOneWidget);
     });
 
+    testWidgets('records a decimal as its amount, with the quantity rounded '
+        'up', (WidgetTester tester) async {
+      await fill(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '1.5',
+      );
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      final Write write = writes.writes.single;
+      expect(write.fields['quantity'], 2);
+      expect(write.fields['amount'], 1.5);
+    });
+
+    testWidgets('a whole number writes no amount', (WidgetTester tester) async {
+      await fill(tester);
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.single.fields.containsKey('amount'), isFalse);
+    });
+
     testWidgets('a second press after a failure writes the same document', (
       WidgetTester tester,
     ) async {
@@ -679,10 +766,76 @@ void main() {
     });
   });
 
+  group('the activity editor on an entry with an amount', () {
+    final Vice coffee = fakeVice('coffee');
+    final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
+    final ViceActivity activity = fakeActivity(coffee.id, 2, at, amount: 1.5);
+
+    Future<void> open(WidgetTester tester) => _pumpOpened(
+      tester,
+      writes,
+      [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(activity),
+        ),
+      ],
+      ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
+    );
+
+    String quantityText(WidgetTester tester) => tester
+        .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
+        .controller!
+        .text;
+
+    testWidgets('shows the amount, and a whole number replaces it', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      expect(quantityText(tester), '1.5');
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '3',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [
+        Write('updateActivity', activity.id, <String, Object?>{
+          'quantity': 3,
+          'amount': 3.0,
+        }),
+      ]);
+    });
+
+    testWidgets('Undo after a delete writes the amount back', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('Deleted 1.5'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.fields['quantity'], 2);
+      expect(writes.writes.last.fields['amount'], 1.5);
+    });
+  });
+
   group('the activity editor', () {
     final Vice coffee = fakeVice('coffee');
     final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
-    final ViceActivity activity = fakeActivity(coffee.id, 3, at);
+    final ViceActivity activity = fakeActivity(
+      coffee.id,
+      3,
+      at,
+      triggers: <String>['work/meeting', 'Late train'],
+    );
 
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([coffee])),
@@ -717,6 +870,25 @@ void main() {
       expect(editor, findsNothing);
     });
 
+    testWidgets('saves a decimal as its amount, with the quantity rounded up', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '0.25',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [
+        Write('updateActivity', activity.id, <String, Object?>{
+          'quantity': 1,
+          'amount': 0.25,
+        }),
+      ]);
+    });
+
     testWidgets('a save that outlasts the timeout closes and says it will '
         'sync', (WidgetTester tester) async {
       writes.respond = _never;
@@ -737,9 +909,8 @@ void main() {
       expect(find.text('Request timed out'), findsNothing);
     });
 
-    testWidgets('deletes the activity, closes, and Undo writes it back', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('deletes the activity, closes, and Undo writes it back, '
+        'triggers included', (WidgetTester tester) async {
       await open(tester);
       await tester.tap(find.byTooltip('Delete'));
       await tester.pump();
@@ -754,6 +925,10 @@ void main() {
 
       expect(writes.writes.last.op, 'recordActivity');
       expect(writes.writes.last.id, activity.id);
+      expect(writes.writes.last.fields['triggers'], [
+        'work/meeting',
+        'Late train',
+      ]);
       expect(find.text(restoredMessage), findsOneWidget);
     });
 

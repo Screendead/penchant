@@ -69,7 +69,7 @@ cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # 
 End to end against the Firebase emulators (Auth + Firestore, project `demo-tracker`):
 
 ```bash
-tools/e2e.sh                      # integration_test/ on the first available "iPhone 18 Pro" simulator; exits with the test status
+tools/e2e.sh                      # integration_test/all_test.dart (every file, one build) on the first available "iPhone 18 Pro" simulator; exits with the test status
 tools/e2e.sh integration_test/smoke_test.dart
 E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
 E2E_DEVICE=macos tools/e2e.sh     # integration_test/ as a macOS app on this Mac
@@ -150,14 +150,22 @@ npm --prefix tests/firestore-rules test   # needs Java 21; uses the firebase.jso
 To run beside another emulator, point `firebase emulators:exec` at a config outside the
 repo with other ports: `npm --prefix tests/firestore-rules test -- --config <path>`.
 
+Cloud Functions (`functions/`, plain CommonJS on Node 22, firebase-functions v2):
+
+```bash
+npm --prefix functions ci
+npm --prefix functions test               # node --test over the pure summary arithmetic; no emulator
+```
+
 CI (`.github/workflows/`) runs on standard GitHub-hosted runners, free while the repo is public.
 `checks.yml` runs `dart analyze --fatal-infos --fatal-warnings` and `flutter test` on every PR to `master`
 except prose-only ones (Markdown, `docs/`, `ideas/`, `tech-debt/`). `rules-tests.yml` runs the Firestore rules
 suite on PRs that touch the rules, indexes, `firebase.json` or the suite. `macos-build.yml` runs only by hand
 (`gh workflow run macos-build.yml`). A PR with no checks has nothing to wait for. `e2e.yml` never runs on a PR: on a
 non-prose push to `master` (or `gh workflow run e2e.yml`) it waits two minutes on Linux, then runs `tools/e2e.sh`
-over all of `integration_test/` on an iPhone simulator of a `macos-26` runner (about 75 minutes: flutter rebuilds
-the app for each file), and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
+over `integration_test/all_test.dart` on an iPhone simulator of a `macos-26` runner (it imports
+every file so flutter builds the app once, where one file per build took 74), caching the Swift packages and Xcode's
+DerivedData, and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
 newer merge cancels the older run, waiting or running, so a burst of merges tests only its last commit. There is no
 macOS e2e job: the runner has no Mac development profile (that would take signing secrets), and unsigned, every
 sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
@@ -165,7 +173,10 @@ indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
 `DEPLOY_FIRESTORE_RULES` is `true` (set 2026-11-04; unset, the job is skipped), and deploys queue in one concurrency
-group so the newest commit lands last. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
+group so the newest commit lands last. `functions.yml` runs `npm --prefix functions test` on PRs that touch
+`functions/`, `firebase.json` or itself, and on such a push to `master` deploys the functions
+(`firebase deploy --only functions`, same pinned firebase-tools, `firestore-production` environment) only while the
+repository variable `DEPLOY_FUNCTIONS` is `true`; unset, the job is skipped. `macos-build.yml` builds the macOS app unsigned (debug, release, and debug
 with the emulator define) on a `macos-26` runner, when run by hand. Nothing
 builds a release of the iOS app or deploys either app. Flutter is pinned in
 `.github/actions/setup-flutter/action.yml`; bump it there when the local `flutter --version`
@@ -241,17 +252,20 @@ document. The one-tap "log one" (`logOne`, `lib/writes/log_one.dart`: a tally's 
 a new id per tap, so two taps are two entries; it shows its bar (`showUndoBar`, `lib/widgets/undo_bar.dart`) at once,
 since the entry is on the device as soon as it is written, and says it is queued if the server has not answered in ten
 seconds. Both Undo through `undoLog`. Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account`
-(`lib/account/account.dart`): sign-in, register (which also sends the verification email),
+(`lib/account/account.dart`): sign-in, register (which also sends the verification email), the anonymous guest
+start and linking a guest to an email and password (same uid, then the verification email),
 password reset, re-authentication, profile and email changes, sign-out, and the
 account-wide Firestore work: `fetchData` pages through the user's vices and activities for
 export, from the server so that offline it fails instead of returning a partial cache (`lib/account/export.dart` builds the CSV and JSON; `exportShareProvider` hands them
-to the share sheet), and `deleteAccount` re-authenticates, deletes every owned document in
-batches of 500, then the Auth user; a failure after the first batch is a
-`DeletionIncompleteException`, and any other failure removed nothing. Sign-out and deletion then `terminate()` Firestore and
+to the share sheet), and `deleteAccount` re-authenticates (a guest has no password, so it skips that), deletes every
+owned document in batches of 500, then the Auth user; a failure after the first batch is a
+`DeletionIncompleteException`, and any other failure removed nothing. A guest's sign-out is that deletion (Jack,
+2026-11-06): nothing could sign back in to the guest's uid, so its documents would otherwise stay on the server for
+good. Offline it fails before removing anything, and the guest stays signed in. Sign-out and deletion then `terminate()` Firestore and
 `clearPersistence()`; the Dart instance keeps the settings `firebase_init.dart` gave it (the
 cache, or the emulator host), and the plugin builds a fresh native instance from them on the
-next call. Sign-out first waits up to 5 s for pending writes and throws
-`UnsyncedEntriesException` rather than discard them silently. Auth error text shown to the
+next call. Sign-out and deletion first wait up to 5 s for pending writes and throw
+`UnsyncedEntriesException` rather than discard them silently or let one land after the deletion swept. Auth error text shown to the
 user comes from `authErrorMessage` (`lib/account/auth_errors.dart`), never Firebase's own
 message; the account and deletion copy lives in `lib/account/account_copy.dart`.
 
@@ -278,9 +292,10 @@ draw. A `null` value means loading; an empty list means no data. Never gate UI o
 provider's stream, so the future never resolves. Render loading and error from the watched
 `AsyncValue` instead. A `User` is a snapshot that profile updates and `reload()` never
 change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
-So Account Settings alone watches `userProfileProvider`, and calls `Account.reloadUser()` on
-opening and on app resume to pick up a verification made elsewhere; the chain stays on
-`userProvider`.
+So only screens that show the profile watch `userProfileProvider`: Account Settings, which calls
+`Account.reloadUser()` on opening and on app resume to pick up a verification made elsewhere, and Settings, through a
+`select` on the email and guest status. Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
+on guest status asks `Account.isGuest`; the chain stays on `userProvider`.
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
 page asks for 50 at a time (`ViceActivityHistoryPage.pageSize`, plus one to learn whether
@@ -288,51 +303,74 @@ older entries exist), the calendar sheet reads one calendar month for its dots (
 index), the editor listens to its one document, and Manage Data counts each
 vice's activities with a server-side `count()` aggregation, which is not live, ignores
 writes still queued on the device, and fails offline. The vice lists have no limit, and
-nothing caps how many vices a user creates; whether to add a cap is undecided (register,
+nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack, 2026-11-06; register,
 `vice-lists-are-unbounded`).
 
 **Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
 flat top-level collections joined by `viceID`: `vices`
-(`name`, `unit`, `ownerID`, `createdAt`, `archived`) and `activities` (`viceID`,
-`quantity`, `ownerID`, `createdAt`). Both carry `ownerID`, which `firestore.rules`
+(`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`) and `activities` (`viceID`,
+`quantity`, `ownerID`, `createdAt`, and the optional `amount` and `triggers`). `triggers` is a list of at most 10
+strings of 1 to 60 UTF-16 code units, each a path of node ids in the starter tree (`lib/data/trigger_tree.dart`,
+such as `work/meeting`) or a free-text label; a node's id never changes once shipped. Every read and write of it goes
+through `lib/data/activity_triggers.dart`, so sealing it (`r2-e2ee`) touches one file; the parser reads a missing
+or mistyped list as empty, the record write omits an empty list, and the export joins it with `; `. Rules cannot
+loop, so `validTriggers` in `firestore.rules` checks each of the 10 indexes. Both collections carry `ownerID`, which `firestore.rules`
 checks against the stored document on read, update and delete and against the incoming
 one on create. The rules also fix each collection's field set and types on create, allow
-updates only to `name`/`unit`/`archived` (vices) and `quantity`/`createdAt`
+updates only to `name`/`unit`/`archived`/`category` (vices) and `quantity`/`createdAt`/`amount`/`triggers`
 (activities), and validate only the changed fields on update so legacy documents
 (vices without `archived`, names over 60, zero quantities, activities whose vice is gone)
-stay readable and editable. A vice name is 1 to 60 UTF-16 code units (rules `size()`,
-Dart `String.length`); a quantity is an int of at least 1; a new activity's `viceID`
+stay readable and editable. A third collection, `summaries`, is server-written (Server side, below). A vice name is 1 to 60 UTF-16 code units (rules `size()`,
+Dart `String.length`); a quantity is an int of at least 1; an amount, when present, is any number above 0. A decimal
+typed into the Quantity field is written as `amount` with `quantity` set to it rounded up (`storedMeasure` in
+`lib/data/vice_activity.dart`), so builds that read only `quantity` still count it; a whole number is written as
+`quantity` alone, unless the entry already has an amount. Charts, totals and labels count `ViceActivity.measure`:
+the amount when present and `quantity` still equals its rounding up, else the quantity (an older build editing the
+entry changes `quantity` alone, and that edit wins). The amount is read in `ViceActivity.fromJson` and written only by
+`TrackerWrites`, so sealing it later (`r2-e2ee`) touches those two places. `parseAmount` (`lib/formats.dart`)
+reads the region's decimal mark or a point and refuses grouping. A new activity's `viceID`
 must name a vice the writer owns, checked with one `get()` (a billed read, even when
 denied). `lib/data/limits.dart` holds the form validators that mirror these. The parsers never throw:
 `lib/data/json_fields.dart` reads each field with a default for a missing or mistyped value
-(empty string, `false`, 0, the nearest int for a double, `Unit.item`, and for `createdAt` the epoch, or now
+(empty string, `false`, 0, the nearest int for a double, null for an amount that is not a positive number,
+`Unit.item`, and for `createdAt` the epoch, or now
 while the document has pending writes and its server timestamp is unresolved). A new field needs a rules change and a test.
 
-**Sealed fields** (`r2-e2ee`). A vice may instead hold its content fields (`name`, `unit`, and every later vice
-content field, such as a category) in one `sealed` field: bytes, the envelope of `lib/crypto/sealer.dart`
-(`version | nonce | ciphertext | tag` around JSON padded to 64/256/1024/4096 bytes), with the document path as
-associated data, so only the user's key opens it and only on that document. Activities keep `quantity`, a decimal
-amount, `createdAt`, `viceID` and `ownerID` plaintext (Jack, 2026-11-06: a server job may aggregate amounts); their
-later content fields (triggers) go in an activity's `sealed`. The field lists live in `contentFields`
-(`lib/data/sealed.dart`) and in the rules' `sealedAlone` calls, and a new content field joins both. Vices'
-`ownerID`, `createdAt` and `archived` stay plaintext, so every query, index and `count()` works unchanged. The rules
-accept either shape on create, never content beside `sealed`, bound `sealed` to bytes of 30 to 4125, refuse
-removing it, and let an update convert a plaintext vice by setting `sealed` and deleting the plaintext fields (a
-deleted field is an affected key). They cannot read a sealed name, so for sealed vices `lib/data/limits.dart` is
-the only guard. `lib/data/sealed.dart` holds `FieldSealer` (its one implementation is
-`lib/crypto/journal_field_sealer.dart`), `sealerProvider` (null while no key exists or while `e2eeEnabled` in
-`lib/crypto/e2ee_enabled.dart` is false, and then every write stays plaintext), and `SealedOpener`, which each query
-provider runs over its snapshots (`asyncMap`) and the export over what it reads. It never throws: a document that
-will not open parses with `locked` set, a placeholder name and default content, and is reported once per listener.
-`TrackerWrites` seals when it has a sealer: an update reseals the whole content (so `updateVice` takes the `Vice`,
-and refuses a locked one), and `SentWrite.fields` is then empty, since the envelope does not exist yet when the
-write is handed back. Tests override `sealerProvider` with `test/fake_sealer.dart`, the real envelope under a fixed
-key. The first-launch sealing (`lib/crypto/plaintext_migrator.dart`) uses the same conversion: it
+**Sealed fields** (`r2-e2ee`). A vice may instead hold its content fields (`name`, `unit`, `category`) in one
+`sealed` field: bytes, the envelope of `lib/crypto/sealer.dart` (`version | nonce | ciphertext | tag` around JSON
+padded to 64/256/1024/4096 bytes), with the document path as associated data, so only the user's key opens it and
+only on that document. An activity seals only its `triggers`; `quantity`, `amount`, `createdAt`, `viceID` and
+`ownerID` stay plaintext (Jack, 2026-11-06: a server job aggregates amounts). The field lists live in
+`contentFields` (`lib/data/sealed.dart`) and in the rules' `sealedAlone` and `changedContent` calls, and a new
+content field joins both. Vices' `ownerID`, `createdAt` and `archived` stay plaintext, so every query, index and
+`count()` works unchanged. The rules accept either shape on create, never content beside `sealed`, bound `sealed`
+to bytes of 30 to 4125, refuse removing it, and let an update convert a plaintext document by setting `sealed` and
+deleting the plaintext fields (a deleted field is an affected key). They cannot read sealed content, so for sealed
+documents `lib/data/limits.dart` is the only guard. `lib/data/sealed.dart` holds `FieldSealer` (its one
+implementation is `lib/crypto/journal_field_sealer.dart`), `sealerProvider` (null while no key exists or while
+`e2eeEnabled` in `lib/crypto/e2ee_enabled.dart` is false, and then every write stays plaintext), and
+`SealedOpener`, which each query provider runs over its snapshots (`asyncMap`) and the export over what it reads.
+It never throws: a document that will not open parses with `locked` set, a placeholder name and default content,
+and is reported once per listener. `TrackerWrites` seals when it has a sealer: a vice update reseals the whole
+content (so `updateVice` takes the `Vice`, and refuses a locked one), an activity is sealed on create even with no
+triggers, and an activity update reseals only when it changes the triggers (the editor never sends a locked entry's
+triggers). A locked vice counts as `categoryStored`, and `fillViceCategory` leaves a sealed vice alone.
+`SentWrite.fields` then holds only the plaintext fields, since the envelope does not exist yet when the write is
+handed back. Tests override `sealerProvider` with `test/fake_sealer.dart`, the real envelope under a fixed key.
+The first-launch sealing (`lib/crypto/plaintext_migrator.dart`) uses the same conversion: it
 pages each collection with content fields from the server and seals every document without `sealed`, run once per
 uid and app version once `sealerProvider` has a key and `offlineProvider` says online; a document that already has
-`sealed` is skipped, so a run cut short is finished by the next. `Unit` (`lib/data/unit.dart`) serializes as its enum name and
-supplies singular/plural labels for the UI. Archiving a vice hides it from recording and
+`sealed` is skipped, so a run cut short is finished by the next.
+`Unit` (`lib/data/unit.dart`) serializes as its enum name and
+supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
+Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on
+create, since app versions before it create without it. The parser reads a missing one as `other` and sets
+`Vice.categoryStored` false, and `categoryMigrationProvider` (`lib/writes/category_migration.dart`, kept alive by
+`MyApp`) writes `guessCategory(name)` to each such vice in the signed-in user's live vice list, once per vice per
+launch, through `fillViceCategory`: a transaction that writes only if the server's copy has no category, since a
+launch's first snapshot comes from the cache, which on a second device can predate a category picked elsewhere.
+Offline the transaction fails and a later snapshot or launch retries; nothing queues. Archiving a vice hides it from recording and
 from Today's dial, tallies and Log fan but keeps its history, which stays reachable: Manage Data still opens
 it and Trends lists archived habits last, marked "· archived", never as the default.
 
@@ -340,11 +378,11 @@ it and Trends lists archived habits last, marked "· archived", never as the def
 stored in its `createdAt`. Day windows and graph buckets are local midnights built with `lib/data/day.dart`
 (never `Duration(days:)`, which drifts an hour across a DST change). The zone an entry was logged in is not
 stored, so an entry near midnight can move a day when viewed in another zone; storing it would be a new activity
-field (the open `r2-data-model` call). `createdAt` is the device's clock at the moment of logging (or the time the
+field, which `r2-data-model` allows as an optional one (not built). `createdAt` is the device's clock at the moment of logging (or the time the
 user picked), not a server timestamp: a pending `FieldValue.serverTimestamp()` matches no `createdAt` range query
 until the server acknowledges it, so an entry logged offline would vanish from Today, and the server would stamp it
-with the time it synced. Whether to trade that for server time is open (register,
-`activity-timestamps-come-from-the-device-clock`).
+with the time it synced. Jack kept the device clock (`r4-server-time`, 2026-11-06); a wrong or hand-set clock places
+an entry at that time (register, `activity-timestamps-come-from-the-device-clock`).
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce
@@ -379,8 +417,8 @@ one. Habits list oldest first, as their colours are given, and Today reads `vice
 unarchived list for that, so tests override both (`habitOverrides`, `test/fakes.dart`). The Trends sheet (`TrendsSheet`,
 `lib/trends/`) is a `DraggableScrollableSheet` over Today that replaced the Graph tab: it peeks below the tallies with
 a sparkline of the chosen habit, and opens over the dial to that habit over a range (7, 30 or 90 days or a year), by
-day or by week (counted back from today, so the newest week is whole and the oldest bucket holds what is left of the
-range), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
+day or by week (counted back from today, the range rounded down to whole weeks, so 30 days shows 28 and no week is
+short), with a moving average whose length a stepper sets, the range's total, average and peak, and when in the day
 it happens. That arithmetic and the chart's axis scale and label spacing are pure functions in
 `lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Its chips list the habits in use oldest first, then
 the archived ones, so the default is never archived. It reads the range through the graph query alone (the hour
@@ -403,7 +441,20 @@ rebuilt. Both read the current day from `todayProvider`, which moves on at local
 follows it unless the user picked another day, and a log (always now) turns a past day back to today. Activity dates go through `ActivityDateField` (`lib/widgets/`), the one format,
 lock toggle, live clock and picker for the record dialog and the editor.
 
-There is no server-side logic. Tests in `test/` run without Firebase: they override providers in a
+**Server side.** One scheduled function, `monthlySummaries` (`functions/index.js`, 03:00 UTC on the 1st), writes
+`summaries/{uid}` for every user who owns a vice: `{computedAt, windowDays: 90, vices: {viceID: {typical, count}}}`,
+the median positive quantity of the user's activities over the last 90 days and how many entries it covers
+(`functions/summary.js`, the same median as `typicalQuantity` in `lib/data/dial_layout.dart`). It reads `viceID` and
+`quantity` only, never a name or unit, since `r2-e2ee` seals those and leaves amounts and times open for this. Per
+user it is one paged query on the existing (`ownerID`, `createdAt` desc) index, capped at 20,000 entries; writes go
+in batches of 400, and it deletes the summary of any uid that owns no vice (a deleted account keeps its summary until
+the next run). The rules let the owner read `summaries/{uid}` and nobody write it; the Admin SDK bypasses them.
+`habitSummaryProvider` (`lib/providers/habit_summary_provider.dart`) follows the provider chain, and
+`storedTypicalsProvider` hands Today's and Trends' `DayDial` each habit's typical, or none while it loads, fails or
+was never written; a habit without one is sized against the shown day's median. Precompute further per-user reads
+(the graph, the calendar) into documents like this one (Jack, 2026-11-06).
+
+Tests in `test/` run without Firebase: they override providers in a
 `ProviderScope` or `ProviderContainer` (`test/fakes.dart` builds models and a mocked
 `User`; `test/fake_writes.dart` is a `TrackerWrites` that records each write, for
 `trackerWritesProvider.overrideWithValue`; `test/fake_account.dart` does the same for
@@ -437,7 +488,12 @@ App Attest entitlement, which the current signing team cannot sign (HANDOVER.md)
 macOS, firebase_core configures the native default app from the bundled
 `GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
 Firebase plist for emulators" build phase (`tools/strip-firebase-plist.sh`) that moves it out
-of the bundle for flagged builds.
+of the bundle for flagged builds and sets `FirebaseCrashlyticsCollectionEnabled` false in the
+built `Info.plist`. Crashlytics has no emulator: production turns collection on and points
+`errorForwarder` (`lib/errors/report_error.dart`, where every reported error goes after the device
+log) at it, uncaught errors as fatal and caught ones as non-fatal, with the literal context and
+nothing the user typed; flagged builds turn it off and forward nothing, and each Runner's last
+build phase (`tools/crashlytics-upload-symbols.sh`) uploads dSYMs for production release builds only.
 
 ## Design
 
