@@ -153,7 +153,7 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   `test/firestore_indexes_test.dart`; no app change, so no e2e).
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED:** the three calls 1d and 1e raised (Calls waiting on Jack, below), Every call on the pitch page is picked (2026-11-06). `r7-ci` and round 5 are moot and off the
+**UNDECIDED:** round 9 on the pitch page, the three calls 1d and 1e raised (Calls waiting on Jack, below). Every earlier call on the pitch page is picked (2026-11-06). `r7-ci` and round 5 are moot and off the
 page. Other languages are still unasked.
 
 **Blocked on Jack, not decisions:** none while there is no paid Apple team and no release (Jack, 2026-11-06): App
@@ -293,12 +293,14 @@ Notes are Jack's, condensed.
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Not on the pitch page yet; each is built one way and waits on a pick.
+Round 9 on the pitch page (2026-11-07); each is built one way and waits on a pick. Recommendations, not decisions:
 
-- **Archive placement** (from 1d): Archive moved from Manage Data to a button on the habit's history page (as built).
-- **Appearance** (from 1e): Settings has a fixed "Match system" row; the theme follows the system with no light or
-  dark override (as built).
-- **Export** (from 1e): Export lives in Account Settings only; Settings has no Export row (as built).
+- **`r9-archive`** (from 1d, PR #100): Archive is a button on the habit's history page (as built). Recommend A, keep
+  it; C (a row in the habit editor) is the cheap way to match the mock-up's header.
+- **`r9-appearance`** (from 1e, PR #99): Settings has a fixed "Match system" row (as built). Recommend B, a
+  Light / Dark / Match system picker saved on the device with shared_preferences.
+- **`r9-export`** (from 1e, PR #99): Export lives in Account Settings only (as built). Recommend B, also a row in
+  Settings as the mock-up shows.
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 

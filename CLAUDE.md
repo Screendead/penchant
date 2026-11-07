@@ -294,7 +294,8 @@ provider's stream, so the future never resolves. Render loading and error from t
 change: only `userChanges()` re-emits after them, and it also fires on every token refresh.
 So only screens that show the profile watch `userProfileProvider`: Account Settings, which calls
 `Account.reloadUser()` on opening and on app resume to pick up a verification made elsewhere, and Settings, through a
-`select` on the email and guest status. Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
+`select` on the email and guest status, and Today's `guestDaysLeftProvider` (`lib/account/guest_expiry.dart`, the
+warning before Firebase's 30-day clean-up deletes a guest account). Linking a guest leaves `userProvider`'s `User` anonymous, so code deciding
 on guest status asks `Account.isGuest`; the chain stays on `userProvider`.
 
 **Query bounds.** The day and graph queries are bounded by their date window, the history
@@ -492,9 +493,9 @@ shows only offline.
 production. With it, the default app is initialized with `demo-tracker` options, Firestore
 persistence is off, Auth and Firestore point at `localhost`, and startup throws if the
 default app resolves to a non-`demo-` project. App Check is activated right after
-`initializeApp` in both modes and enforced nowhere: App Attest with the DeviceCheck
-fallback in production, the debug provider (no committed token) under the emulators, which
-ignore App Check. App Attest yields no accepted token until the Runner target carries the
+`initializeApp` in production only, with App Attest and the DeviceCheck fallback, and
+enforced nowhere; flagged builds never activate it, since the emulators check no App Check
+token (Jack, 2026-11-07). App Attest yields no accepted token until the Runner target carries the
 App Attest entitlement, which the current signing team cannot sign (HANDOVER.md). On iOS and
 macOS, firebase_core configures the native default app from the bundled
 `GoogleService-Info.plist` before Dart runs, so each platform's Runner target has a "Strip
