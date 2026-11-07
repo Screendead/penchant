@@ -12,6 +12,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/trends/trends_sheet.dart';
@@ -284,10 +285,11 @@ Finder historyTitle(String viceName) => find.descendant(
 );
 
 // The history row whose quantity is [quantity], as "3 drinks".
-Finder historyEntry(int quantity) => find.descendant(
+Finder historyEntry(num quantity) => find.descendant(
   of: historyRows,
   matching: find.byWidgetPredicate(
-    (Widget w) => w is Text && (w.data?.startsWith('$quantity ') ?? false),
+    (Widget w) =>
+        w is Text && (w.data?.startsWith('${formatCount(quantity)} ') ?? false),
   ),
 );
 
@@ -337,7 +339,7 @@ extension on Finder {
 Future<void> recordActivity(
   WidgetTester tester,
   String viceName,
-  int quantity, {
+  num quantity, {
   DateTime? at,
   List<String> triggerTaps = const <String>[],
 }) async {
@@ -380,7 +382,7 @@ Future<void> recordActivity(
       ActivityDateField.format.format(at),
     );
   }
-  await enterText(tester, 'Quantity', '$quantity');
+  await enterText(tester, 'Quantity', formatAmount(quantity));
   if (triggerTaps.isNotEmpty) {
     // Each label in [triggerTaps] is tapped in the picker in turn.
     final Finder open = find.text('What was going on? (optional)');
@@ -500,6 +502,32 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
     if (response.statusCode != HttpStatus.ok) {
       throw StateError('DELETE $uri returned ${response.statusCode}: $body');
     }
+  } finally {
+    client.close();
+  }
+}
+
+// Whether a document exists, read with the emulators' admin "owner" token so
+// it works with nobody signed in.
+Future<bool> existsBypassingRules(String collection, String documentID) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection/'
+      '$documentID',
+    );
+    final HttpClientRequest request = await client.getUrl(uri);
+    request.headers.set(HttpHeaders.authorizationHeader, 'Bearer owner');
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        return true;
+      case HttpStatus.notFound:
+        return false;
+    }
+    throw StateError('GET $uri returned ${response.statusCode}: $body');
   } finally {
     client.close();
   }

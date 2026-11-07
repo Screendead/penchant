@@ -11,6 +11,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -92,7 +93,7 @@ class _ViceActivityEditorPageState
 
   void _follow(ViceActivity activity) {
     final String dateText = dateFormat.format(activity.createdAt.toDate());
-    final String quantityText = activity.quantity.toString();
+    final String quantityText = formatAmount(activity.measure);
     if (dateController.text == storedDateText) {
       dateController.text = dateText;
     }
@@ -113,7 +114,7 @@ class _ViceActivityEditorPageState
   String _describe(Vice vice, ViceActivity activity) => describeActivity(
     vice.name,
     vice.unit,
-    activity.quantity,
+    activity.measure,
     activity.createdAt.toDate(),
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
@@ -137,17 +138,22 @@ class _ViceActivityEditorPageState
 
     // A field the user left alone may show a parser default for a legacy value
     // the rules would still accept, so only edited fields are written.
-    final Map<String, Object> changes = <String, Object>{
-      if (dateController.text != storedDateText)
-        'createdAt': dateFormat.parse(dateController.text),
-      if (quantityController.text != storedQuantityText)
-        'quantity': int.parse(quantityController.text),
-      if (editedTriggers case final List<String> picked
-          when !listEquals(picked, activity.triggers))
-        'triggers': picked,
+    final DateTime? createdAt = dateController.text != storedDateText
+        ? dateFormat.parse(dateController.text)
+        : null;
+    final StoredMeasure? measure = quantityController.text != storedQuantityText
+        ? storedMeasure(
+            parseAmount(quantityController.text)!,
+            keepAmount: activity.amount != null,
+          )
+        : null;
+    final List<String>? triggers = switch (editedTriggers) {
+      final List<String> picked when !listEquals(picked, activity.triggers) =>
+        picked,
+      _ => null,
     };
 
-    if (changes.isEmpty) {
+    if (createdAt == null && measure == null && triggers == null) {
       Navigator.of(context).pop();
       return;
     }
@@ -167,13 +173,14 @@ class _ViceActivityEditorPageState
             .read(trackerWritesProvider)
             .updateActivity(
               widget.activityID,
-              quantity: changes['quantity'] as int?,
-              createdAt: changes['createdAt'] as DateTime?,
-              triggers: changes['triggers'] as List<String>?,
+              quantity: measure?.quantity,
+              amount: measure?.amount,
+              createdAt: createdAt,
+              triggers: triggers,
             ),
         'Change not saved: ${_describe(vice, activity)}',
       );
-      if (changes['triggers'] case final List<String> picked) {
+      if (triggers case final List<String> picked) {
         freeText
             .recordUses(
               activity.ownerID,
@@ -313,13 +320,15 @@ class _ViceActivityEditorPageState
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: quantityController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Quantity',
                         suffixText: vice.unit.nameFor(1),
                       ),
                       validator: (String? value) =>
-                          quantityError(value, unchanged: activity.quantity),
+                          quantityError(value, unchanged: activity.measure),
                     ),
                     const SizedBox(height: 8),
                     Align(

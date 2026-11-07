@@ -356,7 +356,7 @@ void main() {
 
       expect(account.ops, <String>['fetchData']);
       final List<ExportFile> files = share.shared.single;
-      expect(files.first.contents, contains(',Tea,2,drink,v1,a1'));
+      expect(files.first.contents, contains(',Tea,2,,drink,v1,a1'));
       expect(files.last.contents, contains('"name": "Tea"'));
     });
 

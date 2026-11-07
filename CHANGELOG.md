@@ -12,6 +12,11 @@ pull request titles (`gh pr list --state merged`).
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
   life with more specific options inside, or your own words, which become a choice once used three times. It is
   optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.
+- Quantities can be decimals, such as 1.5 drinks or 0.25 hours, in the record dialog and the entry editor, written
+  with your region's decimal mark. Totals, charts and the CSV export (a new `amount` column) count them exactly.
+- Start without an account: the sign-in screen opens a guest journal, and Account Settings saves it to an email and
+  password later with every entry kept. Signing out of a guest journal erases it
+  from the server and the device, after a warning, and refuses offline rather than leave part of it behind.
 - Crashes and errors are reported to the developer through Firebase Crashlytics, with the error and where it
   happened, never your habits or amounts.
 - On the Mac, Cmd-1 to Cmd-9 log one of the first nine habits in Today's order, with the same Undo as the +; a Log
@@ -100,6 +105,7 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Today's sync pill no longer breaks the screen when writes settle and start again faster than its fade.
 - Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
 - The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.
 - The usage graph: weekly view counts weeks back from today, so the newest point is a whole week rather than a
