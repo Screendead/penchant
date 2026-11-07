@@ -309,6 +309,10 @@ Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar 
 
 ## For Jack to do (not decisions)
 
+- **Orphaned guest data cleanup runs as a dry run** (`dailyOrphanCleanup` in `functions/index.js`, 04:30 UTC). It
+  logs "Orphan cleanup would delete" with each uid and its document counts once two runs a day apart find the
+  account gone. After a few days of those logs look right, deleting is the one-line change
+  `DELETE_ORPHANED_DATA = true`, in its own PR.
 - **Turn on the monthly summaries function** (`functions.yml`; until then the dial uses the day's median, as
   before). In order: (1) move `screendead-vice-tracker` to the Blaze plan; (2) enable the Cloud Functions, Cloud
   Build, Artifact Registry, Cloud Scheduler, Cloud Run, Eventarc and Pub/Sub APIs; (3) grant the deploy service

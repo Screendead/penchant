@@ -1291,6 +1291,32 @@ describe('summaries', () => {
   });
 });
 
+describe('cleanup', () => {
+  const state = { candidates: [ALICE], scannedAt: createdAt };
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'cleanup/state'), state);
+    });
+  });
+
+  it('denies every client reading or listing it, signed in or not', async () => {
+    for (const db of [asAlice(), asGuest()]) {
+      await assertFails(getDoc(doc(db, 'cleanup/state')));
+      await assertFails(getDocs(collection(db, 'cleanup')));
+    }
+  });
+
+  it('denies every client creating, changing or deleting it', async () => {
+    for (const db of [asAlice(), asGuest()]) {
+      await assertFails(setDoc(doc(db, 'cleanup/state'), { candidates: [], scannedAt: createdAt }));
+      await assertFails(updateDoc(doc(db, 'cleanup/state'), { candidates: [] }));
+      await assertFails(deleteDoc(doc(db, 'cleanup/state')));
+      await assertFails(setDoc(doc(db, 'cleanup/other'), state));
+    }
+  });
+});
+
 describe('keys', () => {
   const record = (overrides = {}) => ({
     keyID: 'AAAAAAAAAAAAAAAAAAAAAA==',

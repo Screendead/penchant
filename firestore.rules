@@ -172,5 +172,11 @@ service cloud.firestore {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if false;
     }
+
+    // The orphaned guest data job's state: uids whose accounts are gone. Only
+    // its Admin SDK, which bypasses these rules, reads or writes it.
+    match /cleanup/{doc} {
+      allow read, write: if false;
+    }
   }
 }
