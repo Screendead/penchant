@@ -108,5 +108,12 @@ service cloud.firestore {
           || !('triggers' in request.resource.data)
           || validTriggers(request.resource.data.triggers));
     }
+
+    // Written only by the monthly summaries function, whose Admin SDK bypasses
+    // these rules; nobody edits a typical by hand.
+    match /summaries/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
   }
 }

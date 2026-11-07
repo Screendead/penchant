@@ -11,6 +11,7 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -211,6 +212,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       totals[e.vice.id] = totals[e.vice.id]! + e.quantity;
     }
     final bool offline = ref.watch(offlineProvider).value ?? false;
+    final Map<String, double> storedTypicals = ref.watch(
+      storedTypicalsProvider,
+    );
     final String? summary = entries == null
         ? null
         : DayDial.summary(
@@ -284,6 +288,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                             entries: entries,
                             semanticsLabel: summary,
                             offline: offline,
+                            storedTypicals: storedTypicals,
                             onBeadTap: _openEntry,
                             onSwipe: (int days) =>
                                 _selectDay(addDays(day, days)),

@@ -50,6 +50,8 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<ScaffoldMessengerState> messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +59,16 @@ class _MyAppState extends ConsumerState<MyApp> {
     final User? user = userValue.value;
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
-    // session's pages would sit over the sign-in screen.
+    // session's pages would sit over the sign-in screen. The root messenger
+    // outlives `home` too: a bar left up would offer the previous account's
+    // Undo, and one lifted over Today's log button lands off screen above the
+    // sign-in keyboard. It goes at once, not animated out.
     ref.listen<AsyncValue<User?>>(userProvider, (previous, next) {
       if (previous?.value?.uid != next.value?.uid) {
         navigatorKey.currentState?.popUntil((Route<dynamic> r) => r.isFirst);
+        messengerKey.currentState
+          ?..clearSnackBars()
+          ..removeCurrentSnackBar();
       }
     });
 
@@ -69,6 +77,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       excludeFromSemantics: true,
       child: MaterialApp(
         navigatorKey: navigatorKey,
+        scaffoldMessengerKey: messengerKey,
         title: 'Penchant',
         theme: appTheme(Brightness.light),
         darkTheme: appTheme(Brightness.dark),

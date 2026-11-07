@@ -123,8 +123,9 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    later (`r2-signin`, the part that needs no paid Apple team), onboarding with the plain-name presets (`r2-presets`
    A), the data model's decimal amount and vice category with its first-launch migrator (`r2-data-model` B), trigger
    tagging with the Areas of life tree (`r2-triggers` A), and end-to-end encryption (`r2-e2ee` A, `r2-e2ee-key` A).
-   Waiting on Jack before any build: the precomputed per-user summary that `r8-bead-size` asks for (no server code
-   exists; see the call) and Sign in with Apple (the paid team).
+   `r8-bead-size`'s monthly summary is built (PR from `feat/bead-summary-function`): `functions/` is back with one
+   scheduled function, and the dial sizes beads against its typicals; it runs only once Jack does the steps under
+   For Jack to do. Waiting on Jack before any build: Sign in with Apple (the paid team).
 5. **The rest of the register**, medium then low, one class per PR.
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
@@ -152,8 +153,7 @@ public and renamed it `Screendead/penchant` the same day; public repos run stand
   `test/firestore_indexes_test.dart`; no app change, so no e2e).
 - **Docs:** land `design/day-dial-system` (the published design system's sources) on `master`.
 
-**UNDECIDED:** the three calls 1d and 1e raised (Calls waiting on Jack, below), and the design of `r8-bead-size`'s
-precomputed summary. Every call on the pitch page is picked (2026-11-06). `r7-ci` and round 5 are moot and off the
+**UNDECIDED:** the three calls 1d and 1e raised (Calls waiting on Jack, below), Every call on the pitch page is picked (2026-11-06). `r7-ci` and round 5 are moot and off the
 page. Other languages are still unasked.
 
 **Blocked on Jack, not decisions:** none while there is no paid Apple team and no release (Jack, 2026-11-06): App
@@ -283,8 +283,10 @@ Notes are Jack's, condensed.
 - **`r8-coach`**: **don't build the "Tap Log" pill.**
 - **`r8-bead-size`**: C, **a typical amount stored per habit**, on Jack's terms: not editable, populated by a
   scheduled job each month over the last 3 months only. More generally, precompute wherever possible into a single
-  document per user, to cut reads and load times, especially for the graph and calendar. The app has no server code
-  (`functions/` was deleted by C7), so how the job runs is open (below); nothing is built until then.
+  document per user, to cut reads and load times, especially for the graph and calendar. How it runs: **a Cloud
+  Function** (Jack, 2026-11-06, over the app refreshing the document itself). Amounts and times stay unsealed under
+  `r2-e2ee` for this; names and units are sealed, so the function reads `viceID` and `quantity` only. Built in the PR
+  from `feat/bead-summary-function`.
 - **`r8-tally-target`**: **44 x 38, as built.** No work.
 - **`r8-mac-window`**: **about 1200 x 780, the split view by default**; lands with 1g.
 - **`r8-mac-keys`**: **Cmd-1 to Cmd-9 log one of the Nth habit now**, listed in the menu bar. Queued.
@@ -297,14 +299,23 @@ Not on the pitch page yet; each is built one way and waits on a pick.
 - **Appearance** (from 1e): Settings has a fixed "Match system" row; the theme follows the system with no light or
   dark override (as built).
 - **Export** (from 1e): Export lives in Account Settings only; Settings has no Export row (as built).
-- **How `r8-bead-size`'s summary is computed**: a scheduled server job needs Cloud Functions back (C7 deleted them),
-  the Blaze plan and a CI deploy path for functions, and it cannot read amounts once `r2-e2ee` seals them. The
-  smallest alternative is the app refreshing the user's summary document itself on launch when it is over a month
-  old (no UI, so not editable; the rules fix its fields).
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 
 ## For Jack to do (not decisions)
+
+- **Turn on the monthly summaries function** (`functions.yml`; until then the dial uses the day's median, as
+  before). In order: (1) move `screendead-vice-tracker` to the Blaze plan; (2) enable the Cloud Functions, Cloud
+  Build, Artifact Registry, Cloud Scheduler, Cloud Run, Eventarc and Pub/Sub APIs; (3) grant the deploy service
+  account (now Firebase Rules Admin, Cloud Datastore Index Admin, Service Usage Consumer) Cloud Functions Admin
+  (`roles/cloudfunctions.admin`) and Service Account User (`roles/iam.serviceAccountUser`) on the default compute
+  service account, plus Cloud Scheduler Admin (`roles/cloudscheduler.admin`) and Artifact Registry Administrator
+  (`roles/artifactregistry.admin`, for the CLI's image cleanup policy; or run
+  `firebase functions:artifacts:setpolicy` once yourself); (4) set the repository variable `DEPLOY_FUNCTIONS=true`;
+  (5) re-run the Cloud Functions workflow on `master`. The first deploy names any permission still missing. The
+  function's runtime account (the default compute service account) needs Firestore read and write
+  (`roles/datastore.user`), which it holds unless it was trimmed. To fill the summaries at once rather than on the
+  1st, use Cloud Scheduler's "Force run" on the job.
 
 Jack reported the page's list done on 2026-11-06. Checked from here: Dependabot PRs #22 and #42 are closed, and the
 CLI's configstore no longer maps the main checkout to production (`firebase use --clear` done). The console steps
