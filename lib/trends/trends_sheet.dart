@@ -185,8 +185,8 @@ class TrendsSheet extends ConsumerStatefulWidget {
             '${stepDays == 1 ? 'days' : 'weeks'}'
       : 'No average line';
 
-  static String peekLabel(Vice vice, int rangeDays, double? perDay) =>
-      '$title. ${vice.name}, last ${formatCount(rangeDays)} days'
+  static String peekLabel(Vice vice, int days, double? perDay) =>
+      '$title. ${vice.name}, last ${formatCount(days)} days'
       '${perDay == null ? '' : ': ${formatAverage(perDay)} ${vice.unit.plural} a day'}';
 
   // In the pane a tapped day moves Today's dial beside it.
@@ -392,6 +392,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             marks: widget.marks,
             vice: vice,
             mark: mark,
+            rangeDays: rangeDays,
             range: range,
             series: series,
             error: error,
@@ -569,7 +570,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                           child: _Peek(
                             vice: vice,
                             mark: mark,
-                            rangeDays: rangeDays,
+                            days: range.days,
                             series: series,
                             focusNode: _peekFocus,
                             onOpen: _open,
@@ -607,7 +608,7 @@ class _Peek extends StatelessWidget {
   const _Peek({
     required this.vice,
     required this.mark,
-    required this.rangeDays,
+    required this.days,
     required this.series,
     required this.focusNode,
     required this.onOpen,
@@ -615,7 +616,7 @@ class _Peek extends StatelessWidget {
 
   final Vice vice;
   final HabitMark mark;
-  final int rangeDays;
+  final int days;
   final TrendsSeries? series;
   final FocusNode focusNode;
   final VoidCallback onOpen;
@@ -625,7 +626,7 @@ class _Peek extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final DialType type = DialType.of(context);
     final TrendsSeries? s = series;
-    final double? perDay = s == null ? null : s.stats.total / s.range.days;
+    final double? perDay = s == null ? null : s.stats.total / days;
     final TextStyle small = DialTypeScale.bodyS.copyWith(
       color: colors.muted,
       fontSize: 12,
@@ -634,7 +635,7 @@ class _Peek extends StatelessWidget {
 
     return MergeSemantics(
       child: Semantics(
-        label: TrendsSheet.peekLabel(vice, rangeDays, perDay),
+        label: TrendsSheet.peekLabel(vice, days, perDay),
         hint: TrendsSheet.openHint,
         child: TextButton(
           focusNode: focusNode,
@@ -675,7 +676,7 @@ class _Peek extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${vice.name} · last ${formatCount(rangeDays)} days',
+                            '${vice.name} · last ${formatCount(days)} days',
                             style: small.copyWith(fontSize: 12.5),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -825,6 +826,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.marks,
     required this.vice,
     required this.mark,
+    required this.rangeDays,
     required this.range,
     required this.series,
     required this.error,
@@ -845,6 +847,8 @@ class _TrendsPanel extends StatelessWidget {
   final Map<String, HabitMark> marks;
   final Vice vice;
   final HabitMark mark;
+  // The range picked, which [range] may round down to whole weeks.
+  final int rangeDays;
   final UsageRange range;
   final TrendsSeries? series;
   final Object? error;
@@ -986,7 +990,7 @@ class _TrendsPanel extends StatelessWidget {
                     spoken: TrendsSheet.rangeSpoken(days),
                   ),
               ],
-              selected: range.days,
+              selected: rangeDays,
               onChanged: onRange,
             ),
             PillSegments<int>(
@@ -1071,8 +1075,8 @@ class _Stats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int total = stats.total.round();
-    final int peak = totals[stats.peakIndex].round();
+    final double total = stats.total;
+    final double peak = totals[stats.peakIndex];
     final bool daily = range.stepDays == 1;
     final DateTime peakStart = range.bucketStart(stats.peakIndex);
     final List<Widget> tiles = <Widget>[

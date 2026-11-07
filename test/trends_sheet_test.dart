@@ -401,24 +401,26 @@ void main() {
   });
 
   group('weekly', () {
-    testWidgets('counts weeks back from today, keeps every day of the range, '
-        'and starts at a four-week average', (WidgetTester tester) async {
+    testWidgets('counts weeks back from today, rounds the range down to '
+        'whole weeks, and starts at a four-week average', (
+      WidgetTester tester,
+    ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       _usePhone(tester);
       await _pump(tester, <ViceActivity>[
         _daysAgo(0, 2),
         _daysAgo(6, 3),
         _daysAgo(7, 4),
-        // In the two days left over before the four whole weeks.
+        // In the two days of 30 left out of the four whole weeks.
         _daysAgo(29, 1),
       ]);
       await _tapText(tester, 'Week');
 
-      expect(_totals(tester), <double>[1, 0, 0, 4, 5]);
+      expect(_totals(tester), <double>[0, 0, 4, 5]);
       final String newestWeek = formatShortDay(addDays(_today, -6));
       expect(
         find.bySemanticsLabel(
-          'Weekly totals of Coffee over the last 30 days: 10 drinks in all. '
+          'Weekly totals of Coffee over the last 28 days: 9 drinks in all. '
           'The most was 5 drinks in the week of $newestWeek. '
           'Shown with a 4-week average.',
         ),
@@ -432,6 +434,12 @@ void main() {
         contains(newestWeek),
       );
       expect(find.text(TrendsSheet.hint(7)), findsOneWidget);
+      expect(find.text('last 28 days'), findsOneWidget);
+      expect(find.text('Coffee · last 28 days'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('30 days')),
+        isSemantics(label: '30 days', isSelected: true),
+      );
       semantics.dispose();
     });
 

@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart';
@@ -158,5 +160,65 @@ void main() {
         await storedActivities('Coffee');
     expect(stored, hasLength(1));
     expect(stored.single.data()['quantity'], 5);
+  });
+
+  testWidgets('a decimal quantity is stored as its amount, totals count it '
+      'exactly, and the editor changes it', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await register(tester, 'e2e-amount@example.com');
+    await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
+
+    await recordActivity(tester, 'Coffee', 1.5);
+    await recordActivity(tester, 'Coffee', 2);
+    await expectTallies(tester, <String>{
+      'Coffee (${Unit.drink.label(3.5)})',
+      'Tea (${Unit.drink.label(0)})',
+    });
+    await _waitForEmulator();
+    final List<Map<String, dynamic>> recorded = <Map<String, dynamic>>[
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
+          in await storedActivities('Coffee'))
+        doc.data(),
+    ];
+    expect(recorded, hasLength(2));
+    final Map<String, dynamic> decimal = recorded.singleWhere(
+      (Map<String, dynamic> a) => a.containsKey('amount'),
+    );
+    expect(decimal['amount'], 1.5);
+    expect(decimal['quantity'], 2);
+    expect(
+      recorded.singleWhere(
+        (Map<String, dynamic> a) => a != decimal,
+      )['quantity'],
+      2,
+    );
+
+    await openFromMenu(tester, Homepage.habitsItem);
+    await tap(tester, find.text('Coffee'));
+    await pumpUntil(tester, historyTitle('Coffee'));
+    await tap(tester, historyEntry(1.5));
+    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+    expect(
+      tester
+          .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
+          .controller!
+          .text,
+      formatAmount(1.5),
+    );
+    await enterText(tester, 'Quantity', formatAmount(2.25));
+    await tap(tester, find.widgetWithText(TextButton, 'Save'));
+    await pumpUntil(
+      tester,
+      find.byType(ViceActivityEditorPage),
+      present: false,
+    );
+    await pumpUntil(tester, historyEntry(2.25));
+
+    await _waitForEmulator();
+    final Map<String, dynamic> edited = (await storedActivities('Coffee'))
+        .map((QueryDocumentSnapshot<Map<String, dynamic>> d) => d.data())
+        .singleWhere((Map<String, dynamic> a) => a.containsKey('amount'));
+    expect(edited['amount'], 2.25);
+    expect(edited['quantity'], 3);
   });
 }

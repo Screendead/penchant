@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
+import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/penchant_mark.dart';
 import 'package:tracker/widgets/sync_status.dart';
 
-class Homepage extends StatefulWidget {
+class Homepage extends ConsumerStatefulWidget {
   const Homepage({super.key});
 
   static const String menuLabel = 'Penchant menu';
@@ -19,16 +23,43 @@ class Homepage extends StatefulWidget {
   static const String settingsItem = 'Settings';
 
   @override
-  State<Homepage> createState() => _HomepageState();
+  ConsumerState<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends ConsumerState<Homepage> {
   // Today's day and the Trends selection outlive their widgets here, as when
   // a load error replaces them. It lives and dies with the signed-in session.
   final PageStorageBucket tabState = PageStorageBucket();
 
+  // Decided by the first list that loads, and kept while the flow runs: its
+  // first step creates habits, which would otherwise swap Today in under it.
+  bool? onboarding;
+
   @override
   Widget build(BuildContext context) {
+    if (onboarding == null) {
+      final List<Vice>? all = ref.watch(viceListProvider).value;
+      final List<Vice>? unarchived = ref
+          .watch(unarchivedViceListProvider)
+          .value;
+      // offlineProvider is false only once the server has answered the
+      // vices query. Before that an empty list can be an empty cache (a
+      // reinstall keeps the iOS session in the keychain), and an existing
+      // account would be offered presets it may already have.
+      final bool serverAnswered = ref.watch(offlineProvider).value == false;
+      if (all != null && unarchived != null) {
+        if (all.isNotEmpty) {
+          // An account whose habits are all archived is not new.
+          onboarding = false;
+        } else if (serverAnswered) {
+          onboarding = true;
+        }
+      }
+    }
+    if (onboarding ?? false) {
+      return Onboarding(onDone: () => setState(() => onboarding = false));
+    }
+
     final double top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
@@ -261,7 +292,7 @@ class SyncFooter extends ConsumerWidget {
 }
 
 // It shows nothing until the app knows.
-class SyncPill extends ConsumerWidget {
+class SyncPill extends ConsumerStatefulWidget {
   const SyncPill({super.key});
 
   static const String synced = 'Synced';
@@ -275,16 +306,31 @@ class SyncPill extends ConsumerWidget {
       : DialGlyph.cloudOk;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SyncPill> createState() => _SyncPillState();
+}
+
+class _SyncPillState extends ConsumerState<SyncPill> {
+  // AnimatedSwitcher keeps each outgoing label until its fade ends and
+  // only drops one keyed like the incoming label, so a label that comes back
+  // twice within the fade would put two children with one key in its Stack.
+  String? _label;
+  int _appearance = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final bool offline = ref.watch(offlineProvider).value ?? false;
     final SyncState state = ref.watch(syncStatusProvider).state;
     final String? label = offline
-        ? offlineLabel
+        ? SyncPill.offlineLabel
         : switch (state) {
             SyncState.unknown => null,
-            SyncState.pending => syncing,
-            SyncState.synced => synced,
+            SyncState.pending => SyncPill.syncing,
+            SyncState.synced => SyncPill.synced,
           };
+    if (label != _label) {
+      _label = label;
+      _appearance++;
+    }
     final DialColors colors = DialColors.of(context);
 
     return AnimatedSwitcher(
@@ -292,7 +338,7 @@ class SyncPill extends ConsumerWidget {
       child: label == null
           ? const SizedBox.shrink()
           : Semantics(
-              key: ValueKey<String>(label),
+              key: ValueKey<(String, int)>((label, _appearance)),
               container: true,
               child: Container(
                 height: 32,
@@ -302,7 +348,7 @@ class SyncPill extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     StrokeIcon(
-                      glyph(state, offline: offline),
+                      SyncPill.glyph(state, offline: offline),
                       size: 18,
                       color: colors.muted,
                     ),

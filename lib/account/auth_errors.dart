@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tracker/account/account.dart';
 
 // Firebase's own messages can say whether an address has an account, so none
 // reaches the screen; a wrong address and a wrong password read the same.
@@ -13,12 +14,17 @@ String authErrorMessage(Object error) {
       case 'invalid-email':
         return 'That email address is not valid.';
       case 'email-already-in-use':
+      case 'credential-already-in-use':
         return 'That email already has an account. Sign in, or reset its '
             'password.';
       case 'weak-password':
         return 'Choose a longer password.';
       case 'user-disabled':
         return 'This account is disabled.';
+      case 'provider-already-linked':
+        return 'This journal already has an email and password.';
+      case 'operation-not-allowed':
+        return 'That way of signing in is not available yet.';
       case 'requires-recent-login':
         return 'Sign in again, then retry.';
       case 'too-many-requests':
@@ -26,6 +32,10 @@ String authErrorMessage(Object error) {
       case 'network-request-failed':
         return 'No connection. Check your internet and try again.';
     }
+  }
+  if (error is UnsyncedEntriesException) {
+    return 'Some entries have not reached the server yet. Connect to the '
+        'internet and try again.';
   }
   if (error is FirebaseException && error.code == 'unavailable') {
     return 'No connection. Check your internet and try again.';

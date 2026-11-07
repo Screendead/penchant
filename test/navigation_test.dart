@@ -63,15 +63,13 @@ void main() {
   });
 
   group('the home screen', () {
-    Future<void> pumpHome(
-      WidgetTester tester, [
-      List<Vice> vices = const <Vice>[],
-    ]) async {
+    // One habit by default: an account with none gets the onboarding.
+    Future<void> pumpHome(WidgetTester tester, [List<Vice>? vices]) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-            ...habitOverrides(vices),
+            ...habitOverrides(vices ?? <Vice>[fakeVice('coffee')]),
             viceActivityDayProvider.overrideWith(
               (ref, DateTime day) => AsyncData(<ViceActivity>[]),
             ),

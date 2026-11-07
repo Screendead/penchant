@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/register.dart';
 import 'package:tracker/sign_in.dart';
+import 'package:tracker/widgets/auth_parts.dart';
 import 'package:tracker/widgets/penchant_mark.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -14,6 +20,7 @@ class Authenticate extends StatefulWidget {
 
   static const Key signInTab = Key('auth-sign-in');
   static const Key registerTab = Key('auth-register');
+  static const Key guestStart = Key('auth-guest');
 
   @override
   State<Authenticate> createState() => _AuthenticateState();
@@ -97,6 +104,7 @@ class _AuthenticateState extends State<Authenticate> {
                                     ? const Register(key: ValueKey<bool>(true))
                                     : const SignIn(key: ValueKey<bool>(false)),
                               ),
+                              const _GuestStart(),
                             ],
                           ),
                           const SizedBox(height: DialSpace.xl),
@@ -259,6 +267,78 @@ class _SegmentState extends State<_Segment> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Signs in anonymously; main.dart then shows the journal as for any user.
+class _GuestStart extends ConsumerStatefulWidget {
+  const _GuestStart();
+
+  @override
+  ConsumerState<_GuestStart> createState() => _GuestStartState();
+}
+
+class _GuestStartState extends ConsumerState<_GuestStart> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _start() async {
+    if (_busy) {
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(accountProvider).startAsGuest();
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while starting without an account');
+      if (mounted) {
+        setState(
+          () => _error = AccountCopy.startAsGuestFailed(authErrorMessage(e)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const SizedBox(height: DialSpace.m),
+        OutlinedButton(
+          key: Authenticate.guestStart,
+          onPressed: _busy ? null : _start,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(DialSize.minTapTarget),
+            foregroundColor: scheme.onSurface,
+            side: BorderSide(color: scheme.outline),
+            textStyle: const TextStyle(
+              fontFamily: DialFonts.text,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+          ),
+          child: _busy
+              ? Semantics(
+                  label: AccountCopy.startAsGuest,
+                  child: const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : const Text(AccountCopy.startAsGuest),
+        ),
+        if (_error != null) AuthErrorPill(_error!),
+      ],
     );
   }
 }

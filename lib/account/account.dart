@@ -17,8 +17,9 @@ class AccountData {
   final List<StoredDocument> activities;
 }
 
-// Thrown by signOut when entries recorded on this device have not reached the
-// server: clearing the cache would discard them.
+// Thrown by signOut and deleteAccount when entries recorded on this device
+// have not reached the server: clearing the cache would discard them, and a
+// deletion could miss them.
 class UnsyncedEntriesException implements Exception {
   const UnsyncedEntriesException();
 }
@@ -79,6 +80,33 @@ class Account {
       // The account exists by now; Account Settings offers to resend.
       _report(e, stack, 'sending the verification email');
     }
+  }
+
+  // A guest's uid owns its data like any other, until it is linked to an
+  // email and password or lost by signing out.
+  Future<void> startAsGuest() => _auth.signInAnonymously();
+
+  // Read live: the User a provider holds is a snapshot that linking leaves
+  // anonymous.
+  bool get isGuest => _auth.currentUser?.isAnonymous ?? false;
+
+  // Linking keeps the uid, so the guest's entries stay theirs with nothing
+  // copied.
+  Future<void> linkEmail({
+    required String email,
+    required String password,
+  }) async {
+    final UserCredential credential = await _signedInUser().linkWithCredential(
+      EmailAuthProvider.credential(email: email, password: password),
+    );
+    try {
+      await credential.user?.sendEmailVerification();
+    } on FirebaseAuthException catch (e, stack) {
+      _report(e, stack, 'sending the verification email');
+    }
+    // userChanges re-emits on a reload, so screens see the email and the
+    // account as no longer anonymous.
+    await reloadUser();
   }
 
   Future<void> sendPasswordResetEmail(String email) {
@@ -148,9 +176,21 @@ class Account {
 
   // Data goes before the Auth user: Firebase never reissues a uid, so
   // documents left behind a deleted user could never be reached again.
-  Future<void> deleteAccount({required String password}) async {
-    await reauthenticate(password);
+  // A guest has no password to confirm with, so [password] is null for one.
+  Future<void> deleteAccount({String? password}) async {
+    if (password != null) {
+      await reauthenticate(password);
+    } else if (!_signedInUser().isAnonymous) {
+      throw StateError('Deleting an account with an email needs its password.');
+    }
     final User user = _signedInUser();
+    // An entry still queued here could reach the server after the sweep below
+    // and outlive its owner. Offline this refuses before anything is removed.
+    try {
+      await _firestore.waitForPendingWrites().timeout(_syncWait);
+    } on TimeoutException {
+      throw const UnsyncedEntriesException();
+    }
     bool removing = false;
     try {
       for (final String collection in _ownedCollections) {
@@ -160,7 +200,7 @@ class Account {
           beforeCommit: () => removing = true,
         );
       }
-      await user.delete();
+      await _deleteUser(user);
     } catch (e, stack) {
       if (!removing) {
         rethrow;
@@ -168,6 +208,21 @@ class Account {
       Error.throwWithStackTrace(DeletionIncompleteException(e), stack);
     }
     await _clearLocalCache();
+  }
+
+  // A guest cannot re-authenticate, so a guest whose sign-in is too old to
+  // delete is signed out instead: its data is gone and nothing can reach the
+  // empty account again.
+  Future<void> _deleteUser(User user) async {
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e, stack) {
+      if (!user.isAnonymous || e.code != 'requires-recent-login') {
+        rethrow;
+      }
+      _report(e, stack, 'deleting a guest whose sign-in is old');
+      await _auth.signOut();
+    }
   }
 
   // Equality on ownerID ordered by document id is served by the automatic

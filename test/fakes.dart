@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
@@ -16,12 +17,14 @@ class FakeUser extends Mock implements User {
     String? displayName,
     String? photoURL,
     bool emailVerified = false,
+    bool isAnonymous = false,
   }) {
     when(() => this.uid).thenReturn(uid);
     when(() => this.email).thenReturn(email);
     when(() => this.displayName).thenReturn(displayName);
     when(() => this.photoURL).thenReturn(photoURL);
     when(() => this.emailVerified).thenReturn(emailVerified);
+    when(() => this.isAnonymous).thenReturn(isAnonymous);
   }
 }
 
@@ -36,18 +39,29 @@ Vice fakeVice(String id, {String? name}) => Vice(
   archived: false,
 );
 
-ViceActivity fakeActivity(String viceID, int quantity, DateTime at) =>
-    ViceActivity(
-      id: '$viceID-$quantity-${at.toIso8601String()}',
-      viceID: viceID,
-      quantity: quantity,
-      ownerID: ownerID,
-      createdAt: Timestamp.fromDate(at),
-    );
+ViceActivity fakeActivity(
+  String viceID,
+  int quantity,
+  DateTime at, {
+  double? amount,
+  List<String> triggers = const <String>[],
+}) => ViceActivity(
+  id: '$viceID-$quantity-${at.toIso8601String()}',
+  viceID: viceID,
+  quantity: quantity,
+  amount: amount,
+  ownerID: ownerID,
+  createdAt: Timestamp.fromDate(at),
+  triggers: triggers,
+);
 
 // Today colours each habit by its place among all of them, archived ones
 // included, so it reads the full list as well as the unarchived one.
-List<Override> habitOverrides(List<Vice> vices) => <Override>[
+List<Override> habitOverrides(
+  List<Vice> vices, {
+  Map<String, double> storedTypicals = const <String, double>{},
+}) => <Override>[
+  storedTypicalsProvider.overrideWithValue(storedTypicals),
   viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
   unarchivedViceListProvider.overrideWithValue(
     AsyncData<List<Vice>>(<Vice>[

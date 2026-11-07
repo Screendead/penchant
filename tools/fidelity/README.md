@@ -14,3 +14,8 @@ Today, rendered by the app and by the Day Dial mock-up in the same states, side 
    left.
 
 The top 47 pt differ by construction: the mock-up draws its own status bar and Dynamic Island.
+
+The onboarding has no Day Dial mock-up; it is compared with the stills it was picked from
+(`mockup/onboarding-presets`, `docs/pitch/mockups/onboarding-presets/plain-*.png`, Material-styled, dark only):
+`flutter test test/fidelity_onboarding_render_test.dart --dart-define=RENDER_DIR=<root>/app`, each still copied to
+`<root>/mock/mock-<step>-<theme>.png` for both themes, then `pair.py`. The pairs are `fidelity/onboarding-*.png`.

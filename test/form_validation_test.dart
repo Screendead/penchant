@@ -61,16 +61,24 @@ void main() {
       expect(quantityError('250'), isNull);
     });
 
+    test('accepts a positive decimal', () {
+      expect(quantityError('1.5'), isNull);
+      expect(quantityError('0.25'), isNull);
+      expect(quantityError('.5'), isNull);
+    });
+
     test('refuses zero, negatives, and non-numbers', () {
-      expect(quantityError('0'), 'Please enter at least 1');
-      expect(quantityError('-3'), 'Please enter at least 1');
-      expect(quantityError('1.5'), 'Please enter a valid number');
+      expect(quantityError('0'), 'Please enter more than 0');
+      expect(quantityError('0.0'), 'Please enter more than 0');
+      expect(quantityError('-3'), 'Please enter more than 0');
+      expect(quantityError('1.2.3'), 'Please enter a valid number');
+      expect(quantityError('abc'), 'Please enter a valid number');
       expect(quantityError(''), 'Please enter a quantity');
     });
 
     test("accepts a legacy activity's unchanged out-of-range quantity", () {
       expect(quantityError('0', unchanged: 0), isNull);
-      expect(quantityError('-1', unchanged: 0), 'Please enter at least 1');
+      expect(quantityError('-1', unchanged: 0), 'Please enter more than 0');
     });
   });
 
@@ -101,7 +109,7 @@ void main() {
     await tester.tap(find.text('Record'));
     await tester.pump();
 
-    expect(find.text('Please enter at least 1'), findsOneWidget);
+    expect(find.text('Please enter more than 0'), findsOneWidget);
   });
 
   testWidgets('the record dialog keeps its vice when the list re-emits', (
@@ -159,7 +167,7 @@ void main() {
       await tester.tap(find.text('Save'));
       await tester.pump();
 
-      expect(find.text('Please enter at least 1'), findsOneWidget);
+      expect(find.text('Please enter more than 0'), findsOneWidget);
     });
 
     testWidgets("lets a legacy zero quantity stand while other fields change", (

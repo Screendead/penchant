@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Settings;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +12,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/onboarding/onboarding.dart';
+import 'package:tracker/onboarding/presets.dart';
+import 'package:tracker/settings.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
@@ -21,6 +25,7 @@ import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/trigger_picker.dart';
 
 const Duration timeout = Duration(seconds: 30);
 
@@ -50,7 +55,14 @@ class _FramesWhileHidden with WidgetsBindingObserver {
   }
 }
 
+bool _bindingReady = false;
+
+// all_test.dart calls every file's main() in one process.
 void ensureE2EBinding() {
+  if (_bindingReady) {
+    return;
+  }
+  _bindingReady = true;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
     _FramesWhileHidden(),
   );
@@ -150,9 +162,24 @@ Future<void> pumpFor(WidgetTester tester, Duration duration) async {
 
 // Waits for the target to be hit-testable as well as present, so taps wait out
 // route transitions and overlays animating away. Only the hit-testable match is
-// tapped: a page pushed over Today leaves Today's tally names in the tree.
+// tapped: a page pushed over Today leaves Today's tally names in the tree. A
+// target in a Scrollable is scrolled into view first: the keyboard can push a
+// form's button below the fold, where it is on screen but not hit-testable,
+// and may still be rising when the wait starts, so the scroll is retried.
 Future<void> tap(WidgetTester tester, Finder finder) async {
-  await pumpUntil(tester, finder.hitTestable());
+  await pumpUntilTrue(tester, () {
+    if (finder.hitTestable().evaluate().isNotEmpty) {
+      return true;
+    }
+    for (final Element e in finder.evaluate()) {
+      if (Scrollable.maybeOf(e) != null) {
+        // With no duration the scroll jumps; the next pump lays it out.
+        unawaited(Scrollable.ensureVisible(e));
+        break;
+      }
+    }
+    return false;
+  }, () => '${finder.hitTestable()} to appear');
   await tester.tap(finder.hitTestable());
   await tester.pump();
 }
@@ -186,23 +213,64 @@ Future<void> screenshot(WidgetTester tester, String name) async {
   }
 }
 
-Future<void> register(WidgetTester tester, String email) async {
+// A new account starts on the onboarding, which this skips unless told not
+// to: a test that drives it, or one whose habit list fails to load, which
+// shows none.
+Future<void> register(
+  WidgetTester tester,
+  String email, {
+  bool skipOnboarding = true,
+}) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
   await tap(tester, find.byKey(Authenticate.registerTab));
+  // The tabs cross-fade, so both forms' Email fields are in the tree until
+  // sign-in's has gone.
+  final Finder emailField = find.widgetWithText(TextFormField, 'Email');
+  await pumpUntilTrue(
+    tester,
+    () =>
+        emailField.evaluate().length == 1 &&
+        find
+            .widgetWithText(TextFormField, 'Confirm password')
+            .evaluate()
+            .isNotEmpty,
+    () => 'the register form alone',
+  );
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', 'Passw0rdE2E');
   await enterText(tester, 'Confirm password', 'Passw0rdE2E');
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Create account'));
+  // The keyboard and the password checklist can push the button below the
+  // fold; tap scrolls it back.
+  final Finder createAccount = find.widgetWithText(
+    ElevatedButton,
+    'Create account',
+  );
+  await tap(tester, createAccount);
   await pumpUntil(tester, find.byType(Homepage));
+  if (skipOnboarding) {
+    await skipTheOnboarding(tester);
+  }
+}
+
+// Skip, then the disclaimer, to the empty Today.
+Future<void> skipTheOnboarding(WidgetTester tester) async {
+  await pumpUntil(tester, find.text(OnboardingCopy.introHeadline));
+  await tap(tester, find.byKey(Onboarding.skipKey));
+  await pumpUntil(tester, find.text(OnboardingCopy.acknowledge));
+  await tap(tester, find.text(OnboardingCopy.acknowledge));
+  await pumpUntil(tester, find.byType(Onboarding), present: false);
 }
 
 // Opens a page from the Penchant menu: Homepage.habitsItem or settingsItem.
+// Waits out the push: until it ends, Today's habit names under the sliding
+// page are hit-testable, so a tap on a name lands on Today instead.
 Future<void> openFromMenu(WidgetTester tester, String item) async {
   await tap(tester, find.byKey(Homepage.menuKey));
   await pumpUntil(tester, find.text(item).hitTestable());
   await tap(tester, find.text(item));
+  await pumpUntilRouteSettled(tester, find.byTooltip('Back'));
 }
 
 // Three vices by default.
@@ -239,10 +307,11 @@ Finder historyTitle(String viceName) => find.descendant(
 );
 
 // The history row whose quantity is [quantity], as "3 drinks".
-Finder historyEntry(int quantity) => find.descendant(
+Finder historyEntry(num quantity) => find.descendant(
   of: historyRows,
   matching: find.byWidgetPredicate(
-    (Widget w) => w is Text && (w.data?.startsWith('$quantity ') ?? false),
+    (Widget w) =>
+        w is Text && (w.data?.startsWith('${formatCount(quantity)} ') ?? false),
   ),
 );
 
@@ -292,9 +361,14 @@ extension on Finder {
 Future<void> recordActivity(
   WidgetTester tester,
   String viceName,
-  int quantity, {
+  num quantity, {
   DateTime? at,
+  List<String> triggerTaps = const <String>[],
 }) async {
+  // Frames draw only on a pump here, and the fan keeps the habits the button
+  // held when it opened: a write made outside the tree since the last frame
+  // would be missing from it.
+  await tester.pump();
   await tap(tester, find.byType(LogButton));
   final Finder wedge = fanWedge(viceName);
   final Finder more = fanWedge('More');
@@ -334,7 +408,25 @@ Future<void> recordActivity(
       ActivityDateField.format.format(at),
     );
   }
-  await enterText(tester, 'Quantity', '$quantity');
+  await enterText(tester, 'Quantity', formatAmount(quantity));
+  if (triggerTaps.isNotEmpty) {
+    // Each label in [triggerTaps] is tapped in the picker in turn.
+    final Finder open = find.text('What was going on? (optional)');
+    await scrollIntoView(tester, open);
+    await tap(tester, open);
+    final Finder sheet = find.byType(TriggerPickerSheet);
+    await pumpUntilRouteSettled(tester, sheet);
+    for (final String label in triggerTaps) {
+      final Finder target = find.descendant(
+        of: sheet,
+        matching: find.text(label),
+      );
+      await scrollIntoView(tester, target);
+      await tap(tester, target);
+    }
+    await tap(tester, find.descendant(of: sheet, matching: find.text('Done')));
+    await pumpUntil(tester, sheet, present: false);
+  }
   await tap(tester, find.descendant(of: dialog, matching: find.text('Record')));
   await pumpUntil(tester, dialog, present: false);
 }
@@ -441,6 +533,32 @@ Future<void> deleteBypassingRules(String collection, String documentID) async {
   }
 }
 
+// Whether a document exists, read with the emulators' admin "owner" token so
+// it works with nobody signed in.
+Future<bool> existsBypassingRules(String collection, String documentID) async {
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/projects/'
+      '$emulatorProjectId/databases/(default)/documents/$collection/'
+      '$documentID',
+    );
+    final HttpClientRequest request = await client.getUrl(uri);
+    request.headers.set(HttpHeaders.authorizationHeader, 'Bearer owner');
+    final HttpClientResponse response = await request.close();
+    final String body = await response.transform(utf8.decoder).join();
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        return true;
+      case HttpStatus.notFound:
+        return false;
+    }
+    throw StateError('GET $uri returned ${response.statusCode}: $body');
+  } finally {
+    client.close();
+  }
+}
+
 // Today's tallies, each as "Name (2 drinks)", or null while the day loads.
 Set<String>? todayTallies(WidgetTester tester) {
   final List<TallyRow> rows = tester
@@ -508,7 +626,23 @@ Future<void> signOutThroughSettings(WidgetTester tester) async {
   // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
   await pumpFor(tester, const Duration(seconds: 1));
   await tap(tester, find.text('Sign out'));
-  await pumpUntil(tester, find.byType(Homepage), present: false);
+  await expectSignInWithNothingAbove(tester);
+}
+
+// Settings hides Homepage offstage, so Homepage vanishing does not mean the
+// sign-out has finished.
+Future<void> expectSignInWithNothingAbove(WidgetTester tester) async {
+  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
+  await pumpUntil(
+    tester,
+    find.byType(Settings, skipOffstage: false),
+    present: false,
+  );
+  await pumpUntil(
+    tester,
+    find.byType(Homepage, skipOffstage: false),
+    present: false,
+  );
 }
 
 Future<void> signIn(WidgetTester tester, String email) async {

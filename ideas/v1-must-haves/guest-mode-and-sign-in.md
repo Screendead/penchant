@@ -1,6 +1,13 @@
-# Let people start without an account, and finish the basic sign-in flows
+# Add Sign in with Apple to the guest start
 
 **Priority:** v1 must-have
+
+## State
+
+Jack picked **C** on 2026-11-06. The guest part shipped: "Start without an account" on the sign-in screen signs in
+anonymously, and Account Settings links an email and password to the same uid. What is left is Sign in with Apple,
+which needs the paid Apple developer team Jack is not getting for now, and the production Anonymous provider switch
+in the Firebase console (Jack).
 
 ## What
 

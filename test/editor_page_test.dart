@@ -43,13 +43,14 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets("a locked entry's quantity and delete are unavailable", (
+  // Only the triggers are sealed, so the quantity of a locked entry is real.
+  testWidgets("a locked entry's delete is unavailable, its quantity is not", (
     tester,
   ) async {
     final ViceActivity locked = ViceActivity(
       id: activity.id,
       viceID: coffee.id,
-      quantity: 0,
+      quantity: 2,
       ownerID: ownerID,
       createdAt: activity.createdAt,
       locked: true,
@@ -73,7 +74,7 @@ void main() {
             ),
           )
           .readOnly,
-      isTrue,
+      isFalse,
     );
   });
 

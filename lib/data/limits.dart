@@ -1,3 +1,5 @@
+import 'package:tracker/formats.dart';
+
 // Mirrors firestore.rules, so a form refuses what the rules would deny.
 
 // Counted in UTF-16 code units (String.length), as the rules' size() is.
@@ -21,21 +23,42 @@ String? viceNameError(String? value, {String? unchanged}) {
   return null;
 }
 
-// The rules check quantity only when an update changes it, so a legacy
-// activity's out-of-range value can be saved back as it is.
-String? quantityError(String? value, {int? unchanged}) {
-  if (value == null || value.isEmpty) {
+// The rules check quantity and amount only when an update changes them, so a
+// legacy activity's out-of-range value can be saved back as it is.
+String? quantityError(String? value, {num? unchanged}) {
+  if (value == null || value.trim().isEmpty) {
     return 'Please enter a quantity';
   }
 
-  final int? quantity = int.tryParse(value);
+  final num? quantity = parseAmount(value);
 
   if (quantity == null) {
     return 'Please enter a valid number';
   }
 
-  if (quantity < 1 && quantity != unchanged) {
-    return 'Please enter at least 1';
+  if (quantity <= 0 && quantity != unchanged) {
+    return 'Please enter more than 0';
+  }
+
+  return null;
+}
+
+// An activity's triggers: at most [maxTriggers] entries, each 1 to
+// [maxTriggerLength] UTF-16 code units.
+const int maxTriggers = 10;
+const int maxTriggerLength = 60;
+
+String? triggersError(List<String> triggers) {
+  if (triggers.length > maxTriggers) {
+    return 'Pick $maxTriggers triggers or fewer';
+  }
+
+  if (triggers.any((String t) => t.isEmpty)) {
+    return 'A trigger needs a name';
+  }
+
+  if (triggers.any((String t) => t.length > maxTriggerLength)) {
+    return 'Keep each trigger to $maxTriggerLength characters or fewer';
   }
 
   return null;

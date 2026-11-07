@@ -58,6 +58,7 @@ const vice = (overrides = {}) => ({
   ownerID: ALICE,
   createdAt: serverTimestamp(),
   archived: false,
+  category: 'caffeine',
   ...overrides,
 });
 
@@ -140,6 +141,22 @@ describe('vices', () => {
     it('allows every unit in the Unit enum', async () => {
       for (const unit of ['item', 'time', 'puff', 'drink', 'minute', 'hour']) {
         await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ unit })));
+      }
+    });
+
+    it('allows every category in the ViceCategory enum', async () => {
+      for (const category of ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other']) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ category })));
+      }
+    });
+
+    it('allows a legacy create without a category', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), without(vice(), 'category')));
+    });
+
+    it('denies a category outside the enum or of the wrong type', async () => {
+      for (const category of ['sugar', '', 3, null]) {
+        await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ category })));
       }
     });
 
@@ -277,6 +294,22 @@ describe('vices', () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: 'yes' }));
     });
 
+    it('allows adding a category to a legacy vice and changing it', async () => {
+      const ref = doc(asAlice(), 'vices/aliceLegacyVice');
+      await assertSucceeds(updateDoc(ref, { category: 'alcohol' }));
+      await assertSucceeds(updateDoc(ref, { category: 'other' }));
+      await assertSucceeds(
+        updateDoc(doc(asAlice(), 'vices/aliceUnknownUnitVice'), { category: 'nicotine' }),
+      );
+    });
+
+    it('denies an invalid category on update', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertFails(updateDoc(ref, { category: 'sugar' }));
+      await assertFails(updateDoc(ref, { category: 1 }));
+      await assertFails(updateDoc(doc(asBob(), 'vices/aliceVice'), { category: 'food' }));
+    });
+
     it('denies an invalid rename', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: '' }));
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { unit: 'pouch' }));
@@ -404,6 +437,20 @@ describe('activities', () => {
       await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ note: 'hi' })));
     });
 
+    it('allows an optional positive amount, whole or decimal', async () => {
+      for (const amount of [1.5, 0.25, 2]) {
+        await assertSucceeds(
+          addDoc(collection(asAlice(), 'activities'), activity({ amount, quantity: Math.ceil(amount) })),
+        );
+      }
+    });
+
+    it('denies a zero, negative or non-number amount', async () => {
+      for (const amount of [0, -1.5, '1.5', null, true]) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ amount })));
+      }
+    });
+
     it('denies wrong types', async () => {
       const bad = [
         { quantity: 2.5 },
@@ -413,6 +460,38 @@ describe('activities', () => {
       ];
       for (const overrides of bad) {
         await assertFails(addDoc(collection(asAlice(), 'activities'), activity(overrides)));
+      }
+    });
+
+    it('allows triggers: tree paths and free text, up to 10, each 1 to 60 long', async () => {
+      const valid = [
+        [],
+        ['work/meeting'],
+        ['feeling/stressed', 'Late train'],
+        Array.from({ length: 10 }, (_, i) => `custom ${i}`),
+        ['x'.repeat(60)],
+      ];
+      for (const triggers of valid) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+      }
+    });
+
+    it('denies more than 10 triggers, or one empty or over 60 long', async () => {
+      const invalid = [
+        Array.from({ length: 11 }, (_, i) => `t${i}`),
+        [''],
+        ['x'.repeat(61)],
+        ['work', 'x'.repeat(61)],
+        [...Array.from({ length: 9 }, (_, i) => `t${i}`), 'x'.repeat(61)],
+      ];
+      for (const triggers of invalid) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+      }
+    });
+
+    it('denies triggers of the wrong type', async () => {
+      for (const triggers of ['work/meeting', 7, { work: true }, [7], ['work', null], [{ path: 'work' }]]) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
       }
     });
   });
@@ -618,11 +697,59 @@ describe('activities', () => {
       await assertFails(updateDoc(doc(asAlice(), 'activities/aliceZeroActivity'), { quantity: -1 }));
     });
 
+    it('allows adding, changing or removing an amount', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertSucceeds(updateDoc(ref, { amount: 1.5, quantity: 2 }));
+      await assertSucceeds(updateDoc(ref, { amount: 0.75 }));
+      await assertSucceeds(updateDoc(ref, { amount: deleteField() }));
+    });
+
+    it('allows adding an amount to a legacy activity', async () => {
+      for (const id of ['aliceZeroActivity', 'aliceLegacyActivity', 'aliceOrphanActivity']) {
+        await assertSucceeds(updateDoc(doc(asAlice(), `activities/${id}`), { amount: 2.5 }));
+      }
+    });
+
+    it('denies changing an amount to zero, below or a non-number', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      for (const amount of [0, -0.5, '2', null]) {
+        await assertFails(updateDoc(ref, { amount }));
+      }
+    });
+
     it('denies wrong types', async () => {
       const ref = doc(asAlice(), 'activities/aliceActivity');
       await assertFails(updateDoc(ref, { quantity: '3' }));
       await assertFails(updateDoc(ref, { quantity: 1.5 }));
       await assertFails(updateDoc(ref, { createdAt: 'yesterday' }));
+    });
+
+    it('allows setting, changing and clearing triggers', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      await assertSucceeds(updateDoc(ref, { triggers: ['work/meeting', 'Late train'] }));
+      await assertSucceeds(updateDoc(ref, { triggers: ['body/tired'], quantity: 3 }));
+      await assertSucceeds(updateDoc(ref, { triggers: [] }));
+    });
+
+    it('allows adding triggers to legacy activities that never had them', async () => {
+      for (const id of ['aliceLegacyActivity', 'aliceZeroActivity', 'aliceOrphanActivity']) {
+        await assertSucceeds(
+          updateDoc(doc(asAlice(), `activities/${id}`), { triggers: ['routine/morning'] }),
+        );
+      }
+    });
+
+    it('denies invalid triggers on update', async () => {
+      const ref = doc(asAlice(), 'activities/aliceActivity');
+      for (const triggers of [
+        'work',
+        [7],
+        [''],
+        ['x'.repeat(61)],
+        Array.from({ length: 11 }, (_, i) => `t${i}`),
+      ]) {
+        await assertFails(updateDoc(ref, { triggers }));
+      }
     });
 
     it('denies moving the activity to another vice', async () => {
@@ -813,12 +940,13 @@ describe('sealed documents', () => {
       await assertFails(updateDoc(doc(db, 'vices/aliceSealedVice'), { sealed: bytesOf(29 + 4097) }));
     });
 
-    it('converts a plaintext vice by sealing it and removing its name and unit', async () => {
+    it('converts a plaintext vice by sealing it and removing its name, unit and category', async () => {
       await assertSucceeds(
         updateDoc(doc(asAlice(), 'vices/aliceVice'), {
           sealed: envelope,
           name: deleteField(),
           unit: deleteField(),
+          category: deleteField(),
         }),
       );
     });
@@ -829,6 +957,7 @@ describe('sealed documents', () => {
           sealed: envelope,
           name: deleteField(),
           unit: deleteField(),
+          category: deleteField(),
         }),
       );
     });
@@ -840,6 +969,39 @@ describe('sealed documents', () => {
     it('refuses sealing a plaintext vice that keeps its name', async () => {
       await assertFails(
         updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: envelope, unit: deleteField() }),
+      );
+    });
+
+    it('seals a vice category with the name and unit', async () => {
+      await assertFails(
+        setDoc(doc(asAlice(), 'vices/new'), sealedVice({ category: 'caffeine' })),
+      );
+      await assertFails(
+        updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), { category: 'caffeine' }),
+      );
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+          doc(context.firestore(), 'vices/aliceCategoryVice'),
+          vice({ category: 'caffeine' }),
+        );
+      });
+      await assertFails(
+        updateDoc(doc(asAlice(), 'vices/aliceCategoryVice'), {
+          sealed: envelope,
+          name: deleteField(),
+          unit: deleteField(),
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(asAlice(), 'vices/aliceCategoryVice'), { category: deleteField() }),
+      );
+      await assertSucceeds(
+        updateDoc(doc(asAlice(), 'vices/aliceCategoryVice'), {
+          sealed: envelope,
+          name: deleteField(),
+          unit: deleteField(),
+          category: deleteField(),
+        }),
       );
     });
 
@@ -903,6 +1065,38 @@ describe('sealed documents', () => {
       );
     });
 
+    it('keeps triggers inside the envelope', async () => {
+      const db = asAlice();
+      await assertFails(
+        setDoc(doc(db, 'activities/new'), sealedActivity({ triggers: ['social'] })),
+      );
+      await assertSucceeds(
+        setDoc(doc(db, 'activities/new'), sealedActivity({ amount: 1.5, quantity: 2 })),
+      );
+      await assertFails(
+        updateDoc(doc(db, 'activities/aliceSealedActivity'), { triggers: ['social'] }),
+      );
+      await assertSucceeds(
+        updateDoc(doc(db, 'activities/aliceSealedActivity'), { amount: 2.5, quantity: 3 }),
+      );
+    });
+
+    it('converts an activity by sealing its triggers and removing them', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+          doc(context.firestore(), 'activities/aliceTriggeredActivity'),
+          activity({ triggers: ['social', 'Long day'] }),
+        );
+      });
+      const ref = doc(asAlice(), 'activities/aliceTriggeredActivity');
+      await assertFails(updateDoc(ref, { sealed: envelope }));
+      await assertSucceeds(
+        updateDoc(ref, { sealed: envelope, triggers: deleteField(), quantity: 2 }),
+      );
+      await assertFails(updateDoc(ref, { triggers: ['social'] }));
+      await assertSucceeds(updateDoc(ref, { sealed: resealed }));
+    });
+
     it("refuses Bob's reads of Alice's sealed activity", async () => {
       await assertFails(getDoc(doc(asBob(), 'activities/aliceSealedActivity')));
     });
@@ -919,5 +1113,104 @@ describe('sealed documents', () => {
       );
       assert.equal(snapshot.data().count, 4);
     });
+  });
+});
+
+describe('summaries', () => {
+  const summary = {
+    computedAt: createdAt,
+    windowDays: 90,
+    vices: { aliceVice: { typical: 2, count: 14 } },
+  };
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, `summaries/${ALICE}`), summary);
+      await setDoc(doc(db, `summaries/${BOB}`), { ...summary, vices: {} });
+    });
+  });
+
+  it('lets the owner read their summary', async () => {
+    const snapshot = await assertSucceeds(getDoc(doc(asAlice(), `summaries/${ALICE}`)));
+    assert.equal(snapshot.get('vices.aliceVice.typical'), 2);
+  });
+
+  it('lets the owner read a summary not yet written', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
+    });
+    const snapshot = await assertSucceeds(getDoc(doc(asAlice(), `summaries/${ALICE}`)));
+    assert.equal(snapshot.exists(), false);
+  });
+
+  it('denies reading another user\'s summary, signed in or not', async () => {
+    await assertFails(getDoc(doc(asAlice(), `summaries/${BOB}`)));
+    await assertFails(getDoc(doc(asGuest(), `summaries/${ALICE}`)));
+  });
+
+  it('denies listing summaries', async () => {
+    await assertFails(getDocs(collection(asAlice(), 'summaries')));
+  });
+
+  it('denies the owner creating, changing or deleting their summary', async () => {
+    const db = asAlice();
+    await assertFails(updateDoc(doc(db, `summaries/${ALICE}`), { 'vices.aliceVice.typical': 9 }));
+    await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
+    await assertFails(deleteDoc(doc(db, `summaries/${ALICE}`)));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(), `summaries/${ALICE}`));
+    });
+    await assertFails(setDoc(doc(db, `summaries/${ALICE}`), summary));
+  });
+});
+
+// Account.startAsGuest: an anonymous Firebase Auth user has a uid like any
+// other, and the ownerID checks apply to it unchanged.
+describe('a guest signed in anonymously', () => {
+  const GUEST = 'guest';
+  const asAnonymous = () =>
+    testEnv
+      .authenticatedContext(GUEST, { firebase: { sign_in_provider: 'anonymous' } })
+      .firestore();
+
+  it('creates, reads, edits and deletes its own vice and activity', async () => {
+    const db = asAnonymous();
+    await assertSucceeds(setDoc(doc(db, 'vices/guestVice'), vice({ ownerID: GUEST })));
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'activities/guestActivity'),
+        activity({ ownerID: GUEST, viceID: 'guestVice' }),
+      ),
+    );
+    const mine = await assertSucceeds(
+      getDocs(query(collection(db, 'activities'), where('ownerID', '==', GUEST))),
+    );
+    assert.deepEqual(mine.docs.map((d) => d.id), ['guestActivity']);
+    await assertSucceeds(updateDoc(doc(db, 'activities/guestActivity'), { quantity: 3 }));
+    await assertSucceeds(deleteDoc(doc(db, 'activities/guestActivity')));
+    await assertSucceeds(deleteDoc(doc(db, 'vices/guestVice')));
+  });
+
+  it('cannot write as another owner or read another owner\'s data', async () => {
+    const db = asAnonymous();
+    await assertFails(addDoc(collection(db, 'vices'), vice()));
+    await assertFails(getDoc(doc(db, 'vices/aliceVice')));
+    await assertFails(
+      getDocs(query(collection(db, 'activities'), where('ownerID', '==', ALICE))),
+    );
+  });
+
+  it('keeps its data once linked, since linking keeps the uid', async () => {
+    await assertSucceeds(
+      setDoc(doc(asAnonymous(), 'vices/guestVice'), vice({ ownerID: GUEST })),
+    );
+    const linked = testEnv
+      .authenticatedContext(GUEST, {
+        email: 'sam@example.com',
+        firebase: { sign_in_provider: 'password' },
+      })
+      .firestore();
+    await assertSucceeds(getDoc(doc(linked, 'vices/guestVice')));
   });
 });

@@ -25,12 +25,12 @@ class TallyRow extends StatefulWidget {
   final Vice vice;
   final HabitMark mark;
   // Null while the day loads.
-  final int? total;
+  final num? total;
   final DateTime day;
   // [from] is the + button's centre, in global coordinates. Null shows no +.
   final void Function(Offset from)? onLog;
 
-  static String label(Vice vice, int total) =>
+  static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.unit.label(total)}';
 
   @override
@@ -51,8 +51,8 @@ class _TallyRowState extends State<TallyRow>
   @override
   void didUpdateWidget(TallyRow old) {
     super.didUpdateWidget(old);
-    final int? before = old.total;
-    final int? after = widget.total;
+    final num? before = old.total;
+    final num? after = widget.total;
     if (before != null && after != null && before != after) {
       _rising = after > before;
       if (old.day == widget.day && after > before) {
@@ -71,7 +71,7 @@ class _TallyRowState extends State<TallyRow>
     if (reduced) {
       return FadeTransition(opacity: animation, child: child);
     }
-    final bool incoming = child.key == ValueKey<int?>(widget.total);
+    final bool incoming = child.key == ValueKey<num?>(widget.total);
     final double from = (_rising ? 1 : -1) * (incoming ? 1 : -1);
     return ClipRect(
       child: SlideTransition(
@@ -90,7 +90,7 @@ class _TallyRowState extends State<TallyRow>
     final DialType type = DialType.of(context);
     final ThemeData theme = Theme.of(context);
     final bool reduced = MediaQuery.disableAnimationsOf(context);
-    final int? total = widget.total;
+    final num? total = widget.total;
     final bool zero = total == 0;
     final Color hue = colors.habit(widget.mark);
 
@@ -106,7 +106,7 @@ class _TallyRowState extends State<TallyRow>
               _roll(child, a, reduced),
           child: Text(
             total == null ? '' : formatCount(total),
-            key: ValueKey<int?>(total),
+            key: ValueKey<num?>(total),
             style: type.monoM.copyWith(
               color: zero ? colors.muted : colors.habitInk(widget.mark),
             ),
