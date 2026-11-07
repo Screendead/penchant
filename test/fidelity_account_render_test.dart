@@ -1,4 +1,4 @@
-// Renders sign-in, sign-up and Settings at the Day Dial mock-up's size and
+// Renders sign-in, sign-up, Settings and Account Settings at the Day Dial mock-up's size and
 // text, for side-by-side comparison with it (tools/fidelity/README.md):
 //   flutter test test/fidelity_account_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
@@ -11,13 +11,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 
+import 'fake_account.dart';
 import 'fakes.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
@@ -47,7 +50,12 @@ Future<void> _loadFonts() async {
 void main() {
   setUpAll(_loadFonts);
   for (final Brightness brightness in Brightness.values) {
-    for (final String name in <String>['signin', 'signup', 'settings']) {
+    for (final String name in <String>[
+      'signin',
+      'signup',
+      'settings',
+      'account',
+    ]) {
       testWidgets('fidelity $name ${brightness.name}', (
         WidgetTester tester,
       ) async {
@@ -67,6 +75,8 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              accountProvider.overrideWithValue(FakeAccount()),
+              exportShareProvider.overrideWithValue(FakeExportShare()),
               userProvider.overrideWith((ref) => Stream.value(user)),
               userProfileProvider.overrideWith((ref) => Stream.value(user)),
               packageInfoProvider.overrideWith(
@@ -85,7 +95,7 @@ void main() {
                 debugShowCheckedModeBanner: false,
                 theme: appTheme(Brightness.light),
                 darkTheme: appTheme(Brightness.dark),
-                home: name == 'settings'
+                home: name == 'settings' || name == 'account'
                     ? const Scaffold()
                     : const Authenticate(),
               ),
@@ -93,9 +103,13 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        if (name == 'settings') {
+        if (name == 'settings' || name == 'account') {
           navigator.currentState!.push(
-            MaterialPageRoute<void>(builder: (_) => const Settings()),
+            MaterialPageRoute<void>(
+              builder: (_) => name == 'settings'
+                  ? const Settings()
+                  : const AccountSettings(),
+            ),
           );
           await tester.pumpAndSettle();
         } else {

@@ -142,6 +142,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Internal
 
+- The decisions page asks round 9: where Archive lives, whether Appearance is a picker, and where Export sits, each
+  with the mock-up beside the built screen.
 - Test builds against the Firebase emulators no longer turn on App Check, which the emulators never check; the
   App Store build is unchanged.
 - The decisions page asks round 8: six calls from the Day Dial and the Mac split view, each with the mock-up beside
