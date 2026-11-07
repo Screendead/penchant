@@ -19,3 +19,7 @@ The onboarding has no Day Dial mock-up; it is compared with the stills it was pi
 (`mockup/onboarding-presets`, `docs/pitch/mockups/onboarding-presets/plain-*.png`, Material-styled, dark only):
 `flutter test test/fidelity_onboarding_render_test.dart --dart-define=RENDER_DIR=<root>/app`, each still copied to
 `<root>/mock/mock-<step>-<theme>.png` for both themes, then `pair.py`. The pairs are `fidelity/onboarding-*.png`.
+
+Sign-in, sign-up, Settings and Account Settings: `flutter test test/fidelity_account_render_test.dart
+--dart-define=RENDER_DIR=<root>/app`. The mock-up has no Account Settings screen, so `fidelity/account-*.png` is the
+app alone.

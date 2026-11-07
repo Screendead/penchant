@@ -7,10 +7,17 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+### Fixed
+
+- iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and
+  password after you sign in, so a changed email reaches the saved password.
+
 ### Added
 
 - Groundwork for end-to-end encryption: the code to make a key for your account, keep it in iCloud Keychain, seal and
   open data with it, and write it out as a recovery key. The app does not use it yet, so nothing is encrypted.
+- A guest journal is erased 30 days after it starts unless it is saved to an email. From day 20 Today says how many
+  days are left, and in the last 3 days a sheet asks once a day; both lead to saving it to an email.
 - Recording or editing an entry can say what was going on: the habit's usual triggers as one-tap chips, areas of
   life with more specific options inside, or your own words, which become a choice once used three times. It is
   optional, and the Log fan still logs one in one tap. The history list shows each entry's triggers.
@@ -137,8 +144,14 @@ pull request titles (`gh pr list --state merged`).
 
 ### Internal
 
+- The decisions page asks round 9: where Archive lives, whether Appearance is a picker, and where Export sits, each
+  with the mock-up beside the built screen.
+- Test builds against the Firebase emulators no longer turn on App Check, which the emulators never check; the
+  App Store build is unchanged.
 - The decisions page asks round 8: six calls from the Day Dial and the Mac split view, each with the mock-up beside
   the built app; the round-5 radar calls and the settled e2e-in-CI call are gone.
+- The Cloud Functions dev toolchain no longer pulls in the vulnerable `glob` and `minimatch` (an npm override moves the
+  unused `rimraf` dependency of `google-gax` to 6.1.4).
 
 ## [0.1.0] - Unreleased
 

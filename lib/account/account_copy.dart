@@ -60,6 +60,21 @@ abstract final class AccountCopy {
       'journal behind, so choose another email.';
   static String linkFailed(String reason) => 'Not saved. $reason';
 
+  static String guestExpiry(int daysLeft) => switch (daysLeft) {
+    <= 0 =>
+      'Your guest journal can be erased at any moment. Save it to an email '
+          'to keep it.',
+    1 =>
+      'Your guest journal will be erased in 1 day. Save it to an email to '
+          'keep it.',
+    _ =>
+      'Your guest journal will be erased in $daysLeft days. Save it to an '
+          'email to keep it.',
+  };
+  static const String guestExpiryTitle = 'Save your journal';
+  static const String guestExpiryAction = 'Save it to an email';
+  static const String guestExpiryLater = 'Not now';
+
   static const String guestDeleteConfirmBody =
       'This permanently deletes your guest journal: every habit and every '
       'entry you have logged, from our servers and from this device.\n\n'
