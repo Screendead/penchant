@@ -104,6 +104,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Signing out no longer leaves the last change's Undo bar on the sign-in screen, where its Undo would have acted
+  on the account just left.
 - Today's sync pill no longer breaks the screen when writes settle and start again faster than its fade.
 - Vices created before archiving existed now show on Today and in the record dialog, so you can log against them.
 - The usage graph puts each entry on the right day, and shows the whole of today, across a daylight-saving change.

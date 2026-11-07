@@ -34,6 +34,7 @@ import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/undo_bar.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
@@ -114,6 +115,50 @@ void main() {
 
       expect(find.byType(AuthStateLoading), findsNothing);
       expect(find.byType(Authenticate), findsOneWidget);
+    });
+
+    testWidgets("signing out takes the session's Undo bar with it", (
+      WidgetTester tester,
+    ) async {
+      final StreamController<User?> auth = StreamController<User?>();
+      addTearDown(auth.close);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProvider.overrideWith((ref) => auth.stream),
+            accountProvider.overrideWithValue(FakeAccount()),
+            offlineProvider.overrideWithValue(const AsyncData(false)),
+            memoryJournal(),
+            ...habitOverrides(<Vice>[]),
+            viceActivityDayProvider.overrideWith(
+              (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+            ),
+          ],
+          child: const MyApp(),
+        ),
+      );
+      auth.add(FakeUser(ownerID));
+      await tester.pump();
+      expect(find.byType(Homepage), findsOneWidget);
+
+      bool undone = false;
+      showUndoBar(
+        tester.state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger)),
+        const TextSpan(text: 'Logged 1 drink'),
+        onUndo: () => undone = true,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Undo'), findsOneWidget);
+
+      auth.add(null);
+      await tester.pump();
+
+      expect(find.byType(Authenticate), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(SnackBar), findsNothing);
+      expect(undone, isFalse);
     });
   });
 
