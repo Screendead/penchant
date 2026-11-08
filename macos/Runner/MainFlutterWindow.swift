@@ -16,7 +16,18 @@ class MainFlutterWindow: NSWindow {
   }
 
   override func awakeFromNib() {
-    let flutterViewController = FlutterViewController()
+    // The status item's popover is a second view on this engine
+    // (StatusItemController), and an engine takes a second view controller
+    // only with multi-view enabled before its first. enableMultiView is not in
+    // the public header (Flutter 3.44); without it the popover's controller
+    // init raises and AppKit swallows the exception, so a click does nothing.
+    let engine = FlutterEngine(name: "penchant", project: nil)
+    let enableMultiView = NSSelectorFromString("enableMultiView")
+    precondition(engine.responds(to: enableMultiView), "FlutterEngine lost enableMultiView")
+    engine.perform(enableMultiView)
+    // Run first: a view added to a running engine is announced to Dart.
+    engine.run(withEntrypoint: nil)
+    let flutterViewController = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
     self.contentViewController = flutterViewController
 
     self.contentMinSize = Self.minimumContentSize
