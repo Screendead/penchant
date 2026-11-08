@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/data/queued_log.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -76,8 +78,9 @@ Future<void> _write(
 // does beside Notification Centre.
 const Duration queuedLogPoll = Duration(minutes: 1);
 
-/// Writes the widgets' queued logs while someone is signed in: at once, on
-/// every resume, when a held-back log comes due, and every [queuedLogPoll].
+/// Writes the widgets' queued logs while someone is signed in with the journal
+/// key loaded: at once, on every resume, when a held-back log comes due, and
+/// every [queuedLogPoll].
 final widgetLogFlushProvider = Provider<void>((ref) {
   if (!widgetsSupported) {
     return;
@@ -86,6 +89,12 @@ final widgetLogFlushProvider = Provider<void>((ref) {
     userProvider.select((AsyncValue<User?> u) => u.value?.uid),
   );
   if (uid == null) {
+    return;
+  }
+  // Until the key loads (or while it is missing or locked) TrackerWrites has
+  // no sealer and would store the log without its sealed field. The queue
+  // keeps it, and the sealer arriving rebuilds this provider.
+  if (ref.watch(e2eeEnabledProvider) && ref.watch(sealerProvider) == null) {
     return;
   }
   final WidgetBridge bridge = ref.watch(widgetBridgeProvider);

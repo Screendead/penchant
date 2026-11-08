@@ -1,17 +1,29 @@
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/queued_log.dart';
+import 'package:tracker/data/sealed.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
+import 'fake_sealer.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
+
+class _KeySlot extends Notifier<FieldSealer?> {
+  @override
+  FieldSealer? build() => null;
+
+  void load() => state = FakeSealer();
+}
+
+final _keySlot = NotifierProvider<_KeySlot, FieldSealer?>(_KeySlot.new);
 
 class _QueueBridge implements WidgetBridge {
   _QueueBridge(this.queue);
@@ -198,5 +210,39 @@ void main() {
         <String>['Not saved: $widgetLogWhat'],
       );
     });
+  });
+
+  test('widgetLogFlushProvider writes nothing until the journal key loads, '
+      'then flushes', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final FakeTrackerWrites writes = FakeTrackerWrites();
+    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+      _log('a', DateTime.now().subtract(const Duration(hours: 3))),
+    ]);
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
+        memoryJournal(),
+        widgetBridgeProvider.overrideWithValue(bridge),
+        trackerWritesProvider.overrideWithValue(writes),
+        sealerProvider.overrideWith((ref) => ref.watch(_keySlot)),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(widgetLogFlushProvider, (_, _) {});
+    await container.read(userProvider.future);
+    await pumpEventQueue();
+    expect(writes.writes, isEmpty);
+    expect(bridge.removed, isEmpty);
+    expect(bridge.queue.map((QueuedLog l) => l.id), <String>['a']);
+
+    container.read(_keySlot.notifier).load();
+    await pumpEventQueue();
+    expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
+      'recordActivity:a',
+    ]);
+    expect(bridge.queue, isEmpty);
   });
 }

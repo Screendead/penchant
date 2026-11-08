@@ -105,9 +105,12 @@ enum LogQueue {
   }
 
   // Drops a log the app has not written yet, or asks it to delete one it has.
-  static func undo(_ last: LastLog, uid: String) -> Bool {
+  // Past the Undo window the app may already be writing the log (it waits 7 s,
+  // queuedLogHold in lib/data/queued_log.dart), so a late Undo always queues
+  // a delete: the app drops both if neither was written, or deletes after.
+  static func undo(_ last: LastLog, uid: String, now: Date = Date()) -> Bool {
     modify { logs in
-      if let i = logs.firstIndex(where: { $0.op == .log && $0.id == last.id }) {
+      if now < last.undoUntil, let i = logs.firstIndex(where: { $0.op == .log && $0.id == last.id }) {
         logs.remove(at: i)
       } else if !logs.contains(where: { $0.op == .delete && $0.id == last.id }) {
         logs.append(QueuedLog(op: .delete, id: last.id, uid: uid, viceID: last.viceID, createdAt: last.at))

@@ -51,8 +51,8 @@ enum WidgetBridge {
           result(FlutterError(code: "queue-unwritable", message: "Could not update the log queue", details: nil))
           return
         }
-        result(nil)
-        return
+        // On to the reload: the snapshot may already count these entries,
+        // and no later save follows if the acknowledgement changes nothing.
       default:
         result(FlutterMethodNotImplemented)
         return
