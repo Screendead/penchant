@@ -108,7 +108,12 @@ void main() {
     await addVicesThroughManageData(tester);
 
     await openTrends(tester);
-    expect(find.byType(LogButton).hitTestable(), findsNothing);
+    // The split view's pane sits beside Today, with Log at the foot of
+    // Today's column.
+    expect(
+      find.byType(LogButton).hitTestable(),
+      splitLayout(tester) ? findsOneWidget : findsNothing,
+    );
     expect(find.byType(NavigationBar), findsNothing);
     await closeTrends(tester);
 

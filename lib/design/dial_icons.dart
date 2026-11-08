@@ -9,6 +9,7 @@ enum DialGlyph {
   right(<String>['M9 18l6-6-6-6']),
   down(<String>['M6 9l6 6 6-6']),
   plus(<String>['M12 5v14M5 12h14']),
+  minus(<String>['M5 12h14']),
   close(<String>['M6 6l12 12M18 6L6 18']),
   mail(<String>[
     'M6 5L18 5A3 3 0 0 1 21 8L21 16A3 3 0 0 1 18 19L6 19A3 3 0 0 1 3 16L3 8A3 3 '
