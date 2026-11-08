@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // The starter trigger tree Jack picked on 2026-11-06 ("Areas of life", option A
-// on mockup/trigger-tree). An activity stores a node as its path: the ids from
+// on the tag archive/mockup/trigger-tree). An activity stores a node as its path: the ids from
 // the root down, joined by [triggerPathSeparator], such as `work/meeting`.
 // Stored paths outlive the app version that wrote them, so a node's id never
 // changes once shipped; relabel it instead.
