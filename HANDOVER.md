@@ -478,8 +478,7 @@ CLI's configstore no longer maps the main checkout to production (`firebase use 
 - `npm --prefix tests/firestore-rules test` runs the rules suite; CI runs it on every PR.
 - Only one agent at a time may use the simulator and the default emulator ports. Parallel agents that need an
   emulator use other ports (Firestore 8180, hub 4410, logging 4510, UI off) through a config outside the repo.
-- `macos/Flutter/GeneratedPluginRegistrant.swift` is tracked (iOS gitignores its own; in the register).
-  `flutter pub get` rewrites it only when the plugin set changes; commit the rewrite with the change that caused it.
+- `GeneratedPluginRegistrant` is gitignored on both platforms; `flutter pub get` and every flutter build regenerate it.
 - Read the Firebase documentation before any change to rules, indexes, queries or emulator wiring, and cite it in
   the PR.
 
