@@ -5,6 +5,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/main.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -29,6 +31,7 @@ const String _dir = String.fromEnvironment('RENDER_DIR');
 
 final List<Vice> _vices = <Vice>[fakeVice('Coffee'), fakeVice('Tea')];
 
+// Each day's beads sit apart from the next day's, so a day change shows.
 List<ViceActivity> _entries(DateTime day) => <ViceActivity>[
   for (final (int i, int minute) in <(int, int)>[
     (0, 8 * 60 + 10),
@@ -37,7 +40,11 @@ List<ViceActivity> _entries(DateTime day) => <ViceActivity>[
     (1, 16 * 60 + 45),
     (0, 19 * 60 + 20),
   ])
-    fakeActivity(_vices[i].id, 1, day.add(Duration(minutes: minute))),
+    fakeActivity(
+      _vices[i].id,
+      1,
+      day.add(Duration(minutes: minute + day.day % 2 * 150)),
+    ),
 ];
 
 List<Override> _overrides() => <Override>[
@@ -75,6 +82,7 @@ Future<void> Function() _recorder(
 Future<GlobalKey> _pumpToday(
   WidgetTester tester, {
   required bool reduced,
+  GlobalKey<NavigatorState>? navigator,
 }) async {
   debugDisableShadows = false;
   tester.view.devicePixelRatio = 2;
@@ -93,6 +101,8 @@ Future<GlobalKey> _pumpToday(
             disableAnimations: reduced,
           ),
           child: MaterialApp(
+            navigatorKey: navigator,
+            onGenerateRoute: generateRoute,
             debugShowCheckedModeBanner: false,
             theme: appTheme(Brightness.light),
             home: const Scaffold(body: SafeArea(child: ViceTracker())),
@@ -147,4 +157,27 @@ void main() {
     await tester.tap(find.byTooltip('Previous day'));
     await _run(tester, capture, 22);
   }, skip: _dir.isEmpty);
+
+  for (final bool reduced in <bool>[false, true]) {
+    testWidgets('page push, reduce motion $reduced', (
+      WidgetTester tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final GlobalKey<NavigatorState> navigator = GlobalKey<NavigatorState>();
+      final GlobalKey frame = await _pumpToday(
+        tester,
+        reduced: reduced,
+        navigator: navigator,
+      );
+      final Future<void> Function() capture = _recorder(
+        tester,
+        frame,
+        reduced ? 'page-reduced' : 'page',
+      );
+      await capture();
+      navigator.currentState!.pushNamed('/manage-data');
+      await _run(tester, capture, 22);
+      debugDefaultTargetPlatformOverride = null;
+    }, skip: _dir.isEmpty);
+  }
 }

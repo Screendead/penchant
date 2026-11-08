@@ -15,6 +15,9 @@ pull request titles (`gh pr list --state merged`).
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
+  it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
+  fade out before the new day's fade in).
 
 ### Fixed
 
