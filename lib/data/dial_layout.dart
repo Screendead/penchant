@@ -303,13 +303,4 @@ class HourArc {
     final double turn = ((atan2(point.dy, point.dx) + pi / 2) / (2 * pi)) % 1;
     return turn * minutesPerDay;
   }
-
-  // Whether [point], in face units, is on the arc, give or take [slop].
-  bool contains(Offset point, double slop) {
-    if ((point.distance - track).abs() > half + slop) {
-      return false;
-    }
-    final double off = (atan2(point.dy, point.dx) - middle + 3 * pi) % (2 * pi);
-    return (off - pi).abs() <= (end - start) / 2 + (half + slop) / track;
-  }
 }

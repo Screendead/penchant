@@ -197,19 +197,16 @@ void main() {
       expect(HourArc(8).middle, closeTo(dialAngle(510), 1e-9));
     });
 
-    test('is hit on its band, across 00 too', () {
-      final HourArc arc = HourArc(0);
-      expect(arc.contains(dialPoint(arc.middle, HourArc.track), 0), isTrue);
-      expect(arc.contains(dialPoint(arc.middle, 84), 0), isFalse);
-      expect(arc.contains(dialPoint(dialAngle(90), HourArc.track), 6), isFalse);
-      expect(
-        arc.contains(dialPoint(dialAngle(minutesPerDay - 1), 100), 6),
-        isTrue,
-      );
+    test('a point on the face reads as its minute, across 00 too', () {
       expect(
         HourArc.minuteAt(dialPoint(dialAngle(510), 50)),
         closeTo(510, 1e-6),
       );
+      expect(
+        HourArc.minuteAt(dialPoint(dialAngle(minutesPerDay - 1), 100)),
+        closeTo(minutesPerDay - 1, 1e-6),
+      );
+      expect(HourArc.minuteAt(dialPoint(dialAngle(1), 100)), closeTo(1, 1e-6));
     });
 
     test('is shared out clockwise in proportion to the counts', () {

@@ -558,6 +558,57 @@ void main() {
           fakeActivity(coffee.id, 2, day.add(const Duration(hours: 14))),
         ];
 
+    testWidgets('a tap on one of two adjacent arcs opens an entry of its own '
+        'hour', (WidgetTester tester) async {
+      final List<String?> pushed = <String?>[];
+      await _pumpApp(
+        tester,
+        _today(
+          [coffee, tea],
+          (DateTime day) => <ViceActivity>[
+            ...dense(day),
+            for (int i = 0; i < 3; i++)
+              fakeActivity(tea.id, 2, day.add(Duration(minutes: 540 + 20 * i))),
+          ],
+        ),
+        const ViceTracker(),
+        onGenerateRoute: (RouteSettings settings) {
+          pushed.add(settings.name);
+          return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+        },
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('arc-9')), findsOneWidget);
+
+      final Rect dial = tester.getRect(find.byType(DayDial));
+      final double scale = dial.shortestSide / DialFace.side;
+      await tester.tapAt(
+        dial.center + dialPoint(dialAngle(541), HourArc.track) * scale,
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity nine = fakeActivity(
+        tea.id,
+        2,
+        today.add(const Duration(minutes: 540)),
+      );
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+      // Late in 08's arc, whose neighbour is a quarter of an hour away.
+      await tester.tapAt(
+        dial.center + dialPoint(dialAngle(530), HourArc.track) * scale,
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity late = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 530)),
+      );
+      expect(pushed, [
+        '/vices/${tea.id}/activities/${nine.id}',
+        '/vices/${coffee.id}/activities/${late.id}',
+      ]);
+    });
+
     testWidgets('above 48 entries a dense hour is one arc, and the dial still '
         'says every entry', (WidgetTester tester) async {
       await _pumpApp(

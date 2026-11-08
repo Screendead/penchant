@@ -611,21 +611,22 @@ class _DayDialState extends ConsumerState<DayDial>
         nearest = e;
       }
     }
-    if (nearest == null) {
-      // A tap on an arc opens the entry nearest the time tapped.
-      for (final MapEntry<int, List<DialEntry>>(key: hour, value: inHour)
-          in DayDial.denseHourEntries(entries).entries) {
-        if (HourArc(hour).contains(local, _hitRadius(0, scale) / scale)) {
-          final double minute = HourArc.minuteAt(local);
-          nearest = inHour.reduce(
-            (DialEntry a, DialEntry b) =>
-                (minuteOfDay(a.at) - minute).abs() <=
-                    (minuteOfDay(b.at) - minute).abs()
-                ? a
-                : b,
-          );
-        }
-      }
+    if (nearest == null &&
+        (local.distance - HourArc.track).abs() <=
+            HourArc.half + _hitRadius(0, scale) / scale) {
+      // A tap on an arc opens the entry nearest the time tapped. The hour is
+      // the tap's angle, so adjacent arcs never claim each other's taps.
+      final double minute = HourArc.minuteAt(local);
+      final List<DialEntry>? inHour = DayDial.denseHourEntries(
+        entries,
+      )[minute ~/ 60];
+      nearest = inHour?.reduce(
+        (DialEntry a, DialEntry b) =>
+            (minuteOfDay(a.at) - minute).abs() <=
+                (minuteOfDay(b.at) - minute).abs()
+            ? a
+            : b,
+      );
     }
     if (nearest != null) {
       widget.onBeadTap!(nearest);
