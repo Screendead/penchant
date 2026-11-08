@@ -10,11 +10,6 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'support.dart';
 
-// A wedge's name, which sits at its label point: inside the wedge's shape,
-// where the wedge widget's own box (the whole fan) need not be.
-Finder _wedgeName(String viceName) =>
-    find.descendant(of: fanWedge(viceName), matching: find.text(viceName));
-
 // A wedge's node: the tally's + under the fan reads the same label, and only
 // the wedge carries the hold hint.
 SemanticsFinder _wedgeNode(String label) => find.semantics.byPredicate(
@@ -53,9 +48,9 @@ void main() {
     await pumpUntil(tester, find.byType(LogButton).hitTestable());
     final Offset log = tester.getCenter(find.byType(LogButton));
     final TestGesture drag = await tester.startGesture(log);
-    await pumpUntil(tester, _wedgeName('Tea'));
+    await pumpUntil(tester, fanWedge('Tea'));
     await pumpFor(tester, const Duration(milliseconds: 800));
-    await drag.moveTo(tester.getCenter(_wedgeName('Tea')));
+    await drag.moveTo(tester.getCenter(fanWedge('Tea')));
     await tester.pump();
     await drag.up();
     await tester.pump();
@@ -69,14 +64,15 @@ void main() {
     expect(await storedActivities('Tea'), hasLength(1));
 
     // Above the fan's reach: the fan stays open and nothing is logged.
+    await pumpUntil(tester, find.byType(LogButton).hitTestable());
     final TestGesture away = await tester.startGesture(log);
-    await pumpUntil(tester, _wedgeName('Coffee'));
+    await pumpUntil(tester, fanWedge('Coffee'));
     await pumpFor(tester, const Duration(milliseconds: 800));
     await away.moveTo(Offset(log.dx, 4));
     await tester.pump();
     await away.up();
     await pumpFor(tester, const Duration(milliseconds: 500));
-    expect(_wedgeName('Coffee').hitTestable(), findsOneWidget);
+    expect(fanWedge('Coffee').hitTestable(), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await pumpUntil(tester, fanWedge('Coffee'), present: false);
@@ -122,9 +118,10 @@ void main() {
     );
 
     // Tapping Log opens the fan; a wedge's tap logs one.
+    await pumpUntil(tester, find.byType(LogButton).hitTestable());
     tester.semantics.tap(find.semantics.byLabel(LogButton.label));
     await tester.pump();
-    await pumpUntil(tester, _wedgeName('Water'));
+    await pumpUntil(tester, fanWedge('Water'));
     await pumpFor(tester, const Duration(milliseconds: 800));
     tester.semantics.tap(_wedgeNode('Log 1 drink of Water'));
     await tester.pump();
@@ -136,9 +133,10 @@ void main() {
     });
 
     // A wedge's long press opens the record dialog with its habit chosen.
+    await pumpUntil(tester, find.byType(LogButton).hitTestable());
     tester.semantics.tap(find.semantics.byLabel(LogButton.label));
     await tester.pump();
-    await pumpUntil(tester, _wedgeName('Tea'));
+    await pumpUntil(tester, fanWedge('Tea'));
     await pumpFor(tester, const Duration(milliseconds: 800));
     tester.semantics.longPress(_wedgeNode('Log 1 drink of Tea'));
     await tester.pump();
