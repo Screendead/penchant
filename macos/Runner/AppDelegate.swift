@@ -5,9 +5,14 @@ import FlutterMacOS
 class AppDelegate: FlutterAppDelegate {
   private var statusItem: StatusItemController?
 
-  override func applicationDidFinishLaunching(_ notification: Notification) {
-    super.applicationDidFinishLaunching(notification)
-    guard let main = mainFlutterWindow?.contentViewController as? FlutterViewController else {
+  // applicationDidFinishLaunching never reached this class (macOS 27.2,
+  // 2026-11-08; cause unknown), so the status item is made here. The main nib,
+  // and with it the window and its engine, is loaded by now.
+  override func applicationWillFinishLaunching(_ notification: Notification) {
+    super.applicationWillFinishLaunching(notification)
+    guard statusItem == nil,
+      let main = mainFlutterWindow?.contentViewController as? FlutterViewController
+    else {
       return
     }
     statusItem = StatusItemController(engine: main.engine) { [weak self] in
