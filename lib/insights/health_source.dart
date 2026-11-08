@@ -11,8 +11,11 @@ class DailyOutcome {
   const DailyOutcome(this.date, this.metricId, this.value);
 
   /// Local midnight of the day. A sleep value for day D is the night that
-  /// ended on D: sleep that ended between noon on D-1 and noon on D, so an
-  /// afternoon nap counts towards the following night.
+  /// ended on D: each sleep, taken whole, that ended between noon on D-1 and
+  /// noon on D, so an afternoon nap counts towards the following night. The
+  /// night metrics ([HealthMetric.respiratoryRate] and
+  /// [HealthMetric.appleSleepingWristTemperature]) use the same noon-to-noon
+  /// window, so they line up with that night's sleep.
   final DateTime date;
 
   /// A [HealthMetric.id], or another source's id.
@@ -51,13 +54,14 @@ enum HealthMetric {
   /// The day's average, in beats per minute.
   restingHeartRate('restingHeartRate'),
 
-  /// The day's average, in breaths per minute.
+  /// The night's average, noon to noon like sleep, in breaths per minute.
   respiratoryRate('respiratoryRate'),
 
   /// The day's average, as a fraction from 0 to 1.
   oxygenSaturation('oxygenSaturation'),
 
-  /// The night's average, in degrees Celsius. iOS 16 and later.
+  /// The night's average, noon to noon like sleep, in degrees Celsius. iOS 16
+  /// and later.
   appleSleepingWristTemperature('appleSleepingWristTemperature'),
 
   /// The day's total.
@@ -81,12 +85,17 @@ final class HealthUnavailable extends HealthRead {
 }
 
 /// A day missing from [values] has no data, which is not a zero: HealthKit
-/// answers a refused read with no samples, the same as an empty one.
+/// answers a read the person refused with no samples, the same as an empty
+/// one. A read HealthKit could not make throws instead (see
+/// [HealthSource.dailyValues]).
 final class HealthValues extends HealthRead {
   const HealthValues(this.values);
 
   final List<DailyOutcome> values;
 }
+
+const healthDatabaseInaccessible = 'database-inaccessible';
+const healthNotDetermined = 'not-determined';
 
 abstract interface class HealthSource {
   Future<bool> isAvailable();
@@ -96,7 +105,14 @@ abstract interface class HealthSource {
   /// is unavailable.
   Future<bool> requestAuthorization();
 
-  /// Values for the days from [start] up to but not including [end].
+  /// Values for the days from [start] up to but not including [end]; none when
+  /// [start] is not before [end].
+  ///
+  /// Throws a [PlatformException] when HealthKit fails the read, rather than
+  /// answer as if the days had no data: [healthDatabaseInaccessible] while the
+  /// device is locked (try again once it is unlocked), [healthNotDetermined]
+  /// before [requestAuthorization] has shown the sheet, and `query-failed`
+  /// otherwise.
   Future<HealthRead> dailyValues(
     Set<HealthMetric> metrics,
     DateTime start,
@@ -151,6 +167,7 @@ class ChannelHealthSource implements HealthSource {
     DateTime end,
   ) async {
     if (!_supported) return const HealthUnavailable();
+    if (!start.isBefore(end)) return const HealthValues([]);
     final Object? rows;
     try {
       rows = await _channel.invokeMethod<Object?>('dailyValues', {

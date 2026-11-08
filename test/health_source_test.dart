@@ -123,6 +123,29 @@ void main() {
     expect(source.requestAuthorization(), throwsA(isA<PlatformException>()));
   });
 
+  test('a locked device or an unasked read throws, not no data', () async {
+    for (final code in [healthDatabaseInaccessible, healthNotDetermined]) {
+      answer((_) => throw PlatformException(code: code));
+      await expectLater(
+        source.dailyValues({HealthMetric.sleepAsleep}, start, end),
+        throwsA(isA<PlatformException>().having((e) => e.code, 'code', code)),
+      );
+    }
+  });
+
+  test('an empty range is no data, without a channel call', () async {
+    answer((_) => throw PlatformException(code: 'bad-arguments'));
+    for (final range in [(start, start), (end, start)]) {
+      final read = await source.dailyValues(
+        {HealthMetric.stepCount},
+        range.$1,
+        range.$2,
+      );
+      expect((read as HealthValues).values, isEmpty);
+    }
+    expect(calls, isEmpty);
+  });
+
   test('off iOS it never calls the channel', () async {
     answer((_) => <Object?>[]);
     final offIOS = ChannelHealthSource();

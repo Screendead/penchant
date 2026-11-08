@@ -9,10 +9,18 @@ enum HealthChannel {
   static let channelName = "com.screendead.penchant/health"
   private static let store = HKHealthStore()
 
+  private enum Window {
+    // Local midnight to midnight.
+    case day
+    // Noon to noon, keyed by the day it ends on, like the sleep metrics.
+    case night
+  }
+
   private struct Statistic {
     let type: HKQuantityType
     let unit: HKUnit
     let options: HKStatisticsOptions
+    var window = Window.day
   }
 
   private static func statistic(_ metric: String) -> Statistic? {
@@ -26,13 +34,14 @@ enum HealthChannel {
     case "restingHeartRate":
       return Statistic(type: HKQuantityType(.restingHeartRate), unit: perMinute, options: average)
     case "respiratoryRate":
-      return Statistic(type: HKQuantityType(.respiratoryRate), unit: perMinute, options: average)
+      return Statistic(type: HKQuantityType(.respiratoryRate), unit: perMinute, options: average, window: .night)
     case "oxygenSaturation":
       return Statistic(type: HKQuantityType(.oxygenSaturation), unit: .percent(), options: average)
     case "appleSleepingWristTemperature":
       guard #available(iOS 16.0, *) else { return nil }
       return Statistic(
-        type: HKQuantityType(.appleSleepingWristTemperature), unit: .degreeCelsius(), options: average)
+        type: HKQuantityType(.appleSleepingWristTemperature), unit: .degreeCelsius(), options: average,
+        window: .night)
     case "stepCount":
       return Statistic(type: HKQuantityType(.stepCount), unit: .count(), options: sum)
     case "activeEnergyBurned":
@@ -45,18 +54,6 @@ enum HealthChannel {
   private static let quantityMetrics = [
     "heartRateVariabilitySDNN", "restingHeartRate", "respiratoryRate", "oxygenSaturation",
     "appleSleepingWristTemperature", "stepCount", "activeEnergyBurned",
-  ]
-
-  // HKCategoryValueSleepAnalysis raw values, which are stable across releases:
-  // inBed 0, asleepUnspecified (iOS 15's asleep) 1, awake 2, asleepCore 3,
-  // asleepDeep 4, asleepREM 5. The named cases for 3 to 5 need iOS 16.
-  private static let sleepMetrics: [(id: String, values: Set<Int>)] = [
-    ("sleepInBed", [0]),
-    ("sleepAsleep", [1, 3, 4, 5]),
-    ("sleepAwake", [2]),
-    ("sleepCore", [3]),
-    ("sleepDeep", [4]),
-    ("sleepREM", [5]),
   ]
 
   private static var readTypes: Set<HKObjectType> {
@@ -92,13 +89,23 @@ enum HealthChannel {
       case "dailyValues":
         guard let args = call.arguments as? [String: Any],
           let metrics = args["metrics"] as? [String],
-          let start = day(args["start"]), let end = day(args["end"]), start < end
+          let start = HealthDays.day(args["start"], calendar), let end = HealthDays.day(args["end"], calendar),
+          start <= end
         else {
           result(FlutterError(code: "bad-arguments", message: "dailyValues takes metrics, start and end", details: nil))
           return
         }
-        dailyValues(metrics: Set(metrics), start: start, end: end) { rows in
-          DispatchQueue.main.async { result(rows) }
+        guard start < end else {
+          result([])
+          return
+        }
+        dailyValues(metrics: Set(metrics), start: start, end: end) { outcome in
+          DispatchQueue.main.async {
+            switch outcome {
+            case .success(let rows): result(rows)
+            case .failure(let error): result(flutterError(error))
+            }
+          }
         }
       default:
         result(FlutterMethodNotImplemented)
@@ -106,128 +113,96 @@ enum HealthChannel {
     }
   }
 
+  // HealthKit refuses reads while the device is locked, since Health data is
+  // protected, and before the authorization sheet has been shown. Either way
+  // the caller must not read the silence as a day with no data.
+  private static func flutterError(_ error: Error) -> FlutterError {
+    let code: String
+    switch (error as? HKError)?.code {
+    case .errorDatabaseInaccessible: code = "database-inaccessible"
+    case .errorAuthorizationNotDetermined: code = "not-determined"
+    default: code = "query-failed"
+    }
+    return FlutterError(code: code, message: error.localizedDescription, details: nil)
+  }
+
+  private static func isNoData(_ error: Error) -> Bool {
+    (error as? HKError)?.code == .errorNoData
+  }
+
   private static var calendar: Calendar { Calendar.current }
 
-  private static func day(_ value: Any?) -> Date? {
-    guard let parts = (value as? String)?.split(separator: "-").compactMap({ Int($0) }), parts.count == 3 else {
-      return nil
-    }
-    return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
-  }
-
-  private static func key(_ date: Date) -> String {
-    let c = calendar.dateComponents([.year, .month, .day], from: date)
-    return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
-  }
-
   // Each row is ["date": "yyyy-MM-dd", "metric": id, "value": Double]. A day
-  // with no samples has no row: no data is never a zero.
+  // with no samples has no row: no data is never a zero. If any query fails,
+  // the whole call fails rather than answer with the rows of the others.
   private static func dailyValues(
-    metrics: Set<String>, start: Date, end: Date, completion: @escaping ([[String: Any]]) -> Void
+    metrics: Set<String>, start: Date, end: Date,
+    completion: @escaping (Result<[[String: Any]], Error>) -> Void
   ) {
     let group = DispatchGroup()
     let lock = NSLock()
     var rows: [[String: Any]] = []
-    func add(_ more: [[String: Any]]) {
+    var firstError: Error?
+    func finish(_ more: [[String: Any]], _ error: Error?) {
       lock.lock()
-      rows.append(contentsOf: more)
+      if let error, !isNoData(error) {
+        if firstError == nil { firstError = error }
+      } else {
+        rows.append(contentsOf: more)
+      }
       lock.unlock()
+      group.leave()
     }
 
     for metric in metrics {
       guard let s = statistic(metric) else { continue }
+      let from = s.window == .night ? HealthDays.noon(before: start, calendar) : start
+      let to = s.window == .night ? HealthDays.noon(before: end, calendar) : end
       group.enter()
       let query = HKStatisticsCollectionQuery(
         quantityType: s.type,
-        quantitySamplePredicate: HKQuery.predicateForSamples(withStart: start, end: end),
+        quantitySamplePredicate: HKQuery.predicateForSamples(withStart: from, end: to),
         options: s.options,
-        anchorDate: start,
+        anchorDate: from,
         intervalComponents: DateComponents(day: 1))
-      query.initialResultsHandler = { _, collection, _ in
+      query.initialResultsHandler = { _, collection, error in
         var found: [[String: Any]] = []
-        collection?.enumerateStatistics(from: start, to: end) { stats, _ in
+        collection?.enumerateStatistics(from: from, to: to) { stats, _ in
           let quantity = s.options == .cumulativeSum ? stats.sumQuantity() : stats.averageQuantity()
-          if let quantity, stats.startDate < end {
-            found.append(["date": key(stats.startDate), "metric": metric, "value": quantity.doubleValue(for: s.unit)])
-          }
+          guard let quantity, stats.startDate < to else { return }
+          let date =
+            s.window == .night
+            ? HealthDays.nightKey(bucketStart: stats.startDate, calendar) : HealthDays.key(stats.startDate, calendar)
+          found.append(["date": date, "metric": metric, "value": quantity.doubleValue(for: s.unit)])
         }
-        add(found)
-        group.leave()
+        finish(found, error)
       }
       store.execute(query)
     }
 
-    let wantedSleep = sleepMetrics.filter { metrics.contains($0.id) }
+    let wantedSleep = HealthDays.sleepMetrics.filter { metrics.contains($0.id) }
     if !wantedSleep.isEmpty {
       group.enter()
-      sleepValues(wantedSleep, start: start, end: end) { found in
-        add(found)
-        group.leave()
-      }
-    }
-
-    group.notify(queue: .global(qos: .userInitiated)) { completion(rows) }
-  }
-
-  // HealthKit stores a night as many stage samples on both sides of midnight,
-  // so a night runs from noon to noon and belongs to the day it ends on: the
-  // value for 2026-11-08 is sleep that ended between noon on the 7th and noon
-  // on the 8th, and an afternoon nap counts towards the following night.
-  // Samples that overlap, as a Watch's and a phone's do, are merged per stage
-  // before their minutes are summed.
-  private static func sleepValues(
-    _ wanted: [(id: String, values: Set<Int>)], start: Date, end: Date,
-    completion: @escaping ([[String: Any]]) -> Void
-  ) {
-    let predicate = HKQuery.predicateForSamples(
-      withStart: noon(before: start), end: noon(before: end), options: .strictEndDate)
-    let query = HKSampleQuery(
-      sampleType: HKCategoryType(.sleepAnalysis), predicate: predicate, limit: HKObjectQueryNoLimit,
-      sortDescriptors: nil
-    ) { _, samples, _ in
-      var byNight: [String: [HKCategorySample]] = [:]
-      for sample in (samples as? [HKCategorySample]) ?? [] {
-        let night = nightOf(sample.endDate)
-        guard night >= start, night < end else { continue }
-        byNight[key(night), default: []].append(sample)
-      }
-      var found: [[String: Any]] = []
-      for (night, samples) in byNight {
-        for metric in wanted {
-          let intervals = samples.filter { metric.values.contains($0.value) }.map { ($0.startDate, $0.endDate) }
-          guard !intervals.isEmpty else { continue }
-          found.append(["date": night, "metric": metric.id, "value": mergedMinutes(intervals)])
+      let (from, to) = HealthDays.sleepFetchWindow(start: start, end: end, calendar)
+      let query = HKSampleQuery(
+        sampleType: HKCategoryType(.sleepAnalysis),
+        predicate: HKQuery.predicateForSamples(withStart: from, end: to), limit: HKObjectQueryNoLimit,
+        sortDescriptors: nil
+      ) { _, samples, error in
+        let sleep = ((samples as? [HKCategorySample]) ?? []).map {
+          HealthDays.SleepSample(start: $0.startDate, end: $0.endDate, value: $0.value)
         }
+        finish(HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar), error)
       }
-      completion(found)
+      store.execute(query)
     }
-    store.execute(query)
-  }
 
-  // Wall-clock noon, so a DST change does not move the boundary.
-  private static func noon(before day: Date) -> Date {
-    let previous = calendar.date(byAdding: .day, value: -1, to: day) ?? day
-    return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: previous) ?? previous
-  }
-
-  private static func nightOf(_ end: Date) -> Date {
-    let day = calendar.startOfDay(for: end)
-    let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: end) ?? day
-    return end <= noon ? day : (calendar.date(byAdding: .day, value: 1, to: day) ?? day)
-  }
-
-  private static func mergedMinutes(_ intervals: [(Date, Date)]) -> Double {
-    var total: TimeInterval = 0
-    var current: (Date, Date)?
-    for interval in intervals.sorted(by: { $0.0 < $1.0 }) {
-      if let c = current, interval.0 <= c.1 {
-        current = (c.0, max(c.1, interval.1))
+    group.notify(queue: .global(qos: .userInitiated)) {
+      if let firstError {
+        completion(.failure(firstError))
       } else {
-        if let c = current { total += c.1.timeIntervalSince(c.0) }
-        current = interval
+        completion(.success(rows))
       }
     }
-    if let c = current { total += c.1.timeIntervalSince(c.0) }
-    return total / 60
   }
 }

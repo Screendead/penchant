@@ -32,6 +32,7 @@
 		C97CE9F24C6EEE147683BDF0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FDAF3C8130B148446AF8C30B /* WidgetKit.framework */; };
 		DF0F76AD70CC8FC84F00EAAB /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */; };
 		A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */; };
+		A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */; };
 		E5FFCDD8E9C437FBA3489068 /* LastWeekWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998351430EAA92ABEDA6864E /* LastWeekWidget.swift */; };
 		E79CFF4636BCA7CB66FC29C5 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */; };
 		ED907333D07824E46214ADD2 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E1EA1AAF79873A5820DAE /* LogQueue.swift */; };
@@ -90,6 +91,7 @@
 		758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatText-Variable.ttf"; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthDays.swift; sourceTree = "<group>"; };
 		7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -230,6 +232,7 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */,
 				A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */,
+				A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */,
 				7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */,
 				2CC8BF16A2E2BF31EDCE1023 /* Runner.entitlements */,
 			);
@@ -455,6 +458,7 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				DF0F76AD70CC8FC84F00EAAB /* WidgetBridge.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */,
+				A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */,
 				8EE7B624B3FF8FD24ECF5F41 /* AppShortcuts.swift in Sources */,
 				55472B4E166DAC649E7BA254 /* Snapshot.swift in Sources */,
 				35537E769B73D3EB43BF6ADD /* LogQueue.swift in Sources */,
