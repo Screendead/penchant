@@ -84,19 +84,23 @@ class AppDelegate: FlutterAppDelegate {
       NSApp.terminate(nil)
       return
     }
+    // Registering launches it, before it shows up as running, so opening it
+    // as well would start a second copy, and two helpers would both launch
+    // Penchant to flush.
     if service.status != .enabled {
       do {
         try service.register()
+        return
       } catch {
         NSLog("Penchant: menu bar helper not registered: \(error)")
       }
     }
-    // Registering launches it; an item enabled earlier and quit since does not
-    // relaunch until the next login, so the app opens it.
     // A running helper whose item the user hid brings it back.
     CFNotificationCenterPostNotification(
       CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(showMenuBarNotification as CFString), nil, nil,
       true)
+    // An item enabled earlier and quit since does not relaunch until the next
+    // login, so the app opens it.
     if NSRunningApplication.runningApplications(withBundleIdentifier: Self.menuBarHelperID).isEmpty {
       let helper = Bundle.main.bundleURL.appendingPathComponent(
         "Contents/Library/LoginItems/PenchantMenuBar.app")
