@@ -14,6 +14,10 @@ class StatusItemController: NSObject, NSPopoverDelegate {
   private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
   private let popover = NSPopover()
   private let channel: FlutterMethodChannel
+  // A transient popover closes on the mouse-down outside it, which includes
+  // the status button, so the button's action that follows would reopen it.
+  private static let reopenGuard: TimeInterval = 0.3
+  private var closedAt: Date?
 
   init(engine: FlutterEngine, openMainWindow: @escaping () -> Void) {
     self.engine = engine
@@ -52,6 +56,9 @@ class StatusItemController: NSObject, NSPopoverDelegate {
       popover.performClose(sender)
       return
     }
+    if let closedAt, Date().timeIntervalSince(closedAt) < Self.reopenGuard {
+      return
+    }
     let view = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
     view.view.frame = NSRect(origin: .zero, size: Self.popoverSize)
     popover.contentViewController = view
@@ -61,6 +68,7 @@ class StatusItemController: NSObject, NSPopoverDelegate {
   }
 
   func popoverDidClose(_ notification: Notification) {
+    closedAt = Date()
     // Releasing the controller removes its view from the engine.
     popover.contentViewController = nil
   }

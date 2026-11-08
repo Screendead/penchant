@@ -61,7 +61,6 @@ Future<(FakeTrackerWrites, ProviderContainer)> _pump(
 }
 
 void main() {
-
   testWidgets("shows today's dial with every habit below it", (
     WidgetTester tester,
   ) async {
