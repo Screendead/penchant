@@ -175,15 +175,15 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
 - **D3.** A dense hour's beads merge into one arc above about 48 entries (1b leftover). `lib/widgets/day_dial.dart`. S.
 - **D4.** The history page's "Last 30 days" summary card (1d leftover). History page. S.
 - **D5.** The rest of 1g: rebuild `integration_test/` around the fan gestures, dial semantics and sheets, on iOS and
-  `E2E_DEVICE=macos` (#119 did the finders and the one-build suite). PR from `feat/e2e-1g-mac-window`:
+  `E2E_DEVICE=macos` (#119 did the finders and the one-build suite). #145 (`feat/e2e-1g-mac-window`):
   `log_fan_test.dart` (press-drag-release onto a wedge, a release off the fan, Escape, Log's screen-reader actions, a
   wedge's tap and hold through semantics), and the Trends helpers and checks follow the sheet or the split pane.
   Left: the amount sheet's tests wait on D1; the macOS run of the suite on the split view is unproven until D6 or a
   hand run of `E2E_DEVICE=macos tools/e2e.sh`. `integration_test/`. M.
 - **D6.** Run the macOS e2e suite in CI after merge, beside iOS (`e2e.yml` runs iOS only; C10 puts e2e in CI and
   `r2-mac` ships the Mac only if its e2e is green). `.github/workflows/e2e.yml`. M.
-- **D7.** #108 (`r8-mac-window` B, 1200 x 780): carried onto D5's PR without its 800 x 600 test override; #108 is
-  closed. `macos/Runner/MainFlutterWindow.swift`. S.
+- **D7.** #108 (`r8-mac-window` B, 1200 x 780): carried onto #145 (with D5) without its 800 x 600 test override;
+  close #108 when #145 merges. `macos/Runner/MainFlutterWindow.swift`. S.
 - **D8.** Queue item 6, widgets, Control Centre controls and the Mac menu bar app. First check that the free signing
   team can sign App Groups and app extensions (if not, it moves to BLOCKED with B2), then build. New native targets. L.
 - **D9.** `flutter build macos --release` fails on this machine at Flutter's architecture check; workaround: xcodebuild
