@@ -16,45 +16,65 @@ import 'package:tracker/writes/tracker_writes.dart';
 
 const String widgetLogWhat = 'a log from a widget or Shortcut';
 
+/// What a flush left queued: when a held-back log comes due, and whether a
+/// log stayed because the server refused it or had not acknowledged it.
+typedef FlushLeft = ({DateTime? next, bool refused, bool unacknowledged});
+
 /// Writes [uid]'s ready logs through [writes], then takes them off the queue.
 /// Each is removed once [RejectedWrites.settle] has journalled it and the
 /// server answered or the write timed out into the SDK's own queue, so a
 /// launch that ends first leaves it to the next flush, which writes the same
-/// document again. Returns when to look again, if a log was held back.
+/// document again.
 ///
-/// With [keepRefused] a log the server refuses stays queued, for the app's
-/// next flush to show in its banner: a background engine has no banner.
-Future<DateTime?> flushQueuedLogs({
+/// With [inBackground] (a headless engine whose process ends soon after) a log
+/// the server refuses stays for the app's next flush to show in its banner,
+/// since a background engine has no banner. So does a log the server has not
+/// acknowledged, for the next flush to write again: the SDK's queue of an
+/// exited process sends it only when Penchant next starts. A delete leaves
+/// anyway, because the SDK's queued copy reaches the server first and the
+/// rules refuse a repeat delete.
+Future<FlushLeft> flushQueuedLogs({
   required WidgetBridge bridge,
   required TrackerWrites writes,
   required RejectedWrites rejected,
   required String uid,
   required DateTime now,
-  bool keepRefused = false,
+  bool inBackground = false,
 }) async {
   final ({List<QueuedLog> ready, List<QueuedLog> cancelled, DateTime? next})
   batch = readyLogs(await bridge.pendingLogs(), uid: uid, now: now);
   final List<QueuedLog> done = <QueuedLog>[...batch.cancelled];
+  bool refused = false;
+  bool unacknowledged = false;
   await Future.wait(<Future<void>>[
     for (final QueuedLog log in batch.ready)
-      _write(log, writes, rejected, keepRefused: keepRefused).then((bool ok) {
-        if (ok) {
-          done.add(log);
+      _write(log, writes, rejected, inBackground: inBackground).then((
+        _Written written,
+      ) {
+        switch (written) {
+          case _Written.done:
+            done.add(log);
+          case _Written.refused:
+            refused = true;
+          case _Written.unacknowledged:
+            unacknowledged = true;
         }
       }),
   ]);
   if (done.isNotEmpty) {
     await bridge.removeLogs(done);
   }
-  return batch.next;
+  return (next: batch.next, refused: refused, unacknowledged: unacknowledged);
 }
 
-// Whether the log can leave the queue.
-Future<bool> _write(
+// done: the log can leave the queue.
+enum _Written { done, refused, unacknowledged }
+
+Future<_Written> _write(
   QueuedLog log,
   TrackerWrites writes,
   RejectedWrites rejected, {
-  required bool keepRefused,
+  required bool inBackground,
 }) async {
   final SentWrite write = switch (log.op) {
     QueuedLogOp.log => writes.recordActivity(
@@ -71,21 +91,23 @@ Future<bool> _write(
       ? 'Not saved: $widgetLogWhat'
       : 'Not undone: $widgetLogWhat';
   try {
-    await rejected.settle(write, what);
-    return true;
+    final bool acknowledged = await rejected.settle(write, what);
+    return acknowledged || !inBackground || !creates
+        ? _Written.done
+        : _Written.unacknowledged;
   } on FirebaseException catch (e, stack) {
     // Refused (a habit deleted since the tap, say): writing it again would
     // be refused again, so it goes to the banner and leaves the queue.
     reportError(e, stack, context: 'while writing $widgetLogWhat');
-    if (keepRefused) {
-      return false;
+    if (inBackground) {
+      return _Written.refused;
     }
     rejected.reporter(
       what,
       creates: creates ? log.id : null,
       changes: creates ? null : log.id,
     )(e);
-    return true;
+    return _Written.done;
   }
 }
 
@@ -119,13 +141,13 @@ final widgetLogFlushProvider = Provider<void>((ref) {
   late final Future<void> Function() flush;
   Future<void> run() async {
     try {
-      final DateTime? next = await flushQueuedLogs(
+      final DateTime? next = (await flushQueuedLogs(
         bridge: bridge,
         writes: writes,
         rejected: rejected,
         uid: uid,
         now: DateTime.now(),
-      );
+      )).next;
       due?.cancel();
       if (next != null && !disposed) {
         due = Timer(next.difference(DateTime.now()), flush);

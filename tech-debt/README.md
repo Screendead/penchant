@@ -14,8 +14,8 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
-**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
+**12 issues: 0 critical, 0 high, 1 medium, 11 low.**
+**12 issues: 0 critical, 0 high, 1 medium, 11 low.**
 
 ## Firebase Data Layer (5)
 
@@ -38,11 +38,12 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 
-## Offline and Write Reliability (1)
+## Offline and Write Reliability (2)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
 - **low** — [A dense hour's arc does not show which of its entries are unsynced](offline-and-write-reliability/dense-hour-arc-shows-no-pending-entries.md)
+- **low** — [A late Undo made offline from a widget reaches the server only when Penchant next starts](offline-and-write-reliability/late-undo-offline-waits-for-the-app.md)
 
 ## Accessibility and Localization (1)
 
@@ -61,10 +62,12 @@ Password reset, email verification, re-authentication, account deletion and expo
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
 
-## Platform and Delivery Config (0)
+## Platform and Delivery Config (2)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
+- **low** — [A Mac launch nobody asked to bring forward still takes focus](platform-and-delivery-config/background-launches-take-focus-on-the-mac.md)
+- **low** — [Mac widget logs wait for the app when the menu bar helper is not running](platform-and-delivery-config/mac-widget-logs-need-the-helper.md)
 
 ## CI and Quality Gates (0)
 

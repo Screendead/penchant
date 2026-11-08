@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-08. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-08 (insights queue). Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -165,9 +165,31 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    Status 2026-11-08: the Mac menu bar is a native login-item helper (`macos/PenchantMenuBar`, a SwiftUI
    `MenuBarExtra` embedded at `Contents/Library/LoginItems`, registered with `SMAppService.loginItem` at each app
    launch), after Jack's call below. It reads the widgets' App Group snapshot and queues logs in their `LogQueue`;
-   the app writes them, sealed, on its next flush. The in-process popover (#157, #163) is gone, and with it the
+   the app writes them, sealed, on its next flush. With the app closed, the helper launches it hidden (no window or
+   Dock icon) to flush and quit (`FlushMode`, PR #167; Jack 2026-11-08: "do it properly"). The run leaves its outcome
+   in the App Group; the helper retries a `retry` when the network returns, on wake and on a backoff of about an hour,
+   and says "open Penchant to sync" for a `blocked` one. The in-process popover (#157, #163) is gone, and with it the
    private `enableMultiView` call, which also sent VoiceOver to the wrong view (`FlutterEngine.mm`,
    `update_semantics_callback2`).
+
+7. **Insights, built free** (Jack, 2026-11-08: "build it free for me, we can paywall later"). The Pro features
+   ship unlocked; the paywall and StoreKit wait until he decides to sell. Apple Health works on the free team: a
+   signed probe build on 2026-11-08 got a profile granting `com.apple.developer.healthkit` and background delivery.
+   Small, resumable steps, one PR each, merged on green; tick each here as it merges. Health and every source below
+   stay on the device: nothing they read goes to Firestore, analytics or crash reports.
+   - **a. Engine core** (pure Dart, `lib/insights/`): per-day series from the decrypted journal, a "what follows"
+     comparison of an outcome on days after each habit against days without, attributed per habit, and a refusal to
+     report below a minimum sample or inside the noise (`ideas/insights/insights-engine.md`).
+   - **b. Health reading** (iOS Swift channel): the entitlement, usage string, permission asked from the Insights
+     screen only, daily and nightly aggregates (`HKStatisticsCollectionQuery`) for sleep stages, HRV, resting heart
+     rate, respiratory rate, oxygen, wrist temperature, steps and energy, kept in an on-device store
+     (`ideas/insights/apple-health-correlation.md`, recommendation B with C's aggregates).
+   - **c. Insights screen:** connect Health, then show the engine's findings; empty Health reads as "no data yet".
+   - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
+   - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
+   - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
+     `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
+     and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 
@@ -473,7 +495,8 @@ does not (Claude recommended B, later). Notes are Jack's.
 - **`r10-intents`**: A, **Siri, Shortcuts and the Action button through the same log intent**, built with the widgets.
 - **`r10-mac-widgets`**: A, **macOS widgets from the same code**, built with the iPhone widgets. Jack: "Widgets for the Notification Centre are useful to me."
 - **Mac menu bar after quit** (2026-11-08): Jack: "the menu bar app should still be present even when the app is
-  cmd+q'd too." Built as a login-item helper app; a log made with the app closed waits for the app's next launch.
+  cmd+q'd too." Built as a login-item helper app; a log made with the app closed is written within seconds by a hidden
+  flush-mode launch (PR #167).
 - **`r10-reduce-motion`**: B, **a Follow system / Reduce / Full row in Settings, saved per device** like Appearance.
 - **`r10-languages`**: A, **English only.**
 - **`r10-analytics`**: A, **none** beyond Crashlytics.
@@ -496,10 +519,20 @@ Later the same day, in chat, on the widgets (#158) and the nudge (#156):
 - **The daily nudge fires every day regardless**, even on a day already logged. Jack: "in case something was
   missed". As built in #156; no change.
 - **"Clean day" just dismisses** (option c). As built in #156; no change.
+- **Log widget = Hero with Glow** (Jack 2026-11-08: "B, with C's glow"). The first habit is a dial with a +
+  badge, the rest are pills with their count and a + button, each on a soft glow of its colour. Renders in
+  `docs/pitch/round-11/log-widgets/final/`.
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None. U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
+- **`r11-ios-widget-sync`** (raised 2026-11-08, PR #167 review): iPhone widget and Shortcut logs reach Firestore only
+  when the app runs or iOS grants a `BGAppRefreshTask`, which it schedules at its own discretion (often hours later)
+  and never for an app the user force-quit. Options: (A) keep the background refresh as is; (B) run the widget's log
+  intent in the app's process so it writes at once, for example as a `LiveActivityIntent`, which Apple documents as
+  running in the app's process (unverified for widget buttons here: it needs a spike on a device first). Claude
+  recommends B, after the spike shows a widget tap writing within seconds with the app suspended or not running.
+
+U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 

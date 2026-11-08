@@ -20,5 +20,8 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetBridge") {
       QueueListener.start(WidgetBridge.register(with: registrar), registrar: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthChannel") {
+      HealthChannel.register(with: registrar)
+    }
   }
 }
