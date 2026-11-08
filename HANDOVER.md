@@ -150,14 +150,14 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    signing team can sign App Groups and extensions before building (proven 2026-11-08 on `spike/widget-app-group`,
    commit becdcaf: the free team signs the WidgetKit extension `com.screendead.penchant.widgets` and the App Group
    `group.com.screendead.penchant` on iOS, the app wrote to the group and the widget read it on Jack's iPhone, and
-   `tools/add-widget-target.rb` there generates the target; macOS App Groups, and whether sandboxed macOS needs a
-   TEAMID-prefixed group name, are unchecked). Read Apple's current WidgetKit, App Intents and ControlWidget docs
+   `tools/add-widget-target.rb` there generates the target; macOS App Groups are available to free teams per Apple's docs, but
+   whether sandboxed macOS needs a TEAMID-prefixed group name is unchecked). Read Apple's current WidgetKit, App Intents and ControlWidget docs
    first. Jack's picks of 2026-11-08 (round 10, below) settle the open questions:
    - **Top habits** (`r10-widget-top` D): the most logged in the last 30 days, overridable by hand in the widget's
      settings.
    - **Undo** (`r10-widget-undo` B): a 5-second Undo where you tapped, on each surface (widget, control, menu bar row).
-     Whether WidgetKit can hold and revert such a state is unchecked; read Apple's docs first. If it cannot, fall
-     back to C (the app's Undo on the Mac menu bar only) and say so.
+     Whether WidgetKit can hold and revert such a state is unchecked; read Apple's docs first. Claude's fallback, in the pitch's
+     recommendation, if it cannot: C (the app's Undo on the Mac menu bar only), said so.
    - **Siri, Shortcuts and the Action button** (`r10-intents` A): the same log intent, built with the widgets.
    - **macOS widgets** (`r10-mac-widgets` A): the same WidgetKit code as a Mac extension, built with the iPhone
      widgets, for the desktop and Notification Centre. It depends on the journal key reaching the Mac (P2).
@@ -239,7 +239,7 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
 - **U2.** DECIDED (`r10-widget-top` D, `r10-widget-undo` B, `r10-intents` A, `r10-mac-widgets` A; queue item 6 holds
   them). Queue item 6's open questions: what "top" habits means, Undo after a widget or menu bar tap, Siri, Shortcuts
   and the Action button through the same App Intent, macOS desktop widgets from the same code.
-- **U3.** DECIDED (`r10-reduce-motion` B). A Reduce motion row in Settings, as the mock-up has; the app follows the
+- **U3.** DECIDED (`r10-reduce-motion` B; in progress as PR #153, `feat/reduce-motion-setting`). A Reduce motion row in Settings, as the mock-up has; the app follows the
   system setting and has nothing of its own to set. S.
 - **U4.** DECIDED (`r10-languages` A): English only. Other languages (register: English only). No work.
 - **U5.** DECIDED (`r10-analytics` A): none. Analytics beyond Crashlytics, content-free

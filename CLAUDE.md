@@ -534,7 +534,8 @@ build phase (`tools/crashlytics-upload-symbols.sh`) uploads dSYMs for production
 
 The UI follows the Day Dial direction (`r6-ui-direction`; the mock-up and its Flutter notes are in
 `docs/pitch/mockups/ui-overhaul/day-dial/`). Its tokens live in `lib/design/`:
-`tokens.json` is the mock-up's export and `tokens.dart` mirrors it (colours for light and dark, the type scale,
+`tokens.json` started as the mock-up's export (the mock-up's copy, in `docs/pitch/mockups/ui-overhaul/day-dial/`, is the
+original; this one is the app's source of truth and has moved on) and `tokens.dart` mirrors it (colours for light and dark, the type scale,
 spacing, radii, sizes, motion durations and curves); `test/design_tokens_test.dart` fails when the two drift.
 `appTheme(Brightness)` (`lib/design/app_theme.dart`) builds both `ThemeData`s from them, and `MaterialApp` follows the
 system with `themeMode: ThemeMode.system`. Chrome is ink on paper (paper on ink in dark): `primary` and the selection
