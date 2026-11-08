@@ -68,7 +68,7 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 Test depth and what CI runs.
 
 - **low** — [The e2e record helper can lose the typed quantity](ci-and-quality-gates/record-helper-can-lose-the-quantity.md)
-- **low** — [Three template tests still run and check nothing about the app](ci-and-quality-gates/template-tests-check-nothing.md)
+- **low** — [Two template tests still run and check nothing about the app](ci-and-quality-gates/template-tests-check-nothing.md)
 
 ## Repo, Docs and Release Hygiene (1)
 
