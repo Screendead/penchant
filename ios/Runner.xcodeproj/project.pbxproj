@@ -7,47 +7,55 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0F8D5FC88E16D544176BD7E5 /* WeekDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 194CE5E36B666E8DE149FCB0 /* WeekDial.swift */; };
-		128CA59B8CE1982ED3BBB4B1 /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C10E6B852EEB247081A003B8 /* RedHatText-Variable.ttf */; };
+		088B9F94D6D69CBA0F521249 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4C9459F8D54DA18A6252F28 /* Foundation.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		2328CB8305C4734257203DFE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA40F28F3455F1267E67CBDD /* GoogleService-Info.plist */; };
-		3171D53B3A4AB9D4DFE6AD10 /* LastWeekWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABC78E478EC8700400418D29 /* LastWeekWidget.swift */; };
-		37AEECE585CF237BDD358700 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7281634B2A9F37C1438987EA /* Foundation.framework */; };
+		24A2D8DEB656A48E02FD4DEF /* LogWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033AD6AE558D469041736580 /* LogWidget.swift */; };
+		33AE04F296D7AE125D79E327 /* RedHatDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C14907B634B8FFBB1CD096F /* RedHatDisplay-Variable.ttf */; };
+		35537E769B73D3EB43BF6ADD /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E1EA1AAF79873A5820DAE /* LogQueue.swift */; };
+		35E6E605FD98566D18E004C8 /* PenchantWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
-		3DE48117F8AF9C826EFDA7BD /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC3515C5F8745D444434BD3 /* Snapshot.swift */; };
-		3E96B484E599BCD75889D393 /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A425AEAA6501340BB9E0DEE9 /* RedHatMono-Variable.ttf */; };
-		4104131DC58011E6A2712DC0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B248424829CC2C1B7503262D /* Theme.swift */; };
-		541AA3D18C76A9FDBD324082 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7076D3F9571E80145927F6B /* WidgetBridge.swift */; };
-		560C1AFF425CC213A41477B7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A465EE910FB8F988F3603C5A /* SwiftUI.framework */; };
-		5857BDE6F3B378F5FBA492D0 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A96479386F6F3EDACD5FAC1 /* PenchantWidgets.swift */; };
+		44FB14D2C9A2CA98E34EFCF3 /* WeekDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B68BFAF71BC81A49821CE60 /* WeekDial.swift */; };
+		55472B4E166DAC649E7BA254 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159B767A1C675D568D71AAF7 /* Snapshot.swift */; };
+		6E1795F424729B54757D33AF /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070FE6C176AAF6D354EDC246 /* LogIntents.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		75F5501C5CEA8A6D1975D4E6 /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5C158E400374D0B712277FD /* RedHatMono-Variable.ttf */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		7D2E25E81C4B20FC1417325B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBEDBC897A1B2CA1D22E3401 /* Theme.swift */; };
+		8EE7B624B3FF8FD24ECF5F41 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		9B9EAEA429652F0ED76FFB69 /* PenchantWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 93339C2BCE7E20182E3B035B /* PenchantWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C2FBAB836DD15D3F71E8FE22 /* RedHatDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 10520EE2412242C7BD3BAF3C /* RedHatDisplay-Variable.ttf */; };
-		D997211B16442E6A9AC092F9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B68579929DEDEF2BF7D95E9D /* WidgetKit.framework */; };
+		9B5D5E6FB425409F1F2C29B0 /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */; };
+		9D19346592041635B06713B8 /* LogControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDED82F96F1BBB1DCE3DF251 /* LogControl.swift */; };
+		BF5576092445DE5D11E90DB1 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159B767A1C675D568D71AAF7 /* Snapshot.swift */; };
+		C97CE9F24C6EEE147683BDF0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FDAF3C8130B148446AF8C30B /* WidgetKit.framework */; };
+		DF0F76AD70CC8FC84F00EAAB /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */; };
+		E5FFCDD8E9C437FBA3489068 /* LastWeekWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998351430EAA92ABEDA6864E /* LastWeekWidget.swift */; };
+		E79CFF4636BCA7CB66FC29C5 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */; };
+		ED907333D07824E46214ADD2 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E1EA1AAF79873A5820DAE /* LogQueue.swift */; };
+		FA018D7A625CA05EDEFBF801 /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070FE6C176AAF6D354EDC246 /* LogIntents.swift */; };
+		FA223AE0737504484797BB6D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB7817A797D5C1CC37CBACC6 /* SwiftUI.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		281373B1261A7FBE20232641 /* PBXContainerItemProxy */ = {
+		51953EAF63AAF46B6D386982 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3D2B32AC09D18B4CC10FF3DD;
+			remoteGlobalIDString = D8452227D4DAE6022DA0C771;
 			remoteInfo = PenchantWidgets;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		6D5AC3E860A9404EA36B740B /* Embed Foundation Extensions */ = {
+		4258A58E25EB904B1BD6EC5A /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				9B9EAEA429652F0ED76FFB69 /* PenchantWidgets.appex in Embed Foundation Extensions */,
+				35E6E605FD98566D18E004C8 /* PenchantWidgets.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,21 +73,26 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		10520EE2412242C7BD3BAF3C /* RedHatDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatDisplay-Variable.ttf"; sourceTree = "<group>"; };
+		033AD6AE558D469041736580 /* LogWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogWidget.swift; sourceTree = "<group>"; };
+		070FE6C176AAF6D354EDC246 /* LogIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogIntents.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
-		1514E89B1EE52EB5FA9A7656 /* PenchantWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWidgets.entitlements; sourceTree = "<group>"; };
-		194CE5E36B666E8DE149FCB0 /* WeekDial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekDial.swift; sourceTree = "<group>"; };
+		159B767A1C675D568D71AAF7 /* Snapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
+		1BCF6CA29011AF565B05302A /* PenchantWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWidgets.entitlements; sourceTree = "<group>"; };
+		227E1EA1AAF79873A5820DAE /* LogQueue.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogQueue.swift; sourceTree = "<group>"; };
+		25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PenchantWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2CC8BF16A2E2BF31EDCE1023 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
-		6A96479386F6F3EDACD5FAC1 /* PenchantWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantWidgets.swift; sourceTree = "<group>"; };
-		7281634B2A9F37C1438987EA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantWidgets.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatText-Variable.ttf"; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
+		7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
+		7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		837DC806C76213021117BA8E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8C8FB2C4EFC8E22CD94F2199 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
-		93339C2BCE7E20182E3B035B /* PenchantWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PenchantWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7B68BFAF71BC81A49821CE60 /* WeekDial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekDial.swift; sourceTree = "<group>"; };
+		7C14907B634B8FFBB1CD096F /* RedHatDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatDisplay-Variable.ttf"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -87,28 +100,18 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A425AEAA6501340BB9E0DEE9 /* RedHatMono-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatMono-Variable.ttf"; sourceTree = "<group>"; };
-		A465EE910FB8F988F3603C5A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SwiftUI.framework; sourceTree = DEVELOPER_DIR; };
-		AAC3515C5F8745D444434BD3 /* Snapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
-		ABC78E478EC8700400418D29 /* LastWeekWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LastWeekWidget.swift; sourceTree = "<group>"; };
-		B248424829CC2C1B7503262D /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		B68579929DEDEF2BF7D95E9D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/WidgetKit.framework; sourceTree = DEVELOPER_DIR; };
-		C10E6B852EEB247081A003B8 /* RedHatText-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatText-Variable.ttf"; sourceTree = "<group>"; };
-		C7076D3F9571E80145927F6B /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
+		998351430EAA92ABEDA6864E /* LastWeekWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LastWeekWidget.swift; sourceTree = "<group>"; };
+		A4C9459F8D54DA18A6252F28 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		BB7817A797D5C1CC37CBACC6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SwiftUI.framework; sourceTree = DEVELOPER_DIR; };
+		DBEDBC897A1B2CA1D22E3401 /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		DC2A1AF4201E4D3452339880 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E5C158E400374D0B712277FD /* RedHatMono-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatMono-Variable.ttf"; sourceTree = "<group>"; };
 		FA40F28F3455F1267E67CBDD /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		FDAF3C8130B148446AF8C30B /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/WidgetKit.framework; sourceTree = DEVELOPER_DIR; };
+		FDED82F96F1BBB1DCE3DF251 /* LogControl.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogControl.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		3FA1080AA3F29FC18EEB9F6E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				37AEECE585CF237BDD358700 /* Foundation.framework in Frameworks */,
-				D997211B16442E6A9AC092F9 /* WidgetKit.framework in Frameworks */,
-				560C1AFF425CC213A41477B7 /* SwiftUI.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -117,28 +120,66 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E0106F06F31946A7B1984C6A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				088B9F94D6D69CBA0F521249 /* Foundation.framework in Frameworks */,
+				C97CE9F24C6EEE147683BDF0 /* WidgetKit.framework in Frameworks */,
+				FA223AE0737504484797BB6D /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		098A55D1ACBD34A39DE38B77 /* Fonts */ = {
+		0E1A57CC7800964EB45121C7 /* PenchantWidgets */ = {
 			isa = PBXGroup;
 			children = (
-				10520EE2412242C7BD3BAF3C /* RedHatDisplay-Variable.ttf */,
-				A425AEAA6501340BB9E0DEE9 /* RedHatMono-Variable.ttf */,
-				C10E6B852EEB247081A003B8 /* RedHatText-Variable.ttf */,
+				44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */,
+				159B767A1C675D568D71AAF7 /* Snapshot.swift */,
+				DBEDBC897A1B2CA1D22E3401 /* Theme.swift */,
+				7B68BFAF71BC81A49821CE60 /* WeekDial.swift */,
+				998351430EAA92ABEDA6864E /* LastWeekWidget.swift */,
+				227E1EA1AAF79873A5820DAE /* LogQueue.swift */,
+				070FE6C176AAF6D354EDC246 /* LogIntents.swift */,
+				033AD6AE558D469041736580 /* LogWidget.swift */,
+				FDED82F96F1BBB1DCE3DF251 /* LogControl.swift */,
+				DC2A1AF4201E4D3452339880 /* Info.plist */,
+				1BCF6CA29011AF565B05302A /* PenchantWidgets.entitlements */,
+				65E8E435DF57D6879A7166EE /* Fonts */,
+			);
+			name = PenchantWidgets;
+			path = PenchantWidgets;
+			sourceTree = "<group>";
+		};
+		2B2DA29884C6D3F28C5FCF3E /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				A4C9459F8D54DA18A6252F28 /* Foundation.framework */,
+				FDAF3C8130B148446AF8C30B /* WidgetKit.framework */,
+				BB7817A797D5C1CC37CBACC6 /* SwiftUI.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		6595B3FE45D2C16D360291C1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2B2DA29884C6D3F28C5FCF3E /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		65E8E435DF57D6879A7166EE /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				7C14907B634B8FFBB1CD096F /* RedHatDisplay-Variable.ttf */,
+				E5C158E400374D0B712277FD /* RedHatMono-Variable.ttf */,
+				758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */,
 			);
 			name = Fonts;
 			path = ../../assets/fonts;
-			sourceTree = "<group>";
-		};
-		35F6690961BC4B4140750858 /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				7281634B2A9F37C1438987EA /* Foundation.framework */,
-				B68579929DEDEF2BF7D95E9D /* WidgetKit.framework */,
-				A465EE910FB8F988F3603C5A /* SwiftUI.framework */,
-			);
-			name = iOS;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -160,8 +201,8 @@
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
 				FA40F28F3455F1267E67CBDD /* GoogleService-Info.plist */,
-				ADF464F7D8465D47447BD3AA /* Frameworks */,
-				C2021397304ED7AC7B0C3157 /* PenchantWidgets */,
+				6595B3FE45D2C16D360291C1 /* Frameworks */,
+				0E1A57CC7800964EB45121C7 /* PenchantWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -169,7 +210,7 @@
 			isa = PBXGroup;
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
-				93339C2BCE7E20182E3B035B /* PenchantWidgets.appex */,
+				25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -185,56 +226,16 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
-				C7076D3F9571E80145927F6B /* WidgetBridge.swift */,
-				8C8FB2C4EFC8E22CD94F2199 /* Runner.entitlements */,
+				7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */,
+				7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */,
+				2CC8BF16A2E2BF31EDCE1023 /* Runner.entitlements */,
 			);
 			path = Runner;
-			sourceTree = "<group>";
-		};
-		ADF464F7D8465D47447BD3AA /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				35F6690961BC4B4140750858 /* iOS */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		C2021397304ED7AC7B0C3157 /* PenchantWidgets */ = {
-			isa = PBXGroup;
-			children = (
-				6A96479386F6F3EDACD5FAC1 /* PenchantWidgets.swift */,
-				AAC3515C5F8745D444434BD3 /* Snapshot.swift */,
-				B248424829CC2C1B7503262D /* Theme.swift */,
-				194CE5E36B666E8DE149FCB0 /* WeekDial.swift */,
-				ABC78E478EC8700400418D29 /* LastWeekWidget.swift */,
-				837DC806C76213021117BA8E /* Info.plist */,
-				1514E89B1EE52EB5FA9A7656 /* PenchantWidgets.entitlements */,
-				098A55D1ACBD34A39DE38B77 /* Fonts */,
-			);
-			name = PenchantWidgets;
-			path = PenchantWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3D2B32AC09D18B4CC10FF3DD /* PenchantWidgets */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = DD428D41A788F2EECA6FBEFB /* Build configuration list for PBXNativeTarget "PenchantWidgets" */;
-			buildPhases = (
-				60F271EE48EAFEADD9B8049C /* Sources */,
-				3FA1080AA3F29FC18EEB9F6E /* Frameworks */,
-				D5B27F6C15941A94765DC49F /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = PenchantWidgets;
-			productName = PenchantWidgets;
-			productReference = 93339C2BCE7E20182E3B035B /* PenchantWidgets.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -245,14 +246,14 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				5E1A7C0B2D4F4E8A9B3C6D10 /* Strip Firebase plist for emulators */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
-				6D5AC3E860A9404EA36B740B /* Embed Foundation Extensions */,
+				4258A58E25EB904B1BD6EC5A /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				5E1A7C0B2D4F4E8A9B3C6D20 /* Upload Crashlytics symbols */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				8004C3720A507E27285A3C41 /* PBXTargetDependency */,
+				DE14C25053D73E2E441A49A4 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -261,6 +262,23 @@
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
+		};
+		D8452227D4DAE6022DA0C771 /* PenchantWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E3F2F3F10B6A84F6F2FC34B /* Build configuration list for PBXNativeTarget "PenchantWidgets" */;
+			buildPhases = (
+				3510DD8F25D25981FCD1C189 /* Sources */,
+				E0106F06F31946A7B1984C6A /* Frameworks */,
+				A62AE04C01CD83F8A8DED891 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PenchantWidgets;
+			productName = PenchantWidgets;
+			productReference = 25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -272,8 +290,9 @@
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
-					3D2B32AC09D18B4CC10FF3DD = {
-						CreatedOnToolsVersion = 27.2;
+					97C146ED1CF9000F007C117D = {
+						CreatedOnToolsVersion = 7.3.1;
+						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.ApplicationGroups.iOS = {
@@ -281,9 +300,8 @@
 							};
 						};
 					};
-					97C146ED1CF9000F007C117D = {
-						CreatedOnToolsVersion = 7.3.1;
-						LastSwiftMigration = 1100;
+					D8452227D4DAE6022DA0C771 = {
+						CreatedOnToolsVersion = 27.2;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.ApplicationGroups.iOS = {
@@ -310,7 +328,7 @@
 			projectRoot = "";
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
-				3D2B32AC09D18B4CC10FF3DD /* PenchantWidgets */,
+				D8452227D4DAE6022DA0C771 /* PenchantWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -328,13 +346,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D5B27F6C15941A94765DC49F /* Resources */ = {
+		A62AE04C01CD83F8A8DED891 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C2FBAB836DD15D3F71E8FE22 /* RedHatDisplay-Variable.ttf in Resources */,
-				3E96B484E599BCD75889D393 /* RedHatMono-Variable.ttf in Resources */,
-				128CA59B8CE1982ED3BBB4B1 /* RedHatText-Variable.ttf in Resources */,
+				33AE04F296D7AE125D79E327 /* RedHatDisplay-Variable.ttf in Resources */,
+				75F5501C5CEA8A6D1975D4E6 /* RedHatMono-Variable.ttf in Resources */,
+				9B5D5E6FB425409F1F2C29B0 /* RedHatText-Variable.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,15 +428,19 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		60F271EE48EAFEADD9B8049C /* Sources */ = {
+		3510DD8F25D25981FCD1C189 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5857BDE6F3B378F5FBA492D0 /* PenchantWidgets.swift in Sources */,
-				3DE48117F8AF9C826EFDA7BD /* Snapshot.swift in Sources */,
-				4104131DC58011E6A2712DC0 /* Theme.swift in Sources */,
-				0F8D5FC88E16D544176BD7E5 /* WeekDial.swift in Sources */,
-				3171D53B3A4AB9D4DFE6AD10 /* LastWeekWidget.swift in Sources */,
+				E79CFF4636BCA7CB66FC29C5 /* PenchantWidgets.swift in Sources */,
+				BF5576092445DE5D11E90DB1 /* Snapshot.swift in Sources */,
+				7D2E25E81C4B20FC1417325B /* Theme.swift in Sources */,
+				44FB14D2C9A2CA98E34EFCF3 /* WeekDial.swift in Sources */,
+				E5FFCDD8E9C437FBA3489068 /* LastWeekWidget.swift in Sources */,
+				ED907333D07824E46214ADD2 /* LogQueue.swift in Sources */,
+				FA018D7A625CA05EDEFBF801 /* LogIntents.swift in Sources */,
+				24A2D8DEB656A48E02FD4DEF /* LogWidget.swift in Sources */,
+				9D19346592041635B06713B8 /* LogControl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -428,18 +450,22 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
-				541AA3D18C76A9FDBD324082 /* WidgetBridge.swift in Sources */,
+				DF0F76AD70CC8FC84F00EAAB /* WidgetBridge.swift in Sources */,
+				8EE7B624B3FF8FD24ECF5F41 /* AppShortcuts.swift in Sources */,
+				55472B4E166DAC649E7BA254 /* Snapshot.swift in Sources */,
+				35537E769B73D3EB43BF6ADD /* LogQueue.swift in Sources */,
+				6E1795F424729B54757D33AF /* LogIntents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		8004C3720A507E27285A3C41 /* PBXTargetDependency */ = {
+		DE14C25053D73E2E441A49A4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = PenchantWidgets;
-			target = 3D2B32AC09D18B4CC10FF3DD /* PenchantWidgets */;
-			targetProxy = 281373B1261A7FBE20232641 /* PBXContainerItemProxy */;
+			target = D8452227D4DAE6022DA0C771 /* PenchantWidgets */;
+			targetProxy = 51953EAF63AAF46B6D386982 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -531,6 +557,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-weak_framework",
+					AppIntents,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -539,7 +570,7 @@
 			};
 			name = Profile;
 		};
-		2EBB7853443059277B70B603 /* Debug */ = {
+		8C60EDD2F9D50F9D585C44AE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
@@ -691,6 +722,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-weak_framework",
+					AppIntents,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -716,6 +752,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-weak_framework",
+					AppIntents,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -724,7 +765,7 @@
 			};
 			name = Release;
 		};
-		A2CC5B04BCCA51DF689E82EB /* Release */ = {
+		A87C560821EC46C7E5125E42 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -750,7 +791,7 @@
 			};
 			name = Release;
 		};
-		C7844ECF328BC2C9E98FFA78 /* Profile */ = {
+		ADF3EA18D1CD3735E14A2B1C /* Profile */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -779,6 +820,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3E3F2F3F10B6A84F6F2FC34B /* Build configuration list for PBXNativeTarget "PenchantWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A87C560821EC46C7E5125E42 /* Release */,
+				8C60EDD2F9D50F9D585C44AE /* Debug */,
+				ADF3EA18D1CD3735E14A2B1C /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -795,16 +846,6 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		DD428D41A788F2EECA6FBEFB /* Build configuration list for PBXNativeTarget "PenchantWidgets" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A2CC5B04BCCA51DF689E82EB /* Release */,
-				2EBB7853443059277B70B603 /* Debug */,
-				C7844ECF328BC2C9E98FFA78 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

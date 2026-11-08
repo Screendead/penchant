@@ -6,7 +6,10 @@
 require 'xcodeproj'
 
 TEAM = '8N575942RT'
-SOURCES = %w[PenchantWidgets.swift Snapshot.swift Theme.swift WeekDial.swift LastWeekWidget.swift].freeze
+SOURCES = %w[PenchantWidgets.swift Snapshot.swift Theme.swift WeekDial.swift LastWeekWidget.swift LogQueue.swift
+             LogIntents.swift LogWidget.swift LogControl.swift].freeze
+# The app also runs the log intent (from Siri, Shortcuts and the Action button), so it compiles these too.
+SHARED = %w[Snapshot.swift LogQueue.swift LogIntents.swift].freeze
 FONTS = %w[RedHatDisplay-Variable.ttf RedHatMono-Variable.ttf RedHatText-Variable.ttf].freeze
 
 project_path = File.expand_path('../ios/Runner.xcodeproj', __dir__)
@@ -16,7 +19,8 @@ abort 'PenchantWidgets already exists' if project.targets.any? { |t| t.name == '
 
 ext = project.new_target(:app_extension, 'PenchantWidgets', :ios, '17.0')
 group = project.main_group.new_group('PenchantWidgets', 'PenchantWidgets')
-ext.add_file_references(SOURCES.map { |f| group.new_reference(f) })
+refs = SOURCES.to_h { |f| [f, group.new_reference(f)] }
+ext.add_file_references(refs.values)
 group.new_reference('Info.plist')
 group.new_reference('PenchantWidgets.entitlements')
 # The app's fonts, referenced where Flutter keeps them rather than copied.
@@ -25,7 +29,8 @@ ext.add_resources(FONTS.map { |f| fonts.new_reference(f) })
 %w[WidgetKit SwiftUI].each { |f| ext.add_system_framework(f) }
 
 runner_group = project.main_group.find_subpath('Runner', false)
-runner.add_file_references([runner_group.new_reference('WidgetBridge.swift')])
+runner.add_file_references(%w[WidgetBridge.swift AppShortcuts.swift].map { |f| runner_group.new_reference(f) })
+runner.add_file_references(SHARED.map { |f| refs[f] })
 runner_group.new_reference('Runner.entitlements')
 
 xcconfig = ->(name) { project.files.find { |f| f.path == "Flutter/#{name}.xcconfig" } }
@@ -51,6 +56,8 @@ runner.build_configurations.each do |runner_config|
     'LD_RUNPATH_SEARCH_PATHS' => ['$(inherited)', '@executable_path/Frameworks', '@executable_path/../../Frameworks'],
   )
   runner_config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'Runner/Runner.entitlements'
+  # AppIntents arrived in iOS 16 and the app runs on 15.
+  runner_config.build_settings['OTHER_LDFLAGS'] = ['$(inherited)', '-weak_framework', 'AppIntents']
 end
 
 runner.add_dependency(ext)
