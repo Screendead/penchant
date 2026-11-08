@@ -33,9 +33,7 @@ class _AuthenticateState extends State<Authenticate> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Color muted = DialColors.of(context).muted;
-    final Duration fade = MediaQuery.disableAnimationsOf(context)
-        ? DialMotion.reducedFade
-        : const Duration(milliseconds: 260);
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -98,11 +96,9 @@ class _AuthenticateState extends State<Authenticate> {
                                     setState(() => _register = register),
                               ),
                               const SizedBox(height: 18),
-                              AnimatedSwitcher(
-                                duration: fade,
-                                child: _register
-                                    ? const Register(key: ValueKey<bool>(true))
-                                    : const SignIn(key: ValueKey<bool>(false)),
+                              _FormSwitcher(
+                                register: _register,
+                                reduced: reduced,
                               ),
                               const _GuestStart(),
                             ],
@@ -138,6 +134,80 @@ class _AuthenticateState extends State<Authenticate> {
   }
 }
 
+// The thumb, the form fade and the height change run together on these.
+const Duration _switchDuration = Duration(milliseconds: 260);
+const Curve _switchCurve = DialMotion.enter;
+
+// A fade-through between the two forms: the old one is gone by a third of the
+// way, the new one fades in and settles 6 pt down (the mock-up's travel), and
+// the box eases to the new form's height so what sits below glides. Under
+// reduced motion the forms cross-fade in place and the height changes at once.
+class _FormSwitcher extends StatelessWidget {
+  const _FormSwitcher({required this.register, required this.reduced});
+
+  final bool register;
+  final bool reduced;
+
+  @override
+  Widget build(BuildContext context) {
+    final Key current = ValueKey<bool>(register);
+    return AnimatedSize(
+      // A zero duration trips RenderAnimatedSize's layout assertion, and
+      // dropping the widget under reduced motion would remount the forms.
+      duration: reduced ? const Duration(microseconds: 1) : _switchDuration,
+      curve: _switchCurve,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: reduced ? DialMotion.reducedFade : _switchDuration,
+        // Outgoing forms are positioned so that only the incoming one sizes
+        // the box, and both are top-aligned so their shared fields line up.
+        layoutBuilder: (Widget? currentChild, List<Widget> previous) => Stack(
+          alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            for (final Widget child in previous)
+              Positioned(top: 0, left: 0, right: 0, child: child),
+            ?currentChild,
+          ],
+        ),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          if (reduced) {
+            return FadeTransition(opacity: animation, child: child);
+          }
+          if (child.key != current) {
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: const Interval(0.65, 1, curve: Curves.easeIn),
+              ),
+              child: child,
+            );
+          }
+          final Animation<double> enter = CurvedAnimation(
+            parent: animation,
+            curve: const Interval(0.35, 1, curve: _switchCurve),
+          );
+          return FadeTransition(
+            opacity: enter,
+            child: AnimatedBuilder(
+              animation: enter,
+              builder: (BuildContext context, Widget? child) =>
+                  Transform.translate(
+                    offset: Offset(0, -6 * (1 - enter.value)),
+                    child: child,
+                  ),
+              child: child,
+            ),
+          );
+        },
+        child: register
+            ? const Register(key: ValueKey<bool>(true))
+            : const SignIn(key: ValueKey<bool>(false)),
+      ),
+    );
+  }
+}
+
 // Sign in or Create account: a recessed track whose surface thumb slides to
 // the chosen side.
 class _AuthSegments extends StatelessWidget {
@@ -152,7 +222,7 @@ class _AuthSegments extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final Duration slide = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
-        : const Duration(milliseconds: 260);
+        : _switchDuration;
     return Container(
       padding: const EdgeInsets.all(DialSpace.xxs),
       decoration: BoxDecoration(
@@ -164,7 +234,7 @@ class _AuthSegments extends StatelessWidget {
           Positioned.fill(
             child: AnimatedAlign(
               duration: slide,
-              curve: Curves.easeOutCubic,
+              curve: _switchCurve,
               alignment: register
                   ? Alignment.centerRight
                   : Alignment.centerLeft,
