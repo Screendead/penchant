@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**10 issues: 0 critical, 0 high, 2 medium, 8 low.**
+**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
 
 ## Firebase Data Layer (5)
 
@@ -69,9 +69,8 @@ Test depth and what CI runs.
 
 - **low** — [The e2e record helper can lose the typed quantity](ci-and-quality-gates/record-helper-can-lose-the-quantity.md)
 
-## Repo, Docs and Release Hygiene (1)
+## Repo, Docs and Release Hygiene (0)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
-- **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 
