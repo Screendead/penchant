@@ -21,12 +21,14 @@ import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/sync_status.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'trends_harness.dart';
 import 'render_fonts.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
@@ -58,7 +60,31 @@ List<Override> _overrides(Stream<bool> offline) => <Override>[
   viceActivityDayProvider.overrideWith(
     (ref, DateTime day) => AsyncData(_entries(day)),
   ),
+  viceActivityGraphProvider.overrideWith(
+    (ref, ViceActivityGraphQuery query) => _graph(query),
+  ),
 ];
+
+final AsyncValue<List<ViceActivity>> Function(ViceActivityGraphQuery) _graph =
+    inRange(_history());
+
+// A year and more of the first habit, a few a day, rising and falling.
+List<ViceActivity> _history() {
+  final DateTime today = DateUtils.dateOnly(DateTime.now());
+  return <ViceActivity>[
+    for (int ago = 0; ago < 400; ago++)
+      for (int i = 0; i < 1 + (ago * 7 % 5) + (ago ~/ 30) % 3; i++)
+        fakeActivity(
+          _vices[0].id,
+          1,
+          DateTime(
+            today.year,
+            today.month,
+            today.day - ago,
+          ).add(Duration(hours: 8 + i * 3)),
+        ),
+  ];
+}
 
 Future<void> Function() _recorder(
   WidgetTester tester,
@@ -217,4 +243,13 @@ void main() {
       await _run(tester, capture, 22);
     }, skip: _dir.isEmpty);
   }
+
+  testWidgets('chart morph between ranges', (WidgetTester tester) async {
+    final GlobalKey frame = await _pumpToday(tester, reduced: false);
+    await openTrends(tester);
+    final Future<void> Function() capture = _recorder(tester, frame, 'morph');
+    await tester.tap(inTrends(find.text('90D')));
+    await tester.pump();
+    await _run(tester, capture, 30);
+  }, skip: _dir.isEmpty);
 }

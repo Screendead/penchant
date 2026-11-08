@@ -19,7 +19,7 @@ for dir in "$frames"/*/; do
   ffmpeg -loglevel error -y -framerate 15 -i "$dir/frame-%03d.png" \
     -vf "scale=390:-1,$palette" "$out/$scene-slow.gif"
   crop=""
-  case "$scene" in snap) crop="crop=390:330:0:20," ;; offline*) crop="crop=390:200:0:0," ;; esac
+  case "$scene" in snap) crop="crop=390:330:0:20," ;; offline*) crop="crop=390:200:0:0," ;; morph) crop="crop=390:420:0:150," ;; esac
   ffmpeg -loglevel error -y -framerate 1 -i "$dir/frame-%03d.png" \
     -vf "select='not(mod(n\,2))',${crop}scale=160:-1,tile=12x1:padding=4:color=gray" \
     -frames:v 1 "$out/$scene-sheet.png"

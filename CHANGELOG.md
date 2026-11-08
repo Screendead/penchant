@@ -20,6 +20,8 @@ pull request titles (`gh pr list --state merged`).
   fade out before the new day's fade in).
 - The offline and "not saved" notices are rounded pills that drop in from the top on a spring and lift away when
   they clear, instead of bars that appear and vanish at once. With Reduce Motion on they fade.
+- In Trends, switching between 7 days, 30 days, 90 days and a year morphs the chart's line from one range into the
+  other instead of scrambling it.
 
 ### Fixed
 
