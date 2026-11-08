@@ -244,13 +244,13 @@ const GROUPS = [
       rec: "C", why: "The mock-up you build from belongs on master, and tags keep every rejected option recoverable while emptying the branch list." },
 
     { id: "r10-release", q: "Cut 0.2.0 now, or wait for the Mac fullscreen layout and AutoFill?",
-      ctx: "The version is still 0.1.0. The iPhone already runs builds from master (762, the encryption merge, and 768), so 0.2.0 would give a name and release notes to what the phone already has. A Mac release build on this machine still needs the arm64 xcodebuild workaround (D9), and the Mac's journal key hasn't synced yet.",
+      ctx: "The version is still 0.1.0. The iPhone already runs builds from master (762, the encryption merge, and 768, the sign-in switch), so 0.2.0 would name what the phone already has, plus #134's one-line recovery-field fix. A Mac release build on this machine still needs the arm64 xcodebuild workaround (D9), and the Mac's journal key hasn't synced yet.",
       opts: [
         { k: "A", t: "Cut 0.2.0 now", c: "Bump the version, turn the changelog's Unreleased section into 0.2.0, run the Release workflow, install on the iPhone and Mac.",
           e: "Small.", r: "Low on the phone. On the Mac, until the key syncs, it asks for the recovery key.", cost: "0.3.0 follows soon for the Mac work." },
         { k: "B", t: "Wait for Mac fullscreen and AutoFill", c: "Cut 0.2.0 once the picked fullscreen layout and PR #133 land.",
           e: "Small, later.", r: "Low.", cost: "The phone keeps showing 0.1.0 while it runs newer code." } ],
-      rec: "B", why: "The phone already runs everything 0.2.0 would hold, so a tag now is only a label. Waiting makes the first tagged Mac build carry AutoFill, the fullscreen layout and, with luck, the key-sync fix." } ] },
+      rec: "B", why: "The phone already runs everything 0.2.0 would hold but #134's small fix, so a tag now is mostly a label. Waiting makes the first tagged Mac build carry AutoFill, the fullscreen layout and, with luck, the key-sync fix." } ] },
 ];
 
 const IMG = Object.fromEntries(["now-mac-2000x1250-dark", "now-mac-2000x1250-light",
