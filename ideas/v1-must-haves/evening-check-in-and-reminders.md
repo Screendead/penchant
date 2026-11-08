@@ -39,6 +39,6 @@ yes.
 
 **Revenue impact:** Medium to high, through retention and insight quality.
 
-**Depends on:** [quick logging](one-tap-quick-logging.md); the day rule (`CLAUDE.md`, **Days**).
+**Depends on:** the one-tap log (`lib/writes/log_one.dart`); the day rule (`CLAUDE.md`, **Days**).
 
-**Needs Jack:** yes — May "nothing logged today" be a new `days` collection?
+**Needs Jack:** yes, for reminders alone. `r2-days` (Jack, 2026-11-06) ruled out the check-in and the `days` collection: a day with nothing logged counts as clean.

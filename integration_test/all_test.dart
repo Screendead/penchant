@@ -15,6 +15,7 @@ import 'cold_start_test.dart' as cold_start_test;
 import 'error_states_test.dart' as error_states_test;
 import 'guest_test.dart' as guest_test;
 import 'key_service_test.dart' as key_service_test;
+import 'log_fan_test.dart' as log_fan_test;
 import 'navigation_test.dart' as navigation_test;
 import 'offline_test.dart' as offline_test;
 import 'onboarding_test.dart' as onboarding_test;
@@ -39,6 +40,7 @@ void main() {
   group('error_states_test', error_states_test.main);
   group('guest_test', guest_test.main);
   group('key_service_test', key_service_test.main);
+  group('log_fan_test', log_fan_test.main);
   group('navigation_test', navigation_test.main);
   group('offline_test', offline_test.main);
   group('onboarding_test', onboarding_test.main);

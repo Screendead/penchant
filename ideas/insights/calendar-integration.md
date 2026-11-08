@@ -8,7 +8,7 @@ With full calendar access, the [insights engine](insights-engine.md) reads past 
 features per entry and per day: minutes in meetings that day, the number of events, whether an event ended within the
 hour or two before an entry, back-to-back blocks, events with many attendees, and events the user tags (for example
 "1:1s with my manager"). It answers "you log coffee within an hour after 64% of meetings longer than 45 minutes" and
-feeds "Work → Meeting" suggestions to the [trigger picker](trigger-tagging.md) when an entry follows an event.
+feeds "Work → Meeting" suggestions to the trigger picker when an entry follows an event.
 
 Event titles, attendees and notes are read on the device and never stored outside it. At most, the entry stores the
 trigger path the user accepted.
@@ -48,6 +48,6 @@ writes to the calendar.
 **Revenue impact:** Medium to high: a distinctive Pro insight for the knowledge-worker audience (INFERENCE: of the
 competitors, only Exist and Gyroscope list a calendar integration, both cloud-processed).
 
-**Depends on:** [insights engine](insights-engine.md); [trigger tagging](trigger-tagging.md); [macOS target](../v1-must-haves/macos-target.md).
+**Depends on:** [insights engine](insights-engine.md); [macOS target](../v1-must-haves/macos-target.md).
 
 **Needs Jack:** no

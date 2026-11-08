@@ -196,7 +196,14 @@ void main() {
         await tester.pumpAndSettle();
         await tester.enterText(quantity, '0');
         // No vice is selected, so validation runs but nothing is written.
-        await tester.tap(find.text('Record'));
+        // A focused field scrolls itself back into view on each frame.
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(RecordNewActivityDialog.submitKey),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
@@ -240,7 +247,7 @@ void main() {
         expect(find.byType(RecordNewActivityDialog), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.tap(find.text('Cancel'));
+        await tester.tap(find.byTooltip('Close'));
         await tester.pumpAndSettle();
         await openTrends(tester);
         expect(find.byType(LineChart), findsOneWidget);

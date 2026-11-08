@@ -17,7 +17,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
-import 'package:tracker/widgets/trigger_picker.dart';
+import 'package:tracker/widgets/amount_fields.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -314,46 +314,23 @@ class _ViceActivityEditorPageState
                       readOnly: true,
                       decoration: const InputDecoration(labelText: 'Habit'),
                     ),
-                    const SizedBox(height: 16),
-                    ActivityDateField(
-                      controller: dateController,
+                    const SizedBox(height: 24),
+                    AmountFields(
+                      quantityController: quantityController,
+                      unit: vice.unit,
+                      dateController: dateController,
                       startLive: false,
                       manualSeed: () => activity.createdAt.toDate(),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: quantityController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Quantity',
-                        suffixText: vice.unit.nameFor(1),
-                      ),
-                      validator: (String? value) =>
+                      triggers: editedTriggers ?? activity.triggers,
+                      onTriggersChanged: (List<String> picked) =>
+                          setState(() => editedTriggers = picked),
+                      viceID: vice.id,
+                      viceName: vice.name,
+                      enabled: !loading,
+                      quantityValidator: (String? value) =>
                           quantityError(value, unchanged: activity.measure),
+                      error: error,
                     ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TriggersField(
-                        value: editedTriggers ?? activity.triggers,
-                        onChanged: (List<String> picked) =>
-                            setState(() => editedTriggers = picked),
-                        viceID: vice.id,
-                        viceName: vice.name,
-                        enabled: !loading,
-                      ),
-                    ),
-                    if (error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
