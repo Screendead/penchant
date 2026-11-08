@@ -37,4 +37,4 @@ before building.
 
 **Depends on:** [business model](business-model-and-paywall.md); [iOS release pipeline](../release-blockers/ios-release-pipeline-and-testflight.md).
 
-**Needs Jack:** yes — StoreKit only (A), or a billing vendor and its revenue share (B)?
+**Needs Jack:** no. StoreKit 2 directly (`r2-billing`, Jack, 2026-11-06); parked with the store work.

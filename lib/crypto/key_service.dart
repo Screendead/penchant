@@ -164,6 +164,7 @@ class KeyService {
     required this.aes256,
     DateTime Function()? now,
     this.serverWait = const Duration(seconds: 10),
+    this.rechecks = _noRechecks,
   }) : _now = now ?? DateTime.now;
 
   final KeyStore store;
@@ -172,6 +173,12 @@ class KeyService {
   final AesGcm aes256;
   final DateTime Function() _now;
   final Duration serverWait;
+
+  /// While the journal is locked, each event re-reads the keychain, since
+  /// iCloud Keychain can deliver the key after this device first looked.
+  final Stream<void> Function() rechecks;
+
+  static Stream<void> _noRechecks() => const Stream<void>.empty();
 
   /// The key on this device first, so sealing never waits on the network,
   /// then what the server says about it.
@@ -195,11 +202,31 @@ class KeyService {
       return;
     }
 
-    if (record != null) {
-      yield _against(stored, record);
-      return;
+    final JournalKeyState state = record != null
+        ? _against(stored, record)
+        : await _publish(uid, stored);
+    yield state;
+    if (state is KeyNeedsRecovery) {
+      yield* _awaitKey(uid, state.record);
     }
-    yield await _publish(uid, stored);
+  }
+
+  // Not an async* loop: a cancel reaches an async* body only at a yield, so
+  // the rechecks would outlive the screen.
+  Stream<JournalKeyState> _awaitKey(String uid, KeyRecord record) => rechecks()
+      .asyncMap((_) => _readQuietly(uid))
+      .where(
+        (StoredKey? s) => s != null && keyIDOf(s.journalKey) == record.keyID,
+      )
+      .take(1)
+      .map((StoredKey? s) => KeyReady(s!, record, aes256));
+
+  Future<StoredKey?> _readQuietly(String uid) async {
+    try {
+      return await store.read(uid);
+    } on Exception {
+      return null;
+    }
   }
 
   JournalKeyState _against(StoredKey? stored, KeyRecord record) =>
