@@ -107,8 +107,7 @@ void main() {
       final String pbxproj = '$platform/Runner.xcodeproj/project.pbxproj';
       final List<String> configs = _targetBuildSettings(pbxproj);
       // Runner (and iOS's PenchantWidgets, macOS's RunnerTests and Flutter
-      // Assemble), three
-      // configurations each.
+      // Assemble), three configurations each.
       expect(configs, hasLength(platform == 'ios' ? 6 : 9));
       for (final String settings in configs) {
         expect(settings, contains('CODE_SIGN_STYLE = Automatic;'));

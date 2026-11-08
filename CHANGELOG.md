@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
+  last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
+  you sign out.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
   habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
   latest entry, and its actions list every entry.
