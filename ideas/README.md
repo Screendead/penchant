@@ -24,35 +24,31 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**26 ideas: 8 release blockers, 5 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. 15 need a call from
-Jack.** Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
+**22 ideas: 7 release blockers, 3 v1 must-haves, 6 insights, 3 monetisation, 3 growth/later. 1 needs a call from
+Jack** (content-free analytics). Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
 Each list is in the recommended build order.
 
-## Release blockers (8)
+## Release blockers (7)
 
 - [Position the app as a neutral journal for learning about yourself](release-blockers/positioning-and-target-user.md). S. Decided (C15)
-- [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16), Needs Jack
-- [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, Needs Jack (`vice-cap`); bounded activity queries and App Check wiring built in #55
-- [Encrypt what each entry says on the device before it syncs, and keep the dates plaintext](release-blockers/end-to-end-encryption.md). L, decided (O1, 2026-11-06); part 1 (`lib/crypto/`) built
-- [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M, Needs Jack
-- [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S, Needs Jack
+- [Keep the framing neutral, rate the app 18+, and show a disclaimer](release-blockers/neutral-framing-and-age-rating.md). S. Decided (C16, `r2-age`)
+- [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, waits on the paid team; bounded activity queries and App Check wiring built in #55
+- [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M. No policy for now (`r2-privacy`)
+- [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S. Waits on a release
 - [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M
-- [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6), Needs Jack
+- [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6, `r2-testflight`); blocked on the paid team
 
-## v1 must-haves (6)
+## v1 must-haves (3)
 
 - [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
-- [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S, Needs Jack
-- [Log in one tap, then add detail without being made to](v1-must-haves/one-tap-quick-logging.md). M
-- [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M, Needs Jack
-- [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6), Needs Jack
+- [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S. Guest start shipped; waits on the paid team
+- [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6, `r2-mac`)
 
-## Insights (7)
+## Insights (6)
 
-- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount` shipped
-- [Tag what led to each entry, from a tree that learns your common triggers](insights/trigger-tagging.md). M, 1.0, Needs Jack
+- [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount`, `category` and `triggers` shipped
 - [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
 - [Read Apple Health, including years of history, to see what follows each vice](insights/apple-health-correlation.md). L, 1.1 Pro
@@ -61,60 +57,38 @@ Each list is in the recommended build order.
 
 ## Monetisation (3)
 
-- [Sell the insights once: free journal in 1.0, a one-time Pro unlock in 1.1](monetisation/business-model-and-paywall.md). M. Decided (C17), Needs Jack
-- [Add purchase, restore and an entitlement check behind one provider](monetisation/iap-and-entitlements.md). M, Needs Jack
+- [Sell the insights once: free journal in 1.0, a one-time Pro unlock in 1.1](monetisation/business-model-and-paywall.md). M. Decided (C17, `r2-pro`)
+- [Add purchase, restore and an entitlement check behind one provider](monetisation/iap-and-entitlements.md). M. Decided (`r2-billing`)
 - [Let users name their own units and set a cost per unit, for spend](monetisation/units-and-cost-per-unit.md). M
 
 ## Growth / later (3)
 
 - [Log from the home screen, the Mac menu bar, Siri and Shortcuts](growth-later/widgets-and-shortcuts.md). XL
-- [Add an app lock and a discreet mode for people journaling sensitive habits](growth-later/app-lock-and-discreet-mode.md). S, Needs Jack
+- [Add an app lock and a discreet mode for people journaling sensitive habits](growth-later/app-lock-and-discreet-mode.md). S. Decided (`r2-applock`)
 - [Let a vice carry an optional goal, never a required one](growth-later/optional-goals-and-limits.md). M
 
-## Recommended path to a paid release
+## Where the path stands
 
-Claude's recommended sequence. The decided calls are C6 and C15–C19; every "Needs Jack" item in it is still open.
+The decided calls are C6, C15–C19 and the round-2 calls in `HANDOVER.md`. Built: the Day Dial Today, the one-tap log,
+trigger tagging, the decimal amount and vice category, guest start, Crashlytics, the macOS target and end-to-end
+encryption of the journal. The encryption has open follow-ups: the sealed-only rules and the integrity and migrator
+entries in `tech-debt/firebase-data-layer/`, export compliance in the
+[release pipeline](release-blockers/ios-release-pipeline-and-testflight.md), and the Crashlytics scrubbing rule in the
+[privacy policy](release-blockers/privacy-policy-and-labels.md). Left, in Claude's order:
 
-1. **Jack makes the four calls 1.0 hangs on** (the brand is Penchant, `r2-brand`): extending C18 to activity fields and
-   the `days` and `triggerNodes` collections, 18+ in place of the retired 17+, Mac in 1.0 or 1.0.x, and whether 1.0
-   seals what each entry says (end-to-end encryption).
-2. **Meanwhile agents build what needs no call,** beside the wave-2 debt: parsers that default every missing field
-   (before any new field is written), backend hardening (built in #55; the rest waits on `vice-cap` and the paid Apple team) and
-   one-tap logging. Account deletion and export are built (Account Settings, `lib/account/`).
-3. **End-to-end encryption, if Jack picks it,** lands next: after the parser defaults, the shared write layer,
-   bounded queries, the bundle-ID lock and the macOS target at 11 or later, and before any granular field is written,
-   so those fields are sealed from their first write. Its rules (R1) and fourth index reach production before the
-   build that migrates.
-4. **1.0 captures everything that cannot be backfilled:** the granular fields, trigger tagging, the check-in, the
-   timeline Today and the free trend views. Health and Calendar history can be read later, so they wait for 1.1.
-5. **Store material:** the brand applied, privacy policy, support pages, neutral copy and disclaimer, 18+ and
-   automated screenshots (the icon is done); then internal and external TestFlight on a separate beta Firebase project, as a review
-   rehearsal.
-6. **1.0 ships free on iOS,** with the Mac on the same record if its e2e run is green, otherwise in 1.0.x. No in-app
-   purchase in the first review; Crashlytics only.
-7. **1.1 adds Pro as one purchase through StoreKit:** the on-device insights engine, Apple Health with its history,
-   Calendar, the weekly review and trend overlays, plus content-free funnel events and a legally reviewed privacy
-   policy. Everything free in 1.0 stays free, so no grandfathering is needed.
-8. **After 1.1:** self-experiments (randomised n-of-1 tests of a found association), widgets, App Intents and the Mac
-   menu bar, the app lock and discreet mode, optional goals, and import from other journals.
+1. **The rest of 1.0's capture:** the context fields and the detail sheet after a tap
+   ([granular logging](insights/granular-logging-and-data-model.md)), then the free trend views.
+2. **Store material, once there is a paid Apple team** (Jack is not getting one for now): screenshots, the support and
+   legal pages, 18+, TestFlight, Sign in with Apple, then the store. The privacy policy waits until and unless Jack
+   decides to sell.
+3. **1.1 adds Pro as one StoreKit 2 purchase:** the on-device insights engine, Apple Health with its history,
+   Calendar, the weekly review and trend overlays.
+4. **After 1.1:** self-experiments (randomised n-of-1 tests of a found association), widgets, App Intents and the Mac
+   menu bar, optional goals, and import from other journals.
 
 ## Needs Jack
 
-- **End-to-end encryption:** seal names, units, amounts and later notes before 1.0, with an iCloud Keychain key and a
-  recovery key (recommended), defer to 1.1, skip it, or hide timing too; accept C12 and C13 as app-only checks and
-  the visible "when"?
-- **Age rating:** confirm 18+, since Apple retired 17+ in 2025.
-- **Mac:** ship in 1.0 or 1.0.x, and confirm Health results never sync to the Mac?
-- **Pro line and price:** the analysis layer as Pro at USD 24.99 (recommended), or a different line?
-- **Billing:** StoreKit only (recommended), or RevenueCat and its revenue share?
-- **TestFlight:** pay for the Developer Program, name the beta testers, and use a separate beta Firebase project?
-- **Privacy policy:** legal entity, contact and data-controller details, and a paid legal review before 1.1?
-- **Support:** the support address, and Firebase Hosting or the brand domain for the legal pages?
-- **Icon:** Jack, a commissioned designer, or generated candidates?
 - **Analytics:** how much content-free analytics "on your device" can carry, decided at 1.1? (Crashlytics shipped.)
-- **Guests:** allow anonymous start in 1.0, accepting that an unlinked guest who deletes the app loses their data?
-- **Check-in:** record "nothing logged today" in a new `days` collection?
-- **Onboarding presets:** which starter vices, worded how?
-- **Triggers:** approve the starter tree's top two levels.
-- **Today:** sign off the layout from a mock-up.
-- **App lock and discreet mode:** free or Pro?
+
+Decided and recorded in `HANDOVER.md`: end-to-end encryption, the daily reminder, 18+, the Mac, Pro at $24.99, StoreKit 2, TestFlight on
+production, guests, presets, triggers, Today, the icon, app lock free, no privacy policy for now.

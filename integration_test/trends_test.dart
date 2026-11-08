@@ -88,10 +88,15 @@ void main() {
           .done;
     }
 
-    // The peek reads the same range before the sheet opens.
-    await pumpUntil(tester, find.text('Coffee · last 30 days'));
-    await pumpUntil(tester, find.text(formatAverage(10 / 30)));
-    await screenshot(tester, 'trends-peek');
+    // The peek reads the same range before the sheet opens; the split
+    // view's pane has no peek.
+    await pumpUntil(tester, find.byType(TrendsSheet));
+    final bool split = splitLayout(tester);
+    if (!split) {
+      await pumpUntil(tester, find.text('Coffee · last 30 days'));
+      await pumpUntil(tester, find.text(formatAverage(10 / 30)));
+      await screenshot(tester, 'trends-peek');
+    }
 
     await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
@@ -139,24 +144,27 @@ void main() {
     );
     await screenshot(tester, 'trends-weekly');
 
-    // Day restarts at a week's average; a tap on today opens its dial.
+    // Day restarts at a week's average. In the sheet a tap on today opens
+    // its dial; the pane hands the day to Today's dial (split_view_test).
     await _pick(tester, 'Day');
     await pumpUntil(tester, find.text('Average over 7 days'));
-    await scrollIntoView(tester, find.byType(LineChart));
-    final Rect chart = tester.getRect(find.byType(LineChart));
-    await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
-    await pumpUntil(tester, find.byType(TrendsDay));
-    await pumpUntil(
-      tester,
-      find.text(TrendsDay.subtitle(1, _coffee(tester), 3)),
-    );
-    await pumpFor(tester, const Duration(milliseconds: 800));
-    await screenshot(tester, 'trends-day');
-    await _use(tester, find.byTooltip(TrendsDay.backLabel));
-    await pumpUntil(tester, find.byType(LineChart));
+    if (!split) {
+      await scrollIntoView(tester, find.byType(LineChart));
+      final Rect chart = tester.getRect(find.byType(LineChart));
+      await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
+      await pumpUntil(tester, find.byType(TrendsDay));
+      await pumpUntil(
+        tester,
+        find.text(TrendsDay.subtitle(1, _coffee(tester), 3)),
+      );
+      await pumpFor(tester, const Duration(milliseconds: 800));
+      await screenshot(tester, 'trends-day');
+      await _use(tester, find.byTooltip(TrendsDay.backLabel));
+      await pumpUntil(tester, find.byType(LineChart));
+    }
 
     await closeTrends(tester);
-    expect(find.byType(LineChart), findsNothing);
+    expect(find.byType(LineChart), split ? findsOneWidget : findsNothing);
     semantics.dispose();
   });
 }

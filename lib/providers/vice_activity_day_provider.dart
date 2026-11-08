@@ -74,3 +74,20 @@ final viceActivityMonthProvider = Provider.autoDispose
             viceActivityMonthForUserProvider((uid: uid, month: first)),
       );
     });
+
+// The [days] days ending with [today], for the widgets' snapshot.
+final viceActivityRecentForUserProvider = StreamProvider.autoDispose
+    .family<List<ViceActivity>, ({String uid, DateTime today, int days})>(
+      retry: firestoreRetry,
+      (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
+        final DateTime end = addDays(startOfDay(key.today), 1);
+        return _activitiesBetween(
+          key.uid,
+          addDays(end, -key.days),
+          end,
+        ).snapshots().asyncMap(
+          (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+        );
+      },
+    );

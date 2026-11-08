@@ -174,7 +174,7 @@ const GROUPS = [
       rec: "B", why: "One keystroke per entry is the Mac's answer to the phone's one tap, and Undo makes a stray press cheap. ⌘N for the fan can ride along at little cost." } ] },
 
   { title: "Round 2: built options", sub: "Each option below was built as real app code on a branch and rendered. Nothing here is merged until you pick.", calls: [
-    { id: "r2-e2ee", q: "Encrypt what each entry says before it leaves the phone?", link: "ideas/release-blockers/end-to-end-encryption.md",
+    { id: "r2-e2ee", q: "Encrypt what each entry says before it leaves the phone?", link: "lib/crypto/",
       ctx: "Your steer: encrypt names and quantities; dates can stay readable. A working prototype is on mockup/e2e-encryption. What it costs either way: the database can no longer check quantity above 0 (C12) or names up to 60 (C13), so the app enforces them; and if every device, the iCloud Keychain and the recovery key are all lost, the journal is unreadable for good.",
       imgs: [["e2ee-signup", "Recovery key at sign-up"], ["e2ee-card", "…or a Today card after a week"], ["e2ee-settings", "Settings shows the key again"], ["e2ee-enter", "New device: enter the key"], ["e2ee-new", "Key lost: start a new journal"]],
       opts: [
@@ -205,7 +205,7 @@ const GROUPS = [
         { k: "B", t: "Everyday habits first", c: "Coffee, Social media, Gaming… with Alcohol and Nicotine below. Blurs the niche." },
         { k: "C", t: "Own words", c: "The user types each one. Lowest exposure, slowest first log." } ],
       rec: "A", why: "The app is for people journaling exactly these things; naming them plainly is fastest, and 18+ plus the disclaimer manage review risk. Gambling stays only if it doesn't change the age rating; ship custom unit labels alongside (“Counted in cigarettes”)." },
-    { id: "r2-triggers", q: "Which starter trigger tree ships?", link: "ideas/insights/trigger-tagging.md",
+    { id: "r2-triggers", q: "Which starter trigger tree ships?", link: "lib/data/trigger_tree.dart",
       ctx: "Same picker for all three: “Usual for <vice>” chips learned on the device, a two-level drill-down, and free text that becomes a choice after three uses. Only the tree differs; it is cheap to change until users have saved triggers.",
       imgs: [["trig-a", "A. Areas of life"], ["trig-b", "B. Reasons only"], ["trig-c", "C. Feelings first"], ["trig-b2", "B. Second level"], ["trig-b3", "B. Usual choices"]],
       opts: [
@@ -306,7 +306,7 @@ const GROUPS = [
         { k: "B", t: "Optional, plus a migrator and decimals", c: "Optional fields, a first-launch migrator for a vice category, and a decimal amount next to the whole-number quantity." },
         { k: "C", t: "Vices only (C18 as is)", c: "Rules out triggers and context on entries." } ],
       rec: "B", why: "Triggers and context can't be backfilled, so 1.0 has to capture them. Everything stays optional in the rules until the web site is down." },
-    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "ideas/v1-must-haves/evening-check-in-and-reminders.md",
+    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "HANDOVER.md",
       ctx: "C12 forbids zero-quantity entries, but the insights need to tell a confirmed zero day from a day you forgot to log.",
       opts: [
         { k: "A", t: "A days collection", c: "One document per day, written by an evening check-in; can later carry a note or mood." },

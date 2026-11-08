@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/appearance_settings.dart';
+import 'package:tracker/reduce_motion_settings.dart';
+import 'package:tracker/widgets/reduce_motion_scope.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
@@ -16,12 +18,19 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/reminder/daily_nudge.dart';
+import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/font_licence.dart';
+import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widget_bridge/background_flush.dart';
+import 'package:tracker/widget_bridge/log_queue.dart';
+import 'package:tracker/widget_bridge/widget_bridge.dart';
+import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
@@ -33,6 +42,22 @@ void main() {
   installErrorHandlers();
   registerFontLicence();
   startApp();
+}
+
+/// The headless engine's entrypoint, for an iOS background refresh with the
+/// queue non-empty (ios/Runner/WidgetBridge.swift). It flushes once and tells
+/// native, which ends the task.
+@pragma('vm:entry-point')
+Future<void> backgroundFlushMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  installErrorHandlers();
+  const WidgetBridge bridge = WidgetBridge();
+  final BackgroundFlushOutcome outcome = await runBackgroundFlush(
+    initialize: initializeFirebase,
+    overrides: keyServiceOverrides,
+    now: DateTime.now,
+  );
+  await bridge.backgroundDone(outcome);
 }
 
 // main() without the global error handlers, which flutter_test owns.
@@ -82,6 +107,9 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     // Kept alive here so sealing runs whichever screen is open.
     ref.listen(plaintextMigrationProvider, (_, _) {});
+    ref.listen(widgetSyncProvider, (_, _) {});
+    ref.listen(widgetLogFlushProvider, (_, _) {});
+    ref.listen(dailyNudgeStartupProvider, (_, _) {});
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -106,10 +134,14 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
-        builder: (BuildContext context, Widget? child) => AppMenuBar(
-          child: rejectedWritesBuilder(
-            context,
-            RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+        builder: (BuildContext context, Widget? child) => KeyboardInsetClamp(
+          child: ReduceMotionScope(
+            child: AppMenuBar(
+              child: rejectedWritesBuilder(
+                context,
+                RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+              ),
+            ),
           ),
         ),
       ),
@@ -148,7 +180,7 @@ class AuthStateFailure extends ConsumerWidget {
 Route<void> generateRoute(RouteSettings settings) {
   final Widget page = routePage(settings.name);
   // Forms that save or discard open as modals; pages to browse push.
-  return MaterialPageRoute<void>(
+  return DialPageRoute<void>(
     fullscreenDialog:
         page is ViceForm || page is EditVice || page is ViceActivityEditorPage,
     settings: settings,
@@ -176,6 +208,10 @@ Widget routePage(String? name) {
       return const AccountSettings();
     case ['settings', 'appearance']:
       return const AppearanceSettings();
+    case ['settings', 'reduce-motion']:
+      return const ReduceMotionSettings();
+    case ['settings', 'reminder']:
+      return const ReminderSettings();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
     default:

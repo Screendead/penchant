@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-07. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-08. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -36,16 +36,17 @@ works through the whole queue: its DECIDED list is the queue, its UNDECIDED list
 | CI deploys rules and indexes | On since 2026-11-04: Jack set `DEPLOY_FIRESTORE_RULES=true` and granted the roles. Run 41822697732 deployed ("Deploy complete!"), and #71's merge deployed too. The 4 unlisted production indexes stay (no `--force`) | `.github/workflows/deploy-firestore.yml` |
 | Web site | Down: returns 404 (checked 2026-11-04) | |
 | macOS target (#47) | Merged 2026-11-05: `E2E_DEVICE=macos tools/e2e.sh` passes 31/31 (15 files, one `flutter test` each) beside iOS 31/31 | `macos/`, `.github/workflows/macos-build.yml` |
-| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | Step 1a, the theme foundation, merged in #79: tokens, light and dark themes following the system, bundled Red Hat fonts, habit colours by creation order. Step 1b, Today, in review in #83 (`feat/today-day-dial`): the dial, tallies with one-tap log, the Log fan, day picker and calendar; the radar and bars are gone | `lib/design/`, `assets/fonts/`, `lib/widgets/day_dial.dart` |
-| Rounds 2, 3, 4 and 8 on the pitch page | All picked by Jack 2026-11-06 and recorded below; round 5 is moot (the radar left Today in #83). Three calls from 1d/1e are not on the page yet (Calls waiting on Jack) | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
+| UI overhaul: Day Dial (`r6-ui-direction`, Jack 2026-11-05) | 1a to 1e merged: 1a #79, 1b #83 with the fidelity pass #94, 1c #89, 1d #100, 1e #99 (2026-11-05/06). 1f partly (#98) and 1g partly (#119); what is left is in the overnight list (D1 to D5) | `lib/design/`, `assets/fonts/`, `lib/widgets/day_dial.dart` |
+| Rounds 2, 3, 4 and 8 on the pitch page | All picked by Jack 2026-11-06, and round 9 on 2026-11-07, recorded below; round 5 is moot (the radar left Today in #83) | https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs |
 | Brand: Penchant (`r2-brand`) and "habit" wording | Applied to the app's strings in #81 (2026-11-05). Bundle ID `com.screendead.penchant` on iOS and macOS with the new Firebase config, shared by the Mac (`r2-mac-config`), merged in #84 (2026-11-06); both development profiles exist, and a signed `flutter build ios --release` carries the new ID | `lib/firebase_options.dart`, `ios/`, `macos/` |
-| End-to-end encryption on (`r2-e2ee`, `r2-e2ee-key`) | `e2eeEnabled` flipped to true in the PR from `feat/e2ee-on` (2026-11-07), after the iCloud Keychain probe (#128) showed a synced item crossing iPhone to Mac under the free team. The first full iOS e2e run on the branch passed 44 of 45: `onboarding_test` launches through `startApp`, which now seals, and `storedViceID` matched vices by plaintext name; the helper now opens sealed vices, and the rerun decides the merge. A local replay of Jack's export shape sealed every vice, left entries without triggers untouched and unlocked a fresh keychain with the recovery key. In review | `lib/crypto/` |
-| Tech-debt register | 21 issues: 0 critical, 0 high, 10 medium, 11 low (`tools/tech-debt-recount.py` on `feat/bundle-id-penchant`, 2026-11-05; from 162 on 2026-08-11) | `tech-debt/README.md` |
-| Product backlog | 28 ideas for the journal positioning (versioning, offline-first, account deletion and export shipped), roadmap in its README | `ideas/README.md` |
+| End-to-end encryption (`r2-e2ee`, `r2-e2ee-key`) | On: merged in #130 (2026-11-08), after the crypto core (#115), sealed fields (#117), the migrator (#114), the key UI (#116) and the key service (#124). The post-merge e2e run on a2b5c30 passed. Why the key did not sync from iPhone to Mac is in progress (`fix/journal-key-sync`) | `lib/crypto/` |
+| Tech-debt register | 11 issues: 0 critical, 0 high, 4 medium, 7 low (`tools/tech-debt-recount.py` on `master`, 2026-11-08; from 162 on 2026-08-11) | `tech-debt/README.md` |
+| Product backlog | 27 idea files, some for work that has shipped (overnight list, D14) | `ideas/README.md` |
+| Cloud Functions | Deployed by CI: Jack set `DEPLOY_FUNCTIONS=true` (2026-11-07), and run 42410165620 created `dailyOrphanCleanup` (a dry run) and updated `monthlySummaries` | `functions/`, `.github/workflows/functions.yml` |
 
-Baseline: wave D's PRs each ran `tools/e2e.sh` 31/31 on iOS before merging (2026-11-04); CI runs `dart analyze`, the
-`dart format` check, `flutter test` and the rules tests. `flutter build macos` fails on master (deployment target);
-#47 fixes it. Test counts were last measured before wave D: re-measure; don't trust this.
+Baseline: CI runs `dart analyze`, the `dart format` check, `flutter test` and the rules tests on every PR, and the
+iOS e2e suite on `master` after merge (C10, `e2e.yml`). `flutter build macos --release` last passed in CI on
+2026-11-05 (`macos-build.yml`, Flutter pin) and fails with this machine's Homebrew Flutter (overnight list, D9).
 
 ## The queue (DECIDED work, in order)
 
@@ -54,12 +55,15 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 `tools/e2e.sh` or uses the default emulator ports. Subagents write PR bodies to uniquely named scratchpad files: the
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
-1. **The Day Dial UI overhaul** (`r6-ui-direction`, below). The source of truth is branch
-   `origin/design/ui-overhaul-day-dial`, folder `docs/pitch/mockups/ui-overhaul/day-dial/`: `index.html` (the live
+1. **The Day Dial UI overhaul** (`r6-ui-direction`, below). The source of truth is the folder
+   `docs/pitch/mockups/ui-overhaul/day-dial/` on `master` (landed from `design/ui-overhaul-day-dial`, which
+   `r10-pitch-branches` C archives as the tag `archive/design/ui-overhaul-day-dial`): `index.html` (the live
    mock-up), `tokens.json` (mirrored in `lib/design/tokens.json`), `notes.md` (how each part is built in Flutter) and
    the stills. One PR per step, in order; every screen keeps working between steps, and each PR keeps
    `tools/e2e.sh` green by updating the tests its screens break. Habit names in examples are made up; the product
    name is Penchant (`r2-brand`; the mock-up's "Tracker" is a placeholder).
+   Status 2026-11-08: 1a to 1e are merged; 1f and 1g are partly done. The "in review" notes below are history; what
+   is left is D1 to D5 in the overnight list.
    - **a. Theme foundation:** tokens, light and dark `ThemeData` with `themeMode: system`, bundled fonts, the habit
      colour function, the hard-coded colours replaced. In review (#79).
    - **b. Today:** the dial (`CustomPainter`, beads at their times, now-hand, clear-day ring), the tally rows with a
@@ -103,10 +107,12 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      `animations` package), and the reduce-motion fades.
    - **g. e2e rewrite:** rebuild `integration_test/` around the new flows (fan gestures, dial semantics, the sheets),
      on iOS and `E2E_DEVICE=macos`.
-2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. In review in
-   #92 (`feat/macos-split-view`): width-based, so an iPad on its side gets it too; the Log button
-   sits at the foot of Today's column, a chart day moves Today's dial, Left and Right step days. The Mac window still
-   opens at 800×600 (phone layout), so the macOS e2e suite keeps testing the sheet;
+2. **The macOS split view** (`notes.md`, "macOS"): dial and tallies left, Trends right, from 900 pt. Merged in
+   #92 (2026-11-06) (`feat/macos-split-view`): width-based, so an iPad on its side gets it too; the Log button
+   sits at the foot of Today's column, a chart day moves Today's dial, Left and Right step days. The Mac window
+   opens at 1200×780 (`r8-mac-window` B), so it shows the split view; the minimum is 390×600 and the frame is saved
+   as `MainWindow` (`macos/Runner/MainFlutterWindow.swift`). The e2e suite follows whichever layout it gets
+   (`splitLayout` in `integration_test/support.dart`): the Mac runs it on the split view, iOS on the sheet;
    `integration_test/split_view_test.dart` lays the app out at 900, 1200 and 1600 pt.
 3. **Bundle IDs to `com.screendead.penchant`: done** (#84, merged 2026-11-06): iOS and
    macOS, Runner and RunnerTests, the Penchant `GoogleService-Info.plist` on both platforms, `firebase_options.dart`,
@@ -126,7 +132,8 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    tagging with the Areas of life tree (`r2-triggers` A), and end-to-end encryption (`r2-e2ee` A, `r2-e2ee-key` A).
    `r8-bead-size`'s monthly summary is built (PR from `feat/bead-summary-function`): `functions/` is back with one
    scheduled function, and the dial sizes beads against its typicals; it runs only once Jack does the steps under
-   For Jack to do. Waiting on Jack before any build: Sign in with Apple (the paid team).
+   For Jack to do. Waiting on Jack before any build: Sign in with Apple (the paid team). Status 2026-11-08: all built
+   and merged (#103 to #107, #109 to #118, #124, #130) except `r8-mac-window` (#108, overnight list D7).
 5. **The rest of the register**, medium then low, one class per PR.
 6. **Soon: iPhone widgets, Control Centre controls and a Mac menu bar app** (Jack, 2026-11-07). Build all of these:
    - **Home and Lock Screen widgets** in every size WidgetKit offers (small, medium, large, extra large on iPad, and
@@ -140,15 +147,143 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    does not run in an extension. Writing an activity needs no key (`viceID`, `quantity`, `amount`, `createdAt` and
    `ownerID` are plaintext under `r2-e2ee`), but showing habit names does, so the extension needs the app's Firebase
    Auth session and the E2EE key through a shared Keychain access group and an App Group. Check whether the free
-   signing team can sign App Groups and extensions before building. Read Apple's current WidgetKit, App Intents and
-   ControlWidget docs first. Open for Jack once scoped (recommendations, not calls): what "top" means (Claude:
-   most logged in the last 30 days, overridable in the widget's settings); Undo after a widget or menu bar tap;
-   Siri, Shortcuts and the Action button through the same App Intent; macOS desktop widgets from the same code.
+   signing team can sign App Groups and extensions before building (proven 2026-11-08 on `spike/widget-app-group`,
+   commit becdcaf: the free team signs the WidgetKit extension `com.screendead.penchant.widgets` and the App Group
+   `group.com.screendead.penchant` on iOS, the app wrote to the group and the widget read it on Jack's iPhone, and
+   `tools/add-widget-target.rb` there generates the target; macOS App Groups are available to free teams per Apple's docs, but
+   whether sandboxed macOS needs a TEAMID-prefixed group name is unchecked). Read Apple's current WidgetKit, App Intents and ControlWidget docs
+   first. Jack's picks of 2026-11-08 (round 10, below) settle the open questions:
+   - **Top habits** (`r10-widget-top` D): the most logged in the last 30 days, overridable by hand in the widget's
+     settings.
+   - **Undo** (`r10-widget-undo` B): a 5-second Undo where you tapped, on each surface (widget, control, menu bar row).
+     Whether WidgetKit can hold and revert such a state is unchecked; read Apple's docs first. Claude's fallback, in the pitch's
+     recommendation, if it cannot: C (the app's Undo on the Mac menu bar only), said so.
+   - **Siri, Shortcuts and the Action button** (`r10-intents` A): the same log intent, built with the widgets.
+   - **macOS widgets** (`r10-mac-widgets` A): the same WidgetKit code as a Mac extension, built with the iPhone
+     widgets, for the desktop and Notification Centre. It depends on the journal key reaching the Mac (P2).
    The idea file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
+
+### Overnight run (`/finish-and-pitch`, 2026-11-08)
+
+The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, the open PRs, the remote branches, CI on
+`master`, the register and the backlog. Effort: S under a day, M a day or two, L more.
+
+**In progress, owned by other agents (leave alone):**
+
+- **P1.** Native AppKit auth fields on macOS for Passwords AutoFill, being made less clunky. PR #133
+  (`feat/mac-native-auth-fields`).
+- **P2.** Why the journal key did not sync from iPhone to Mac through iCloud Keychain. Branch `fix/journal-key-sync`
+  (not on `origin` yet).
+- **P3.** Mac fullscreen layout pitch, 3 options. `design/mac-fullscreen-a` is pushed; b and c are local worktrees.
+
+**DECIDED** (the goal is set by a recorded call or a convention):
+
+- **D1.** DONE (#148, merged 2026-11-08; the leftovers below are follow-ups). Amount sheet replacing the record dialog for new entries, reused by the entry editor (1b and 1d leftover).
+  PR #148: the sheet (title, stepper, pill button) replaces the dialog, and the editor page builds the same
+  `AmountFields`. Left: the mini dial for the time, which replaces `ActivityDateField` in the mock-up (next; D2's
+  edited bead travel needs it); the step of 5 for habits whose typical entry is 10 or more; the editor as the sheet
+  itself rather than a page (with D5, which rewrites the editor e2e flows). `lib/widgets/`. M.
+- **D2.** The rest of 1f, as #98's "Left for 1f" lists it: `animations` page transitions, `OpenContainer` for a
+  Trends day point, the chart morph between ranges, the offline and refused-write pills on a spring, an edited bead
+  travelling to its new time (needs D1), the reduce-motion day fade, the dial's drag snap-back. `lib/widgets/`. L.
+- **D3.** A dense hour's beads merge into one arc above about 48 entries (1b leftover). `lib/widgets/day_dial.dart`. S.
+  Built in `feat/dense-hour-arc` (stills in `docs/pitch/dense-hour/`): above 48 entries, an hour with more than one
+  entry is one arc; an hour's lone entry stays a bead, pushed clear of the arcs. The arc draws no pending rim for
+  unsynced entries in it (register, `dense-hour-arc-shows-no-pending-entries`).
+- **D4.** The history page's "Last 30 days" summary card (1d leftover). History page. S.
+- **D5.** DONE (#145, merged 2026-11-08; the leftovers below are follow-ups). The rest of 1g: rebuild `integration_test/` around the fan gestures, dial semantics and sheets, on iOS and
+  `E2E_DEVICE=macos` (#119 did the finders and the one-build suite). #145 (`feat/e2e-1g-mac-window`):
+  `log_fan_test.dart` (press-drag-release onto a wedge, a release off the fan, Escape, Log's screen-reader actions, a
+  wedge's tap and hold through semantics), and the Trends helpers and checks follow the sheet or the split pane.
+  Left: the amount sheet's tests wait on D1; the macOS run of the suite on the split view is unproven until D6 or a
+  hand run of `E2E_DEVICE=macos tools/e2e.sh`. `integration_test/`. M.
+- **D6.** Run the macOS e2e suite in CI after merge, beside iOS (`e2e.yml` runs iOS only; C10 puts e2e in CI and
+  `r2-mac` ships the Mac only if its e2e is green). `.github/workflows/e2e.yml`. M.
+- **D7.** DONE (#145, merged 2026-11-08; #108 closed). #108 (`r8-mac-window` B, 1200 x 780): carried onto #145 (with D5) without its 800 x 600 test override;
+  close #108 when #145 merges. `macos/Runner/MainFlutterWindow.swift`. S.
+- **D8.** Queue item 6, widgets, Control Centre controls and the Mac menu bar app. First check that the free signing
+  team can sign App Groups and app extensions (if not, it moves to BLOCKED with B2), then build. New native targets. L.
+- **D9.** `flutter build macos --release` fails on this machine at Flutter's architecture check; workaround: xcodebuild
+  with `ARCHS=arm64`. Likely cause (inferred, unverified): the machine's Homebrew Flutter is 3.44.7, and the release
+  build needs 3.44.8 or later (flutter/flutter#188346); CI's pin is 3.44.9. Move the machine to 3.44.9 while no agent
+  is building, and rebuild. Machine setup. S.
+- **D10.** DONE (#136, merged 2026-11-08). `flags=$(tools/build-version.sh) && flutter build ipa $flags` passes the flags as one word in zsh.
+  `CLAUDE.md` already notes `${=flags}`; make the tool shell-safe (for example, it runs the build command it is given).
+  `tools/build-version.sh`, `CLAUDE.md`. S.
+- **D11.** Flutter 3.47 (Dart 3.13) and riverpod_lint 3.1.9, the separate step `CLAUDE.md` records.
+  `.github/actions/setup-flutter/action.yml`, `analysis_options.yaml`. M.
+- **D12.** DONE (#139, merged 2026-11-08; the rules-and-indexes entry stays: console drift and the unused `archived` index are still unchecked). Close the register entries that recorded a call Jack has since made, or that no longer hold:
+  `activity-timestamps-come-from-the-device-clock` (`r4-server-time`: as built), `vice-lists-are-unbounded`
+  (`r4-vice-cap`: no cap for 1.0), `no-email-verification` (`r3-verify`), `every-firebase-command-targets-production`
+  (the CLI's configstore no longer maps the checkout, checked 2026-11-08; `r2-testflight`: no beta project). Re-check
+  `rules-and-indexes-are-never-deployed-or-tested` (CI deploys; #90 checks the index file against the queries).
+  `tech-debt/`. S.
+- **D13.** The rest of the register, one class per PR: the generated plugin registrant tracked on macOS only
+  (medium), the duplicated client API key, the template tests, the e2e record helper flake (low). `tech-debt/`. S each.
+- **D14.** DONE (#139, merged 2026-11-08). Refresh `ideas/`: its "Needs Jack" section asks calls Jack has made (E2EE, age, Mac, Pro, billing,
+  TestFlight, icon, guests, check-in, presets, triggers, Today, app lock), and idea files for shipped work remain
+  (`end-to-end-encryption`, `one-tap-quick-logging`, `trigger-tagging`, `granular-logging-and-data-model`, part of
+  `guest-mode-and-sign-in`): delete or trim each. `ideas/`. S. The deleted E2EE file's open items moved to
+  `tech-debt/firebase-data-layer/` (sealed-only rules, binding scope and key rotation, migrator edge cases),
+  `tech-debt/auth-and-account-lifecycle/` (clipboard), the release-pipeline idea (export compliance) and the privacy
+  idea (Crashlytics scrubbing).
+- **D15.** Close draft #128 (the keychain probe, CONFLICTING, "not for merge") once P2 no longer needs it. S.
+- **D16.** Reduce motion row in Settings (`r10-reduce-motion` B, Jack, 2026-11-08): Follow system / Reduce / Full, saved
+  per device in `shared_preferences`. PR #153 (`feat/reduce-motion-setting`). Full cannot bring back motion the
+  framework scales itself: while iOS Reduce Motion is on, every default `AnimationController` runs at 5% of its length
+  and no release-mode API turns that off. So Full covers the app's own controllers (`AnimationBehavior.preserve`: dial,
+  log fan, tallies, day picker, Undo timer, status pills (`PillDrop`), the Trends range morph (`RangeMorph`)) and pushed
+  pages (`DialPageRoute`); sheets, dialogs and implicit animations (segment thumbs, label fades) still follow the
+  system, and the page's foot copy says so. Open: a custom `WidgetsFlutterBinding` overriding
+  `SemanticsBinding.disableAnimations` would cover the rest (inferred, untested).
+
+**Were UNDECIDED; all decided in round 10 (2026-11-08)** (U1 to U8; see Jack's calls, round 10, below):
+
+- **U1.** DECIDED (`r10-mac-fullscreen` B, responsive scaling). Mac fullscreen layout: one of P3's three options.
+  Build M from `design/mac-fullscreen-b` (the tag
+  `archive/design/mac-fullscreen-b` once archived), with the pitch's two conditions: cap the dial near 480 pt, and keep
+  Today's column at 504 pt at 1200 x 780 (Claude's conditions, in the pitch's recommendation; Jack picked B as
+  presented).
+- **U2.** DECIDED (`r10-widget-top` D, `r10-widget-undo` B, `r10-intents` A, `r10-mac-widgets` A; queue item 6 holds
+  them). Queue item 6's open questions: what "top" habits means, Undo after a widget or menu bar tap, Siri, Shortcuts
+  and the Action button through the same App Intent, macOS desktop widgets from the same code.
+- **U3.** DECIDED (`r10-reduce-motion` B; in progress as PR #153, `feat/reduce-motion-setting`). A Reduce motion row in Settings, as the mock-up has; the app follows the
+  system setting and has nothing of its own to set. S.
+- **U4.** DECIDED (`r10-languages` A): English only. Other languages (register: English only). No work.
+- **U5.** DECIDED (`r10-analytics` A): none. Analytics beyond Crashlytics, content-free
+  (`ideas/v1-must-haves/crash-reporting-and-analytics.md`), which the idea defers to 1.1. No work.
+- **U6.** DECIDED (`r10-reminders` B): one optional daily nudge. Reminders: `r2-days` ruled out the daily check-in,
+  not reminders (`ideas/v1-must-haves/evening-check-in-and-reminders.md`). M.
+- **U7.** DECIDED (`r10-pitch-branches` C). The Day Dial files landed in the PR from `docs/round-10-picks`; the
+  archive tags and branch deletions are for the main session after it merges. The pushed pitch-source branches with
+  no PR (`mockup/*`, `design/ui-overhaul-*`, `design/mac-fullscreen-*`, `spike/*`): land the picked Day Dial mock-up
+  (`index.html`, `notes.md`, `tokens.json`, the stills) on `master`, tag each other branch `archive/<branch>`, then
+  delete the branches. S.
+- **U8.** DECIDED (`r10-release` B): wait. Cut 0.2.0 once the picked Mac fullscreen layout and PR #133 (AutoFill)
+  land. When to cut 0.2.0 and install it on Jack's iPhone and Mac (the iPhone runs 0.1.0). Its first launch runs the
+  sealing migrator over his real journal. S.
+
+**BLOCKED on Jack** (tasks, not decisions):
+
+- **B1.** Read `dailyOrphanCleanup`'s "Orphan cleanup would delete" logs for a few days (deployed 2026-11-07; first
+  run 04:30 UTC 2026-11-08). Claude can't read production logs. Then Claude pitches the one-line flip of
+  `DELETE_ORPHANED_DATA`. S.
+- **B2.** The paid Apple Developer team, which Jack is not getting for now: App Attest, App Check registration and
+  enforcement, TestFlight, Sign in with Apple, the App Store.
+- **B3.** Waits on a release: the domain, the support and legal pages, the privacy-policy details, an App Store search.
+- **B4.** The main checkout's modified `macos/Runner.xcodeproj/project.pbxproj`: discard or keep.
+- **B5.** Delete the old `com.screendead.tracker.tracker` install, then its two iOS registrations in the console.
+- **B6.** Optional: Cloud Scheduler's "Force run" on the monthly summaries job, to fill them before the 1st.
+
+**CI on `master`:** the last finished e2e run is green (a2b5c30, #130); the run for 82f69f0 (#132, #134) was still
+going at the time of writing. The one red run, fef30f9 (#116, 2026-11-07), was followed by green runs. The Dependabot
+failures of 2026-11-07 (functions' minimatch and glob) predate #120, and no alerts are open. Skipped tests: the
+fidelity renders (they skip without an output directory) and the DST guards (they skip in a zone without DST; CI sets
+`TZ=Europe/London`). None is skipped by mistake.
 
 ### This run (`/finish-and-pitch`, second pass, started 2026-11-06)
 
-The first pass (waves A to D) is merged. CI was down on 2026-11-06 (Actions billing limit) until Jack made the repo
+Closed: every track below is merged (2026-11-06/07). The first pass (waves A to D) is merged. CI was down on 2026-11-06 (Actions billing limit) until Jack made the repo
 public and renamed it `Screendead/penchant` the same day; public repos run standard Actions runners free. #83 merged.
 
 **DECIDED** (in order; code PRs open and stack, and merge once CI is back or Jack waives it):
@@ -227,7 +362,7 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   (checked 2026-11-04). Done.
 - **`r2-icon`** (2026-11-05, in chat): **candidate 38**, the Today radar's coloured segments with spokes running past
   them, centred, on a light background. Picked from 38 candidates on the icon sheet
-  (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on `mockup/icon-sheet`). Shipped as the iOS and macOS
+  (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on the tag `archive/mockup/icon-sheet`). Shipped as the iOS and macOS
   icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
   brand. Done.
 - **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
@@ -319,20 +454,56 @@ Picked on the pitch page, each as recommended:
 - **`r9-export`**: B, **also an Export row in Settings, as the mock-up**; Account Settings keeps its row beside
   Delete, and both share one export action. Built in the PR from `feat/r9-picks`.
 
+## Jack's calls, round 10 (2026-11-08)
+
+Picked on the round 10 pitch page (`docs/pitch/round-10/`). Ten match Claude's recommendation; `r10-mac-widgets`
+does not (Claude recommended B, later). Notes are Jack's.
+
+- **`r10-mac-fullscreen`**: B, **responsive scaling.** Both panes grow with the window; the dial scales with the
+  height. Built from `design/mac-fullscreen-b` (U1).
+- **`r10-widget-top`**: D, **the top habits are the most logged in the last 30 days, overridable by hand in the
+  widget's settings.**
+- **`r10-widget-undo`**: B, **a 5-second Undo where you tapped.**
+- **`r10-intents`**: A, **Siri, Shortcuts and the Action button through the same log intent**, built with the widgets.
+- **`r10-mac-widgets`**: A, **macOS widgets from the same code**, built with the iPhone widgets. Jack: "Widgets for the Notification Centre are useful to me."
+- **`r10-reduce-motion`**: B, **a Follow system / Reduce / Full row in Settings, saved per device** like Appearance.
+- **`r10-languages`**: A, **English only.**
+- **`r10-analytics`**: A, **none** beyond Crashlytics.
+- **`r10-reminders`**: B, **one optional daily nudge**, off by default. Jack: long-pressing the notification should
+  offer something like "Nothing further" or "Clean day"; it needn't do anything, but should feel good to press.
+- **`r10-pitch-branches`**: C, **land the Day Dial mock-up files, tag the rest as `archive/*`, then delete those
+  branches.** The files are in `docs/pitch/mockups/ui-overhaul/day-dial/`; the tag and delete commands are in the PR
+  from `docs/round-10-picks`, for the main session to run after it merges.
+- **`r10-release`**: B, **wait** for the Mac fullscreen layout and AutoFill (#133) before cutting 0.2.0.
+
+Later the same day, in chat, on the widgets (#158) and the nudge (#156):
+
+- **Background refresh, battery-light.** Jack: "Background refresh now. Don't use up all of my phone's battery with
+  it." A log from a widget, control or Siri reaches Firestore without opening the app: on iOS a `BGAppRefreshTask`
+  asked for only while logs are queued, timed by the system; on the Mac, while the app runs, a retry every 15
+  minutes or more at utility priority, only while logs are queued. No polling, no silent push. Built in #158.
+- **Habit names and counts in the App Group, plaintext on the device, are acceptable.** The widgets' snapshot and
+  queue stay as built in #158 (they clear on sign-out).
+- **The Lock Screen shows the top 3.** As built in #158.
+- **The daily nudge fires every day regardless**, even on a day already logged. Jack: "in case something was
+  missed". As built in #156; no change.
+- **"Clean day" just dismisses** (option c). As built in #156; no change.
+
 ## Calls waiting on Jack (UNDECIDED)
 
-None. Round 9 is picked (Jack's calls, round 9, above).
+None. U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 
 ## For Jack to do (not decisions)
 
-- **Orphaned guest data cleanup runs as a dry run** (`dailyOrphanCleanup` in `functions/index.js`, 04:30 UTC). It
+- **Orphaned guest data cleanup runs as a dry run** (`dailyOrphanCleanup` in `functions/index.js`, 04:30 UTC;
+  deployed 2026-11-07, overnight list B1). It
   logs "Orphan cleanup would delete" with each uid and its document counts once two runs a day apart find the
   account gone. After a few days of those logs look right, deleting is the one-line change
   `DELETE_ORPHANED_DATA = true`, in its own PR.
-- **Turn on the monthly summaries function** (`functions.yml`; until then the dial uses the day's median, as
-  before). In order: (1) move `screendead-vice-tracker` to the Blaze plan; (2) enable the Cloud Functions, Cloud
+- **Turn on the monthly summaries function: done.** `DEPLOY_FUNCTIONS` is `true` and the 2026-11-07 deploy updated
+  `monthlySummaries`; only the optional "Force run" (B6) is left. The steps, for the record: In order: (1) move `screendead-vice-tracker` to the Blaze plan; (2) enable the Cloud Functions, Cloud
   Build, Artifact Registry, Cloud Scheduler, Cloud Run, Eventarc and Pub/Sub APIs; (3) grant the deploy service
   account (now Firebase Rules Admin, Cloud Datastore Index Admin, Service Usage Consumer) Cloud Functions Admin
   (`roles/cloudfunctions.admin`) and Service Account User (`roles/iam.serviceAccountUser`) on the default compute
@@ -371,8 +542,7 @@ CLI's configstore no longer maps the main checkout to production (`firebase use 
 - `npm --prefix tests/firestore-rules test` runs the rules suite; CI runs it on every PR.
 - Only one agent at a time may use the simulator and the default emulator ports. Parallel agents that need an
   emulator use other ports (Firestore 8180, hub 4410, logging 4510, UI off) through a config outside the repo.
-- `macos/Flutter/GeneratedPluginRegistrant.swift` is tracked (iOS gitignores its own; in the register).
-  `flutter pub get` rewrites it only when the plugin set changes; commit the rewrite with the change that caused it.
+- `GeneratedPluginRegistrant` is gitignored on both platforms; `flutter pub get` and every flutter build regenerate it.
 - Read the Firebase documentation before any change to rules, indexes, queries or emulator wiring, and cite it in
   the PR.
 

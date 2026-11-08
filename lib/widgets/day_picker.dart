@@ -180,6 +180,7 @@ class _DaySlideState extends State<_DaySlide>
 
   late final AnimationController _in = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration: DialMotion.tallyRoll,
     value: 1,
   );

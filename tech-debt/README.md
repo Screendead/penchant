@@ -14,31 +14,35 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**11 issues: 0 critical, 0 high, 4 medium, 7 low.**
+**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
+**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
 
 ## Firebase Data Layer (5)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
-- **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
+- **medium** — [The rules still accept a vice's name and unit, and an activity's triggers, in plaintext](firebase-data-layer/plaintext-creates-are-still-accepted.md)
+- **low** — [A sealed entry can be moved in time or rolled back without the client noticing](firebase-data-layer/sealed-blobs-bind-neither-time-nor-state.md)
+- **low** — [The sealing migrator fails a whole batch on one oversized legacy name and tracks completion per device](firebase-data-layer/sealing-migrator-edge-cases.md)
 - **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
-- **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
-## Widget State and View Logic (0)
+## Widget State and View Logic (1)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
+
+- **low** — [The undo bar's lift over Log is fixed when it is shown, and applies on every page](widget-state-and-view-logic/undo-bar-lift-is-fixed-at-show-time.md)
 
 ## Error Handling and Observability (0)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 
-## Offline and Write Reliability (0)
+## Offline and Write Reliability (1)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
+- **low** — [A dense hour's arc does not show which of its entries are unsynced](offline-and-write-reliability/dense-hour-arc-shows-no-pending-entries.md)
 
 ## Accessibility and Localization (1)
 
@@ -50,29 +54,25 @@ Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, 
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
-- **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
+- **low** — [The recovery key is copied with a plain clipboard write](auth-and-account-lifecycle/recovery-key-copy-reaches-universal-clipboard.md)
 
 ## Dependency and Tooling Drift (0)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
 
-## Platform and Delivery Config (1)
+## Platform and Delivery Config (0)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
-- **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
 
-## CI and Quality Gates (2)
+## CI and Quality Gates (0)
 
 Test depth and what CI runs.
 
-- **low** — [The e2e record helper can lose the typed quantity](ci-and-quality-gates/record-helper-can-lose-the-quantity.md)
-- **low** — [Three template tests still run and check nothing about the app](ci-and-quality-gates/template-tests-check-nothing.md)
 
-## Repo, Docs and Release Hygiene (1)
+## Repo, Docs and Release Hygiene (0)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
-- **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 

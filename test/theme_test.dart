@@ -36,6 +36,7 @@ import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
@@ -494,7 +495,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        expect(find.byType(Dialog), findsOneWidget);
+        expect(find.byType(RecordNewActivityDialog), findsOneWidget);
       });
 
       testWidgets('renders sign-in and registration', (

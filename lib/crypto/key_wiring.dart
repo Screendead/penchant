@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
@@ -19,8 +21,28 @@ final keyServiceProvider = Provider<KeyService>(
     directory: FirestoreKeyDirectory(FirebaseFirestore.instance),
     aes128: nativeAesGcm(secretKeyLength: 16),
     aes256: nativeAesGcm(secretKeyLength: 32),
+    rechecks: keychainRechecks,
   ),
 );
+
+/// Every few seconds and on app resume, for as long as it is listened to.
+/// iOS suspends timers in the background, so the resume event matters there.
+Stream<void> keychainRechecks({Duration every = const Duration(seconds: 5)}) {
+  Timer? timer;
+  AppLifecycleListener? lifecycle;
+  late final StreamController<void> controller;
+  controller = StreamController<void>(
+    onListen: () {
+      timer = Timer.periodic(every, (_) => controller.add(null));
+      lifecycle = AppLifecycleListener(onResume: () => controller.add(null));
+    },
+    onCancel: () {
+      timer?.cancel();
+      lifecycle?.dispose();
+    },
+  );
+  return controller.stream;
+}
 
 final journalKeyForUserProvider = StreamProvider.autoDispose
     .family<JournalKeyState, String>(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/design/tokens.dart';
 
 // Chrome is ink on paper (paper on ink in dark). The five habit colours are
@@ -157,6 +158,12 @@ ThemeData appTheme(Brightness brightness) {
     scaffoldBackgroundColor: p.bg,
     canvasColor: p.bg,
     dividerColor: p.line,
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: <TargetPlatform, PageTransitionsBuilder>{
+        for (final TargetPlatform platform in TargetPlatform.values)
+          platform: const DialPageTransitionsBuilder(),
+      },
+    ),
     extensions: <ThemeExtension<dynamic>>[
       DialColors.fromPalette(p),
       DialType.colored(p.text, p.muted),

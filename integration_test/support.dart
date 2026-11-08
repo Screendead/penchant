@@ -197,6 +197,25 @@ Future<void> enterText(WidgetTester tester, String label, String text) async {
   await tester.pump();
 }
 
+// Types [text] into the open amount sheet's Quantity field and reads the
+// field back. On a slow hosted runner the text sometimes never reaches the
+// field, and the sheet, which opens holding the default amount, would record
+// that instead, so it types again until the field holds it.
+Future<void> enterQuantity(WidgetTester tester, String text) async {
+  final Finder editable = find.descendant(
+    of: find.widgetWithText(TextFormField, 'Quantity'),
+    matching: find.byType(EditableText),
+  );
+  for (int attempt = 0; attempt < 3; attempt++) {
+    await enterText(tester, 'Quantity', text);
+    await tester.pump(const Duration(milliseconds: 100));
+    if (tester.widget<EditableText>(editable).controller.text == text) {
+      return;
+    }
+  }
+  throw TestFailure('The Quantity field did not keep "$text" after 3 tries');
+}
+
 Future<void> screenshot(WidgetTester tester, String name) async {
   if (_screenshotServer.isEmpty) {
     return;
@@ -358,7 +377,7 @@ extension on Finder {
 }
 
 // Records through Today's Log fan: a hold on the habit's wedge opens the
-// record dialog with it chosen, or More does when the fan has no room for it.
+// amount sheet with it chosen, or More does when the fan has no room for it.
 // With [at], unlocks the date field and types the time, as a user correcting
 // the clock would.
 Future<void> recordActivity(
@@ -390,16 +409,19 @@ Future<void> recordActivity(
     await tester.tap(more);
   }
   await tester.pump();
-  final Finder dialog = find.byType(AlertDialog);
-  await pumpUntil(tester, dialog);
+  final Finder dialog = find.byType(RecordNewActivityDialog);
+  await pumpUntilRouteSettled(tester, dialog);
   final Finder chosen = find.descendant(
     of: find.byType(RecordNewActivityDialog),
     matching: find.byType(DropdownButtonFormField<String>),
   );
-  if (find
-      .descendant(of: chosen, matching: find.text(viceName))
-      .evaluate()
-      .isEmpty) {
+  // A held wedge titles the sheet with its habit and shows no dropdown; More
+  // opens it with the dropdown and no habit chosen.
+  if (chosen.evaluate().isNotEmpty &&
+      find
+          .descendant(of: chosen, matching: find.text(viceName))
+          .evaluate()
+          .isEmpty) {
     await tap(tester, chosen);
     await tap(tester, find.text(viceName).last);
   }
@@ -411,7 +433,8 @@ Future<void> recordActivity(
       ActivityDateField.format.format(at),
     );
   }
-  await enterText(tester, 'Quantity', formatAmount(quantity));
+  final String typed = formatAmount(quantity);
+  await enterQuantity(tester, typed);
   if (triggerTaps.isNotEmpty) {
     // Each label in [triggerTaps] is tapped in the picker in turn.
     final Finder open = find.text('What was going on? (optional)');
@@ -430,7 +453,12 @@ Future<void> recordActivity(
     await tap(tester, find.descendant(of: sheet, matching: find.text('Done')));
     await pumpUntil(tester, sheet, present: false);
   }
-  await tap(tester, find.descendant(of: dialog, matching: find.text('Record')));
+  await enterQuantity(tester, typed);
+  // A focused field scrolls itself back into view, away from the button.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
+  final Finder submit = find.byKey(RecordNewActivityDialog.submitKey);
+  await tap(tester, submit);
   await pumpUntil(tester, dialog, present: false);
 }
 
@@ -707,8 +735,26 @@ Future<void> pumpUntilNeverShowing(
   }, () => '$until to appear');
 }
 
+// Whether Trends is a pane beside Today (900 pt and up: the Mac window as it
+// opens, or an iPad on its side) rather than a sheet over it.
+bool splitLayout(WidgetTester tester) =>
+    find.byType(TrendsSheet).evaluate().isNotEmpty &&
+    find.byType(DraggableScrollableSheet).evaluate().isEmpty;
+
 // Opens the Trends sheet with a tap on its peek, and waits for it to settle.
+// The split view's pane is always open, so there it waits for the pane.
 Future<void> openTrends(WidgetTester tester) async {
+  await pumpUntil(tester, find.byType(TrendsSheet));
+  if (splitLayout(tester)) {
+    await pumpUntil(
+      tester,
+      find.descendant(
+        of: find.byType(TrendsSheet),
+        matching: find.text(TrendsSheet.title),
+      ),
+    );
+    return;
+  }
   await tap(
     tester,
     find.descendant(
@@ -720,7 +766,12 @@ Future<void> openTrends(WidgetTester tester) async {
   await pumpFor(tester, const Duration(milliseconds: 500));
 }
 
+// The pane has no Close; there this only checks Log is still in reach.
 Future<void> closeTrends(WidgetTester tester) async {
+  if (splitLayout(tester)) {
+    await pumpUntil(tester, find.byType(LogButton).hitTestable());
+    return;
+  }
   // Close sits at the top of the sheet, which may have scrolled.
   await scrollIntoView(tester, find.byTooltip(TrendsSheet.closeLabel));
   await tap(tester, find.byTooltip(TrendsSheet.closeLabel));

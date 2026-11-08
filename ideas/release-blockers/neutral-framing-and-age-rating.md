@@ -40,4 +40,4 @@ reviewer notes short: a personal journal, no encouragement, insights computed on
 
 **Depends on:** [positioning](positioning-and-target-user.md); [`neutral-empty-states-use-the-error-colour`](../../tech-debt/accessibility-and-localization/neutral-empty-states-use-the-error-colour.md).
 
-**Needs Jack:** yes — Confirm 18+ in place of the retired 17+.
+**Needs Jack:** no. 18+ (`r2-age`, Jack, 2026-11-06); the rest waits on a release.
