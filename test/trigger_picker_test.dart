@@ -284,7 +284,7 @@ void main() {
 
     expect(find.widgetWithText(InputChip, 'Pitch review'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextFormField, 'Quantity'), '1');
-    await tester.tap(find.text('Record'));
+    await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
     await tester.pumpAndSettle();
 
     expect(writes.writes.single.fields['triggers'], <String>['Pitch review']);
