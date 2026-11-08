@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
@@ -117,18 +118,15 @@ void main() {
     expect(tester.takeException(), isNull);
     await screenshot(tester, 'a11y-log-fan-text-3x');
     await tester.longPress(fanWedge('Water'));
-    final Finder dialog = find.byType(AlertDialog);
-    await pumpUntil(tester, dialog);
+    final Finder dialog = find.byType(RecordNewActivityDialog);
+    await pumpUntilRouteSettled(tester, dialog);
     await screenshot(tester, 'a11y-record-dialog-text-3x');
     final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
     await pumpUntil(tester, quantity);
     await tester.ensureVisible(quantity);
     await pumpFor(tester, const Duration(milliseconds: 500));
     await enterText(tester, 'Quantity', '4');
-    await _tapInDialog(
-      tester,
-      find.descendant(of: dialog, matching: find.text('Record')),
-    );
+    await _tapInDialog(tester, find.byKey(RecordNewActivityDialog.submitKey));
     await pumpUntil(tester, dialog, present: false);
 
     expect(tester.takeException(), isNull);

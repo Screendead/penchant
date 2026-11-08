@@ -69,23 +69,15 @@ void main() {
     expect(fanWedge('Juice'), findsNothing);
     await tester.longPress(fanWedge('Water'));
     final Finder dialog = find.byType(RecordNewActivityDialog);
-    await pumpUntil(tester, dialog);
-    await tap(
-      tester,
-      find.descendant(
-        of: dialog,
-        matching: find.byType(DropdownButtonFormField<String>),
-      ),
+    await pumpUntilRouteSettled(tester, dialog);
+    // A held wedge names its habit in the sheet's title.
+    expect(
+      find.descendant(of: dialog, matching: find.text('Water')),
+      findsOneWidget,
     );
-    await pumpUntil(tester, find.text('Coffee'));
-    // The menu fades in; read it once it is up.
-    await pumpFor(tester, const Duration(milliseconds: 500));
-    expect(find.text('Water'), findsWidgets);
-    expect(find.text('Juice'), findsNothing);
-    await tap(tester, find.text('Coffee').last);
     await tap(
       tester,
-      find.descendant(of: dialog, matching: find.text('Cancel')),
+      find.descendant(of: dialog, matching: find.byTooltip('Close')),
     );
     await pumpUntil(tester, dialog, present: false);
 

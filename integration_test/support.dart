@@ -358,7 +358,7 @@ extension on Finder {
 }
 
 // Records through Today's Log fan: a hold on the habit's wedge opens the
-// record dialog with it chosen, or More does when the fan has no room for it.
+// amount sheet with it chosen, or More does when the fan has no room for it.
 // With [at], unlocks the date field and types the time, as a user correcting
 // the clock would.
 Future<void> recordActivity(
@@ -390,8 +390,8 @@ Future<void> recordActivity(
     await tester.tap(more);
   }
   await tester.pump();
-  final Finder dialog = find.byType(AlertDialog);
-  await pumpUntil(tester, dialog);
+  final Finder dialog = find.byType(RecordNewActivityDialog);
+  await pumpUntilRouteSettled(tester, dialog);
   final Finder chosen = find.descendant(
     of: find.byType(RecordNewActivityDialog),
     matching: find.byType(DropdownButtonFormField<String>),
@@ -430,7 +430,8 @@ Future<void> recordActivity(
     await tap(tester, find.descendant(of: sheet, matching: find.text('Done')));
     await pumpUntil(tester, sheet, present: false);
   }
-  await tap(tester, find.descendant(of: dialog, matching: find.text('Record')));
+  final Finder submit = find.byKey(RecordNewActivityDialog.submitKey);
+  await tap(tester, submit);
   await pumpUntil(tester, dialog, present: false);
 }
 
