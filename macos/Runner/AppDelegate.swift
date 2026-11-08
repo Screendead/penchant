@@ -6,10 +6,10 @@ import ServiceManagement
 class AppDelegate: FlutterAppDelegate {
   static let menuBarHelperID = "com.screendead.penchant.menubar"
 
-  // applicationDidFinishLaunching never reached this class (macOS 27.2,
-  // 2026-11-08; cause unknown), so launch work runs here.
-  override func applicationWillFinishLaunching(_ notification: Notification) {
-    super.applicationWillFinishLaunching(notification)
+  // No super: FlutterAppDelegate does not implement this on macOS, so the call
+  // raises "unrecognized selector", which AppKit swallows along with the rest
+  // of the method.
+  override func applicationDidFinishLaunching(_ notification: Notification) {
     startMenuBarHelper()
   }
 
