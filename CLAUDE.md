@@ -496,10 +496,13 @@ shows only offline.
 `GoogleService-Info.plist` (which the native SDK reads before Dart runs) and in `lib/firebase_options.dart`
 (FlutterFire's output, which Dart's `initializeApp` reads). Neither copy can go without breaking one side, and
 regenerating either file restores the key. It is a public identifier, not a secret: Firebase says keys for its
-services "do not need to be treated as secrets" and are "OK to include in code or checked-in config files"
-(https://firebase.google.com/docs/projects/api-keys). The protection is Firestore rules and App Check, not hiding the key. The key's own restrictions
-live in the Google Cloud console of the production project, which Claude does not touch, and repository files
-cannot show them. Recommended there (Google Cloud, https://docs.cloud.google.com/docs/authentication/api-keys):
+services "do not need to be treated as secrets" and are "OK to include in code or checked-in config files", on
+the condition that the key is restricted to Firebase APIs and the app's setup follows the page's guidelines
+(https://firebase.google.com/docs/projects/api-keys). Today the protection is Firestore rules. App Check is
+activated but enforced nowhere (see Emulator wiring), so it adds protection only once App Attest tokens are
+accepted and enforcement is on. The key's own restrictions live in the Google Cloud console of the production
+project, which Claude does not touch, and repository files cannot show them; they are not yet set, a call for
+Jack. Recommended there (Google Cloud, https://docs.cloud.google.com/docs/authentication/api-keys):
 an iOS application restriction to `com.screendead.penchant`, and an API restriction to the Firebase APIs the app
 calls; Google notes the bundle-ID check is easy to bypass, so it limits casual reuse only. The key of the earlier
 `com.screendead.tracker.tracker` registration stays valid until revoked there. Never commit a service-account
