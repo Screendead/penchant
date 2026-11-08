@@ -23,12 +23,14 @@ class KeyboardInsetClamp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MediaQueryData data = MediaQuery.of(context);
-    final double bottom = clamp(data.viewInsets.bottom, data.size.height);
-    if (bottom == data.viewInsets.bottom) {
-      return child;
-    }
+    // Always wrapped: a wrapper only on the clamped frame would change the
+    // tree's shape there and rebuild the app's state under it.
     return MediaQuery(
-      data: data.copyWith(viewInsets: data.viewInsets.copyWith(bottom: bottom)),
+      data: data.copyWith(
+        viewInsets: data.viewInsets.copyWith(
+          bottom: clamp(data.viewInsets.bottom, data.size.height),
+        ),
+      ),
       child: child,
     );
   }
