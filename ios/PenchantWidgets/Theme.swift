@@ -1,5 +1,12 @@
 import SwiftUI
-import UIKit
+
+#if os(macOS)
+  import AppKit
+  typealias PlatformColor = NSColor
+#else
+  import UIKit
+  typealias PlatformColor = UIColor
+#endif
 
 // Copied from lib/design/tokens.json (Day Dial); the extension cannot read the
 // Flutter bundle. A token change there is a change here.
@@ -33,20 +40,29 @@ enum Palette {
   private static func dynamic(_ light: UInt32, _ dark: UInt32, lightAlpha: UInt32 = 0xFF, darkAlpha: UInt32 = 0xFF)
     -> Color
   {
-    Color(
-      UIColor { traits in
-        traits.userInterfaceStyle == .dark ? uiColor(dark, darkAlpha) : uiColor(light, lightAlpha)
-      })
+    #if os(macOS)
+      Color(
+        NSColor(name: nil) { appearance in
+          appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            ? uiColor(dark, darkAlpha) : uiColor(light, lightAlpha)
+        })
+    #else
+      Color(
+        UIColor { traits in
+          traits.userInterfaceStyle == .dark ? uiColor(dark, darkAlpha) : uiColor(light, lightAlpha)
+        })
+    #endif
   }
 
-  private static func uiColor(_ rgb: UInt32, _ alpha: UInt32) -> UIColor {
-    UIColor(
+  private static func uiColor(_ rgb: UInt32, _ alpha: UInt32) -> PlatformColor {
+    PlatformColor(
       red: CGFloat((rgb >> 16) & 0xFF) / 255, green: CGFloat((rgb >> 8) & 0xFF) / 255,
       blue: CGFloat(rgb & 0xFF) / 255, alpha: CGFloat(alpha) / 255)
   }
 }
 
-// The Red Hat variable fonts, bundled with the extension (UIAppFonts).
+// The Red Hat variable fonts, bundled with the extension (UIAppFonts on iOS,
+// ATSApplicationFontsPath on macOS).
 enum Typeface {
   static func display(_ size: CGFloat, _ weight: Font.Weight = .black) -> Font {
     .custom("Red Hat Display", size: size).weight(weight)

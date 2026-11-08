@@ -34,10 +34,10 @@ struct WeekDial: View {
           VStack(spacing: 0) {
             Text("\(week.entryCount)")
               .font(Typeface.mono(radius * 0.26, .medium))
-              .foregroundStyle(Palette.text)
+              .foregroundStyle(vibrant ? AnyShapeStyle(.primary) : AnyShapeStyle(Palette.text))
             Text(week.entryCount == 1 ? "entry" : "entries")
               .font(Typeface.text(max(7, radius * 0.11)))
-              .foregroundStyle(Palette.muted)
+              .foregroundStyle(vibrant ? AnyShapeStyle(.secondary) : AnyShapeStyle(Palette.muted))
           }
           .minimumScaleFactor(0.5)
           .frame(width: radius * hubShare * 1.7)

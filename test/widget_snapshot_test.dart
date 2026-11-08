@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/data/queued_log.dart';
 import 'package:tracker/data/widget_snapshot.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -41,6 +42,12 @@ class _FakeBridge implements WidgetBridge {
 
   @override
   Future<void> clear() async => calls.add('clear');
+
+  @override
+  Future<List<QueuedLog>> pendingLogs() async => const <QueuedLog>[];
+
+  @override
+  Future<void> removeLogs(List<QueuedLog> done) async => calls.add('remove');
 }
 
 class _FixedToday extends Today {
@@ -59,6 +66,7 @@ void main() {
   group('widgetSnapshot', () {
     test('carries the last 7 days, oldest first, per unarchived habit', () {
       final Map<String, Object?> snapshot = widgetSnapshot(
+        uid: 'u1',
         vices: <Vice>[_vice('Tea', 1), _vice('Coffee', 0)],
         activities: <ViceActivity>[
           fakeActivity('Coffee', 2, DateTime(2026, 11, 8, 9)),
@@ -98,6 +106,7 @@ void main() {
 
     test('keeps archived habits\' colour slots but leaves them out', () {
       final Map<String, Object?> snapshot = widgetSnapshot(
+        uid: 'u1',
         vices: <Vice>[
           _vice('Sugar', 0, archived: true),
           _vice('Coffee', 1),
@@ -119,6 +128,7 @@ void main() {
         for (int i = 0; i < 10; i++) _vice('H$i', i),
       ];
       final Map<String, Object?> snapshot = widgetSnapshot(
+        uid: 'u1',
         vices: vices,
         activities: <ViceActivity>[
           for (int n = 0; n < 3; n++)

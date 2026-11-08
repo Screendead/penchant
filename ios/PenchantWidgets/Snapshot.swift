@@ -1,16 +1,24 @@
 import Foundation
 
 // Written by the app through ios/Runner/WidgetBridge.swift; the shape is
-// widgetSnapshot's in lib/data/widget_snapshot.dart.
-let appGroup = "group.com.screendead.penchant"
+// widgetSnapshot's in lib/data/widget_snapshot.dart. A sandboxed Mac app's
+// group takes the team ID as its prefix ("Configuring app groups"), and must
+// match macos/Runner/*.entitlements.
+#if os(macOS)
+  let appGroup = "8N575942RT.com.screendead.penchant"
+#else
+  let appGroup = "group.com.screendead.penchant"
+#endif
 let snapshotKey = "widgets.snapshot"
 
 struct Snapshot: Decodable {
   static let supportedVersion = 1
 
   let version: Int
+  // Absent from snapshots written before logging from a widget existed.
+  let uid: String?
   let days: [String]
-  let habits: [Habit]
+  var habits: [Habit]
   let top: [String]
 
   struct Habit: Decodable, Identifiable {
@@ -20,21 +28,48 @@ struct Snapshot: Decodable {
     let unitOther: String
     let slot: Int
     let style: MarkStyle
-    let week: [Double]
-    let weekEntries: [Int]
-    let entries30: Int
+    var week: [Double]
+    var weekEntries: [Int]
+    var entries30: Int
+
+    func unit(_ count: Double) -> String { count == 1 ? unitOne : unitOther }
   }
 
   enum MarkStyle: String, Decodable {
     case filled, ring, dotted
   }
 
+  // The app's last snapshot plus the logs still waiting in LogQueue for it to
+  // write, so a tap shows at once.
   static func load() -> Snapshot? {
     guard let json = UserDefaults(suiteName: appGroup)?.string(forKey: snapshotKey),
-      let snapshot = try? JSONDecoder().decode(Snapshot.self, from: Data(json.utf8)),
+      var snapshot = try? JSONDecoder().decode(Snapshot.self, from: Data(json.utf8)),
       snapshot.version == supportedVersion
     else { return nil }
+    snapshot.add(LogQueue.read())
     return snapshot
+  }
+
+  mutating func add(_ queued: [QueuedLog]) {
+    for log in queued where log.op == .log && log.uid == uid {
+      guard let h = habits.firstIndex(where: { $0.id == log.viceID }) else { continue }
+      habits[h].entries30 += 1
+      if let d = days.firstIndex(of: dayKey(log.date)), habits[h].week.indices.contains(d),
+        habits[h].weekEntries.indices.contains(d)
+      {
+        habits[h].week[d] += 1
+        habits[h].weekEntries[d] += 1
+      }
+    }
+  }
+
+  func habit(_ id: String) -> Habit? { habits.first { $0.id == id } }
+
+  // The configured habits that still exist, else the 30-day top.
+  func shown(_ chosen: [String], count: Int) -> [Habit] {
+    let picked = chosen.compactMap(habit)
+    let ranked = top.compactMap(habit) + habits.filter { !top.contains($0.id) }
+    return Array((picked.isEmpty ? ranked : picked).prefix(count))
   }
 }
 

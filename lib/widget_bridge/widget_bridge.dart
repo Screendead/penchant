@@ -14,6 +14,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/data/queued_log.dart';
 
 // Hands the snapshot to ios/Runner/WidgetBridge.swift, which keeps it in the
 // App Group and reloads the widgets' timelines.
@@ -28,6 +29,23 @@ class WidgetBridge {
 
   Future<void> clear() => _invoke('clear');
 
+  /// The logs the widgets, controls and intents left for the app to write.
+  Future<List<QueuedLog>> pendingLogs() async {
+    try {
+      return decodeQueuedLogs(
+        await _channel.invokeMethod<String>('pendingLogs') ?? '[]',
+      );
+    } on PlatformException catch (e, stack) {
+      reportError(e, stack, context: 'while reading the widget log queue');
+      return const <QueuedLog>[];
+    }
+  }
+
+  Future<void> removeLogs(List<QueuedLog> done) => _invoke(
+    'removeLogs',
+    jsonEncode(<Object?>[for (final l in done) l.toJson()]),
+  );
+
   Future<void> _invoke(String method, [Object? argument]) async {
     try {
       await _channel.invokeMethod<void>(method, argument);
@@ -41,9 +59,10 @@ final widgetBridgeProvider = Provider<WidgetBridge>(
   (ref) => const WidgetBridge(),
 );
 
-// Only the iOS app embeds a widget extension so far.
 bool get widgetsSupported =>
-    !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS);
 
 // Waits for a burst of snapshots (every write and its acknowledgement) to
 // settle before writing once.
@@ -99,7 +118,12 @@ final widgetSyncProvider = Provider<void>((ref) {
     return;
   }
   memory.latest = jsonEncode(
-    widgetSnapshot(vices: vices, activities: activities, today: today),
+    widgetSnapshot(
+      uid: uid,
+      vices: vices,
+      activities: activities,
+      today: today,
+    ),
   );
   final Timer settle = Timer(widgetSnapshotSettle, () => memory.write(bridge));
   ref.onDispose(settle.cancel);

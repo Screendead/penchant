@@ -20,8 +20,10 @@ String dayKey(DateTime day) =>
 // What the widgets show, as JSON for the App Group. [vices] is every vice,
 // archived ones included, so the colours match the app's; [activities] covers
 // at least the [widgetTopWindowDays] days ending [today]. Locked vices are
-// left out: their name is a placeholder, not the habit's.
+// left out: their name is a placeholder, not the habit's. [uid] is the owner
+// the widgets' logs are queued for.
 Map<String, Object?> widgetSnapshot({
+  required String uid,
   required List<Vice> vices,
   required List<ViceActivity> activities,
   required DateTime today,
@@ -76,6 +78,7 @@ Map<String, Object?> widgetSnapshot({
 
   return <String, Object?>{
     'version': widgetSnapshotVersion,
+    'uid': uid,
     'days': days,
     'habits': <Map<String, Object?>>[
       for (final Vice v in shown)

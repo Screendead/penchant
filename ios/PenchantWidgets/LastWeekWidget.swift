@@ -262,9 +262,13 @@ private struct InlineView: View {
 
   var body: some View {
     let habits = lockScreenHabits(week, top, count: 3)
-    ViewThatFits {
-      ForEach((1...max(1, habits.count)).reversed(), id: \.self) { n in
-        Text(habits.prefix(n).map { "\($0.habit.name) \(formatCount($0.total))" }.joined(separator: " · "))
+    if habits.isEmpty {
+      Text("No habits yet")
+    } else {
+      ViewThatFits {
+        ForEach((1...max(1, habits.count)).reversed(), id: \.self) { n in
+          Text(habits.prefix(n).map { "\($0.habit.name) \(formatCount($0.total))" }.joined(separator: " · "))
+        }
       }
     }
   }
@@ -276,6 +280,7 @@ extension Snapshot {
     let today = Calendar.current.startOfDay(for: Date())
     return Snapshot(
     version: supportedVersion,
+    uid: nil,
     days: (0..<Week.length).reversed().map {
       dayKey(Calendar.current.date(byAdding: .day, value: -$0, to: today)!)
     },
