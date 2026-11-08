@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**10 issues: 0 critical, 0 high, 1 medium, 9 low.**
+**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
 
 ## Firebase Data Layer (5)
 
@@ -57,11 +57,10 @@ Password reset, email verification, re-authentication, account deletion and expo
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
 
-## Platform and Delivery Config (1)
+## Platform and Delivery Config (0)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
-- **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
 
 ## CI and Quality Gates (2)
 
