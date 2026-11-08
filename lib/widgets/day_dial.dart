@@ -1501,6 +1501,7 @@ class _BeadFlightState extends State<_BeadFlight>
     with SingleTickerProviderStateMixin {
   late final AnimationController _travel = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration: DialMotion.beadTravel,
   )..forward().then((_) => widget.onLanded());
 

@@ -21,6 +21,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/font_licence.dart';
+import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
@@ -152,7 +153,7 @@ class AuthStateFailure extends ConsumerWidget {
 Route<void> generateRoute(RouteSettings settings) {
   final Widget page = routePage(settings.name);
   // Forms that save or discard open as modals; pages to browse push.
-  return MaterialPageRoute<void>(
+  return DialPageRoute<void>(
     fullscreenDialog:
         page is ViceForm || page is EditVice || page is ViceActivityEditorPage,
     settings: settings,

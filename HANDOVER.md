@@ -217,6 +217,13 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   `tech-debt/auth-and-account-lifecycle/` (clipboard), the release-pipeline idea (export compliance) and the privacy
   idea (Crashlytics scrubbing).
 - **D15.** Close draft #128 (the keychain probe, CONFLICTING, "not for merge") once P2 no longer needs it. S.
+- **D16.** Reduce motion row in Settings (`r10-reduce-motion` B, Jack, 2026-11-08): Follow system / Reduce / Full,
+  saved per device in `shared_preferences`. PR #153 (`feat/reduce-motion-setting`). Full cannot bring back motion the
+  framework scales itself: while iOS Reduce Motion is on, every default `AnimationController` runs at 5% of its length
+  and no release-mode API turns that off. So Full covers the app's own controllers (`AnimationBehavior.preserve`: dial,
+  log fan, tallies, day picker, Undo timer) and pushed pages (`DialPageRoute`); sheets, dialogs and implicit
+  animations (segment thumbs, label fades) still follow the system, and the page's foot copy says so. Open: a custom
+  `WidgetsFlutterBinding` overriding `SemanticsBinding.disableAnimations` would cover the rest (inferred, untested).
 
 **UNDECIDED** (Jack's call; these are "Calls waiting on Jack"):
 
@@ -224,8 +231,6 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
 - **U2.** Queue item 6's open questions, each with Claude's recommendation in item 6: what "top" habits means, Undo
   after a widget or menu bar tap, Siri, Shortcuts and the Action button through the same App Intent, macOS desktop
   widgets from the same code. S each.
-- **U3.** A Reduce motion row in Settings, as the mock-up has; the app follows the system setting and has nothing of
-  its own to set. S.
 - **U4.** Other languages (register: English only); still unasked. L if yes.
 - **U5.** Analytics beyond Crashlytics, content-free (`ideas/v1-must-haves/crash-reporting-and-analytics.md`), which
   the idea defers to 1.1. S to decide.

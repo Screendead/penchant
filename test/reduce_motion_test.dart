@@ -13,6 +13,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reduce_motion_settings.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/widgets/reduce_motion_scope.dart';
+import 'package:tracker/widgets/undo_bar.dart';
 
 import 'fake_account.dart';
 
@@ -199,5 +200,59 @@ void main() {
     await tester.tap(find.text('Full'));
     await tester.pumpAndSettle();
     expect(MediaQuery.disableAnimationsOf(context()), isFalse);
+  });
+
+  group('Full with iOS Reduce Motion on keeps the app\'s own motion', () {
+    // Flutter scales every default AnimationController by 0.05 while the
+    // platform flag is set, whatever MediaQuery says.
+    Future<void> fullOnReducingSystem(WidgetTester tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ReduceMotion.key: 'full',
+      });
+      await tester.pumpWidget(
+        _app(system: true, home: const Scaffold(body: _Probe())),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('reduced: false'), findsOneWidget);
+    }
+
+    testWidgets('the Undo countdown runs over its five seconds', (
+      WidgetTester tester,
+    ) async {
+      await fullOnReducingSystem(tester);
+      showUndoBar(
+        ScaffoldMessenger.of(tester.element(find.byType(_Probe))),
+        const TextSpan(text: 'Logged'),
+        onUndo: () {},
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      final CircularProgressIndicator ring = tester.widget(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(ring.value, greaterThan(0.9));
+      await tester.pumpAndSettle(const Duration(seconds: 10));
+    });
+
+    testWidgets('a pushed page keeps its transition clock', (
+      WidgetTester tester,
+    ) async {
+      await fullOnReducingSystem(tester);
+      final NavigatorState navigator = tester.state(find.byType(Navigator));
+      final TransitionRoute<void> route =
+          generateRoute(const RouteSettings(name: '/nowhere'))
+              as TransitionRoute<void>;
+      navigator.push(route);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(route.animation!.value, lessThan(0.5));
+      await tester.pumpAndSettle();
+    });
   });
 }
