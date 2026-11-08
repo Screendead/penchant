@@ -58,7 +58,7 @@ class ViceTracker extends ConsumerStatefulWidget {
 
   // Today's column in the split view.
   static double splitColumnWidth(double width) =>
-      (width * 0.42).clamp(400.0, 560.0);
+      (width * 0.36).clamp(400.0, 760.0);
 
   @override
   ConsumerState<ViceTracker> createState() => _ViceTrackerState();
@@ -268,9 +268,12 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             : constraints.maxWidth;
         // A phone on its side keeps the notch's side of Today clear.
         final double notch = split ? MediaQuery.paddingOf(context).left : 0;
-        final double width = min(column - notch, 600.0);
+        final double width = min(column - notch, split ? 760.0 : 600.0);
+        // In the split view the dial grows with the window's height.
         final double side = min(
-          DialSize.dialDiameter,
+          split
+              ? max(DialSize.dialDiameter, constraints.maxHeight * 0.44)
+              : DialSize.dialDiameter,
           width - 2 * DialSpace.gutter,
         );
 
@@ -331,19 +334,26 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                         ),
                       ),
                       const SizedBox(height: 6),
+                      // The dial's geometry is drawn for its 320 pt size, so
+                      // a larger dial is that one scaled.
                       Center(
                         child: SizedBox.square(
                           dimension: side,
-                          child: DayDial(
-                            day: day,
-                            today: today,
-                            entries: entries,
-                            semanticsLabel: summary,
-                            offline: offline,
-                            storedTypicals: storedTypicals,
-                            onBeadTap: _openEntry,
-                            onSwipe: (int days) =>
-                                _selectDay(addDays(day, days)),
+                          child: FittedBox(
+                            child: SizedBox.square(
+                              dimension: min(side, DialSize.dialDiameter),
+                              child: DayDial(
+                                day: day,
+                                today: today,
+                                entries: entries,
+                                semanticsLabel: summary,
+                                offline: offline,
+                                storedTypicals: storedTypicals,
+                                onBeadTap: _openEntry,
+                                onSwipe: (int days) =>
+                                    _selectDay(addDays(day, days)),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -424,6 +434,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   child: allVices == null || allVices.isEmpty
                       ? const SizedBox.shrink()
                       : TrendsSheet.pane(
+                          contentWidth: 1100,
                           habits: trendsOrder(allVices, marks),
                           marks: marks,
                           onOpenDay: _selectDay,
