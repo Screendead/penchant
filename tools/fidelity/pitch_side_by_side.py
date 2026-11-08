@@ -1,4 +1,4 @@
-# Builds the round-8 pitch images from the mock-up stills (design/ui-overhaul-day-dial) and test/today_render_test.dart renders.
+# Builds the round-8 pitch images from the mock-up stills (docs/pitch/mockups/ui-overhaul/day-dial) and test/today_render_test.dart renders.
 # Usage: python3 -I tools/fidelity/pitch_side_by_side.py <dir with stills-light.png, stills-dark.png and render/> [label for the built side]
 import sys
 from PIL import Image, ImageDraw, ImageFont
