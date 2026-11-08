@@ -21,7 +21,10 @@ ScrollPosition _trendsScroll(WidgetTester tester) => tester
     .state<ScrollableState>(_inTrends(find.byType(Scrollable)).first)
     .position;
 
-Future<void> _expectCommonLayout(WidgetTester tester) async {
+Future<void> _expectCommonLayout(
+  WidgetTester tester, {
+  required bool chipsWrap,
+}) async {
   expect(tester.takeException(), isNull);
 
   // Synced sits on the Trends title row, not over Today.
@@ -35,13 +38,15 @@ Future<void> _expectCommonLayout(WidgetTester tester) async {
     ),
   );
 
-  // The chips wrap onto more rows instead of running off the pane.
+  // The chips stay in the pane, wrapping onto more rows when they must.
   final Rect pane = _rect(tester, find.byType(TrendsSheet));
   final List<Rect> chips = <Rect>[
     for (final String name in macHabits.map((h) => h.name))
       _rect(tester, _inTrends(find.text(name)).first),
   ];
-  expect(chips.map((Rect r) => r.top.round()).toSet().length, greaterThan(1));
+  if (chipsWrap) {
+    expect(chips.map((Rect r) => r.top.round()).toSet().length, greaterThan(1));
+  }
   for (final Rect chip in chips) {
     expect(chip.right, lessThanOrEqualTo(pane.right));
   }
@@ -89,7 +94,7 @@ void main() {
       TrendsChart.plotHeight,
     );
     expect(_trendsScroll(tester).maxScrollExtent, greaterThan(0));
-    await _expectCommonLayout(tester);
+    await _expectCommonLayout(tester, chipsWrap: true);
   });
 
   testWidgets('a 2000x1250 fullscreen window grows the dial, Today and the '
@@ -116,7 +121,7 @@ void main() {
       pane.bottom - hint.bottom,
       moreOrLessEquals(DialSpace.xl, epsilon: 1),
     );
-    await _expectCommonLayout(tester);
+    await _expectCommonLayout(tester, chipsWrap: false);
   });
 
   testWidgets('a taller window stops the chart at its largest', (

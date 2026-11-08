@@ -133,8 +133,8 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const double _sparkGap = 1;
   static const double sparkHeight = 44;
   static const double _peekBottom = 25;
-  // A wide pane centres its content at this width, so the chart's days stay
-  // close enough to read across.
+  // A wide pane centres its content at this width: wide enough for a
+  // fullscreen window's chart, narrow enough that its days still read across.
   static const double paneContentWidth = 1100;
 
   // The pane's chart takes the height its other content leaves, up to this.
