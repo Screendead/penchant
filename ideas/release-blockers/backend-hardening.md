@@ -18,8 +18,7 @@ Done (PR #55):
 
 Left before strangers install:
 
-- **The vice lists are unbounded.** Whether to cap the number of vices per user is the open call `vice-cap`
-  (`HANDOVER.md`, "Calls waiting on Jack").
+- **The vice lists are unbounded,** by decision: no cap for 1.0 (`r4-vice-cap`, Jack, 2026-11-06).
 - **App Check yields no accepted token on a device yet.** The App Attest entitlement can't be signed by the personal
   team, so App Attest has nothing to attest with. The DeviceCheck fallback does not cover this: in
   `firebase_app_check` 0.4.9 (`FirebaseAppCheckPlugin.swift`, `appAttestWithDeviceCheckFallback`) the plugin picks
@@ -49,14 +48,13 @@ backend holds only the user's own logs.
 ## Recommendation
 
 Claude's recommendation: **B**, plus budget alerts, which cost nothing. Built in PR #55 apart from what is listed as
-left above. On `vice-cap`, Claude recommends leaving the vice lists unbounded for 1.0.
+left above. Jack left the vice lists unbounded for 1.0 (`r4-vice-cap`).
 
 **Effort:** M (S left: the entitlement, once the paid team exists)
 
 **Revenue impact:** Avoids risk.
 
 **Depends on:**
-- [`vice-lists-are-unbounded`](../../tech-debt/firebase-data-layer/vice-lists-are-unbounded.md)
 - The paid Apple Developer Program team (also needed by the [iOS release pipeline](ios-release-pipeline-and-testflight.md))
 
-**Needs Jack:** yes — `vice-cap`; the paid team; the App Check console steps and budget alerts.
+**Needs Jack:** no. The App Check steps and budget alerts wait on the paid Apple team.

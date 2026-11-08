@@ -47,4 +47,4 @@ moment of value, never on launch.
 
 **Depends on:** [IAP plumbing](iap-and-entitlements.md); [insights engine](../insights/insights-engine.md).
 
-**Needs Jack:** yes — Approve the free/Pro line (A, B or C) and the price.
+**Needs Jack:** no. The analysis layer is Pro at $24.99 (`r2-pro`, Jack, 2026-11-06); parked with the store work.

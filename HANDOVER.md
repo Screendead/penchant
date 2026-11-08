@@ -198,7 +198,7 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   `tools/build-version.sh`, `CLAUDE.md`. S.
 - **D11.** Flutter 3.47 (Dart 3.13) and riverpod_lint 3.1.9, the separate step `CLAUDE.md` records.
   `.github/actions/setup-flutter/action.yml`, `analysis_options.yaml`. M.
-- **D12.** Close the register entries that recorded a call Jack has since made, or that no longer hold:
+- **D12.** DONE (PR from `docs/register-ideas-refresh`; the rules-and-indexes entry stays: console drift and the unused `archived` index are still unchecked). Close the register entries that recorded a call Jack has since made, or that no longer hold:
   `activity-timestamps-come-from-the-device-clock` (`r4-server-time`: as built), `vice-lists-are-unbounded`
   (`r4-vice-cap`: no cap for 1.0), `no-email-verification` (`r3-verify`), `every-firebase-command-targets-production`
   (the CLI's configstore no longer maps the checkout, checked 2026-11-08; `r2-testflight`: no beta project). Re-check
@@ -206,10 +206,13 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   `tech-debt/`. S.
 - **D13.** The rest of the register, one class per PR: the generated plugin registrant tracked on macOS only
   (medium), the duplicated client API key, the template tests, the e2e record helper flake (low). `tech-debt/`. S each.
-- **D14.** Refresh `ideas/`: its "Needs Jack" section asks calls Jack has made (E2EE, age, Mac, Pro, billing,
+- **D14.** DONE (same PR). Refresh `ideas/`: its "Needs Jack" section asks calls Jack has made (E2EE, age, Mac, Pro, billing,
   TestFlight, icon, guests, check-in, presets, triggers, Today, app lock), and idea files for shipped work remain
   (`end-to-end-encryption`, `one-tap-quick-logging`, `trigger-tagging`, `granular-logging-and-data-model`, part of
-  `guest-mode-and-sign-in`): delete or trim each. `ideas/`. S.
+  `guest-mode-and-sign-in`): delete or trim each. `ideas/`. S. The deleted E2EE file's open items moved to
+  `tech-debt/firebase-data-layer/` (sealed-only rules, binding scope and key rotation, migrator edge cases),
+  `tech-debt/auth-and-account-lifecycle/` (clipboard), the release-pipeline idea (export compliance) and the privacy
+  idea (Crashlytics scrubbing).
 - **D15.** Close draft #128 (the keychain probe, CONFLICTING, "not for merge") once P2 no longer needs it. S.
 
 **UNDECIDED** (Jack's call; these are "Calls waiting on Jack"):

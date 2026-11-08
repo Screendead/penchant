@@ -305,8 +305,7 @@ older entries exist), the calendar sheet reads one calendar month for its dots (
 index), the editor listens to its one document, and Manage Data counts each
 vice's activities with a server-side `count()` aggregation, which is not live, ignores
 writes still queued on the device, and fails offline. The vice lists have no limit, and
-nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack, 2026-11-06; register,
-`vice-lists-are-unbounded`).
+nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack, 2026-11-06).
 
 **Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
@@ -398,7 +397,7 @@ field, which `r2-data-model` allows as an optional one (not built). `createdAt` 
 user picked), not a server timestamp: a pending `FieldValue.serverTimestamp()` matches no `createdAt` range query
 until the server acknowledges it, so an entry logged offline would vanish from Today, and the server would stamp it
 with the time it synced. Jack kept the device clock (`r4-server-time`, 2026-11-06); a wrong or hand-set clock places
-an entry at that time (register, `activity-timestamps-come-from-the-device-clock`).
+an entry at that time.
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce
