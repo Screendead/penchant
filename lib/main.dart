@@ -27,6 +27,7 @@ import 'package:tracker/vice_form.dart';
 import 'package:tracker/widget_bridge/background_flush.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
+import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
@@ -130,10 +131,12 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
-        builder: (BuildContext context, Widget? child) => AppMenuBar(
-          child: rejectedWritesBuilder(
-            context,
-            RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+        builder: (BuildContext context, Widget? child) => KeyboardInsetClamp(
+          child: AppMenuBar(
+            child: rejectedWritesBuilder(
+              context,
+              RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+            ),
           ),
         ),
       ),

@@ -16,9 +16,11 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/trends/hour_ring.dart';
+import 'package:tracker/trends/pane_fill.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
 import 'package:tracker/widgets/bead_painter.dart';
@@ -131,9 +133,12 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const double _sparkGap = 1;
   static const double sparkHeight = 44;
   static const double _peekBottom = 25;
-  // A wide pane centres its content at this width, so the chart's days stay
-  // close enough to read across.
-  static const double paneContentWidth = 720;
+  // A wide pane centres its content at this width: wide enough for a
+  // fullscreen window's chart, narrow enough that its days still read across.
+  static const double paneContentWidth = 1100;
+
+  // The pane's chart takes the height its other content leaves, up to this.
+  static const double paneChartMax = 640;
 
   // The peek's height: its two lines of text at the device's text size and
   // the sparkline under them.
@@ -385,7 +390,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     final ValueChanged<DateTime>? showDay = widget.onOpenDay;
     final DateTime? day = controller == null ? null : openDay;
 
-    final Widget content = day != null
+    Widget content({bool fill = false}) => day != null
         ? TrendsDay(
             key: ValueKey<DateTime>(day),
             day: day,
@@ -399,6 +404,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
           )
         : _TrendsPanel(
             key: const ValueKey<String>('panel'),
+            fill: fill,
             habits: widget.habits,
             marks: widget.marks,
             vice: vice,
@@ -458,22 +464,32 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       return Material(
         color: scheme.surfaceContainerLow,
         shape: BorderDirectional(start: BorderSide(color: colors.line)),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            DialSpace.gutter,
-            DialSpace.xl,
-            DialSpace.gutter + MediaQuery.paddingOf(context).right,
-            DialSpace.xl + bottomInset,
-          ),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: TrendsSheet.paneContentWidth,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints box) {
+            final EdgeInsets padding = EdgeInsets.fromLTRB(
+              DialSpace.gutter,
+              DialSpace.xl,
+              DialSpace.gutter + MediaQuery.paddingOf(context).right,
+              DialSpace.xl + bottomInset,
+            );
+            return SingleChildScrollView(
+              padding: padding,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: TrendsSheet.paneContentWidth,
+                  ),
+                  child: PaneFill(
+                    height: box.maxHeight - padding.vertical,
+                    minSlot: TrendsChart.plotHeight,
+                    maxSlot: TrendsSheet.paneChartMax,
+                    child: content(fill: true),
+                  ),
+                ),
               ),
-              child: content,
-            ),
-          ),
+            );
+          },
         ),
       );
     }
@@ -549,7 +565,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                             duration: MediaQuery.disableAnimationsOf(context)
                                 ? DialMotion.reducedFade
                                 : DialMotion.fadeThrough,
-                            child: content,
+                            child: content(),
                           ),
                         ),
                       ),
@@ -854,8 +870,11 @@ class _TrendsPanel extends StatelessWidget {
     required this.onCursor,
     required this.onOpenDay,
     required this.onRetry,
+    this.fill = false,
   });
 
+  // In the pane: the chart takes the height a [PaneFill] gives it.
+  final bool fill;
   final List<Vice> habits;
   final Map<String, HabitMark> marks;
   final Vice vice;
@@ -886,6 +905,9 @@ class _TrendsPanel extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final ThemeData theme = Theme.of(context);
     final TrendsSeries? s = series;
+    Widget chartBox(Widget child) => fill
+        ? Expanded(child: PaneFillSlot(child: child))
+        : SizedBox(height: TrendsChart.plotHeight, child: child);
 
     final List<Widget> body;
     if (error case final Object e) {
@@ -898,42 +920,42 @@ class _TrendsPanel extends StatelessWidget {
         ),
       ];
     } else if (s == null) {
-      body = const <Widget>[
-        SizedBox(
-          height: TrendsChart.plotHeight,
-          child: Center(child: CircularProgressIndicator()),
-        ),
+      body = <Widget>[
+        chartBox(const Center(child: CircularProgressIndicator())),
       ];
     } else {
       final int limit = smoothingLimit(range.bucketCount);
       final bool empty = s.stats.total == 0;
+      Widget chart() => TrendsChart(
+        key: ValueKey<String>('chart-${vice.id}'),
+        vice: vice,
+        mark: mark,
+        range: range,
+        totals: s.totals,
+        smoothed: s.smoothed,
+        window: s.window,
+        cursor: cursor ?? s.totals.length - 1,
+        onCursor: onCursor,
+        onOpenBucket: onOpenDay,
+        focusNode: chartFocus,
+        fill: fill,
+      );
       body = <Widget>[
         const SizedBox(height: DialSpace.s),
         _Stats(vice: vice, range: range, stats: s.stats, totals: s.totals),
         const SizedBox(height: DialSpace.s),
         if (empty)
-          SizedBox(
-            height: TrendsChart.plotHeight,
-            child: Center(
+          chartBox(
+            Center(
               child: InfoBox(
                 message: 'No entries for ${vice.name} in this range',
               ),
             ),
           )
+        else if (fill)
+          Expanded(child: chart())
         else
-          TrendsChart(
-            key: ValueKey<String>('chart-${vice.id}'),
-            vice: vice,
-            mark: mark,
-            range: range,
-            totals: s.totals,
-            smoothed: s.smoothed,
-            window: s.window,
-            cursor: cursor ?? s.totals.length - 1,
-            onCursor: onCursor,
-            onOpenBucket: onOpenDay,
-            focusNode: chartFocus,
-          ),
+          chart(),
         const SizedBox(height: DialSpace.s),
         _AverageStepper(
           window: s.window,
@@ -963,6 +985,7 @@ class _TrendsPanel extends StatelessWidget {
                 child: Text(TrendsSheet.title, style: type.displayL),
               ),
             ),
+            if (onClose == null) const SyncPill(),
             if (onClose case final VoidCallback close)
               CircleButton(
                 icon: DialGlyph.down,
@@ -973,23 +996,38 @@ class _TrendsPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DialSpace.s),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: Row(
+        if (onClose == null)
+          Wrap(
+            spacing: DialSpace.xs,
+            runSpacing: DialSpace.xs,
             children: <Widget>[
-              for (final Vice v in habits) ...<Widget>[
-                if (v != habits.first) const SizedBox(width: DialSpace.xs),
+              for (final Vice v in habits)
                 _HabitChip(
                   vice: v,
                   mark: marks[v.id] ?? const HabitMark(0),
                   selected: v.id == vice.id,
                   onPressed: () => onHabit(v),
                 ),
-              ],
             ],
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: <Widget>[
+                for (final Vice v in habits) ...<Widget>[
+                  if (v != habits.first) const SizedBox(width: DialSpace.xs),
+                  _HabitChip(
+                    vice: v,
+                    mark: marks[v.id] ?? const HabitMark(0),
+                    selected: v.id == vice.id,
+                    onPressed: () => onHabit(v),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
         const SizedBox(height: DialSpace.s),
         Wrap(
           alignment: WrapAlignment.spaceBetween,
