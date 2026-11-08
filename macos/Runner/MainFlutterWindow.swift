@@ -9,7 +9,7 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
-    AuthFieldFactory.register(with: flutterViewController)
+    AuthFieldsFactory.register(with: flutterViewController)
 
     super.awakeFromNib()
   }

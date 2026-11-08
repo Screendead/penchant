@@ -543,8 +543,13 @@ whose `style` is filled for habits 1-5, a ring for 6-10 and a dotted ring for 11
 zero-frame `NSTextView`, with no autofill groups and no `finishAutofillContext`, so Passwords never offers to fill.
 On macOS the sign-in form's Email and Password `AuthField`s (those given a `nativeKind`) are therefore an
 `NSTextField` (`.username`) and an `NSSecureTextField` (`.password`, or `.newPassword` on macOS 14+ when
-registering) hosted as `AppKitView` platform views (`macos/Runner/AuthFieldPlatformView.swift`,
-`lib/widgets/native_auth_field.dart`), one method channel `penchant/auth_field/<view id>` each. The native side
-reports text, Return, Tab and focus, and also polls the value, since AutoFill may set it without telling the
-delegate. Confirm password stays a Flutter field. Tests run as non-macOS and get the Flutter fields;
+registering) hosted as sibling subviews of one `AppKitView` (`macos/Runner/AuthFieldPlatformView.swift`,
+`lib/widgets/native_auth_field.dart`). They must share a view: as two platform views, a fill started from Email
+left Password empty. `NativeAuthFieldsHost` wraps the two `AuthField`s, which still draw their pills, glyphs, eye and
+error lines in Flutter; it measures their text areas after each frame and lays the view over them (no wider than
+Password's, so the eye stays a Flutter button), sending each field's rect to native. One method channel
+`penchant/auth_fields/<view id>`; every call names its field (`email` or `password`). The native side reports text
+(both fields' changes in one `changed`), Return, Tab and focus; Tab and Return from Email to Password stay in AppKit.
+It never reads `stringValue` mid-edit (that commits the editor, mid-AutoFill), and Dart asks for native focus only
+when Flutter focus arrived from elsewhere. Confirm password stays a Flutter field. Tests run as non-macOS and get the Flutter fields;
 `debugUseNativeAuthFields` forces the native path. iOS keeps the Flutter fields, whose AutoFill works.

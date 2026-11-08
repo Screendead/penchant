@@ -18,26 +18,25 @@ Future<void> _fromNative(String channel, String method, Object? args) =>
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('NativeAuthFieldChannel', () {
+  group('NativeAuthFieldsChannel', () {
     late List<MethodCall> sent;
-    late NativeAuthFieldChannel channel;
-    final List<String> changed = <String>[];
-    final List<String> submitted = <String>[];
-    final List<bool> focus = <bool>[];
-    final List<bool> tabs = <bool>[];
+    late NativeAuthFieldsChannel channel;
+    final List<Map<String, String>> changed = <Map<String, String>>[];
+    final List<String> events = <String>[];
 
     setUp(() {
       sent = <MethodCall>[];
       changed.clear();
-      submitted.clear();
-      focus.clear();
-      tabs.clear();
-      channel = NativeAuthFieldChannel(
+      events.clear();
+      channel = NativeAuthFieldsChannel(
         7,
         onChanged: changed.add,
-        onSubmitted: submitted.add,
-        onFocusChanged: focus.add,
-        onTab: tabs.add,
+        onSubmitted: (String field, String text) =>
+            events.add('submitted $field $text'),
+        onFocusChanged: (String field, bool focused) =>
+            events.add('focus $field $focused'),
+        onTab: (String field, bool forward) =>
+            events.add('tab $field $forward'),
       );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(MethodChannel(channel.name), (
@@ -55,16 +54,18 @@ void main() {
     });
 
     test('is named for its view', () {
-      expect(channel.name, 'penchant/auth_field/7');
+      expect(channel.name, 'penchant/auth_fields/7');
     });
 
-    test('sends text, focus, obscuring and configuration', () async {
-      await channel.setText('a@b.co');
-      await channel.setObscured(false);
-      await channel.focus();
-      await channel.blur();
+    test('sends text, focus, obscuring, configuration and layout, '
+        'each naming its field', () async {
+      await channel.setText('email', 'a@b.co');
+      await channel.setObscured('password', false);
+      await channel.focus('password');
+      await channel.blur('email');
       await channel.configure(
-        NativeAuthFieldChannel.configuration(
+        'password',
+        NativeAuthFieldsChannel.configuration(
           kind: NativeAuthFieldKind.newPassword,
           placeholder: 'Password',
           textColor: const Color(0xFF102030),
@@ -72,46 +73,71 @@ void main() {
           caretColor: const Color(0xFFFF0000),
         ),
       );
+      await channel.layout(<String, List<double>>{
+        'email': <double>[0, 0, 200, 52],
+      });
       expect(sent.map((MethodCall c) => c.method), <String>[
         'setText',
         'setObscured',
         'focus',
         'blur',
         'configure',
+        'layout',
       ]);
-      expect(sent[0].arguments, <String, Object>{'text': 'a@b.co'});
-      expect(sent[1].arguments, <String, Object>{'obscured': false});
+      expect(sent[0].arguments, <String, Object>{
+        'field': 'email',
+        'text': 'a@b.co',
+      });
+      expect(sent[1].arguments, <String, Object>{
+        'field': 'password',
+        'obscured': false,
+      });
+      expect(sent[2].arguments, <String, Object>{'field': 'password'});
       expect(sent[4].arguments, <String, Object>{
+        'field': 'password',
         'kind': 'newPassword',
         'placeholder': 'Password',
         'textColor': 0xFF102030,
         'placeholderColor': 0x80405060,
         'caretColor': 0xFFFF0000,
       });
+      expect(sent[5].arguments, <String, Object>{
+        'email': <double>[0, 0, 200, 52],
+      });
     });
 
     test('hands native events to its callbacks', () async {
       await _fromNative(channel.name, 'changed', <String, Object>{
-        'text': 'filled',
+        'email': 'me@example.com',
+        'password': 'secret',
       });
       await _fromNative(channel.name, 'submitted', <String, Object>{
-        'text': 'filled',
+        'field': 'password',
+        'text': 'secret',
       });
       await _fromNative(channel.name, 'focusChanged', <String, Object>{
+        'field': 'email',
         'focused': true,
       });
       await _fromNative(channel.name, 'tab', <String, Object>{
+        'field': 'password',
         'forward': false,
       });
-      expect(changed, <String>['filled']);
-      expect(submitted, <String>['filled']);
-      expect(focus, <bool>[true]);
-      expect(tabs, <bool>[false]);
+      expect(changed, <Map<String, String>>[
+        <String, String>{'email': 'me@example.com', 'password': 'secret'},
+      ]);
+      expect(events, <String>[
+        'submitted password secret',
+        'focus email true',
+        'tab password false',
+      ]);
     });
   });
 
-  testWidgets('a forced native AuthField keeps its controller in step and '
-      'still validates with the form', (WidgetTester tester) async {
+  testWidgets('forced native AuthFields share one view over their text areas, '
+      'keep their controllers in step and still validate with the form', (
+    WidgetTester tester,
+  ) async {
     debugUseNativeAuthFields = true;
     addTearDown(() => debugUseNativeAuthFields = null);
     final List<MethodCall> viewCalls = <MethodCall>[];
@@ -122,10 +148,10 @@ void main() {
         return null;
       },
     );
-    const String fieldChannel = 'penchant/auth_field/0';
+    const String fieldsChannel = 'penchant/auth_fields/0';
     final List<MethodCall> fieldCalls = <MethodCall>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      const MethodChannel(fieldChannel),
+      const MethodChannel(fieldsChannel),
       (MethodCall call) async {
         fieldCalls.add(call);
         return null;
@@ -134,26 +160,45 @@ void main() {
     addTearDown(() {
       tester.binding.defaultBinaryMessenger
         ..setMockMethodCallHandler(SystemChannels.platform_views, null)
-        ..setMockMethodCallHandler(const MethodChannel(fieldChannel), null);
+        ..setMockMethodCallHandler(const MethodChannel(fieldsChannel), null);
     });
 
-    final TextEditingController controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final TextEditingController email = TextEditingController();
+    final TextEditingController password = TextEditingController();
+    addTearDown(email.dispose);
+    addTearDown(password.dispose);
     final GlobalKey<FormState> form = GlobalKey<FormState>();
-    final List<String> changes = <String>[];
+    final List<String> emailChanges = <String>[];
+    final List<String> passwordChanges = <String>[];
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: Form(
             key: form,
-            child: AuthField(
-              controller: controller,
-              hint: 'Email',
-              glyph: DialGlyph.mail,
-              nativeKind: NativeAuthFieldKind.email,
-              onChanged: changes.add,
-              validator: (String? value) =>
-                  (value ?? '').isEmpty ? 'Enter your email' : null,
+            child: NativeAuthFieldsHost(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  AuthField(
+                    controller: email,
+                    hint: 'Email',
+                    glyph: DialGlyph.mail,
+                    nativeKind: NativeAuthFieldKind.email,
+                    onChanged: emailChanges.add,
+                    validator: (String? value) =>
+                        (value ?? '').isEmpty ? 'Enter your email' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  AuthField(
+                    controller: password,
+                    hint: 'Password',
+                    glyph: DialGlyph.lock,
+                    obscurable: true,
+                    nativeKind: NativeAuthFieldKind.password,
+                    onChanged: passwordChanges.add,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -165,21 +210,35 @@ void main() {
     final MethodCall create = viewCalls.singleWhere(
       (MethodCall c) => c.method == 'create',
     );
-    expect(
-      (create.arguments as Map<Object?, Object?>)['viewType'],
-      nativeAuthFieldViewType,
-    );
-    expect(tester.getSize(find.byType(AppKitView)).height, 52);
+    final Map<Object?, Object?> createArgs =
+        create.arguments as Map<Object?, Object?>;
+    expect(createArgs['viewType'], nativeAuthFieldsViewType);
+    expect(find.byType(AppKitView), findsOneWidget);
+    final Rect view = tester.getRect(find.byType(AppKitView));
+    expect(view.height, 52 + 10 + 52);
+    // The eye beside Password stays outside the native view.
+    final Rect eye = tester.getRect(find.byType(IconButton));
+    expect(eye.left, greaterThanOrEqualTo(view.right));
 
     expect(form.currentState!.validate(), isFalse);
     await tester.pump();
+    await tester.pump();
     expect(find.text('Enter your email'), findsOneWidget);
+    expect(
+      tester.getRect(find.byType(AppKitView)).height,
+      greaterThan(52 + 10 + 52),
+      reason: 'the error line under Email moves Password down',
+    );
+    expect(fieldCalls.last.method, 'layout');
 
-    await _fromNative(fieldChannel, 'changed', <String, Object>{
-      'text': 'me@example.com',
+    await _fromNative(fieldsChannel, 'changed', <String, Object>{
+      'email': 'me@example.com',
+      'password': 'secret',
     });
-    expect(controller.text, 'me@example.com');
-    expect(changes, <String>['me@example.com']);
+    expect(email.text, 'me@example.com');
+    expect(password.text, 'secret');
+    expect(emailChanges, <String>['me@example.com']);
+    expect(passwordChanges, <String>['secret']);
     expect(
       fieldCalls.where((MethodCall c) => c.method == 'setText'),
       isEmpty,
@@ -187,10 +246,21 @@ void main() {
     );
     expect(form.currentState!.validate(), isTrue);
 
-    controller.text = 'other@example.com';
+    email.text = 'other@example.com';
     expect(fieldCalls.last.method, 'setText');
     expect(fieldCalls.last.arguments, <String, Object>{
+      'field': 'email',
       'text': 'other@example.com',
     });
+
+    await tester.tap(find.byType(IconButton));
+    await tester.pump();
+    expect(
+      fieldCalls
+          .where((MethodCall c) => c.method == 'setObscured')
+          .last
+          .arguments,
+      <String, Object>{'field': 'password', 'obscured': false},
+    );
   });
 }
