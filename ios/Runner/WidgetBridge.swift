@@ -143,23 +143,32 @@ enum QueueListener {
     }
   }
 #else
-  // A BGAppRefreshTask, asked for by LogQueue.scheduleRefresh only while the
-  // queue holds the user's logs. A suspended app's own engine flushes; a
-  // launch into the background has no engine (the implicit one comes with a
-  // scene), so a headless one runs backgroundFlushMain in lib/main.dart, which
-  // writes through the same TrackerWrites, sealed, or leaves the logs queued.
-  // Firebase's native instances are per process, so both engines share them.
+  // Writes the queue from this process, sealed, through the Dart flush: the
+  // running engine's when there is one, otherwise a headless engine on
+  // backgroundFlushMain in lib/main.dart (the implicit engine comes with a
+  // scene, and a launch into the background has none). Firebase's native
+  // instances are per process (cloud_firestore's firestoreInstanceCache), so
+  // both engines share one Firestore and one disk cache. Two callers:
+  // - a log intent, which iOS runs in this process (LogIntents.swift): soon()
+  //   waits out the Undo hold under a UIApplication background task, then
+  //   flushes, so a tap reaches Firestore within seconds of the hold;
+  // - the BGAppRefreshTask that LogQueue.scheduleRefresh asks for while logs
+  //   are queued, the fallback for whatever a tap's run left behind.
   enum BackgroundFlush {
-    // Under the about 30 s iOS gives a refresh, so the task ends on its own.
+    // Under the about 30 s iOS gives a refresh, so a run ends on its own.
     private static let budget: TimeInterval = 25
 
-    private static var task: BGTask?
+    private static var running = false
     private static var engine: FlutterEngine?
+    // Told when the current run ends, with whether a log is still queued.
+    private static var waiters: [(_ left: Bool) -> Void] = []
+    // Arrived during a run, which may have read the queue before their log.
+    private static var next: [(_ left: Bool) -> Void] = []
 
     // Before application(_:didFinishLaunchingWithOptions:) returns, once.
     static func register() {
       let registered = BGTaskScheduler.shared.register(forTaskWithIdentifier: LogQueue.refreshTaskID, using: .main) {
-        run($0)
+        refresh($0)
       }
       if !registered {
         NSLog("Penchant: %@ is missing from BGTaskSchedulerPermittedIdentifiers", LogQueue.refreshTaskID)
@@ -167,26 +176,70 @@ enum QueueListener {
       NotificationCenter.default.addObserver(
         forName: UIScene.didEnterBackgroundNotification, object: nil, queue: .main
       ) { _ in LogQueue.scheduleRefresh() }
+      LogQueue.flushInThisProcess = { DispatchQueue.main.async { soon() } }
     }
 
-    private static func run(_ bgTask: BGTask) {
-      guard task == nil else {
-        bgTask.setTaskCompleted(success: false)
+    // A log intent just changed the queue in this process.
+    private static func soon() {
+      let assertion = Assertion()
+      guard assertion.begin(onExpiry: { stop() }) else { return }
+      let wait = LogQueue.due(LogQueue.pending()).timeIntervalSinceNow
+      DispatchQueue.main.asyncAfter(deadline: .now() + max(0, wait)) {
+        guard assertion.active else { return }
+        flush { _ in assertion.end() }
+      }
+    }
+
+    private static func refresh(_ task: BGTask) {
+      // A run already in progress covers it, and reschedules if it must.
+      guard !running else {
+        task.setTaskCompleted(success: false)
         return
       }
-      task = bgTask
-      bgTask.expirationHandler = { DispatchQueue.main.async { end(retry: true) } }
-      DispatchQueue.main.asyncAfter(deadline: .now() + budget) { [weak bgTask] in
-        if let bgTask, bgTask === task { end(retry: true) }
+      var done = false
+      let complete = { (left: Bool) in
+        guard !done else { return }
+        done = true
+        task.setTaskCompleted(success: !left)
       }
-      if LogQueue.pending().isEmpty {
+      task.expirationHandler = {
+        DispatchQueue.main.async {
+          stop()
+          complete(true)
+        }
+      }
+      flush(then: complete)
+    }
+
+    private static func flush(then done: @escaping (_ left: Bool) -> Void) {
+      if running {
+        next.append(done)
+        return
+      }
+      waiters.append(done)
+      start()
+    }
+
+    private static func start() {
+      running = true
+      guard !LogQueue.pending().isEmpty else {
         end(retry: false)
-      } else if QueueListener.running {
-        QueueListener.flush { canFlush in end(retry: canFlush) }
+        return
+      }
+      let remaining = UIApplication.shared.backgroundTimeRemaining - 3
+      DispatchQueue.main.asyncAfter(deadline: .now() + min(budget, max(remaining, 1))) { [token = runToken] in
+        if running && token == runToken { end(retry: true) }
+      }
+      if QueueListener.running {
+        QueueListener.flush { [token = runToken] canFlush in
+          if token == runToken { end(retry: canFlush) }
+        }
       } else {
         startHeadless()
       }
     }
+
+    private static var runToken = 0
 
     private static func startHeadless() {
       let headless = FlutterEngine(name: "background-flush", project: nil, allowHeadlessExecution: true)
@@ -206,19 +259,62 @@ enum QueueListener {
       end(retry: outcome != "blocked")
     }
 
-    // A log still queued (held back, the key not in time, the task expired
-    // mid-write) gets another refresh; the next flush writes the same
-    // document id, so nothing doubles.
+    // The app is about to be suspended: whatever is left goes to a refresh.
+    private static func stop() {
+      let late = next
+      next = []
+      end(retry: true)
+      late.forEach { $0(!LogQueue.pending().isEmpty) }
+    }
+
+    // A log still queued (held back, the key not in time, the run cut short
+    // mid-write) gets a refresh; the next flush writes the same document id,
+    // so nothing doubles. Callers that came during the run get one of their
+    // own, unless the run was blocked (signed out, the key needs recovery).
     private static func end(retry: Bool) {
-      guard let current = task else { return }
-      task = nil
+      guard running else { return }
+      running = false
+      runToken += 1
       engine?.destroyContext()
       engine = nil
       let left = !LogQueue.pending().isEmpty
       if retry && left {
         LogQueue.scheduleRefresh()
       }
-      current.setTaskCompleted(success: !left)
+      let told = waiters
+      waiters = []
+      told.forEach { $0(left) }
+      guard !next.isEmpty else { return }
+      waiters = next
+      next = []
+      if retry && left {
+        start()
+      } else {
+        running = true
+        end(retry: false)
+      }
+    }
+  }
+
+  // One UIApplication background task, ended once whichever comes first.
+  private final class Assertion {
+    private var id = UIBackgroundTaskIdentifier.invalid
+
+    var active: Bool { id != .invalid }
+
+    func begin(onExpiry: @escaping () -> Void) -> Bool {
+      id = UIApplication.shared.beginBackgroundTask(withName: LogQueue.refreshTaskID) { [self] in
+        onExpiry()
+        end()
+      }
+      return active
+    }
+
+    func end() {
+      guard active else { return }
+      let ended = id
+      id = .invalid
+      UIApplication.shared.endBackgroundTask(ended)
     }
   }
 #endif

@@ -149,6 +149,7 @@ enum LogQueue {
       true)
     #if os(iOS)
       scheduleRefresh()
+      flushInThisProcess?()
     #endif
   }
 
@@ -156,6 +157,17 @@ enum LogQueue {
     // Info.plist's BGTaskSchedulerPermittedIdentifiers lists it; the app
     // registers the handler (ios/Runner/WidgetBridge.swift).
     static let refreshTaskID = "com.screendead.penchant.flush-log-queue"
+
+    // Set by the app (BackgroundFlush.register in ios/Runner/WidgetBridge.swift)
+    // and nil in the extension. The log intents run in the app's process
+    // (LiveActivityIntent in LogIntents.swift), so there a tap is written
+    // within seconds; the refresh above stays as the fallback.
+    static var flushInThisProcess: (() -> Void)?
+
+    // When the youngest of these logs is past its Undo hold.
+    static func due(_ logs: [QueuedLog]) -> Date {
+      max(logs.map { $0.date.addingTimeInterval(queuedLogHold) }.max() ?? Date(), Date())
+    }
 
     // The system picks the time; iOS keeps at most one refresh request per
     // app, and a new one replaces it. Apple allows a submit "from some
@@ -168,9 +180,7 @@ enum LogQueue {
         return
       }
       let request = BGAppRefreshTaskRequest(identifier: refreshTaskID)
-      // Not before the youngest log is past its Undo hold.
-      let held = logs.map { $0.date.addingTimeInterval(queuedLogHold) }.max() ?? Date()
-      request.earliestBeginDate = max(held, Date())
+      request.earliestBeginDate = due(logs)
       try? BGTaskScheduler.shared.submit(request)
     }
   #endif
