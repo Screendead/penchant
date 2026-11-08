@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/trigger_usage.dart';
+import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -18,6 +19,8 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/trends/hour_ring.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/circle_button.dart';
 import 'package:tracker/widgets/dial_page.dart';
@@ -36,6 +39,13 @@ class ViceActivityHistoryPage extends ConsumerStatefulWidget {
   static const String swipeHint =
       'Swipe an entry left to delete it. Tap it to edit.';
   static const String empty = 'Nothing logged for this habit yet';
+
+  // The summary card covers the same days as Trends' default range, so the
+  // two share one listener.
+  static const int summaryDays = 30;
+  static const String summaryTitle = 'Last 30 days';
+  static const String summaryNothing = 'Nothing logged';
+  static const String summaryFailed = 'Could not load these days';
 
   // The day heading: Today and Yesterday by name, then the date.
   static String dayLabel(DateTime day, DateTime today) =>
@@ -131,6 +141,7 @@ class _ViceActivityHistoryPageState
   @override
   Widget build(BuildContext context) {
     final String? uid = ref.watch(userProvider).value?.uid;
+    final DateTime today = ref.watch(todayProvider);
     final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
     // One more than is shown, to learn whether there are older entries.
     final AsyncValue<List<ViceActivity>> loadedValue = ref.watch(
@@ -197,7 +208,18 @@ class _ViceActivityHistoryPageState
         (hasOlder ? fetched.sublist(0, shown) : fetched)
             .where((ViceActivity a) => !dismissed.contains(a.id))
             .toList();
-    final DateTime today = ref.watch(todayProvider);
+    final UsageRange summaryRange = usageRange(
+      today,
+      ViceActivityHistoryPage.summaryDays,
+      1,
+    );
+    final AsyncValue<List<ViceActivity>> summaryValue = ref.watch(
+      viceActivityGraphProvider((
+        viceID: viceID,
+        start: summaryRange.start,
+        end: summaryRange.end,
+      )),
+    );
 
     // Newest first, as the query orders them, so each day is one run.
     final List<(DateTime, List<ViceActivity>)> days =
@@ -245,6 +267,12 @@ class _ViceActivityHistoryPageState
         ],
       ),
       children: <Widget>[
+        _SummaryCard(
+          vice: vice,
+          mark: mark,
+          range: summaryRange,
+          value: summaryValue,
+        ),
         if (activityList.isEmpty)
           const PageFootnote(ViceActivityHistoryPage.empty)
         else ...<Widget>[
@@ -415,6 +443,123 @@ class _ViceActivityHistoryPageState
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// The total and the hours of the last 30 days, as the mock-up's summary card.
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.vice,
+    required this.mark,
+    required this.range,
+    required this.value,
+  });
+
+  final Vice vice;
+  final HabitMark mark;
+  final UsageRange range;
+  final AsyncValue<List<ViceActivity>> value;
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ThemeData theme = Theme.of(context);
+    final List<ViceActivity>? activities = value.hasError ? null : value.value;
+    final HourProfile? profile = activities == null
+        ? null
+        : hourProfile(range, activities);
+    final num? total = activities?.fold<num>(
+      0,
+      (num s, ViceActivity a) => s + a.measure,
+    );
+
+    final String? note = value.hasError
+        ? ViceActivityHistoryPage.summaryFailed
+        : profile == null
+        ? null
+        : profile.total == 0
+        ? ViceActivityHistoryPage.summaryNothing
+        : TrendsSheet.whenTitle(
+            profile,
+            alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+          );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: MergeSemantics(
+        child: DialCard(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Row(
+                children: <Widget>[
+                  HourRing(
+                    hours: profile?.hours ?? List<double>.filled(24, 0),
+                    mark: mark,
+                    size: 92,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          ViceActivityHistoryPage.summaryTitle,
+                          style: DialTypeScale.label.copyWith(
+                            fontSize: 12,
+                            height: 1,
+                            fontWeight: FontWeight.w500,
+                            color: colors.muted,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text.rich(
+                          TextSpan(
+                            children: <InlineSpan>[
+                              TextSpan(
+                                // The space is set in the number's size, as the mock-up's is.
+                                text: total == null
+                                    ? '–'
+                                    : '${formatCount(total)} ',
+                              ),
+                              if (total != null)
+                                TextSpan(
+                                  text: vice.unit.nameFor(total),
+                                  style: DialTypeScale.label.copyWith(
+                                    fontSize: 13,
+                                    height: 1,
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.muted,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          style: DialTypeScale.monoL.copyWith(
+                            fontSize: 24,
+                            height: 1,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        if (note != null) ...<Widget>[
+                          const SizedBox(height: 6),
+                          Text(
+                            note,
+                            style: DialTypeScale.bodyS.copyWith(
+                              height: 1.35,
+                              color: colors.muted,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

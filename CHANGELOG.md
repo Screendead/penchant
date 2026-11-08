@@ -20,9 +20,14 @@ pull request titles (`gh pr list --state merged`).
   choice. Export my data is now one tap from Settings, as well as under Account.
 - The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
   you left it. It narrows to 390 pt, where the phone layout returns.
+- A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
+  three hours that hold the most.
+  you left it. It narrows to 390 pt; below 900 pt the phone layout returns.
 
 ### Fixed
 
+- With large text, the offline and refused-change banners no longer push Today off the screen: each stops at a third
+  of the screen and scrolls, and the sync status beside the menu stops growing at twice its size.
 - A device that opens on "Unlock your journal" because iCloud Keychain has not yet brought the key from your
   other device now checks again every few seconds and when you return to the app, and opens the journal by itself
   once the key arrives.
