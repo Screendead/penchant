@@ -57,7 +57,6 @@ flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 dart format --output=none --set-exit-if-changed lib test integration_test  # CI's format check; not `.`, since build/ holds plugin copies
 flutter test
-flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
 flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
@@ -191,7 +190,7 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
 `firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
-(test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
+and share one Firebase iOS app registration (`r2-mac-config`):
 `macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
 **Native dependencies come from Swift Package Manager; there is no CocoaPods.** Every plugin with native code ships
