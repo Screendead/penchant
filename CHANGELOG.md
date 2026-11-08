@@ -18,6 +18,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- A device that opens on "Unlock your journal" because iCloud Keychain has not yet brought the key from your
+  other device now checks again every few seconds and when you return to the app, and opens the journal by itself
+  once the key arrives.
 - The recovery key box on the unlock screen is one line high where the key fits, instead of leaving an empty
   second line under it.
 - Switching between Sign in and Create account is smooth: Email and Password stay put and keep what you typed,
