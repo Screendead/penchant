@@ -529,7 +529,9 @@ class _RecoveryKeyEntryPageState extends ConsumerState<RecoveryKeyEntryPage> {
           controller: _typed,
           autocorrect: false,
           enableSuggestions: false,
-          minLines: 2,
+          // One line where the key fits, so the pill hugs it; it grows
+          // only where the key wraps.
+          minLines: 1,
           maxLines: 3,
           textCapitalization: TextCapitalization.characters,
           style: const TextStyle(
