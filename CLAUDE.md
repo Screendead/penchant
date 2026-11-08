@@ -350,8 +350,8 @@ content field joins both. Vices' `ownerID`, `createdAt` and `archived` stay plai
 to bytes of 30 to 4125, refuse removing it, and let an update convert a plaintext document by setting `sealed` and
 deleting the plaintext fields (a deleted field is an affected key). They cannot read sealed content, so for sealed
 documents `lib/data/limits.dart` is the only guard. `lib/data/sealed.dart` holds `FieldSealer` (its one
-implementation is `lib/crypto/journal_field_sealer.dart`), `sealerProvider` (null while no key exists or while
-`e2eeEnabled` in `lib/crypto/e2ee_enabled.dart` is false, and then every write stays plaintext), and
+implementation is `lib/crypto/journal_field_sealer.dart`), `sealerProvider` (null while no key exists, and then every write stays plaintext; `e2eeEnabled` in
+`lib/crypto/e2ee_enabled.dart` is true, and switching it off would strand every sealed journal), and
 `SealedOpener`, which each query provider runs over its snapshots (`asyncMap`) and the export over what it reads.
 It never throws: a document that will not open parses with `locked` set, a placeholder name and default content,
 and is reported once per listener. `TrackerWrites` seals when it has a sealer: a vice update reseals the whole
@@ -375,6 +375,9 @@ transaction, so of two devices racing the loser adopts the winner's record and a
 whose `keyID` differs from the keychain's (or with no key here) locks the journal behind `RecoveryKeyGate`; the
 gate also holds every route while `journalKeyPendingProvider` says no key is here and the server has not answered.
 Offline with no key, the state is `KeyUnknown`: no gate, writes stay plaintext. `deleteAccount` deletes the record.
+Most of `integration_test/` pumps `ProviderScope(child: MyApp())` without `keyServiceOverrides`, so it runs with no
+key and writes plaintext; the files that launch through `startApp`, and `key_service_test.dart`, seal with the real
+key, so `storedViceID` opens sealed vices with the keychain's key to match a name.
 `Unit` (`lib/data/unit.dart`) serializes as its enum name and
 supplies singular/plural labels for the UI. `ViceCategory` (`lib/data/category.dart`, not `Category`, which
 Flutter's foundation exports) is stored by name too; the rules check it against the same list and keep it optional on
