@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/widgets/banner_scroll.dart';
 import 'package:tracker/widgets/pill_drop.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
@@ -92,62 +93,67 @@ class RejectedWritesBanner extends ConsumerWidget {
     // tooltip.
     return SafeArea(
       bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-        child: Material(
+      child: BannerScroll(
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+        frame: (Widget scroll) => Material(
           color: colors.errorContainer,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(PillDrop.radius),
             side: BorderSide(color: colors.error.withValues(alpha: 0.3)),
           ),
           clipBehavior: Clip.antiAlias,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height / 3,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-              child: Column(
-                children: [
-                  for (final RejectedWrite item in rejected)
-                    Semantics(
-                      liveRegion: true,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.sync_problem,
-                            color: colors.onErrorContainer,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.what,
-                                  style: text.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(item.reason, style: text),
-                              ],
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => ref
-                                .read(rejectedWritesProvider.notifier)
-                                .dismiss(item),
-                            child: Text(dismissLabel, style: text),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
+          child: scroll,
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        child: Column(
+          children: [
+            for (final RejectedWrite item in rejected)
+              Semantics(
+                liveRegion: true,
+                child: _item(context, ref, item, text),
               ),
-            ),
-          ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _item(
+    BuildContext context,
+    WidgetRef ref,
+    RejectedWrite item,
+    TextStyle text,
+  ) {
+    final Widget dismiss = TextButton(
+      onPressed: () => ref.read(rejectedWritesProvider.notifier).dismiss(item),
+      child: Text(dismissLabel, style: text),
+    );
+    // Inside the pill's margins, at large text a button beside the message
+    // leaves the message no width, so it goes under it.
+    final bool stacked = MediaQuery.textScalerOf(context).scale(1) > 1.5;
+    return Row(
+      children: [
+        Icon(Icons.sync_problem, color: text.color),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.what,
+                style: text.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(item.reason, style: text),
+              if (stacked)
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: dismiss,
+                ),
+            ],
+          ),
+        ),
+        if (!stacked) dismiss,
+      ],
     );
   }
 }

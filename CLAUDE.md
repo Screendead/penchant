@@ -57,7 +57,6 @@ flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 dart format --output=none --set-exit-if-changed lib test integration_test  # CI's format check; not `.`, since build/ holds plugin copies
 flutter test
-flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
 flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
@@ -191,7 +190,7 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
 `firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
-(test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
+(the macOS test target `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
 `macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
 **Native dependencies come from Swift Package Manager; there is no CocoaPods.** Every plugin with native code ships
@@ -421,7 +420,12 @@ the Log button (`LogButton`, `lib/widgets/log_fan.dart`). The dial's geometry is
 costs no extra read; a habit's later entries in one hour step out to the other tracks; neighbours on a track pushed
 apart along the arc, never off it), and the fan's in `lib/data/fan_layout.dart` (up to eight wedges, then seven and
 More). The face, hand and beads are `CustomPainter`s; each bead is also its own `Semantics` button opening its entry's
-editor, and a pointer tap goes to the nearest bead within a 44 pt target. The dial is one `Semantics` node labelled
+editor, and a pointer tap goes to the nearest bead within a 44 pt target. On a day of more than 48 entries
+(`DialFace.mergeAbove`), each hour holding more than one becomes one `HourArc` on the first track, shared out by habit
+in proportion to entry count and labelled with its count. The arcs hold still in `layoutBeads` and push the hour's
+lone beads clear (a bead too wide for the gap between two arcs overlaps both). A tap on an arc opens the entry nearest
+the time tapped; for a screen reader it is one button naming the hour and each habit's total, which opens the hour's
+latest entry and has one custom action per entry. The dial is one `Semantics` node labelled
 `DayDial.summary` (the day, each total, the first and last entry times). Motion follows `DialMotion`: the day change
 contracts the beads, then sweeps a hand round with each bead springing in as it passes; a logged bead flies in from
 the `+` or wedge through `beadArrivalsProvider`; a pending bead's dashed rim turns until it syncs; under
@@ -490,6 +494,22 @@ the header's Synced/Syncing pill and the menu's footer: `TrackerWrites` reports 
 tracker calls `waitForPendingWrites()` again after each (a wait covers only writes issued before it, earlier
 sessions' included), so it says Synced only once every write has been acknowledged. The day's "not yet synced" note
 shows only offline.
+
+**Client API key.** One Firebase client key serves iOS and macOS, and it appears twice by design: in each
+`GoogleService-Info.plist` (which the native SDK reads before Dart runs) and in `lib/firebase_options.dart`
+(FlutterFire's output, which Dart's `initializeApp` reads). Neither copy can go without breaking one side, and
+regenerating either file restores the key. It is a public identifier, not a secret: Firebase says keys for its
+services "do not need to be treated as secrets" and are "OK to include in code or checked-in config files", on
+the condition that the key is restricted to Firebase APIs and the app's setup follows the page's guidelines
+(https://firebase.google.com/docs/projects/api-keys). Today the protection is Firestore rules. App Check is
+activated but enforced nowhere (see Emulator wiring), so it adds protection only once App Attest tokens are
+accepted and enforcement is on. The key's own restrictions live in the Google Cloud console of the production
+project, which Claude does not touch, and repository files cannot show them; they are not yet set, a call for
+Jack. Recommended there (Google Cloud, https://docs.cloud.google.com/docs/authentication/api-keys):
+an iOS application restriction to `com.screendead.penchant`, and an API restriction to the Firebase APIs the app
+calls; Google notes the bundle-ID check is easy to bypass, so it limits casual reuse only. The key of the earlier
+`com.screendead.tracker.tracker` registration stays valid until revoked there. Never commit a service-account
+file or `privateKey.json`; `admin/.gitignore` and the root `.gitignore` exclude them.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against

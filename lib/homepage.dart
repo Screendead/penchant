@@ -355,6 +355,11 @@ class _SyncPillState extends ConsumerState<SyncPill> {
                     const SizedBox(width: 6),
                     Text(
                       label,
+                      // Larger, the pill leaves the menu beside it too
+                      // narrow for its mark and chevron on a phone.
+                      textScaler: MediaQuery.textScalerOf(
+                        context,
+                      ).clamp(maxScaleFactor: 2),
                       style: DialTypeScale.bodyS.copyWith(
                         fontSize: 12,
                         height: 1,

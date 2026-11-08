@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,9 +26,11 @@ void main() {
   ];
 
   late List<int> requestedLimits;
+  late List<ViceActivityGraphQuery> summaryQueries;
 
   setUp(() {
     requestedLimits = <int>[];
+    summaryQueries = <ViceActivityGraphQuery>[];
   });
 
   Future<void> pumpHistory(
@@ -35,8 +38,10 @@ void main() {
     int count, {
     Stream<User?>? users,
     bool alwaysUse24HourFormat = false,
+    List<ViceActivity>? entries,
+    Object? summaryError,
   }) async {
-    final List<ViceActivity> all = stored(count);
+    final List<ViceActivity> all = entries ?? stored(count);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -53,6 +58,21 @@ void main() {
               return const AsyncLoading();
             }
             return AsyncData(all.take(query.limit).toList());
+          }),
+          viceActivityGraphProvider.overrideWith((
+            ref,
+            ViceActivityGraphQuery query,
+          ) {
+            summaryQueries.add(query);
+            if (summaryError != null) {
+              return AsyncError(summaryError, StackTrace.empty);
+            }
+            return AsyncData([
+              for (final ViceActivity a in all)
+                if (!a.createdAt.toDate().isBefore(query.start) &&
+                    a.createdAt.toDate().isBefore(query.end))
+                  a,
+            ]);
           }),
         ],
         child: MediaQuery(
@@ -130,5 +150,97 @@ void main() {
 
     await pumpHistory(tester, 2);
     expect(find.text('11:00\u202fAM'), findsOneWidget);
+  });
+
+  group('Last 30 days card', () {
+    final DateTime now = DateTime(2026, 11, 2, 13);
+
+    Finder card() => find.ancestor(
+      of: find.text(ViceActivityHistoryPage.summaryTitle),
+      matching: find.byType(MergeSemantics),
+    );
+
+    Finder inCard(String text) =>
+        find.descendant(of: card(), matching: find.textContaining(text));
+
+    testWidgets('totals the last 30 days and names the busiest hours', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpHistory(
+          tester,
+          0,
+          alwaysUse24HourFormat: true,
+          entries: [
+            fakeActivity(coffee.id, 2, DateTime(2026, 11, 2, 9)),
+            fakeActivity(coffee.id, 1, DateTime(2026, 10, 20, 10)),
+            // The first of the 30 days, and the day before it.
+            fakeActivity(coffee.id, 3, DateTime(2026, 10, 4, 8)),
+            fakeActivity(coffee.id, 40, DateTime(2026, 10, 3, 22)),
+          ],
+        );
+
+        expect(summaryQueries.toSet(), {
+          (
+            viceID: coffee.id,
+            start: DateTime(2026, 10, 4),
+            end: DateTime(2026, 11, 3),
+          ),
+        });
+        expect(card(), findsOneWidget);
+        expect(
+          find.descendant(of: card(), matching: find.text('Last 30 days')),
+          findsOneWidget,
+        );
+        expect(inCard('6 ${coffee.unit.plural}'), findsOneWidget);
+        expect(inCard('Mostly 08:00–11:00'), findsOneWidget);
+      });
+    });
+
+    testWidgets('says when nothing was logged in them', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpHistory(
+          tester,
+          0,
+          entries: [fakeActivity(coffee.id, 4, DateTime(2026, 9, 1, 9))],
+        );
+
+        expect(inCard('0 ${coffee.unit.plural}'), findsOneWidget);
+        expect(inCard(ViceActivityHistoryPage.summaryNothing), findsOneWidget);
+        // The older entry still lists below.
+        expect(quantity(4), findsOneWidget);
+      });
+    });
+
+    testWidgets('says when the days could not load', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpHistory(tester, 3, summaryError: StateError('offline'));
+
+        expect(inCard(ViceActivityHistoryPage.summaryFailed), findsOneWidget);
+        expect(quantity(1), findsOneWidget);
+      });
+    });
+
+    testWidgets('reads as one node', (tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await withClock(Clock.fixed(now), () async {
+        await pumpHistory(
+          tester,
+          0,
+          alwaysUse24HourFormat: true,
+          entries: [fakeActivity(coffee.id, 1, DateTime(2026, 11, 1, 9))],
+        );
+
+        // The busiest three hours start at the earliest that holds the most.
+        expect(
+          tester.getSemantics(card()),
+          matchesSemantics(
+            label:
+                'Last 30 days\n1 ${coffee.unit.singular}\nMostly 07:00–10:00',
+          ),
+        );
+      });
+      semantics.dispose();
+    });
   });
 }

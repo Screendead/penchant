@@ -206,9 +206,10 @@ void main() {
 
     double y(WidgetTester tester) => tester
         .widget<Transform>(
+          // PillDrop's own, not the scroll view's overscroll stretch.
           find
-              .ancestor(
-                of: find.text(OfflineBanner.message),
+              .descendant(
+                of: find.byType(PillDrop),
                 matching: find.byType(Transform),
               )
               .first,

@@ -76,6 +76,24 @@ const List<(int, int, int)> _busy = <(int, int, int)>[
   (2, 1250, 1),
 ];
 
+// A day of 60 entries, over the dial's merge threshold: dense hours of
+// Coffee and Doomscrolling, a mixed evening, and lone entries between.
+final List<(int, int, int)> _dense = <(int, int, int)>[
+  for (int i = 0; i < 9; i++) (0, 8 * 60 + 6 * i, 1),
+  for (int i = 0; i < 6; i++) (4, 10 * 60 + 9 * i, 10 + 5 * i),
+  for (int i = 0; i < 4; i++) (0, 11 * 60 + 12 * i, 1),
+  (1, 12 * 60 + 40, 2),
+  for (int i = 0; i < 7; i++) (4, 13 * 60 + 8 * i, 15),
+  (3, 30, 1),
+  (0, 15 * 60 + 20, 1),
+  for (int i = 0; i < 5; i++) (1, 17 * 60 + 11 * i, 1),
+  for (int i = 0; i < 8; i++) (2, 19 * 60 + 7 * i, 1),
+  for (int i = 0; i < 6; i++) (0, 19 * 60 + 3 + 9 * i, 1),
+  for (int i = 0; i < 5; i++) (4, 21 * 60 + 10 * i, 20),
+  for (int i = 0; i < 4; i++) (2, 22 * 60 + 13 * i, 1),
+  for (int i = 0; i < 3; i++) (3, 23 * 60 + 15 * i, 1),
+];
+
 const List<(int, int, int)> _sparse = <(int, int, int)>[
   (0, 490, 1),
   (1, 1165, 1),
@@ -146,6 +164,7 @@ void main() {
     for (final (String scene, List<(int, int, int)> entries)
         in <(String, List<(int, int, int)>)>[
           ('busy', _busy),
+          ('dense', _dense),
           ('sparse', _sparse),
           ('clear', const <(int, int, int)>[]),
           ('fan', _sparse),

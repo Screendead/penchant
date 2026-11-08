@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
+  habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
+  latest entry, and its actions list every entry.
 - End-to-end encryption is on. The first launch makes your journal key, keeps it in iCloud Keychain, and seals your
   habits' names, units and categories, and any entry triggers, in the background; dates and amounts stay readable
   to the server. Save the recovery key (Settings › Account, or the card Today shows a week in): a device without
@@ -24,9 +27,13 @@ pull request titles (`gh pr list --state merged`).
   they clear, instead of bars that appear and vanish at once. With Reduce Motion on they fade.
 - In Trends, switching between 7 days, 30 days, 90 days and a year keeps the chart up while the new range loads, then
   morphs its line into the new range, instead of putting a spinner in its place.
+- A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
+  three hours that hold the most.
 
 ### Fixed
 
+- With large text, the offline and refused-change banners no longer push Today off the screen: each stops at a third
+  of the screen and scrolls, and the sync status beside the menu stops growing at twice its size.
 - A device that opens on "Unlock your journal" because iCloud Keychain has not yet brought the key from your
   other device now checks again every few seconds and when you return to the app, and opens the journal by itself
   once the key arrives.
