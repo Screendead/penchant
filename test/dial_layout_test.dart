@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
@@ -172,6 +173,137 @@ void main() {
     });
   });
 
+  group('a dense hour', () {
+    List<double> minutes(int n, double first, double step) => <double>[
+      for (int i = 0; i < n; i++) first + step * i,
+    ];
+
+    test('merges nothing at 48 entries or fewer', () {
+      expect(denseHours(minutes(48, 480, 2)), isEmpty);
+    });
+
+    test("above 48, merges each hour holding more than one entry", () {
+      expect(
+        denseHours(<double>[...minutes(48, 480, 2), 900, 1200, 1210]),
+        <int>{8, 9, 20},
+      );
+    });
+
+    test("neighbouring hours' arcs are a bead's gap apart", () {
+      final double gap =
+          (HourArc(9).start - HourArc(8).end) * HourArc.track -
+          2 * HourArc.half;
+      expect(gap, closeTo(DialFace.beadGap, 1e-9));
+      expect(HourArc(8).middle, closeTo(dialAngle(510), 1e-9));
+    });
+
+    test("pushes a lone bead clear of the next and the previous hour's arc, "
+        'across 00 too', () {
+      const double cap = HourArc.half / HourArc.track;
+      final Map<String, BeadPlacement> placed = layoutBeads(
+        const <DialBeadInput>[
+          DialBeadInput(id: 'a', habit: 'h', minute: 538, radius: 10),
+          DialBeadInput(id: 'b', habit: 'h', minute: 605, radius: 10),
+          DialBeadInput(id: 'c', habit: 'h', minute: 2, radius: 10),
+        ],
+        arcs: <HourArc>[HourArc(9), HourArc(23)],
+      );
+      double clearance(double from, double to) =>
+          (to - from) * HourArc.track - 10;
+      expect(
+        clearance(placed['a']!.angle, HourArc(9).start - cap),
+        closeTo(DialFace.beadGap, 1e-6),
+      );
+      expect(
+        clearance(HourArc(9).end + cap, placed['b']!.angle),
+        closeTo(DialFace.beadGap, 1e-6),
+      );
+      expect(
+        clearance(HourArc(23).end + cap, placed['c']!.angle + 2 * pi),
+        closeTo(DialFace.beadGap, 1e-6),
+      );
+      for (final BeadPlacement p in placed.values) {
+        expect(p.track, HourArc.track);
+      }
+    });
+
+    test('centres a bead too wide for the gap between two arcs', () {
+      const double cap = HourArc.half / HourArc.track;
+      final BeadPlacement p = layoutBeads(
+        const <DialBeadInput>[
+          DialBeadInput(id: 'a', habit: 'h', minute: 610, radius: 14),
+        ],
+        arcs: <HourArc>[HourArc(9), HourArc(11)],
+      )['a']!;
+      final double before = (p.angle - (HourArc(9).end + cap)) * HourArc.track;
+      final double after = (HourArc(11).start - cap - p.angle) * HourArc.track;
+      expect(before, closeTo(after, 1e-6));
+      expect(before, lessThan(14));
+    });
+
+    test("numbers an arc's entries that read alike, so each is an action", () {
+      final Vice coffee = Vice(
+        id: 'c',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: fakeVice('c').createdAt,
+        archived: false,
+      );
+      DialEntry at(String id, int minute) => DialEntry(
+        id: id,
+        vice: coffee,
+        mark: const HabitMark(0),
+        quantity: 1,
+        at: DateTime(2026, 11, 5, 8, minute),
+      );
+      final List<(String, DialEntry)> actions = DayDial.arcActions(<DialEntry>[
+        at('a', 5),
+        at('b', 5),
+        at('c', 7),
+        at('d', 5),
+      ], alwaysUse24Hour: true);
+      expect(
+        <String>[for (final (String l, _) in actions) l],
+        <String>[
+          'Coffee, 1 drink at 08:05',
+          'Coffee, 1 drink at 08:05 (2)',
+          'Coffee, 1 drink at 08:07',
+          'Coffee, 1 drink at 08:05 (3)',
+        ],
+      );
+      expect(
+        <String>[for (final (_, DialEntry e) in actions) e.id],
+        <String>['a', 'b', 'c', 'd'],
+      );
+    });
+
+    test('a point on the face reads as its minute, across 00 too', () {
+      expect(
+        HourArc.minuteAt(dialPoint(dialAngle(510), 50)),
+        closeTo(510, 1e-6),
+      );
+      expect(
+        HourArc.minuteAt(dialPoint(dialAngle(minutesPerDay - 1), 100)),
+        closeTo(minutesPerDay - 1, 1e-6),
+      );
+      expect(HourArc.minuteAt(dialPoint(dialAngle(1), 100)), closeTo(1, 1e-6));
+    });
+
+    test('is shared out clockwise in proportion to the counts', () {
+      // At 06 the face runs straight down.
+      final List<Rect> pieces = <Rect>[
+        for (final Path p in HourArc(6).shares(<int>[1, 3])) p.getBounds(),
+      ];
+      final Rect whole = HourArc(6).outline().getBounds();
+      expect(pieces[0].top, closeTo(whole.top, 0.2));
+      expect(pieces[1].bottom, closeTo(whole.bottom, 0.2));
+      expect(pieces[0].center.dy, lessThan(pieces[1].center.dy));
+      // Three times the share, less the round end the first one holds.
+      expect(pieces[1].height, greaterThan(pieces[0].height * 2.5));
+    });
+  });
+
   group('the summary', () {
     final DateTime today = DateTime(2026, 11, 5);
     final List<Vice> habits = <Vice>[
@@ -235,6 +367,31 @@ void main() {
         ),
         '${formatDay(addDays(today, -5))}. Coffee 0 drinks, '
         'Late nights 0 times. Nothing recorded.',
+      );
+    });
+
+    test("an arc names its hour, then each habit's total in habit order", () {
+      DialEntry entry(int h, int hour, int minute, int q) => DialEntry(
+        id: '$h-$hour-$minute',
+        vice: habits[h],
+        mark: HabitMark(h),
+        quantity: q,
+        at: DateTime(2026, 11, 5, hour, minute),
+      );
+      expect(
+        DayDial.arcLabel(8, <DialEntry>[
+          entry(1, 8, 5, 1),
+          entry(0, 8, 10, 2),
+          entry(0, 8, 40, 1),
+        ], alwaysUse24Hour: true),
+        '3 entries from 08:00 to 09:00: Coffee 3 drinks, Late nights 1 time',
+      );
+      expect(
+        DayDial.arcLabel(23, <DialEntry>[
+          entry(0, 23, 5, 1),
+          entry(0, 23, 50, 1),
+        ], alwaysUse24Hour: true),
+        '2 entries from 23:00 to 00:00: Coffee 2 drinks',
       );
     });
 

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' show PathMetric, Tangent;
 
 import 'package:flutter/material.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -79,6 +80,74 @@ void paintHabitMark(
     bead,
     rimWidth ?? bead.rimWidth,
   );
+}
+
+// A habit's mark drawn over a shape rather than a circle, for its share of a
+// dense hour's arc: filled with the bead's rim or glow, or the ring's or the
+// dotted ring's outline, each kept inside the shape.
+void paintHabitBand(
+  Canvas canvas,
+  Path shape,
+  HabitMark mark,
+  DialColors colors,
+) {
+  final Color hue = colors.habit(mark);
+  final Color ink = colors.habitInk(mark);
+  final BeadTreatment bead = colors.bead;
+  switch (mark.style) {
+    case HabitMarkStyle.filled:
+      if (bead.glowAlpha > 0) {
+        canvas.drawPath(
+          shape,
+          Paint()
+            ..color = hue.withValues(alpha: bead.glowAlpha)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, bead.glowBlur / 2),
+        );
+      }
+      canvas.drawPath(shape, Paint()..color = hue);
+      if (bead.rimWidth > 0) {
+        _strokeInside(
+          canvas,
+          shape,
+          Paint()
+            ..strokeWidth = bead.rimWidth * 2
+            ..color = ink.withValues(alpha: bead.rimAlpha),
+        );
+      }
+    case HabitMarkStyle.ring:
+      _strokeInside(
+        canvas,
+        shape,
+        Paint()
+          ..strokeWidth = 2.4 * 2
+          ..color = ink,
+      );
+    case HabitMarkStyle.dotted:
+      final Paint dot = Paint()..color = ink;
+      for (final PathMetric metric in shape.computeMetrics()) {
+        for (double d = 0; d < metric.length; d += 4.01) {
+          if (metric.getTangentForOffset(d) case final Tangent t) {
+            // A quarter-turn of the tangent, whichever way points inside.
+            final Offset normal = Offset(-t.vector.dy, t.vector.dx) * 1.2;
+            canvas.drawCircle(
+              shape.contains(t.position + normal)
+                  ? t.position + normal
+                  : t.position - normal,
+              1.2,
+              dot,
+            );
+          }
+        }
+      }
+  }
+}
+
+void _strokeInside(Canvas canvas, Path shape, Paint paint) {
+  canvas
+    ..save()
+    ..clipPath(shape)
+    ..drawPath(shape, paint..style = PaintingStyle.stroke)
+    ..restore();
 }
 
 void _paintFilled(
