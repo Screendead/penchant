@@ -492,6 +492,19 @@ tracker calls `waitForPendingWrites()` again after each (a wait covers only writ
 sessions' included), so it says Synced only once every write has been acknowledged. The day's "not yet synced" note
 shows only offline.
 
+**Client API key.** One Firebase client key serves iOS and macOS, and it appears twice by design: in each
+`GoogleService-Info.plist` (which the native SDK reads before Dart runs) and in `lib/firebase_options.dart`
+(FlutterFire's output, which Dart's `initializeApp` reads). Neither copy can go without breaking one side, and
+regenerating either file restores the key. It is a public identifier, not a secret: Firebase says keys for its
+services "do not need to be treated as secrets" and are "OK to include in code or checked-in config files"
+(https://firebase.google.com/docs/projects/api-keys). The protection is Firestore rules and App Check, not hiding the key. The key's own restrictions
+live in the Google Cloud console of the production project, which Claude does not touch, and repository files
+cannot show them. Recommended there (Google Cloud, https://docs.cloud.google.com/docs/authentication/api-keys):
+an iOS application restriction to `com.screendead.penchant`, and an API restriction to the Firebase APIs the app
+calls; Google notes the bundle-ID check is easy to bypass, so it limits casual reuse only. The key of the earlier
+`com.screendead.tracker.tracker` registration stays valid until revoked there. Never commit a service-account
+file or `privateKey.json`; `admin/.gitignore` and the root `.gitignore` exclude them.
+
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against
 production. With it, the default app is initialized with `demo-tracker` options, Firestore
