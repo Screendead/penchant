@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
+**8 issues: 0 critical, 0 high, 1 medium, 7 low.**
 
 ## Firebase Data Layer (5)
 
@@ -62,12 +62,11 @@ Version lag and resolver locks across Dart, Node and Gradle, dead or incompatibl
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
 
-## CI and Quality Gates (2)
+## CI and Quality Gates (1)
 
 Test depth and what CI runs.
 
 - **low** — [The e2e record helper can lose the typed quantity](ci-and-quality-gates/record-helper-can-lose-the-quantity.md)
-- **low** — [Two template tests still run and check nothing about the app](ci-and-quality-gates/template-tests-check-nothing.md)
 
 ## Repo, Docs and Release Hygiene (0)
 
