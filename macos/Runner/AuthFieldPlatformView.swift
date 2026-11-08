@@ -78,6 +78,7 @@ class AuthFieldView: NSView, NSTextFieldDelegate, AuthFieldOwner {
   private var lastSent = ""
   private var focused = false
   private var poll: Timer?
+  private var reading = false
 
   init(channel: FlutterMethodChannel, flutterView: NSView?, arguments: [String: Any]) {
     self.channel = channel
@@ -230,8 +231,12 @@ class AuthFieldView: NSView, NSTextFieldDelegate, AuthFieldOwner {
   }
 
   fileprivate func fieldValueMayHaveChanged() {
-    guard let field = field else { return }
+    // Reading stringValue mid-edit commits the editor's text, which may come
+    // back through the overridden setters.
+    guard let field = field, !reading else { return }
+    reading = true
     let text = field.stringValue
+    reading = false
     if text != lastSent {
       lastSent = text
       channel.invokeMethod("changed", arguments: ["text": text])
