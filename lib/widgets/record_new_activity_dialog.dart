@@ -433,30 +433,34 @@ class _SheetFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color ink = Theme.of(context).colorScheme.onSurface;
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        22,
-        12,
-        22,
-        22 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 38,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(
-                color: ink.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(3),
+    // Its own Material, so it also renders outside a sheet's.
+    return Material(
+      type: MaterialType.transparency,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          22,
+          12,
+          22,
+          22 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: ink.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
             ),
-          ),
-          child,
-        ],
+            child,
+          ],
+        ),
       ),
     );
   }

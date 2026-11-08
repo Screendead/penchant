@@ -430,6 +430,9 @@ Future<void> recordActivity(
     await tap(tester, find.descendant(of: sheet, matching: find.text('Done')));
     await pumpUntil(tester, sheet, present: false);
   }
+  // A focused field scrolls itself back into view, away from the button.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
   final Finder submit = find.byKey(RecordNewActivityDialog.submitKey);
   await tap(tester, submit);
   await pumpUntil(tester, dialog, present: false);
