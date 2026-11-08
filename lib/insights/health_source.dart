@@ -10,8 +10,9 @@ import 'package:flutter/services.dart';
 class DailyOutcome {
   const DailyOutcome(this.date, this.metricId, this.value);
 
-  /// Local midnight of the day. A sleep value belongs to the day the night
-  /// ended on.
+  /// Local midnight of the day. A sleep value for day D is the night that
+  /// ended on D: sleep that ended between noon on D-1 and noon on D, so an
+  /// afternoon nap counts towards the following night.
   final DateTime date;
 
   /// A [HealthMetric.id], or another source's id.

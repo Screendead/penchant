@@ -169,21 +169,27 @@ enum HealthChannel {
     group.notify(queue: .global(qos: .userInitiated)) { completion(rows) }
   }
 
-  // A night belongs to the local day it ends on: the value for 2026-11-08 is
-  // the sleep that ended that morning. Samples that overlap, as a Watch's and
-  // a phone's do, are merged per stage before their minutes are summed.
+  // HealthKit stores a night as many stage samples on both sides of midnight,
+  // so a night runs from noon to noon and belongs to the day it ends on: the
+  // value for 2026-11-08 is sleep that ended between noon on the 7th and noon
+  // on the 8th, and an afternoon nap counts towards the following night.
+  // Samples that overlap, as a Watch's and a phone's do, are merged per stage
+  // before their minutes are summed.
   private static func sleepValues(
     _ wanted: [(id: String, values: Set<Int>)], start: Date, end: Date,
     completion: @escaping ([[String: Any]]) -> Void
   ) {
-    let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictEndDate)
+    let predicate = HKQuery.predicateForSamples(
+      withStart: noon(before: start), end: noon(before: end), options: .strictEndDate)
     let query = HKSampleQuery(
       sampleType: HKCategoryType(.sleepAnalysis), predicate: predicate, limit: HKObjectQueryNoLimit,
       sortDescriptors: nil
     ) { _, samples, _ in
       var byNight: [String: [HKCategorySample]] = [:]
-      for sample in (samples as? [HKCategorySample]) ?? [] where sample.endDate < end {
-        byNight[key(calendar.startOfDay(for: sample.endDate)), default: []].append(sample)
+      for sample in (samples as? [HKCategorySample]) ?? [] {
+        let night = nightOf(sample.endDate)
+        guard night >= start, night < end else { continue }
+        byNight[key(night), default: []].append(sample)
       }
       var found: [[String: Any]] = []
       for (night, samples) in byNight {
@@ -196,6 +202,18 @@ enum HealthChannel {
       completion(found)
     }
     store.execute(query)
+  }
+
+  // Wall-clock noon, so a DST change does not move the boundary.
+  private static func noon(before day: Date) -> Date {
+    let previous = calendar.date(byAdding: .day, value: -1, to: day) ?? day
+    return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: previous) ?? previous
+  }
+
+  private static func nightOf(_ end: Date) -> Date {
+    let day = calendar.startOfDay(for: end)
+    let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: end) ?? day
+    return end <= noon ? day : (calendar.date(byAdding: .day, value: 1, to: day) ?? day)
   }
 
   private static func mergedMinutes(_ intervals: [(Date, Date)]) -> Double {
