@@ -132,7 +132,8 @@ void main() {
       'Water (1 drink)',
     });
 
-    // A wedge's long press opens the record dialog with its habit chosen.
+    // A wedge's long press opens the amount sheet titled with its habit, with
+    // no habit dropdown.
     await pumpUntil(tester, find.byType(LogButton).hitTestable());
     tester.semantics.tap(find.semantics.byLabel(LogButton.label));
     await tester.pump();
@@ -141,20 +142,21 @@ void main() {
     tester.semantics.longPress(_wedgeNode('Log 1 drink of Tea'));
     await tester.pump();
     final Finder dialog = find.byType(RecordNewActivityDialog);
-    await pumpUntil(tester, dialog);
+    await pumpUntilRouteSettled(tester, dialog);
     expect(
       find.descendant(
-        of: find.descendant(
-          of: dialog,
-          matching: find.byType(DropdownButtonFormField<String>),
-        ),
-        matching: find.text('Tea'),
+        of: dialog,
+        matching: find.byType(DropdownButtonFormField<String>),
       ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('Tea')),
       findsOneWidget,
     );
     await tap(
       tester,
-      find.descendant(of: dialog, matching: find.text('Cancel')),
+      find.descendant(of: dialog, matching: find.byTooltip('Close')),
     );
     await pumpUntil(tester, dialog, present: false);
     expect(await storedActivities('Tea'), isEmpty);
