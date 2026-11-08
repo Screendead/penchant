@@ -136,7 +136,10 @@ jobs:
       # asks for the data-protection keychain, which needs that entitlement, so every sign-in fails with
       # keychain-error (-34018). The CI copy of the Firebase SDK asks for the file keychain instead, which an
       # unsigned app can use. Flutter builds from the packages resolved here (build/macos/SourcePackages).
-      - name: Let Firebase Auth use the file keychain
+      # flutter_secure_storage (the journal key) defaults to the data-protection keychain on macOS for the same reason,
+      # so its option is forced off in the pub cache, and flipped back in the last step so the cache post-step does not
+      # save the edit for the iOS job.
+      - name: Use the file keychain for Firebase Auth and the journal key
         run: |
           flutter pub get
           xcodebuild -resolvePackageDependencies -workspace macos/Runner.xcworkspace -scheme Runner \
@@ -145,6 +148,10 @@ jobs:
           grep -c kSecUseDataProtectionKeychain "$file"
           sed -i '' '/kSecUseDataProtectionKeychain/d' "$file"
           ! grep -q kSecUseDataProtectionKeychain "$file"
+          plugin=$(realpath macos/Flutter/ephemeral/Packages/.packages/flutter_secure_storage_darwin-*/Sources/flutter_secure_storage_darwin/FlutterSecureStorage.swift)
+          echo "$plugin" > "$RUNNER_TEMP/secure-storage-plugin"
+          sed -i '' 's/, params.usesDataProtectionKeychain {/, false {/' "$plugin"
+          grep -q 'macOS 10.15, \*), false {' "$plugin"
       - name: End to end (macOS)
         env:
           E2E_DEVICE: macos
@@ -152,6 +159,11 @@ jobs:
         run: |
           set -o pipefail
           tools/e2e.sh 2>&1 | tee "$RUNNER_TEMP/e2e-macos.log"
+      - name: Restore the pub cache
+        if: always()
+        run: |
+          plugin=$(cat "$RUNNER_TEMP/secure-storage-plugin" 2>/dev/null) || exit 0
+          sed -i '' 's/macOS 10.15, \*), false {/macOS 10.15, *), params.usesDataProtectionKeychain {/' "$plugin"
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
