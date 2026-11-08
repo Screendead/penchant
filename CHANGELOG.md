@@ -86,6 +86,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Holding a habit in the Log fan opens an amount sheet instead of the record dialog: the habit's name at the top, a
+  large amount with − and + to step it (or type a decimal), and one button that says what it will log and when.
+  Editing an entry uses the same amount stepper.
 - An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
   Craving) or typed in; exports include them as a "triggers" column.
 - On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
