@@ -1,6 +1,6 @@
 name: End to end
-# integration_test/ on an iOS Simulator against the Auth and Firestore emulators (demo-tracker), after merge
-# rather than on PRs. No macOS job: unsigned, Firebase Auth fails with keychain-error, and signing needs secrets.
+# integration_test/ against the Auth and Firestore emulators (demo-tracker), after merge rather than on PRs: on an iOS
+# Simulator, and as a macOS app.
 on:
   push:
     branches:
@@ -103,5 +103,60 @@ jobs:
           name: e2e-ios-log
           path: |
             ${{ runner.temp }}/e2e-ios.log
+            *-debug.log
+          if-no-files-found: ignore
+  macos:
+    needs: debounce
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-flutter
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.1'
+          cache: npm
+          cache-dependency-path: tests/firestore-rules/package-lock.json
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('tests/firestore-rules/package-lock.json') }}
+      - name: Install firebase-tools
+        run: |
+          npm --prefix tests/firestore-rules ci
+          echo "$PWD/tests/firestore-rules/node_modules/.bin" >> "$GITHUB_PATH"
+      # The runner has no Mac development profile, so the build is unsigned and has no keychain-access-groups
+      # entitlement; an ad hoc signature carrying it is killed at launch (restricted without a profile). Firebase Auth
+      # asks for the data-protection keychain, which needs that entitlement, so every sign-in fails with
+      # keychain-error (-34018). The CI copy of the Firebase SDK asks for the file keychain instead, which an
+      # unsigned app can use. Flutter builds from the packages resolved here (build/macos/SourcePackages).
+      - name: Let Firebase Auth use the file keychain
+        run: |
+          flutter pub get
+          xcodebuild -resolvePackageDependencies -workspace macos/Runner.xcworkspace -scheme Runner \
+            -clonedSourcePackagesDirPath build/macos/SourcePackages
+          file=build/macos/SourcePackages/checkouts/firebase-ios-sdk/FirebaseAuth/Sources/Swift/Storage/AuthKeychainServices.swift
+          grep -c kSecUseDataProtectionKeychain "$file"
+          sed -i '' '/kSecUseDataProtectionKeychain/d' "$file"
+          ! grep -q kSecUseDataProtectionKeychain "$file"
+      - name: End to end (macOS)
+        env:
+          E2E_DEVICE: macos
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+        run: |
+          set -o pipefail
+          tools/e2e.sh 2>&1 | tee "$RUNNER_TEMP/e2e-macos.log"
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-macos-log
+          path: |
+            ${{ runner.temp }}/e2e-macos.log
             *-debug.log
           if-no-files-found: ignore
