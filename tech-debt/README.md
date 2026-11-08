@@ -57,11 +57,10 @@ Password reset, email verification, re-authentication, account deletion and expo
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
 
-## Platform and Delivery Config (1)
+## Platform and Delivery Config (0)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
-- **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
 
 ## CI and Quality Gates (1)
 

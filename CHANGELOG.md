@@ -16,7 +16,7 @@ pull request titles (`gh pr list --state merged`).
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
 - The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
-  you left it. It narrows to 390 pt, where the phone layout returns.
+  you left it. It narrows to 390 pt; below 900 pt the phone layout returns.
 
 ### Fixed
 
