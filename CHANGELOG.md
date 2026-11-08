@@ -54,6 +54,7 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Opening or closing a page in dark mode no longer flashes white halfway through the transition.
 - A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
 
 - With large text, the offline and refused-change banners no longer push Today off the screen: each stops at a third

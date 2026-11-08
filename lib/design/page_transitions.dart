@@ -31,10 +31,16 @@ class DialPageTransitionsBuilder extends PageTransitionsBuilder {
         child: child,
       );
     }
-    return FadeThroughTransition(
-      animation: animation,
-      secondaryAnimation: secondaryAnimation,
-      child: child,
+    // animations 3 reads its default fill from package:material_ui's Theme,
+    // which never sees this app's Theme, so it would fill with Material's
+    // light default: a white flash mid-transition in dark mode.
+    return Builder(
+      builder: (BuildContext context) => FadeThroughTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        fillColor: Theme.of(context).canvasColor,
+        child: child,
+      ),
     );
   }
 }
