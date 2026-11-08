@@ -55,8 +55,9 @@ and say so. Items under one number can run in parallel in separate worktrees; on
 `tools/e2e.sh` or uses the default emulator ports. Subagents write PR bodies to uniquely named scratchpad files: the
 scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
-1. **The Day Dial UI overhaul** (`r6-ui-direction`, below). The source of truth is branch
-   `origin/design/ui-overhaul-day-dial`, folder `docs/pitch/mockups/ui-overhaul/day-dial/`: `index.html` (the live
+1. **The Day Dial UI overhaul** (`r6-ui-direction`, below). The source of truth is the folder
+   `docs/pitch/mockups/ui-overhaul/day-dial/` on `master` (landed from `design/ui-overhaul-day-dial`, which
+   `r10-pitch-branches` C archives as the tag `archive/design/ui-overhaul-day-dial`): `index.html` (the live
    mock-up), `tokens.json` (mirrored in `lib/design/tokens.json`), `notes.md` (how each part is built in Flutter) and
    the stills. One PR per step, in order; every screen keeps working between steps, and each PR keeps
    `tools/e2e.sh` green by updating the tests its screens break. Habit names in examples are made up; the product
@@ -146,10 +147,20 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    does not run in an extension. Writing an activity needs no key (`viceID`, `quantity`, `amount`, `createdAt` and
    `ownerID` are plaintext under `r2-e2ee`), but showing habit names does, so the extension needs the app's Firebase
    Auth session and the E2EE key through a shared Keychain access group and an App Group. Check whether the free
-   signing team can sign App Groups and extensions before building. Read Apple's current WidgetKit, App Intents and
-   ControlWidget docs first. Open for Jack once scoped (recommendations, not calls): what "top" means (Claude:
-   most logged in the last 30 days, overridable in the widget's settings); Undo after a widget or menu bar tap;
-   Siri, Shortcuts and the Action button through the same App Intent; macOS desktop widgets from the same code.
+   signing team can sign App Groups and extensions before building (proven 2026-11-08 on `spike/widget-app-group`,
+   commit becdcaf: the free team signs the WidgetKit extension `com.screendead.penchant.widgets` and the App Group
+   `group.com.screendead.penchant` on iOS, the app wrote to the group and the widget read it on Jack's iPhone, and
+   `tools/add-widget-target.rb` there generates the target; macOS App Groups, and whether sandboxed macOS needs a
+   TEAMID-prefixed group name, are unchecked). Read Apple's current WidgetKit, App Intents and ControlWidget docs
+   first. Jack's picks of 2026-11-08 (round 10, below) settle the open questions:
+   - **Top habits** (`r10-widget-top` D): the most logged in the last 30 days, overridable by hand in the widget's
+     settings.
+   - **Undo** (`r10-widget-undo` B): a 5-second Undo where you tapped, on each surface (widget, control, menu bar row).
+     Whether WidgetKit can hold and revert such a state is unchecked; read Apple's docs first. If it cannot, fall
+     back to C (the app's Undo on the Mac menu bar only) and say so.
+   - **Siri, Shortcuts and the Action button** (`r10-intents` A): the same log intent, built with the widgets.
+   - **macOS widgets** (`r10-mac-widgets` A): the same WidgetKit code as a Mac extension, built with the iPhone
+     widgets, for the desktop and Notification Centre. It depends on the journal key reaching the Mac (P2).
    The idea file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
@@ -218,23 +229,30 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   idea (Crashlytics scrubbing).
 - **D15.** Close draft #128 (the keychain probe, CONFLICTING, "not for merge") once P2 no longer needs it. S.
 
-**UNDECIDED** (Jack's call; these are "Calls waiting on Jack"):
+**Were UNDECIDED; all decided in round 10 (2026-11-08)** (U1 to U8; see Jack's calls, round 10, below):
 
-- **U1.** Mac fullscreen layout: one of P3's three options. Pitch in flight. Build M after the pick.
-- **U2.** Queue item 6's open questions, each with Claude's recommendation in item 6: what "top" habits means, Undo
-  after a widget or menu bar tap, Siri, Shortcuts and the Action button through the same App Intent, macOS desktop
-  widgets from the same code. S each.
-- **U3.** A Reduce motion row in Settings, as the mock-up has; the app follows the system setting and has nothing of
-  its own to set. S.
-- **U4.** Other languages (register: English only); still unasked. L if yes.
-- **U5.** Analytics beyond Crashlytics, content-free (`ideas/v1-must-haves/crash-reporting-and-analytics.md`), which
-  the idea defers to 1.1. S to decide.
-- **U6.** Reminders: `r2-days` ruled out the daily check-in, not reminders
-  (`ideas/v1-must-haves/evening-check-in-and-reminders.md`). M if yes.
-- **U7.** The 15 pushed pitch-source branches with no PR (`mockup/*`, `design/ui-overhaul-*`): keep them as archive
-  refs, or land the picked Day Dial mock-up (`index.html`, `notes.md`, `tokens.json`, only on
-  `design/ui-overhaul-day-dial`) on `master` and delete the rest. S.
-- **U8.** When to cut 0.2.0 and install it on Jack's iPhone and Mac (the iPhone runs 0.1.0). Its first launch runs the
+- **U1.** DECIDED (`r10-mac-fullscreen` B, responsive scaling). Mac fullscreen layout: one of P3's three options.
+  Build M from `design/mac-fullscreen-b` (the tag
+  `archive/design/mac-fullscreen-b` once archived), with the pitch's two conditions: cap the dial near 480 pt, and keep
+  Today's column at 504 pt at 1200 x 780 (Claude's conditions, in the pitch's recommendation; Jack picked B as
+  presented).
+- **U2.** DECIDED (`r10-widget-top` D, `r10-widget-undo` B, `r10-intents` A, `r10-mac-widgets` A; queue item 6 holds
+  them). Queue item 6's open questions: what "top" habits means, Undo after a widget or menu bar tap, Siri, Shortcuts
+  and the Action button through the same App Intent, macOS desktop widgets from the same code.
+- **U3.** DECIDED (`r10-reduce-motion` B). A Reduce motion row in Settings, as the mock-up has; the app follows the
+  system setting and has nothing of its own to set. S.
+- **U4.** DECIDED (`r10-languages` A): English only. Other languages (register: English only). No work.
+- **U5.** DECIDED (`r10-analytics` A): none. Analytics beyond Crashlytics, content-free
+  (`ideas/v1-must-haves/crash-reporting-and-analytics.md`), which the idea defers to 1.1. No work.
+- **U6.** DECIDED (`r10-reminders` B): one optional daily nudge. Reminders: `r2-days` ruled out the daily check-in,
+  not reminders (`ideas/v1-must-haves/evening-check-in-and-reminders.md`). M.
+- **U7.** DECIDED (`r10-pitch-branches` C). The Day Dial files landed in the PR from `docs/round-10-picks`; the
+  archive tags and branch deletions are for the main session after it merges. The pushed pitch-source branches with
+  no PR (`mockup/*`, `design/ui-overhaul-*`, `design/mac-fullscreen-*`, `spike/*`): land the picked Day Dial mock-up
+  (`index.html`, `notes.md`, `tokens.json`, the stills) on `master`, tag each other branch `archive/<branch>`, then
+  delete the branches. S.
+- **U8.** DECIDED (`r10-release` B): wait. Cut 0.2.0 once the picked Mac fullscreen layout and PR #133 (AutoFill)
+  land. When to cut 0.2.0 and install it on Jack's iPhone and Mac (the iPhone runs 0.1.0). Its first launch runs the
   sealing migrator over his real journal. S.
 
 **BLOCKED on Jack** (tasks, not decisions):
@@ -336,7 +354,7 @@ Picked on the pitch page; the page keeps the options and costs each was chosen f
   (checked 2026-11-04). Done.
 - **`r2-icon`** (2026-11-05, in chat): **candidate 38**, the Today radar's coloured segments with spokes running past
   them, centred, on a light background. Picked from 38 candidates on the icon sheet
-  (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on `mockup/icon-sheet`). Shipped as the iOS and macOS
+  (https://claude.ai/artifact/JGnHCcPxaTLHKiyZeFgNmK, sources on the tag `archive/mockup/icon-sheet`). Shipped as the iOS and macOS
   icon in the PR that records this; the sources are `assets/icon.svg` and `assets/icon-macos.svg`. Independent of the
   brand. Done.
 - **`r2-brand`** (2026-11-05, on the pitch page https://claude.ai/artifact/NBsbWYMVPh2phzS3wKDRCH, no note):
@@ -428,9 +446,31 @@ Picked on the pitch page, each as recommended:
 - **`r9-export`**: B, **also an Export row in Settings, as the mock-up**; Account Settings keeps its row beside
   Delete, and both share one export action. Built in the PR from `feat/r9-picks`.
 
+## Jack's calls, round 10 (2026-11-08)
+
+Picked on the round 10 pitch page (`docs/pitch/round-10/`). Ten match Claude's recommendation; `r10-mac-widgets`
+does not (Claude recommended B, later). Notes are Jack's.
+
+- **`r10-mac-fullscreen`**: B, **responsive scaling.** Both panes grow with the window; the dial scales with the
+  height. Built from `design/mac-fullscreen-b` (U1).
+- **`r10-widget-top`**: D, **the top habits are the most logged in the last 30 days, overridable by hand in the
+  widget's settings.**
+- **`r10-widget-undo`**: B, **a 5-second Undo where you tapped.**
+- **`r10-intents`**: A, **Siri, Shortcuts and the Action button through the same log intent**, built with the widgets.
+- **`r10-mac-widgets`**: A, **macOS widgets from the same code**, built with the iPhone widgets. Jack: "Widgets for the Notification Centre are useful to me."
+- **`r10-reduce-motion`**: B, **a Follow system / Reduce / Full row in Settings, saved per device** like Appearance.
+- **`r10-languages`**: A, **English only.**
+- **`r10-analytics`**: A, **none** beyond Crashlytics.
+- **`r10-reminders`**: B, **one optional daily nudge**, off by default. Jack: long-pressing the notification should
+  offer something like "Nothing further" or "Clean day"; it needn't do anything, but should feel good to press.
+- **`r10-pitch-branches`**: C, **land the Day Dial mock-up files, tag the rest as `archive/*`, then delete those
+  branches.** The files are in `docs/pitch/mockups/ui-overhaul/day-dial/`; the tag and delete commands are in the PR
+  from `docs/round-10-picks`, for the main session to run after it merges.
+- **`r10-release`**: B, **wait** for the Mac fullscreen layout and AutoFill (#133) before cutting 0.2.0.
+
 ## Calls waiting on Jack (UNDECIDED)
 
-U1 to U8 in the overnight list (under the queue). Round 9 is picked (Jack's calls, round 9, above).
+None. U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 
