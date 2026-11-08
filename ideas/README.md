@@ -71,8 +71,11 @@ Each list is in the recommended build order.
 ## Where the path stands
 
 The decided calls are C6, C15–C19 and the round-2 calls in `HANDOVER.md`. Built: the Day Dial Today, the one-tap log,
-trigger tagging, the decimal amount and vice category, end-to-end encryption of the journal, guest start, Crashlytics and
-the macOS target. Left, in Claude's order:
+trigger tagging, the decimal amount and vice category, guest start, Crashlytics, the macOS target and end-to-end
+encryption of the journal. The encryption has open follow-ups: the sealed-only rules and the integrity and migrator
+entries in `tech-debt/firebase-data-layer/`, export compliance in the
+[release pipeline](release-blockers/ios-release-pipeline-and-testflight.md), and the Crashlytics scrubbing rule in the
+[privacy policy](release-blockers/privacy-policy-and-labels.md). Left, in Claude's order:
 
 1. **The rest of 1.0's capture:** the context fields and the detail sheet after a tap
    ([granular logging](insights/granular-logging-and-data-model.md)), then the free trend views.

@@ -14,12 +14,15 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**7 issues: 0 critical, 0 high, 1 medium, 6 low.**
+**11 issues: 0 critical, 0 high, 2 medium, 9 low.**
 
-## Firebase Data Layer (2)
+## Firebase Data Layer (5)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
+- **medium** — [The rules still accept a vice's name and unit, and an activity's triggers, in plaintext](firebase-data-layer/plaintext-creates-are-still-accepted.md)
+- **low** — [A sealed entry can be moved in time or rolled back without the client noticing](firebase-data-layer/sealed-blobs-bind-neither-time-nor-state.md)
+- **low** — [The sealing migrator fails a whole batch on one oversized legacy name and tracks completion per device](firebase-data-layer/sealing-migrator-edge-cases.md)
 - **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
 
@@ -43,10 +46,11 @@ Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, 
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 
-## Auth and Account Lifecycle (0)
+## Auth and Account Lifecycle (1)
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
+- **low** — [The recovery key is copied with a plain clipboard write](auth-and-account-lifecycle/recovery-key-copy-reaches-universal-clipboard.md)
 
 ## Dependency and Tooling Drift (0)
 

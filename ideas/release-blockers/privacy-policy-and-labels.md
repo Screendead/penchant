@@ -31,6 +31,13 @@ inventory has two halves:
 - INFERENCE, to verify with a source: under GDPR Art. 9, alcohol, drug and tobacco logs may be special-category health
   data for UK and EU users, which would need explicit consent.
 
+- SOURCED (`lib/crypto/`, built): the journal's names, units and triggers are sealed on the device, but timestamps,
+  quantities and amounts are collected in plaintext, so the label and any wording must say "we can see when and how
+  much you log, not what".
+- SOURCED (`lib/firebase_init.dart`): the Crashlytics forwarder drops `FlutterErrorDetails.informationCollector` but
+  sends each exception whole. A scrubbing rule is still needed so that no exception message or reason carries a decrypted
+  name, unit or trigger; otherwise the end-to-end claim is false.
+
 ## Options
 
 - **A.** A generator-based policy (Termly, iubenda).

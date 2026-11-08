@@ -13,6 +13,10 @@
 
 The work includes the App Review demo account and short reviewer notes.
 
+Export compliance belongs here: the app does its own AES-256-GCM encryption of the journal, and nothing in `ios/` or
+`macos/` sets `ITSAppUsesNonExemptEncryption` or answers the encryption questions yet (SOURCED: grep of both trees,
+2026-11-08). Settle it before the first upload.
+
 ## Decision
 
 Decided by Jack 2026-11-03 (C6): **iOS first, through TestFlight**, with macOS as a fully supported target; Android and

@@ -200,7 +200,10 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
 - **D14.** DONE (same PR). Refresh `ideas/`: its "Needs Jack" section asks calls Jack has made (E2EE, age, Mac, Pro, billing,
   TestFlight, icon, guests, check-in, presets, triggers, Today, app lock), and idea files for shipped work remain
   (`end-to-end-encryption`, `one-tap-quick-logging`, `trigger-tagging`, `granular-logging-and-data-model`, part of
-  `guest-mode-and-sign-in`): delete or trim each. `ideas/`. S.
+  `guest-mode-and-sign-in`): delete or trim each. `ideas/`. S. The deleted E2EE file's open items moved to
+  `tech-debt/firebase-data-layer/` (sealed-only rules, binding scope and key rotation, migrator edge cases),
+  `tech-debt/auth-and-account-lifecycle/` (clipboard), the release-pipeline idea (export compliance) and the privacy
+  idea (Crashlytics scrubbing).
 - **D15.** Close draft #128 (the keychain probe, CONFLICTING, "not for merge") once P2 no longer needs it. S.
 
 **UNDECIDED** (Jack's call; these are "Calls waiting on Jack"):
