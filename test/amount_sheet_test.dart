@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -159,6 +161,28 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(RecordNewActivityDialog), findsNothing);
       expect(writes.writes, isEmpty);
+    });
+  });
+
+  testWidgets('a drag cannot close the sheet while it saves', (tester) async {
+    await withClock(Clock.fixed(_now), () async {
+      writes.respond = (_) => Completer<void>().future;
+      await _open(tester, writes, initialViceID: _coffee.id);
+      await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
+      await tester.pump();
+      await tester.drag(
+        find.text('Coffee'),
+        const Offset(0, 500),
+        warnIfMissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(RecordNewActivityDialog), findsOneWidget);
+      expect(writes.writes, hasLength(1));
+      // The save outlasts its timeout, so the sheet closes as queued.
+      await tester.pump(const Duration(seconds: 11));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecordNewActivityDialog), findsNothing);
+      await tester.pump(const Duration(seconds: 10));
     });
   });
 

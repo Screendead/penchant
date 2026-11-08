@@ -165,8 +165,11 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
 
 **DECIDED** (the goal is set by a recorded call or a convention):
 
-- **D1.** Amount sheet replacing the record dialog for new entries, reused by the entry editor (1b and 1d leftover;
-  nothing in `lib/` builds it yet). `lib/widgets/`, record dialog, editor. M.
+- **D1.** Amount sheet replacing the record dialog for new entries, reused by the entry editor (1b and 1d leftover).
+  PR #148: the sheet (title, stepper, pill button) replaces the dialog, and the editor page builds the same
+  `AmountFields`. Left: the mini dial for the time, which replaces `ActivityDateField` in the mock-up (next; D2's
+  edited bead travel needs it); the step of 5 for habits whose typical entry is 10 or more; the editor as the sheet
+  itself rather than a page (with D5, which rewrites the editor e2e flows). `lib/widgets/`. M.
 - **D2.** The rest of 1f, as #98's "Left for 1f" lists it: `animations` page transitions, `OpenContainer` for a
   Trends day point, the chart morph between ranges, the offline and refused-write pills on a spring, an edited bead
   travelling to its new time (needs D1), the reduce-motion day fade, the dial's drag snap-back. `lib/widgets/`. L.

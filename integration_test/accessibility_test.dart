@@ -14,6 +14,9 @@ import 'support.dart';
 
 // The dialog scrolls at large text sizes, so a control can sit below the fold.
 Future<void> _tapInDialog(WidgetTester tester, Finder finder) async {
+  // A focused field scrolls itself back into view, away from the button.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
   await pumpUntil(tester, finder);
   await tester.ensureVisible(finder);
   await pumpFor(tester, const Duration(milliseconds: 500));
