@@ -13,7 +13,7 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/account_provider.dart';
-import 'package:tracker/sign_in.dart';
+import 'package:tracker/auth_form.dart';
 
 import 'support.dart';
 
@@ -325,7 +325,7 @@ void main() {
       ),
     );
     await pumpUntil(tester, find.text(AccountCopy.deleted));
-    await pumpUntil(tester, find.byType(SignIn));
+    await pumpUntil(tester, find.byType(AuthForm));
     // The popped page may still be sliding away when sign-in appears; it
     // must not stay.
     await pumpUntil(tester, find.byType(AccountSettings), present: false);

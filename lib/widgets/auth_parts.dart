@@ -305,3 +305,82 @@ class AuthPrimaryButton extends StatelessWidget {
     );
   }
 }
+
+// The segmented control's thumb and everything the form reveals or hides
+// when it switches mode move together on these. The primary button's label
+// swaps at once, as in the mock-up: a fade would leave it blank or doubled.
+const Duration authSwitchDuration = Duration(milliseconds: 260);
+const Curve authSwitchCurve = DialMotion.enter;
+
+// Under reduced motion a zero duration would do, but it trips
+// RenderAnimatedSize's layout assertion.
+const Duration _instant = Duration(microseconds: 1);
+
+// Shows or hides part of a form in place: it fades in while settling 6 pt
+// down (the mock-up's travel) or fades out early, while the space it takes
+// eases open or shut so what follows glides. Under reduced motion it fades
+// and the space changes at once.
+class AuthReveal extends StatelessWidget {
+  const AuthReveal({super.key, required this.shown, required this.child});
+
+  final bool shown;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    final Key current = ValueKey<bool>(shown);
+    return AnimatedSize(
+      duration: reduced ? _instant : authSwitchDuration,
+      curve: authSwitchCurve,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: reduced ? DialMotion.reducedFade : authSwitchDuration,
+        // An outgoing child is positioned so it does not hold the space
+        // open; AnimatedSize clips it as the space closes.
+        layoutBuilder: (Widget? currentChild, List<Widget> previous) => Stack(
+          alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            for (final Widget child in previous)
+              Positioned(top: 0, left: 0, right: 0, child: child),
+            ?currentChild,
+          ],
+        ),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          if (reduced) {
+            return FadeTransition(opacity: animation, child: child);
+          }
+          if (child.key != current) {
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: const Interval(0.7, 1, curve: Curves.easeIn),
+              ),
+              child: child,
+            );
+          }
+          final Animation<double> enter = CurvedAnimation(
+            parent: animation,
+            curve: authSwitchCurve,
+          );
+          return FadeTransition(
+            opacity: enter,
+            child: AnimatedBuilder(
+              animation: enter,
+              builder: (BuildContext context, Widget? child) =>
+                  Transform.translate(
+                    offset: Offset(0, -6 * (1 - enter.value)),
+                    child: child,
+                  ),
+              child: child,
+            ),
+          );
+        },
+        child: shown
+            ? KeyedSubtree(key: current, child: child)
+            : SizedBox(key: current, width: double.infinity),
+      ),
+    );
+  }
+}

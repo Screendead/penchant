@@ -229,8 +229,7 @@ Future<void> register(
   // reinstalls and the emulator wipe.
   await FirebaseAuth.instance.signOut();
   await tap(tester, find.byKey(Authenticate.registerTab));
-  // The tabs cross-fade, so both forms' Email fields are in the tree until
-  // sign-in's has gone.
+  // The confirmation fades in as the tab switches.
   final Finder emailField = find.widgetWithText(TextFormField, 'Email');
   await pumpUntilTrue(
     tester,
