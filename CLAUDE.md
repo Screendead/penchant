@@ -109,8 +109,8 @@ Store release); its `+N` is a placeholder. The build number of any shipped build
 rises with every merge and App Store Connect never sees a repeat. Build with the helper's flags, never by hand:
 
 ```bash
-tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
-flags=$(tools/build-version.sh) && flutter build ipa $flags   # bash; zsh needs ${=flags}
+tools/build-version.sh flutter build ipa   # appends --build-name=0.1.0 --build-number=212 as two arguments (needs full history, not a shallow clone)
+tools/build-version.sh                     # no arguments: prints the flags; in zsh expand them with ${=flags}
 ```
 
 To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
