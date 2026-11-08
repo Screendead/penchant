@@ -148,6 +148,8 @@ class _DayDialState extends ConsumerState<DayDial>
     with TickerProviderStateMixin {
   static const SpringDescription _spring = DialMotion.landing;
   static const Duration _springTail = Duration(milliseconds: 700);
+  // The mock-up's ease back from a drag too short to change the day.
+  static const Duration _snapBack = Duration(milliseconds: 220);
 
   late final Ticker _ticker;
   Duration _t = Duration.zero;
@@ -175,6 +177,10 @@ class _DayDialState extends ConsumerState<DayDial>
   final ValueNotifier<DateTime> _clock = ValueNotifier<DateTime>(clock.now());
   Timer? _clockTimer;
   double _drag = 0;
+  // Where a drag caught the dial while it was still easing back.
+  double _dragFrom = 0;
+  double _snapFrom = 0;
+  Duration? _snapStart;
   final ValueNotifier<double> _spin = ValueNotifier<double>(0);
   bool _wasMoving = false;
 
@@ -207,7 +213,9 @@ class _DayDialState extends ConsumerState<DayDial>
       _fadeInAt.clear();
       _awaitingSweep = true;
       _sweepStart = null;
-      if (_outgoing.isNotEmpty && !_reduced) {
+      // Under reduce motion the old day's beads fade where they are rather
+      // than contract.
+      if (_outgoing.isNotEmpty) {
         _contractStart = _start();
       } else {
         _outgoing = const <DialEntry>[];
@@ -258,6 +266,7 @@ class _DayDialState extends ConsumerState<DayDial>
       _fadeStart = null;
       _clearStart = null;
       _contractStart = null;
+      _snapStart = null;
       _ticker.start();
     }
     return _t;
@@ -290,7 +299,8 @@ class _DayDialState extends ConsumerState<DayDial>
       start != null && _t - start < length;
 
   bool _animating() =>
-      _within(_contractStart, DialMotion.dayContract) ||
+      _within(_contractStart, _leaving) ||
+      _within(_snapStart, _snapBack) ||
       _awaitingSweepAfterContract ||
       _within(_sweepStart, DialMotion.daySweep + _springTail) ||
       _within(_fadeStart, DialMotion.reducedFade) ||
@@ -301,6 +311,9 @@ class _DayDialState extends ConsumerState<DayDial>
         (Duration s) => _within(s, DialMotion.reducedFade),
       ) ||
       _within(_clearStart, DialMotion.cleanDayGlow);
+
+  Duration get _leaving =>
+      _reduced ? DialMotion.reducedFade : DialMotion.dayContract;
 
   bool get _awaitingSweepAfterContract =>
       _awaitingSweep && widget.entries != null && _contractStart != null;
@@ -336,8 +349,7 @@ class _DayDialState extends ConsumerState<DayDial>
     }
 
     if (_awaitingSweep) {
-      if (_contractStart != null &&
-          _t - _contractStart! < DialMotion.dayContract) {
+      if (_contractStart != null && _t - _contractStart! < _leaving) {
         return;
       }
       _awaitingSweep = false;
@@ -441,6 +453,24 @@ class _DayDialState extends ConsumerState<DayDial>
       return 1;
     }
     return SpringSimulation(_spring, from, 1, 0).x(seconds);
+  }
+
+  // The dial follows a quarter of the drag, and eases back once let go.
+  double _shift() {
+    if (_snapStart case final Duration start) {
+      final double k = (_t - start).inMicroseconds / _snapBack.inMicroseconds;
+      return k >= 1 ? 0 : _snapFrom * (1 - Curves.easeOut.transform(k));
+    }
+    return _dragFrom + _drag * 0.25;
+  }
+
+  void _release() {
+    setState(() {
+      _snapFrom = _dragFrom + _drag * 0.25;
+      _dragFrom = 0;
+      _drag = 0;
+      _snapStart = _snapFrom == 0 || _reduced ? null : _start();
+    });
   }
 
   // The hand's share of a turn during the day sweep, or null outside one.
@@ -555,8 +585,7 @@ class _DayDialState extends ConsumerState<DayDial>
 
   @override
   Widget build(BuildContext context) {
-    if (_awaitingSweepAfterContract &&
-        _t - _contractStart! >= DialMotion.dayContract) {
+    if (_awaitingSweepAfterContract && _t - _contractStart! >= _leaving) {
       _absorb();
     }
     final DialColors colors = DialColors.of(context);
@@ -568,19 +597,18 @@ class _DayDialState extends ConsumerState<DayDial>
     ).clamp(maxScaleFactor: 1.35);
     final List<DialEntry>? entries = widget.entries;
     final bool contracting =
-        _contractStart != null && _t - _contractStart! < DialMotion.dayContract;
+        _contractStart != null && _t - _contractStart! < _leaving;
+    final double left = contracting
+        ? (_t - _contractStart!).inMicroseconds / _leaving.inMicroseconds
+        : 1;
     final List<DialEntry> shown = contracting
         ? _outgoing
         : entries ?? const <DialEntry>[];
     final Map<String, BeadPlacement> layout = contracting
         ? _outgoingLayout
         : DayDial.layout(shown, stored: widget.storedTypicals);
-    final double contract = contracting
-        ? 1 -
-              DialMotion.exit.transform(
-                (_t - _contractStart!).inMicroseconds /
-                    DialMotion.dayContract.inMicroseconds,
-              )
+    final double contract = contracting && !_reduced
+        ? 1 - DialMotion.exit.transform(left)
         : 1;
     final double clear = entries == null ? 0 : _clearProgress();
 
@@ -599,7 +627,9 @@ class _DayDialState extends ConsumerState<DayDial>
                 centre: centre + p.position * scale * contract,
                 radius: p.radius * scale,
                 scale: contracting ? contract : _beadScale(e.id, p.angle),
-                opacity: contracting ? 1 : _beadOpacity(e.id),
+                opacity: contracting
+                    ? (_reduced ? 1 - left : 1)
+                    : _beadOpacity(e.id),
                 fill: _syncFill(e.id),
                 label: shown.length <= DialFace.timedBeads && !contracting
                     ? (
@@ -675,6 +705,13 @@ class _DayDialState extends ConsumerState<DayDial>
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapUp: (TapUpDetails d) => _onTapUp(d, scale, size),
+            onHorizontalDragStart: widget.onSwipe == null
+                ? null
+                : (DragStartDetails d) => setState(() {
+                    _dragFrom = _shift();
+                    _drag = 0;
+                    _snapStart = null;
+                  }),
             onHorizontalDragUpdate: widget.onSwipe == null
                 ? null
                 : (DragUpdateDetails d) => setState(() => _drag += d.delta.dx),
@@ -682,16 +719,16 @@ class _DayDialState extends ConsumerState<DayDial>
                 ? null
                 : (DragEndDetails d) {
                     final double dx = _drag;
-                    setState(() => _drag = 0);
+                    _release();
                     if (dx > 50) {
                       widget.onSwipe!(-1);
                     } else if (dx < -50) {
                       widget.onSwipe!(1);
                     }
                   },
-            onHorizontalDragCancel: () => setState(() => _drag = 0),
+            onHorizontalDragCancel: _release,
             child: Transform.translate(
-              offset: Offset(_drag * 0.25, 0),
+              offset: Offset(_shift(), 0),
               child: SizedBox.fromSize(
                 size: size,
                 child: Stack(
