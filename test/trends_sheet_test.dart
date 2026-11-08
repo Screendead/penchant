@@ -17,6 +17,7 @@ import 'package:tracker/main.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
@@ -726,5 +727,54 @@ void main() {
     expect(find.textContaining('Coffee for this range'), findsOneWidget);
     expect(inTrends(find.text('Retry')), findsOneWidget);
     expect(calls, greaterThan(0));
+  });
+
+  testWidgets('a new range keeps the chart up while it loads, then morphs '
+      'into it', (WidgetTester tester) async {
+    _usePhone(tester);
+    final List<ViceActivity> entries = <ViceActivity>[
+      for (int ago = 0; ago < 120; ago++) _daysAgo(ago, 1 + ago % 4),
+    ];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          offlineProvider.overrideWithValue(const AsyncData(false)),
+          trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+          ...habitOverrides(<Vice>[_coffee]),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+          // As Firestore answers: a new range's query starts with no value.
+          viceActivityGraphForUserProvider.overrideWith(
+            (ref, key) => Stream<List<ViceActivity>>.fromFuture(
+              Future<List<ViceActivity>>.delayed(
+                const Duration(milliseconds: 48),
+                () => inRange(entries)(key.query).requireValue,
+              ),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: const Scaffold(body: ViceTracker()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await openTrends(tester);
+    expect(_totals(tester), hasLength(30));
+
+    await tester.tap(inTrends(find.text('90D')));
+    final Set<int> lengths = <int>{};
+    for (int i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.byType(TrendsChart), findsOneWidget, reason: 'frame $i');
+      lengths.add(_totals(tester).length);
+    }
+    await tester.pumpAndSettle();
+
+    expect(lengths, containsAll(<int>[30, RangeMorph.samples, 90]));
+    expect(_totals(tester), hasLength(90));
   });
 }

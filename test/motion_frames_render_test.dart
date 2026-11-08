@@ -21,6 +21,7 @@ import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
@@ -29,6 +30,7 @@ import 'package:tracker/writes/rejected_writes.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'trends_harness.dart';
 import 'render_fonts.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
@@ -58,16 +60,52 @@ List<ViceActivity> _entries(DateTime day) => <ViceActivity>[
     ),
 ];
 
-List<Override> _overrides(Stream<bool> offline) => <Override>[
-  ...habitOverrides(_vices),
-  userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-  offlineProvider.overrideWith((ref) => offline),
-  trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
-  memoryJournal(),
-  viceActivityDayProvider.overrideWith(
-    (ref, DateTime day) => AsyncData(_entries(day)),
-  ),
-];
+List<Override> _overrides(Stream<bool> offline, {bool liveGraph = false}) =>
+    <Override>[
+      ...habitOverrides(_vices),
+      userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+      offlineProvider.overrideWith((ref) => offline),
+      trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+      memoryJournal(),
+      viceActivityDayProvider.overrideWith(
+        (ref, DateTime day) => AsyncData(_entries(day)),
+      ),
+      // Live, a new range's query starts with no value, as Firestore's does.
+      if (liveGraph)
+        viceActivityGraphForUserProvider.overrideWith(
+          (ref, key) => Stream<List<ViceActivity>>.fromFuture(
+            Future<List<ViceActivity>>.delayed(
+              const Duration(milliseconds: 48),
+              () => _graph(key.query).requireValue,
+            ),
+          ),
+        )
+      else
+        viceActivityGraphProvider.overrideWith(
+          (ref, ViceActivityGraphQuery query) => _graph(query),
+        ),
+    ];
+
+final AsyncValue<List<ViceActivity>> Function(ViceActivityGraphQuery) _graph =
+    inRange(_history());
+
+// A year and more of the first habit, a few a day, rising and falling.
+List<ViceActivity> _history() {
+  final DateTime today = DateUtils.dateOnly(DateTime.now());
+  return <ViceActivity>[
+    for (int ago = 0; ago < 400; ago++)
+      for (int i = 0; i < 1 + (ago * 7 % 5) + (ago ~/ 30) % 3; i++)
+        fakeActivity(
+          _vices[0].id,
+          1,
+          DateTime(
+            today.year,
+            today.month,
+            today.day - ago,
+          ).add(Duration(hours: 8 + i * 3)),
+        ),
+  ];
+}
 
 Future<void> Function() _recorder(
   WidgetTester tester,
@@ -98,6 +136,7 @@ Future<GlobalKey> _pumpToday(
   Brightness brightness = Brightness.light,
   List<Override> overrides = const <Override>[],
   bool statusBar = false,
+  bool liveGraph = false,
 }) async {
   debugDisableShadows = false;
   tester.view.devicePixelRatio = 2;
@@ -107,7 +146,10 @@ Future<GlobalKey> _pumpToday(
   await tester.pumpWidget(
     ProviderScope(
       overrides: <Override>[
-        ..._overrides(offline ?? Stream<bool>.value(false)),
+        ..._overrides(
+          offline ?? Stream<bool>.value(false),
+          liveGraph: liveGraph,
+        ),
         ...overrides,
       ],
       child: RepaintBoundary(
@@ -234,6 +276,19 @@ void main() {
       await _run(tester, capture, 22);
     }, skip: _dir.isEmpty);
   }
+
+  testWidgets('chart morph between ranges', (WidgetTester tester) async {
+    final GlobalKey frame = await _pumpToday(
+      tester,
+      reduced: false,
+      liveGraph: true,
+    );
+    await openTrends(tester);
+    final Future<void> Function() capture = _recorder(tester, frame, 'morph');
+    await tester.tap(inTrends(find.text('90D')));
+    await tester.pump();
+    await _run(tester, capture, 30);
+  }, skip: _dir.isEmpty);
 
   for (final Brightness brightness in Brightness.values) {
     testWidgets(
