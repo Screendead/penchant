@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
+  habit, instead of a heap of beads. Tap it to open the entry nearest that time.
 - End-to-end encryption is on. The first launch makes your journal key, keeps it in iCloud Keychain, and seals your
   habits' names, units and categories, and any entry triggers, in the background; dates and amounts stay readable
   to the server. Save the recovery key (Settings › Account, or the card Today shows a week in): a device without

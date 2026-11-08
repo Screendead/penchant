@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
@@ -172,6 +173,59 @@ void main() {
     });
   });
 
+  group('a dense hour', () {
+    List<double> minutes(int n, double first, double step) => <double>[
+      for (int i = 0; i < n; i++) first + step * i,
+    ];
+
+    test('merges nothing at 48 entries or fewer', () {
+      expect(denseHours(minutes(48, 480, 2)), isEmpty);
+    });
+
+    test("above 48, merges each hour holding more than one entry", () {
+      expect(
+        denseHours(<double>[...minutes(48, 480, 2), 900, 1200, 1210]),
+        <int>{8, 9, 20},
+      );
+    });
+
+    test("neighbouring hours' arcs are a bead's gap apart", () {
+      final double gap =
+          (HourArc(9).start - HourArc(8).end) * HourArc.track -
+          2 * HourArc.half;
+      expect(gap, closeTo(DialFace.beadGap, 1e-9));
+      expect(HourArc(8).middle, closeTo(dialAngle(510), 1e-9));
+    });
+
+    test('is hit on its band, across 00 too', () {
+      final HourArc arc = HourArc(0);
+      expect(arc.contains(dialPoint(arc.middle, HourArc.track), 0), isTrue);
+      expect(arc.contains(dialPoint(arc.middle, 84), 0), isFalse);
+      expect(arc.contains(dialPoint(dialAngle(90), HourArc.track), 6), isFalse);
+      expect(
+        arc.contains(dialPoint(dialAngle(minutesPerDay - 1), 100), 6),
+        isTrue,
+      );
+      expect(
+        HourArc.minuteAt(dialPoint(dialAngle(510), 50)),
+        closeTo(510, 1e-6),
+      );
+    });
+
+    test('is shared out clockwise in proportion to the counts', () {
+      // At 06 the face runs straight down.
+      final List<Rect> pieces = <Rect>[
+        for (final Path p in HourArc(6).shares(<int>[1, 3])) p.getBounds(),
+      ];
+      final Rect whole = HourArc(6).outline().getBounds();
+      expect(pieces[0].top, closeTo(whole.top, 0.2));
+      expect(pieces[1].bottom, closeTo(whole.bottom, 0.2));
+      expect(pieces[0].center.dy, lessThan(pieces[1].center.dy));
+      // Three times the share, less the round end the first one holds.
+      expect(pieces[1].height, greaterThan(pieces[0].height * 2.5));
+    });
+  });
+
   group('the summary', () {
     final DateTime today = DateTime(2026, 11, 5);
     final List<Vice> habits = <Vice>[
@@ -235,6 +289,31 @@ void main() {
         ),
         '${formatDay(addDays(today, -5))}. Coffee 0 drinks, '
         'Late nights 0 times. Nothing recorded.',
+      );
+    });
+
+    test("an arc names its hour, then each habit's total in habit order", () {
+      DialEntry entry(int h, int hour, int minute, int q) => DialEntry(
+        id: '$h-$hour-$minute',
+        vice: habits[h],
+        mark: HabitMark(h),
+        quantity: q,
+        at: DateTime(2026, 11, 5, hour, minute),
+      );
+      expect(
+        DayDial.arcLabel(8, <DialEntry>[
+          entry(1, 8, 5, 1),
+          entry(0, 8, 10, 2),
+          entry(0, 8, 40, 1),
+        ], alwaysUse24Hour: true),
+        '3 entries from 08:00 to 09:00: Coffee 3 drinks, Late nights 1 time',
+      );
+      expect(
+        DayDial.arcLabel(23, <DialEntry>[
+          entry(0, 23, 5, 1),
+          entry(0, 23, 50, 1),
+        ], alwaysUse24Hour: true),
+        '2 entries from 23:00 to 00:00: Coffee 2 drinks',
       );
     });
 

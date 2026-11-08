@@ -881,6 +881,7 @@ class _DayDialState extends ConsumerState<DayDial>
         centre.dy + bounds.bottom * scale,
       ),
       child: Semantics(
+        container: true,
         label: DayDial.arcLabel(
           a.arc.hour,
           a.entries,

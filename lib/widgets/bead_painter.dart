@@ -127,10 +127,15 @@ void paintHabitBand(
       for (final PathMetric metric in shape.computeMetrics()) {
         for (double d = 0; d < metric.length; d += 4.01) {
           if (metric.getTangentForOffset(d) case final Tangent t) {
-            // A quarter-turn of the tangent points into the shape, which is
-            // traced clockwise.
-            final Offset inward = Offset(-t.vector.dy, t.vector.dx) * 1.2;
-            canvas.drawCircle(t.position + inward, 1.2, dot);
+            // A quarter-turn of the tangent, whichever way points inside.
+            final Offset normal = Offset(-t.vector.dy, t.vector.dx) * 1.2;
+            canvas.drawCircle(
+              shape.contains(t.position + normal)
+                  ? t.position + normal
+                  : t.position - normal,
+              1.2,
+              dot,
+            );
           }
         }
       }
