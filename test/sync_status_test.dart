@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_tracker.dart';
+import 'package:tracker/widgets/pill_drop.dart';
 import 'package:tracker/widgets/sync_status.dart';
 
 import 'fakes.dart';
@@ -172,9 +174,105 @@ void main() {
     await tester.pump();
     expect(find.text(OfflineBanner.message), findsOneWidget);
     offline.add(false);
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text(OfflineBanner.message), findsNothing);
+  });
+
+  group('the offline pill', () {
+    Future<StreamController<bool>> pump(
+      WidgetTester tester, {
+      required bool reduced,
+    }) async {
+      final StreamController<bool> offline = StreamController<bool>();
+      addTearDown(() => unawaited(offline.close()));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [offlineProvider.overrideWith((ref) => offline.stream)],
+          child: MediaQuery(
+            data: MediaQueryData(disableAnimations: reduced),
+            child: const MaterialApp(
+              home: Scaffold(
+                body: Column(children: [OfflineBanner(), Text('Today')]),
+              ),
+            ),
+          ),
+        ),
+      );
+      offline.add(false);
+      await tester.pump();
+      await tester.pump();
+      return offline;
+    }
+
+    double y(WidgetTester tester) => tester
+        .widget<Transform>(
+          // PillDrop's own, not the scroll view's overscroll stretch.
+          find
+              .descendant(
+                of: find.byType(PillDrop),
+                matching: find.byType(Transform),
+              )
+              .first,
+        )
+        .transform
+        .getTranslation()
+        .y;
+
+    testWidgets('drops in on a spring that overshoots, and lifts away', (
+      WidgetTester tester,
+    ) async {
+      final StreamController<bool> offline = await pump(tester, reduced: false);
+      offline.add(true);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(y(tester), lessThan(-50));
+      final List<double> path = <double>[];
+      for (int i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        path.add(y(tester));
+      }
+      // Past its place, then back.
+      expect(path.reduce(max), greaterThan(0.5));
+      await tester.pumpAndSettle();
+      expect(y(tester), moreOrLessEquals(0, epsilon: 0.01));
+
+      offline.add(false);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 110));
+      expect(y(tester), inExclusiveRange(PillDrop.liftTo, 0));
+      await tester.pump(const Duration(milliseconds: 120));
+      await tester.pump();
+      expect(find.text(OfflineBanner.message), findsNothing);
+    });
+
+    testWidgets('only fades under reduce motion', (WidgetTester tester) async {
+      final StreamController<bool> offline = await pump(tester, reduced: true);
+      offline.add(true);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 75));
+      expect(y(tester), 0);
+      final Opacity fade = tester.widget<Opacity>(
+        find
+            .ancestor(
+              of: find.text(OfflineBanner.message),
+              matching: find.byType(Opacity),
+            )
+            .first,
+      );
+      expect(fade.opacity, inExclusiveRange(0.3, 0.7));
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(tester.binding.hasScheduledFrame, isFalse);
+
+      offline.add(false);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(PillDrop.reducedLift);
+      await tester.pump();
+      expect(find.text(OfflineBanner.message), findsNothing);
+    });
   });
 
   test('sustainedOffline reports offline only once the cache has answered '
