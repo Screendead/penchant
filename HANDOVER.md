@@ -166,7 +166,9 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    `MenuBarExtra` embedded at `Contents/Library/LoginItems`, registered with `SMAppService.loginItem` at each app
    launch), after Jack's call below. It reads the widgets' App Group snapshot and queues logs in their `LogQueue`;
    the app writes them, sealed, on its next flush. With the app closed, the helper launches it hidden (no window or
-   Dock icon) to flush and quit (`FlushMode`, PR #167; Jack 2026-11-08: "do it properly"). The in-process popover (#157, #163) is gone, and with it the
+   Dock icon) to flush and quit (`FlushMode`, PR #167; Jack 2026-11-08: "do it properly"). The run leaves its outcome
+   in the App Group; the helper retries a `retry` when the network returns, on wake and on a backoff of about an hour,
+   and says "open Penchant to sync" for a `blocked` one. The in-process popover (#157, #163) is gone, and with it the
    private `enableMultiView` call, which also sent VoiceOver to the wrong view (`FlutterEngine.mm`,
    `update_semantics_callback2`).
 
