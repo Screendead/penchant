@@ -171,7 +171,10 @@ job runs `E2E_DEVICE=macos tools/e2e.sh` on the same runner image, unsigned: the
 profile, and without one the app has no keychain-access-groups entitlement (an ad hoc signature carrying it is killed at
 launch), so Firebase Auth's data-protection keychain fails every sign-in with `keychain-error` (-34018; run
 42227475574). That job deletes the `kSecUseDataProtectionKeychain` lines from its checkout of the Firebase SDK
-before the build, so Auth uses the file keychain. On a push to `master` that touches the rules,
+before the build, so Auth uses the file keychain. It also forces `flutter_secure_storage_darwin`'s
+`params.usesDataProtectionKeychain` to `false` in the pub cache (restored in an `always()` step so the cache post-step
+doesn't save the edit for the iOS job), so the Mac e2e runs the journal key through the file keychain: it covers that
+path, not the data-protection or synced path the shipped app uses. On a push to `master` that touches the rules,
 indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable

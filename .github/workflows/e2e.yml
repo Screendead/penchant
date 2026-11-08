@@ -147,7 +147,7 @@ jobs:
           file=build/macos/SourcePackages/checkouts/firebase-ios-sdk/FirebaseAuth/Sources/Swift/Storage/AuthKeychainServices.swift
           grep -c kSecUseDataProtectionKeychain "$file"
           sed -i '' '/kSecUseDataProtectionKeychain/d' "$file"
-          ! grep -q kSecUseDataProtectionKeychain "$file"
+          if grep -q kSecUseDataProtectionKeychain "$file"; then exit 1; fi
           plugin=$(realpath macos/Flutter/ephemeral/Packages/.packages/flutter_secure_storage_darwin-*/Sources/flutter_secure_storage_darwin/FlutterSecureStorage.swift)
           echo "$plugin" > "$RUNNER_TEMP/secure-storage-plugin"
           sed -i '' 's/, params.usesDataProtectionKeychain {/, false {/' "$plugin"
