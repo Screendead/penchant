@@ -53,18 +53,25 @@ class _PillDropState extends State<PillDrop> with TickerProviderStateMixin {
       if (_reduced) {
         _y.value = 0;
         _fade.duration = DialMotion.reducedFade;
-        _fade.forward(from: 0);
+        _fade.forward();
       } else {
+        // From wherever a lift had got to, or from the top once gone.
+        final bool gone = _fade.value == 0;
         _fade.value = 1;
         _y.animateWith(
-          SpringSimulation(DialMotion.landing, PillDrop.dropFrom, 0, 0),
+          SpringSimulation(
+            DialMotion.landing,
+            gone ? PillDrop.dropFrom : _y.value,
+            0,
+            gone ? 0 : _y.velocity,
+          ),
         );
       }
     } else {
       _lifting = true;
       if (_reduced) {
         _fade.duration = PillDrop.reducedLift;
-        _fade.reverse(from: 1);
+        _fade.reverse();
       } else {
         _y
             .animateTo(
@@ -106,7 +113,14 @@ class _PillDropState extends State<PillDrop> with TickerProviderStateMixin {
         heightFactor: _reduced ? _fade.value : k,
         child: Transform.translate(
           offset: Offset(0, y),
-          child: Opacity(opacity: opacity, child: child),
+          // A pill on its way out no longer takes taps or speaks.
+          child: IgnorePointer(
+            ignoring: _lifting,
+            child: ExcludeSemantics(
+              excluding: _lifting,
+              child: Opacity(opacity: opacity, child: child),
+            ),
+          ),
         ),
       );
     },

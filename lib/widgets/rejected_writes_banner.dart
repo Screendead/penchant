@@ -21,19 +21,56 @@ class _RejectedWritesFrame extends ConsumerWidget {
     // The same tree whether or not the banner shows. WidgetsApp keys the
     // navigator, so a different tree would move it, but the FocusScope it
     // wraps the navigator in has no key and would be rebuilt.
-    return Column(
-      children: [
-        RejectedWritesBanner(rejected: rejected),
-        Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeTop: rejected.isNotEmpty,
-            child: child,
+    // The background fills the status bar and the pill's margins once the
+    // banner has pushed the screen below them.
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: CustomMultiChildLayout(
+        delegate: _BannerOverChild(MediaQuery.paddingOf(context).top),
+        children: <Widget>[
+          LayoutId(id: _Slot.child, child: child),
+          LayoutId(
+            id: _Slot.banner,
+            child: RejectedWritesBanner(rejected: rejected),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+enum _Slot { child, banner }
+
+// The banner sits over the screen's own status-bar inset, which the screen
+// paints, and pushes the screen down only by as much as it is taller than
+// that inset. So the screen follows the banner's height frame by frame
+// rather than losing its inset at once.
+class _BannerOverChild extends MultiChildLayoutDelegate {
+  _BannerOverChild(this.inset);
+
+  final double inset;
+
+  @override
+  void performLayout(Size size) {
+    final double banner = layoutChild(
+      _Slot.banner,
+      BoxConstraints(
+        minWidth: size.width,
+        maxWidth: size.width,
+        maxHeight: size.height,
+      ),
+    ).height;
+    final double push = (banner - inset).clamp(0, size.height);
+    layoutChild(
+      _Slot.child,
+      BoxConstraints.tightFor(width: size.width, height: size.height - push),
+    );
+    positionChild(_Slot.child, Offset(0, push));
+    positionChild(_Slot.banner, Offset.zero);
+  }
+
+  @override
+  bool shouldRelayout(_BannerOverChild old) => inset != old.inset;
 }
 
 class RejectedWritesBanner extends ConsumerWidget {
