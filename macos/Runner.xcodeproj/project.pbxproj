@@ -21,36 +21,46 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		009F905E7BB341DF35C50474 /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9F877B16C2609B9FCACF66F3 /* RedHatMono-Variable.ttf */; };
 		0A5155C5D37EAEAAD45F0641 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B910D8E0F924E2F81F30D7 /* WidgetBridge.swift */; };
+		0C1AFAF212F662234B35FC85 /* PenchantMenuBar.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0DDDF4D0C5D6243847662058 /* PenchantWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F970E3CBCA0C2B733244E8B9 /* PenchantWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		10CE09FC5145BB326A3F1656 /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9F877B16C2609B9FCACF66F3 /* RedHatMono-Variable.ttf */; };
 		111FE357B9DD4B8BC6EB4392 /* WeekDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78FC0142B54D7C48BC8D9D85 /* WeekDial.swift */; };
 		28073CA02C90B6C4FA5958C9 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B69315DCAE9E1922AE61DDC0 /* PenchantWidgets.swift */; };
+		28F4A88ABA52205C3FF10742 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBBB4471838389DFF0ADB8C4 /* SwiftUI.framework */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
-		A17E0F1C2EB0000100C0FFEE /* AuthFieldPlatformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */; };
+		3CE4E13B2DA5F0EA115A872E /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A91B2B3BF4716F9EB880EE5 /* RedHatText-Variable.ttf */; };
 		44B2D5D0EC03B2195CFCD16F /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B12BA0415ED91B06E614F4 /* Theme.swift */; };
 		4963817F7AA5D7C3E1793372 /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D688D99C47DAF3EB6CE12 /* LogIntents.swift */; };
 		62E3670E8675FF21878902FC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */; };
 		6631FEE5A115DB8E4A240EB6 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 940F06C599904E05C899CD50 /* AppShortcuts.swift */; };
-		7A1B2C3D4E5F60718293A4B5 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F60718293A4B6 /* StatusItemController.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		7AB4E74D5161B1364A6CD9DA /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D012DFFBB7E971330F4C7C67 /* LogQueue.swift */; };
 		7B97340733F85F87E42265E2 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 563854C0BE68885493DC8058 /* GoogleService-Info.plist */; };
+		89B5559629BA2E9CEA0F3F61 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */; };
 		8E89365D8F3A5A4568BFBC5E /* LogWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126DABE50E56F335151FD1A5 /* LogWidget.swift */; };
 		97DC1276358958BF4F290229 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D012DFFBB7E971330F4C7C67 /* LogQueue.swift */; };
+		A17E0F1C2EB0000100C0FFEE /* AuthFieldPlatformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */; };
 		A7966F1D5090EE0F45C4BFA3 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = E280143B1E3686494103E12C /* Snapshot.swift */; };
+		AC4852697D9BCD624DC8B456 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6531715F876930270497B5CF /* Cocoa.framework */; };
 		B960088E18CDD5BE0CEE242F /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D688D99C47DAF3EB6CE12 /* LogIntents.swift */; };
+		C5808D32BA2F065D210773D2 /* PenchantMenuBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB7CDA466D35C0B09436F8C /* PenchantMenuBarApp.swift */; };
 		C71589F358F09D6633D5D546 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = E280143B1E3686494103E12C /* Snapshot.swift */; };
+		C7B0688DDE2163539AF416F4 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = E280143B1E3686494103E12C /* Snapshot.swift */; };
 		D0D92605A75AA96FEDA9C590 /* LastWeekWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051A30A0EF28E7B52764F0D9 /* LastWeekWidget.swift */; };
 		D1628B5AA01D8D01437B7A22 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBBB4471838389DFF0ADB8C4 /* SwiftUI.framework */; };
+		DF9056E8344FA340A40AE18E /* RedHatDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 550B6051F6493331E9DA4E96 /* RedHatDisplay-Variable.ttf */; };
 		E7CE27BD529610ADEA4D1B6D /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A91B2B3BF4716F9EB880EE5 /* RedHatText-Variable.ttf */; };
 		E822BAD7DFDB97051EBA6F97 /* RedHatDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 550B6051F6493331E9DA4E96 /* RedHatDisplay-Variable.ttf */; };
 		ED9DDDBCAC38F2AB2AFD9925 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6531715F876930270497B5CF /* Cocoa.framework */; };
 		F8D59162EAE873D0DF97ECC8 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D012DFFBB7E971330F4C7C67 /* LogQueue.swift */; };
+		F9A9BA89A9B66E4D38DC5DBC /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B12BA0415ED91B06E614F4 /* Theme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +85,13 @@
 			remoteGlobalIDString = 1C52F8ED009055183C339AA0;
 			remoteInfo = PenchantWidgets;
 		};
+		D7387F8438353502D5A19EE9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 02B3C9B69D66D9BA4340B89A;
+			remoteInfo = PenchantMenuBar;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -86,6 +103,17 @@
 			files = (
 			);
 			name = "Bundle Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		82F0EE4C69007A92ABB52EAF /* Embed Login Items */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LoginItems;
+			dstSubfolderSpec = 1;
+			files = (
+				0C1AFAF212F662234B35FC85 /* PenchantMenuBar.app in Embed Login Items */,
+			);
+			name = "Embed Login Items";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E4E5259FC905BDF29C751D31 /* Embed Foundation Extensions */ = {
@@ -103,6 +131,7 @@
 
 /* Begin PBXFileReference section */
 		051A30A0EF28E7B52764F0D9 /* LastWeekWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LastWeekWidget.swift; sourceTree = "<group>"; };
+		06D79A1F5130ED90D8A6E9D6 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		126DABE50E56F335151FD1A5 /* LogWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogWidget.swift; sourceTree = "<group>"; };
 		141210E32A3D56DC1D1DD35E /* PenchantWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWidgets.entitlements; sourceTree = "<group>"; };
 		1A91B2B3BF4716F9EB880EE5 /* RedHatText-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatText-Variable.ttf"; sourceTree = "<group>"; };
@@ -115,9 +144,7 @@
 		33CC10F22044A3C60003C045 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Runner/Assets.xcassets; sourceTree = "<group>"; };
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		33CC10F72044A3C60003C045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Runner/Info.plist; sourceTree = "<group>"; };
-		A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthFieldPlatformView.swift; sourceTree = "<group>"; };
 		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
-		7A1B2C3D4E5F60718293A4B6 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
 		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
 		33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Flutter-Generated.xcconfig"; path = "ephemeral/Flutter-Generated.xcconfig"; sourceTree = "<group>"; };
@@ -125,6 +152,7 @@
 		33E51914231749380026EE4D /* Release.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Release.entitlements; sourceTree = "<group>"; };
 		33E5194F232828860026EE4D /* AppInfo.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppInfo.xcconfig; sourceTree = "<group>"; };
 		38B910D8E0F924E2F81F30D7 /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
+		3F8FCB0B6B9E29D1D43F3151 /* PenchantMenuBar.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantMenuBar.entitlements; sourceTree = "<group>"; };
 		47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/WidgetKit.framework; sourceTree = DEVELOPER_DIR; };
 		550B6051F6493331E9DA4E96 /* RedHatDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatDisplay-Variable.ttf"; sourceTree = "<group>"; };
 		563854C0BE68885493DC8058 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -137,7 +165,10 @@
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		99B12BA0415ED91B06E614F4 /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		9F877B16C2609B9FCACF66F3 /* RedHatMono-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatMono-Variable.ttf"; sourceTree = "<group>"; };
+		A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthFieldPlatformView.swift; sourceTree = "<group>"; };
+		A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PenchantMenuBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B69315DCAE9E1922AE61DDC0 /* PenchantWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantWidgets.swift; sourceTree = "<group>"; };
+		BBB7CDA466D35C0B09436F8C /* PenchantMenuBarApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantMenuBarApp.swift; sourceTree = "<group>"; };
 		CF4B074958F4F88A855F58A2 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D012DFFBB7E971330F4C7C67 /* LogQueue.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogQueue.swift; sourceTree = "<group>"; };
 		DBBB4471838389DFF0ADB8C4 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/SwiftUI.framework; sourceTree = DEVELOPER_DIR; };
@@ -168,6 +199,16 @@
 				ED9DDDBCAC38F2AB2AFD9925 /* Cocoa.framework in Frameworks */,
 				62E3670E8675FF21878902FC /* WidgetKit.framework in Frameworks */,
 				D1628B5AA01D8D01437B7A22 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F6B3DF479DC17938CCE012E8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC4852697D9BCD624DC8B456 /* Cocoa.framework in Frameworks */,
+				28F4A88ABA52205C3FF10742 /* SwiftUI.framework in Frameworks */,
+				89B5559629BA2E9CEA0F3F61 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -247,6 +288,7 @@
 				563854C0BE68885493DC8058 /* GoogleService-Info.plist */,
 				131DA2E53F1780F5A350604B /* Frameworks */,
 				595A3786D236D578FEB06057 /* PenchantWidgets */,
+				978F838D922D902CE386CD07 /* PenchantMenuBar */,
 			);
 			sourceTree = "<group>";
 		};
@@ -256,6 +298,7 @@
 				33CC10ED2044A3C60003C045 /* Penchant.app */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 				F970E3CBCA0C2B733244E8B9 /* PenchantWidgets.appex */,
+				A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -289,7 +332,6 @@
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */,
-				7A1B2C3D4E5F60718293A4B6 /* StatusItemController.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -322,9 +364,37 @@
 			path = PenchantWidgets;
 			sourceTree = "<group>";
 		};
+		978F838D922D902CE386CD07 /* PenchantMenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				BBB7CDA466D35C0B09436F8C /* PenchantMenuBarApp.swift */,
+				06D79A1F5130ED90D8A6E9D6 /* Info.plist */,
+				3F8FCB0B6B9E29D1D43F3151 /* PenchantMenuBar.entitlements */,
+			);
+			name = PenchantMenuBar;
+			path = PenchantMenuBar;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		02B3C9B69D66D9BA4340B89A /* PenchantMenuBar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CE63293BF6D12928BF22918 /* Build configuration list for PBXNativeTarget "PenchantMenuBar" */;
+			buildPhases = (
+				DB601AD502E9D54A2E3B7FB6 /* Sources */,
+				F6B3DF479DC17938CCE012E8 /* Frameworks */,
+				496408CFBFAAD6F08112951B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PenchantMenuBar;
+			productName = PenchantMenuBar;
+			productReference = A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */;
+			productType = "com.apple.product-type.application";
+		};
 		1C52F8ED009055183C339AA0 /* PenchantWidgets */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FE1463485E56D8C138E4B497 /* Build configuration list for PBXNativeTarget "PenchantWidgets" */;
@@ -371,6 +441,7 @@
 				33CC110E2044A8840003C045 /* Bundle Framework */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				E4E5259FC905BDF29C751D31 /* Embed Foundation Extensions */,
+				82F0EE4C69007A92ABB52EAF /* Embed Login Items */,
 				5E1A7C0B2D4F4E8A9B3C6D21 /* Upload Crashlytics symbols */,
 			);
 			buildRules = (
@@ -378,6 +449,7 @@
 			dependencies = (
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
 				CF3AEDCE833333F6021E2FD3 /* PBXTargetDependency */,
+				0920B04C58F85D0DA41F8D84 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -398,6 +470,18 @@
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
+					02B3C9B69D66D9BA4340B89A = {
+						CreatedOnToolsVersion = 27.2;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.Mac = {
+								enabled = 1;
+							};
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
+					};
 					1C52F8ED009055183C339AA0 = {
 						CreatedOnToolsVersion = 27.2;
 						ProvisioningStyle = Automatic;
@@ -454,6 +538,7 @@
 				331C80D4294CF70F00263BE5 /* RunnerTests */,
 				33CC111A2044C6BA0003C045 /* Flutter Assemble */,
 				1C52F8ED009055183C339AA0 /* PenchantWidgets */,
+				02B3C9B69D66D9BA4340B89A /* PenchantMenuBar */,
 			);
 		};
 /* End PBXProject section */
@@ -473,6 +558,16 @@
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
 				7B97340733F85F87E42265E2 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		496408CFBFAAD6F08112951B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF9056E8344FA340A40AE18E /* RedHatDisplay-Variable.ttf in Resources */,
+				009F905E7BB341DF35C50474 /* RedHatMono-Variable.ttf in Resources */,
+				3CE4E13B2DA5F0EA115A872E /* RedHatText-Variable.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,7 +674,6 @@
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				A17E0F1C2EB0000100C0FFEE /* AuthFieldPlatformView.swift in Sources */,
-				7A1B2C3D4E5F60718293A4B5 /* StatusItemController.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 				0A5155C5D37EAEAAD45F0641 /* WidgetBridge.swift in Sources */,
@@ -587,6 +681,17 @@
 				C71589F358F09D6633D5D546 /* Snapshot.swift in Sources */,
 				97DC1276358958BF4F290229 /* LogQueue.swift in Sources */,
 				B960088E18CDD5BE0CEE242F /* LogIntents.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DB601AD502E9D54A2E3B7FB6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5808D32BA2F065D210773D2 /* PenchantMenuBarApp.swift in Sources */,
+				C7B0688DDE2163539AF416F4 /* Snapshot.swift in Sources */,
+				7AB4E74D5161B1364A6CD9DA /* LogQueue.swift in Sources */,
+				F9A9BA89A9B66E4D38DC5DBC /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -608,6 +713,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		0920B04C58F85D0DA41F8D84 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PenchantMenuBar;
+			target = 02B3C9B69D66D9BA4340B89A /* PenchantMenuBar */;
+			targetProxy = D7387F8438353502D5A19EE9 /* PBXContainerItemProxy */;
+		};
 		331C80DA294CF71000263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 33CC10EC2044A3C60003C045 /* Runner */;
@@ -688,6 +799,60 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
+		};
+		20C4A2DEFC9E66AB9D525151 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantMenuBar/PenchantMenuBar.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantMenuBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		26ABE5D29354427CE49554C7 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantMenuBar/PenchantMenuBar.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantMenuBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Profile;
 		};
 		331C80DB294CF71000263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1022,6 +1187,33 @@
 			};
 			name = Profile;
 		};
+		DBA0DA077D4771A685B00714 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantMenuBar/PenchantMenuBar.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantMenuBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1061,6 +1253,16 @@
 				33CC111C2044C6BA0003C045 /* Debug */,
 				33CC111D2044C6BA0003C045 /* Release */,
 				338D0CEB231458BD00FA5F75 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4CE63293BF6D12928BF22918 /* Build configuration list for PBXNativeTarget "PenchantMenuBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DBA0DA077D4771A685B00714 /* Release */,
+				20C4A2DEFC9E66AB9D525151 /* Debug */,
+				26ABE5D29354427CE49554C7 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

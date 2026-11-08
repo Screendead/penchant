@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,8 +16,6 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
-import 'package:tracker/menu_bar/app_views.dart';
-import 'package:tracker/menu_bar/menu_bar_popover.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
@@ -65,10 +62,6 @@ Future<void> backgroundFlushMain() async {
 
 // main() without the global error handlers, which flutter_test owns.
 void startApp() {
-  if (defaultTargetPlatform == TargetPlatform.macOS) {
-    _startMacApp();
-    return;
-  }
   runApp(
     ProviderScope(
       observers: const [ReportProviderErrors()],
@@ -76,27 +69,6 @@ void startApp() {
       // Every provider reaches Firebase when first read, and nothing reads one
       // until MyApp builds, after Firebase has started.
       child: const Bootstrap(initialize: initializeFirebase, child: MyApp()),
-    ),
-  );
-}
-
-// The Mac app has a second view, the status item's popover, so it renders
-// through runWidget rather than runApp, which draws the main window alone.
-void _startMacApp() {
-  final ValueNotifier<bool> started = ValueNotifier<bool>(false);
-  Future<void> initialize() async {
-    await initializeFirebase();
-    started.value = true;
-  }
-
-  runWidget(
-    ProviderScope(
-      observers: const [ReportProviderErrors()],
-      overrides: keyServiceOverrides,
-      child: AppViews(
-        main: Bootstrap(initialize: initialize, child: const MyApp()),
-        popover: MenuBarPopover(started: started),
-      ),
     ),
   );
 }
