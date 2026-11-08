@@ -9,6 +9,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Settings has a Reduce motion row: Follow system, Reduce or Full, saved on each device. Reduce swaps travel and sweeps
+  for short fades; Full keeps the motion even when the system asks for less.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
   habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
   latest entry, and its actions list every entry.

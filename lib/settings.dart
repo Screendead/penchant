@@ -13,6 +13,8 @@ import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/providers/appearance_provider.dart';
+import 'package:tracker/providers/reduce_motion_provider.dart';
+import 'package:tracker/reduce_motion_settings.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
@@ -211,6 +213,14 @@ class _SettingsState extends ConsumerState<Settings> {
               glyph: DialGlyph.right,
               onTap: () {
                 Navigator.of(context).pushNamed(AppearanceSettings.route);
+              },
+            ),
+            CardRow(
+              label: 'Reduce motion',
+              value: Text(motionRowValue(ref.watch(reduceMotionProvider))),
+              glyph: DialGlyph.right,
+              onTap: () {
+                Navigator.of(context).pushNamed(ReduceMotionSettings.route);
               },
             ),
             if (sealing != null)

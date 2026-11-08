@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/appearance_settings.dart';
+import 'package:tracker/reduce_motion_settings.dart';
+import 'package:tracker/widgets/reduce_motion_scope.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
@@ -106,10 +108,12 @@ class _MyAppState extends ConsumerState<MyApp> {
             ? const AuthStateLoading()
             : const Authenticate(),
         onGenerateRoute: generateRoute,
-        builder: (BuildContext context, Widget? child) => AppMenuBar(
-          child: rejectedWritesBuilder(
-            context,
-            RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+        builder: (BuildContext context, Widget? child) => ReduceMotionScope(
+          child: AppMenuBar(
+            child: rejectedWritesBuilder(
+              context,
+              RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+            ),
           ),
         ),
       ),
@@ -176,6 +180,8 @@ Widget routePage(String? name) {
       return const AccountSettings();
     case ['settings', 'appearance']:
       return const AppearanceSettings();
+    case ['settings', 'reduce-motion']:
+      return const ReduceMotionSettings();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
     default:
