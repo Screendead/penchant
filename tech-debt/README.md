@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**11 issues: 0 critical, 0 high, 4 medium, 7 low.**
+**10 issues: 0 critical, 0 high, 4 medium, 6 low.**
 
 ## Firebase Data Layer (5)
 
@@ -63,11 +63,10 @@ The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
 - **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
 
-## CI and Quality Gates (2)
+## CI and Quality Gates (1)
 
 Test depth and what CI runs.
 
-- **low** — [The e2e record helper can lose the typed quantity](ci-and-quality-gates/record-helper-can-lose-the-quantity.md)
 - **low** — [Three template tests still run and check nothing about the app](ci-and-quality-gates/template-tests-check-nothing.md)
 
 ## Repo, Docs and Release Hygiene (1)
