@@ -18,6 +18,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- The recovery key box on the unlock screen is one line high where the key fits, instead of leaving an empty
+  second line under it.
 - Switching between Sign in and Create account is smooth: Email and Password stay put and keep what you typed,
   while the password confirmation and checklist ease in or out in step with the tab instead of the screen jumping.
 - iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and
