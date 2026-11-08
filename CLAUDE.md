@@ -537,3 +537,14 @@ A habit's colour is its creation order, oldest first and archived habits include
 whose `style` is filled for habits 1-5, a ring for 6-10 and a dotted ring for 11-15, repeating after that. Pass it
 `viceListProvider`'s full list, not the unarchived one, or archiving a habit recolours the ones after it. Equal
 `createdAt`s are ordered by id. It is computed on the device and stores nothing.
+
+**Native auth fields on macOS.** Flutter's macOS text input has no real AutoFill: the engine's
+`shell/platform/darwin/macos/framework/Source/FlutterTextInputPlugin.mm` only sets an `NSTextContentType` on a
+zero-frame `NSTextView`, with no autofill groups and no `finishAutofillContext`, so Passwords never offers to fill.
+On macOS the sign-in form's Email and Password `AuthField`s (those given a `nativeKind`) are therefore an
+`NSTextField` (`.username`) and an `NSSecureTextField` (`.password`, or `.newPassword` on macOS 14+ when
+registering) hosted as `AppKitView` platform views (`macos/Runner/AuthFieldPlatformView.swift`,
+`lib/widgets/native_auth_field.dart`), one method channel `penchant/auth_field/<view id>` each. The native side
+reports text, Return, Tab and focus, and also polls the value, since AutoFill may set it without telling the
+delegate. Confirm password stays a Flutter field. Tests run as non-macOS and get the Flutter fields;
+`debugUseNativeAuthFields` forces the native path. iOS keeps the Flutter fields, whose AutoFill works.

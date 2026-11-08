@@ -15,6 +15,7 @@ pull request titles (`gh pr list --state merged`).
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- On the Mac, the sign-in Email and Password fields offer AutoFill from Passwords, as on iPhone.
 
 ### Fixed
 
