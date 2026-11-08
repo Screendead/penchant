@@ -7,7 +7,7 @@ hollow, turning rim until the server acknowledges it; the arc paints its habits'
 entry in it is pending, so an entry logged offline into a busy hour looks synced on the dial. The day's pending note
 under the dial and the arc's screen-reader label ("N not yet synced") still say it.
 
-## Evidence
+## Evidence (at `feat/dense-hour-arc`, 2026-11-08)
 
-- `lib/widgets/day_dial.dart:1324` — `pending: b.entry.pending,` (beads pass it to the painter)
-- `lib/widgets/day_dial.dart:1359` — `paintHabitBand(canvas, pieces[i], shares[i].mark, colors);` (arcs pass nothing)
+- `lib/widgets/day_dial.dart:1337` — `pending: b.entry.pending,` (beads pass it to the painter)
+- `lib/widgets/day_dial.dart:1372` — `paintHabitBand(canvas, pieces[i], shares[i].mark, colors);` (arcs pass nothing)

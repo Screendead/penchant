@@ -189,6 +189,22 @@ class DayDial extends ConsumerStatefulWidget {
 
   static const String arcHint = 'Opens the latest entry';
 
+  // One action label per entry of an arc. Actions with one label are one
+  // action, so entries that read alike are numbered.
+  static List<(String, DialEntry)> arcActions(
+    List<DialEntry> entries, {
+    required bool alwaysUse24Hour,
+  }) {
+    final Map<String, int> seen = <String, int>{};
+    final List<(String, DialEntry)> actions = <(String, DialEntry)>[];
+    for (final DialEntry e in entries) {
+      final String label = beadLabel(e, alwaysUse24Hour: alwaysUse24Hour);
+      final int k = seen[label] = (seen[label] ?? 0) + 1;
+      actions.add((k == 1 ? label : '$label ($k)', e));
+    }
+    return actions;
+  }
+
   static String arcLabel(
     int hour,
     List<DialEntry> entries, {
@@ -905,14 +921,11 @@ class _DayDialState extends ConsumerState<DayDial>
         customSemanticsActions: open == null
             ? null
             : <CustomSemanticsAction, VoidCallback>{
-                for (final DialEntry e in a.entries)
-                  CustomSemanticsAction(
-                    label: DayDial.beadLabel(
-                      e,
-                      alwaysUse24Hour: alwaysUse24Hour,
-                    ),
-                  ): () =>
-                      open(e),
+                for (final (String label, DialEntry e) in DayDial.arcActions(
+                  a.entries,
+                  alwaysUse24Hour: alwaysUse24Hour,
+                ))
+                  CustomSemanticsAction(label: label): () => open(e),
               },
         child: const SizedBox.expand(),
       ),

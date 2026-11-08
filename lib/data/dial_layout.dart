@@ -107,8 +107,8 @@ class BeadPlacement {
 // neighbours on one track would touch: those are pushed apart along the arc
 // until their edges are [DialFace.beadGap] apart, never off the track. The
 // [arcs] hold still on their track and push its beads clear the same way.
-// Between two arcs an hour has about 24.7 units of track, so a bead wider
-// than that settles between them and overlaps both ends.
+// Between two arcs an hour has about 24.7 units of track; a bead too wide
+// for that sits midway, overlapping both arcs equally.
 Map<String, BeadPlacement> layoutBeads(
   Iterable<DialBeadInput> beads, {
   Iterable<HourArc> arcs = const <HourArc>[],
@@ -176,6 +176,25 @@ Map<String, BeadPlacement> layoutBeads(
           onTrack.first,
           onTrack.first.angle + 2 * pi - onTrack.last.angle,
         );
+      }
+    }
+
+    // A pass pushes a bead the whole way off each arc in turn, so one that
+    // fits between neither would end up overlapping only the second.
+    final int n = onTrack.length;
+    for (int i = 0; n >= 3 && i < n; i++) {
+      final _Slot s = onTrack[i];
+      final _Slot before = onTrack[(i - 1 + n) % n];
+      final _Slot after = onTrack[(i + 1) % n];
+      if (s.fixed || !before.fixed || !after.fixed) {
+        continue;
+      }
+      final double from =
+          before.angle + before.radius / track - (i == 0 ? 2 * pi : 0);
+      final double to =
+          after.angle - after.radius / track + (i == n - 1 ? 2 * pi : 0);
+      if ((to - from) * track < 2 * (s.radius + DialFace.beadGap)) {
+        s.angle = (from + to) / 2;
       }
     }
   }

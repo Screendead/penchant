@@ -227,6 +227,57 @@ void main() {
       }
     });
 
+    test('centres a bead too wide for the gap between two arcs', () {
+      const double cap = HourArc.half / HourArc.track;
+      final BeadPlacement p = layoutBeads(
+        const <DialBeadInput>[
+          DialBeadInput(id: 'a', habit: 'h', minute: 610, radius: 14),
+        ],
+        arcs: <HourArc>[HourArc(9), HourArc(11)],
+      )['a']!;
+      final double before = (p.angle - (HourArc(9).end + cap)) * HourArc.track;
+      final double after = (HourArc(11).start - cap - p.angle) * HourArc.track;
+      expect(before, closeTo(after, 1e-6));
+      expect(before, lessThan(14));
+    });
+
+    test("numbers an arc's entries that read alike, so each is an action", () {
+      final Vice coffee = Vice(
+        id: 'c',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: fakeVice('c').createdAt,
+        archived: false,
+      );
+      DialEntry at(String id, int minute) => DialEntry(
+        id: id,
+        vice: coffee,
+        mark: const HabitMark(0),
+        quantity: 1,
+        at: DateTime(2026, 11, 5, 8, minute),
+      );
+      final List<(String, DialEntry)> actions = DayDial.arcActions(<DialEntry>[
+        at('a', 5),
+        at('b', 5),
+        at('c', 7),
+        at('d', 5),
+      ], alwaysUse24Hour: true);
+      expect(
+        <String>[for (final (String l, _) in actions) l],
+        <String>[
+          'Coffee, 1 drink at 08:05',
+          'Coffee, 1 drink at 08:05 (2)',
+          'Coffee, 1 drink at 08:07',
+          'Coffee, 1 drink at 08:05 (3)',
+        ],
+      );
+      expect(
+        <String>[for (final (_, DialEntry e) in actions) e.id],
+        <String>['a', 'b', 'c', 'd'],
+      );
+    });
+
     test('a point on the face reads as its minute, across 00 too', () {
       expect(
         HourArc.minuteAt(dialPoint(dialAngle(510), 50)),
