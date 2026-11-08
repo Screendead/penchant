@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
+  step and energy totals from Apple Health, read-only and kept on the device. Nothing asks for access or shows them
+  yet.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
   lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. Logs made while the
   app is closed wait, marked "Saved — syncs when Penchant opens", and the app saves them when it next opens. Closing
