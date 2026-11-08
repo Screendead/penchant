@@ -24,7 +24,9 @@ import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -32,6 +34,13 @@ import 'trends_harness.dart';
 import 'render_fonts.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
+
+class _Rejected extends RejectedWrites {
+  @override
+  List<RejectedWrite> build() => const <RejectedWrite>[];
+
+  void show(List<RejectedWrite> rejected) => state = rejected;
+}
 
 final List<Vice> _vices = <Vice>[fakeVice('Coffee'), fakeVice('Tea')];
 
@@ -112,6 +121,9 @@ Future<GlobalKey> _pumpToday(
   required bool reduced,
   GlobalKey<NavigatorState>? navigator,
   Stream<bool>? offline,
+  Brightness brightness = Brightness.light,
+  List<Override> overrides = const <Override>[],
+  bool statusBar = false,
 }) async {
   debugDisableShadows = false;
   tester.view.devicePixelRatio = 2;
@@ -120,7 +132,10 @@ Future<GlobalKey> _pumpToday(
   final GlobalKey frame = GlobalKey();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: _overrides(offline ?? Stream<bool>.value(false)),
+      overrides: <Override>[
+        ..._overrides(offline ?? Stream<bool>.value(false)),
+        ...overrides,
+      ],
       child: RepaintBoundary(
         key: frame,
         child: MediaQuery(
@@ -128,12 +143,14 @@ Future<GlobalKey> _pumpToday(
             size: const Size(390, 844),
             devicePixelRatio: 2,
             disableAnimations: reduced,
+            padding: EdgeInsets.only(top: statusBar ? 47 : 0),
           ),
           child: MaterialApp(
             navigatorKey: navigator,
             onGenerateRoute: generateRoute,
             debugShowCheckedModeBanner: false,
-            theme: appTheme(Brightness.light),
+            theme: appTheme(brightness),
+            builder: statusBar ? rejectedWritesBuilder : null,
             home: const Scaffold(
               body: SafeArea(
                 child: Column(
@@ -245,11 +262,62 @@ void main() {
   }
 
   testWidgets('chart morph between ranges', (WidgetTester tester) async {
-    final GlobalKey frame = await _pumpToday(tester, reduced: false);
+    // As Firestore answers: a new range's query starts with no value.
+    final GlobalKey frame = await _pumpToday(
+      tester,
+      reduced: false,
+      overrides: <Override>[
+        viceActivityGraphForUserProvider.overrideWith(
+          (ref, key) => Stream<List<ViceActivity>>.fromFuture(
+            Future<List<ViceActivity>>.delayed(
+              const Duration(milliseconds: 48),
+              () => _graph(key.query).requireValue,
+            ),
+          ),
+        ),
+      ],
+    );
     await openTrends(tester);
     final Future<void> Function() capture = _recorder(tester, frame, 'morph');
     await tester.tap(inTrends(find.text('90D')));
     await tester.pump();
     await _run(tester, capture, 30);
   }, skip: _dir.isEmpty);
+
+  for (final Brightness brightness in Brightness.values) {
+    testWidgets(
+      'refused-write pill under a status bar, ${brightness.name}',
+      (WidgetTester tester) async {
+        final GlobalKey frame = await _pumpToday(
+          tester,
+          reduced: false,
+          brightness: brightness,
+          statusBar: true,
+          overrides: <Override>[
+            rejectedWritesProvider.overrideWith(_Rejected.new),
+          ],
+        );
+        final Future<void> Function() capture = _recorder(
+          tester,
+          frame,
+          'rejected-${brightness.name}',
+        );
+        await capture();
+        (ProviderScope.containerOf(
+                  tester.element(find.byType(ViceTracker)),
+                ).read(rejectedWritesProvider.notifier)
+                as _Rejected)
+            .show(const <RejectedWrite>[
+              RejectedWrite('Not saved: Coffee, 1 cup, today 09:10', null),
+            ]);
+        await tester.pump();
+        await _run(tester, capture, 30);
+        debugDisableShadows = false;
+        await tester.tap(find.text(RejectedWritesBanner.dismissLabel));
+        await tester.pump();
+        await _run(tester, capture, 20);
+      },
+      skip: _dir.isEmpty,
+    );
+  }
 }
