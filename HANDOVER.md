@@ -162,6 +162,12 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    - **macOS widgets** (`r10-mac-widgets` A): the same WidgetKit code as a Mac extension, built with the iPhone
      widgets, for the desktop and Notification Centre. It depends on the journal key reaching the Mac (P2).
    The idea file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
+   Status 2026-11-08: the Mac menu bar app is a draft (`feat/mac-menu-bar`, #157), blocked at runtime. The popover
+   hosts a second `FlutterViewController` on the main engine, but at Flutter 3.44 the macOS engine accepts a second
+   controller only after `enableMultiView` (private), which has to run before any controller is attached. Then the
+   main window is no longer the implicit view, and the engine sends semantics (VoiceOver) to the implicit view alone
+   (`FlutterEngine.mm`, `update_semantics_callback2`). As built, opening the popover hits "The engine already has a
+   view controller for the implicit view." The options for the next step are in #157.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 

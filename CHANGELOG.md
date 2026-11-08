@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- On the Mac, Penchant sits in the menu bar: its popover shows today's dial with your habits below it. A click on a habit
+  logs one now, and that habit's row offers Undo for five seconds. Closing the window no longer quits the app; click the
+  Dock icon or Open Penchant to bring it back.
 - A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
   last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
   you sign out.

@@ -86,7 +86,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   @override
   void initState() {
     super.initState();
-    _logTarget.log = _logNow;
+    _logTarget.add(_logNow);
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
@@ -122,9 +122,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
   @override
   void dispose() {
-    if (_logTarget.log == _logNow) {
-      _logTarget.log = null;
-    }
+    _logTarget.remove(_logNow);
     _position.dispose();
     _sheet.dispose();
     super.dispose();
@@ -237,30 +235,14 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     HabitMark markOf(Vice vice) => marks[vice.id] ?? const HabitMark(0);
     final List<Vice>? vices = listed == null ? null : tallyOrder(listed, marks);
     final List<ViceActivity>? activities = activitiesValue.value;
-    final Map<String, Vice> byID = <String, Vice>{
-      for (final Vice vice in vices ?? const <Vice>[]) vice.id: vice,
-    };
     // Archived habits' entries stay off Today, as do those of a habit gone.
     final List<DialEntry>? entries = vices == null || activities == null
         ? null
-        : <DialEntry>[
-            for (final ViceActivity a in activities)
-              if (byID[a.viceID] case final Vice vice)
-                DialEntry(
-                  id: a.id,
-                  vice: vice,
-                  mark: markOf(vice),
-                  quantity: a.measure,
-                  at: a.createdAt.toDate(),
-                  pending: a.pending,
-                ),
-          ];
-    final Map<String, num> totals = <String, num>{
-      for (final Vice vice in vices ?? const <Vice>[]) vice.id: 0,
-    };
-    for (final DialEntry e in entries ?? const <DialEntry>[]) {
-      totals[e.vice.id] = totals[e.vice.id]! + e.quantity;
-    }
+        : dialEntries(vices, activities, markOf);
+    final Map<String, num> totals = dayTotals(
+      vices ?? const <Vice>[],
+      entries ?? const <DialEntry>[],
+    );
     final bool offline = ref.watch(offlineProvider).value ?? false;
     final int? guestDaysLeft = ref.watch(guestDaysLeftProvider);
     final Widget? guestBanner =

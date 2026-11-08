@@ -36,6 +36,7 @@
 		4963817F7AA5D7C3E1793372 /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D688D99C47DAF3EB6CE12 /* LogIntents.swift */; };
 		62E3670E8675FF21878902FC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */; };
 		6631FEE5A115DB8E4A240EB6 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 940F06C599904E05C899CD50 /* AppShortcuts.swift */; };
+		7A1B2C3D4E5F60718293A4B5 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F60718293A4B6 /* StatusItemController.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7B97340733F85F87E42265E2 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 563854C0BE68885493DC8058 /* GoogleService-Info.plist */; };
 		8E89365D8F3A5A4568BFBC5E /* LogWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126DABE50E56F335151FD1A5 /* LogWidget.swift */; };
@@ -114,6 +115,7 @@
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		33CC10F72044A3C60003C045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Runner/Info.plist; sourceTree = "<group>"; };
 		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
+		7A1B2C3D4E5F60718293A4B6 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
 		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
 		33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Flutter-Generated.xcconfig"; path = "ephemeral/Flutter-Generated.xcconfig"; sourceTree = "<group>"; };
@@ -284,6 +286,7 @@
 			children = (
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
+				7A1B2C3D4E5F60718293A4B6 /* StatusItemController.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -572,6 +575,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
+				7A1B2C3D4E5F60718293A4B5 /* StatusItemController.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 				0A5155C5D37EAEAAD45F0641 /* WidgetBridge.swift in Sources */,
