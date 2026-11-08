@@ -9,6 +9,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- On the Mac, Penchant sits in the menu bar: its popover shows today's dial with your habits below it, and a click on a
+  habit logs one now, with Undo for five seconds. Closing the window no longer quits the app; click the Dock icon or
+  Open Penchant to bring it back.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
   habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
   latest entry, and its actions list every entry.
