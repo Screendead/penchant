@@ -254,6 +254,7 @@ class _FanPageState extends State<_FanPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _open = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration:
         DialMotion.fanStagger * widget.route.count +
         const Duration(milliseconds: 700),

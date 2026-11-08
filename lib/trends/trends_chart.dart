@@ -623,15 +623,18 @@ class RangeMorph extends StatefulWidget {
 class _RangeMorphState extends State<RangeMorph>
     with SingleTickerProviderStateMixin {
   late final AnimationController _t =
-      AnimationController(vsync: this, duration: DialMotion.chartMorph)
-        ..addStatusListener((AnimationStatus status) {
-          if (status.isCompleted) {
-            setState(() {
-              _from = null;
-              _handoff = true;
-            });
-          }
-        });
+      AnimationController(
+        vsync: this,
+        animationBehavior: AnimationBehavior.preserve,
+        duration: DialMotion.chartMorph,
+      )..addStatusListener((AnimationStatus status) {
+        if (status.isCompleted) {
+          setState(() {
+            _from = null;
+            _handoff = true;
+          });
+        }
+      });
   MorphFrame? _from;
   bool _handoff = false;
 

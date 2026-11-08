@@ -43,6 +43,7 @@ class _TallyRowState extends State<TallyRow>
 
   late final AnimationController _flash = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration: _flashLength,
     value: 0,
   );

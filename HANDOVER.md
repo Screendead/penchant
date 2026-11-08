@@ -228,6 +228,14 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   `tech-debt/auth-and-account-lifecycle/` (clipboard), the release-pipeline idea (export compliance) and the privacy
   idea (Crashlytics scrubbing).
 - **D15.** Close draft #128 (the keychain probe, CONFLICTING, "not for merge") once P2 no longer needs it. S.
+- **D16.** Reduce motion row in Settings (`r10-reduce-motion` B, Jack, 2026-11-08): Follow system / Reduce / Full, saved
+  per device in `shared_preferences`. PR #153 (`feat/reduce-motion-setting`). Full cannot bring back motion the
+  framework scales itself: while iOS Reduce Motion is on, every default `AnimationController` runs at 5% of its length
+  and no release-mode API turns that off. So Full covers the app's own controllers (`AnimationBehavior.preserve`: dial,
+  log fan, tallies, day picker, Undo timer, status pills (`PillDrop`), the Trends range morph (`RangeMorph`)) and pushed
+  pages (`DialPageRoute`); sheets, dialogs and implicit animations (segment thumbs, label fades) still follow the
+  system, and the page's foot copy says so. Open: a custom `WidgetsFlutterBinding` overriding
+  `SemanticsBinding.disableAnimations` would cover the rest (inferred, untested).
 
 **Were UNDECIDED; all decided in round 10 (2026-11-08)** (U1 to U8; see Jack's calls, round 10, below):
 
