@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -16,8 +15,7 @@ Future<void> _relaunch(WidgetTester tester) =>
     tester.pumpWidget(ProviderScope(key: UniqueKey(), child: const MyApp()));
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -33,7 +31,7 @@ void main() {
     await _relaunch(tester);
     expect(find.byType(Authenticate), findsNothing);
     await pumpUntilNeverShowing(tester, find.byType(Homepage), <String>[
-      'Sign In to Your Account',
+      'A private journal of your days.',
     ]);
 
     await FirebaseAuth.instance.signOut();

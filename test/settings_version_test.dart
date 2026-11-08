@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:tracker/providers/package_info_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
 
 void main() {
@@ -10,6 +11,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          userProvider.overrideWith((ref) => Stream.value(null)),
+          userProfileProvider.overrideWith((ref) => Stream.value(null)),
           packageInfoProvider.overrideWith(
             (ref) async => PackageInfo(
               appName: 'tracker',
@@ -24,11 +27,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Version 0.1.0 (212)'), findsOneWidget);
+    expect(find.text('0.1.0 (212)'), findsOneWidget);
 
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
     expect(find.byType(AboutDialog), findsOneWidget);
-    expect(find.text('Version 0.1.0 (212)'), findsNWidgets(2));
+    expect(find.text('Version 0.1.0 (212)'), findsOneWidget);
   });
 }

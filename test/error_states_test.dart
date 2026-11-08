@@ -9,7 +9,6 @@ import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
-import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
@@ -23,15 +22,15 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/vice_chart.dart';
+import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fake_account.dart';
 import 'fakes.dart';
+import 'trends_harness.dart';
 
 FirebaseException _firestoreError(String code) => FirebaseException(
   plugin: 'cloud_firestore',
@@ -209,7 +208,7 @@ void main() {
         viceActivityDayForUserProvider.overrideWith(
           (ref, key) => Stream.value(<ViceActivity>[]),
         ),
-      ], ViceChart(selectedDate: startOfDay(DateTime.now())));
+      ], const Scaffold(body: ViceTracker()));
 
       expect(find.text(loadErrorMessage('this day', _denied)), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -234,7 +233,7 @@ void main() {
           (ref, uid) => Stream.value([coffee]),
         ),
         viceActivityDayForUserProvider.overrideWith((ref, key) => day.listen()),
-      ], ViceChart(selectedDate: startOfDay(DateTime.now())));
+      ], const Scaffold(body: ViceTracker()));
 
       expect(find.text(loadErrorMessage('this day', _denied)), findsOneWidget);
 
@@ -245,43 +244,22 @@ void main() {
     });
   });
 
-  group('the usage graph', () {
-    testWidgets('a failed vice list shows the error and Retry recovers', (
-      WidgetTester tester,
-    ) async {
-      final _FailsOnce<List<Vice>> vices = _FailsOnce<List<Vice>>(
-        _denied,
-        <Vice>[],
-      );
-      await _pump(tester, [
-        viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
-      ], const Scaffold(body: UsageGraphView()));
-
-      expect(
-        find.text(loadErrorMessage('your vices', _denied)),
-        findsOneWidget,
-      );
-
-      await _tapRetry(tester);
-
-      expect(find.text('No vices available to graph'), findsOneWidget);
-    });
-
+  group('the Trends sheet', () {
     testWidgets("a failed range query shows the error in the chart's place", (
       WidgetTester tester,
     ) async {
       final _FailsOnce<List<ViceActivity>> range =
           _FailsOnce<List<ViceActivity>>(_denied, <ViceActivity>[]);
       await _pump(tester, [
-        viceListForUserProvider.overrideWith(
-          (ref, uid) => Stream.value([coffee]),
+        ...habitOverrides([coffee]),
+        viceActivityDayProvider.overrideWith(
+          (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
         ),
         viceActivityGraphForUserProvider.overrideWith(
           (ref, key) => range.listen(),
         ),
-      ], const Scaffold(body: UsageGraphView()));
-      // The range query starts only once the vice list has arrived.
-      await tester.pump();
+      ], const Scaffold(body: ViceTracker()));
+      await openTrends(tester);
 
       expect(
         find.text(loadErrorMessage('coffee for this range', _denied)),
@@ -292,10 +270,7 @@ void main() {
       await _tapRetry(tester);
 
       expect(range.listens, 2);
-      expect(
-        find.text('No activities found for coffee in the selected range'),
-        findsOneWidget,
-      );
+      expect(find.text('No entries for coffee in this range'), findsOneWidget);
     });
   });
 
@@ -312,18 +287,18 @@ void main() {
       ], const ManageData());
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
       await _expectNoAutomaticRetry(tester, vices);
 
       await _tapRetry(tester);
 
-      expect(find.text('No vices yet. Tap + to add one.'), findsOneWidget);
+      expect(find.text('No habits yet. Tap + to add one.'), findsOneWidget);
     });
   });
 
-  group('Edit Vice', () {
+  group('Edit Habit', () {
     testWidgets('a failed vice list shows the error and Retry opens the form', (
       WidgetTester tester,
     ) async {
@@ -335,7 +310,7 @@ void main() {
       ], EditVice(viceID: coffee.id));
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
 
@@ -369,7 +344,7 @@ void main() {
       await _tapRetry(tester);
 
       expect(history.listens, 2);
-      expect(find.text('No activities found for this vice'), findsOneWidget);
+      expect(find.text(ViceActivityHistoryPage.empty), findsOneWidget);
     });
 
     testWidgets('a list still loading is a spinner, not an error', (
@@ -447,7 +422,7 @@ void main() {
       ], const Scaffold(body: RecordNewActivityDialog()));
 
       expect(
-        find.text(loadErrorMessage('your vices', _denied)),
+        find.text(loadErrorMessage('your habits', _denied)),
         findsOneWidget,
       );
       expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);

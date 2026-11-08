@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -13,8 +13,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'support.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -43,11 +42,16 @@ void main() {
         child: const MyApp(),
       ),
     );
-    await register(tester, 'e2e-denied-read@example.com');
+    // A list that fails to load shows no onboarding.
+    await register(
+      tester,
+      'e2e-denied-read@example.com',
+      skipOnboarding: false,
+    );
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     final String denied = loadErrorMessage(
-      'your vices',
+      'your habits',
       FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied'),
     );
     await pumpUntil(tester, find.text(denied));
@@ -63,7 +67,7 @@ void main() {
         matching: find.widgetWithText(TextButton, 'Retry'),
       ),
     );
-    await pumpUntil(tester, find.text('No vices yet. Tap + to add one.'));
+    await pumpUntil(tester, find.text('No habits yet. Tap + to add one.'));
     expect(find.text(denied), findsNothing);
   });
 }

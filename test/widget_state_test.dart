@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -25,17 +26,20 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/usage_graph_view.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/vice_chart.dart';
+import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/undo_bar.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'trends_harness.dart';
 
 class _FakeToday extends Today {
   _FakeToday(this._start);
@@ -96,6 +100,7 @@ void main() {
           overrides: [
             userProvider.overrideWith((ref) => auth.stream),
             accountProvider.overrideWithValue(FakeAccount()),
+            memoryJournal(),
           ],
           child: const MyApp(),
         ),
@@ -111,6 +116,50 @@ void main() {
       expect(find.byType(AuthStateLoading), findsNothing);
       expect(find.byType(Authenticate), findsOneWidget);
     });
+
+    testWidgets("signing out takes the session's Undo bar with it", (
+      WidgetTester tester,
+    ) async {
+      final StreamController<User?> auth = StreamController<User?>();
+      addTearDown(auth.close);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProvider.overrideWith((ref) => auth.stream),
+            accountProvider.overrideWithValue(FakeAccount()),
+            offlineProvider.overrideWithValue(const AsyncData(false)),
+            memoryJournal(),
+            ...habitOverrides(<Vice>[]),
+            viceActivityDayProvider.overrideWith(
+              (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+            ),
+          ],
+          child: const MyApp(),
+        ),
+      );
+      auth.add(FakeUser(ownerID));
+      await tester.pump();
+      expect(find.byType(Homepage), findsOneWidget);
+
+      bool undone = false;
+      showUndoBar(
+        tester.state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger)),
+        const TextSpan(text: 'Logged 1 drink'),
+        onUndo: () => undone = true,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Undo'), findsOneWidget);
+
+      auth.add(null);
+      await tester.pump();
+
+      expect(find.byType(Authenticate), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(SnackBar), findsNothing);
+      expect(undone, isFalse);
+    });
   });
 
   group('past midnight', () {
@@ -118,9 +167,7 @@ void main() {
 
     List<Override> todayOverrides(_FakeToday clock) => [
       todayProvider.overrideWith(() => clock),
-      unarchivedViceListProvider.overrideWithValue(
-        AsyncData([coffee, fakeVice('beer'), fakeVice('wine')]),
-      ),
+      ...habitOverrides([coffee, fakeVice('beer'), fakeVice('wine')]),
       viceActivityDayProvider.overrideWith((ref, DateTime day) {
         requestedDays.add(day);
         return AsyncData(<ViceActivity>[]);
@@ -146,10 +193,7 @@ void main() {
 
       expect(find.text('Today'), findsOneWidget);
       expect(find.text('Yesterday'), findsNothing);
-      expect(
-        tester.widget<ViceChart>(find.byType(ViceChart)).selectedDate,
-        today,
-      );
+      expect(tester.widget<DayDial>(find.byType(DayDial)).day, today);
       expect(requestedDays.last, today);
     });
 
@@ -169,9 +213,12 @@ void main() {
       clock.moveTo(addDays(today, 1));
       await tester.pump();
 
-      expect(find.text('2 days ago'), findsOneWidget);
       expect(
-        tester.widget<ViceChart>(find.byType(ViceChart)).selectedDate,
+        find.text(dayWord(addDays(today, -1), addDays(today, 1))),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<DayDial>(find.byType(DayDial)).day,
         addDays(today, -1),
       );
     });
@@ -191,18 +238,15 @@ void main() {
         final _FakeToday clock = _FakeToday(day);
         await _pump(tester, [
           todayProvider.overrideWith(() => clock),
-          viceListProvider.overrideWithValue(AsyncData([coffee])),
-          viceActivityGraphProvider.overrideWith((
-            ref,
-            ViceActivityGraphQuery query,
-          ) {
+          ...trendsOverrides([coffee], (ViceActivityGraphQuery query) {
             queries.add(query);
             return AsyncData(<ViceActivity>[
               fakeActivity(coffee.id, 5, day.copyWith(hour: 23, minute: 30)),
               fakeActivity(coffee.id, 3, next.copyWith(minute: 30)),
             ]);
           }),
-        ], const Scaffold(body: UsageGraphView()));
+        ], const Scaffold(body: ViceTracker()));
+        await openTrends(tester);
         expect(queries.last.end, next);
 
         clock.moveTo(next);
@@ -220,36 +264,40 @@ void main() {
   });
 
   group('an archived vice', () {
-    testWidgets('is graphable, listed last and marked, and not the default', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('opens in Trends, listed last and marked, and not the '
+        'default', (WidgetTester tester) async {
       final List<String> graphed = <String>[];
       await _pump(tester, [
-        viceListProvider.overrideWithValue(AsyncData([tea, coffee])),
-        viceActivityGraphProvider.overrideWith((
-          ref,
-          ViceActivityGraphQuery query,
-        ) {
+        ...trendsOverrides([tea, coffee], (ViceActivityGraphQuery query) {
           graphed.add(query.viceID);
-          return AsyncData(<ViceActivity>[]);
+          return const AsyncData(<ViceActivity>[]);
         }),
-      ], const Scaffold(body: UsageGraphView()));
+      ], const Scaffold(body: ViceTracker()));
+      await openTrends(tester);
 
       expect(graphed.last, coffee.id);
+      expect(
+        tester.getTopLeft(inTrends(find.text('tea'))).dx,
+        greaterThan(tester.getTopLeft(inTrends(find.text('coffee'))).dx),
+      );
+      expect(inTrends(find.text(' · archived')), findsOneWidget);
 
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
-      await tester.pumpAndSettle();
-      final List<String> items = tester
-          .widgetList<DropdownMenuItem<String>>(
-            find.byType(DropdownMenuItem<String>),
-          )
-          .map((DropdownMenuItem<String> item) => (item.child as Text).data!)
-          .toList();
-      expect(items.toSet().toList(), <String>['coffee', 'tea (archived)']);
-
-      await tester.tap(find.text('tea (archived)').last);
+      await tester.tap(inTrends(find.text('tea')));
       await tester.pumpAndSettle();
       expect(graphed.last, tea.id);
+    });
+
+    testWidgets('with every habit archived, Trends still opens them', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, [
+        ...trendsOverrides([tea], inRange(const <ViceActivity>[])),
+      ], const Scaffold(body: ViceTracker()));
+
+      expect(find.text(ViceTracker.noHabits), findsOneWidget);
+      expect(find.byType(LogButton), findsNothing);
+      await openTrends(tester);
+      expect(inTrends(find.text('tea')), findsOneWidget);
     });
 
     testWidgets('still opens its history from Manage Data', (
@@ -266,8 +314,18 @@ void main() {
         ),
       ], const ManageData());
 
-      expect(find.text('${ManageData.archivedLabel}, 2 activities'), findsOne);
-      expect(find.text('2 activities'), findsOne);
+      expect(find.text('1 active · 1 archived'), findsOne);
+      // Active habits come first, then the archived section.
+      expect(
+        tester.getTopLeft(find.text('coffee')).dy,
+        lessThan(tester.getTopLeft(find.text(ManageData.archivedLabel)).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text(ManageData.archivedLabel)).dy,
+        lessThan(tester.getTopLeft(find.text('tea')).dy),
+      );
+      expect(find.text(ManageData.archivedLabel), findsOne);
+      expect(find.textContaining(' · 2 entries'), findsNWidgets(2));
 
       await tester.tap(find.text('tea'));
       await tester.pumpAndSettle();
@@ -283,52 +341,44 @@ void main() {
     });
   });
 
-  group('the home tabs', () {
-    testWidgets('only the visible tab is built, and each keeps its '
-        'selection across a switch', (WidgetTester tester) async {
+  group('the home screen', () {
+    testWidgets("keeps Today's day and the Trends selection while a page is "
+        'pushed over it', (WidgetTester tester) async {
       final Vice beer = fakeVice('beer');
       final List<String> graphed = <String>[];
       await _pump(tester, [
-        viceListProvider.overrideWithValue(AsyncData([coffee, beer])),
-        unarchivedViceListProvider.overrideWithValue(
-          AsyncData([coffee, beer, fakeVice('wine')]),
-        ),
-        viceActivityDayProvider.overrideWith(
-          (ref, DateTime day) => AsyncData(<ViceActivity>[]),
-        ),
-        viceActivityGraphProvider.overrideWith((
-          ref,
-          ViceActivityGraphQuery query,
-        ) {
+        ...trendsOverrides([coffee, beer], (ViceActivityGraphQuery query) {
           graphed.add(query.viceID);
-          return AsyncData(<ViceActivity>[]);
+          return const AsyncData(<ViceActivity>[]);
         }),
       ], const Homepage());
 
-      expect(find.byType(UsageGraphView, skipOffstage: false), findsNothing);
-      expect(graphed, isEmpty);
+      // The peek is all there is until the sheet moves.
+      expect(find.byType(LineChart), findsNothing);
+      // Equal creation times order by id, so beer comes first.
+      expect(graphed, <String>[beer.id]);
 
       await tester.tap(find.byTooltip('Previous day'));
       await tester.pump();
       expect(find.text('Yesterday'), findsOneWidget);
 
-      await tester.tap(find.text('Graph'));
+      await openTrends(tester);
+      await tester.tap(inTrends(find.text('coffee')));
       await tester.pumpAndSettle();
-      expect(find.byType(ViceTracker, skipOffstage: false), findsNothing);
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('beer').last);
-      await tester.pumpAndSettle();
-      expect(graphed.last, beer.id);
+      expect(graphed.last, coffee.id);
 
-      await tester.tap(find.byIcon(Icons.today_outlined));
+      await tester.tap(find.byKey(Homepage.menuKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Homepage.settingsItem));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(graphed.last, coffee.id);
+      expect(find.text('coffee · last 30 days'), findsOneWidget);
+      await tester.tap(find.byTooltip(TrendsSheet.closeLabel));
       await tester.pumpAndSettle();
       expect(find.text('Yesterday'), findsOneWidget);
-
-      await tester.tap(find.text('Graph'));
-      await tester.pumpAndSettle();
-      expect(graphed.last, beer.id);
-      expect(find.text('Smoothing: 1 bucket for beer'), findsOneWidget);
     });
   });
 
@@ -350,6 +400,7 @@ void main() {
         viceListProvider.overrideWithValue(AsyncData([coffee])),
         viceActivityForUserProvider.overrideWith((ref, key) => activity.stream),
         if (writes != null) trackerWritesProvider.overrideWithValue(writes),
+        memoryJournal(),
       ], ViceActivityEditorPage(viceID: coffee.id, activityID: stored.id));
       activity.add(stored);
       await tester.pump();

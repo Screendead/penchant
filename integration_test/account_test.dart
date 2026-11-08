@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
@@ -14,7 +13,7 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/account_provider.dart';
-import 'package:tracker/sign_in.dart';
+import 'package:tracker/auth_form.dart';
 
 import 'support.dart';
 
@@ -111,7 +110,7 @@ Future<List<String>> _ownerIDs(String collection) async {
 }
 
 Future<void> _openAccountSettings(WidgetTester tester) async {
-  await openFromDrawer(tester, 'Settings');
+  await openFromMenu(tester, Homepage.settingsItem);
   await tap(tester, find.text('Account'));
   await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
 }
@@ -123,13 +122,12 @@ Future<void> _signInThroughForm(
 ) async {
   await enterText(tester, 'Email', email);
   await enterText(tester, 'Password', password);
-  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign In'));
+  await tap(tester, find.widgetWithText(ElevatedButton, 'Sign in'));
   await pumpUntil(tester, find.byType(Homepage));
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -183,6 +181,8 @@ void main() {
     );
 
     await _signInThroughForm(tester, email, newPassword);
+    // The account still has no habits, so signing in starts the onboarding.
+    await skipTheOnboarding(tester);
     await addVicesThroughManageData(tester, const <String>['Coffee']);
     expect(await _ownerIDs('vices'), <String>[
       FirebaseAuth.instance.currentUser!.uid,
@@ -209,7 +209,7 @@ void main() {
     );
     await _get(Uri.parse(links.last['oobLink'] as String));
 
-    await tap(tester, find.byType(BackButton));
+    await tap(tester, find.byTooltip('Back'));
     await pumpUntil(tester, find.text(AccountCopy.dataSection), present: false);
     await tap(tester, find.text('Account'));
     await pumpUntilRouteSettled(tester, find.text(AccountCopy.dataSection));
@@ -252,14 +252,17 @@ void main() {
 
     final List<ExportFile> files = share.shared.single;
     final List<String> rows = files.first.contents.trim().split('\r\n');
-    expect(rows.first, 'time,vice,quantity,unit,vice_id,entry_id');
+    expect(
+      rows.first,
+      'time,vice,quantity,amount,unit,vice_id,entry_id,triggers',
+    );
     expect(rows, hasLength(3));
     expect(
-      rows.where((String row) => row.contains(',Coffee,2,drink,')),
+      rows.where((String row) => row.contains(',Coffee,2,,drink,')),
       hasLength(1),
     );
     expect(
-      rows.where((String row) => row.contains(',Tea,1,drink,')),
+      rows.where((String row) => row.contains(',Tea,1,,drink,')),
       hasLength(1),
     );
 
@@ -322,8 +325,10 @@ void main() {
       ),
     );
     await pumpUntil(tester, find.text(AccountCopy.deleted));
-    await pumpUntil(tester, find.byType(SignIn));
-    expect(find.byType(AccountSettings), findsNothing);
+    await pumpUntil(tester, find.byType(AuthForm));
+    // The popped page may still be sliding away when sign-in appears; it
+    // must not stay.
+    await pumpUntil(tester, find.byType(AccountSettings), present: false);
 
     expect(await _ownerIDs('vices'), <String>[bystander]);
     expect(await _ownerIDs('activities'), isEmpty);

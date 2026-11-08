@@ -1,13 +1,12 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:tracker/homepage.dart';
+import 'package:tracker/manage_data.dart';
 import 'package:tracker/main.dart' as app;
 
 import 'support.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -24,19 +23,26 @@ void main() {
     await addVicesThroughManageData(tester);
 
     await recordActivity(tester, 'Coffee', 2);
-    await pumpUntil(tester, find.byType(RadarChart));
+    await expectTallies(tester, const <String>{
+      'Coffee (2 drinks)',
+      'Tea (0 drinks)',
+      'Water (0 drinks)',
+    });
 
-    await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('Your Vices'));
+    await openFromMenu(tester, Homepage.habitsItem);
+    await pumpUntil(tester, find.byType(ManageData));
     // Each row's count is its own server request, so the rows fill in any order.
-    await pumpUntil(tester, find.text('1 activity'));
+    await pumpUntil(tester, habitsCount('1 entry'));
     await pumpUntilTrue(
       tester,
-      () => find.text('0 activities').evaluate().length == 2,
-      () => "two '0 activities' rows",
+      () => habitsCount('0 entries').evaluate().length == 2,
+      () => "two '0 entries' rows",
     );
-    expect(find.text('Coffee'), findsOneWidget);
-    expect(find.text('Tea'), findsOneWidget);
-    expect(find.text('Water'), findsOneWidget);
+    for (final String name in <String>['Coffee', 'Tea', 'Water']) {
+      expect(
+        find.descendant(of: find.byType(ManageData), matching: find.text(name)),
+        findsOneWidget,
+      );
+    }
   });
 }

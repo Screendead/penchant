@@ -1,28 +1,33 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_icons.dart';
+import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/habit_mark.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
-import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/bead_painter.dart';
+import 'package:tracker/widgets/circle_button.dart';
+import 'package:tracker/widgets/dial_page.dart';
 import 'package:tracker/widgets/info_box.dart';
-import 'package:tracker/widgets/sync_status.dart';
-import 'package:tracker/writes/rejected_writes.dart';
-import 'package:tracker/writes/settle_write.dart';
 
 class ManageData extends ConsumerStatefulWidget {
   const ManageData({super.key});
 
+  static const String title = 'Habits';
   static const String archivedLabel = 'Archived';
+  static const String colourNote =
+      'Colours follow the order habits were added, archived ones included. '
+      'From the sixth habit on, the five colours repeat as rings.';
   static const String countUnavailable = 'Count unavailable';
 
   static String countText(ActivityCount count) {
     final String activities =
         '${formatCount(count.count)} '
-        '${pluralWord(count.count, one: 'activity', other: 'activities')}';
+        '${pluralWord(count.count, one: 'entry', other: 'entries')}';
     return switch (count.source) {
       CountSource.server => activities,
       CountSource.deviceOffline => '$activities on this device (offline)',
@@ -36,161 +41,144 @@ class ManageData extends ConsumerStatefulWidget {
 }
 
 class _ManageDataState extends ConsumerState<ManageData> {
-  final Set<String> archiving = <String>{};
-
-  Future<void> _setArchived(Vice vice, {required bool archived}) async {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    setState(() {
-      archiving.add(vice.id);
-    });
-
-    String? message;
-    try {
-      if (!await settleWrite(
-        ref
-            .read(trackerWritesProvider)
-            .setViceArchived(vice.id, archived: archived),
-        onRejectedLater: ref
-            .read(rejectedWritesProvider.notifier)
-            .reporter(
-              '${archived ? 'Not archived' : 'Not unarchived'}: ${vice.name}',
-            ),
-      )) {
-        message = queuedMessage;
-      }
-    } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while archiving or unarchiving a vice');
-      message =
-          '${archived ? 'Could not archive' : 'Could not unarchive'} '
-          '${vice.name}. ${firestoreErrorMessage(e)}';
-    }
-
-    if (mounted) {
-      setState(() {
-        archiving.remove(vice.id);
-      });
-    }
-    if (message != null && messenger.mounted) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
+    final List<Vice>? viceList = viceListValue.value;
+    final List<Vice> active = <Vice>[
+      for (final Vice vice in viceList ?? const <Vice>[])
+        if (!vice.archived) vice,
+    ];
+    final List<Vice> archived = <Vice>[
+      for (final Vice vice in viceList ?? const <Vice>[])
+        if (vice.archived) vice,
+    ];
+    final Map<String, HabitMark> marks = habitMarks(viceList ?? const <Vice>[]);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Vices'),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Add vice',
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.of(context).pushNamed('/vices/add');
-            },
-          ),
-        ],
+    return DialPage(
+      title: ManageData.title,
+      subtitle: viceList == null || viceListValue.hasError
+          ? null
+          : '${active.length} active · ${archived.length} archived',
+      action: CircleButton(
+        icon: DialGlyph.plus,
+        tooltip: 'Add habit',
+        onPressed: () {
+          Navigator.of(context).pushNamed('/vices/add');
+        },
       ),
-      body: Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(child: _buildBody(viceListValue: viceListValue)),
+      children: <Widget>[
+        if (viceListValue.error case final Object error)
+          SizedBox(
+            height: 320,
+            child: ErrorView(
+              message: loadErrorMessage('your habits', error),
+              onRetry: () =>
+                  ref.invalidate(viceListForUserProvider, asReload: true),
+            ),
+          )
+        else if (viceList == null)
+          const Padding(
+            padding: EdgeInsets.only(top: 80),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (viceList.isEmpty)
+          const PageFootnote('No habits yet. Tap + to add one.')
+        else ...<Widget>[
+          const SizedBox(height: DialSpace.l),
+          if (active.isNotEmpty) _card(active, marks),
+          if (archived.isNotEmpty) ...<Widget>[
+            const SectionLabel(ManageData.archivedLabel),
+            _card(archived, marks),
+          ],
+          const PageFootnote(ManageData.colourNote),
         ],
-      ),
+      ],
     );
   }
 
-  Widget _buildBody({required AsyncValue<List<Vice>> viceListValue}) {
-    if (viceListValue.error case final Object error) {
-      return ErrorView(
-        message: loadErrorMessage('your vices', error),
-        onRetry: () => ref.invalidate(viceListForUserProvider, asReload: true),
-      );
-    }
+  Widget _card(List<Vice> vices, Map<String, HabitMark> marks) => DialCard(
+    children: <Widget>[
+      for (int i = 0; i < vices.length; i++) ...<Widget>[
+        if (i > 0) const CardDivider(indent: 44),
+        _row(vices[i], marks[vices[i].id] ?? const HabitMark(0)),
+      ],
+    ],
+  );
 
-    final List<Vice>? viceList = viceListValue.value;
+  Widget _row(Vice vice, HabitMark mark) {
+    final DialColors colors = DialColors.of(context);
 
-    if (viceList == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (viceList.isEmpty) {
-      return const Center(child: Text('No vices yet. Tap + to add one.'));
-    }
-
-    return ListView.builder(
-      itemCount: viceList.length,
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (BuildContext context, int index) {
-        final Vice vice = viceList[index];
-
-        // An archived vice keeps its history, so its row still opens it.
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(vice.name),
-          subtitle: Consumer(
-            builder: (BuildContext context, WidgetRef ref, Widget? child) {
-              final AsyncValue<ActivityCount> count = ref.watch(
-                viceActivityCountProvider(vice.id),
-              );
-              // A re-run keeps the last count until the new one arrives.
-              final String text = <String>[
-                if (vice.archived) ManageData.archivedLabel,
-                switch (count.value) {
-                  final ActivityCount value => ManageData.countText(value),
-                  null when count.hasError => ManageData.countUnavailable,
-                  null => '',
-                },
-              ].where((String part) => part.isNotEmpty).join(', ');
-              // A blank line holds the row's height until the count loads.
-              return Text(text.isEmpty ? ' ' : text);
-            },
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Tooltip(
-                message: 'Edit',
-                child: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/vices/${vice.id}/edit');
-                  },
-                ),
-              ),
-              vice.archived
-                  ? Tooltip(
-                      message: 'Unarchive',
-                      child: IconButton(
-                        icon: const Icon(Icons.unarchive),
-                        onPressed: archiving.contains(vice.id)
-                            ? null
-                            : () => _setArchived(vice, archived: false),
-                      ),
-                    )
-                  : Tooltip(
-                      message: 'Archive',
-                      child: IconButton(
-                        icon: const Icon(Icons.archive),
-                        onPressed: archiving.contains(vice.id)
-                            ? null
-                            : () => _setArchived(vice, archived: true),
+    // An archived vice keeps its history, so its row still opens it.
+    return InkWell(
+      onTap: () async {
+        await Navigator.of(context).pushNamed('/vices/${vice.id}/activities');
+        // The count is not live; the history page can delete entries.
+        if (mounted) {
+          ref.invalidate(viceActivityCountForUserProvider);
+        }
+      },
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 66),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 4, 8),
+          child: Row(
+            children: <Widget>[
+              HabitPip(mark: mark, size: 14),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      vice.name,
+                      style: DialTypeScale.bodyL.copyWith(
+                        height: 1.2,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: 3),
+                    Consumer(
+                      builder: (BuildContext context, WidgetRef ref, _) {
+                        final AsyncValue<ActivityCount> count = ref.watch(
+                          viceActivityCountProvider(vice.id),
+                        );
+                        // A re-run keeps the last count until the new one
+                        // arrives.
+                        final String text = <String>[
+                          vice.unit.nameFor(2),
+                          switch (count.value) {
+                            final ActivityCount value => ManageData.countText(
+                              value,
+                            ),
+                            null when count.hasError =>
+                              ManageData.countUnavailable,
+                            null => '',
+                          },
+                        ].where((String part) => part.isNotEmpty).join(' · ');
+                        return Text(
+                          text,
+                          style: DialTypeScale.bodyS.copyWith(
+                            color: colors.muted,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: StrokeIcon(
+                  DialGlyph.right,
+                  size: 18,
+                  color: colors.muted,
+                ),
+              ),
             ],
           ),
-          onTap: () async {
-            await Navigator.of(
-              context,
-            ).pushNamed('/vices/${vice.id}/activities');
-            // The count is not live; the history page can delete entries.
-            if (context.mounted) {
-              ref.invalidate(viceActivityCountForUserProvider);
-            }
-          },
-        );
-      },
+        ),
+      ),
     );
   }
 }

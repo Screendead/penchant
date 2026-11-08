@@ -12,23 +12,38 @@ Every entry can carry, beyond vice, quantity and time:
 | `loggedAt` | activity | server timestamp | When it was written: tells live logs from evening backfill, whose times are less reliable |
 | `timeZone` | activity | IANA name | Day and hour-of-day stay right when travelling |
 | `durationMinutes` | activity | int, optional | Sessions (screen time, gambling, a night out) |
-| `triggers` | activity | path strings | See [trigger tagging](trigger-tagging.md) |
+| `triggers` | activity | path strings | SHIPPED (picker in the record dialog and editor, `lib/data/trigger_tree.dart`, history rows); free text is stored as the label |
 | `with`, `place` | activity | small enums | Alone / partner / friends / colleagues; home / work / out / travelling. No GPS |
 | `moodBefore`, `urge` | activity | 1–5, optional | How it felt going in |
 | `cost` | activity | number, optional | Overrides the vice's cost per unit |
 | `note` | activity | string ≤ 500 | Free text |
 | `source` | activity | enum | manual / quick / widget / shortcut, for data-quality weighting |
-| `category` | vice | enum | alcohol / caffeine / nicotine / cannabis / screen / gambling / food / other: maps a vice to HealthKit types and to sensible defaults |
-| `defaultQuantity`, `unitLabel`, `costPerUnit` | vice | | [quick logging](../v1-must-haves/one-tap-quick-logging.md), [units and cost](../monetisation/units-and-cost-per-unit.md) |
+| `category` | vice | enum | SHIPPED without `screen`: alcohol / caffeine / nicotine / cannabis / food / gambling / other (`lib/data/category.dart`), with a migrator that guesses it for older vices |
+| `defaultQuantity`, `unitLabel`, `costPerUnit` | vice | | `defaultQuantity` is a constant 1 (`lib/writes/log_one.dart`) and is not stored per vice; [units and cost](../monetisation/units-and-cost-per-unit.md) |
 | `schemaVersion` | both | int | Which migrations a document has had |
 
-The [check-in](../v1-must-haves/evening-check-in-and-reminders.md) adds a per-day record of "nothing to log".
+A day with nothing logged counts as clean (`r2-days`), so there is no per-day record of "nothing to log".
 
 ## Decision so far
+
+Decided by Jack 2026-11-06 (`r2-data-model`): **B**, optional fields plus a first-launch migrator, with decimals
+through a separate optional `amount` beside `quantity`. The `amount` field has shipped (rules, parser, record dialog,
+editor, export); the other fields and the migrator have not.
 
 Decided by Jack 2026-11-03 (C18): **new fields on vices are allowed**; optional ones freely, mandatory ones only with
 a migrator that runs on first launch and adds them to existing records. C18 does not cover fields on `activities` or
 new collections (`days`, `triggerNodes`), which most of the table needs.
+
+## Left from the shipped ideas
+
+The one-tap log (tally `+`, Log-fan tap, 8-second Undo), trigger tagging (tree, usual chips, "Your own" chips) and the
+sealed journal fields are built. What remains of them:
+
+- The detail sheet after a one-tap log, once the context fields above exist.
+- `triggerNodes`, so custom triggers and their counts follow the user to another device (the counts live in
+  shared_preferences per uid today), and time-of-day weighting of the usual chips.
+- An "urge, didn't log" entry type, if wanted. The analysis of triggers belongs to the
+  [insights engine](insights-engine.md).
 
 ## Consequences
 
@@ -70,8 +85,7 @@ everything optional in the rules until the web site is down and no pre-1.0 build
 **Revenue impact:** High, indirectly: every insight is only as good as these fields.
 
 **Depends on:**
-- [`activity-timestamps-come-from-the-device-clock`](../../tech-debt/firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
+- the device clock stamps `createdAt` (`r4-server-time`, Jack, 2026-11-06)
 - the day rule (`CLAUDE.md`, **Days**): an entry counts on the viewing device's local day, and its zone is not stored
 
-**Needs Jack:** yes — Extend C18 to fields on `activities` and to the new `days` and `triggerNodes` collections, and
-allow decimals through a separate `amount` field?
+**Needs Jack:** no (decided 2026-11-06, above).

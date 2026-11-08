@@ -13,17 +13,18 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/usage_graph_view.dart';
-import 'package:tracker/vice_chart.dart';
+import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/vice_tracker.dart';
-import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/tally_row.dart';
+import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
 import 'fakes.dart';
+import 'trends_harness.dart';
 
 final DateTime _today = startOfDay(DateTime.now());
-final String _todayLabel = formatDay(_today);
 
 Future<void> _pump(
   WidgetTester tester,
@@ -49,11 +50,16 @@ void _usePhone(WidgetTester tester, {double textScale = 1}) {
 }
 
 List<Override> _day(List<Vice> vices, List<int> quantities) => [
-  unarchivedViceListProvider.overrideWith((ref) => AsyncData(vices)),
+  ...habitOverrides(vices),
   viceActivityDayProvider.overrideWith(
     (ref, DateTime day) => AsyncData([
       for (int i = 0; i < vices.length; i++)
-        if (quantities[i] > 0) fakeActivity(vices[i].id, quantities[i], day),
+        if (quantities[i] > 0)
+          fakeActivity(
+            vices[i].id,
+            quantities[i],
+            day.add(Duration(hours: 8 + i)),
+          ),
     ]),
   ),
 ];
@@ -64,109 +70,73 @@ final List<Vice> _three = [
   fakeVice('tea'),
 ];
 
-RadarChartData _radar(WidgetTester tester) =>
-    tester.widget<RadarChart>(find.byType(RadarChart)).data;
-
 final List<Vice> _longNamed = [
   fakeVice('elderflower', name: 'Sparkling elderflower water'),
   fakeVice('coffee'),
   fakeVice('tea'),
 ];
 
+// Scrolls [finder] to the middle of the screen, clear of the Log button.
+Future<void> _centre(WidgetTester tester, Finder finder) async {
+  // Today's list builds its rows only as they near the screen.
+  for (int i = 0; i < 20 && finder.evaluate().isEmpty; i++) {
+    await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+    await tester.pump();
+  }
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  group('the radar', () {
-    testWidgets('puts a zero at the centre', (WidgetTester tester) async {
-      await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
-
-      final RadarChartData data = _radar(tester);
-      expect(data.isMinValueAtCenter, isTrue);
-      expect(data.minEntry.value, 0);
-      expect(data.dataSets.first.dataEntries.map((RadarEntry e) => e.value), [
-        2,
-        0,
-        1,
-      ]);
-    });
-
-    testWidgets('keeps the centre at zero when every vice was used', (
-      WidgetTester tester,
-    ) async {
-      await _pump(tester, _day(_three, [3, 1, 2]), const ViceTracker());
-
-      final RadarChartData data = _radar(tester);
-      expect(data.isMinValueAtCenter, isTrue);
-      expect(data.minEntry.value, 0);
-      expect(data.maxEntry.value, 3);
-      expect(data.tickCount, 3);
-    });
-
-    test('rings are round numbers, at most five of them', () {
-      expect(ViceChart.radarScale(1), (top: 1, step: 1));
-      expect(ViceChart.radarScale(3), (top: 3, step: 1));
-      expect(ViceChart.radarScale(7), (top: 8, step: 2));
-      expect(ViceChart.radarScale(120), (top: 150, step: 50));
-      for (int largest = 1; largest <= 1000; largest++) {
-        final ({int top, int step}) scale = ViceChart.radarScale(largest);
-        expect(scale.top, greaterThanOrEqualTo(largest));
-        expect(scale.top ~/ scale.step, lessThanOrEqualTo(5));
-        expect(scale.top % scale.step, 0);
-      }
-    });
-  });
-
   group('screen readers', () {
-    testWidgets('hear the radar as the day and each total', (
+    testWidgets('hear the dial as the day, each total and when', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
 
+      final String summary = tester
+          .widget<DayDial>(find.byType(DayDial))
+          .semanticsLabel!;
       expect(
-        find.bySemanticsLabel(
-          'Totals for $_todayLabel. coffee: 2 items; beer: 0 items; '
-          'tea: 1 item',
+        summary,
+        startsWith(
+          'Today, ${dayPillDate(_today, _today)}. beer 0 items, '
+          'coffee 2 items, tea 1 item. First entry ',
         ),
-        findsOneWidget,
       );
+      expect(find.bySemanticsLabel(summary), findsOneWidget);
       semantics.dispose();
     });
 
-    testWidgets('hear the bars as the day and each total, once', (
+    testWidgets('hear each tally once, and a + named for what it logs', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
-      await _pump(
-        tester,
-        _day(_three.sublist(0, 2), [2, 1]),
-        const ViceTracker(),
-      );
+      await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
 
-      expect(
-        find.bySemanticsLabel(
-          'Totals for $_todayLabel. coffee: 2 items; beer: 1 item',
-        ),
-        findsOneWidget,
-      );
-      expect(find.bySemanticsLabel('coffee (2 items)'), findsNothing);
+      expect(find.bySemanticsLabel('coffee, 2 items'), findsOneWidget);
+      expect(find.bySemanticsLabel('beer, 0 items'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('^2\$')), findsNothing);
+      // The last row can sit below the fold, above the Trends peek.
+      for (final Vice vice in _three) {
+        expect(
+          find.byTooltip(logOneLabel(vice), skipOffstage: false),
+          findsOneWidget,
+        );
+      }
+      expect(find.bySemanticsLabel(LogButton.label), findsOneWidget);
       semantics.dispose();
     });
 
-    testWidgets('hear the radar once when it shows a key', (
+    testWidgets('every tap target on Today is at least 44 points', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
-      _usePhone(tester, textScale: 3);
-      await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
+      _usePhone(tester);
+      await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
 
-      expect(find.text('coffee: 0 items'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel(
-          'Totals for $_todayLabel. Sparkling elderflower water: 4 items; '
-          'coffee: 0 items; tea: 0 items',
-        ),
-        findsOneWidget,
-      );
-      expect(find.bySemanticsLabel(RegExp('^coffee: 0 items')), findsNothing);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
       semantics.dispose();
     });
 
@@ -175,32 +145,36 @@ void main() {
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       final DateTime peakDay = addDays(_today, -3);
-      await _pump(tester, [
-        viceListProvider.overrideWith((ref) => AsyncData([_three.first])),
-        viceActivityGraphProvider.overrideWith(
-          (ref, ViceActivityGraphQuery query) => AsyncData(<ViceActivity>[
+      await _pump(
+        tester,
+        trendsOverrides(
+          [_three.first],
+          inRange(<ViceActivity>[
             fakeActivity('coffee', 4, peakDay.add(const Duration(hours: 9))),
             fakeActivity('coffee', 1, _today.add(const Duration(hours: 9))),
           ]),
         ),
-      ], const UsageGraphView());
+        const ViceTracker(),
+      );
+      await openTrends(tester);
 
       expect(
         find.bySemanticsLabel(
           'Daily totals of coffee over the last 30 days: 5 items in all. '
-          'The most was 4 items on ${formatShortDay(peakDay)}.',
+          'The most was 4 items on ${formatShortDay(peakDay)}. '
+          'Shown with a 7-day average.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Smoothing: 1 bucket for coffee'), findsOneWidget);
+      expect(find.text('Average over 7 days'), findsOneWidget);
       semantics.dispose();
     });
   });
 
   test('the graph says which series is which in words', () {
-    expect(UsageGraphView.seriesName(1), 'Daily total');
-    expect(UsageGraphView.averageName(1, 3), '3-day average');
-    expect(UsageGraphView.averageName(7, 2), '2-week average');
+    expect(TrendsChart.seriesName(1), 'Daily total');
+    expect(TrendsChart.averageName(1, 3), '3-day average');
+    expect(TrendsChart.averageName(7, 2), '2-week average');
   });
 
   for (final double textScale in [2.0, 3.0]) {
@@ -222,13 +196,20 @@ void main() {
         await tester.pumpAndSettle();
         await tester.enterText(quantity, '0');
         // No vice is selected, so validation runs but nothing is written.
-        await tester.tap(find.text('Record'));
+        // A focused field scrolls itself back into view on each frame.
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(RecordNewActivityDialog.submitKey),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        await tester.ensureVisible(find.text('Please select a vice'));
-        expect(find.text('Please select a vice'), findsOneWidget);
-        expect(find.text('Please enter at least 1'), findsOneWidget);
+        await tester.ensureVisible(find.text('Please select a habit'));
+        expect(find.text('Please select a habit'), findsOneWidget);
+        expect(find.text('Please enter more than 0'), findsOneWidget);
       });
 
       testWidgets('the home screen opens the record dialog without '
@@ -241,7 +222,6 @@ void main() {
               userProvider.overrideWith(
                 (ref) => Stream.value(FakeUser(ownerID)),
               ),
-              viceListProvider.overrideWith((ref) => AsyncData(_three)),
               viceActivityGraphProvider.overrideWith(
                 (ref, ViceActivityGraphQuery query) => AsyncData(<ViceActivity>[
                   fakeActivity('coffee', 2, _today),
@@ -254,48 +234,50 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 
-        await tester.tap(find.text('Record'));
+        await tester.tap(find.byType(LogButton));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.longPress(
+          find.descendant(
+            of: find.byKey(const ValueKey<String>('fan-wedge-coffee')),
+            matching: find.text('coffee'),
+          ),
+        );
         await tester.pumpAndSettle();
         expect(find.byType(RecordNewActivityDialog), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.tap(find.text('Cancel'));
+        await tester.tap(find.byTooltip('Close'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Graph'));
-        await tester.pumpAndSettle();
+        await openTrends(tester);
+        expect(find.byType(LineChart), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('Today shows every name whole, on the chart or in its key', (
+      testWidgets('Today shows every habit name whole', (
         WidgetTester tester,
       ) async {
         _usePhone(tester, textScale: textScale);
         await _pump(tester, _day(_longNamed, [4, 0, 0]), const ViceTracker());
         expect(tester.takeException(), isNull);
 
-        // At this size the key may take the chart's whole space.
-        final Finder radar = find.byType(RadarChart);
-        final RadarChartData? data = radar.evaluate().isEmpty
-            ? null
-            : _radar(tester);
-        for (int i = 0; i < _longNamed.length; i++) {
-          final Vice vice = _longNamed[i];
-          final String title = data?.getTitle!(i, 0).text ?? '';
-          if (title == vice.name || title.startsWith('${vice.name} (')) {
-            continue;
-          }
-          final Finder entry = find.textContaining(RegExp('^${vice.name}: '));
-          // The test font is about twice as wide as the system's, so at text
-          // scale 3 this key outgrows the screen and scrolls; the e2e test
-          // checks the key unscrolled on a real device.
-          if (textScale == 3) {
-            await tester.ensureVisible(entry);
-            await tester.pumpAndSettle();
-          }
+        // Top to bottom: equal creation times list by id.
+        final List<Vice> shown = [..._longNamed]
+          ..sort((Vice a, Vice b) => a.id.compareTo(b.id));
+        for (final Vice vice in shown) {
+          final Finder name = find.descendant(
+            of: find.byType(TallyRow, skipOffstage: false),
+            matching: find.text(vice.name, skipOffstage: false),
+            skipOffstage: false,
+          );
+          await _centre(tester, name);
+          final Text text = tester.widget<Text>(name);
+          expect(text.maxLines, isNull, reason: vice.name);
+          expect(text.overflow, isNot(TextOverflow.ellipsis));
           expect(
-            entry.hitTestable(),
+            find.text(vice.name).hitTestable(),
             findsOneWidget,
-            reason: '${vice.name} is not shown whole',
+            reason: vice.name,
           );
         }
       });
@@ -307,12 +289,14 @@ void main() {
         await _pump(tester, _day(_three, [2, 0, 1]), const ViceTracker());
         expect(tester.takeException(), isNull);
 
-        for (int i = 0; i < ViceTracker.selectableDays - 1; i++) {
+        for (int i = 0; i < 8; i++) {
           await tester.tap(find.byTooltip('Previous day'));
           await tester.pump();
         }
         await tester.pumpAndSettle();
-        expect(find.text('29 days ago'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.byType(LogButton));
+        await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       });
 
@@ -329,7 +313,6 @@ void main() {
               userProvider.overrideWith(
                 (ref) => Stream.value(FakeUser(ownerID)),
               ),
-              viceListProvider.overrideWith((ref) => AsyncData(_three)),
               viceActivityGraphProvider.overrideWith(
                 (ref, ViceActivityGraphQuery query) =>
                     AsyncData(<ViceActivity>[]),
@@ -340,7 +323,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(CleanDay), findsOneWidget);
+        // Today scrolls, so the dial can be reached above the keyboard.
+        await _centre(tester, find.text(ClearDay.headline));
+        expect(find.text(ClearDay.headline).hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -348,13 +333,16 @@ void main() {
         WidgetTester tester,
       ) async {
         _usePhone(tester, textScale: textScale);
-        await _pump(tester, [
-          viceListProvider.overrideWith((ref) => AsyncData([_three.first])),
-          viceActivityGraphProvider.overrideWith(
-            (ref, ViceActivityGraphQuery query) =>
+        await _pump(
+          tester,
+          trendsOverrides(
+            [_three.first],
+            (ViceActivityGraphQuery query) =>
                 AsyncData(<ViceActivity>[fakeActivity('coffee', 1200, _today)]),
           ),
-        ], const UsageGraphView());
+          const ViceTracker(),
+        );
+        await openTrends(tester);
         expect(tester.takeException(), isNull);
 
         final FlTitlesData titles = tester

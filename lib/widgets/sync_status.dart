@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/widgets/banner_scroll.dart';
+import 'package:tracker/widgets/pill_drop.dart';
 
 class NotSyncedMarker extends StatelessWidget {
   const NotSyncedMarker({super.key, this.label = defaultLabel});
@@ -46,15 +50,15 @@ class PendingDayNote extends ConsumerWidget {
         activities?.where((ViceActivity activity) => activity.pending).length ??
         0;
 
-    // A reserved height, so an online write's brief pending state does not
-    // resize the chart above. It grows only when large text wraps the note.
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.textScalerOf(context).scale(32),
-      ),
-      child: count == 0
-          ? null
-          : Center(child: NotSyncedMarker(label: text(count))),
+    // Offline only: online, an entry is pending for a moment, the header's
+    // pill says Syncing meanwhile, and a note here would shift the tallies
+    // twice for each entry logged.
+    if (count == 0 || ref.watch(offlineProvider).value != true) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Center(child: NotSyncedMarker(label: text(count))),
     );
   }
 }
@@ -68,26 +72,35 @@ class OfflineBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(offlineProvider).value != true) {
-      return const SizedBox.shrink();
-    }
-
     final ColorScheme colors = Theme.of(context).colorScheme;
 
-    return Semantics(
-      liveRegion: true,
-      child: Material(
-        color: colors.tertiaryContainer,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return PillDrop(
+      shown: ref.watch(offlineProvider).value == true,
+      child: Semantics(
+        liveRegion: true,
+        child: BannerScroll(
+          margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          frame: (Widget scroll) => DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(PillDrop.radius),
+              border: Border.all(color: DialColors.of(context).line),
+              boxShadow: DialShadows.pop(Theme.of(context).brightness),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(PillDrop.radius),
+              child: scroll,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 16, 10),
           child: Row(
             children: [
-              Icon(Icons.cloud_off, color: colors.onTertiaryContainer),
-              const SizedBox(width: 12),
+              Icon(Icons.cloud_off, size: 18, color: colors.onSurface),
+              const SizedBox(width: 9),
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(color: colors.onTertiaryContainer),
+                  style: DialTypeScale.bodyS.copyWith(color: colors.onSurface),
                 ),
               ),
             ],

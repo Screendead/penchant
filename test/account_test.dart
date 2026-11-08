@@ -2,17 +2,20 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
+import 'package:tracker/auth_form.dart';
+import 'package:tracker/authenticate.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/register.dart';
 import 'package:tracker/settings.dart';
-import 'package:tracker/sign_in.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
@@ -67,6 +70,35 @@ Future<void> _tapText(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
+Iterable<String>? _hints(WidgetTester tester, Type form, int index) => tester
+    .widget<TextField>(
+      find
+          .descendant(of: find.byType(form), matching: find.byType(TextField))
+          .at(index),
+    )
+    .autofillHints;
+
+// The finishAutofillContext calls the form sends, by their shouldSave.
+List<bool> _recordAutofillFinishes(WidgetTester tester) {
+  final List<bool> finishes = <bool>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.textInput,
+    (MethodCall call) async {
+      if (call.method == 'TextInput.finishAutofillContext') {
+        finishes.add(call.arguments as bool);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.textInput,
+      null,
+    ),
+  );
+  return finishes;
+}
+
 FirebaseAuthException _authError(String code) => FirebaseAuthException(
   code: code,
   message: 'There is no user record corresponding to this identifier.',
@@ -74,14 +106,50 @@ FirebaseAuthException _authError(String code) => FirebaseAuthException(
 
 void main() {
   group('sign in', () {
+    // iOS reads only the first hint, and pairs a saved password with the
+    // field whose content type is username, not emailAddress.
+    testWidgets('the email field is the credential username for AutoFill', (
+      tester,
+    ) async {
+      await _pump(tester, FakeAccount(), const Authenticate());
+      expect(_hints(tester, AuthForm, 0), <String>[
+        AutofillHints.username,
+        AutofillHints.email,
+      ]);
+      expect(_hints(tester, AuthForm, 1), <String>[AutofillHints.password]);
+    });
+
+    testWidgets('a successful sign-in commits the AutoFill context so iOS '
+        'offers to save the credential', (tester) async {
+      final List<bool> finishes = _recordAutofillFinishes(tester);
+      await _pump(tester, FakeAccount(), const Authenticate());
+      await _enter(tester, 'Email', _email);
+      await _enter(tester, 'Password', 'right');
+      await _tapText(tester, 'Sign in');
+      expect(finishes, <bool>[true]);
+    });
+
+    testWidgets('a failed sign-in leaves the AutoFill context open', (
+      tester,
+    ) async {
+      final List<bool> finishes = _recordAutofillFinishes(tester);
+      final FakeAccount account = FakeAccount()
+        ..respond = (_) async => throw _authError('wrong-password');
+      await _pump(tester, account, const Authenticate());
+      await _enter(tester, 'Email', _email);
+      await _enter(tester, 'Password', 'wrong');
+      await _tapText(tester, 'Sign in');
+      expect(finishes, isEmpty);
+    });
+
     testWidgets('a wrong password reads the same as an unknown address and '
         "never shows Firebase's message", (tester) async {
       final FakeAccount account = FakeAccount()
         ..respond = (_) async => throw _authError('user-not-found');
-      await _pump(tester, account, const SignIn());
+      await _pump(tester, account, const Authenticate());
       await _enter(tester, 'Email', _email);
       await _enter(tester, 'Password', 'wrong');
-      await _tapText(tester, 'Sign In');
+      await _tapText(tester, 'Sign in');
 
       expect(account.calls.single.fields, <String, Object?>{
         'email': _email,
@@ -98,7 +166,7 @@ void main() {
         'and says the same whether or not it has an account', (tester) async {
       final FakeAccount account = FakeAccount()
         ..respond = (_) async => throw _authError('user-not-found');
-      await _pump(tester, account, const SignIn());
+      await _pump(tester, account, const Authenticate());
       await _enter(tester, 'Email', _email);
       await _tapText(tester, AccountCopy.forgotPassword);
 
@@ -109,6 +177,17 @@ void main() {
       expect(
         tester.widget<TextFormField>(dialogEmail).controller!.text,
         _email,
+      );
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: dialogEmail,
+                matching: find.byType(TextField),
+              ),
+            )
+            .autofillHints,
+        <String>[AutofillHints.email],
       );
       await _tapText(tester, AccountCopy.resetSend);
 
@@ -122,7 +201,7 @@ void main() {
     testWidgets('a failed reset for another reason says so', (tester) async {
       final FakeAccount account = FakeAccount()
         ..respond = (_) async => throw _authError('network-request-failed');
-      await _pump(tester, account, const SignIn());
+      await _pump(tester, account, const Authenticate());
       await _tapText(tester, AccountCopy.forgotPassword);
       await tester.enterText(
         find.descendant(
@@ -139,14 +218,29 @@ void main() {
     });
   });
 
+  testWidgets('registering offers the email as the username of a new '
+      'password for AutoFill', (tester) async {
+    await _pump(tester, FakeAccount(), const Authenticate());
+    await tester.tap(find.byKey(Authenticate.registerTab));
+    await tester.pumpAndSettle();
+    expect(_hints(tester, AuthForm, 0), <String>[
+      AutofillHints.username,
+      AutofillHints.email,
+    ]);
+    expect(_hints(tester, AuthForm, 1), <String>[AutofillHints.newPassword]);
+    expect(_hints(tester, AuthForm, 2), <String>[AutofillHints.newPassword]);
+  });
+
   testWidgets('a registration Firebase refuses says why', (tester) async {
     final FakeAccount account = FakeAccount()
       ..respond = (_) async => throw _authError('email-already-in-use');
-    await _pump(tester, account, const Register());
+    await _pump(tester, account, const Authenticate());
+    await tester.tap(find.byKey(Authenticate.registerTab));
+    await tester.pumpAndSettle();
     await _enter(tester, 'Email', _email);
     await _enter(tester, 'Password', 'Passw0rdTest');
-    await _enter(tester, 'Confirm Password', 'Passw0rdTest');
-    await _tapText(tester, 'Register');
+    await _enter(tester, 'Confirm password', 'Passw0rdTest');
+    await _tapText(tester, 'Create account');
 
     expect(account.ops, <String>['register']);
     expect(
@@ -189,6 +283,34 @@ void main() {
       });
       expect(find.byType(Settings), findsNothing);
       expect(find.text('root'), findsOneWidget);
+    });
+
+    testWidgets('leaves alone what opened after MyApp popped Settings', (
+      tester,
+    ) async {
+      final Completer<void> signedOut = Completer<void>();
+      final FakeAccount account = FakeAccount()
+        ..respond = (_) => signedOut.future;
+      await openSettings(tester, account);
+      await tester.tap(find.text('Sign out'));
+      await tester.pump();
+
+      // As MyApp does once the uid changes, before the cache is cleared.
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .popUntil((Route<dynamic> r) => r.isFirst);
+      await tester.pumpAndSettle();
+      unawaited(
+        showDialog<void>(
+          context: tester.element(find.text('root')),
+          builder: (_) => const AlertDialog(title: Text('reset')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      signedOut.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('reset'), findsOneWidget);
     });
 
     testWidgets('asks before discarding entries that have not synced', (
@@ -352,11 +474,13 @@ void main() {
 
       expect(account.ops, <String>['fetchData']);
       final List<ExportFile> files = share.shared.single;
-      expect(files.first.contents, contains(',Tea,2,drink,v1,a1'));
+      expect(files.first.contents, contains(',Tea,2,,drink,v1,a1'));
       expect(files.last.contents, contains('"name": "Tea"'));
     });
 
     group('delete account', () {
+      setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
+
       Future<void> startDeletion(WidgetTester tester, FakeAccount account) {
         return _pump(
           tester,
@@ -373,6 +497,10 @@ void main() {
 
       testWidgets('says what goes, asks for the password, deletes, and '
           'returns to the root', (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          FreeTextTriggers.key(ownerID): '{"Pitch review":3}',
+          FreeTextTriggers.key('someone-else'): '{"Other":3}',
+        });
         final FakeAccount account = FakeAccount();
         await startDeletion(tester, account);
         expect(find.text(AccountCopy.deleteConfirmBody), findsOneWidget);
@@ -391,6 +519,11 @@ void main() {
         ]);
         expect(find.byType(AccountSettings), findsNothing);
         expect(find.text(AccountCopy.deleted), findsOneWidget);
+        // The user's own words don't outlive the account on this device.
+        expect(await const FreeTextTriggers().uses(ownerID), isEmpty);
+        expect(await const FreeTextTriggers().uses('someone-else'), {
+          'Other': 3,
+        });
       });
 
       testWidgets('cancelling at either step deletes nothing', (tester) async {

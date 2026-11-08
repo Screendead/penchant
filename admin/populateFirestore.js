@@ -19,14 +19,15 @@ function requireEmulators() {
     }
 }
 
-// Units are the names of the Unit enum in lib/data/unit.dart.
+// Units and categories are the names of the Unit and ViceCategory enums in
+// lib/data/unit.dart and lib/data/category.dart.
 const vices = [
-    { name: 'Marijuana', unit: 'puff', archived: false },
-    { name: 'Booze', unit: 'drink', archived: false },
-    { name: 'Cigarettes', unit: 'item', archived: false },
-    { name: 'Junk Food', unit: 'item', archived: false },
-    { name: 'Video Games', unit: 'hour', archived: false },
-    { name: 'Old Habit', unit: 'time', archived: true },
+    { name: 'Marijuana', unit: 'puff', archived: false, category: 'cannabis' },
+    { name: 'Booze', unit: 'drink', archived: false, category: 'alcohol' },
+    { name: 'Cigarettes', unit: 'item', archived: false, category: 'nicotine' },
+    { name: 'Junk Food', unit: 'item', archived: false, category: 'food' },
+    { name: 'Video Games', unit: 'hour', archived: false, category: 'other' },
+    { name: 'Old Habit', unit: 'time', archived: true, category: 'other' },
 ];
 
 async function seedUser(auth) {
@@ -66,17 +67,28 @@ async function populate() {
     let activityCount = 0;
     viceIDs.forEach((viceID, index) => {
         if (vices[index].archived) return;
+        const sampleTriggers = [
+            ['work/meeting'],
+            ['feeling/stressed', 'work/deadline'],
+            ['social/friends', 'place/bar'],
+            ['routine/morning'],
+            ['Late train'],
+        ];
         for (let day = 0; day < 30; day++) {
             if (Math.random() >= 0.5) continue;
             const count = Math.floor(Math.random() * 5) + 1;
             for (let i = 0; i < count; i++) {
                 const date = new Date(now);
                 date.setDate(date.getDate() - day);
+                // Optional: about half the entries carry none, as entries logged
+                // before triggers existed do.
+                const triggers = sampleTriggers[Math.floor(Math.random() * sampleTriggers.length * 2)];
                 writer.create(db.collection('activities').doc(), {
                     viceID,
                     quantity: Math.floor(Math.random() * 5) + 1,
                     ownerID,
                     createdAt: Timestamp.fromDate(new Date(date.getTime() - Math.random() * 86400000)),
+                    ...(triggers ? { triggers } : {}),
                 });
                 activityCount++;
             }

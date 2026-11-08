@@ -45,8 +45,8 @@ says "can't tell coffee and alcohol apart yet" instead of a number. Sleep is ali
 4. a 7-day moving-block bootstrap interval excludes zero.
 
 Each card shows the effect with its interval and the number of days behind it, uses "goes with", never "causes", and
-lists the pairs still collecting data ("9 of 21 days"). Missing days are missing, not zero, unless the user confirmed
-them in the [check-in](../v1-must-haves/evening-check-in-and-reminders.md).
+lists the pairs still collecting data ("9 of 21 days"). A day with nothing logged counts as a zero
+(`r2-days`).
 
 ## Why
 
@@ -90,6 +90,6 @@ Health or Calendar, so it can light up for every Pro user from their 1.0 journal
 
 **Revenue impact:** High: it is what Pro sells.
 
-**Depends on:** [granular logging](granular-logging-and-data-model.md); [trigger tagging](trigger-tagging.md); [Apple Health](apple-health-correlation.md); [calendar](calendar-integration.md); [`weekly-bucketing-leaves-a-short-trailing-bucket`](../../tech-debt/widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md).
+**Depends on:** [granular logging](granular-logging-and-data-model.md); [Apple Health](apple-health-correlation.md); [calendar](calendar-integration.md); [`weekly-bucketing-leaves-a-short-trailing-bucket`](../../tech-debt/widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md).
 
 **Needs Jack:** no

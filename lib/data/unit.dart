@@ -14,8 +14,8 @@ enum Unit {
 
   String get singular => name;
 
-  String nameFor(int count) => pluralWord(count, one: singular, other: plural);
-  String label(int count) => '${formatCount(count)} ${nameFor(count)}';
+  String nameFor(num count) => pluralWord(count, one: singular, other: plural);
+  String label(num count) => '${formatCount(count)} ${nameFor(count)}';
 
   static const Unit fallback = Unit.item;
 

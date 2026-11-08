@@ -4,7 +4,7 @@
 # live resources, so nothing run under it can reach production.
 E2E_PROJECT=demo-tracker
 # Resolved by name so flutter never picks an attached iPhone or another
-# project's simulator.
+# project's simulator. E2E_DEVICE=macos runs on this Mac as a desktop app.
 E2E_DEVICE_NAME="iPhone 18 Pro"
 E2E_DEVICE="${E2E_DEVICE:-}"
 EMULATOR_PORTS="8080 9099 9150 4000 4400 4500"
@@ -33,6 +33,9 @@ require_free_ports() {
 }
 
 boot_simulator() {
+  if [ "$E2E_DEVICE" = macos ]; then
+    return
+  fi
   if [ -z "$E2E_DEVICE" ]; then
     E2E_DEVICE="$(xcrun simctl list devices available \
       | sed -nE "s/^ +$E2E_DEVICE_NAME \(([0-9A-F-]{36})\).*/\1/p" | head -n 1)"

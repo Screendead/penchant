@@ -1,21 +1,16 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/onboarding/presets.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 
 import 'support.dart';
 
-// The day header also reads "Today", so the tabs are found by their icons.
-final Finder _graphTab = find.byIcon(Icons.show_chart_outlined);
-final Finder _todayTab = find.byIcon(Icons.today_outlined);
-
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -34,41 +29,43 @@ void main() {
 
     await register(tester, 'e2e-switch-first@example.com');
     await addVicesThroughManageData(tester, firstVices);
-    // The graph opens on the newest vice, so the activity goes on that one
-    // for the graph to draw a line.
-    await recordActivity(tester, 'Water', 2);
-    await expectRadar(tester, <String>{
-      'Coffee (0 drinks)',
+    // Trends opens on the oldest habit, so the activity goes on that one for
+    // its chart to draw a line.
+    await recordActivity(tester, 'Coffee', 2);
+    await expectTallies(tester, <String>{
+      'Coffee (2 drinks)',
       'Tea (0 drinks)',
-      'Water (2 drinks)',
+      'Water (0 drinks)',
     });
-    // Visiting the graph loads the first account's range too.
-    await tap(tester, _graphTab);
+    // Opening Trends loads the first account's range too.
+    await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
-    await tap(tester, _todayTab);
-    await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('1 activity'));
-    await closeDrawerPage(tester);
+    await closeTrends(tester);
+    await openFromMenu(tester, Homepage.habitsItem);
+    await pumpUntil(tester, habitsCount('1 entry'));
+    await closeMenuPage(tester);
 
     await signOutThroughSettings(tester);
     await signIn(tester, second);
 
+    // The second account has no habits, so it starts on the onboarding.
     await pumpUntilNeverShowing(
       tester,
-      find.textContaining('No vices yet. Add one'),
+      find.text(OnboardingCopy.introHeadline),
       firstVices,
     );
-    await tap(tester, _graphTab);
+    await skipTheOnboarding(tester);
     await pumpUntilNeverShowing(
       tester,
-      find.text('No vices available to graph'),
+      find.textContaining('No habits yet. Add one'),
       firstVices,
     );
-    await tap(tester, _todayTab);
-    await openFromDrawer(tester, 'Manage Data');
+    // With no habits there is no Trends sheet to carry the first account's.
+    expect(find.byType(TrendsSheet), findsNothing);
+    await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntilNeverShowing(
       tester,
-      find.text('No vices yet. Tap + to add one.'),
+      find.text('No habits yet. Tap + to add one.'),
       firstVices,
     );
     expect(find.byType(Homepage, skipOffstage: false), findsOneWidget);

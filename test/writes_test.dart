@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -21,6 +22,7 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
+import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -83,6 +85,7 @@ Future<void> _pumpOpened(
     ProviderScope(
       overrides: [
         trackerWritesProvider.overrideWithValue(writes),
+        memoryJournal(),
         userProvider.overrideWith(
           (ref) => users ?? Stream.value(FakeUser(ownerID)),
         ),
@@ -125,11 +128,11 @@ void main() {
     writes = FakeTrackerWrites();
   });
 
-  group('Add Vice', () {
+  group('Add Habit', () {
     Future<void> fillAndSave(WidgetTester tester) async {
       await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Coffee',
       );
       await tester.tap(find.byType(DropdownButtonFormField<Unit>));
@@ -146,13 +149,34 @@ void main() {
       await fillAndSave(tester);
 
       expect(writes.writes, [
-        const Write('addVice', '', <String, Object?>{
+        const Write('addVice', 'vice-1', <String, Object?>{
           'ownerID': ownerID,
           'name': 'Coffee',
           'unit': Unit.drink,
+          'category': ViceCategory.other,
         }),
       ]);
       expect(find.byType(ViceForm), findsNothing);
+    });
+
+    testWidgets('saves the picked category', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, const [], const ViceForm());
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Habit Name'),
+        'Coffee',
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Unit.drink.plural).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ViceCategory.caffeine.label).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.single.fields['category'], ViceCategory.caffeine);
     });
 
     testWidgets('a save in flight disables Save, and one that outlasts the '
@@ -160,7 +184,7 @@ void main() {
       writes.respond = _never;
       await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Coffee',
       );
       await tester.tap(find.byType(DropdownButtonFormField<Unit>));
@@ -196,7 +220,7 @@ void main() {
     });
   });
 
-  group('Edit Vice', () {
+  group('Edit Habit', () {
     final Vice legacy = Vice(
       id: 'coffee',
       name: 'x' * 61,
@@ -225,7 +249,7 @@ void main() {
     testWidgets('opens filled with the vice', (WidgetTester tester) async {
       await open(tester);
 
-      expect(find.text('Edit Vice'), findsOneWidget);
+      expect(find.text('Edit Habit'), findsOneWidget);
       expect(find.text('x' * 61), findsOneWidget);
       expect(find.text(Unit.drink.plural), findsOneWidget);
     });
@@ -248,7 +272,7 @@ void main() {
     testWidgets('writes only a changed name', (WidgetTester tester) async {
       await open(tester);
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Espresso',
       );
       await save(tester);
@@ -256,6 +280,48 @@ void main() {
       expect(writes.writes, [
         const Write('updateVice', 'coffee', <String, Object?>{
           'name': 'Espresso',
+        }),
+      ]);
+    });
+
+    testWidgets('writes only a changed category', (WidgetTester tester) async {
+      await open(tester);
+      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ViceCategory.food.label).last);
+      await tester.pumpAndSettle();
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'category': ViceCategory.food,
+        }),
+      ]);
+    });
+
+    testWidgets('a vice written before categories opens on the guess and '
+        'saves it', (WidgetTester tester) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith(
+          (ref) => AsyncData([
+            Vice(
+              id: 'beer',
+              name: 'Beer',
+              unit: Unit.drink,
+              ownerID: ownerID,
+              createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+              archived: false,
+              categoryStored: false,
+            ),
+          ]),
+        ),
+      ], const EditVice(viceID: 'beer'));
+      expect(find.text(ViceCategory.alcohol.label), findsOneWidget);
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'beer', <String, Object?>{
+          'category': ViceCategory.alcohol,
         }),
       ]);
     });
@@ -339,7 +405,7 @@ void main() {
       ) async {
         await openThenRename(tester);
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Vice Name'),
+          find.widgetWithText(TextFormField, 'Habit Name'),
           'Latte',
         );
         await save(tester);
@@ -369,7 +435,7 @@ void main() {
         viceListProvider.overrideWith((ref) => AsyncData(<Vice>[])),
       ], const EditVice(viceID: 'coffee'));
 
-      expect(find.text('Vice not found'), findsOneWidget);
+      expect(find.text('Habit not found'), findsOneWidget);
     });
   });
 
@@ -386,6 +452,9 @@ void main() {
 
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([active, archived])),
+      viceActivityHistoryProvider.overrideWith(
+        (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
+      ),
       viceActivityCountProvider.overrideWith(
         (ref, String viceID) =>
             const AsyncData((count: 0, source: CountSource.server)),
@@ -395,10 +464,21 @@ void main() {
     testWidgets('archives an active vice and unarchives an archived one', (
       WidgetTester tester,
     ) async {
-      await _pumpOpened(tester, writes, overrides(), const ManageData());
-
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: active.id),
+      );
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
+      await tester.pumpWidget(const SizedBox());
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: archived.id),
+      );
       await tester.tap(find.byTooltip('Unarchive'));
       await tester.pump();
 
@@ -415,7 +495,12 @@ void main() {
     testWidgets('an archive in flight disables that row, and one that '
         'outlasts the timeout says it will sync', (WidgetTester tester) async {
       writes.respond = _never;
-      await _pumpOpened(tester, writes, overrides(), const ManageData());
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: active.id),
+      );
 
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
@@ -423,17 +508,14 @@ void main() {
       expect(writes.writes, hasLength(1));
       expect(
         tester
-            .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.archive))
-            .onPressed,
-        isNull,
-      );
-      expect(
-        tester
             .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.unarchive),
+              find.ancestor(
+                of: find.byTooltip('Archive'),
+                matching: find.byType(IconButton),
+              ),
             )
             .onPressed,
-        isNotNull,
+        isNull,
       );
 
       await tester.pump(writeTimeout);
@@ -472,25 +554,33 @@ void main() {
         ),
       ], const ManageData());
 
-      expect(find.text('1 activity'), findsOneWidget);
+      expect(find.textContaining(' · 1 entry'), findsOneWidget);
       expect(
-        find.text(
-          '${ManageData.archivedLabel}, 3 activities on this device (offline)',
+        find.textContaining(' · 3 entries on this device (offline)'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          ' · 2 entries on this device (server count unavailable)',
         ),
         findsOneWidget,
       );
       expect(
-        find.text('2 activities on this device (server count unavailable)'),
+        find.textContaining(' · ${ManageData.countUnavailable}'),
         findsOneWidget,
       );
-      expect(find.text(ManageData.countUnavailable), findsOneWidget);
     });
 
     testWidgets('shows the error when archiving fails', (
       WidgetTester tester,
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('permission-denied'));
-      await _pumpOpened(tester, writes, overrides(), const ManageData());
+      await _pumpOpened(
+        tester,
+        writes,
+        overrides(),
+        ViceActivityHistoryPage(viceID: active.id),
+      );
 
       await tester.tap(find.byTooltip('Archive'));
       await tester.pumpAndSettle();
@@ -514,10 +604,7 @@ void main() {
     ];
 
     final Finder dialog = find.byType(RecordNewActivityDialog);
-    final Finder record = find.descendant(
-      of: find.byType(AlertDialog),
-      matching: find.text('Record'),
-    );
+    final Finder record = find.byKey(RecordNewActivityDialog.submitKey);
 
     Future<void> fill(WidgetTester tester) async {
       await _pumpOpened(
@@ -567,6 +654,29 @@ void main() {
       expect(find.text('Activity removed'), findsOneWidget);
     });
 
+    testWidgets('records a decimal as its amount, with the quantity rounded '
+        'up', (WidgetTester tester) async {
+      await fill(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '1.5',
+      );
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      final Write write = writes.writes.single;
+      expect(write.fields['quantity'], 2);
+      expect(write.fields['amount'], 1.5);
+    });
+
+    testWidgets('a whole number writes no amount', (WidgetTester tester) async {
+      await fill(tester);
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.single.fields.containsKey('amount'), isFalse);
+    });
+
     testWidgets('a second press after a failure writes the same document', (
       WidgetTester tester,
     ) async {
@@ -597,7 +707,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dialog, findsOneWidget);
-      expect(find.text('That vice no longer exists'), findsOneWidget);
+      expect(find.text('That habit no longer exists'), findsOneWidget);
     });
 
     testWidgets('a write that outlasts the timeout closes the dialog and says '
@@ -653,10 +763,76 @@ void main() {
     });
   });
 
+  group('the activity editor on an entry with an amount', () {
+    final Vice coffee = fakeVice('coffee');
+    final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
+    final ViceActivity activity = fakeActivity(coffee.id, 2, at, amount: 1.5);
+
+    Future<void> open(WidgetTester tester) => _pumpOpened(
+      tester,
+      writes,
+      [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(activity),
+        ),
+      ],
+      ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
+    );
+
+    String quantityText(WidgetTester tester) => tester
+        .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
+        .controller!
+        .text;
+
+    testWidgets('shows the amount, and a whole number replaces it', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      expect(quantityText(tester), '1.5');
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '3',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [
+        Write('updateActivity', activity.id, <String, Object?>{
+          'quantity': 3,
+          'amount': 3.0,
+        }),
+      ]);
+    });
+
+    testWidgets('Undo after a delete writes the amount back', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('Deleted 1.5'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.fields['quantity'], 2);
+      expect(writes.writes.last.fields['amount'], 1.5);
+    });
+  });
+
   group('the activity editor', () {
     final Vice coffee = fakeVice('coffee');
     final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
-    final ViceActivity activity = fakeActivity(coffee.id, 3, at);
+    final ViceActivity activity = fakeActivity(
+      coffee.id,
+      3,
+      at,
+      triggers: <String>['work/meeting', 'Late train'],
+    );
 
     List<Override> overrides() => [
       viceListProvider.overrideWithValue(AsyncData([coffee])),
@@ -691,6 +867,25 @@ void main() {
       expect(editor, findsNothing);
     });
 
+    testWidgets('saves a decimal as its amount, with the quantity rounded up', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '0.25',
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [
+        Write('updateActivity', activity.id, <String, Object?>{
+          'quantity': 1,
+          'amount': 0.25,
+        }),
+      ]);
+    });
+
     testWidgets('a save that outlasts the timeout closes and says it will '
         'sync', (WidgetTester tester) async {
       writes.respond = _never;
@@ -711,48 +906,46 @@ void main() {
       expect(find.text('Request timed out'), findsNothing);
     });
 
-    testWidgets('a delete in flight disables both actions, and one that '
-        'outlasts the timeout closes and says it will sync', (
+    testWidgets('deletes the activity, closes, and Undo writes it back, '
+        'triggers included', (WidgetTester tester) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(writes.writes, [Write('deleteActivity', activity.id)]);
+      expect(editor, findsNothing);
+      expect(find.textContaining('Deleted 3'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.id, activity.id);
+      expect(writes.writes.last.fields['triggers'], [
+        'work/meeting',
+        'Late train',
+      ]);
+      expect(find.text(restoredMessage), findsOneWidget);
+    });
+
+    testWidgets('a delete that outlasts the timeout says it will sync', (
       WidgetTester tester,
     ) async {
       writes.respond = _never;
       await open(tester);
       await tester.tap(find.byTooltip('Delete'));
-      await tester.pump();
-
-      expect(
-        tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.delete_outline),
-            )
-            .onPressed,
-        isNull,
-      );
-      expect(
-        tester
-            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
-            .onPressed,
-        isNull,
-      );
+      await tester.pumpAndSettle();
+      expect(editor, findsNothing);
 
       await tester.pump(writeTimeout);
       await tester.pumpAndSettle();
 
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(editor, findsNothing);
       expect(find.text(queuedDeleteMessage), findsOneWidget);
     });
 
-    testWidgets('deletes the activity and closes', (WidgetTester tester) async {
-      await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pumpAndSettle();
-
-      expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(editor, findsNothing);
-    });
-
-    testWidgets('stays open and shows the error when the delete fails', (
+    testWidgets('shows the error when the delete fails', (
       WidgetTester tester,
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
@@ -760,7 +953,6 @@ void main() {
       await tester.tap(find.byTooltip('Delete'));
       await tester.pumpAndSettle();
 
-      expect(editor, findsOneWidget);
       expect(
         find.text('Could not delete this activity. $_offline'),
         findsOneWidget,
@@ -783,22 +975,50 @@ void main() {
       ),
     ];
 
-    testWidgets('deletes a row and says so', (WidgetTester tester) async {
+    final Finder row = find.descendant(
+      of: find.byType(SingleChildScrollView),
+      matching: find.byType(Dismissible),
+    );
+
+    Future<void> swipe(WidgetTester tester) async {
+      await tester.drag(row, const Offset(-500, 0));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a swipe deletes a row, and Undo writes it back', (
+      WidgetTester tester,
+    ) async {
       await _pumpOpened(
         tester,
         writes,
         overrides(),
         ViceActivityHistoryPage(viceID: coffee.id),
       );
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pumpAndSettle();
+      await swipe(tester);
 
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(find.text('Activity deleted'), findsOneWidget);
+      expect(find.textContaining('Deleted 3'), findsOneWidget);
+      // The fake's list still holds it; the page hides it until Undo.
+      expect(row, findsNothing);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, hasLength(2));
+      expect(writes.writes.last.op, 'recordActivity');
+      expect(writes.writes.last.id, activity.id);
+      expect(writes.writes.last.fields, <String, Object?>{
+        'ownerID': ownerID,
+        'viceID': coffee.id,
+        'quantity': 3,
+        'createdAt': activity.createdAt.toDate(),
+      });
+      expect(row, findsOneWidget);
     });
 
-    testWidgets('a delete in flight disables its button, and one that '
-        'outlasts the timeout says it will sync', (WidgetTester tester) async {
+    testWidgets('a delete that outlasts the timeout says it will sync', (
+      WidgetTester tester,
+    ) async {
       writes.respond = _never;
       await _pumpOpened(
         tester,
@@ -806,27 +1026,44 @@ void main() {
         overrides(),
         ViceActivityHistoryPage(viceID: coffee.id),
       );
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pump();
-
+      await swipe(tester);
       expect(writes.writes, [Write('deleteActivity', activity.id)]);
-      expect(
-        tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.delete_outline),
-            )
-            .onPressed,
-        isNull,
-      );
 
       await tester.pump(writeTimeout);
       await tester.pumpAndSettle();
 
       expect(find.text(queuedDeleteMessage), findsOneWidget);
-      expect(find.text('Activity deleted'), findsNothing);
+      expect(find.textContaining('Deleted 3'), findsNothing);
     });
 
-    testWidgets('shows the error when the delete fails', (
+    testWidgets('an entry the snapshot drops and then puts back shows again', (
+      WidgetTester tester,
+    ) async {
+      List<ViceActivity> current = <ViceActivity>[activity];
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData(current),
+        ),
+      ], ViceActivityHistoryPage(viceID: coffee.id));
+      await swipe(tester);
+      expect(row, findsNothing);
+
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(ViceActivityHistoryPage)),
+      );
+      // The local delete lands, then a late refusal rolls it back.
+      current = <ViceActivity>[];
+      container.invalidate(viceActivityHistoryProvider);
+      await tester.pump();
+      current = <ViceActivity>[activity];
+      container.invalidate(viceActivityHistoryProvider);
+      await tester.pump();
+
+      expect(row, findsOneWidget);
+    });
+
+    testWidgets('a failed delete brings the row back and says why', (
       WidgetTester tester,
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
@@ -836,14 +1073,13 @@ void main() {
         overrides(),
         ViceActivityHistoryPage(viceID: coffee.id),
       );
-      await tester.tap(find.byTooltip('Delete'));
-      await tester.pumpAndSettle();
+      await swipe(tester);
 
       expect(
         find.text('Could not delete this activity. $_offline'),
         findsOneWidget,
       );
-      expect(find.text('Activity deleted'), findsNothing);
+      expect(row, findsOneWidget);
     });
   });
 
@@ -950,12 +1186,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '2',
       );
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.text('Record'),
-        ),
-      );
+      await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pump();
       await waitOutTimeout(tester);
     }
@@ -1034,7 +1265,8 @@ void main() {
           (ref, ViceActivityHistoryQuery query) => AsyncData([activity]),
         ),
       ], ViceActivityHistoryPage(viceID: coffee.id));
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
       await tester.pump();
 
       ProviderScope.containerOf(
@@ -1158,7 +1390,8 @@ void main() {
             widget is FocusScope && widget.debugLabel == 'Navigator Scope',
       );
       final State scope = tester.state(navigatorScope);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
       await tester.pump();
       await waitOutTimeout(tester);
       await refusal.refuse(tester);
@@ -1175,7 +1408,7 @@ void main() {
       final _LateRefusal refusal = holdWrites();
       await _pumpOpened(tester, writes, const [], const ViceForm());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Vice Name'),
+        find.widgetWithText(TextFormField, 'Habit Name'),
         'Coffee',
       );
       await tester.tap(find.byType(DropdownButtonFormField<Unit>));
@@ -1187,7 +1420,7 @@ void main() {
       await waitOutTimeout(tester);
       await refusal.refuse(tester);
 
-      expect(_rejected('Not saved: the vice Coffee'), findsOneWidget);
+      expect(_rejected('Not saved: the habit Coffee'), findsOneWidget);
     });
 
     testWidgets('archiving is named', (WidgetTester tester) async {
@@ -1198,7 +1431,10 @@ void main() {
           (ref, String viceID) =>
               const AsyncData((count: 0, source: CountSource.server)),
         ),
-      ], const ManageData());
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
+        ),
+      ], const ViceActivityHistoryPage(viceID: 'coffee'));
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
       await waitOutTimeout(tester);
@@ -1214,13 +1450,23 @@ void main() {
       final StreamController<User?> users = StreamController<User?>();
       addTearDown(() => unawaited(users.close()));
       users.add(FakeUser(ownerID));
-      await _pumpOpened(tester, writes, users: users.stream, [
-        viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
-        viceActivityCountProvider.overrideWith(
-          (ref, String viceID) =>
-              const AsyncData((count: 0, source: CountSource.server)),
-        ),
-      ], const ManageData());
+      await _pumpOpened(
+        tester,
+        writes,
+        users: users.stream,
+        [
+          viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+          viceActivityCountProvider.overrideWith(
+            (ref, String viceID) =>
+                const AsyncData((count: 0, source: CountSource.server)),
+          ),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, ViceActivityHistoryQuery query) =>
+                AsyncData(<ViceActivity>[]),
+          ),
+        ],
+        const ViceActivityHistoryPage(viceID: 'coffee'),
+      );
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
       await waitOutTimeout(tester);
@@ -1239,6 +1485,7 @@ void main() {
       final ProviderContainer container = ProviderContainer(
         overrides: [
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          memoryJournal(),
         ],
       );
       addTearDown(container.dispose);

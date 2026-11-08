@@ -73,7 +73,7 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 <div class="wrap">
   <header>
     <h1>Tracker: calls for Jack</h1>
-    <p class="lede">Round 1 is decided and built. Round 5 is new today (the Today chart at large text); Round 4 is open; Round 2 holds the calls that 1.0 hangs on; the first group has screenshots of options built on branches. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
+    <p class="lede">Round 9 is new today: three calls from the Habits, Settings and Account screens, each built one way, with the mock-up beside the built app. Every call in rounds 1 to 8 is picked; they stay below with your picks. Tap an option to pick it; picks save as you go and Claude reads them back. Tap a screenshot to open it full size.</p>
     <div class="tally" id="tally"></div>
     <p class="banner" id="banner">Connecting to saved picks…</p>
   </header>
@@ -100,8 +100,81 @@ textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: verti
 
 <script>
 const GROUPS = [
+  { title: "Round 9 (7 November): Habits, Settings and Account against the mock-up", sub: "Raised by PRs #99 and #100. Each is built the first way; a pick changes a little code. Screenshots put the mock-up on the left.", calls: [
+    { id: "r9-archive", q: "Where does a habit's Archive control live?",
+      ctx: "Archiving hides a habit from Today and the Log fan and keeps its history, listed under Habits › Archived. Built (PR #100): a round archive button beside the pencil at the top of the habit's history page; one tap archives, the same button unarchives, no confirm. The mock-up has no archive control anywhere: its history page shows only the pencil. On that page, swiping an entry left already deletes it.",
+      imgs: [["r9-history", "History: mock-up (pencil only) and built (archive and pencil)", "wide"], ["r9-habits", "Habits: the rows a swipe would act on", "wide"]],
+      opts: [
+        { k: "A", t: "A button on the history page (as built)", c: "No work. Visible, one tap from the habit, undone with the same button. One more button than the mock-up's header." },
+        { k: "B", t: "Swipe or long-press a Habits row", c: "Archives without opening the habit, and the history header matches the mock-up. Hidden: needs Undo and a VoiceOver action, and swipe-left would archive on Habits but delete one screen deeper. Half a day plus tests." },
+        { k: "C", t: "A row at the foot of the habit editor", c: "The history header matches the mock-up exactly; archiving takes two taps (pencil, then Archive). About two hours; the archive tests move to the editor." } ],
+      rec: "A", why: "The mock-up gives Archive no home, and A is the only place someone finds it without being told. A swipe that archives on Habits and deletes on history teaches one gesture two meanings. If the mock-up's header matters more to you, C is the cheap way to get it." },
+    { id: "r9-appearance", q: "Can you choose light or dark, or does the app always match the phone?",
+      ctx: "Built (PR #99): Settings › App shows “Appearance · Match system” as a fixed row, with no chevron and nothing on tap; the app follows the phone's light or dark setting. The mock-up draws the same row with a chevron, so it implies a picker. Both themes are built and contrast-checked.",
+      imgs: [["r9-settings", "Settings: mock-up (chevron) and built (fixed)", "wide"]],
+      opts: [
+        { k: "A", t: "Match system only (as built)", c: "No work. The row looks like a setting but does nothing on tap." },
+        { k: "B", t: "A Light / Dark / Match system picker, saved on the device", c: "Matches the mock-up's chevron. Saved with shared_preferences, already a dependency; each device keeps its own choice; no data-model or rules change. Half a day." },
+        { k: "C", t: "Drop the row", c: "One line. Honest, and the app still follows the phone, but it departs from the mock-up." } ],
+      rec: "B", why: "The mock-up you picked promises a choice, and it costs half a day with no data change. Someone logging late at night may want dark whatever the phone is set to; a per-device choice is the usual iOS pattern and keeps it out of the account." },
+    { id: "r9-export", q: "Where does Export my data live?",
+      ctx: "Built (PR #99): only in Account Settings › Your data, beside Delete account, so it takes Settings › Account › Export. The delete dialog's “Export first” button runs it there. The mock-up puts “Export my data · CSV, JSON” in Settings' first card, under Account. Export is free under every Pro option.",
+      imgs: [["r9-settings", "Settings: the mock-up has an Export row, the build doesn't", "wide"], ["r9-account", "Built: Account Settings › Your data"]],
+      opts: [
+        { k: "A", t: "Account Settings only (as built)", c: "No work. Reached only through Settings › Account, one screen deeper than the mock-up." },
+        { k: "B", t: "Also a row in Settings, as the mock-up", c: "One tap from Settings, and Account Settings keeps it beside Delete. The export code moves out of Account Settings so both rows share it. About two hours." },
+        { k: "C", t: "Settings only", c: "Matches the mock-up with one entry point; the delete dialog's Export first still works, and Account Settings' Your data card holds only Delete. About two hours." } ],
+      rec: "B", why: "It matches the mock-up you picked, puts the free export one tap from Settings, and leaves it where someone about to delete their account looks." } ] },
+
+  { title: "Round 8 (6 November): the Day Dial against its mock-up", sub: "Raised by PRs #83, #92 and #94. Each is built the first way; a pick changes a little code. Screenshots put the mock-up on the left.", calls: [
+    { id: "r8-clear-spokes", q: "On a clear day, do the dial's major spokes stay at full strength?",
+      ctx: "With nothing logged, the minor spokes fade to 25% and the sage ring draws on. The mock-up fades the major spokes to 25% as well. The build keeps them at full strength: in light they already sit at the 3:1 floor for meaningful graphics that your contrast rule sets, so a 25% major spoke falls below it.",
+      imgs: [["r8-clear-dark", "Clear day, dark: mock-up and built", "wide"], ["r8-clear-light", "Built, light"]],
+      opts: [
+        { k: "A", t: "Full strength (as built)", c: "Meets 3:1 in both themes. The clear dial reads a little busier than the mock-up. No work." },
+        { k: "B", t: "25%, as the mock-up", c: "The quietest clear day. Breaks the contrast rule unless clear-day spokes are classed as decoration (the 00/06/12/18 labels still give the time). One line and a contrast-pair change." } ],
+      rec: "A", why: "The contrast rule was yours and it holds without an exception, and the sage ring already says the day is clear." },
+    { id: "r8-coach", q: "Build the first-run “Tap Log” pill, and what shows it?",
+      ctx: "The mock-up's Record board has a pill beside the Log button saying “Tap Log”, shown only in its demo flow; its notes name no trigger. It is not built. The onboarding flow (r2-presets) ends with an optional first log, so the pill matters most for someone who skips it.",
+      imgs: [["r8-coach", "Mock-up: the pill beside Log"]],
+      opts: [
+        { k: "A", t: "Until the account's first entry", c: "Shows while the account has no entries at all, on any device; gone after the first log. One small query at launch (one document at most), no new field. Half a day." },
+        { k: "B", t: "Once per install", c: "A flag on the device; the first tap on Log clears it. Shows again on each new device, even to a long-time user. Half a day." },
+        { k: "C", t: "Don't build it", c: "No work. The Log button is the screen's one large control." } ],
+      rec: "A", why: "It shows to exactly the people who have never logged, and never to anyone who has, whatever device they open." },
+    { id: "r8-bead-size", q: "What does a bead's size compare against?",
+      ctx: "Built: radius 7.5 × √(amount ÷ typical), clamped to 5–14 pt, where typical is the median of that habit's entries on the shown day, which costs no read. So sizes compare only within one day: on a day with one coffee that bead is the middle size, whatever the amount. The mock-up sizes each habit against a fixed typical amount, so a big entry looks big on any day. Neither shows the one-line explainer of what size means.",
+      imgs: [["r8-sparse-light", "Sparse day: mock-up and built", "wide"], ["busy-light", "Busy day: mock-up and built", "wide"]],
+      opts: [
+        { k: "A", t: "Median of the shown day (as built)", c: "No work, no extra reads. A single entry is always middle-sized." },
+        { k: "B", t: "Each habit's usual over the last 7 days", c: "One 7-day query for all habits, which the existing index covers, computed on the device. Sizes compare across days and nothing is stored. About a day." },
+        { k: "C", t: "A typical amount stored per habit (mock-up)", c: "An optional field on vices, set in the habit editor and defaulted from history; a rules change and a test. The most predictable, and one more thing to set. One to two days." } ],
+      rec: "B", why: "It gives the mock-up's behaviour, sizes that mean the same thing every day, without a new field to set or migrate. Add the explainer line with it." },
+    { id: "r8-tally-target", q: "How large is each tally row's + touch target?",
+      ctx: "The + is drawn at 32 pt in a 38 pt row, as in the mock-up. Its ink is 44 × 44, but Flutter takes touches only inside the row, so the target is 44 × 38, and the rows' targets meet with no gap. VoiceOver's frame is stretched to 44 pt, and that frame is what the app's 44 pt tap-target test reads, not the touch area. WCAG 2.2 AA's minimum is 24 × 24; Apple's guidelines and WCAG AAA ask for 44 × 44.",
+      imgs: [["busy-light", "Tally rows: mock-up and built", "wide"]],
+      opts: [
+        { k: "A", t: "44 × 38 (as built, the mock-up's rows)", c: "No work. Passes WCAG 2.2 AA; the touch area is 6 pt short of Apple's 44. A near miss lands on the next row's +, and Undo covers it." },
+        { k: "B", t: "44 pt rows", c: "Meets 44 × 44. Today grows 30 pt over five rows, so on a 390 × 844 phone the fifth tally sits under the Log button. Small." },
+        { k: "C", t: "An overlay that lets the 44 pt ink take touches", c: "As the mock-up's CSS does. Neighbouring targets overlap by 6 pt and the nearer centre wins, so the spacing is still 38 pt in practice. Half a day." } ],
+      rec: "A", why: "It passes WCAG 2.2 AA and keeps all five tallies clear of the Log button; C only looks larger, and B costs the layout you picked." },
+    { id: "r8-mac-window", q: "What size does the Mac window open at?",
+      ctx: "It opens at 800 × 600, below the split view's 900 pt, so a new Mac user sees the phone layout until they widen the window. The split view puts the dial and tallies on the left and Trends on the right (PR #92). The macOS end-to-end suite runs only on this Mac since CI dropped its macOS job.",
+      imgs: [["r8-split-1200", "Built: split view at 1200 pt", "wide"]],
+      opts: [
+        { k: "A", t: "800 × 600, the phone layout (as built)", c: "No work; the macOS end-to-end suite keeps covering the phone layout. The split view has to be found by resizing." },
+        { k: "B", t: "About 1200 × 780, split view by default", c: "One window-size change; remembering the size the user leaves is a small extra. Every macOS end-to-end test then runs on the split layout, so it lands with the end-to-end rewrite (1g)." } ],
+      rec: "B", why: "The split view is the Mac design; a Mac app that opens as a phone looks unfinished. Doing it in 1g keeps the tests honest." },
+    { id: "r8-mac-keys", q: "Can you log from the Mac keyboard?",
+      ctx: "Not yet. Left and Right step the day; Enter on the Log button opens the fan, Tab walks its wedges and Escape closes it. Habits are listed in the order they were created.",
+      opts: [
+        { k: "A", t: "No shortcut (as built)", c: "No work. Logging needs the mouse or Tab." },
+        { k: "B", t: "⌘1 to ⌘9 log one of the Nth habit now", c: "The fastest; the macOS idea proposes it. Listed in the menu bar. A stray press logs an entry, which the 8 s Undo covers; habits past the ninth use the fan. Half a day." },
+        { k: "C", t: "⌘N opens the Log fan", c: "The Mac convention for “new”. Two steps per log, and nothing logs by accident. Small." } ],
+      rec: "B", why: "One keystroke per entry is the Mac's answer to the phone's one tap, and Undo makes a stray press cheap. ⌘N for the fan can ride along at little cost." } ] },
+
   { title: "Round 2: built options", sub: "Each option below was built as real app code on a branch and rendered. Nothing here is merged until you pick.", calls: [
-    { id: "r2-e2ee", q: "Encrypt what each entry says before it leaves the phone?", link: "ideas/release-blockers/end-to-end-encryption.md",
+    { id: "r2-e2ee", q: "Encrypt what each entry says before it leaves the phone?", link: "lib/crypto/",
       ctx: "Your steer: encrypt names and quantities; dates can stay readable. A working prototype is on mockup/e2e-encryption. What it costs either way: the database can no longer check quantity above 0 (C12) or names up to 60 (C13), so the app enforces them; and if every device, the iCloud Keychain and the recovery key are all lost, the journal is unreadable for good.",
       imgs: [["e2ee-signup", "Recovery key at sign-up"], ["e2ee-card", "…or a Today card after a week"], ["e2ee-settings", "Settings shows the key again"], ["e2ee-enter", "New device: enter the key"], ["e2ee-new", "Key lost: start a new journal"]],
       opts: [
@@ -124,7 +197,7 @@ const GROUPS = [
         { k: "B", t: "Tiles first", c: "Big tiles fill the screen; the chart and timeline start below the fold at 5 vices. Effort M–L." },
         { k: "C", t: "Today's screen plus a timeline", c: "Logging stays in the dialog, so no one-tap log. Effort S." } ],
       rec: "A", why: "It is the only layout that shows the timeline on the first screen, and the timeline is what the insights are built from. Its tiles log in one tap like B's." },
-    { id: "r2-presets", q: "Which starter presets and voice does a new user see?", link: "ideas/v1-must-haves/first-run-onboarding.md",
+    { id: "r2-presets", q: "Which starter presets and voice does a new user see?", link: "lib/onboarding/presets.dart",
       ctx: "One flow for all three: what the app is, pick what to track, a disclaimer, an optional first log, then Today.",
       imgs: [["pre-plain", "Plain: substances named"], ["pre-every", "Everyday habits first"], ["pre-own", "Own words: nothing named"], ["pre-intro", "Plain: intro"], ["pre-disc", "Plain: disclaimer"]],
       opts: [
@@ -132,7 +205,7 @@ const GROUPS = [
         { k: "B", t: "Everyday habits first", c: "Coffee, Social media, Gaming… with Alcohol and Nicotine below. Blurs the niche." },
         { k: "C", t: "Own words", c: "The user types each one. Lowest exposure, slowest first log." } ],
       rec: "A", why: "The app is for people journaling exactly these things; naming them plainly is fastest, and 18+ plus the disclaimer manage review risk. Gambling stays only if it doesn't change the age rating; ship custom unit labels alongside (“Counted in cigarettes”)." },
-    { id: "r2-triggers", q: "Which starter trigger tree ships?", link: "ideas/insights/trigger-tagging.md",
+    { id: "r2-triggers", q: "Which starter trigger tree ships?", link: "lib/data/trigger_tree.dart",
       ctx: "Same picker for all three: “Usual for <vice>” chips learned on the device, a two-level drill-down, and free text that becomes a choice after three uses. Only the tree differs; it is cheap to change until users have saved triggers.",
       imgs: [["trig-a", "A. Areas of life"], ["trig-b", "B. Reasons only"], ["trig-c", "C. Feelings first"], ["trig-b2", "B. Second level"], ["trig-b3", "B. Usual choices"]],
       opts: [
@@ -154,27 +227,6 @@ const GROUPS = [
         { k: "A", t: "Reuse the iOS app's registration", c: "No console step: Claude copies the committed iOS config. Delete the RunnerTests app afterwards." },
         { k: "B", t: "Register a separate Apple app", c: "Needs a different bundle ID, which breaks one purchase covering both." } ],
       rec: "A", why: "Same bundle ID, same App Store record, one Pro purchase for both devices." } ] },
-
-  { title: "Round 5 (4 November): Today chart at large text", sub: "Built one way in PR #74; a pick changes a few lines.", calls: [
-    { id: "r5-radar-inset", q: "Inset the Today radar by one title line on every side, at every text size?",
-      ctx: "At large text the vice names around the radar were clipped. PR #74 pulls the radar in by one title line on all sides at all text sizes, and shows a key of vice names below the chart.",
-      opts: [
-        { k: "A", t: "Always inset (as built)", c: "One layout at every size; the radar is slightly smaller at normal text." },
-        { k: "B", t: "Inset only when the key shows", c: "Full-size radar at normal text; the layout changes when text grows." } ],
-      rec: "A", why: "The chart does not jump between layouts as text size changes, and the cost is a few pixels." },
-    { id: "r5-key-height", q: "How tall may the key below the Today chart be?",
-      ctx: "The key lists every vice name. With many vices or very large text it takes a lot of height.",
-      opts: [
-        { k: "A", t: "Take the height it needs (as built)", c: "The chart is left out when fewer than four title lines of room remain; the key still names every vice." },
-        { k: "B", t: "Cap at half the height, scrolling", c: "The chart always shows; the key scrolls inside a small box." },
-        { k: "C", t: "Bars instead of the radar at large text", c: "Bars, with the key when bar names still don't fit. Bars also need a name per bar, so at the largest size it still falls back to the key. About a day's work." } ],
-      rec: "A", why: "A chart squeezed to a sliver says nothing, and a nested scroller is awkward with VoiceOver and large text." },
-    { id: "r5-key-always", q: "Show the key whenever amounts are dropped from titles, not only when a name is cut?",
-      ctx: "When titles are tight, the chart drops the amounts first and keeps the names. If every name then fits, no key shows, so the day's amounts appear only as the radar's shape.",
-      opts: [
-        { k: "A", t: "Yes: also when amounts are dropped", c: "The key carries the amounts, so nothing is lost." },
-        { k: "B", t: "Only when a name is cut", c: "Fewer cases show the key; amounts can vanish with no other place to read them." } ],
-      rec: "A", why: "Dropping data from the chart should always leave it readable somewhere." } ] },
 
   { title: "Round 4 (4 November): raised by the wave D fixes", sub: "Each is built one way now; a pick changes a few lines.", calls: [
     { id: "r4-weekly", q: "How should Weekly view handle days that don't make a whole week?", link: "lib/data/usage_series.dart",
@@ -234,19 +286,13 @@ const GROUPS = [
         { k: "B", t: "Now", c: "You run firebase hosting:disable today. No app access until a build is on your phone." },
         { k: "C", t: "Keep it up", c: "It slowly diverges from the app, and it keeps the data model loose." } ],
       rec: "A", why: "Nobody else uses it, and you shouldn't lose your journal in the gap. Taking it down unblocks mandatory fields later." },
-    { id: "r2-brand", q: "What is the brand?", link: "ideas/release-blockers/brand-name.md",
+    { id: "r2-brand", q: "What is the brand?", link: "ideas/release-blockers/name-and-bundle-id.md",
       ctx: "These are quick checks only: web and App Store searches, plus domain lookups. Every exact .com and .app is taken, so plan on a variant domain. Write your own idea in the note if none fits.",
       opts: [
         { k: "A", t: "Penchant", c: "A habitual liking, without judgement. No app or brand conflict found." },
         { k: "B", t: "Kenning", c: "Old English for knowing; reads as self-knowledge." },
         { k: "C", t: "Sounding", c: "A depth reading of what lies beneath." } ],
       rec: "A", why: "It names the leaning without moralising, which fits a neutral journal. Subtitle: “Habit journal & sleep insights”. Bundle ID com.screendead.penchant on iOS and macOS." },
-    { id: "r2-trademark", q: "Pay for a trademark search before committing to the brand?",
-      ctx: "Classes 9, 42 and 44. A rename after launch costs reviews and search ranking.",
-      opts: [
-        { k: "A", t: "Yes, before the first TestFlight upload", c: "A professional search: tens to a few hundred dollars." },
-        { k: "B", t: "No, the quick checks are enough", c: "Free. The risk is found later." } ],
-      rec: "A", why: "The bundle ID locks at the first upload, and the search is cheap next to a rename." },
     { id: "r2-age", q: "Rate the app 18+?", link: "ideas/release-blockers/neutral-framing-and-age-rating.md",
       ctx: "You picked 17+ (C16), but Apple retired 17+ in July 2025. The tiers are now 4+, 9+, 13+, 16+ and 18+, and frequent alcohol, tobacco or drug references rate 18+.",
       opts: [
@@ -260,7 +306,7 @@ const GROUPS = [
         { k: "B", t: "Optional, plus a migrator and decimals", c: "Optional fields, a first-launch migrator for a vice category, and a decimal amount next to the whole-number quantity." },
         { k: "C", t: "Vices only (C18 as is)", c: "Rules out triggers and context on entries." } ],
       rec: "B", why: "Triggers and context can't be backfilled, so 1.0 has to capture them. Everything stays optional in the rules until the web site is down." },
-    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "ideas/v1-must-haves/evening-check-in-and-reminders.md",
+    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "HANDOVER.md",
       ctx: "C12 forbids zero-quantity entries, but the insights need to tell a confirmed zero day from a day you forgot to log.",
       opts: [
         { k: "A", t: "A days collection", c: "One document per day, written by an evening check-in; can later carry a note or mood." },
@@ -388,13 +434,6 @@ const GROUPS = [
         { k: "A", t: "Archive, then clean", c: "Each stash saved as a commit on a local archive branch, then dropped. Merged branches deleted; copilot/fix-9 kept." },
         { k: "B", t: "Leave everything", c: "No risk, and the clutter stays." } ],
       rec: "A", why: "Nothing is lost, because the archive branch keeps the stashes' contents, and the branch list then means something again." },
-    { id: "e2e-ci", q: "Should the iOS end-to-end tests run in CI?",
-      ctx: "They run locally today, and Claude runs them before every merge. The repo is private, so macOS runner minutes count 10×.",
-      opts: [
-        { k: "A", t: "Local only", c: "Free. Relies on Claude running them (a CLAUDE.md rule)." },
-        { k: "B", t: "On every PR, on a macOS runner", c: "Medium setup, and it costs runner minutes." },
-        { k: "C", t: "Nightly on master only", c: "A tenth of B's minutes. Breaks show up a day late." } ],
-      rec: "A", why: "The suite is small and the merge rule already demands it. Revisit when someone other than Claude merges." },
     { id: "pr-previews", q: "Keep the hosting preview deploy on every PR?",
       ctx: "Each PR deploys a preview channel inside the production Firebase project. Previews never touch the live site or Firestore data.",
       opts: [
@@ -459,7 +498,7 @@ const GROUPS = [
       ctx: "The bundle ID locks at the first TestFlight upload. Put name ideas in the note.",
       opts: [
         { k: "A", t: "Keep “Vice Tracker”", c: "No work. Generic in search." },
-        { k: "B", t: "Brand plus subtitle", c: "For example “<Brand>: Habit & Vice Log”. Needs a trademark check." },
+        { k: "B", t: "Brand plus subtitle", c: "For example “<Brand>: Habit & Vice Log”." },
         { k: "C", t: "A neutral wellness name", c: "Leaves “vice” out." } ],
       rec: "B", why: "A distinct brand is searchable and ownable, and the subtitle carries the keywords. Decide it before any upload, because renaming after launch costs reviews." } ] },
 ];
@@ -473,7 +512,11 @@ const IMG = {
   "pre-intro": "/_blob/3f4d5a24a7e59dee4ae730c056ac4754", "pre-disc": "/_blob/a7b9465bacc47dc8abb8f124ad17ea11",
   "trig-a": "/_blob/51a4ec54a2a9b899c6f5e9930c4abd85", "trig-b": "/_blob/c36bb6710c16ad8694020d9b258f5041", "trig-c": "/_blob/aef923021944f058571aac98caa0243f",
   "trig-b2": "/_blob/0944df869a2cf6421d2cea80e4b7137b", "trig-b3": "/_blob/1208657076a0b972ad882ad44666b602",
-  "brand-overview": "/_blob/9681985e021bcb5048c8bffc1d046bfe", "brand-penchant": "/_blob/864af59e45732ce7e68fa6b4f2bf2c2c", "brand-kenning": "/_blob/2bcc243eb323908882b0528883bb8c7d", "brand-sounding": "/_blob/5b0ce6ca2f371b3c0d9a0f697c90f1a6" };
+  "brand-overview": "/_blob/9681985e021bcb5048c8bffc1d046bfe", "brand-penchant": "/_blob/864af59e45732ce7e68fa6b4f2bf2c2c", "brand-kenning": "/_blob/2bcc243eb323908882b0528883bb8c7d", "brand-sounding": "/_blob/5b0ce6ca2f371b3c0d9a0f697c90f1a6",
+  "r8-clear-dark": "/_blob/98a17336cac52a189d104d2ff8eb68ac", "r8-clear-light": "/_blob/2208967c6bd55ea459f254eab5ce55a5", "r8-coach": "/_blob/457c0aed13607a68e1a2fb0cd5c82937",
+  "r8-sparse-light": "/_blob/9f99f2f8b4ca726a465c298d76aad0d3", "r8-split-1200": "/_blob/d6d729bcbee5d622ea56d43e6c9657e4", "busy-light": "/_blob/b5606c820793dba92e36c8d9378b45bb",
+  "r9-history": "/_blob/e834caffca3464acbdaea5081a9e1d4e", "r9-habits": "/_blob/db1cbfa016e54aea13e8314e1f220374", "r9-settings": "/_blob/f4c309b1fddc6f6c101018ad3e058a70",
+  "r9-account": "/_blob/bc85246e9a5766907328758dab415084" };
 const ALL = GROUPS.flatMap(g => g.calls);
 const picks = {};
 let db = null;
@@ -538,7 +581,7 @@ function callNode(c) {
   const shots = c.imgs ? el("div", { class: "shots" }, ...c.imgs.filter(([k]) => IMG[k]).map(([k, cap, cls]) =>
     el("figure", cls ? { class: cls } : {}, el("a", { href: IMG[k], target: "_blank", rel: "noopener" },
       el("img", { src: IMG[k], alt: cap, loading: "lazy" })), el("figcaption", { text: cap })))) : null;
-  if (c.link) ctx.append(" ", el("a", { class: "note", href: "https://github.com/Screendead/tracker/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
+  if (c.link) ctx.append(" ", el("a", { class: "note", href: "https://github.com/Screendead/penchant/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
   return el("div", { class: "call", id: "call-" + c.id },
     el("div", { class: "qrow" }, el("h3", { text: c.q }), status), ctx, shots, opts, why, ta);
 }

@@ -1,0 +1,31 @@
+<!-- @dsCard group="Recording" height=200 subtitle="The snackbar after a log, an edit or a delete, with its 8-second Undo ring" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .grid { display: grid; grid-template-columns: repeat(2, 400px); gap: var(--space-m) 40px; justify-content: center; padding: 24px var(--space-gutter); }
+  .snack { min-height: 52px; border-radius: var(--radius-pill); background: var(--text); color: var(--bg); display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 18px; font: 500 14px/1.3 var(--font-text); box-sizing: border-box; }
+  .snack .t { flex: 1; } .snack b { font-weight: 600; }
+  .snack.solo { padding-right: 18px; }
+  .undo { height: 40px; padding: 0 14px 0 10px; border-radius: var(--radius-pill); display: flex; align-items: center; gap: 8px; font: 600 14px/1 var(--font-text); color: var(--bg); background: color-mix(in srgb, var(--bg) 14%, transparent); }
+  .undo svg { width: 20px; height: 20px; }
+  .track { stroke: color-mix(in srgb, var(--bg) 30%, transparent); }
+</style>
+</head>
+<body>
+<div id="root" class="grid" role="status" aria-live="polite"></div>
+<script>
+  const C = 2 * Math.PI * 8;
+  const ring = left => `<svg viewBox="0 0 20 20"><circle class="track" cx="10" cy="10" r="8" fill="none" stroke-width="2.2"/><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - left)}" transform="rotate(-90 10 10)"/></svg>`;
+  const snack = (html, left) => `<div class="snack${left == null ? ' solo' : ''}"><span class="t">${html}</span>${left == null ? '' : `<span class="undo">${ring(left)}Undo</span>`}</div>`;
+  document.getElementById('root').innerHTML =
+    snack('Logged <b>1 drink</b> of Alcohol at <b>21:10</b>', .9) +
+    snack('Deleted <b>2 drinks</b> of Alcohol', .55) +
+    snack('Saved on this device. It will sync when you\'re back online.', .3) +
+    snack('Entry updated: <b>2 drinks</b> at <b>18:30</b>');
+</script>
+</body>
+</html>

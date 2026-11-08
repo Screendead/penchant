@@ -1,0 +1,41 @@
+name: macOS build
+on:
+  # Run by hand only: macOS runners are the costliest when minutes are billed.
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    # macOS runners are the costliest when minutes are billed, so this job is manual-only.
+    runs-on: macos-26
+    timeout-minutes: 45
+    concurrency:
+      group: macos-build-${{ github.head_ref || github.run_id }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-flutter
+      # The runner has no signing identity or provisioning profile for the
+      # team in macos/Runner.xcodeproj; this checks that the app compiles.
+      - name: Build (debug, unsigned)
+        env:
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+        run: flutter build macos --debug
+      # Universal (arm64 and x86_64), unlike a debug build; Flutter before
+      # 3.44.8 fails it under Xcode 27 (flutter/flutter#188346).
+      - name: Build (release, unsigned)
+        env:
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+        run: flutter build macos --release
+      - name: Build with the emulator define (debug, unsigned)
+        env:
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+        run: |
+          flutter build macos --debug --dart-define=USE_FIREBASE_EMULATORS=true
+          plist=build/macos/Build/Products/Debug/Penchant.app/Contents/Resources/GoogleService-Info.plist
+          if [ -e "$plist" ]; then
+            echo "The emulator build still bundles GoogleService-Info.plist." >&2
+            exit 1
+          fi

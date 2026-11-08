@@ -1,17 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/limits.dart';
+import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/amount_fields.dart';
+import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 
@@ -45,6 +52,9 @@ class _ViceActivityEditorPageState
   String storedDateText = '';
   String storedQuantityText = '';
   ViceActivity? shown;
+  // Null until the user changes the triggers; until then they follow the
+  // stored ones.
+  List<String>? editedTriggers;
 
   @override
   void initState() {
@@ -83,7 +93,7 @@ class _ViceActivityEditorPageState
 
   void _follow(ViceActivity activity) {
     final String dateText = dateFormat.format(activity.createdAt.toDate());
-    final String quantityText = activity.quantity.toString();
+    final String quantityText = formatAmount(activity.measure);
     if (dateController.text == storedDateText) {
       dateController.text = dateText;
     }
@@ -104,52 +114,21 @@ class _ViceActivityEditorPageState
   String _describe(Vice vice, ViceActivity activity) => describeActivity(
     vice.name,
     vice.unit,
-    activity.quantity,
+    activity.measure,
     activity.createdAt.toDate(),
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
 
-  Future<void> _deleteActivity(Vice vice, ViceActivity activity) async {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-
-    setState(() {
-      loading = true;
-      error = null;
-    });
-
-    final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
-    try {
-      final bool synced = await settleWrite(
-        ref.read(trackerWritesProvider).deleteActivity(widget.activityID),
-        onRejectedLater: rejected.reporter(
-          'Not deleted: ${_describe(vice, activity)}',
-          changes: widget.activityID,
-        ),
-      );
-      if (!synced) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text(queuedDeleteMessage)),
-        );
-      }
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while deleting an activity');
-      if (!mounted) {
-        return;
-      }
-      // The banner already says the entry was not saved.
-      if (rejected.createRefused(widget.activityID)) {
-        Navigator.of(context).pop();
-        return;
-      }
-      setState(() {
-        loading = false;
-        error = 'Could not delete this activity. ${firestoreErrorMessage(e)}';
-      });
-      _followRolledBack();
-    }
+  // The bar's Undo writes the entry back, so the delete needs no confirming.
+  void _deleteActivity(Vice vice, ViceActivity activity) {
+    deleteWithUndo(
+      ref,
+      ScaffoldMessenger.of(context),
+      vice,
+      activity,
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
+    Navigator.of(context).pop();
   }
 
   Future<void> _saveActivity(Vice vice, ViceActivity activity) async {
@@ -159,14 +138,24 @@ class _ViceActivityEditorPageState
 
     // A field the user left alone may show a parser default for a legacy value
     // the rules would still accept, so only edited fields are written.
-    final Map<String, Object> changes = <String, Object>{
-      if (dateController.text != storedDateText)
-        'createdAt': dateFormat.parse(dateController.text),
-      if (quantityController.text != storedQuantityText)
-        'quantity': int.parse(quantityController.text),
+    final DateTime? createdAt = dateController.text != storedDateText
+        ? dateFormat.parse(dateController.text)
+        : null;
+    final StoredMeasure? measure = quantityController.text != storedQuantityText
+        ? storedMeasure(
+            parseAmount(quantityController.text)!,
+            keepAmount: activity.amount != null,
+          )
+        : null;
+    final List<String>? triggers = switch (editedTriggers) {
+      // A locked entry's triggers are placeholders, never to be saved.
+      final List<String> picked
+          when !activity.locked && !listEquals(picked, activity.triggers) =>
+        picked,
+      _ => null,
     };
 
-    if (changes.isEmpty) {
+    if (createdAt == null && measure == null && triggers == null) {
       Navigator.of(context).pop();
       return;
     }
@@ -179,20 +168,36 @@ class _ViceActivityEditorPageState
     });
 
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
     try {
-      final bool synced = await settleWrite(
+      final bool synced = await rejected.settle(
         ref
             .read(trackerWritesProvider)
             .updateActivity(
               widget.activityID,
-              quantity: changes['quantity'] as int?,
-              createdAt: changes['createdAt'] as DateTime?,
+              quantity: measure?.quantity,
+              amount: measure?.amount,
+              createdAt: createdAt,
+              triggers: triggers,
             ),
-        onRejectedLater: rejected.reporter(
-          'Change not saved: ${_describe(vice, activity)}',
-          changes: widget.activityID,
-        ),
+        'Change not saved: ${_describe(vice, activity)}',
       );
+      if (triggers case final List<String> picked) {
+        freeText
+            .recordUses(
+              activity.ownerID,
+              picked.where(
+                (t) => isFreeTextTrigger(t) && !activity.triggers.contains(t),
+              ),
+            )
+            .catchError((Object e, StackTrace stack) {
+              reportError(
+                e,
+                stack,
+                context: 'while counting free-text triggers',
+              );
+            });
+      }
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
@@ -283,7 +288,8 @@ class _ViceActivityEditorPageState
                 IconButton(
                   tooltip: 'Delete',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: loading
+                  // Undo could not write a locked entry's content back.
+                  onPressed: loading || activity.locked
                       ? null
                       : () => _deleteActivity(vice, activity),
                 ),
@@ -295,7 +301,7 @@ class _ViceActivityEditorPageState
                 ),
               ],
             ),
-            body: Padding(
+            body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: formKey,
@@ -306,34 +312,25 @@ class _ViceActivityEditorPageState
                     TextFormField(
                       initialValue: vice.name,
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: 'Vice'),
+                      decoration: const InputDecoration(labelText: 'Habit'),
                     ),
-                    const SizedBox(height: 16),
-                    ActivityDateField(
-                      controller: dateController,
+                    const SizedBox(height: 24),
+                    AmountFields(
+                      quantityController: quantityController,
+                      unit: vice.unit,
+                      dateController: dateController,
                       startLive: false,
                       manualSeed: () => activity.createdAt.toDate(),
+                      triggers: editedTriggers ?? activity.triggers,
+                      onTriggersChanged: (List<String> picked) =>
+                          setState(() => editedTriggers = picked),
+                      viceID: vice.id,
+                      viceName: vice.name,
+                      enabled: !loading,
+                      quantityValidator: (String? value) =>
+                          quantityError(value, unchanged: activity.measure),
+                      error: error,
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: quantityController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Quantity',
-                        suffixText: vice.unit.nameFor(1),
-                      ),
-                      validator: (String? value) =>
-                          quantityError(value, unchanged: activity.quantity),
-                    ),
-                    if (error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -342,7 +339,7 @@ class _ViceActivityEditorPageState
         ),
         if (loading) ...[
           Positioned.fill(
-            child: Container(color: Colors.black.withValues(alpha: 0.5)),
+            child: ColoredBox(color: DialColors.of(context).scrim),
           ),
           const CircularProgressIndicator(),
         ],

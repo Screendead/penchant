@@ -1,0 +1,107 @@
+name: End to end
+# integration_test/ on an iOS Simulator against the Auth and Firestore emulators (demo-tracker), after merge
+# rather than on PRs. No macOS job: unsigned, Firebase Auth fails with keychain-error, and signing needs secrets.
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "ideas/**"
+      - "tech-debt/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  # A newer master commit cancels the older run, waiting or running, so a burst of merges tests only its last.
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  debounce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # A merge in the next two minutes cancels this run before it takes a macOS runner.
+      - if: github.event_name == 'push'
+        run: sleep 120
+  ios:
+    needs: debounce
+    runs-on: macos-26
+    # 74 minutes when flutter rebuilt the app for each file; all_test.dart builds it once.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-flutter
+      # firebase-tools refuses to start the emulators below Java 21.
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.1'
+          cache: npm
+          cache-dependency-path: tests/firestore-rules/package-lock.json
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('tests/firestore-rules/package-lock.json') }}
+      # The pub cache is subosito's (setup-flutter, cache: true), keyed on pubspec.lock.
+      # Firebase's Swift packages, resolved by Package.resolved.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+      # Xcode's intermediates, mostly the compiled Firebase packages. Only an exact key is saved, so a newer image,
+      # Flutter or dependency set saves its own; a partial restore is rebuilt by Xcode where stale.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-
+      # The firebase-tools the rules tests run with, pinned by that lockfile; tools/e2e.sh calls `firebase`.
+      - name: Install firebase-tools
+        run: |
+          npm --prefix tests/firestore-rules ci
+          echo "$PWD/tests/firestore-rules/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          flutter doctor -v
+      # The image has no "iPhone 18 Pro": take an iPhone on the newest iOS runtime.
+      - name: Pick a simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("SimRuntime\\.iOS-")))
+            | sort_by(.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber))
+            | last.value | map(select(.name | startswith("iPhone")))
+            | (map(select(.name == "iPhone 17 Pro")) + .) | .[0].udid // empty')
+          if [ -z "$udid" ]; then
+            xcrun simctl list devices available
+            echo "No available iPhone simulator." >&2
+            exit 1
+          fi
+          xcrun simctl list devices available | grep "$udid"
+          echo "E2E_DEVICE=$udid" >> "$GITHUB_ENV"
+      - name: End to end (iOS Simulator)
+        run: |
+          set -o pipefail
+          tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
+      - name: Cache sizes
+        if: always()
+        run: du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.pub-cache build/ios 2>/dev/null || true
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-ios-log
+          path: |
+            ${{ runner.temp }}/e2e-ios.log
+            *-debug.log
+          if-no-files-found: ignore

@@ -3,47 +3,72 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
-import 'package:tracker/widgets/clean_day.dart';
+import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/day_picker.dart';
+import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/writes/log_one.dart' show removedMessage;
 
 import 'support.dart';
 
-final Finder _back = find.widgetWithIcon(IconButton, Icons.arrow_back);
-final Finder _forward = find.widgetWithIcon(IconButton, Icons.arrow_forward);
-final Finder _dayMenu = find.byType(DropdownButton<DateTime>);
+final Finder _back = find.byTooltip('Previous day');
+final Finder _forward = find.byTooltip('Next day');
+final Finder _pill = find.byTooltip(DayPicker.chooseDay);
 
 DateTime _shownDay(WidgetTester tester) =>
-    tester.widget<DropdownButton<DateTime>>(_dayMenu).value!;
+    tester.widget<DayDial>(find.byType(DayDial)).day;
+
+bool _arrowEnabled(WidgetTester tester, Finder arrow) =>
+    tester
+        .widget<IconButton>(
+          find.ancestor(of: arrow, matching: find.byType(IconButton)),
+        )
+        .onPressed !=
+    null;
 
 // The forward arrow is meant to be disabled on today only; the bug greyed out
 // every control after the first navigation.
 void _expectControlsEnabled(WidgetTester tester, {required bool onToday}) {
-  expect(tester.widget<IconButton>(_back).onPressed, isNotNull, reason: 'back');
+  expect(_arrowEnabled(tester, _back), isTrue, reason: 'back');
+  expect(_arrowEnabled(tester, _forward), !onToday, reason: 'forward');
   expect(
-    tester.widget<IconButton>(_forward).onPressed,
-    onToday ? isNull : isNotNull,
-    reason: 'forward',
-  );
-  expect(
-    tester.widget<DropdownButton<DateTime>>(_dayMenu).onChanged,
+    tester
+        .widget<InkWell>(
+          find.descendant(of: _pill, matching: find.byType(InkWell)),
+        )
+        .onTap,
     isNotNull,
-    reason: 'date menu',
+    reason: 'date pill',
   );
 }
 
+// Picks [day] from the calendar the date pill opens.
 Future<void> _pickDay(WidgetTester tester, DateTime day) async {
-  await tap(tester, _dayMenu);
-  // The menu fades in; taps during the animation miss.
-  await pumpFor(tester, const Duration(milliseconds: 500));
-  await tap(tester, find.text(formatDay(day)).last);
-  await pumpFor(tester, const Duration(milliseconds: 500));
+  await tap(tester, _pill);
+  final Finder sheet = find.byType(CalendarSheet);
+  await pumpUntilRouteSettled(tester, sheet);
+  final DateTime shown = _shownDay(tester);
+  if (shown.year != day.year || shown.month != day.month) {
+    await tap(tester, find.byTooltip('Previous month'));
+    await pumpUntil(tester, find.text(formatMonth(day)));
+  }
+  await tap(
+    tester,
+    find.descendant(of: sheet, matching: find.text(formatCount(day.day))),
+  );
+  await pumpUntil(tester, sheet, present: false);
+  await pumpUntilTrue(
+    tester,
+    () => _shownDay(tester) == day,
+    () => 'the dial to show $day',
+  );
 }
 
 Future<void> _startApp(WidgetTester tester, String email) async {
@@ -53,8 +78,7 @@ Future<void> _startApp(WidgetTester tester, String email) async {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -62,7 +86,7 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('arrows and the date menu change the charted day and stay '
+  testWidgets('arrows and the calendar change the shown day and stay '
       'enabled', (WidgetTester tester) async {
     await _startApp(tester, 'e2e-days@example.com');
 
@@ -95,14 +119,14 @@ void main() {
       at: yesterday.add(const Duration(hours: 20, minutes: 30)),
     );
 
-    await expectChart(tester, todayChart);
+    await expectTallies(tester, todayChart);
     expect(_shownDay(tester), today);
     _expectControlsEnabled(tester, onToday: true);
 
     await tap(tester, _back);
     expect(_shownDay(tester), yesterday);
     expect(find.text('Yesterday'), findsOneWidget);
-    await expectChart(tester, yesterdayChart);
+    await expectTallies(tester, yesterdayChart);
     _expectControlsEnabled(tester, onToday: false);
     await screenshot(tester, 'today-view-on-yesterday');
 
@@ -113,17 +137,17 @@ void main() {
 
     await tap(tester, _forward);
     expect(_shownDay(tester), yesterday);
-    await expectChart(tester, yesterdayChart);
+    await expectTallies(tester, yesterdayChart);
     _expectControlsEnabled(tester, onToday: false);
 
     await tap(tester, _forward);
     expect(_shownDay(tester), today);
-    await expectChart(tester, todayChart);
+    await expectTallies(tester, todayChart);
     _expectControlsEnabled(tester, onToday: true);
 
     await _pickDay(tester, yesterday);
     expect(_shownDay(tester), yesterday);
-    await expectChart(tester, yesterdayChart);
+    await expectTallies(tester, yesterdayChart);
     _expectControlsEnabled(tester, onToday: false);
 
     await _pickDay(tester, twoDaysAgo);
@@ -133,12 +157,12 @@ void main() {
 
     await _pickDay(tester, today);
     expect(_shownDay(tester), today);
-    await expectChart(tester, todayChart);
+    await expectTallies(tester, todayChart);
     _expectControlsEnabled(tester, onToday: true);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
-    await screenshot(tester, 'usage-graph-tab');
+    await openTrends(tester);
+    await screenshot(tester, 'trends-sheet');
+    await closeTrends(tester);
   });
 
   testWidgets('Undo on the record snackbar deletes the activity just recorded', (
@@ -163,27 +187,67 @@ void main() {
 
     expect(await storedActivities('Water'), isEmpty);
     expect(await storedActivities('Coffee'), hasLength(1));
-    await expectChart(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
     });
   });
 
-  testWidgets('one or two vices chart as bars, three as a radar, and an empty '
-      'day reads as a clear day', (WidgetTester tester) async {
+  testWidgets("a tally's + logs one now, a wedge of the Log fan logs one, "
+      'and Undo removes the latest', (WidgetTester tester) async {
+    await _startApp(tester, 'e2e-one-tap@example.com');
+
+    await logOne(tester, 'Tea');
+    await pumpUntil(tester, find.textContaining('Logged 1 drink of Tea at'));
+    await expectTallies(tester, const <String>{
+      'Coffee (0 drinks)',
+      'Tea (1 drink)',
+      'Water (0 drinks)',
+    });
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> tea =
+        await storedActivities('Tea');
+    expect(tea, hasLength(1));
+    expect(tea.single.data()['quantity'], 1);
+    final DateTime at = (tea.single.data()['createdAt'] as Timestamp).toDate();
+    expect(DateTime.now().difference(at).inMinutes, lessThan(2));
+
+    await tap(tester, find.byType(LogButton));
+    await pumpFor(tester, const Duration(milliseconds: 800));
+    await tap(tester, fanWedge('Coffee'));
+    await pumpUntil(tester, find.textContaining('Logged 1 drink of Coffee at'));
+    await expectTallies(tester, const <String>{
+      'Coffee (1 drink)',
+      'Tea (1 drink)',
+      'Water (0 drinks)',
+    });
+    await screenshot(tester, 'today-after-one-tap');
+
+    await tap(tester, find.text('Undo'));
+    await pumpUntil(tester, find.text(removedMessage));
+    expect(await storedActivities('Coffee'), isEmpty);
+    expect(await storedActivities('Tea'), hasLength(1));
+    await expectTallies(tester, const <String>{
+      'Coffee (0 drinks)',
+      'Tea (1 drink)',
+      'Water (0 drinks)',
+    });
+  });
+
+  testWidgets('the tallies follow each habit added and the day shown, and an '
+      'empty day reads as a clear day', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-bars@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee']);
 
     final DateTime today = startOfDay(DateTime.now());
-    await pumpUntil(tester, find.byType(CleanDay));
-    expect(find.text('A clear day so far'), findsOneWidget);
+    await pumpUntil(tester, find.text(ClearDay.headline));
+    expect(find.text(ClearDay.subline(isToday: true)), findsOneWidget);
     await screenshot(tester, 'today-clean-day');
 
     await recordActivity(tester, 'Coffee', 2);
-    await expectBars(tester, const <String>{'Coffee (2 drinks)'});
-    await screenshot(tester, 'today-bars-one-vice');
+    await expectTallies(tester, const <String>{'Coffee (2 drinks)'});
+    await screenshot(tester, 'today-one-habit');
 
     await addVicesThroughManageData(tester, const <String>['Tea']);
     await recordActivity(tester, 'Tea', 1);
@@ -193,33 +257,58 @@ void main() {
       3,
       at: addDays(today, -1).add(const Duration(hours: 12)),
     );
-    await expectBars(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (1 drink)',
     });
-    await screenshot(tester, 'today-bars-two-vices');
+    await screenshot(tester, 'today-two-habits');
 
     await tap(tester, _back);
     expect(_shownDay(tester), addDays(today, -1));
-    await expectBars(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (0 drinks)',
       'Tea (3 drinks)',
     });
     await tap(tester, _back);
     await pumpUntil(tester, find.text('A clear day'));
-    await tap(tester, find.text('Jump to Today'));
-    await expectBars(tester, const <String>{
+    await tap(tester, _forward);
+    await tap(tester, _forward);
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (1 drink)',
     });
 
     await addVicesThroughManageData(tester, const <String>['Water']);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (1 drink)',
       'Water (0 drinks)',
     });
-    await screenshot(tester, 'today-radar-three-vices');
+    await screenshot(tester, 'today-three-habits');
+  });
+
+  testWidgets('a trigger picked while recording is stored and shown on the '
+      'history row', (WidgetTester tester) async {
+    await _startApp(tester, 'e2e-triggers@example.com');
+
+    await recordActivity(
+      tester,
+      'Coffee',
+      1,
+      triggerTaps: const <String>['Work', 'Meeting'],
+    );
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
+        await storedActivities('Coffee');
+    expect(stored.single.data()['triggers'], <String>['work/meeting']);
+
+    await openFromMenu(tester, Homepage.habitsItem);
+    await pumpUntil(tester, habitsCount('1 entry'));
+    await tap(tester, find.text('Coffee'));
+    await pumpUntil(tester, historyTitle('Coffee'));
+    await pumpUntil(
+      tester,
+      find.descendant(of: historyRows, matching: find.text('Meeting')),
+    );
   });
 
   testWidgets('an activity can be deleted from the history page and from the '
@@ -242,11 +331,11 @@ void main() {
     );
     expect(await storedActivities('Coffee'), hasLength(3));
 
-    await openFromDrawer(tester, 'Manage Data');
-    await pumpUntil(tester, find.text('3 activities'));
+    await openFromMenu(tester, Homepage.habitsItem);
+    await pumpUntil(tester, habitsCount('3 entries'));
     await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, find.text('Coffee history'));
-    final Finder rows = find.byType(Card);
+    await pumpUntil(tester, historyTitle('Coffee'));
+    final Finder rows = historyRows;
     await pumpUntil(tester, rows);
     expect(rows, findsNWidgets(3));
     expect(
@@ -255,16 +344,9 @@ void main() {
     );
     await screenshot(tester, 'history-page');
 
-    final Finder threeDrinksRow = find.ancestor(
-      of: find.text('Quantity: 3'),
-      matching: find.byType(Card),
-    );
-    await tap(
-      tester,
-      find.descendant(of: threeDrinksRow, matching: find.byTooltip('Delete')),
-    );
-    await pumpUntil(tester, find.text('Activity deleted'));
-    await pumpUntil(tester, find.text('Quantity: 3'), present: false);
+    await swipeToDelete(tester, historyEntry(3));
+    await pumpUntil(tester, deletedBar);
+    await pumpUntil(tester, historyEntry(3), present: false);
     expect(rows, findsNWidgets(2));
     expect(
       (await storedActivities(
@@ -273,7 +355,7 @@ void main() {
       <int>{1, 2},
     );
 
-    await tap(tester, find.text('Quantity: 2'));
+    await tap(tester, historyEntry(2));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     await tap(
       tester,
@@ -283,15 +365,15 @@ void main() {
       ),
     );
     // The history page is off stage until the editor has popped.
-    await pumpUntil(tester, find.text('Coffee history').hitTestable());
+    await pumpUntil(tester, historyTitle('Coffee').hitTestable());
     await pumpUntil(
       tester,
       find.byType(ViceActivityEditorPage),
       present: false,
     );
-    await pumpUntil(tester, find.text('Quantity: 2'), present: false);
+    await pumpUntil(tester, historyEntry(2), present: false);
     expect(rows, findsOneWidget);
-    expect(find.text('Quantity: 1'), findsOneWidget);
+    expect(historyEntry(1), findsOneWidget);
     expect(
       (await storedActivities(
         'Coffee',
@@ -344,11 +426,11 @@ void main() {
       );
     }
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, find.text('Coffee history'));
+    await pumpUntil(tester, historyTitle('Coffee'));
 
-    await tap(tester, find.text('Quantity: 4'));
+    await tap(tester, historyEntry(4));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     expect(
       tester
@@ -369,8 +451,8 @@ void main() {
     });
 
     // 2.5 reads as 3.
-    await pumpUntil(tester, find.text('Quantity: 3').hitTestable());
-    await tap(tester, find.text('Quantity: 3'));
+    await pumpUntil(tester, historyEntry(3).hitTestable());
+    await tap(tester, historyEntry(3));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     final DateTime moved = addDays(today, -1).add(const Duration(hours: 9));
     await enterText(
@@ -382,13 +464,23 @@ void main() {
     final Map<String, dynamic> requantified = await stored('legacy-quantity');
     expect(requantified['quantity'], 2.5);
     expect((requantified['createdAt'] as Timestamp).toDate(), moved);
+    // The row's label carries the full date; it shows only the time, under a
+    // Yesterday heading.
+    final String movedLabel = formatDayAndTime(
+      moved,
+      alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat,
+    );
     await pumpUntil(
       tester,
       find
-          .textContaining(
-            'on ${formatDayAndTime(moved, alwaysUse24HourFormat: tester.platformDispatcher.alwaysUse24HourFormat)}',
+          .descendant(
+            of: find.byWidgetPredicate(
+              (Widget w) => w is Semantics && w.properties.label == movedLabel,
+            ),
+            matching: historyEntry(3),
           )
           .hitTestable(),
     );
+    expect(find.text('Yesterday'), findsOneWidget);
   });
 }

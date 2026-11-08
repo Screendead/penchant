@@ -34,7 +34,9 @@ through CI on merge, never from an agent's machine.
 **Revenue impact:** A release prerequisite (the listing URLs); it also protects ratings.
 
 **Depends on:**
-- [brand name](brand-name.md), for the domain
+- The domain, which sets the support and legal-page addresses. `penchant.com` is held through MarkMonitor (a brand
+  owner, unknown) and `penchant.app` is parked (the 2026-11-03 check, [market scan](../market-scan.md), "Brand quick
+  check"), so it is a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. Chosen before the first
+  TestFlight upload.
 
-**Needs Jack:** yes — Which address is the support contact, and where do the pages live (Firebase Hosting or the brand
-domain)?
+**Needs Jack:** no call left. The pages wait on a release (`HANDOVER.md`, B3).

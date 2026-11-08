@@ -61,25 +61,33 @@ void main() {
       expect(quantityError('250'), isNull);
     });
 
+    test('accepts a positive decimal', () {
+      expect(quantityError('1.5'), isNull);
+      expect(quantityError('0.25'), isNull);
+      expect(quantityError('.5'), isNull);
+    });
+
     test('refuses zero, negatives, and non-numbers', () {
-      expect(quantityError('0'), 'Please enter at least 1');
-      expect(quantityError('-3'), 'Please enter at least 1');
-      expect(quantityError('1.5'), 'Please enter a valid number');
+      expect(quantityError('0'), 'Please enter more than 0');
+      expect(quantityError('0.0'), 'Please enter more than 0');
+      expect(quantityError('-3'), 'Please enter more than 0');
+      expect(quantityError('1.2.3'), 'Please enter a valid number');
+      expect(quantityError('abc'), 'Please enter a valid number');
       expect(quantityError(''), 'Please enter a quantity');
     });
 
     test("accepts a legacy activity's unchanged out-of-range quantity", () {
       expect(quantityError('0', unchanged: 0), isNull);
-      expect(quantityError('-1', unchanged: 0), 'Please enter at least 1');
+      expect(quantityError('-1', unchanged: 0), 'Please enter more than 0');
     });
   });
 
-  testWidgets('Add Vice shows the length message inline', (tester) async {
+  testWidgets('Add Habit shows the length message inline', (tester) async {
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
     ], const ViceForm());
 
-    await tester.enterText(_field('Vice Name'), 'x' * 61);
+    await tester.enterText(_field('Habit Name'), 'x' * 61);
     // No unit is selected, so validation runs but nothing is written.
     await tester.tap(find.text('Save'));
     await tester.pump();
@@ -98,10 +106,10 @@ void main() {
 
     await tester.enterText(_field('Quantity'), '0');
     // No vice is selected, so validation runs but nothing is written.
-    await tester.tap(find.text('Record'));
+    await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
     await tester.pump();
 
-    expect(find.text('Please enter at least 1'), findsOneWidget);
+    expect(find.text('Please enter more than 0'), findsOneWidget);
   });
 
   testWidgets('the record dialog keeps its vice when the list re-emits', (
@@ -113,7 +121,7 @@ void main() {
     ], const RecordNewActivityDialog());
 
     await pumpWith([fakeVice('coffee'), fakeVice('tea')]);
-    await tester.tap(find.text('Select Vice'));
+    await tester.tap(find.text('Select Habit'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('coffee').last);
     await tester.pumpAndSettle();
@@ -126,7 +134,7 @@ void main() {
     // The selected vice is archived: the selection clears instead of asserting.
     await pumpWith([fakeVice('tea')]);
     expect(tester.takeException(), isNull);
-    expect(find.text('Select Vice'), findsOneWidget);
+    expect(find.text('Select Habit'), findsOneWidget);
   });
 
   group('the activity editor', () {
@@ -159,7 +167,7 @@ void main() {
       await tester.tap(find.text('Save'));
       await tester.pump();
 
-      expect(find.text('Please enter at least 1'), findsOneWidget);
+      expect(find.text('Please enter more than 0'), findsOneWidget);
     });
 
     testWidgets("lets a legacy zero quantity stand while other fields change", (

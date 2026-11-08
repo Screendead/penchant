@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/category.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -12,6 +13,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
+import 'package:tracker/writes/tracker_writes.dart';
 
 // Adds a vice, or with [vice] edits that one.
 class ViceForm extends ConsumerStatefulWidget {
@@ -32,6 +34,12 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     text: opened?.name,
   );
   late Unit? unit = opened?.unit;
+  // A vice written before categories opens on the guess the migration makes.
+  late ViceCategory category = switch (opened) {
+    null => ViceCategory.fallback,
+    final Vice vice when !vice.categoryStored => guessCategory(vice.name),
+    final Vice vice => vice.category,
+  };
   bool saving = false;
 
   @override
@@ -41,7 +49,10 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   }
 
   Future<void> _save(User user) async {
-    if (!formKey.currentState!.validate() || unit == null) {
+    // A locked vice's name and unit are placeholders, never to be saved.
+    if (!formKey.currentState!.validate() ||
+        unit == null ||
+        (opened?.locked ?? false)) {
       return;
     }
 
@@ -49,20 +60,31 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     final String name = viceNameController.text;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
-    final Future<void>? write;
+    final SentWrite? write;
     if (vice == null) {
       write = ref
           .read(trackerWritesProvider)
-          .addVice(ownerID: user.uid, name: name, unit: unit!);
-    } else if (name != vice.name || unit != vice.unit) {
+          .addVice(
+            ownerID: user.uid,
+            name: name,
+            unit: unit!,
+            category: category,
+          );
+    } else if (name != vice.name ||
+        unit != vice.unit ||
+        !vice.categoryStored ||
+        category != vice.category) {
       // Only the changed fields are written: an untouched unit may be a
       // legacy value the parser shows as the fallback.
       write = ref
           .read(trackerWritesProvider)
           .updateVice(
-            vice.id,
+            vice,
             name: name == vice.name ? null : name,
             unit: unit == vice.unit ? null : unit,
+            category: vice.categoryStored && category == vice.category
+                ? null
+                : category,
           );
     } else {
       write = null;
@@ -74,23 +96,21 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
     try {
       if (write != null &&
-          !await settleWrite(
-            write,
-            onRejectedLater: ref
-                .read(rejectedWritesProvider.notifier)
-                .reporter(
-                  vice == null
-                      ? 'Not saved: the vice $name'
-                      : 'Change not saved: the vice ${vice.name}',
-                ),
-          )) {
+          !await ref
+              .read(rejectedWritesProvider.notifier)
+              .settle(
+                write,
+                vice == null
+                    ? 'Not saved: the habit $name'
+                    : 'Change not saved: the habit ${vice.name}',
+              )) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
       }
       if (mounted) {
         Navigator.of(context).pop();
       }
     } on FirebaseException catch (e, stack) {
-      reportError(e, stack, context: 'while saving a vice');
+      reportError(e, stack, context: 'while saving a habit');
       if (mounted) {
         setState(() {
           saving = false;
@@ -105,11 +125,11 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   @override
   Widget build(BuildContext context) {
     final User? user = ref.watch(userProvider).value;
-    final String title = widget.vice == null ? 'Add Vice' : 'Edit Vice';
+    final String title = widget.vice == null ? 'Add Habit' : 'Edit Habit';
 
     if (user == null) {
       return const Scaffold(
-        body: Center(child: Text('Please sign in to add a vice')),
+        body: Center(child: Text('Please sign in to add a habit')),
       );
     }
 
@@ -137,7 +157,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             children: [
               TextFormField(
                 controller: viceNameController,
-                decoration: const InputDecoration(labelText: 'Vice Name'),
+                decoration: const InputDecoration(labelText: 'Habit Name'),
                 validator: (String? value) =>
                     viceNameError(value, unchanged: opened?.name),
               ),
@@ -168,6 +188,26 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<ViceCategory>(
+                initialValue: category,
+                items: ViceCategory.values
+                    .map(
+                      (ViceCategory category) => DropdownMenuItem<ViceCategory>(
+                        value: category,
+                        child: Text(category.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (ViceCategory? value) {
+                  if (value != null) {
+                    setState(() {
+                      category = value;
+                    });
+                  }
+                },
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
             ],
           ),
         ),
@@ -188,10 +228,10 @@ class EditVice extends ConsumerWidget {
 
     if (viceList == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Vice')),
+        appBar: AppBar(title: const Text('Edit Habit')),
         body: switch (viceListValue.error) {
           final Object error => ErrorView(
-            message: loadErrorMessage('your vices', error),
+            message: loadErrorMessage('your habits', error),
             onRetry: () =>
                 ref.invalidate(viceListForUserProvider, asReload: true),
           ),
@@ -204,8 +244,8 @@ class EditVice extends ConsumerWidget {
 
     if (vice == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Vice')),
-        body: const Center(child: Text('Vice not found')),
+        appBar: AppBar(title: const Text('Edit Habit')),
+        body: const Center(child: Text('Habit not found')),
       );
     }
 

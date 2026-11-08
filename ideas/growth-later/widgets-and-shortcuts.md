@@ -27,7 +27,14 @@ Writing alcohol and caffeine to Apple Health is part of [Apple Health](../insigh
 - **B.** App Intents first (no extension target, and Shortcuts users are the quantified-self audience).
 - **C.** Defer all.
 
-## Recommendation
+## Decision
+
+**Jack, 2026-11-07: build all of it, soon** (queue item 6 in `HANDOVER.md`): widgets in every size showing last
+week's usage or logging one of the top 1, 3 or 8 habits, Control Centre controls, and a menu bar app with the dial
+above the habit list, where a click logs one usage now. App Intents for Siri and Shortcuts are still Claude's
+recommendation, not a call.
+
+## Recommendation (before the decision)
 
 Claude's recommendation: **A, after 1.1.** Widgets reuse quick logging's "log one" action. Read Apple's current
 WidgetKit and App Intents docs before scoping. Logging surfaces stay free; a widget showing an insight card is Pro.
@@ -36,6 +43,6 @@ WidgetKit and App Intents docs before scoping. Logging surfaces stay free; a wid
 
 **Revenue impact:** Medium: retention, and good material for App Store featuring.
 
-**Depends on:** [quick logging](../v1-must-haves/one-tap-quick-logging.md); [macOS target](../v1-must-haves/macos-target.md).
+**Depends on:** the one-tap log (`lib/writes/log_one.dart`); [macOS target](../v1-must-haves/macos-target.md).
 
-**Needs Jack:** no
+**Needs Jack:** no (decided)

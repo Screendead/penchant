@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/account_settings.dart';
@@ -8,17 +9,18 @@ import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
-import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
-import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/settings.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
-import 'package:tracker/widgets/record_new_activity_button.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'fakes.dart';
+import 'trends_harness.dart';
 
 void main() {
   group('routes', () {
@@ -61,17 +63,19 @@ void main() {
   });
 
   group('the home screen', () {
-    Future<void> pumpHome(WidgetTester tester) async {
+    // One habit by default: an account with none gets the onboarding.
+    Future<void> pumpHome(WidgetTester tester, [List<Vice>? vices]) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-            viceListProvider.overrideWith((ref) => AsyncData(<Vice>[])),
-            unarchivedViceListProvider.overrideWith(
-              (ref) => AsyncData(<Vice>[]),
-            ),
+            ...habitOverrides(vices ?? <Vice>[fakeVice('coffee')]),
             viceActivityDayProvider.overrideWith(
               (ref, DateTime day) => AsyncData(<ViceActivity>[]),
+            ),
+            viceActivityGraphProvider.overrideWith(
+              (ref, ViceActivityGraphQuery query) =>
+                  AsyncData(<ViceActivity>[]),
             ),
           ],
           child: const MaterialApp(
@@ -83,31 +87,63 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('offers Record on both tabs', (WidgetTester tester) async {
-      await pumpHome(tester);
-      expect(find.byType(RecordNewActivityButton), findsOneWidget);
+    testWidgets('has no tabs: Trends opens over Today, and Log rides the '
+        "sheet's edge", (WidgetTester tester) async {
+      await pumpHome(tester, [fakeVice('coffee')]);
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byType(LogButton), findsOneWidget);
+      final double peekTop = tester
+          .getTopLeft(inTrends(find.byType(Material)).first)
+          .dy;
+      expect(
+        tester.getCenter(find.byType(LogButton)).dy,
+        moreOrLessEquals(peekTop, epsilon: 1),
+      );
 
-      await tester.tap(find.text('Graph'));
-      await tester.pumpAndSettle();
-      expect(find.text('Usage Graph'), findsOneWidget);
-      expect(find.byType(RecordNewActivityButton), findsOneWidget);
+      await openTrends(tester);
+      expect(find.text('Penchant'), findsOneWidget);
+      expect(find.byTooltip(TrendsSheet.closeLabel), findsOneWidget);
     });
 
-    testWidgets('a page opened from the drawer returns to a closed drawer', (
+    testWidgets('the Penchant menu reaches Habits and Settings, and a page '
+        'opened from it returns to Today with the menu shut', (
       WidgetTester tester,
     ) async {
       await pumpHome(tester);
 
-      await tester.tap(find.byTooltip('Open navigation menu'));
+      await tester.tap(find.byKey(Homepage.menuKey));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Manage Data'));
+      expect(find.text(Homepage.settingsItem), findsOneWidget);
+      await tester.tap(find.text(Homepage.habitsItem));
       await tester.pumpAndSettle();
-      expect(find.text('Your Vices'), findsOneWidget);
+      expect(find.byType(ManageData), findsOneWidget);
+      expect(find.text(ManageData.title), findsOneWidget);
 
-      await tester.tap(find.byType(BackButton));
+      await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
       expect(find.byType(ManageData), findsNothing);
-      expect(find.byType(Drawer), findsNothing);
+      expect(find.text(Homepage.habitsItem), findsNothing);
+
+      await tester.tap(find.byKey(Homepage.menuKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Homepage.settingsItem));
+      await tester.pumpAndSettle();
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+
+    testWidgets('the menu button is one labelled, 44 pt screen-reader stop', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      final SemanticsData menu = tester
+          .getSemantics(find.byKey(Homepage.menuKey))
+          .getSemanticsData();
+      expect(menu.label, Homepage.menuLabel);
+      expect(menu.hasAction(SemanticsAction.tap), isTrue);
+      expect(
+        tester.getSize(find.byKey(Homepage.menuKey)).height,
+        greaterThanOrEqualTo(44),
+      );
     });
   });
 }

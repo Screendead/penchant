@@ -14,81 +14,65 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**27 issues: 0 critical, 1 high, 13 medium, 13 low.**
+**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
+**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
 
 ## Firebase Data Layer (5)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
-- **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
-- **low** — [Nothing checks the index file against the queries or the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
+- **medium** — [The rules still accept a vice's name and unit, and an activity's triggers, in plaintext](firebase-data-layer/plaintext-creates-are-still-accepted.md)
+- **low** — [A sealed entry can be moved in time or rolled back without the client noticing](firebase-data-layer/sealed-blobs-bind-neither-time-nor-state.md)
+- **low** — [The sealing migrator fails a whole batch on one oversized legacy name and tracks completion per device](firebase-data-layer/sealing-migrator-edge-cases.md)
+- **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
-- **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
 ## Widget State and View Logic (1)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
-- **low** — [The oldest weekly bucket is a short remainder, summed like a full week](widget-state-and-view-logic/oldest-weekly-bucket-holds-the-remainder.md)
 
-## Error Handling and Observability (1)
+- **low** — [The undo bar's lift over Log is fixed when it is shown, and applies on every page](widget-state-and-view-logic/undo-bar-lift-is-fixed-at-show-time.md)
+
+## Error Handling and Observability (0)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
-- **medium** — [Errors reach only the device log; no crash report or usage data leaves the device](error-handling-and-observability/no-logging-crash-reporting-or-telemetry.md)
 
-## Offline and Write Reliability (2)
+## Offline and Write Reliability (1)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **medium** — [A queued change the server refuses after the app restarts vanishes without a word](offline-and-write-reliability/rejected-write-from-an-earlier-launch-is-dropped-silently.md)
-- **medium** — [Deleting an activity behaves differently depending on which screen you're on](offline-and-write-reliability/destructive-actions-have-inconsistent-safety.md)
+- **low** — [A dense hour's arc does not show which of its entries are unsynced](offline-and-write-reliability/dense-hour-arc-shows-no-pending-entries.md)
 
-## Accessibility and Localization (3)
+## Accessibility and Localization (1)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
-- **low** — [The usage graph sizes its date labels from one sample date](accessibility-and-localization/date-axis-sizes-labels-from-one-sample-month.md)
-- **low** — [The radar's ring numbers print with a decimal and skip the region's number format](accessibility-and-localization/radar-ring-numbers-skip-the-region-format.md)
 
 ## Auth and Account Lifecycle (1)
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
-- **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
+- **low** — [The recovery key is copied with a plain clipboard write](auth-and-account-lifecycle/recovery-key-copy-reaches-universal-clipboard.md)
 
-## Dependency and Tooling Drift (2)
+## Dependency and Tooling Drift (0)
 
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
-- **medium** — [The minimatch 11 override breaks the firebase-tools paths that call minimatch as a function](dependency-and-tooling-drift/minimatch-override-breaks-firebase-tools-glob-paths.md)
-- **medium** — [Firebase stops publishing to CocoaPods in October 2026, and both Apple builds depend on it](dependency-and-tooling-drift/cocoapods-sunset-ends-firebase-ios-publishing.md)
 
-## Platform and Delivery Config (10)
+## Platform and Delivery Config (0)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
-- **high** — [macOS Firebase pods are missing from the lockfile despite being registered in code](platform-and-delivery-config/macos-tree-is-stale-and-lockfile-has-no-firebase-pods.md)
-- **medium** — [The macOS build ships Firebase config registered under an iOS test bundle id](platform-and-delivery-config/macos-firebase-config-carries-the-ios-test-bundle-id.md)
-- **medium** — [macOS sandbox entitlements omit outbound network access that Firebase needs](platform-and-delivery-config/macos-sandbox-grants-no-outbound-network.md)
-- **medium** — [App name and description are still flutter-create scaffold text outside Dart code](platform-and-delivery-config/placeholder-app-identity-strings.md)
-- **low** — [The client-side Firebase API key is duplicated across config files](platform-and-delivery-config/client-firebase-api-keys-committed-in-plaintext.md)
-- **low** — [Legacy iOS icons the generator recreates, and a 1x1 launch image placeholder](platform-and-delivery-config/dead-scaffold-assets-ship-in-every-build.md)
-- **low** — [iOS Podfile relaxes modular includes on every pod, and forces the deployment target](platform-and-delivery-config/ios-podfile-applies-blanket-pod-wide-overrides.md)
-- **low** — [macOS still targets a years-unsupported OS version while iOS was upgraded](platform-and-delivery-config/macos-deployment-target-frozen-at-10-14.md)
-- **low** — [iOS hardcodes a development team, and macOS has none and mixes provisioning styles](platform-and-delivery-config/signing-configuration-is-legacy-and-inconsistent.md)
-- **medium** — [`flutter build macos --release` fails because the pods target macOS versions Xcode no longer supports](platform-and-delivery-config/macos-release-build-fails-on-pod-deployment-targets.md)
 
-## CI and Quality Gates (1)
+## CI and Quality Gates (0)
 
 Test depth and what CI runs.
 
-- **low** — [Three template tests still run and check nothing about the app](ci-and-quality-gates/template-tests-check-nothing.md)
 
-## Repo, Docs and Release Hygiene (1)
+## Repo, Docs and Release Hygiene (0)
 
 Git working state and refs, documentation that contradicts the code, and versioning, licensing and release records.
 
-- **medium** — [A generated file is ignored on iOS but tracked on macOS](repo-docs-and-release-hygiene/generated-plugin-registrant-tracked-on-macos-only.md)
 

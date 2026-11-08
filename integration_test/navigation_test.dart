@@ -3,27 +3,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widgets/log_fan.dart';
 
 import 'support.dart';
 
-Finder _rowButton(String viceName, String tooltip) => find.descendant(
-  of: find.ancestor(of: find.text(viceName), matching: find.byType(ListTile)),
-  matching: find.byTooltip(tooltip),
-);
-
 Future<void> _expectSignedOutWithNothingAbove(WidgetTester tester) async {
-  await pumpUntil(tester, find.text('Register').hitTestable());
+  await pumpUntil(tester, find.byKey(Authenticate.registerTab).hitTestable());
   expect(find.byType(Authenticate), findsOneWidget);
   // Sign-in is hit-testable while the popped pages are still animating out.
   for (final Finder page in <Finder>[
@@ -37,8 +33,7 @@ Future<void> _expectSignedOutWithNothingAbove(WidgetTester tester) async {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  WidgetController.hitTestWarningShouldBeFatal = true;
+  ensureE2EBinding();
 
   setUpAll(() async {
     requireEmulators();
@@ -53,7 +48,7 @@ void main() {
     await register(tester, 'e2e-edit-vice@example.com');
     await addVicesThroughManageData(tester);
     await recordActivity(tester, 'Coffee', 2);
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
@@ -67,13 +62,15 @@ void main() {
     await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
     final Map<String, dynamic> before = (await stored.get(server)).data()!;
 
-    await openFromDrawer(tester, 'Manage Data');
-    await tap(tester, _rowButton('Coffee', 'Edit'));
-    await pumpUntilRouteSettled(tester, find.text('Edit Vice'));
+    await openFromMenu(tester, Homepage.habitsItem);
+    await tap(tester, find.text('Coffee'));
+    await pumpUntilRouteSettled(tester, historyTitle('Coffee'));
+    await tap(tester, find.byTooltip('Edit habit'));
+    await pumpUntilRouteSettled(tester, find.text('Edit Habit'));
     expect(find.byType(NotFound), findsNothing);
     expect(find.byType(CloseButton), findsOneWidget);
     await screenshot(tester, 'edit-vice');
-    await enterText(tester, 'Vice Name', 'Espresso');
+    await enterText(tester, 'Habit Name', 'Espresso');
     await tap(tester, find.byType(DropdownButtonFormField<Unit>));
     await tap(tester, find.text(Unit.hour.plural).last);
     await tap(tester, find.widgetWithText(TextButton, 'Save'));
@@ -88,28 +85,42 @@ void main() {
       'unit': 'hour',
     });
 
-    await closeDrawerPage(tester);
-    await expectRadar(tester, const <String>{
+    // History opens from Habits, so its Back returns there first.
+    await tap(tester, find.byTooltip('Back'));
+    await pumpUntil(
+      tester,
+      find.byType(ViceActivityHistoryPage),
+      present: false,
+    );
+    await pumpUntil(tester, find.text('Espresso').hitTestable());
+    await closeMenuPage(tester);
+    await expectTallies(tester, const <String>{
       'Espresso (2 hours)',
       'Tea (0 drinks)',
       'Water (0 drinks)',
     });
   });
 
-  testWidgets('Record works from the Graph tab', (WidgetTester tester) async {
+  testWidgets('Trends opens over Today, and Log comes back on its edge once '
+      'it closes', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await register(tester, 'e2e-graph-record@example.com');
+    await register(tester, 'e2e-trends-record@example.com');
     await addVicesThroughManageData(tester);
 
-    await tap(tester, find.text('Graph'));
-    await pumpUntil(tester, find.text('Usage Graph'));
+    await openTrends(tester);
+    // The split view's pane sits beside Today, with Log at the foot of
+    // Today's column.
+    expect(
+      find.byType(LogButton).hitTestable(),
+      splitLayout(tester) ? findsOneWidget : findsNothing,
+    );
+    expect(find.byType(NavigationBar), findsNothing);
+    await closeTrends(tester);
+
     await recordActivity(tester, 'Tea', 3);
     await pumpUntil(tester, find.text('Activity recorded'));
-    expect(find.text('Usage Graph'), findsOneWidget);
     expect(await storedActivities('Tea'), hasLength(1));
-
-    await tap(tester, find.text('Today'));
-    await expectRadar(tester, const <String>{
+    await expectTallies(tester, const <String>{
       'Coffee (0 drinks)',
       'Tea (3 drinks)',
       'Water (0 drinks)',
@@ -121,7 +132,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await register(tester, 'e2e-settings-nav@example.com');
 
-    await openFromDrawer(tester, 'Settings');
+    await openFromMenu(tester, Homepage.settingsItem);
     await pumpUntil(tester, find.text('Account'));
     expect(find.text('Notifications'), findsNothing);
     expect(find.text('Privacy'), findsNothing);
@@ -129,7 +140,7 @@ void main() {
     await tap(tester, find.text('Account'));
     await pumpUntilRouteSettled(tester, find.text('Account Settings'));
     expect(find.byType(AccountSettings), findsOneWidget);
-    await tap(tester, find.byType(BackButton));
+    await tap(tester, find.byTooltip('Back'));
     await pumpUntil(tester, find.byType(AccountSettings), present: false);
 
     await tap(tester, find.text('Sign out'));
@@ -143,9 +154,9 @@ void main() {
     await register(tester, 'e2e-session-end@example.com');
     await addVicesThroughManageData(tester);
 
-    await openFromDrawer(tester, 'Manage Data');
+    await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.text('Coffee'));
-    await pumpUntilRouteSettled(tester, find.text('Coffee history'));
+    await pumpUntilRouteSettled(tester, historyTitle('Coffee'));
 
     await FirebaseAuth.instance.signOut();
     await _expectSignedOutWithNothingAbove(tester);
