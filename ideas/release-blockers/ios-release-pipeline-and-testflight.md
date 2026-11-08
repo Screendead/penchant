@@ -40,5 +40,4 @@ can be rehearsed. Creating that project is Jack's.
 **Depends on:** the bundle ID (done: `com.screendead.penchant`, 2026-11-05); the domain, for the support and
 privacy URLs ([support pages](support-about-and-legal-pages.md)); versioning (done: `CHANGELOG.md`, `tools/build-version.sh`, the Release workflow); account deletion (done: Account Settings, `lib/account/`); [privacy policy](privacy-policy-and-labels.md); [backend hardening](backend-hardening.md) (bounded activity queries and App Check wiring built; the App Attest entitlement needs the paid team); `no-license-file-anywhere` (fixed in PR #34: proprietary LICENSE) (queue 1c, C8).
 
-**Needs Jack:** yes — Will he pay for the Developer Program, who are the beta testers, and do TestFlight builds use
-production Firebase or a separate beta project?
+**Needs Jack:** no call left. Production, no separate beta project (`r2-testflight`, Jack, 2026-11-06); blocked on the paid Apple developer team, which Jack is not getting for now.

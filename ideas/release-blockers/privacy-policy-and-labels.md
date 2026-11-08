@@ -48,5 +48,4 @@ leave your phone" is both the safest reading of Apple's rules and the trust line
 
 **Depends on:** [support pages](support-about-and-legal-pages.md); [crash reporting](../v1-must-haves/crash-reporting-and-analytics.md); [Apple Health](../insights/apple-health-correlation.md).
 
-**Needs Jack:** yes — Which legal entity, contact address and data-controller details go in the policy, and is a paid
-legal review in budget before 1.1?
+**Needs Jack:** no call left. No privacy policy for now (`r2-privacy`, Jack, 2026-11-06); the legal details wait until and unless he decides to sell.

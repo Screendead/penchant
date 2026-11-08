@@ -14,17 +14,14 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**11 issues: 0 critical, 0 high, 4 medium, 7 low.**
+**7 issues: 0 critical, 0 high, 1 medium, 6 low.**
 
-## Firebase Data Layer (5)
+## Firebase Data Layer (2)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **medium** — [Activity timestamps trust the device clock, not the server](firebase-data-layer/activity-timestamps-come-from-the-device-clock.md)
-- **medium** — [The main checkout's active Firebase project is production; no staging project](firebase-data-layer/every-firebase-command-targets-production.md)
 - **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)
-- **low** — [The vice lists are the last list queries with no limit](firebase-data-layer/vice-lists-are-unbounded.md)
 
 ## Widget State and View Logic (0)
 
@@ -46,11 +43,10 @@ Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, 
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 
-## Auth and Account Lifecycle (1)
+## Auth and Account Lifecycle (0)
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
-- **medium** — [Unverified accounts work fully; nothing checks the verified flag](auth-and-account-lifecycle/no-email-verification.md)
 
 ## Dependency and Tooling Drift (0)
 
