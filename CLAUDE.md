@@ -166,9 +166,12 @@ non-prose push to `master` (or `gh workflow run e2e.yml`) it waits two minutes o
 over `integration_test/all_test.dart` on an iPhone simulator of a `macos-26` runner (it imports
 every file so flutter builds the app once, where one file per build took 74), caching the Swift packages and Xcode's
 DerivedData, and uploads the log if it fails. One concurrency group with `cancel-in-progress` means a
-newer merge cancels the older run, waiting or running, so a burst of merges tests only its last commit. There is no
-macOS e2e job: the runner has no Mac development profile (that would take signing secrets), and unsigned, every
-sign-in fails with `keychain-error` (run 42227475574). On a push to `master` that touches the rules,
+newer merge cancels the older run, waiting or running, so a burst of merges tests only its last commit. A second
+job runs `E2E_DEVICE=macos tools/e2e.sh` on the same runner image, unsigned: the runner has no Mac development
+profile, and without one the app has no keychain-access-groups entitlement (an ad hoc signature carrying it is killed at
+launch), so Firebase Auth's data-protection keychain fails every sign-in with `keychain-error` (-34018; run
+42227475574). That job deletes the `kSecUseDataProtectionKeychain` lines from its checkout of the Firebase SDK
+before the build, so Auth uses the file keychain. On a push to `master` that touches the rules,
 indexes, `firebase.json`, the rules suite or these workflows, `deploy-firestore.yml` re-runs both and, only if they pass, deploys
 `firestore.rules` and `firestore.indexes.json` to production with the firebase-tools pinned in
 `tests/firestore-rules/package-lock.json`. The deploy job runs because the repository variable
