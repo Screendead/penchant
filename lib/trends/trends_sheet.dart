@@ -16,6 +16,7 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/homepage.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/trends/hour_ring.dart';
@@ -95,13 +96,15 @@ class TrendsSheet extends ConsumerStatefulWidget {
     required this.minSize,
     required this.habits,
     required this.marks,
-  }) : onOpenDay = null;
+  }) : onOpenDay = null,
+       contentWidth = paneContentWidth;
 
   const TrendsSheet.pane({
     super.key,
     required this.habits,
     required this.marks,
     required ValueChanged<DateTime> this.onOpenDay,
+    this.contentWidth = paneContentWidth,
   }) : controller = null,
        minSize = 1;
 
@@ -114,6 +117,8 @@ class TrendsSheet extends ConsumerStatefulWidget {
   final Map<String, HabitMark> marks;
   // The pane's way to show a day.
   final ValueChanged<DateTime>? onOpenDay;
+  // The pane's content column, at most.
+  final double contentWidth;
 
   static const String title = 'Trends';
   static const String openHint = 'Opens Trends';
@@ -134,6 +139,11 @@ class TrendsSheet extends ConsumerStatefulWidget {
   // A wide pane centres its content at this width, so the chart's days stay
   // close enough to read across.
   static const double paneContentWidth = 720;
+
+  // The pane's content other than the chart's plot, measured at the default
+  // text size: the chart takes the rest of the pane's height.
+  static const double _paneChrome = 580;
+  static const double _paneChartMax = 640;
 
   // The peek's height: its two lines of text at the device's text size and
   // the sparkline under them.
@@ -374,7 +384,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     final ValueChanged<DateTime>? showDay = widget.onOpenDay;
     final DateTime? day = controller == null ? null : openDay;
 
-    final Widget content = day != null
+    Widget content([double chartHeight = TrendsChart.plotHeight]) => day != null
         ? TrendsDay(
             key: ValueKey<DateTime>(day),
             day: day,
@@ -388,6 +398,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
           )
         : _TrendsPanel(
             key: const ValueKey<String>('panel'),
+            chartHeight: chartHeight,
             habits: widget.habits,
             marks: widget.marks,
             vice: vice,
@@ -446,22 +457,29 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       return Material(
         color: scheme.surfaceContainerLow,
         shape: BorderDirectional(start: BorderSide(color: colors.line)),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            DialSpace.gutter,
-            DialSpace.xl,
-            DialSpace.gutter + MediaQuery.paddingOf(context).right,
-            DialSpace.xl + bottomInset,
-          ),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: TrendsSheet.paneContentWidth,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints box) {
+            final double chartHeight =
+                (box.maxHeight - TrendsSheet._paneChrome - bottomInset).clamp(
+                  TrendsChart.plotHeight,
+                  TrendsSheet._paneChartMax,
+                );
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                DialSpace.gutter,
+                DialSpace.xl,
+                DialSpace.gutter + MediaQuery.paddingOf(context).right,
+                DialSpace.xl + bottomInset,
               ),
-              child: content,
-            ),
-          ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: widget.contentWidth),
+                  child: content(chartHeight),
+                ),
+              ),
+            );
+          },
         ),
       );
     }
@@ -537,7 +555,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                             duration: MediaQuery.disableAnimationsOf(context)
                                 ? DialMotion.reducedFade
                                 : DialMotion.fadeThrough,
-                            child: content,
+                            child: content(),
                           ),
                         ),
                       ),
@@ -841,8 +859,10 @@ class _TrendsPanel extends StatelessWidget {
     required this.onCursor,
     required this.onOpenDay,
     required this.onRetry,
+    this.chartHeight = TrendsChart.plotHeight,
   });
 
+  final double chartHeight;
   final List<Vice> habits;
   final Map<String, HabitMark> marks;
   final Vice vice;
@@ -883,9 +903,9 @@ class _TrendsPanel extends StatelessWidget {
         ),
       ];
     } else if (s == null) {
-      body = const <Widget>[
+      body = <Widget>[
         SizedBox(
-          height: TrendsChart.plotHeight,
+          height: chartHeight,
           child: Center(child: CircularProgressIndicator()),
         ),
       ];
@@ -898,7 +918,7 @@ class _TrendsPanel extends StatelessWidget {
         const SizedBox(height: DialSpace.s),
         if (empty)
           SizedBox(
-            height: TrendsChart.plotHeight,
+            height: chartHeight,
             child: Center(
               child: InfoBox(
                 message: 'No entries for ${vice.name} in this range',
@@ -918,6 +938,7 @@ class _TrendsPanel extends StatelessWidget {
             onCursor: onCursor,
             onOpenBucket: onOpenDay,
             focusNode: chartFocus,
+            height: chartHeight,
           ),
         const SizedBox(height: DialSpace.s),
         _AverageStepper(
@@ -948,6 +969,7 @@ class _TrendsPanel extends StatelessWidget {
                 child: Text(TrendsSheet.title, style: type.displayL),
               ),
             ),
+            if (onClose == null) const SyncPill(),
             if (onClose case final VoidCallback close)
               CircleButton(
                 icon: DialGlyph.down,
@@ -958,23 +980,38 @@ class _TrendsPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DialSpace.s),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: Row(
+        if (onClose == null)
+          Wrap(
+            spacing: DialSpace.xs,
+            runSpacing: DialSpace.xs,
             children: <Widget>[
-              for (final Vice v in habits) ...<Widget>[
-                if (v != habits.first) const SizedBox(width: DialSpace.xs),
+              for (final Vice v in habits)
                 _HabitChip(
                   vice: v,
                   mark: marks[v.id] ?? const HabitMark(0),
                   selected: v.id == vice.id,
                   onPressed: () => onHabit(v),
                 ),
-              ],
             ],
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: <Widget>[
+                for (final Vice v in habits) ...<Widget>[
+                  if (v != habits.first) const SizedBox(width: DialSpace.xs),
+                  _HabitChip(
+                    vice: v,
+                    mark: marks[v.id] ?? const HabitMark(0),
+                    selected: v.id == vice.id,
+                    onPressed: () => onHabit(v),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
         const SizedBox(height: DialSpace.s),
         Wrap(
           alignment: WrapAlignment.spaceBetween,

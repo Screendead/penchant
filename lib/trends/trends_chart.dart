@@ -31,6 +31,7 @@ class TrendsChart extends StatelessWidget {
     required this.onCursor,
     this.onOpenBucket,
     this.focusNode,
+    this.height = plotHeight,
   });
 
   final Vice vice;
@@ -44,6 +45,8 @@ class TrendsChart extends StatelessWidget {
   final ValueChanged<int> onCursor;
   final ValueChanged<int>? onOpenBucket;
   final FocusNode? focusNode;
+  // The plot's height, without the readout above it.
+  final double height;
 
   static const String focusLabel = 'Trends chart';
   static const double plotHeight = 220;
@@ -242,7 +245,7 @@ class TrendsChart extends StatelessWidget {
       largest,
       min(
         maxYSteps,
-        max(1, (plotHeight - bottomTitlesHeight) ~/ (numberHeight + labelGap)),
+        max(1, (height - bottomTitlesHeight) ~/ (numberHeight + labelGap)),
       ),
     );
     final double leftTitlesWidth =
@@ -269,7 +272,7 @@ class TrendsChart extends StatelessWidget {
             _readout(context, today, shown, colors, type, cursorX),
             const SizedBox(height: DialSpace.xs),
             SizedBox(
-              height: plotHeight,
+              height: height,
               child: LineChart(
                 duration: MediaQuery.disableAnimationsOf(context)
                     ? Duration.zero
