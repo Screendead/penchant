@@ -18,6 +18,9 @@ class NudgeCopy {
   static const String permissionDenied =
       'Notifications are off for Penchant. Turn them on in the system '
       'Settings, then try again.';
+  static const String permissionWithdrawn =
+      'Notifications are off for Penchant, so the reminder won\'t arrive. '
+      'Turn them on in the system Settings and it will start again.';
 }
 
 /// What a press on the notification asks of the app.
@@ -46,6 +49,10 @@ abstract class NudgeScheduler {
   /// Shows the system prompt the first time; after that, the stored answer.
   Future<bool> requestPermission();
 
+  /// Whether the system lets the app notify now. The user can withdraw it in
+  /// the system Settings at any time, and the app hears nothing when they do.
+  Future<bool> isPermitted();
+
   Future<void> scheduleDaily(TimeOfDay time);
 
   Future<void> cancel();
@@ -55,8 +62,9 @@ class LocalNudgeScheduler implements NudgeScheduler {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  // "Clean day" has no foreground option, so iOS handles it without opening
-  // the app; with no background handler registered, nothing runs.
+  // "Clean day" has no foreground option, so iOS handles it without bringing
+  // the app forward. It may still wake a quit app in the background, where
+  // the plugin finds no background handler registered and starts nothing.
   static final List<DarwinNotificationCategory> _categories =
       <DarwinNotificationCategory>[
         DarwinNotificationCategory(
@@ -120,6 +128,22 @@ class LocalNudgeScheduler implements NudgeScheduler {
             >()
             ?.requestPermissions(alert: true, sound: true);
     return granted ?? false;
+  }
+
+  @override
+  Future<bool> isPermitted() async {
+    final NotificationsEnabledOptions? options =
+        await _plugin
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >()
+            ?.checkPermissions() ??
+        await _plugin
+            .resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin
+            >()
+            ?.checkPermissions();
+    return options?.isEnabled ?? false;
   }
 
   // The trigger keeps the zone it was scheduled in, so the app schedules
@@ -209,11 +233,13 @@ class DailyNudge extends Notifier<NudgeSettings> {
   static const String enabledKey = 'nudge.enabled';
   static const String minutesKey = 'nudge.minutes';
 
-  bool _chosen = false;
+  // Every change waits for this, so a change made while the saved setting is
+  // still being read is not overwritten by it, nor saves defaults over it.
+  late Future<void> _loaded;
 
   @override
   NudgeSettings build() {
-    _load();
+    _loaded = _load();
     return NudgeSettings.off;
   }
 
@@ -232,10 +258,6 @@ class DailyNudge extends Notifier<NudgeSettings> {
       reportError(e, stack, context: 'while reading the reminder setting');
       return;
     }
-    // A choice made while the read was in flight is newer than what it read.
-    if (_chosen) {
-      return;
-    }
     state = saved;
     if (saved.enabled) {
       await _schedule(saved.time);
@@ -244,6 +266,7 @@ class DailyNudge extends Notifier<NudgeSettings> {
 
   /// Turns the nudge on, asking for permission first. False if refused.
   Future<bool> turnOn() async {
+    await _loaded;
     final NudgeScheduler scheduler = ref.read(nudgeSchedulerProvider);
     final bool granted;
     try {
@@ -255,7 +278,6 @@ class DailyNudge extends Notifier<NudgeSettings> {
     if (!granted) {
       return false;
     }
-    _chosen = true;
     state = state.copyWith(enabled: true);
     await _save();
     await _schedule(state.time);
@@ -263,7 +285,7 @@ class DailyNudge extends Notifier<NudgeSettings> {
   }
 
   Future<void> turnOff() async {
-    _chosen = true;
+    await _loaded;
     state = state.copyWith(enabled: false);
     await _save();
     try {
@@ -274,7 +296,7 @@ class DailyNudge extends Notifier<NudgeSettings> {
   }
 
   Future<void> setTime(TimeOfDay time) async {
-    _chosen = true;
+    await _loaded;
     state = state.copyWith(time: time);
     await _save();
     if (state.enabled) {

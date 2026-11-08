@@ -15,10 +15,11 @@ import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/settings.dart';
 
 class _FakeScheduler implements NudgeScheduler {
-  _FakeScheduler({this.grant = true, this.launched});
+  _FakeScheduler({this.grant = true, this.launched}) : permitted = grant;
 
   final bool grant;
   final NudgeAction? launched;
+  bool permitted;
   void Function(NudgeAction action)? onAction;
   int permissionRequests = 0;
   final List<TimeOfDay> scheduled = <TimeOfDay>[];
@@ -36,6 +37,9 @@ class _FakeScheduler implements NudgeScheduler {
     permissionRequests++;
     return grant;
   }
+
+  @override
+  Future<bool> isPermitted() async => permitted;
 
   @override
   Future<void> scheduleDaily(TimeOfDay time) async => scheduled.add(time);
@@ -178,6 +182,50 @@ void main() {
       TimeOfDay(hour: 20, minute: 45),
     ]);
     expect(scheduler.permissionRequests, 0);
+  });
+
+  test('turning it on before the saved time is read keeps that time', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      DailyNudge.enabledKey: false,
+      DailyNudge.minutesKey: 7 * 60 + 30,
+    });
+    final _FakeScheduler scheduler = _FakeScheduler();
+    final ProviderContainer container = ProviderContainer(
+      overrides: [nudgeSchedulerProvider.overrideWithValue(scheduler)],
+    );
+    addTearDown(container.dispose);
+
+    expect(await container.read(dailyNudgeProvider.notifier).turnOn(), isTrue);
+
+    expect(scheduler.scheduled, const <TimeOfDay>[
+      TimeOfDay(hour: 7, minute: 30),
+    ]);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(DailyNudge.minutesKey), 7 * 60 + 30);
+    expect(prefs.getBool(DailyNudge.enabledKey), isTrue);
+  });
+
+  testWidgets('notifications turned off in system Settings show it off', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      DailyNudge.enabledKey: true,
+    });
+    final _FakeScheduler scheduler = _FakeScheduler()..permitted = false;
+    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    expect(find.text(NudgeCopy.permissionWithdrawn), findsOneWidget);
+
+    // Back from the system Settings with notifications on again.
+    scheduler.permitted = true;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(find.text(ReminderSettings.foot), findsOneWidget);
   });
 
   test(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -30,6 +31,36 @@ class ReminderSettings extends ConsumerStatefulWidget {
 class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
   bool _asking = false;
   bool _refused = false;
+  // Null until known. Checked on opening and on return from the system
+  // Settings, where the user can withdraw it without the app hearing.
+  bool? _permitted;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _checkPermission);
+    _checkPermission();
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkPermission() async {
+    final bool permitted;
+    try {
+      permitted = await ref.read(nudgeSchedulerProvider).isPermitted();
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while checking notification permission');
+      return;
+    }
+    if (mounted) {
+      setState(() => _permitted = permitted);
+    }
+  }
 
   Future<void> _toggle(bool on) async {
     final DailyNudge nudge = ref.read(dailyNudgeProvider.notifier);
@@ -44,6 +75,7 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
       setState(() {
         _asking = false;
         _refused = !granted;
+        _permitted = granted;
       });
     }
   }
@@ -62,6 +94,8 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
   Widget build(BuildContext context) {
     final NudgeSettings settings = ref.watch(dailyNudgeProvider);
     final String time = nudgeTimeLabel(context, settings.time);
+    final bool withdrawn = settings.enabled && _permitted == false;
+    final bool on = settings.enabled && !withdrawn;
     return CardPage(
       title: 'Reminder',
       children: <Widget>[
@@ -71,9 +105,9 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
               child: CardRow(
                 label: ReminderSettings.switchLabel,
                 enabled: !_asking,
-                onTap: () => _toggle(!settings.enabled),
+                onTap: () => _toggle(!on),
                 trailing: Switch.adaptive(
-                  value: settings.enabled,
+                  value: on,
                   activeTrackColor: Theme.of(context).colorScheme.primary,
                   onChanged: _asking ? null : _toggle,
                 ),
@@ -93,7 +127,13 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
             ),
           ],
         ),
-        CardFoot(_refused ? NudgeCopy.permissionDenied : ReminderSettings.foot),
+        CardFoot(
+          _refused
+              ? NudgeCopy.permissionDenied
+              : withdrawn
+              ? NudgeCopy.permissionWithdrawn
+              : ReminderSettings.foot,
+        ),
       ],
     );
   }
