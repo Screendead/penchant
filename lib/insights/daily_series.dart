@@ -31,36 +31,56 @@ class DailyOutcome {
 
 /// Each habit's total per local calendar day. A day with no entry for a habit
 /// is a day it was not used.
+///
+/// Only entries with a positive amount count as use: a zero-quantity entry
+/// (legacy data has them) adds nothing and moves no first or last day.
 class DailyHabitSeries {
-  DailyHabitSeries._(this._totals, this.firstDay, this.lastDay);
+  DailyHabitSeries._(this._totals, this._spans);
 
   factory DailyHabitSeries.fromUses(Iterable<HabitUse> uses) {
     final Map<String, Map<DateTime, double>> totals =
         <String, Map<DateTime, double>>{};
-    DateTime? first, last;
+    final Map<String, (DateTime, DateTime)> spans =
+        <String, (DateTime, DateTime)>{};
     for (final HabitUse use in uses) {
-      final DateTime day = startOfDay(use.at);
       final Map<DateTime, double> days = totals.putIfAbsent(
         use.habitId,
         () => <DateTime, double>{},
       );
+      if (use.amount <= 0) continue;
+      final DateTime day = startOfDay(use.at);
       days[day] = (days[day] ?? 0) + use.amount;
-      if (first == null || day.isBefore(first)) first = day;
-      if (last == null || day.isAfter(last)) last = day;
+      final (DateTime, DateTime)? span = spans[use.habitId];
+      spans[use.habitId] = span == null
+          ? (day, day)
+          : (
+              day.isBefore(span.$1) ? day : span.$1,
+              day.isAfter(span.$2) ? day : span.$2,
+            );
     }
-    return DailyHabitSeries._(totals, first, last);
+    return DailyHabitSeries._(totals, spans);
   }
 
   final Map<String, Map<DateTime, double>> _totals;
+  final Map<String, (DateTime, DateTime)> _spans;
 
-  /// The first and last days with any use; null for an empty journal.
-  final DateTime? firstDay;
-  final DateTime? lastDay;
-
+  /// Every habit with an entry, including one whose entries are all zero.
   Iterable<String> get habitIds => _totals.keys;
 
   double total(String habitId, DateTime day) =>
       _totals[habitId]?[startOfDay(day)] ?? 0;
+
+  /// The first and last days [habitId] was used; null when it never was.
+  DateTime? firstUse(String habitId) => _spans[habitId]?.$1;
+  DateTime? lastUse(String habitId) => _spans[habitId]?.$2;
+
+  /// The first and last days any habit was used; null when none was.
+  DateTime? get firstDay => _spans.values.isEmpty
+      ? null
+      : _spans.values.map((s) => s.$1).reduce((a, b) => a.isBefore(b) ? a : b);
+  DateTime? get lastDay => _spans.values.isEmpty
+      ? null
+      : _spans.values.map((s) => s.$2).reduce((a, b) => a.isAfter(b) ? a : b);
 }
 
 /// Outcome values by metric and day. Several values for one metric on one day

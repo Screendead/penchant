@@ -118,14 +118,19 @@ class HabitRefusal extends HabitInsight {
 /// For each habit, what [metricId] looks like [lagDays] days after a day it was
 /// used, against days it was not.
 ///
-/// Days run from [from] to [through], by default the journal's first and last
-/// days with any use, so the days before someone started logging do not count
-/// as days without. A day whose outcome is missing is left out.
+/// Each habit is judged over its own span, the days from its first use to its
+/// last, clipped to [from] and [through] when given: the days before someone
+/// started logging it, or after they stopped, are not days without it. A day
+/// whose outcome is missing is left out. [HabitInsight.usableDays] counts the
+/// days left in that habit's span.
 ///
-/// Attribution: every habit with days both ways enters one least-squares model
-/// of the outcome on an intercept and a 0/1 "used that day" indicator per
-/// habit, so each coefficient is that habit's difference with the others held
-/// fixed, and a habit that only rides along with another gets no credit.
+/// Attribution: on those days, one least-squares model of the outcome on an
+/// intercept and a 0/1 "used that day" indicator for the habit and for every
+/// other habit that clears the sample gates there, so the coefficient is the
+/// habit's difference with the others held fixed, and a habit that only rides
+/// along with another gets no credit. Another habit counts as not used on the
+/// days outside its own span: that can make its coefficient a proxy for time,
+/// but its coefficient is never the one reported here.
 List<HabitInsight> whatFollows({
   required DailyHabitSeries habits,
   required OutcomeSeries outcomes,
@@ -136,8 +141,41 @@ List<HabitInsight> whatFollows({
   InsightGates gates = const InsightGates(),
 }) {
   final List<String> habitIds = habits.habitIds.toList()..sort();
-  final DateTime? start = from ?? habits.firstDay;
-  final DateTime? end = through ?? habits.lastDay;
+  return <HabitInsight>[
+    for (final String id in habitIds)
+      _whatFollowsOne(
+        id,
+        habitIds: habitIds,
+        habits: habits,
+        outcomes: outcomes,
+        metricId: metricId,
+        lagDays: lagDays,
+        from: from,
+        through: through,
+        gates: gates,
+      ),
+  ];
+}
+
+HabitInsight _whatFollowsOne(
+  String id, {
+  required List<String> habitIds,
+  required DailyHabitSeries habits,
+  required OutcomeSeries outcomes,
+  required String metricId,
+  required int lagDays,
+  required DateTime? from,
+  required DateTime? through,
+  required InsightGates gates,
+}) {
+  final DateTime? first = habits.firstUse(id), last = habits.lastUse(id);
+  final DateTime? start = first == null || from == null || first.isAfter(from)
+      ? first
+      : startOfDay(from);
+  final DateTime? end =
+      last == null || through == null || last.isBefore(through)
+      ? last
+      : through;
 
   final List<DateTime> days = <DateTime>[];
   final List<double> y = <double>[];
@@ -150,17 +188,19 @@ List<HabitInsight> whatFollows({
       }
     }
   }
-  final Map<String, List<double>> exposure = <String, List<double>>{
-    for (final String id in habitIds)
-      id: <double>[
-        for (final DateTime day in days) habits.total(id, day) > 0 ? 1 : 0,
-      ],
-  };
+  List<double> exposureOf(String habit) => <double>[
+    for (final DateTime day in days) habits.total(habit, day) > 0 ? 1 : 0,
+  ];
+  bool clearsSampleGates(List<double> x) {
+    final int exposed = x.where((v) => v == 1).length;
+    return exposed >= gates.minExposedDays &&
+        x.length - exposed >= gates.minUnexposedDays;
+  }
 
-  Comparison? rawFor(String id) => _welch(exposure[id]!, y, gates.level);
+  final List<double> x = exposureOf(id);
+  final Comparison? raw = _welch(x, y, gates.level);
 
   HabitRefusal refuse(
-    String id,
     RefusalReason reason, {
     String? entangledWith,
     double? effect,
@@ -170,27 +210,35 @@ List<HabitInsight> whatFollows({
     metricId: metricId,
     lagDays: lagDays,
     usableDays: days.length,
-    raw: rawFor(id),
+    raw: raw,
     reason: reason,
     entangledWith: entangledWith,
     effect: effect,
     interval: interval,
   );
 
-  if (days.length < gates.minDays) {
-    return <HabitInsight>[
-      for (final String id in habitIds) refuse(id, RefusalReason.tooFewDays),
-    ];
+  if (days.length < gates.minDays || !clearsSampleGates(x)) {
+    return refuse(RefusalReason.tooFewDays);
   }
 
-  int exposedCount(String id) => exposure[id]!.where((v) => v == 1).length;
+  // A habit refused for its sample never enters: a one-off use would absorb
+  // its day, cost a degree of freedom and inflate this habit's variance.
+  final Map<String, List<double>> others = <String, List<double>>{
+    for (final String other in habitIds)
+      if (other != id) other: exposureOf(other),
+  }..removeWhere((_, v) => !clearsSampleGates(v));
+  int exposedCount(String other) => others[other]!.where((v) => v == 1).length;
+  final List<String> covariates = others.keys.toList()
+    ..sort((a, b) {
+      final int byUse = exposedCount(b).compareTo(exposedCount(a));
+      return byUse != 0 ? byUse : a.compareTo(b);
+    });
 
-  String? closestPartner(String id, Iterable<String> among) {
+  String? closestPartner(Iterable<String> among) {
     String? best;
     double bestR = -1;
     for (final String other in among) {
-      if (other == id) continue;
-      final double r = correlation(exposure[id]!, exposure[other]!).abs();
+      final double r = correlation(x, others[other]!).abs();
       if (r > bestR) {
         bestR = r;
         best = other;
@@ -199,88 +247,66 @@ List<HabitInsight> whatFollows({
     return best;
   }
 
-  // Columns join one at a time, the most used first; one that makes the
-  // design singular duplicates habits already in, so it and its closest
-  // partner are both entangled.
-  final List<String> candidates = habitIds.where((id) {
-    final int exposed = exposedCount(id);
-    return exposed > 0 && exposed < days.length;
-  }).toList()..sort((a, b) => exposedCount(b).compareTo(exposedCount(a)));
-  final List<String> inModel = <String>[];
-  final Map<String, String> entangled = <String, String>{};
   List<List<double>> design(List<String> ids) => <List<double>>[
     for (int r = 0; r < days.length; r++)
-      <double>[1, for (final String id in ids) exposure[id]![r]],
+      <double>[1, x[r], for (final String other in ids) others[other]![r]],
   ];
-  for (final String id in candidates) {
-    if (invert(gram(design(<String>[...inModel, id]))) == null) {
-      final String partner = closestPartner(id, inModel)!;
-      entangled[id] = partner;
-      entangled.putIfAbsent(partner, () => id);
-    } else {
-      inModel.add(id);
-    }
+
+  // Covariates join the most used first. One that duplicates those already in
+  // changes nothing this habit's coefficient can see, so it is skipped; one
+  // more column than would leave a residual degree of freedom is skipped too.
+  final List<String> inModel = <String>[];
+  for (final String other in covariates) {
+    if (inModel.length + 4 > days.length) break;
+    final List<List<double>> without = <List<double>>[
+      for (final List<double> row in design(<String>[...inModel, other]))
+        <double>[row[0], ...row.skip(2)],
+    ];
+    if (invert(gram(without)) != null) inModel.add(other);
+  }
+  if (invert(gram(design(inModel))) == null) {
+    return refuse(
+      RefusalReason.entangled,
+      entangledWith: closestPartner(covariates),
+    );
   }
 
-  final LinearFit? fit = inModel.isEmpty
-      ? null
-      : fitLeastSquares(design(inModel), y);
+  final LinearFit? fit = fitLeastSquares(design(inModel), y);
+  if (fit == null) return refuse(RefusalReason.tooFewDays);
+  const int column = 1;
+  final double effect = fit.coefficients[column];
+  final Interval interval = fit.interval(column, level: gates.level);
+  // With an intercept in the model, (X'X)^-1 at j is 1 / (SS_j (1 - R_j^2)),
+  // so this is 1 / (1 - R_j^2).
+  final double mx = mean(x);
+  final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
+  final double inflation = fit.inverseGram[column][column] * ss;
+  if (inflation > gates.maxVarianceInflation) {
+    return refuse(
+      RefusalReason.entangled,
+      entangledWith: closestPartner(inModel),
+      effect: effect,
+      interval: interval,
+    );
+  }
+  if (interval.crossesZero) {
+    return refuse(
+      RefusalReason.withinNoise,
+      effect: effect,
+      interval: interval,
+    );
+  }
   final double sd = sqrt(sampleVariance(y));
-
-  return <HabitInsight>[
-    for (final String id in habitIds)
-      () {
-        final int exposed = exposedCount(id);
-        if (exposed < gates.minExposedDays ||
-            days.length - exposed < gates.minUnexposedDays) {
-          return refuse(id, RefusalReason.tooFewDays);
-        }
-        if (entangled.containsKey(id)) {
-          return refuse(
-            id,
-            RefusalReason.entangled,
-            entangledWith: entangled[id],
-          );
-        }
-        if (fit == null) return refuse(id, RefusalReason.tooFewDays);
-        final int column = inModel.indexOf(id) + 1;
-        final double effect = fit.coefficients[column];
-        final Interval interval = fit.interval(column, level: gates.level);
-        // With an intercept in the model, (X'X)^-1 at j is
-        // 1 / (SS_j (1 - R_j^2)), so this is 1 / (1 - R_j^2).
-        final List<double> x = exposure[id]!;
-        final double mx = mean(x);
-        final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
-        final double inflation = fit.inverseGram[column][column] * ss;
-        if (inflation > gates.maxVarianceInflation) {
-          return refuse(
-            id,
-            RefusalReason.entangled,
-            entangledWith: closestPartner(id, inModel),
-            effect: effect,
-            interval: interval,
-          );
-        }
-        if (interval.crossesZero) {
-          return refuse(
-            id,
-            RefusalReason.withinNoise,
-            effect: effect,
-            interval: interval,
-          );
-        }
-        return HabitFinding(
-          habitId: id,
-          metricId: metricId,
-          lagDays: lagDays,
-          usableDays: days.length,
-          raw: rawFor(id),
-          effect: effect,
-          interval: interval,
-          standardized: sd == 0 ? 0 : effect / sd,
-        );
-      }(),
-  ];
+  return HabitFinding(
+    habitId: id,
+    metricId: metricId,
+    lagDays: lagDays,
+    usableDays: days.length,
+    raw: raw,
+    effect: effect,
+    interval: interval,
+    standardized: sd == 0 ? 0 : effect / sd,
+  );
 }
 
 Comparison? _welch(List<double> exposure, List<double> y, double level) {

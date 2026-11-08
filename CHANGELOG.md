@@ -226,8 +226,9 @@ pull request titles (`gh pr list --state merged`).
 ### Internal
 
 - Groundwork for Insights, nothing to see yet: an on-device engine that compares a measure (such as sleep) after
-  days with each habit against days without, credits each habit only for its own share when habits share days, and
-  says nothing below 21 days or when the difference could be noise.
+  days with each habit against days without, judges each habit only between its first and last use, credits each
+  habit only for its own share when habits share days, and says nothing below 21 days or when the difference could be
+  noise.
 - The decisions page asks round 9: where Archive lives, whether Appearance is a picker, and where Export sits, each
   with the mock-up beside the built screen.
 - Test builds against the Firebase emulators no longer turn on App Check, which the emulators never check; the
