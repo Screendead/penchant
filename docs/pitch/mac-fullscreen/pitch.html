@@ -1,0 +1,149 @@
+<title>Mac Fullscreen Layout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;800&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column of option sections, each a hero still over a row of regression frames and a cost table. */
+:root{--bg:#f5f4f1;--panel:#ffffff;--fg:#17161a;--muted:#67646d;--line:#e2dfe6;--accent:#d9861c;--pick:#2f7d4f;
+--display:"Red Hat Display",system-ui,sans-serif;--text:"Red Hat Text",system-ui,sans-serif;--mono:"Red Hat Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121114;--panel:#1c1b1f;--fg:#f1eff4;--muted:#a19dab;--line:#2e2c33;--accent:#f0a540;--pick:#5cc488;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121114;--panel:#1c1b1f;--fg:#f1eff4;--muted:#a19dab;--line:#2e2c33;--accent:#f0a540;--pick:#5cc488;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--text);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:30px;font-weight:800}
+h2{font-size:22px;font-weight:800}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.decision{font-size:18px;max-width:65ch;margin:8px 0 0}
+p{margin:0;max-width:70ch}
+figure{margin:0;display:grid;gap:6px}
+figure img{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+figcaption{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.opt{display:grid;gap:16px;padding-top:24px;border-top:1px solid var(--line)}
+.head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.frames{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.frames{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;width:90px;color:var(--muted)}
+.tbl{overflow-x:auto}
+.rec{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:10px}
+.rec h2{color:var(--pick)}
+ul{margin:0;padding-left:20px;max-width:70ch}
+button.pick{font:600 14px var(--text);padding:10px 18px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button.pick:hover{border-color:var(--accent)}
+button.pick:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.pick[aria-pressed="true"]{border-color:var(--pick);color:var(--pick)}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.tag{font-family:var(--mono);font-size:12px;color:var(--pick);border:1px solid var(--pick);border-radius:999px;padding:2px 8px}
+code{font-family:var(--mono);font-size:13px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Penchant · macOS · pitch for Jack</div>
+  <h1>How should the Mac app fill a big window?</h1>
+  <p class="decision">Pick one of three layouts for windows larger than the default 1200×780. All three render the same way at 1200×780, the size you decided for <code>r8-mac-window</code>.</p>
+  <p class="status" id="pickStatus">Your pick: loading…</p>
+</header>
+
+<section class="opt">
+  <div class="eyebrow">Now · master</div>
+  <h2>What you saw</h2>
+  <p>At 2000×1250 the left pane stops halfway down and the Log button sits alone at the bottom. Trends is centred at 720 pt with wide gutters, the chips run off the edge, the chart is 220 pt tall, and Synced sits alone in the top right corner.</p>
+  <figure><img src="img/now-mac-2000x1250-dark.jpg" alt="Current master at 2000 by 1250, dark"><figcaption>master · 2000×1250 · dark</figcaption></figure>
+</section>
+
+<section class="opt">
+  <div class="eyebrow">In all three options</div>
+  <h2>Shared fixes</h2>
+  <ul>
+    <li>Trends chips wrap onto a second row in the pane. No more clipping. The phone sheet keeps its scrolling row.</li>
+    <li>The chart takes the pane's spare height, from 220 to 640 pt.</li>
+    <li>The Log button sits under the last tally instead of at the foot of the column.</li>
+    <li>Synced moves onto the Trends title row.</li>
+  </ul>
+  <figure><img src="img/a-mac-1200x780-dark.jpg" alt="1200 by 780 with the shared fixes, dark"><figcaption>1200×780 · dark · every option renders this frame, except for B's narrower Today column</figcaption></figure>
+</section>
+
+<section class="opt" id="opt-a">
+  <div class="head"><h2>A · Letterboxed canvas</h2><button class="pick" data-pick="A" aria-pressed="false">Pick A</button></div>
+  <p>Once the window is larger than 1320×860, the app sits centred at that size as a framed card on a slightly lighter backdrop. It always looks like the well-proportioned default window.</p>
+  <figure><img src="img/a-mac-2000x1250-dark.jpg" alt="Option A at 2000 by 1250, dark"><figcaption>2000×1250 · dark</figcaption></figure>
+  <div class="frames">
+    <figure><img src="img/a-mac-2000x1250-light.jpg" alt="Option A 2000 by 1250 light"><figcaption>2000×1250 · light</figcaption></figure>
+    <figure><img src="img/a-mac-1200x780-dark.jpg" alt="Option A 1200 by 780 dark"><figcaption>1200×780 · dark</figcaption></figure>
+    <figure><img src="img/a-mac-1200x780-light.jpg" alt="Option A 1200 by 780 light"><figcaption>1200×780 · light</figcaption></figure>
+  </div>
+  <div class="tbl"><table>
+    <tr><th>Effort</th><td>Smallest. One wrapper in <code>Homepage</code> that sets the canvas as the layout's screen size.</td></tr>
+    <tr><th>Cost</th><td>A fullscreen Mac shows about 45% of its area as backdrop. With many habits the list still scrolls inside the canvas, and the Log button scrolls with it.</td></tr>
+    <tr><th>Risk</th><td>Low. A card inside a fullscreen window can look like a web page, not a Mac app. Menus and dialogs still open relative to the real window.</td></tr>
+  </table></div>
+</section>
+
+<section class="opt" id="opt-b">
+  <div class="head"><h2>B · Responsive scaling</h2><button class="pick" data-pick="B" aria-pressed="false">Pick B</button></div>
+  <p>Two panes that grow with the window. The dial grows with the window's height, to 44%. Today's column takes 36% of the width, up to 760 pt. Trends widens to 1100 pt and the chart fills the height.</p>
+  <figure><img src="img/b-mac-2000x1250-dark.jpg" alt="Option B at 2000 by 1250, dark"><figcaption>2000×1250 · dark</figcaption></figure>
+  <div class="frames">
+    <figure><img src="img/b-mac-2000x1250-light.jpg" alt="Option B 2000 by 1250 light"><figcaption>2000×1250 · light</figcaption></figure>
+    <figure><img src="img/b-mac-1200x780-dark.jpg" alt="Option B 1200 by 780 dark"><figcaption>1200×780 · dark</figcaption></figure>
+    <figure><img src="img/b-mac-1200x780-light.jpg" alt="Option B 1200 by 780 light"><figcaption>1200×780 · light</figcaption></figure>
+  </div>
+  <div class="tbl"><table>
+    <tr><th>Effort</th><td>Small to medium. The dial's geometry is fixed at 320 pt, so the larger dial is that dial scaled up. Its labels and beads grow with it.</td></tr>
+    <tr><th>Cost</th><td>The scaled dial's type gets big (the clock is about 36 pt at 550 pt). At 1200×780 Today's column is narrower than on master (432 pt instead of 504 pt), so the decided default changes a little. Retuning the ratio removes that.</td></tr>
+    <tr><th>Risk</th><td>Low to medium. It behaves the same at every size, so there is no breakpoint to jump across. A 2000 pt chart spreads 30 days thin.</td></tr>
+  </table></div>
+</section>
+
+<section class="opt" id="opt-c">
+  <div class="head"><h2>C · Three columns from 1600 pt</h2><button class="pick" data-pick="C" aria-pressed="false">Pick C</button></div>
+  <p>From 1600 pt wide the window splits into three columns: the dial, a Habits column with the tallies and the Log button, and Trends. The dial fills its column's height. Below 1600 pt it is today's split view.</p>
+  <figure><img src="img/c-mac-2000x1250-dark.jpg" alt="Option C at 2000 by 1250, dark"><figcaption>2000×1250 · dark</figcaption></figure>
+  <div class="frames">
+    <figure><img src="img/c-mac-2000x1250-light.jpg" alt="Option C 2000 by 1250 light"><figcaption>2000×1250 · light</figcaption></figure>
+    <figure><img src="img/c-mac-1200x780-dark.jpg" alt="Option C 1200 by 780 dark"><figcaption>1200×780 · dark</figcaption></figure>
+    <figure><img src="img/c-mac-1200x780-light.jpg" alt="Option C 1200 by 780 light"><figcaption>1200×780 · light</figcaption></figure>
+  </div>
+  <div class="tbl"><table>
+    <tr><th>Effort</th><td>Medium to large. It is a third layout to keep in step with the other two (keys, focus, snackbar clearance, guest and recovery banners, e2e at 1600+).</td></tr>
+    <tr><th>Cost</th><td>With a few habits, the Habits column is mostly empty below the list. The layout jumps when the window crosses 1600 pt.</td></tr>
+    <tr><th>Risk</th><td>Medium. It uses big screens best and reads most like a desktop app, but it is the most code that only Mac fullscreen users see.</td></tr>
+  </table></div>
+</section>
+
+<section class="rec">
+  <span class="tag">Recommendation</span>
+  <h2>B, responsive scaling</h2>
+  <ul>
+    <li>It fixes every complaint with one rule and no breakpoint. The window fills at any size, and you get the same layout as you resize.</li>
+    <li>The code is small and stays close to the split view that already shipped, so 1g's e2e rewrite and the macOS keys need no new layout.</li>
+    <li>A wastes the screen Jack fullscreened for. C costs a third layout for the one size where B already looks right.</li>
+    <li>Before it merges: cap the dial near 480 pt, and keep Today's column at 504 pt at 1200×780 so the decided default stays as it is.</li>
+  </ul>
+</section>
+
+<footer class="status">Prototypes: branches design/mac-fullscreen-a, -b and -c on Screendead/penchant. Stills come from test/mac_fullscreen_render_test.dart with made-up habits.</footer>
+</div>
+
+<script>
+(async () => {
+  const status = document.getElementById('pickStatus');
+  const buttons = [...document.querySelectorAll('button.pick')];
+  const show = (p) => {
+    status.textContent = p ? 'Your pick: ' + p + ' (saved)' : 'Your pick: none yet. Choose one of the Pick buttons below.';
+    buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pick === p)));
+  };
+  const timer = setTimeout(() => { if (status.textContent.endsWith('loading…')) show(null); }, 10000);
+  const db = await claude.use('db');
+  if (!db) { clearTimeout(timer); status.textContent = 'Picking is unavailable here. Reply with A, B or C.'; buttons.forEach(b => b.disabled = true); return; }
+  const doc = db.doc('decision/mac-fullscreen');
+  doc.onSnapshot(s => { clearTimeout(timer); const d = s && s.exists ? (s.data ? s.data() : s) : null; show(d && d.pick ? d.pick : null); },
+                 () => { clearTimeout(timer); status.textContent = 'Could not load the saved pick.'; });
+  buttons.forEach(b => b.addEventListener('click', async () => {
+    try { await doc.set({ pick: b.dataset.pick, at: new Date().toISOString() }); }
+    catch (e) { status.textContent = 'Could not save the pick: ' + (e && e.message || e); }
+  }));
+})();
+</script>
