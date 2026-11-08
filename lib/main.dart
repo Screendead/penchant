@@ -27,6 +27,9 @@ import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widget_bridge/background_flush.dart';
+import 'package:tracker/widget_bridge/log_queue.dart';
+import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -39,6 +42,22 @@ void main() {
   installErrorHandlers();
   registerFontLicence();
   startApp();
+}
+
+/// The headless engine's entrypoint, for an iOS background refresh with the
+/// queue non-empty (ios/Runner/WidgetBridge.swift). It flushes once and tells
+/// native, which ends the task.
+@pragma('vm:entry-point')
+Future<void> backgroundFlushMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  installErrorHandlers();
+  const WidgetBridge bridge = WidgetBridge();
+  final BackgroundFlushOutcome outcome = await runBackgroundFlush(
+    initialize: initializeFirebase,
+    overrides: keyServiceOverrides,
+    now: DateTime.now,
+  );
+  await bridge.backgroundDone(outcome);
 }
 
 // main() without the global error handlers, which flutter_test owns.
@@ -88,6 +107,8 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     // Kept alive here so sealing runs whichever screen is open.
     ref.listen(plaintextMigrationProvider, (_, _) {});
+    ref.listen(widgetSyncProvider, (_, _) {});
+    ref.listen(widgetLogFlushProvider, (_, _) {});
     ref.listen(dailyNudgeStartupProvider, (_, _) {});
 
     return GestureDetector(

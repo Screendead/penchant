@@ -9,6 +9,16 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
+  last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
+  you sign out.
+- A "Log" widget in small, medium and large: tap a habit to log one, and tap Undo in the same place within 5 seconds
+  to take it back. It shows your 1, 3 or 8 most logged habits of the last 30 days, or the ones you pick in its
+  settings. A tap is kept on the device and saved to your journal in the background when iOS allows, or the next
+  time you open Penchant; on the Mac, while Penchant is open.
+- "Log one" for Control Centre, the Lock Screen and the Action button (iOS 18), and for Siri and Shortcuts ("Log
+  Coffee in Penchant").
+- The Last week and Log widgets on the Mac, in Notification Centre and on the desktop.
 - Settings has a Reduce motion row: Follow system, Reduce or Full, saved on each device. Reduce swaps travel and sweeps
   for short fades; Full keeps the dial, log fan, tallies, Undo timer, status pills, the Trends chart's range morph and
   page changes moving even when the system asks for less (sheets, dialogs and small fades still follow the system).
