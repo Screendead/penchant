@@ -46,7 +46,7 @@ Each list is in the recommended build order.
 - [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S. Guest start shipped; waits on the paid team
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6, `r2-mac`)
 
-## Insights (6)
+## Insights (7)
 
 - [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount`, `category` and `triggers` shipped
 - [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
@@ -54,6 +54,7 @@ Each list is in the recommended build order.
 - [Read Apple Health, including years of history, to see what follows each vice](insights/apple-health-correlation.md). L, 1.1 Pro
 - [Read the calendar on the device to see which events come before use](insights/calendar-integration.md). M, 1.1 Pro
 - [Close each week with a review of what the journal found](insights/weekly-review.md). M, 1.1 Pro
+- [Feed the insights engine from more sources on the device](insights/more-data-sources.md). M each. Jack: add them all (2026-11-08)
 
 ## Monetisation (3)
 
