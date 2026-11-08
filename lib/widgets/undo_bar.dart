@@ -75,6 +75,7 @@ class _UndoCountdownButtonState extends State<UndoCountdownButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _countdown = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration: widget.window,
   )..forward();
 

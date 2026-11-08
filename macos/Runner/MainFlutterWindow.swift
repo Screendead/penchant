@@ -32,6 +32,7 @@ class MainFlutterWindow: NSWindow {
     self.setFrameAutosaveName(Self.frameAutosaveName)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    QueueListener.start(WidgetBridge.register(with: flutterViewController.registrar(forPlugin: "WidgetBridge")))
 
     super.awakeFromNib()
   }

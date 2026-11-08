@@ -12,6 +12,21 @@ pull request titles (`gh pr list --state merged`).
 - On the Mac, Penchant sits in the menu bar: its popover shows today's dial with your habits below it. A click on a habit
   logs one now, and that habit's row offers Undo for five seconds. Closing the window no longer quits the app; click the
   Dock icon or Open Penchant to bring it back.
+- A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
+  last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
+  you sign out.
+- A "Log" widget in small, medium and large: tap a habit to log one, and tap Undo in the same place within 5 seconds
+  to take it back. It shows your 1, 3 or 8 most logged habits of the last 30 days, or the ones you pick in its
+  settings. A tap is kept on the device and saved to your journal in the background when iOS allows, or the next
+  time you open Penchant; on the Mac, while Penchant is open.
+- "Log one" for Control Centre, the Lock Screen and the Action button (iOS 18), and for Siri and Shortcuts ("Log
+  Coffee in Penchant").
+- The Last week and Log widgets on the Mac, in Notification Centre and on the desktop.
+- Settings has a Reduce motion row: Follow system, Reduce or Full, saved on each device. Reduce swaps travel and sweeps
+  for short fades; Full keeps the dial, log fan, tallies, Undo timer, status pills, the Trends chart's range morph and
+  page changes moving even when the system asks for less (sheets, dialogs and small fades still follow the system).
+- Settings › Reminder sends one quiet notification a day at a time you choose; it is off until you turn it on, and
+  only then asks to send notifications. Press and hold it to log something, or tap Clean day to close it.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
   habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
   latest entry, and its actions list every entry.
@@ -21,16 +36,24 @@ pull request titles (`gh pr list --state merged`).
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- A large or fullscreen Mac window uses its room: the dial grows with the window's height (up to 480 pt), Today's
+  column widens, and the Trends chart takes the height the rest of the pane leaves. Trends' habit chips wrap onto
+  more rows, Synced sits beside the Trends title, and the Log button sits under your last habit.
 - The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
   you left it. It narrows to 390 pt, where the phone layout returns.
 - Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
   it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
   fade out before the new day's fade in).
+- The offline and "not saved" notices are rounded pills that drop in from the top on a spring and lift away when
+  they clear, instead of bars that appear and vanish at once. With Reduce Motion on they fade.
+- In Trends, switching between 7 days, 30 days, 90 days and a year keeps the chart up while the new range loads, then
+  morphs its line into the new range, instead of putting a spinner in its place.
 - A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
   three hours that hold the most.
-  you left it. It narrows to 390 pt; below 900 pt the phone layout returns.
 
 ### Fixed
+
+- A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
 
 - With large text, the offline and refused-change banners no longer push Today off the screen: each stops at a third
   of the screen and scrolls, and the sync status beside the menu stops growing at twice its size.
