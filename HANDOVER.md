@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-08. Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
+*Updated 2026-11-08 (insights queue). Audience: the next agent, or Jack. This file holds the current task: the queue, where each item
 stands, the calls waiting on Jack, and the options set aside. Update it in the same commit that closes an item or
 records a call. Git holds the history. How the code works lives in `CLAUDE.md`.*
 
@@ -171,6 +171,25 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    and says "open Penchant to sync" for a `blocked` one. The in-process popover (#157, #163) is gone, and with it the
    private `enableMultiView` call, which also sent VoiceOver to the wrong view (`FlutterEngine.mm`,
    `update_semantics_callback2`).
+
+7. **Insights, built free** (Jack, 2026-11-08: "build it free for me, we can paywall later"). The Pro features
+   ship unlocked; the paywall and StoreKit wait until he decides to sell. Apple Health works on the free team: a
+   signed probe build on 2026-11-08 got a profile granting `com.apple.developer.healthkit` and background delivery.
+   Small, resumable steps, one PR each, merged on green; tick each here as it merges. Health and every source below
+   stay on the device: nothing they read goes to Firestore, analytics or crash reports.
+   - **a. Engine core** (pure Dart, `lib/insights/`): per-day series from the decrypted journal, a "what follows"
+     comparison of an outcome on days after each habit against days without, attributed per habit, and a refusal to
+     report below a minimum sample or inside the noise (`ideas/insights/insights-engine.md`).
+   - **b. Health reading** (iOS Swift channel): the entitlement, usage string, permission asked from the Insights
+     screen only, daily and nightly aggregates (`HKStatisticsCollectionQuery`) for sleep stages, HRV, resting heart
+     rate, respiratory rate, oxygen, wrist temperature, steps and energy, kept in an on-device store
+     (`ideas/insights/apple-health-correlation.md`, recommendation B with C's aggregates).
+   - **c. Insights screen:** connect Health, then show the engine's findings; empty Health reads as "no data yet".
+   - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
+   - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
+   - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
+     `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
+     and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 
@@ -500,6 +519,9 @@ Later the same day, in chat, on the widgets (#158) and the nudge (#156):
 - **The daily nudge fires every day regardless**, even on a day already logged. Jack: "in case something was
   missed". As built in #156; no change.
 - **"Clean day" just dismisses** (option c). As built in #156; no change.
+- **Log widget = Hero with Glow** (Jack 2026-11-08: "B, with C's glow"). The first habit is a dial with a +
+  badge, the rest are pills with their count and a + button, each on a soft glow of its colour. Renders in
+  `docs/pitch/round-11/log-widgets/final/`.
 
 ## Calls waiting on Jack (UNDECIDED)
 

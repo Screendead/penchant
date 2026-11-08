@@ -13,6 +13,9 @@ pull request titles (`gh pr list --state merged`).
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
   backoff for about an hour. Opening Penchant meanwhile brings up the app as usual.
+- Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
+  step and energy totals from Apple Health, read-only and kept on the device. Nothing asks for access or shows them
+  yet.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
   lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. A log made while the
   app is closed is marked "Saved — syncs shortly", or "Saved — open Penchant to sync" when only the app can save it
@@ -138,6 +141,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- The Log widget is redrawn to match the Dial widgets: your top habit is a dial with a + button, and the others are
+  pills with today's count and a + button, each lit with a soft glow of its colour.
 - Holding a habit in the Log fan opens an amount sheet instead of the record dialog: the habit's name at the top, a
   large amount with − and + to step it (or type a decimal), and one button that says what it will log and when.
   Editing an entry uses the same amount stepper.
@@ -229,6 +234,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Internal
 
+- Groundwork for Insights, nothing to see yet: an on-device engine that compares a measure (such as sleep) after
+  days with each habit against days without, judges each habit only between its first and last use, credits each
+  habit only for its own share when habits share days, and says nothing below 21 days or when the difference could be
+  noise.
 - The decisions page asks round 9: where Archive lives, whether Appearance is a picker, and where Export sits, each
   with the mock-up beside the built screen.
 - Test builds against the Firebase emulators no longer turn on App Check, which the emulators never check; the
