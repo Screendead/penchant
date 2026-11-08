@@ -310,6 +310,7 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    container.listen(userProvider, (_, _) {});
     await container.read(userProvider.future);
     await flushQueuedLogs(
       bridge: bridge,
