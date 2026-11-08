@@ -127,6 +127,23 @@ void main() {
     await _expectCommonLayout(tester, chipsWrap: false);
   });
 
+  testWidgets('the grown chart morphs to another range at its height', (
+    WidgetTester tester,
+  ) async {
+    await pumpMacWindow(tester, const Size(2000, 1250));
+    final double plot = _rect(tester, _inTrends(find.byType(LineChart))).height;
+    expect(plot, greaterThan(TrendsChart.plotHeight));
+
+    await tester.tap(_inTrends(find.text(TrendsSheet.rangeLabel(90))));
+    await tester.pump();
+    await tester.pump(DialMotion.chartMorph ~/ 2);
+    final LineChart mid = tester.widget(_inTrends(find.byType(LineChart)));
+    expect(mid.data.lineBarsData.first.spots, hasLength(RangeMorph.samples));
+    expect(_rect(tester, _inTrends(find.byType(LineChart))).height, plot);
+    await tester.pumpAndSettle();
+    expect(_rect(tester, _inTrends(find.byType(LineChart))).height, plot);
+  });
+
   testWidgets('while the habits load, Today stays at the top of its column', (
     WidgetTester tester,
   ) async {

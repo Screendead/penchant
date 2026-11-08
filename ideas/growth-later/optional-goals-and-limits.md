@@ -5,7 +5,7 @@
 ## What
 
 Each vice can carry an optional goal: a direction (fewer, more, or none), and a daily or weekly limit. Where one is
-set, its tile on Today shows progress, the check-in can nudge near it, and trends draw the line. With none set, the
+set, its tile on Today shows progress, the daily reminder could nudge near it, and trends draw the line. With none set, the
 app is purely a journal, and nothing anywhere suggests the user should have one.
 
 ## Why

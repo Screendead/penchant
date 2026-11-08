@@ -244,6 +244,10 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   List<ViceActivity>? _bucketed;
   UsageRange? _bucketedRange;
   List<double> _totals = const <double>[];
+  // The last series shown, kept on screen while another range of the same
+  // habit loads: a new range is a new query, which starts with no value, and
+  // a spinner in the chart's place would end the morph into it.
+  ({String viceID, TrendsSeries series})? _shown;
 
   @override
   void initState() {
@@ -367,9 +371,16 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     );
     final Object? error = value.error;
     final List<ViceActivity>? activities = error == null ? value.value : null;
-    final TrendsSeries? series = activities == null
+    TrendsSeries? series = activities == null
         ? null
         : _series(range, activities);
+    if (series != null) {
+      _shown = (viceID: vice.id, series: series);
+    } else if (error == null && _shown?.viceID == vice.id) {
+      series = _shown!.series;
+    }
+    // The range the series on screen covers.
+    final UsageRange shown = series?.range ?? range;
 
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
@@ -399,7 +410,8 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             vice: vice,
             mark: mark,
             rangeDays: rangeDays,
-            range: range,
+            stepDays: stepDays,
+            range: shown,
             series: series,
             error: error,
             cursor: cursor,
@@ -427,7 +439,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                 ? null
                 : showDay != null
                 ? (int index) {
-                    final DateTime picked = range.bucketStart(index);
+                    final DateTime picked = shown.bucketStart(index);
                     showDay(picked);
                     unawaited(
                       SemanticsService.sendAnnouncement(
@@ -440,7 +452,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                 : (int index) => _handOver(
                     _chartFocus,
                     _backFocus,
-                    () => openDay = range.bucketStart(index),
+                    () => openDay = shown.bucketStart(index),
                   ),
             onRetry: () => ref.invalidate(
               viceActivityGraphForUserProvider,
@@ -586,7 +598,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                           child: _Peek(
                             vice: vice,
                             mark: mark,
-                            days: range.days,
+                            days: shown.days,
                             series: series,
                             focusNode: _peekFocus,
                             onOpen: _open,
@@ -843,6 +855,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.vice,
     required this.mark,
     required this.rangeDays,
+    required this.stepDays,
     required this.range,
     required this.series,
     required this.error,
@@ -868,6 +881,8 @@ class _TrendsPanel extends StatelessWidget {
   final HabitMark mark;
   // The range picked, which [range] may round down to whole weeks.
   final int rangeDays;
+  final int stepDays;
+  // The range [series] covers, which trails the one picked while it loads.
   final UsageRange range;
   final TrendsSeries? series;
   final Object? error;
@@ -1036,7 +1051,7 @@ class _TrendsPanel extends StatelessWidget {
                 (value: 1, label: 'Day', spoken: 'By day'),
                 (value: 7, label: 'Week', spoken: 'By week'),
               ],
-              selected: range.stepDays,
+              selected: stepDays,
               onChanged: onStep,
             ),
           ],
