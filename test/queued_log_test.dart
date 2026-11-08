@@ -193,6 +193,10 @@ void main() {
         now: now,
       );
       expect(bridge.queue, isEmpty);
+      expect(
+        container.read(rejectedWritesProvider).map((r) => r.what),
+        <String>['Not saved: $widgetLogWhat'],
+      );
     });
   });
 }

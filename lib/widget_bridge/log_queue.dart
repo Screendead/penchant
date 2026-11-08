@@ -54,17 +54,21 @@ Future<void> _write(
     ),
     QueuedLogOp.delete => writes.deleteActivity(log.id),
   };
+  final bool creates = log.op == QueuedLogOp.log;
+  final String what = creates
+      ? 'Not saved: $widgetLogWhat'
+      : 'Not undone: $widgetLogWhat';
   try {
-    await rejected.settle(
-      write,
-      log.op == QueuedLogOp.log
-          ? 'Not saved: $widgetLogWhat'
-          : 'Not undone: $widgetLogWhat',
-    );
+    await rejected.settle(write, what);
   } on FirebaseException catch (e, stack) {
     // Refused (a habit deleted since the tap, say): writing it again would
-    // be refused again.
+    // be refused again, so it goes to the banner and leaves the queue.
     reportError(e, stack, context: 'while writing $widgetLogWhat');
+    rejected.reporter(
+      what,
+      creates: creates ? log.id : null,
+      changes: creates ? null : log.id,
+    )(e);
   }
 }
 
