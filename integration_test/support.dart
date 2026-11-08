@@ -197,6 +197,25 @@ Future<void> enterText(WidgetTester tester, String label, String text) async {
   await tester.pump();
 }
 
+// Types [text] into the open amount sheet's Quantity field and reads the
+// field back. On a slow hosted runner the text sometimes never reaches the
+// field, and the sheet, which opens holding the default amount, would record
+// that instead, so it types again until the field holds it.
+Future<void> enterQuantity(WidgetTester tester, String text) async {
+  final Finder editable = find.descendant(
+    of: find.widgetWithText(TextFormField, 'Quantity'),
+    matching: find.byType(EditableText),
+  );
+  for (int attempt = 0; attempt < 3; attempt++) {
+    await enterText(tester, 'Quantity', text);
+    await tester.pump(const Duration(milliseconds: 100));
+    if (tester.widget<EditableText>(editable).controller.text == text) {
+      return;
+    }
+  }
+  throw TestFailure('The Quantity field did not keep "$text" after 3 tries');
+}
+
 Future<void> screenshot(WidgetTester tester, String name) async {
   if (_screenshotServer.isEmpty) {
     return;
@@ -414,7 +433,8 @@ Future<void> recordActivity(
       ActivityDateField.format.format(at),
     );
   }
-  await enterText(tester, 'Quantity', formatAmount(quantity));
+  final String typed = formatAmount(quantity);
+  await enterQuantity(tester, typed);
   if (triggerTaps.isNotEmpty) {
     // Each label in [triggerTaps] is tapped in the picker in turn.
     final Finder open = find.text('What was going on? (optional)');
@@ -433,6 +453,7 @@ Future<void> recordActivity(
     await tap(tester, find.descendant(of: sheet, matching: find.text('Done')));
     await pumpUntil(tester, sheet, present: false);
   }
+  await enterQuantity(tester, typed);
   // A focused field scrolls itself back into view, away from the button.
   FocusManager.instance.primaryFocus?.unfocus();
   await tester.pump();
