@@ -816,6 +816,101 @@ void main() {
       await tester.pump(const Duration(milliseconds: 160));
       expect(tester.binding.hasScheduledFrame, isFalse);
     });
+
+    testWidgets("under reduce motion, the old day's beads fade out over "
+        '150 ms before the new day fades in', (WidgetTester tester) async {
+      final DateTime today = DateUtils.dateOnly(DateTime.now());
+      String id(DateTime day) =>
+          fakeActivity(coffee.id, 1, day.add(const Duration(hours: 1))).id;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _today(
+            [coffee],
+            (DateTime day) => [
+              fakeActivity(coffee.id, 1, day.add(const Duration(hours: 1))),
+            ],
+          ),
+          child: const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: MaterialApp(home: Scaffold(body: ViceTracker())),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      Finder bead(DateTime day) =>
+          find.byKey(ValueKey<String>('bead-${id(day)}'));
+      expect(bead(today), findsOneWidget);
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 75));
+      expect(bead(today), findsOneWidget);
+      expect(bead(addDays(today, -1)), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 80));
+      await tester.pump();
+      expect(bead(today), findsNothing);
+      expect(bead(addDays(today, -1)), findsOneWidget);
+      await tester.pumpAndSettle();
+    });
+  });
+
+  group('a drag too short to change the day', () {
+    final Vice coffee = _habit('Coffee');
+
+    double shift(WidgetTester tester) => tester
+        .widget<Transform>(
+          find
+              .descendant(
+                of: find.byType(DayDial),
+                matching: find.byType(Transform),
+              )
+              .first,
+        )
+        .transform
+        .getTranslation()
+        .x;
+
+    for (final bool reduced in <bool>[false, true]) {
+      testWidgets(
+        reduced
+            ? 'jumps back at once under reduce motion'
+            : 'eases the dial back over 220 ms',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: _today([coffee], (_) => const <ViceActivity>[]),
+              child: MediaQuery(
+                data: MediaQueryData(disableAnimations: reduced),
+                child: const MaterialApp(home: Scaffold(body: ViceTracker())),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final TestGesture drag = await tester.startGesture(
+            tester.getCenter(find.byType(DayDial)),
+          );
+          for (int i = 0; i < 8; i++) {
+            await drag.moveBy(const Offset(5, 0));
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+          // A quarter of the drag past the slop.
+          expect(shift(tester), greaterThan(4));
+          await drag.up();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          if (reduced) {
+            expect(shift(tester), 0);
+          } else {
+            expect(shift(tester), inExclusiveRange(0, 5));
+          }
+          await tester.pump(const Duration(milliseconds: 130));
+          expect(shift(tester), 0);
+          expect(find.text('Today'), findsOneWidget);
+          await tester.pumpAndSettle();
+        },
+      );
+    }
   });
 
   group('a day with nothing recorded', () {

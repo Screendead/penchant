@@ -20,6 +20,9 @@ pull request titles (`gh pr list --state merged`).
   choice. Export my data is now one tap from Settings, as well as under Account.
 - The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
   you left it. It narrows to 390 pt, where the phone layout returns.
+- Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
+  it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
+  fade out before the new day's fade in).
 - A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
   three hours that hold the most.
   you left it. It narrows to 390 pt; below 900 pt the phone layout returns.
