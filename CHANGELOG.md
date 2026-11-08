@@ -10,8 +10,10 @@ pull request titles (`gh pr list --state merged`).
 ### Added
 
 - Settings has a Reduce motion row: Follow system, Reduce or Full, saved on each device. Reduce swaps travel and sweeps
-  for short fades; Full keeps the dial, log fan, tallies, Undo timer and page changes moving even when the system asks
-  for less (sheets, dialogs and small fades still follow the system).
+  for short fades; Full keeps the dial, log fan, tallies, Undo timer, status pills, the Trends chart's range morph and
+  page changes moving even when the system asks for less (sheets, dialogs and small fades still follow the system).
+- Settings › Reminder sends one quiet notification a day at a time you choose; it is off until you turn it on, and
+  only then asks to send notifications. Press and hold it to log something, or tap Clean day to close it.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
   habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
   latest entry, and its actions list every entry.
@@ -26,9 +28,12 @@ pull request titles (`gh pr list --state merged`).
 - Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
   it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
   fade out before the new day's fade in).
+- The offline and "not saved" notices are rounded pills that drop in from the top on a spring and lift away when
+  they clear, instead of bars that appear and vanish at once. With Reduce Motion on they fade.
+- In Trends, switching between 7 days, 30 days, 90 days and a year keeps the chart up while the new range loads, then
+  morphs its line into the new range, instead of putting a spinner in its place.
 - A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
   three hours that hold the most.
-  you left it. It narrows to 390 pt; below 900 pt the phone layout returns.
 
 ### Fixed
 

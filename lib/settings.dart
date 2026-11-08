@@ -17,6 +17,8 @@ import 'package:tracker/providers/reduce_motion_provider.dart';
 import 'package:tracker/reduce_motion_settings.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/reminder/daily_nudge.dart';
+import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 // Nothing signs a guest back in, so signing out erases their journal rather
@@ -172,6 +174,7 @@ class _SettingsState extends ConsumerState<Settings> {
     final String? sealing = migrationNote(
       ref.watch(plaintextMigrationProvider),
     );
+    final NudgeSettings nudge = ref.watch(dailyNudgeProvider);
     return CardPage(
       title: 'Settings',
       children: <Widget>[
@@ -221,6 +224,16 @@ class _SettingsState extends ConsumerState<Settings> {
               glyph: DialGlyph.right,
               onTap: () {
                 Navigator.of(context).pushNamed(ReduceMotionSettings.route);
+              },
+            ),
+            CardRow(
+              label: 'Reminder',
+              value: Text(
+                nudge.enabled ? nudgeTimeLabel(context, nudge.time) : 'Off',
+              ),
+              glyph: DialGlyph.right,
+              onTap: () {
+                Navigator.of(context).pushNamed(ReminderSettings.route);
               },
             ),
             if (sealing != null)

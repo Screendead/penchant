@@ -12,6 +12,8 @@ import 'package:tracker/providers/reduce_motion_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reduce_motion_settings.dart';
 import 'package:tracker/settings.dart';
+import 'package:tracker/trends/trends_chart.dart';
+import 'package:tracker/widgets/pill_drop.dart';
 import 'package:tracker/widgets/reduce_motion_scope.dart';
 import 'package:tracker/widgets/undo_bar.dart';
 
@@ -254,5 +256,95 @@ void main() {
       expect(route.animation!.value, lessThan(0.5));
       await tester.pumpAndSettle();
     });
+
+    testWidgets('the Trends chart morphs between ranges over 450 ms', (
+      WidgetTester tester,
+    ) async {
+      await fullOnReducingSystem(tester);
+      final List<MorphFrame?> frames = <MorphFrame?>[];
+      Widget morph(int days, double value) => _app(
+        system: true,
+        home: RangeMorph(
+          shape: (days: days, stepDays: 1),
+          totals: List<double>.filled(days, value),
+          smoothed: null,
+          top: value,
+          builder: (BuildContext context, MorphFrame? frame, bool tween) {
+            frames.add(frame);
+            return const SizedBox();
+          },
+        ),
+      );
+      await tester.pumpWidget(morph(7, 2));
+      await tester.pumpWidget(morph(30, 6));
+      await tester.pump(const Duration(milliseconds: 225));
+      expect(frames.last, isNotNull);
+      expect(frames.last!.top, inExclusiveRange(2, 6));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a status pill drops in on its spring', (
+      WidgetTester tester,
+    ) async {
+      await fullOnReducingSystem(tester);
+      Widget pill({required bool shown}) => _app(
+        system: true,
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              PillDrop(shown: shown, child: const Text('Offline')),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpWidget(pill(shown: false));
+      await tester.pumpWidget(pill(shown: true));
+      await tester.pump(const Duration(milliseconds: 50));
+      final double y = tester
+          .widget<Transform>(
+            find
+                .ancestor(
+                  of: find.text('Offline'),
+                  matching: find.byType(Transform),
+                )
+                .first,
+          )
+          .transform
+          .getTranslation()
+          .y;
+      expect(y, lessThan(0));
+      await tester.pumpAndSettle();
+    });
+  });
+
+  testWidgets('Reduce with iOS Reduce Motion on keeps a pill\'s fade', (
+    WidgetTester tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      ReduceMotion.key: 'reduce',
+    });
+    Widget pill({required bool shown}) => _app(
+      system: true,
+      home: Scaffold(
+        body: Column(
+          children: <Widget>[
+            PillDrop(shown: shown, child: const Text('Offline')),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpWidget(pill(shown: false));
+    await tester.pump();
+    await tester.pumpWidget(pill(shown: true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    final Opacity fade = tester.widget(
+      find.ancestor(of: find.text('Offline'), matching: find.byType(Opacity)),
+    );
+    expect(fade.opacity, inExclusiveRange(0, 1));
+    await tester.pumpAndSettle();
   });
 }

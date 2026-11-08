@@ -22,7 +22,7 @@ Every entry can carry, beyond vice, quantity and time:
 | `defaultQuantity`, `unitLabel`, `costPerUnit` | vice | | `defaultQuantity` is a constant 1 (`lib/writes/log_one.dart`) and is not stored per vice; [units and cost](../monetisation/units-and-cost-per-unit.md) |
 | `schemaVersion` | both | int | Which migrations a document has had |
 
-The [check-in](../v1-must-haves/evening-check-in-and-reminders.md) adds a per-day record of "nothing to log".
+A day with nothing logged counts as clean (`r2-days`), so there is no per-day record of "nothing to log".
 
 ## Decision so far
 

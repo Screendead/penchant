@@ -270,169 +270,195 @@ class TrendsChart extends StatelessWidget {
             const SizedBox(height: DialSpace.xs),
             SizedBox(
               height: plotHeight,
-              child: LineChart(
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : DialMotion.chartMorph,
-                curve: DialMotion.travel,
-                LineChartData(
-                  minX: minX,
-                  maxX: maxX,
-                  minY: 0,
-                  maxY: yScale.top.toDouble(),
-                  // A curve through a small value between steep falls can
-                  // still swing below the axis.
-                  clipData: const FlClipData(
-                    top: false,
-                    bottom: true,
-                    left: false,
-                    right: false,
-                  ),
-                  gridData: FlGridData(
-                    drawVerticalLine: false,
-                    horizontalInterval: yScale.step.toDouble(),
-                    getDrawingHorizontalLine: (double value) =>
-                        FlLine(color: colors.line, strokeWidth: 1),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  extraLinesData: ExtraLinesData(
-                    verticalLines: <VerticalLine>[
-                      VerticalLine(
-                        x: shown.toDouble(),
-                        color: scheme.outline,
-                        strokeWidth: 1,
-                      ),
-                    ],
-                  ),
-                  lineTouchData: LineTouchData(
-                    handleBuiltInTouches: false,
-                    touchSpotThreshold: _anyDistance,
-                    touchCallback: (FlTouchEvent event, LineTouchResponse? r) {
-                      final int? index =
-                          r?.lineBarSpots?.firstOrNull?.spotIndex;
-                      if (index == null) {
-                        return;
-                      }
-                      if (event is FlTapUpEvent) {
-                        onCursor(index);
-                        onOpenBucket?.call(index);
-                      } else if (event.isInterestedForInteractions) {
-                        onCursor(index);
-                      }
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    topTitles: const AxisTitles(),
-                    rightTitles: const AxisTitles(),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: leftTitlesWidth,
-                        interval: yScale.step.toDouble(),
-                        getTitlesWidget: (double value, TitleMeta meta) =>
-                            Padding(
-                              padding: const EdgeInsets.only(right: labelGap),
-                              child: Text(
-                                formatCount(value.round()),
-                                style: axisStyle,
-                                textAlign: TextAlign.end,
+              child: RangeMorph(
+                shape: (days: range.days, stepDays: range.stepDays),
+                totals: totals,
+                smoothed: window > 1 ? smoothed : null,
+                top: yScale.top.toDouble(),
+                builder:
+                    (
+                      BuildContext context,
+                      MorphFrame? morph,
+                      bool tween,
+                    ) => LineChart(
+                      duration:
+                          !tween || MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : DialMotion.chartMorph,
+                      curve: DialMotion.travel,
+                      LineChartData(
+                        minX: minX,
+                        maxX: maxX,
+                        minY: 0,
+                        maxY: morph?.top ?? yScale.top.toDouble(),
+                        // A curve through a small value between steep falls can
+                        // still swing below the axis.
+                        clipData: const FlClipData(
+                          top: false,
+                          bottom: true,
+                          left: false,
+                          right: false,
+                        ),
+                        gridData: FlGridData(
+                          drawVerticalLine: false,
+                          horizontalInterval: yScale.step.toDouble(),
+                          getDrawingHorizontalLine: (double value) =>
+                              FlLine(color: colors.line, strokeWidth: 1),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        extraLinesData: ExtraLinesData(
+                          verticalLines: <VerticalLine>[
+                            VerticalLine(
+                              x: shown.toDouble(),
+                              color: scheme.outline,
+                              strokeWidth: 1,
+                            ),
+                          ],
+                        ),
+                        lineTouchData: LineTouchData(
+                          enabled: morph == null,
+                          handleBuiltInTouches: false,
+                          touchSpotThreshold: _anyDistance,
+                          touchCallback:
+                              (FlTouchEvent event, LineTouchResponse? r) {
+                                final int? index =
+                                    r?.lineBarSpots?.firstOrNull?.spotIndex;
+                                if (index == null) {
+                                  return;
+                                }
+                                if (event is FlTapUpEvent) {
+                                  onCursor(index);
+                                  onOpenBucket?.call(index);
+                                } else if (event.isInterestedForInteractions) {
+                                  onCursor(index);
+                                }
+                              },
+                        ),
+                        titlesData: FlTitlesData(
+                          topTitles: const AxisTitles(),
+                          rightTitles: const AxisTitles(),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: leftTitlesWidth,
+                              interval: yScale.step.toDouble(),
+                              getTitlesWidget: (double value, TitleMeta meta) =>
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      right: labelGap,
+                                    ),
+                                    child: Text(
+                                      formatCount(value.round()),
+                                      style: axisStyle,
+                                      textAlign: TextAlign.end,
+                                    ),
+                                  ),
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: bottomTitlesHeight,
+                              interval: 1,
+                              getTitlesWidget: (double value, TitleMeta meta) {
+                                final int index = value.round();
+                                if (value != index.toDouble() ||
+                                    !labelled.contains(index)) {
+                                  return const SizedBox.shrink();
+                                }
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  fitInside:
+                                      SideTitleFitInsideData.fromTitleMeta(
+                                        meta,
+                                        distanceFromEdge: 0,
+                                      ),
+                                  child: Text(
+                                    bucketLabel(range, index, today),
+                                    style: axisStyle,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        lineBarsData: <LineChartBarData>[
+                          LineChartBarData(
+                            spots: morph == null
+                                ? <FlSpot>[
+                                    for (int i = 0; i < n; i++)
+                                      FlSpot(i.toDouble(), totals[i]),
+                                  ]
+                                : morph.spots(morph.totals, minX, maxX),
+                            color: ink,
+                            barWidth: 1.5,
+                            dotData: FlDotData(
+                              checkToShowDot:
+                                  (FlSpot spot, LineChartBarData _) =>
+                                      morph == null &&
+                                      (dots || spot.x == shown),
+                              getDotPainter:
+                                  (
+                                    FlSpot spot,
+                                    double _,
+                                    LineChartBarData _,
+                                    int index,
+                                  ) => index == shown
+                                  ? FlDotCirclePainter(
+                                      radius: 5,
+                                      color: ink,
+                                      strokeWidth: 2.5,
+                                      strokeColor: surface,
+                                    )
+                                  : FlDotCirclePainter(
+                                      radius: n <= 7 ? 3.5 : 2.4,
+                                      color: ink,
+                                      strokeWidth: 0,
+                                    ),
+                            ),
+                          ),
+                          if (window > 1)
+                            LineChartBarData(
+                              spots: morph?.smoothed == null
+                                  ? <FlSpot>[
+                                      for (int i = 0; i < smoothed.length; i++)
+                                        FlSpot(i.toDouble(), smoothed[i]),
+                                    ]
+                                  : morph!.spots(morph.smoothed!, minX, maxX),
+                              isCurved: true,
+                              preventCurveOverShooting: true,
+                              isStrokeCapRound: true,
+                              color: ink,
+                              barWidth: 3,
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: colors
+                                    .habit(mark)
+                                    .withValues(alpha: 0.10),
+                              ),
+                              dotData: FlDotData(
+                                checkToShowDot:
+                                    (FlSpot spot, LineChartBarData _) =>
+                                        morph == null && spot.x == shown,
+                                getDotPainter:
+                                    (
+                                      FlSpot spot,
+                                      double _,
+                                      LineChartBarData _,
+                                      int _,
+                                    ) => FlDotCirclePainter(
+                                      radius: 4.5,
+                                      color: surface,
+                                      strokeWidth: 2.5,
+                                      strokeColor: ink,
+                                    ),
                               ),
                             ),
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: bottomTitlesHeight,
-                        interval: 1,
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          final int index = value.round();
-                          if (value != index.toDouble() ||
-                              !labelled.contains(index)) {
-                            return const SizedBox.shrink();
-                          }
-                          return SideTitleWidget(
-                            meta: meta,
-                            fitInside: SideTitleFitInsideData.fromTitleMeta(
-                              meta,
-                              distanceFromEdge: 0,
-                            ),
-                            child: Text(
-                              bucketLabel(range, index, today),
-                              style: axisStyle,
-                              maxLines: 1,
-                              softWrap: false,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  lineBarsData: <LineChartBarData>[
-                    LineChartBarData(
-                      spots: <FlSpot>[
-                        for (int i = 0; i < n; i++)
-                          FlSpot(i.toDouble(), totals[i]),
-                      ],
-                      color: ink,
-                      barWidth: 1.5,
-                      dotData: FlDotData(
-                        checkToShowDot: (FlSpot spot, LineChartBarData _) =>
-                            dots || spot.x == shown,
-                        getDotPainter:
-                            (
-                              FlSpot spot,
-                              double _,
-                              LineChartBarData _,
-                              int index,
-                            ) => index == shown
-                            ? FlDotCirclePainter(
-                                radius: 5,
-                                color: ink,
-                                strokeWidth: 2.5,
-                                strokeColor: surface,
-                              )
-                            : FlDotCirclePainter(
-                                radius: n <= 7 ? 3.5 : 2.4,
-                                color: ink,
-                                strokeWidth: 0,
-                              ),
-                      ),
-                    ),
-                    if (window > 1)
-                      LineChartBarData(
-                        spots: <FlSpot>[
-                          for (int i = 0; i < smoothed.length; i++)
-                            FlSpot(i.toDouble(), smoothed[i]),
                         ],
-                        isCurved: true,
-                        preventCurveOverShooting: true,
-                        isStrokeCapRound: true,
-                        color: ink,
-                        barWidth: 3,
-                        belowBarData: BarAreaData(
-                          show: true,
-                          color: colors.habit(mark).withValues(alpha: 0.10),
-                        ),
-                        dotData: FlDotData(
-                          checkToShowDot: (FlSpot spot, LineChartBarData _) =>
-                              spot.x == shown,
-                          getDotPainter:
-                              (
-                                FlSpot spot,
-                                double _,
-                                LineChartBarData _,
-                                int _,
-                              ) => FlDotCirclePainter(
-                                radius: 4.5,
-                                color: surface,
-                                strokeWidth: 2.5,
-                                strokeColor: ink,
-                              ),
-                        ),
                       ),
-                  ],
-                ),
+                    ),
               ),
             ),
           ],
@@ -516,4 +542,145 @@ class _Readout extends StatelessWidget {
       );
     },
   );
+}
+
+// [values] read at [count] evenly spaced points from the first to the last,
+// joining neighbours with straight lines.
+List<double> resampleSeries(List<double> values, int count) {
+  if (values.length == 1) {
+    return List<double>.filled(count, values.single);
+  }
+  return <double>[
+    for (int j = 0; j < count; j++)
+      () {
+        final double x = j * (values.length - 1) / (count - 1);
+        final int i = min(x.floor(), values.length - 2);
+        return values[i] + (values[i + 1] - values[i]) * (x - i);
+      }(),
+  ];
+}
+
+typedef ChartShape = ({int days, int stepDays});
+
+// One frame of a morph between ranges: both series resampled to
+// [RangeMorph.samples] points, part way from the old range's to the new's.
+class MorphFrame {
+  const MorphFrame({required this.totals, this.smoothed, required this.top});
+
+  final List<double> totals;
+  final List<double>? smoothed;
+  final double top;
+
+  List<FlSpot> spots(List<double> values, double minX, double maxX) => <FlSpot>[
+    for (int j = 0; j < values.length; j++)
+      FlSpot(minX + (maxX - minX) * j / (values.length - 1), values[j]),
+  ];
+}
+
+// fl_chart tweens a line spot by spot, so a range with another bucket count
+// would jump. On a change of range this hands [builder] both ranges' series
+// resampled to one count and eased from the old to the new over
+// DialMotion.chartMorph, then the new range's own series ([MorphFrame] null).
+// [builder]'s chart may tween its own changes only while `tween` is true: not
+// during a morph, nor on the frame that swaps the resampled series for the
+// range's own, which have another spot count.
+class RangeMorph extends StatefulWidget {
+  const RangeMorph({
+    super.key,
+    required this.shape,
+    required this.totals,
+    required this.smoothed,
+    required this.top,
+    required this.builder,
+  });
+
+  // The mock-up's count.
+  static const int samples = 221;
+
+  final ChartShape shape;
+  final List<double> totals;
+  final List<double>? smoothed;
+  final double top;
+  final Widget Function(BuildContext context, MorphFrame? morph, bool tween)
+  builder;
+
+  @override
+  State<RangeMorph> createState() => _RangeMorphState();
+}
+
+class _RangeMorphState extends State<RangeMorph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _t =
+      AnimationController(
+        vsync: this,
+        animationBehavior: AnimationBehavior.preserve,
+        duration: DialMotion.chartMorph,
+      )..addStatusListener((AnimationStatus status) {
+        if (status.isCompleted) {
+          setState(() {
+            _from = null;
+            _handoff = true;
+          });
+        }
+      });
+  MorphFrame? _from;
+  bool _handoff = false;
+
+  MorphFrame _resampled(RangeMorph w) => MorphFrame(
+    totals: resampleSeries(w.totals, RangeMorph.samples),
+    smoothed: w.smoothed == null
+        ? null
+        : resampleSeries(w.smoothed!, RangeMorph.samples),
+    top: w.top,
+  );
+
+  // Where the morph from [_from] towards [target]'s series has got to.
+  MorphFrame _towards(RangeMorph target) {
+    final MorphFrame from = _from!;
+    final MorphFrame to = _resampled(target);
+    final double k = DialMotion.travel.transform(_t.value);
+    List<double> mix(List<double> a, List<double> b) => <double>[
+      for (int i = 0; i < a.length; i++) a[i] + (b[i] - a[i]) * k,
+    ];
+    return MorphFrame(
+      totals: mix(from.totals, to.totals),
+      smoothed: to.smoothed == null
+          ? null
+          : mix(from.smoothed ?? from.totals, to.smoothed!),
+      top: from.top + (to.top - from.top) * k,
+    );
+  }
+
+  @override
+  void didUpdateWidget(RangeMorph old) {
+    super.didUpdateWidget(old);
+    if (old.shape == widget.shape || MediaQuery.disableAnimationsOf(context)) {
+      return;
+    }
+    // A morph caught part way starts again from where it is.
+    _from = _from == null ? _resampled(old) : _towards(old);
+    _t.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _t.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Cleared only once the swap has been built, whatever rebuilds first.
+    if (_handoff) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handoff = false);
+    }
+    return AnimatedBuilder(
+      animation: _t,
+      builder: (BuildContext context, _) => widget.builder(
+        context,
+        _from == null ? null : _towards(widget),
+        _from == null && !_handoff,
+      ),
+    );
+  }
 }

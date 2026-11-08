@@ -2,6 +2,7 @@
 //   flutter test test/motion_frames_render_test.dart --dart-define=RENDER_DIR=<dir>
 // Each scene writes <dir>/<scene>/frame-NNN.png; tools/motion-frames.sh turns
 // them into GIFs and contact sheets.
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -20,14 +21,26 @@ import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/rejected_writes_banner.dart';
+import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/writes/rejected_writes.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'trends_harness.dart';
 import 'render_fonts.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
+
+class _Rejected extends RejectedWrites {
+  @override
+  List<RejectedWrite> build() => const <RejectedWrite>[];
+
+  void show(List<RejectedWrite> rejected) => state = rejected;
+}
 
 final List<Vice> _vices = <Vice>[fakeVice('Coffee'), fakeVice('Tea')];
 
@@ -47,16 +60,52 @@ List<ViceActivity> _entries(DateTime day) => <ViceActivity>[
     ),
 ];
 
-List<Override> _overrides() => <Override>[
-  ...habitOverrides(_vices),
-  userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-  offlineProvider.overrideWith((ref) => Stream.value(false)),
-  trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
-  memoryJournal(),
-  viceActivityDayProvider.overrideWith(
-    (ref, DateTime day) => AsyncData(_entries(day)),
-  ),
-];
+List<Override> _overrides(Stream<bool> offline, {bool liveGraph = false}) =>
+    <Override>[
+      ...habitOverrides(_vices),
+      userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+      offlineProvider.overrideWith((ref) => offline),
+      trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+      memoryJournal(),
+      viceActivityDayProvider.overrideWith(
+        (ref, DateTime day) => AsyncData(_entries(day)),
+      ),
+      // Live, a new range's query starts with no value, as Firestore's does.
+      if (liveGraph)
+        viceActivityGraphForUserProvider.overrideWith(
+          (ref, key) => Stream<List<ViceActivity>>.fromFuture(
+            Future<List<ViceActivity>>.delayed(
+              const Duration(milliseconds: 48),
+              () => _graph(key.query).requireValue,
+            ),
+          ),
+        )
+      else
+        viceActivityGraphProvider.overrideWith(
+          (ref, ViceActivityGraphQuery query) => _graph(query),
+        ),
+    ];
+
+final AsyncValue<List<ViceActivity>> Function(ViceActivityGraphQuery) _graph =
+    inRange(_history());
+
+// A year and more of the first habit, a few a day, rising and falling.
+List<ViceActivity> _history() {
+  final DateTime today = DateUtils.dateOnly(DateTime.now());
+  return <ViceActivity>[
+    for (int ago = 0; ago < 400; ago++)
+      for (int i = 0; i < 1 + (ago * 7 % 5) + (ago ~/ 30) % 3; i++)
+        fakeActivity(
+          _vices[0].id,
+          1,
+          DateTime(
+            today.year,
+            today.month,
+            today.day - ago,
+          ).add(Duration(hours: 8 + i * 3)),
+        ),
+  ];
+}
 
 Future<void> Function() _recorder(
   WidgetTester tester,
@@ -83,6 +132,11 @@ Future<GlobalKey> _pumpToday(
   WidgetTester tester, {
   required bool reduced,
   GlobalKey<NavigatorState>? navigator,
+  Stream<bool>? offline,
+  Brightness brightness = Brightness.light,
+  List<Override> overrides = const <Override>[],
+  bool statusBar = false,
+  bool liveGraph = false,
 }) async {
   debugDisableShadows = false;
   tester.view.devicePixelRatio = 2;
@@ -91,7 +145,13 @@ Future<GlobalKey> _pumpToday(
   final GlobalKey frame = GlobalKey();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: _overrides(),
+      overrides: <Override>[
+        ..._overrides(
+          offline ?? Stream<bool>.value(false),
+          liveGraph: liveGraph,
+        ),
+        ...overrides,
+      ],
       child: RepaintBoundary(
         key: frame,
         child: MediaQuery(
@@ -99,13 +159,24 @@ Future<GlobalKey> _pumpToday(
             size: const Size(390, 844),
             devicePixelRatio: 2,
             disableAnimations: reduced,
+            padding: EdgeInsets.only(top: statusBar ? 47 : 0),
           ),
           child: MaterialApp(
             navigatorKey: navigator,
             onGenerateRoute: generateRoute,
             debugShowCheckedModeBanner: false,
-            theme: appTheme(Brightness.light),
-            home: const Scaffold(body: SafeArea(child: ViceTracker())),
+            theme: appTheme(brightness),
+            builder: statusBar ? rejectedWritesBuilder : null,
+            home: const Scaffold(
+              body: SafeArea(
+                child: Column(
+                  children: <Widget>[
+                    OfflineBanner(),
+                    Expanded(child: ViceTracker()),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -179,5 +250,80 @@ void main() {
       await _run(tester, capture, 22);
       debugDefaultTargetPlatformOverride = null;
     }, skip: _dir.isEmpty);
+  }
+
+  for (final bool reduced in <bool>[false, true]) {
+    testWidgets('offline pill, reduce motion $reduced', (
+      WidgetTester tester,
+    ) async {
+      final StreamController<bool> offline = StreamController<bool>();
+      addTearDown(() => unawaited(offline.close()));
+      final GlobalKey frame = await _pumpToday(
+        tester,
+        reduced: reduced,
+        offline: offline.stream,
+      );
+      offline.add(false);
+      await tester.pumpAndSettle();
+      final Future<void> Function() capture = _recorder(
+        tester,
+        frame,
+        reduced ? 'offline-reduced' : 'offline',
+      );
+      await capture();
+      offline.add(true);
+      await tester.pump();
+      await _run(tester, capture, 22);
+    }, skip: _dir.isEmpty);
+  }
+
+  testWidgets('chart morph between ranges', (WidgetTester tester) async {
+    final GlobalKey frame = await _pumpToday(
+      tester,
+      reduced: false,
+      liveGraph: true,
+    );
+    await openTrends(tester);
+    final Future<void> Function() capture = _recorder(tester, frame, 'morph');
+    await tester.tap(inTrends(find.text('90D')));
+    await tester.pump();
+    await _run(tester, capture, 30);
+  }, skip: _dir.isEmpty);
+
+  for (final Brightness brightness in Brightness.values) {
+    testWidgets(
+      'refused-write pill under a status bar, ${brightness.name}',
+      (WidgetTester tester) async {
+        final GlobalKey frame = await _pumpToday(
+          tester,
+          reduced: false,
+          brightness: brightness,
+          statusBar: true,
+          overrides: <Override>[
+            rejectedWritesProvider.overrideWith(_Rejected.new),
+          ],
+        );
+        final Future<void> Function() capture = _recorder(
+          tester,
+          frame,
+          'rejected-${brightness.name}',
+        );
+        await capture();
+        (ProviderScope.containerOf(
+                  tester.element(find.byType(ViceTracker)),
+                ).read(rejectedWritesProvider.notifier)
+                as _Rejected)
+            .show(const <RejectedWrite>[
+              RejectedWrite('Not saved: Coffee, 1 cup, today 09:10', null),
+            ]);
+        await tester.pump();
+        await _run(tester, capture, 30);
+        debugDisableShadows = false;
+        await tester.tap(find.text(RejectedWritesBanner.dismissLabel));
+        await tester.pump();
+        await _run(tester, capture, 20);
+      },
+      skip: _dir.isEmpty,
+    );
   }
 }

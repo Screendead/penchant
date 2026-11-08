@@ -19,6 +19,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
@@ -85,6 +86,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
+    ref.listenManual<bool>(
+      pendingNudgeLogProvider,
+      (bool? _, bool pending) => _openNudgeLog(pending),
+      fireImmediately: true,
+    );
     ref.listenManual<int?>(
       guestDaysLeftProvider,
       (int? _, int? days) => _warnGuest(days),
@@ -163,6 +169,22 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       initialViceID: vice?.id,
       bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
+  }
+
+  // The notification's "Log something": back to Today, then the Log, as if
+  // the Log button were held. After the frame, as it may fire from initState.
+  void _openNudgeLog(bool pending) {
+    if (!pending) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(pendingNudgeLogProvider)) {
+        return;
+      }
+      ref.read(pendingNudgeLogProvider.notifier).clear();
+      Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+      _record(null);
+    });
   }
 
   void _openEntry(DialEntry entry) {

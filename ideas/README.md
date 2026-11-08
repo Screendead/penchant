@@ -24,8 +24,8 @@ line below and fixes the counts. The evidence behind the market and platform cla
 
 Effort runs S, M, L, XL.
 
-**23 ideas: 7 release blockers, 4 v1 must-haves, 6 insights, 3 monetisation, 3 growth/later. 2 need a call from
-Jack** (content-free analytics, reminders). Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
+**22 ideas: 7 release blockers, 3 v1 must-haves, 6 insights, 3 monetisation, 3 growth/later. 1 needs a call from
+Jack** (content-free analytics). Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
 alcohol-only and quit-counter positionings (C15).
 
 Each list is in the recommended build order.
@@ -40,11 +40,10 @@ Each list is in the recommended build order.
 - [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M
 - [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6, `r2-testflight`); blocked on the paid team
 
-## v1 must-haves (4)
+## v1 must-haves (3)
 
 - [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
 - [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S. Guest start shipped; waits on the paid team
-- [Offer one optional daily check-in that closes the day's journal](v1-must-haves/evening-check-in-and-reminders.md). M. The check-in is ruled out (`r2-days`); reminders alone Needs Jack
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6, `r2-mac`)
 
 ## Insights (6)
@@ -90,7 +89,6 @@ entries in `tech-debt/firebase-data-layer/`, export compliance in the
 ## Needs Jack
 
 - **Analytics:** how much content-free analytics "on your device" can carry, decided at 1.1? (Crashlytics shipped.)
-- **Reminders:** the daily check-in is ruled out (`r2-days`), but are reminders wanted?
 
-Decided and recorded in `HANDOVER.md`: end-to-end encryption, 18+, the Mac, Pro at $24.99, StoreKit 2, TestFlight on
+Decided and recorded in `HANDOVER.md`: end-to-end encryption, the daily reminder, 18+, the Mac, Pro at $24.99, StoreKit 2, TestFlight on
 production, guests, presets, triggers, Today, the icon, app lock free, no privacy policy for now.
