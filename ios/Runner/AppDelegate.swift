@@ -18,7 +18,7 @@ import UserNotifications
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetBridge") {
-      QueueListener.start(WidgetBridge.register(with: registrar))
+      QueueListener.start(WidgetBridge.register(with: registrar), registrar: registrar)
     }
   }
 }

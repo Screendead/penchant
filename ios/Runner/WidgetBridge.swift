@@ -14,8 +14,12 @@ import WidgetKit
 enum WidgetBridge {
   static let channelName = "com.screendead.penchant/widgets"
 
+  // onBackgroundDone hears the headless engine's backgroundDone, on the main
+  // queue after the reply: ending the run destroys the engine that called.
   @discardableResult
-  static func register(with registrar: FlutterPluginRegistrar) -> FlutterMethodChannel {
+  static func register(
+    with registrar: FlutterPluginRegistrar, onBackgroundDone: ((_ outcome: String?) -> Void)? = nil
+  ) -> FlutterMethodChannel {
     #if os(macOS)
       let messenger = registrar.messenger
     #else
@@ -46,11 +50,10 @@ enum WidgetBridge {
         return
       case "backgroundDone":
         result(nil)
-        // After the reply: ending the task destroys the engine that called.
-        #if os(iOS)
-          let outcome = call.arguments as? String
-          DispatchQueue.main.async { BackgroundFlush.finish(outcome: outcome) }
-        #endif
+        let outcome = call.arguments as? String
+        if let onBackgroundDone {
+          DispatchQueue.main.async { onBackgroundDone(outcome) }
+        }
         return
       case "removeLogs":
         guard let json = call.arguments as? String,
@@ -81,11 +84,12 @@ enum WidgetBridge {
 // Dart answers not implemented while it cannot flush (signed out, no key).
 enum QueueListener {
   private static var channel: FlutterMethodChannel?
+  private static var observing = false
 
   static func start(_ appChannel: FlutterMethodChannel) {
-    let first = channel == nil
     channel = appChannel
-    guard first else { return }
+    guard !observing else { return }
+    observing = true
     CFNotificationCenterAddObserver(
       CFNotificationCenterGetDarwinNotifyCenter(), nil,
       { _, _, _, _, _ in DispatchQueue.main.async { QueueListener.flush() } },
@@ -96,6 +100,33 @@ enum QueueListener {
   }
 
   static var running: Bool { channel != nil }
+
+  #if os(iOS)
+    // A released engine's channel never replies ("Communicating on a dead
+    // channel." in FlutterBinaryMessengerRelay.mm), so the listener forgets
+    // it when the engine deallocates, and BackgroundFlush starts a headless
+    // engine instead. The implicit engine belongs to the scene's view
+    // controller, which iOS may release while the process stays alive.
+    static func start(_ appChannel: FlutterMethodChannel, registrar: FlutterPluginRegistrar) {
+      start(appChannel)
+      registrar.publish(EngineGone { if channel === appChannel { channel = nil } })
+    }
+
+    // FlutterEngine's dealloc calls detachFromEngine on each published value.
+    private final class EngineGone: NSObject, FlutterPlugin {
+      private let gone: () -> Void
+
+      init(_ gone: @escaping () -> Void) {
+        self.gone = gone
+      }
+
+      static func register(with registrar: FlutterPluginRegistrar) {}
+
+      func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+        DispatchQueue.main.async(execute: gone)
+      }
+    }
+  #endif
 
   // Calls back on the main queue once Dart's flush has ended, or at once
   // without a Dart to ask. canFlush is false when Dart could not.
@@ -155,7 +186,8 @@ enum QueueListener {
   // - the BGAppRefreshTask that LogQueue.scheduleRefresh asks for while logs
   //   are queued, the fallback for whatever a tap's run left behind.
   enum BackgroundFlush {
-    // Under the about 30 s iOS gives a refresh, so a run ends on its own.
+    // Under the about 30 s iOS gives a refresh, so a run ends on its own. A
+    // run with less time left is stopped by the expiry handlers.
     private static let budget: TimeInterval = 25
 
     private static var running = false
@@ -208,8 +240,8 @@ enum QueueListener {
       }
       task.expirationHandler = {
         DispatchQueue.main.async {
-          stop()
           complete(true)
+          stop()
         }
       }
       flush(then: complete)
@@ -230,8 +262,7 @@ enum QueueListener {
         end(retry: false)
         return
       }
-      let remaining = UIApplication.shared.backgroundTimeRemaining - 3
-      DispatchQueue.main.asyncAfter(deadline: .now() + min(budget, max(remaining, 1))) { [token = runToken] in
+      DispatchQueue.main.asyncAfter(deadline: .now() + budget) { [token = runToken] in
         if running && token == runToken { end(retry: true) }
       }
       if QueueListener.running {
@@ -253,14 +284,12 @@ enum QueueListener {
       }
       GeneratedPluginRegistrant.register(with: headless)
       if let registrar = headless.registrar(forPlugin: "WidgetBridge") {
-        WidgetBridge.register(with: registrar)
+        // The outcome is BackgroundFlushOutcome's name.
+        WidgetBridge.register(with: registrar) { [token = runToken] outcome in
+          if token == runToken { end(retry: outcome != "blocked") }
+        }
       }
       engine = headless
-    }
-
-    // backgroundDone from the headless engine: BackgroundFlushOutcome's name.
-    static func finish(outcome: String?) {
-      end(retry: outcome != "blocked")
     }
 
     // The app is about to be suspended: whatever is left goes to a refresh.
@@ -274,7 +303,8 @@ enum QueueListener {
     // A log still queued (held back, the key not in time, the run cut short
     // mid-write) gets a refresh; the next flush writes the same document id,
     // so nothing doubles. Callers that came during the run get one of their
-    // own, unless the run was blocked (signed out, the key needs recovery).
+    // own, unless the run was blocked (signed out, the key needs recovery) or
+    // every log left is in its hold: each such log's own soon() comes later.
     private static func end(retry: Bool) {
       guard running else { return }
       running = false
@@ -291,7 +321,8 @@ enum QueueListener {
       guard !next.isEmpty else { return }
       waiters = next
       next = []
-      if retry && left {
+      let writable = LogQueue.pending().contains { $0.date.addingTimeInterval(queuedLogHold) <= Date() }
+      if retry && left && writable {
         start()
       } else {
         running = true
@@ -301,26 +332,41 @@ enum QueueListener {
   }
 
   // One UIApplication background task, ended once whichever comes first.
-  // begin may run on any thread (Apple documents it as safe); the rest runs
-  // on the main queue, where UIKit calls the expiry handler.
-  private final class Assertion {
+  // begin runs on the intent's thread and the rest on the main queue, where
+  // UIKit calls the expiry handler, possibly before begin has its identifier
+  // (a refused grant), so the lock guards both.
+  private final class Assertion: @unchecked Sendable {
+    private let lock = NSLock()
     private var id = UIBackgroundTaskIdentifier.invalid
+    private var over = false
 
-    var active: Bool { id != .invalid }
+    var active: Bool { lock.withLock { id != .invalid } }
 
     func begin(onExpiry: @escaping () -> Void) -> Bool {
-      id = UIApplication.shared.beginBackgroundTask(withName: LogQueue.refreshTaskID) { [self] in
-        onExpiry()
+      // Ended first, so the teardown in onExpiry never delays suspension.
+      let granted = UIApplication.shared.beginBackgroundTask(withName: LogQueue.refreshTaskID) { [self] in
         end()
+        DispatchQueue.main.async(execute: onExpiry)
       }
-      return active
+      let expired = lock.withLock {
+        if !over { id = granted }
+        return over
+      }
+      if expired && granted != .invalid {
+        UIApplication.shared.endBackgroundTask(granted)
+      }
+      return !expired && granted != .invalid
     }
 
     func end() {
-      guard active else { return }
-      let ended = id
-      id = .invalid
-      UIApplication.shared.endBackgroundTask(ended)
+      let ended = lock.withLock {
+        over = true
+        defer { id = .invalid }
+        return id
+      }
+      if ended != .invalid {
+        UIApplication.shared.endBackgroundTask(ended)
+      }
     }
   }
 #endif
