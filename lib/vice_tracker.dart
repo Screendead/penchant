@@ -280,6 +280,17 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         final double peek = TrendsSheet.peekHeight(context);
         final double minSize = min(0.5, peek / height);
         final double logInset = ViceTracker._splitLogInset(context);
+        final Widget? logButton = vices == null || vices.isEmpty
+            ? null
+            : LogButton(
+                habits: <FanHabit>[
+                  for (final Vice vice in vices)
+                    (vice: vice, mark: markOf(vice)),
+                ],
+                onLog: _log,
+                onRecord: _record,
+              );
+
         final Widget page = noHabits
             ? Padding(
                 padding: const EdgeInsets.all(DialSpace.m),
@@ -303,7 +314,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                       6,
                       DialSpace.m,
                       split
-                          ? logInset + DialSize.logButton + DialSpace.m
+                          ? logInset
                           : DialSize.logButton / 2 + 6 + DialSpace.m,
                     ),
                     children: <Widget>[
@@ -365,6 +376,12 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                             day: day,
                             onLog: (Offset from) => _log(vice, from),
                           ),
+                      // Docked under the tallies, not at the column's foot.
+                      if (split && logButton != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: DialSpace.l),
+                          child: Center(child: logButton),
+                        ),
                     ],
                   ),
                 ),
@@ -395,17 +412,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             child: child,
           ),
         );
-        final Widget? logButton = vices == null || vices.isEmpty
-            ? null
-            : LogButton(
-                habits: <FanHabit>[
-                  for (final Vice vice in vices)
-                    (vice: vice, mark: markOf(vice)),
-                ],
-                onLog: _log,
-                onRecord: _record,
-              );
-
         if (split) {
           return dayKeys(
             Row(
@@ -414,18 +420,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 Container(
                   width: column,
                   padding: EdgeInsets.only(left: notch),
-                  child: Stack(
-                    children: <Widget>[
-                      Positioned.fill(child: page),
-                      if (logButton != null)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: logInset,
-                          child: Center(child: logButton),
-                        ),
-                    ],
-                  ),
+                  child: page,
                 ),
                 Expanded(
                   child: allVices == null || allVices.isEmpty

@@ -87,21 +87,24 @@ class _HomepageState extends ConsumerState<Homepage> {
 class TodayHeader extends StatelessWidget {
   const TodayHeader({super.key});
 
+  // In the split view the pill sits on Trends' title row instead.
   @override
   Widget build(BuildContext context) => ConstrainedBox(
     constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
-    child: const Padding(
-      padding: EdgeInsets.only(left: 14, right: 16),
+    child: Padding(
+      padding: const EdgeInsets.only(left: 14, right: 16),
       child: Row(
         children: <Widget>[
-          Expanded(
+          const Expanded(
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: _AppMenu(),
             ),
           ),
-          SizedBox(width: DialSpace.xs),
-          SyncPill(),
+          if (MediaQuery.sizeOf(context).width < ViceTracker.splitWidth) ...[
+            const SizedBox(width: DialSpace.xs),
+            const SyncPill(),
+          ],
         ],
       ),
     ),
