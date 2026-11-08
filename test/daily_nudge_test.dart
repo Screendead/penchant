@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,18 +15,21 @@ import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/settings.dart';
 
 class _FakeScheduler implements NudgeScheduler {
-  _FakeScheduler({this.grant = true});
+  _FakeScheduler({this.grant = true, this.launched});
 
   final bool grant;
+  final NudgeAction? launched;
+  void Function(NudgeAction action)? onAction;
   int permissionRequests = 0;
   final List<TimeOfDay> scheduled = <TimeOfDay>[];
   int cancels = 0;
 
   @override
-  Future<void> start(void Function(NudgeAction action) onAction) async {}
+  Future<void> start(void Function(NudgeAction action) onAction) async =>
+      this.onAction = onAction;
 
   @override
-  Future<NudgeAction?> launchAction() async => null;
+  Future<NudgeAction?> launchAction() async => launched;
 
   @override
   Future<bool> requestPermission() async {
@@ -175,6 +179,34 @@ void main() {
     ]);
     expect(scheduler.permissionRequests, 0);
   });
+
+  test(
+    'Log something asks Today for the Log; Clean day asks nothing',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final _FakeScheduler scheduler = _FakeScheduler(
+        launched: NudgeAction.log,
+      );
+      final ProviderContainer container = ProviderContainer(
+        overrides: [nudgeSchedulerProvider.overrideWithValue(scheduler)],
+      );
+      addTearDown(container.dispose);
+
+      // The press that launched the app.
+      await container.read(dailyNudgeStartupProvider.future);
+      expect(container.read(pendingNudgeLogProvider), isTrue);
+
+      container.read(pendingNudgeLogProvider.notifier).clear();
+      scheduler.onAction!(NudgeAction.clean);
+      expect(container.read(pendingNudgeLogProvider), isFalse);
+
+      // A press while the app runs.
+      scheduler.onAction!(NudgeAction.log);
+      expect(container.read(pendingNudgeLogProvider), isTrue);
+      expect(scheduler.permissionRequests, 0);
+    },
+  );
 
   test('each action id maps to its action', () {
     expect(nudgeActionFor('log'), NudgeAction.log);
