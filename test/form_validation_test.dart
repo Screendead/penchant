@@ -106,7 +106,7 @@ void main() {
 
     await tester.enterText(_field('Quantity'), '0');
     // No vice is selected, so validation runs but nothing is written.
-    await tester.tap(find.text('Record'));
+    await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
     await tester.pump();
 
     expect(find.text('Please enter more than 0'), findsOneWidget);

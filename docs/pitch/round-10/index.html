@@ -1,0 +1,356 @@
+<title>Penchant Round 10</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: one reading column in three parts (calls, Jack's to-do, done overnight); each call is a row of option tiles you tap to pick. Same tokens as the rounds 1-9 page. */
+:root {
+  --bg: #f3f5f6; --surface: #ffffff; --fg: #17222a; --muted: #5a6872; --line: #d8dee2;
+  --accent: #0d6b66; --accent-soft: #dcefed; --rec: #9a5b00; --rec-soft: #fbedd6; --warn: #a2321f;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1518; --surface: #172025; --fg: #e4eaed; --muted: #95a3ab; --line: #2a363d;
+  --accent: #4fc2b9; --accent-soft: #163a38; --rec: #f0b45a; --rec-soft: #3a2a12; --warn: #f08a76; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1518; --surface: #172025; --fg: #e4eaed; --muted: #95a3ab; --line: #2a363d;
+  --accent: #4fc2b9; --accent-soft: #163a38; --rec: #f0b45a; --rec-soft: #3a2a12; --warn: #f08a76; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--body); }
+a { color: var(--accent); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.08rem; font-weight: 600; line-height: 1.3; }
+p { margin: 0; }
+header { display: grid; gap: 10px; }
+.lede { color: var(--muted); max-width: 65ch; }
+.tally { display: flex; gap: 18px; flex-wrap: wrap; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .95rem; }
+.tally b { color: var(--fg); font-family: var(--display); font-size: 1.15rem; }
+.marks { font-family: var(--mono); letter-spacing: .05em; color: var(--accent); }
+section { display: grid; gap: 16px; min-width: 0; }
+.sechead { display: grid; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.sechead p { color: var(--muted); font-size: .95rem; }
+.todo { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 6px; padding: 16px; display: grid; gap: 10px; }
+.todo ol, .todo ul { margin: 0; padding-left: 1.2em; display: grid; gap: 12px; }
+.todo li ul { margin-top: 6px; gap: 4px; }
+.todo .pending { color: var(--muted); font-style: italic; }
+.done { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; padding: 16px; }
+.done ul { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.pr { font-family: var(--mono); font-size: .85rem; color: var(--accent); }
+.cmd { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; margin-top: 6px; }
+code, .cmd pre { font-family: var(--mono); font-size: .82rem; overflow-wrap: anywhere; }
+.cmd pre { margin: 0; flex: 1 1 320px; min-width: 0; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+button { font: inherit; cursor: pointer; }
+.copy { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 4px; padding: 0 12px; }
+.call { display: grid; gap: 10px; padding: 16px 0; border-bottom: 1px dashed var(--line); min-width: 0; }
+.call:last-child { border-bottom: 0; }
+.qrow { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.qrow h3 { flex: 1 1 400px; min-width: 0; }
+.cid { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
+.status { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); white-space: nowrap; }
+.status.done { color: var(--accent); font-weight: 600; }
+.ctx { color: var(--muted); font-size: .95rem; max-width: 70ch; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.opt { text-align: left; background: var(--surface); color: var(--fg); border: 1.5px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
+.opt:hover { border-color: var(--accent); }
+.opt:focus-visible, .copy:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt .lab { font-weight: 600; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.opt .cost { font-size: .88rem; color: var(--muted); }
+.opt dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: .85rem; }
+.opt dt { color: var(--muted); font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; padding-top: 2px; }
+.opt dd { margin: 0; }
+.badge { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; background: var(--rec-soft); color: var(--rec); border-radius: 3px; padding: 1px 6px; font-weight: 600; }
+.why { font-size: .93rem; border-left: 3px solid var(--rec); padding-left: 10px; max-width: 70ch; }
+.why b { color: var(--rec); }
+textarea { width: 100%; box-sizing: border-box; min-height: 2.4em; resize: vertical; font: inherit; font-size: .93rem; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+.banner { font-size: .9rem; color: var(--muted); }
+.banner.err { color: var(--warn); }
+.shots { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x proximity; }
+.shots figure { margin: 0; flex: 0 0 auto; width: 168px; display: grid; gap: 4px; scroll-snap-align: start; align-content: start; }
+.shots figure.wide { width: 300px; }
+.shots figure.big { width: min(520px, 82vw); }
+.shots img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); display: block; }
+.shots figcaption { font-size: .8rem; color: var(--muted); line-height: 1.3; }
+@media (prefers-reduced-motion: no-preference) { .opt { transition: border-color .12s, background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Penchant: round 10 calls</h1>
+    <p class="lede">Round 10, 8 November: eleven calls from the overnight run. Tap an option to pick it; picks save as you go and Claude reads them back. Below the calls: what is yours to do, and what landed overnight. Rounds 1 to 9 are all picked and stay on <a href="https://claude.ai/artifact/FP7t44ss9JtF9BXfhMcFNs" target="_blank" rel="noopener">the earlier page</a>.</p>
+    <div class="tally" id="tally"></div>
+    <p class="banner" id="banner">Connecting to saved picks…</p>
+  </header>
+
+  <div id="groups"></div>
+
+  <section id="todo">
+    <div class="sechead"><h2>For you to do</h2><p>Actions, not decisions.</p></div>
+    <div class="todo">
+      <ol id="todo-list">
+        <li id="todo-mac-777"><b>Test Mac build 777</b> (PR #133, native sign-in fields for Passwords AutoFill). Open:
+          <div class="cmd"><pre id="c-777">open ~/development/tracker-worktrees/mac-native-auth-fields/build/macos-arm64/Build/Products/Release/Penchant.app</pre><button class="copy" type="button" data-copy="c-777">Copy</button></div>
+          <ul>
+            <li>Start from Password: one click and one Touch ID fills both fields.</li>
+            <li>Start from Email: it fills both fields.</li>
+            <li>Tab order, the eye button, and the layout in Light and Dark.</li>
+          </ul></li>
+        <li id="keychain-sync"><b>Journal key didn't sync to the Mac:</b> <span class="pending">result pending. Claude fills this in.</span></li>
+        <li id="todo-orphan-logs"><b>Read a few days of the <code>dailyOrphanCleanup</code> logs</b> (“Orphan cleanup would delete”). It is a dry run, deployed 7 November, first run 04:30 UTC 8 November. Claude can't read production logs. Once you've read them, Claude pitches the one-line switch that lets it delete.</li>
+        <li id="todo-pbxproj"><b>Decide on the modified <code>macos/Runner.xcodeproj/project.pbxproj</code></b> in the main checkout. It adds the signing team to two build configurations and touches the old CocoaPods entries. The checkout sits on f82231e, before master moved to Swift Package Manager, so the change looks stale. To discard it:
+          <div class="cmd"><pre id="c-pbx">cd ~/development/tracker && git checkout -- macos/Runner.xcodeproj/project.pbxproj</pre><button class="copy" type="button" data-copy="c-pbx">Copy</button></div></li>
+        <li id="todo-old-install"><b>Delete the old <code>com.screendead.tracker.tracker</code> install</b> from the iPhone, then its two iOS registrations in the Firebase console.</li>
+        <li id="todo-summaries"><b>Optional: force-run the monthly summaries job</b> (Cloud Scheduler › Force run). Until it runs, bead sizes fall back to the shown day's median.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="done">
+    <div class="sechead"><h2>Done overnight</h2><p>Merged or installed, 7 and 8 November.</p></div>
+    <div class="done">
+      <ul id="done-list">
+        <li><span class="pr">#129</span> The plan for widgets, Control Centre controls and the menu bar app is recorded.</li>
+        <li><span class="pr">#130</span> End-to-end encryption is on, proven on a replay of your data's shape.</li>
+        <li><span class="pr">#131</span> The e2e flake (the record helper can lose the typed amount) is recorded.</li>
+        <li><span class="pr">#132</span> Switching between Sign in and Create account is smooth.</li>
+        <li><span class="pr">#134</span> The recovery key field is one line where the key fits.</li>
+        <li><span class="pr">#135</span> An inventory of all open work.</li>
+        <li>Builds 762 and 768 are installed on the iPhone. Build 762 is the merge of #130, so the phone runs with encryption on.</li>
+        <li>Mac build 762 is in Applications.</li>
+        <li>The IAM alert is investigated: it was your own App Check save in the console, and nothing is enforced.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+// To add a call: append an object to a group's calls (id, q, ctx, opts [{k, t, c, e, r}], rec, why; optional imgs, link).
+// Picks live in the db collection "picks", one doc per call id: {choice, note, at}.
+const GROUPS = [
+  { title: "Round 10 (2026-11-08)", sub: "From the overnight inventory (HANDOVER.md, U1 to U8). Each option lists effort, cost and risk; Claude's pick is marked.", calls: [
+    { id: "r10-mac-fullscreen", q: "How does the Mac app fill a large or fullscreen window?",
+      ctx: "Today at 2000 × 1250 the left pane stops halfway down, the Log button sits alone at the bottom, Trends is centred at 720 pt with wide gutters, its chips run off the edge and the chart is 220 pt tall. All three options share four fixes: the chips wrap, the chart takes the spare height (220 to 640 pt), the Log button sits under the last tally, and Synced moves onto the Trends title row. All three look the same at the default 1200 × 780, except B's narrower Today column. Each is built on its own branch (design/mac-fullscreen-a, -b, -c). Not yet picked on its own pitch page.",
+      imgs: [["now-mac-2000x1250-dark", "Now (master), 2000 × 1250", "big"], ["a-mac-2000x1250-dark", "A. Letterboxed canvas, 2000 × 1250", "big"], ["b-mac-2000x1250-dark", "B. Responsive scaling, 2000 × 1250", "big"], ["c-mac-2000x1250-dark", "C. Three columns, 2000 × 1250", "big"],
+             ["a-mac-2000x1250-light", "A, light", "wide"], ["b-mac-2000x1250-light", "B, light", "wide"], ["c-mac-2000x1250-light", "C, light", "wide"],
+             ["b-mac-1200x780-dark", "B at 1200 × 780, dark", "wide"], ["a-mac-1200x780-dark", "A and C at 1200 × 780, dark", "wide"], ["b-mac-1200x780-light", "B at 1200 × 780, light", "wide"]],
+      opts: [
+        { k: "A", t: "Letterboxed canvas", c: "Above 1320 × 860 the app sits centred at that size, as a framed card on a lighter backdrop.",
+          e: "Smallest: one wrapper in Homepage.", r: "Low. A card in a fullscreen window can read as a web page.", cost: "About 45% of a fullscreen Mac is backdrop. With many habits the list still scrolls inside the card." },
+        { k: "B", t: "Responsive scaling", c: "Both panes grow with the window. The dial grows with the height, Today's column takes 36% of the width up to 760 pt, Trends widens to 1100 pt and the chart fills the height.",
+          e: "Small to medium. The dial is drawn at 320 pt and scaled up.", r: "Low to medium. No breakpoint to jump across; a 2000 pt chart spreads 30 days thin.", cost: "The scaled dial's type gets large (the clock is about 36 pt at a 550 pt dial). At 1200 × 780 Today's column is 432 pt, not 504 pt, until the ratio is retuned." },
+        { k: "C", t: "Three columns from 1600 pt", c: "Dial, then the tallies and Log button, then Trends. Below 1600 pt it is today's split view.",
+          e: "Medium to large: a third layout to keep in step (keys, focus, banners, e2e at 1600+).", r: "Medium. The most code that only fullscreen Mac users see.", cost: "With few habits the middle column is mostly empty. The layout jumps at 1600 pt." } ],
+      rec: "B", why: "One rule fixes every problem at every size, with no breakpoint, and it stays close to the split view that shipped, so the e2e rewrite and the Mac keys need no new layout. A wastes the screen you went fullscreen for; C costs a third layout for the one size where B already looks right. Two conditions before it merges: cap the dial near 480 pt, and keep Today's column at 504 pt at 1200 × 780 so the window you decided in r8-mac-window stays as it is." },
+
+    { id: "r10-widget-top", q: "For the iPhone widgets, what are the “top 1, 3 or 8” habits?",
+      ctx: "Your call of 7 November (queue item 6): one widget kind logs one use of one of the top 1, 3 or 8 habits, and the widget's size sets how many. Widgets are native Swift (WidgetKit), so they need the app's sign-in and journal key through a shared keychain group and an App Group. Whether the free signing team can sign those is the first check before any of this is built (D8).",
+      opts: [
+        { k: "A", t: "Most logged in the last 30 days", c: "The widget shows what you actually log; the order shifts as habits rise and fall.",
+          e: "Small on top of the widgets: a 30-day count per habit.", r: "Low. A slot can move between two looks, so a tap from memory can hit the wrong habit.", cost: "Needs the last 30 days of entries, or a ranking the app writes for the widget." },
+        { k: "B", t: "The order on Today", c: "Habits in the order you created them, as Today lists them and as ⌘1 to ⌘9 take them.",
+          e: "Smallest.", r: "Low.", cost: "Stable but blind to use: an old habit you rarely log can hold the only slot of a small widget." },
+        { k: "C", t: "Picked by hand", c: "You choose the habits in the widget's settings (long-press › Edit Widget).",
+          e: "Small: a configurable widget with a habit picker.", r: "Low.", cost: "Exact, but every widget is set up by hand, and a new one needs a default until you do." },
+        { k: "D", t: "A by default, overridable as in C", c: "Most logged in 30 days until you pick habits in the widget's settings.",
+          e: "Small: A plus C.", r: "Low.", cost: "Two code paths for one setting." } ],
+      rec: "D", why: "A new widget is right with no setup, and a habit you want pinned stays where your thumb expects it." },
+
+    { id: "r10-widget-undo", q: "After a tap on a widget, a Control Centre control or the menu bar, can you undo it?",
+      ctx: "In the app, a one-tap log shows the 8-second Undo (C4). The new surfaces log one use now with a single tap or click. On iPhone a stray tap is likeliest on the Lock Screen and in Control Centre.",
+      opts: [
+        { k: "A", t: "No undo", c: "A wrong entry stays until you delete it in the app (swipe left on the habit's history).",
+          e: "None.", r: "Stray entries land silently and skew Trends until you notice.", cost: "Free." },
+        { k: "B", t: "5-second Undo where you tapped", c: "After a tap the button turns into Undo for 5 seconds; the menu bar row does the same.",
+          e: "Medium across the three surfaces.", r: "Medium. Inferred, not checked: a widget redraws after its button runs, so it can show Undo, but how quickly it reverts depends on WidgetKit's refresh rules. Read Apple's docs before building.", cost: "Each surface needs an Undo state and tests." },
+        { k: "C", t: "Undo only in the app", c: "The Mac menu bar, which is part of the app, gets the app's 8-second Undo. iPhone widgets and Control Centre get none; a stray entry is deleted in the app.",
+          e: "Small.", r: "Low on the Mac; iPhone as in A.", cost: "Inconsistent between surfaces." } ],
+      rec: "B", why: "One tap that writes needs a cheap way back, and the surface you tapped is where you'll look for it. If Apple's docs show a widget can't hold an Undo state reliably, Claude falls back to C and says so." },
+
+    { id: "r10-intents", q: "Expose the same “log one” App Intent to Siri, Shortcuts and the Action button?",
+      ctx: "An interactive widget button and a Control Centre control each run an App Intent, so the widgets build a “log one use of a habit” intent anyway. Offering it to Shortcuts, Siri and the Action button reuses that intent. The widgets idea file lists this as Claude's recommendation, not yet your call.",
+      opts: [
+        { k: "A", t: "Yes, with the widgets", c: "“Log a coffee” by voice, a Shortcuts automation that logs on a trigger, or the Action button logging your most-used habit.",
+          e: "Small on top of the widgets.", r: "Low. Siri reads habit names aloud, which are sealed, so it needs the same key access as the widgets.", cost: "A few phrases and a parameter for the habit." },
+        { k: "B", t: "Later", c: "Ship widgets, controls and the menu bar first.",
+          e: "None now.", r: "None.", cost: "The intent sits unused outside the widgets." } ],
+      rec: "A", why: "The intent exists once the widgets do; exposing it is a small step that adds three more one-tap ways to log." },
+
+    { id: "r10-mac-widgets", q: "Build macOS desktop widgets from the same WidgetKit code?",
+      ctx: "The Mac app gets the menu bar app (queue item 6). WidgetKit also runs on the Mac desktop and in Notification Centre, so the same Swift code could ship a Mac widget extension.",
+      opts: [
+        { k: "A", t: "Yes, with the iPhone widgets", c: "Last week's usage and log-one buttons on the Mac desktop too.",
+          e: "Small to medium: a second extension target, its signing, and Mac tests.", r: "Medium. It depends on the journal key reaching the Mac, which is still being fixed.", cost: "Another target to sign and test." },
+        { k: "B", t: "Later", c: "The menu bar app covers quick logging at the desk.",
+          e: "None now.", r: "None.", cost: "No usage summary on the Mac desktop." } ],
+      rec: "B", why: "The menu bar is one click from any window, while desktop widgets sit behind your windows. Revisit once the iPhone widgets and the Mac key sync work." },
+
+    { id: "r10-reduce-motion", q: "A Reduce motion row in Settings, or follow the system only?",
+      ctx: "The app follows the system's Reduce Motion everywhere (the dial, Trends and sign-in read it). The mock-up's Settings shows “Reduce motion · Follows iOS” with a chevron, the same pattern as Appearance, which you made a real picker in round 9. The build has no row. iOS also lets you set Reduce Motion for one app (Accessibility › Per-App Settings); the Mac has no such per-app setting.",
+      opts: [
+        { k: "A", t: "Follow the system only (as now)", c: "No row in Settings.",
+          e: "None.", r: "None.", cost: "Departs from the mock-up; on the Mac, calmer motion means changing it for every app." },
+        { k: "B", t: "A Follow system / Reduce / Full row", c: "Saved on each device, like Appearance; the app-wide setting overrides the system's.",
+          e: "Half a day.", r: "Low. Every animation already checks one flag, so the override sits in one place.", cost: "One more setting." } ],
+      rec: "B", why: "It matches the mock-up you picked and the Appearance row beside it, and gives the Mac a per-app choice it otherwise lacks." },
+
+    { id: "r10-languages", q: "Which languages does 1.0 ship in?",
+      ctx: "English only. Dates and numbers already follow the device's region, but every word of the app's copy is written straight into its screen: there are no translation files, so adding a language starts with moving every string out (the register lists this as low). The app is for your own use for now (6 November).",
+      opts: [
+        { k: "A", t: "English only for 1.0", c: "Close the question; the register entry stays as a known gap.",
+          e: "None.", r: "None while it's for you.", cost: "Nothing now." },
+        { k: "B", t: "English plus 1 or 2 languages", c: "Move every string into translation files, then translate.",
+          e: "Large: the extraction, plus translating every copy change from then on.", r: "Medium: untested layouts in longer languages.", cost: "Every future screen is slower to ship." },
+        { k: "C", t: "Later", c: "Leave it open until a store release is on the table.",
+          e: "None now.", r: "None.", cost: "The question comes back." } ],
+      rec: "A", why: "An app for one English-speaking user gains nothing from translations, and the extraction is large. If you ever sell it, that is a release decision with its own pitch." },
+
+    { id: "r10-analytics", q: "Any analytics beyond Crashlytics?",
+      ctx: "Crashlytics shipped (r2-crash). The idea file proposes, at most, a few content-free events (sign-up, first habit, first log, day-7 return), never a habit name, amount or trigger, and defers the decision to the Pro paywall, which waits on a store release.",
+      opts: [
+        { k: "A", t: "None for 1.0", c: "Crashlytics only, as the idea file has it.",
+          e: "None.", r: "None.", cost: "No usage counts." },
+        { k: "B", t: "Content-free counts only", c: "A handful of events through a privacy-first service or Firebase.",
+          e: "Small.", r: "Low, but another SDK and another privacy-label line.", cost: "With one user, the counts say what you already know." },
+        { k: "C", t: "Later", c: "Decide if a paywall ever ships.",
+          e: "None now.", r: "None.", cost: "The question comes back." } ],
+      rec: "A", why: "With one user there is nothing to measure, and every SDK weakens “it stays on your device”. The paywall question can reopen it." },
+
+    { id: "r10-reminders", q: "Optional reminders?",
+      ctx: "r2-days ruled out the daily check-in (a day with nothing logged counts as clean), not reminders. The idea file describes a Notifications row in Settings, off by default, asking for permission only when turned on, with neutral copy. Local notifications need no paid Apple team.",
+      opts: [
+        { k: "A", t: "None", c: "No notifications.",
+          e: "None.", r: "None.", cost: "A forgotten entry reads as a clean day." },
+        { k: "B", t: "One optional daily nudge", c: "Off by default; at a time you pick, “Anything to log today?” opens the Log fan.",
+          e: "Medium.", r: "Low.", cost: "One setting and one notification." },
+        { k: "C", t: "Per-habit reminders", c: "Each habit gets its own times.",
+          e: "Medium to large.", r: "Medium: habit names on the Lock Screen are the sealed data, so the text has to stay generic or be opened on the device.", cost: "A settings screen per habit." } ],
+      rec: "B", why: "Since an empty day now counts as clean, one evening nudge is what keeps that true, at the smallest cost. Per-habit reminders read as nagging in a neutral journal." },
+
+    { id: "r10-pitch-branches", q: "What happens to the pitch branches that never had a PR?",
+      ctx: "The remote holds design/ui-overhaul-day-dial, -ledger, -petal and -pitch, and ten mockup/* branches (brand, icon, encryption, onboarding, Today charts and layout, trigger tree); the inventory counts 15. The picked Day Dial mock-up, the overhaul's source of truth, lives only on design/ui-overhaul-day-dial (index.html, notes.md, tokens.json and its stills). The earlier pitch pages keep their own copies of every screenshot.",
+      opts: [
+        { k: "A", t: "Land the Day Dial mock-up, delete the rest", c: "index.html, notes.md and tokens.json go to master under docs/pitch/mockups/ui-overhaul/day-dial/; CLAUDE.md and HANDOVER.md point there; the other branches go.",
+          e: "Small: one docs PR.", r: "Low. The rejected options' sources are gone for good.", cost: "Nothing you see changes." },
+        { k: "B", t: "Keep them all as archives", c: "Nothing moves.",
+          e: "None.", r: "The overhaul's source of truth stays off master, one branch delete from loss.", cost: "The branch list stays cluttered." },
+        { k: "C", t: "A, but tag the rest before deleting", c: "Land the Day Dial files as in A, and keep each other branch as an archive/* tag.",
+          e: "Small.", r: "None.", cost: "Tags in the repo instead of branches." } ],
+      rec: "C", why: "The mock-up you build from belongs on master, and tags keep every rejected option recoverable while emptying the branch list." },
+
+    { id: "r10-release", q: "Cut 0.2.0 now, or wait for the Mac fullscreen layout and AutoFill?",
+      ctx: "The version is still 0.1.0. The iPhone already runs builds from master (762, the encryption merge, and 768, the sign-in switch), so 0.2.0 would name what the phone already has, plus #134's one-line recovery-field fix. A Mac release build on this machine still needs the arm64 xcodebuild workaround (D9), and the Mac's journal key hasn't synced yet.",
+      opts: [
+        { k: "A", t: "Cut 0.2.0 now", c: "Bump the version, turn the changelog's Unreleased section into 0.2.0, run the Release workflow, install on the iPhone and Mac.",
+          e: "Small.", r: "Low on the phone. On the Mac, until the key syncs, it asks for the recovery key.", cost: "0.3.0 follows soon for the Mac work." },
+        { k: "B", t: "Wait for Mac fullscreen and AutoFill", c: "Cut 0.2.0 once the picked fullscreen layout and PR #133 land.",
+          e: "Small, later.", r: "Low.", cost: "The phone keeps showing 0.1.0 while it runs newer code." } ],
+      rec: "B", why: "The phone already runs everything 0.2.0 would hold but #134's small fix, so a tag now is mostly a label. Waiting makes the first tagged Mac build carry AutoFill, the fullscreen layout and, with luck, the key-sync fix." } ] },
+];
+
+const IMG = Object.fromEntries(["now-mac-2000x1250-dark", "now-mac-2000x1250-light",
+  ...["a", "b", "c"].flatMap(o => ["1200x780-dark", "1200x780-light", "2000x1250-dark", "2000x1250-light"].map(s => o + "-mac-" + s))]
+  .map(k => [k, "img/" + k + ".jpg"]));
+const ALL = GROUPS.flatMap(g => g.calls);
+const picks = {};
+let db = null;
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v);
+  }
+  for (const kid of kids) if (kid) e.append(kid);
+  return e;
+}
+
+function renderTally() {
+  const done = ALL.filter(c => picks[c.id] && picks[c.id].choice).length;
+  document.getElementById("tally").replaceChildren(
+    el("span", {}, el("b", { text: String(ALL.length) }), " calls"),
+    el("span", {}, el("b", { text: String(done) }), " picked"),
+    el("span", { class: "marks", "aria-hidden": "true", text: "│".repeat(done) + "·".repeat(ALL.length - done) }));
+}
+
+function render() {
+  if (document.getElementById("call-" + ALL[0].id)) { sync(); return; }
+  document.getElementById("groups").replaceChildren(...GROUPS.map(g => el("section", {},
+    el("div", { class: "sechead" }, el("h2", { text: g.title }), el("p", { text: g.sub })),
+    ...g.calls.map(callNode))));
+  renderTally();
+}
+
+function sync() {
+  for (const c of ALL) {
+    const p = picks[c.id] || {};
+    const st = document.querySelector("#call-" + c.id + " .status");
+    st.className = "status" + (p.choice ? " done" : "");
+    st.textContent = p.choice ? "Picked " + p.choice : "Open";
+    for (const o of c.opts) document.getElementById("opt-" + c.id + "-" + o.k).setAttribute("aria-pressed", String(p.choice === o.k));
+    const ta = document.getElementById("note-" + c.id);
+    if (document.activeElement !== ta && ta.value !== (p.note || "")) ta.value = p.note || "";
+  }
+  renderTally();
+}
+
+function callNode(c) {
+  const p = picks[c.id] || {};
+  const status = el("span", { class: "status" + (p.choice ? " done" : ""), text: p.choice ? "Picked " + p.choice : "Open" });
+  const opts = el("div", { class: "opts", role: "group", "aria-label": c.q });
+  for (const o of c.opts) {
+    const facts = el("dl", {}, el("dt", { text: "Effort" }), el("dd", { text: o.e }), el("dt", { text: "Cost" }), el("dd", { text: o.cost }), el("dt", { text: "Risk" }), el("dd", { text: o.r }));
+    const b = el("button", { class: "opt", type: "button", "aria-pressed": String(p.choice === o.k), id: "opt-" + c.id + "-" + o.k },
+      el("span", { class: "lab" }, o.k + ". " + o.t, o.k === c.rec ? el("span", { class: "badge", text: "Recommended" }) : null),
+      el("span", { class: "cost", text: o.c }), facts);
+    b.addEventListener("click", () => { const cur = (picks[c.id] || {}).choice; save(c.id, { choice: cur === o.k ? "" : o.k }); });
+    opts.append(b);
+  }
+  const why = el("p", { class: "why" }, el("b", { text: "Recommend " + c.rec + ". " }), c.why);
+  const ta = el("textarea", { id: "note-" + c.id, placeholder: "Note for Claude (optional)", "aria-label": "Note on: " + c.q });
+  ta.value = p.note || "";
+  ta.addEventListener("change", () => save(c.id, { note: ta.value.trim() }));
+  const ctx = el("p", { class: "ctx" }, c.ctx);
+  if (c.link) ctx.append(" ", el("a", { href: "https://github.com/Screendead/penchant/blob/master/" + c.link, target: "_blank", rel: "noopener", text: "Full pitch" }));
+  const shots = c.imgs ? el("div", { class: "shots" }, ...c.imgs.filter(([k]) => IMG[k]).map(([k, cap, cls]) =>
+    el("figure", cls ? { class: cls } : {}, el("a", { href: IMG[k], target: "_blank", rel: "noopener" },
+      el("img", { src: IMG[k], alt: cap, loading: "lazy" })), el("figcaption", { text: cap })))) : null;
+  return el("div", { class: "call", id: "call-" + c.id },
+    el("div", { class: "qrow" }, el("h3", { text: c.q }), status), el("span", { class: "cid", text: c.id }), ctx, shots, opts, why, ta);
+}
+
+async function save(id, patch) {
+  const next = { ...(picks[id] || {}), ...patch, at: new Date().toISOString() };
+  picks[id] = next;
+  render();
+  if (!db) { setBanner("Picks can't be saved in this view. Open the page signed in to claude.ai.", true); return; }
+  try { await db.collection("picks").doc(id).set(next); }
+  catch (e) { setBanner("That pick didn't save (" + (e && e.code || "error") + "). Try again in a moment.", true); }
+}
+
+function setBanner(msg, err) { const b = document.getElementById("banner"); b.textContent = msg; b.className = "banner" + (err ? " err" : ""); }
+
+document.addEventListener("click", e => {
+  const id = e.target && e.target.getAttribute && e.target.getAttribute("data-copy");
+  if (!id) return;
+  const text = document.getElementById(id).textContent;
+  const select = () => { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  try { navigator.clipboard.writeText(text).then(() => { e.target.textContent = "Copied"; }, select); } catch (err) { select(); }
+});
+
+render();
+(async () => {
+  try { db = window.claude && await window.claude.use("db"); } catch (e) { db = null; }
+  if (!db) { setBanner("Picks can't be saved in this view. Open the page signed in to claude.ai.", true); return; }
+  const timer = setTimeout(() => setBanner("Saved picks can't be reached yet. Picks you make now will save once they can.", true), 10000);
+  db.collection("picks").onSnapshot(snap => {
+    for (const d of snap.docs) picks[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setBanner("Picks save as you go."); }
+    render();
+  }, err => { clearTimeout(timer); setBanner("Saved picks are unavailable (" + (err && err.code || "error") + ").", true); });
+})();
+</script>
