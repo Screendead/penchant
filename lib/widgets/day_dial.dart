@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
@@ -133,16 +134,19 @@ class DayDial extends ConsumerStatefulWidget {
     final Set<int> dense = denseHours(<double>[
       for (final DialEntry e in entries) minuteOfDay(e.at),
     ]);
-    return layoutBeads(<DialBeadInput>[
-      for (final DialEntry e in entries)
-        if (!dense.contains(e.at.hour))
-          DialBeadInput(
-            id: e.id,
-            habit: e.vice.id,
-            minute: minuteOfDay(e.at),
-            radius: beadRadius(e.quantity, typical[e.vice.id]!),
-          ),
-    ]);
+    return layoutBeads(
+      <DialBeadInput>[
+        for (final DialEntry e in entries)
+          if (!dense.contains(e.at.hour))
+            DialBeadInput(
+              id: e.id,
+              habit: e.vice.id,
+              minute: minuteOfDay(e.at),
+              radius: beadRadius(e.quantity, typical[e.vice.id]!),
+            ),
+      ],
+      arcs: <HourArc>[for (final int hour in dense) HourArc(hour)],
+    );
   }
 
   // The entries of each hour drawn as one arc, by hour, in time order.
@@ -183,6 +187,8 @@ class DayDial extends ConsumerStatefulWidget {
       ..sort((a, b) => a.mark.creationIndex.compareTo(b.mark.creationIndex));
   }
 
+  static const String arcHint = 'Opens the latest entry';
+
   static String arcLabel(
     int hour,
     List<DialEntry> entries, {
@@ -197,8 +203,10 @@ class DayDial extends ConsumerStatefulWidget {
       for (final s in arcShares(entries))
         '${s.vice.name} ${s.vice.unit.label(s.total)}',
     ].join(', ');
+    final int pending = entries.where((DialEntry e) => e.pending).length;
     return '${formatCount(entries.length)} entries from ${time(hour)} to '
-        '${time(hour + 1)}: $habits';
+        '${time(hour + 1)}: $habits'
+        '${pending > 0 ? ', ${formatCount(pending)} not yet synced' : ''}';
   }
 
   @override
@@ -862,14 +870,17 @@ class _DayDialState extends ConsumerState<DayDial>
     return popped;
   }
 
-  // An arc is one node for a screen reader, naming the hour and what it
-  // holds; its entries are in the tallies and the history.
+  // An arc is one button for a screen reader, naming the hour and what it
+  // holds. A pointer opens the entry nearest the time tapped, which a screen
+  // reader has no way to aim, so activating it opens the hour's latest entry
+  // and each entry is one of its custom actions.
   Widget _arcTarget(
     _PlacedArc a,
     Offset centre,
     double scale,
     bool alwaysUse24Hour,
   ) {
+    final void Function(DialEntry)? open = widget.onBeadTap;
     final Rect bounds = a.arc.outline().getBounds().inflate(
       DialFace.beadHitSlop,
     );
@@ -883,11 +894,26 @@ class _DayDialState extends ConsumerState<DayDial>
       ),
       child: Semantics(
         container: true,
+        button: open != null,
         label: DayDial.arcLabel(
           a.arc.hour,
           a.entries,
           alwaysUse24Hour: alwaysUse24Hour,
         ),
+        hint: open == null ? null : DayDial.arcHint,
+        onTap: open == null ? null : () => open(a.entries.last),
+        customSemanticsActions: open == null
+            ? null
+            : <CustomSemanticsAction, VoidCallback>{
+                for (final DialEntry e in a.entries)
+                  CustomSemanticsAction(
+                    label: DayDial.beadLabel(
+                      e,
+                      alwaysUse24Hour: alwaysUse24Hour,
+                    ),
+                  ): () =>
+                      open(e),
+              },
         child: const SizedBox.expand(),
       ),
     );

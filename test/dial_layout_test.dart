@@ -197,6 +197,36 @@ void main() {
       expect(HourArc(8).middle, closeTo(dialAngle(510), 1e-9));
     });
 
+    test("pushes a lone bead clear of the next and the previous hour's arc, "
+        'across 00 too', () {
+      const double cap = HourArc.half / HourArc.track;
+      final Map<String, BeadPlacement> placed = layoutBeads(
+        const <DialBeadInput>[
+          DialBeadInput(id: 'a', habit: 'h', minute: 538, radius: 10),
+          DialBeadInput(id: 'b', habit: 'h', minute: 605, radius: 10),
+          DialBeadInput(id: 'c', habit: 'h', minute: 2, radius: 10),
+        ],
+        arcs: <HourArc>[HourArc(9), HourArc(23)],
+      );
+      double clearance(double from, double to) =>
+          (to - from) * HourArc.track - 10;
+      expect(
+        clearance(placed['a']!.angle, HourArc(9).start - cap),
+        closeTo(DialFace.beadGap, 1e-6),
+      );
+      expect(
+        clearance(HourArc(9).end + cap, placed['b']!.angle),
+        closeTo(DialFace.beadGap, 1e-6),
+      );
+      expect(
+        clearance(HourArc(23).end + cap, placed['c']!.angle + 2 * pi),
+        closeTo(DialFace.beadGap, 1e-6),
+      );
+      for (final BeadPlacement p in placed.values) {
+        expect(p.track, HourArc.track);
+      }
+    });
+
     test('a point on the face reads as its minute, across 00 too', () {
       expect(
         HourArc.minuteAt(dialPoint(dialAngle(510), 50)),

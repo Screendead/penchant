@@ -706,6 +706,71 @@ void main() {
       expect(pushed, ['/vices/${coffee.id}/activities/${half.id}']);
     });
 
+    testWidgets('a screen reader opens the latest entry from an arc, and any '
+        'entry from its actions', (WidgetTester tester) async {
+      final List<String?> pushed = <String?>[];
+      await _pumpApp(
+        tester,
+        _today([coffee, tea], (DateTime day) => dense(day)),
+        const ViceTracker(),
+        onGenerateRoute: (RouteSettings settings) {
+          pushed.add(settings.name);
+          return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+        },
+      );
+      await tester.pumpAndSettle();
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      String time(int h) => formatTime(
+        today.add(Duration(hours: h)),
+        alwaysUse24HourFormat: false,
+      );
+      final FinderBase<SemanticsNode> arc = find.semantics.byLabel(
+        '30 entries from ${time(8)} to ${time(9)}: Coffee 30 drinks',
+      );
+      final SemanticsData data = arc.evaluate().single.getSemanticsData();
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.hint, DayDial.arcHint);
+      expect(data.customSemanticsActionIds, hasLength(30));
+
+      tester.semantics.tap(arc);
+      await tester.pumpAndSettle();
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+
+      final ViceActivity half = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 510)),
+      );
+      tester.semantics.customAction(
+        arc,
+        CustomSemanticsAction(
+          label: DayDial.beadLabel(
+            DialEntry(
+              id: half.id,
+              vice: coffee,
+              mark: _mark,
+              quantity: 1,
+              at: half.createdAt.toDate(),
+            ),
+            alwaysUse24Hour: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity latest = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 538)),
+      );
+      expect(pushed, [
+        '/vices/${coffee.id}/activities/${latest.id}',
+        '/vices/${coffee.id}/activities/${half.id}',
+      ]);
+      semantics.dispose();
+    });
+
     testWidgets("shows today's clock in the hub, and a past day's weekday", (
       WidgetTester tester,
     ) async {

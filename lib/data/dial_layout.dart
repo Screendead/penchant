@@ -105,8 +105,14 @@ class BeadPlacement {
 
 // Where each bead sits, by id. Beads keep their time's angle except where
 // neighbours on one track would touch: those are pushed apart along the arc
-// until their edges are [DialFace.beadGap] apart, never off the track.
-Map<String, BeadPlacement> layoutBeads(Iterable<DialBeadInput> beads) {
+// until their edges are [DialFace.beadGap] apart, never off the track. The
+// [arcs] hold still on their track and push its beads clear the same way.
+// Between two arcs an hour has about 24.7 units of track, so a bead wider
+// than that settles between them and overlaps both ends.
+Map<String, BeadPlacement> layoutBeads(
+  Iterable<DialBeadInput> beads, {
+  Iterable<HourArc> arcs = const <HourArc>[],
+}) {
   final List<DialBeadInput> ordered = beads.toList()
     ..sort((DialBeadInput a, DialBeadInput b) {
       final int byTime = a.minute.compareTo(b.minute);
@@ -129,6 +135,17 @@ Map<String, BeadPlacement> layoutBeads(Iterable<DialBeadInput> beads) {
     slots.add(slot);
     (byTrack[slot.track] ??= <_Slot>[]).add(slot);
   }
+  for (final HourArc arc in arcs) {
+    (byTrack[HourArc.track] ??= <_Slot>[]).add(
+      _Slot(
+        'hour-${arc.hour}',
+        arc.middle,
+        HourArc.track,
+        (arc.end - arc.start) / 2 * HourArc.track + HourArc.half,
+        fixed: true,
+      ),
+    );
+  }
 
   for (final MapEntry<double, List<_Slot>>(key: track, value: onTrack)
       in byTrack.entries) {
@@ -136,10 +153,10 @@ Map<String, BeadPlacement> layoutBeads(Iterable<DialBeadInput> beads) {
     void separate(_Slot p, _Slot q, double angleGap) {
       final double need = p.radius + q.radius + DialFace.beadGap;
       final double gap = angleGap * track;
-      if (gap < need) {
-        final double push = (need - gap) / track / 2;
-        p.angle -= push;
-        q.angle += push;
+      if (gap < need && !(p.fixed && q.fixed)) {
+        final double push = (need - gap) / track;
+        p.angle -= q.fixed ? push : (p.fixed ? 0 : push / 2);
+        q.angle += p.fixed ? push : (q.fixed ? 0 : push / 2);
       }
     }
 
@@ -170,12 +187,13 @@ Map<String, BeadPlacement> layoutBeads(Iterable<DialBeadInput> beads) {
 }
 
 class _Slot {
-  _Slot(this.id, this.angle, this.track, this.radius);
+  _Slot(this.id, this.angle, this.track, this.radius, {this.fixed = false});
 
   final String id;
   double angle;
   final double track;
   final double radius;
+  final bool fixed;
 }
 
 // Where a bead's time label goes, relative to the bead's centre: toward the
