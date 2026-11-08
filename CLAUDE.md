@@ -47,11 +47,7 @@ a merge conflict in `tech-debt/README.md`, and fails if a report file has no lin
 ## Commands
 
 ```bash
-flutter pub get
-flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
-flutter test
-flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter build macos --debug      # the macOS target still builds (CI builds no app)
 dart run flutter_launcher_icons  # after changing assets/icon.webp
 ```
@@ -71,40 +67,9 @@ Both boot the simulator by UDID (looked up by name unless `E2E_DEVICE` is set), 
 `tools/emulator-env.sh`. `flutter test integration_test` without `--dart-define=USE_FIREBASE_EMULATORS=true` fails in
 `setUpAll` rather than run against production.
 
-Versions and releases. `version:` in `pubspec.yaml` is the user-facing semantic version (0.x until the first App
-Store release); its `+N` is a placeholder. The build number of any shipped build is the commit count on `master`, so it
-rises with every merge and App Store Connect never sees a repeat. Build with the helper's flags, never by hand:
-
-```bash
-tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
-flags=$(tools/build-version.sh) && flutter build ipa $flags
-```
-
-To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
-rename that section to `## [X.Y.Z] - <date>`, and merge. Then run the Release workflow
-(`gh workflow run release.yml --repo Screendead/tracker`) on `master`: it re-runs the checks, tags `vX.Y.Z` and
-publishes that changelog section as the release notes (`tools/changelog-section.sh X.Y.Z` prints it). It refuses a
-version that already has a release. The app shows `version (build)` under Settings > About.
-
-Seed data, into emulators only (Node 22, `npm --prefix admin ci` once). `emulators:exec` sets the emulator hosts
-itself but discards the data when the script exits, so it only checks that the script runs:
-
-```bash
-firebase emulators:exec --project demo-tracker --only auth,firestore "node admin/populateFirestore.js"
-```
-
-To keep the data, start `tools/run-emulated.sh` (or `firebase emulators:start --project demo-tracker`), then in
-another terminal point the script at its ports and log in as the seed user:
-
-```bash
-FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node admin/populateFirestore.js
-```
-
-`admin/populateFirestore.js` refuses to start unless `FIRESTORE_EMULATOR_HOST` and
-`FIREBASE_AUTH_EMULATOR_HOST` are set and the project id (`SEED_PROJECT_ID`, default `demo-tracker`)
-starts with `demo-`; it needs no credentials. It creates the Auth user `seed@example.com` (password
-`seed-password`) and replaces that user's vices (one archived) and 30 days of activities with documents in the
-current data shape.
+Shipped builds take their version and build number from `tools/build-version.sh` flags, never by hand; versioning
+and releasing are in the `release` skill (`.claude/skills/release/SKILL.md`). Seed data goes into emulators only,
+never production: the `seed-emulators` skill (`.claude/skills/seed-emulators/SKILL.md`).
 
 Firestore rules tests (`tests/firestore-rules/`, Node 22, `node --test` under the
 Firestore emulator on `demo-tracker`):
