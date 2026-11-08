@@ -132,6 +132,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- The Log widget is redrawn to match the Dial widgets: your top habit is a dial with a + button, and the others are
+  pills with today's count and a + button, each lit with a soft glow of its colour.
 - Holding a habit in the Log fan opens an amount sheet instead of the record dialog: the habit's name at the top, a
   large amount with − and + to step it (or type a decimal), and one button that says what it will log and when.
   Editing an entry uses the same amount stepper.

@@ -496,6 +496,9 @@ Later the same day, in chat, on the widgets (#158) and the nudge (#156):
 - **The daily nudge fires every day regardless**, even on a day already logged. Jack: "in case something was
   missed". As built in #156; no change.
 - **"Clean day" just dismisses** (option c). As built in #156; no change.
+- **Log widget = Hero with Glow** (Jack 2026-11-08: "B, with C's glow"). The first habit is a dial with a +
+  badge, the rest are pills with their count and a + button, each on a soft glow of its colour. Renders in
+  `docs/pitch/round-11/log-widgets/final/`.
 
 ## Calls waiting on Jack (UNDECIDED)
 
