@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -15,6 +16,7 @@ import 'package:tracker/widget_bridge/background_flush.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/rejected_writes.dart';
+import 'package:tracker/writes/settle_write.dart';
 
 import 'fake_sealer.dart';
 import 'fake_writes.dart';
@@ -173,13 +175,13 @@ void main() {
         _log('gone', tapped, op: QueuedLogOp.delete),
       ]);
 
-      final DateTime? next = await flushQueuedLogs(
+      final DateTime? next = (await flushQueuedLogs(
         bridge: bridge,
         writes: writes,
         rejected: container.read(rejectedWritesProvider.notifier),
         uid: 'u1',
         now: now,
-      );
+      )).next;
 
       expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
         'recordActivity:a',
@@ -294,7 +296,7 @@ void main() {
   });
 
   // testWidgets, which demangles the stack reportError prints.
-  testWidgets('flushQueuedLogs with keepRefused leaves a refused log queued '
+  testWidgets('flushQueuedLogs in the background leaves a refused log queued '
       'and reports nothing', (tester) async {
     final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
       _log('a', DateTime(2026, 11, 8, 9)),
@@ -312,16 +314,55 @@ void main() {
     addTearDown(container.dispose);
     container.listen(userProvider, (_, _) {});
     await container.read(userProvider.future);
-    await flushQueuedLogs(
+    final FlushLeft left = await flushQueuedLogs(
       bridge: bridge,
       writes: writes,
       rejected: container.read(rejectedWritesProvider.notifier),
       uid: 'u1',
       now: DateTime(2026, 11, 8, 10),
-      keepRefused: true,
+      inBackground: true,
     );
     expect(bridge.queue.map((QueuedLog l) => l.id), <String>['a']);
     expect(container.read(rejectedWritesProvider), isEmpty);
+    expect(left.refused, isTrue);
+  });
+
+  // The process that queued it in the SDK exits soon after, so the queue must
+  // keep the log for the next flush; a repeat delete would be refused.
+  testWidgets('flushQueuedLogs in the background keeps a log the server has '
+      'not acknowledged, and lets a delete go', (tester) async {
+    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+      _log('a', DateTime(2026, 11, 8, 9)),
+      _log('b', DateTime(2026, 11, 8, 9), op: QueuedLogOp.delete),
+    ]);
+    final FakeTrackerWrites writes = FakeTrackerWrites()
+      ..respond = (Write w) => Completer<void>().future;
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
+        memoryJournal(),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(userProvider, (_, _) {});
+    await tester.pump();
+    FlushLeft? left;
+    unawaited(
+      flushQueuedLogs(
+        bridge: bridge,
+        writes: writes,
+        rejected: container.read(rejectedWritesProvider.notifier),
+        uid: 'u1',
+        now: DateTime(2026, 11, 8, 10),
+        inBackground: true,
+      ).then((FlushLeft l) => left = l),
+    );
+    await tester.pump(writeTimeout + const Duration(seconds: 1));
+    expect(left?.unacknowledged, isTrue);
+    expect(left?.refused, isFalse);
+    expect(bridge.queue.map((QueuedLog l) => '${l.op.name}:${l.id}'), <String>[
+      'log:a',
+    ]);
   });
 
   group('runBackgroundFlush', () {
@@ -329,11 +370,12 @@ void main() {
       String? uid = 'u1',
       bool e2ee = true,
       JournalKeyState? key,
+      Future<void> Function(Write write)? respond,
     }) async {
       final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
         _log('a', DateTime(2026, 11, 8, 9)),
       ]);
-      final FakeTrackerWrites writes = FakeTrackerWrites();
+      final FakeTrackerWrites writes = FakeTrackerWrites()..respond = respond;
       final BackgroundFlushOutcome outcome = await runBackgroundFlush(
         initialize: () async {},
         overrides: [
@@ -374,6 +416,24 @@ void main() {
       final (outcome, bridge, writes) = await run();
       expect(outcome, BackgroundFlushOutcome.retry);
       expect(writes.writes, isEmpty);
+      expect(bridge.queue, hasLength(1));
+    });
+
+    // testWidgets, which demangles the stack reportError prints.
+    testWidgets('a refused log: blocked, left for the app\'s banner', (
+      tester,
+    ) async {
+      final (outcome, bridge, writes) = await run(
+        e2ee: false,
+        respond: (Write w) => Future<void>.error(
+          FirebaseException(
+            plugin: 'cloud_firestore',
+            code: 'permission-denied',
+          ),
+        ),
+      );
+      expect(outcome, BackgroundFlushOutcome.blocked);
+      expect(writes.writes, hasLength(1));
       expect(bridge.queue, hasLength(1));
     });
 
