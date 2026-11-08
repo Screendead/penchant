@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/dial_layout.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -36,6 +37,41 @@ class DialEntry {
   final num quantity;
   final DateTime at;
   final bool pending;
+}
+
+// A day's entries of [habits] as the dial draws them. Entries of a habit not
+// listed (archived, or gone) stay off.
+List<DialEntry> dialEntries(
+  List<Vice> habits,
+  List<ViceActivity> activities,
+  HabitMark Function(Vice vice) markOf,
+) {
+  final Map<String, Vice> byID = <String, Vice>{
+    for (final Vice vice in habits) vice.id: vice,
+  };
+  return <DialEntry>[
+    for (final ViceActivity a in activities)
+      if (byID[a.viceID] case final Vice vice)
+        DialEntry(
+          id: a.id,
+          vice: vice,
+          mark: markOf(vice),
+          quantity: a.measure,
+          at: a.createdAt.toDate(),
+          pending: a.pending,
+        ),
+  ];
+}
+
+// Each habit's total over [entries], 0 for a habit with none.
+Map<String, num> dayTotals(List<Vice> habits, List<DialEntry> entries) {
+  final Map<String, num> totals = <String, num>{
+    for (final Vice vice in habits) vice.id: 0,
+  };
+  for (final DialEntry e in entries) {
+    totals[e.vice.id] = (totals[e.vice.id] ?? 0) + e.quantity;
+  }
+  return totals;
 }
 
 // The copy of a day with no entries, in the hub.

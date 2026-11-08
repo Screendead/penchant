@@ -56,6 +56,7 @@ Future<void> logOne(
   Offset? from,
   required bool alwaysUse24HourFormat,
   double bottomClearance = 0,
+  Duration undoWindow = undoDuration,
 }) async {
   final User? user = ref.read(userProvider).value;
   if (user == null) {
@@ -82,6 +83,7 @@ Future<void> logOne(
     messenger,
     message,
     bottomClearance: bottomClearance,
+    undoWindow: undoWindow,
     onUndo: () {
       undone = true;
       undoLog(
