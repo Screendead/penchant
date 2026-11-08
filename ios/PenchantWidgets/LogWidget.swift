@@ -89,7 +89,9 @@ struct LogView: View {
       if habits.isEmpty {
         message("Add a habit in Penchant to log it here.")
       } else {
-        grid(habits.map { habit in today.habits.first { $0.id == habit.id }! })
+        LogFace(
+          family: family, habits: habits.map { habit in today.habits.first { $0.id == habit.id }! },
+          undo: entry.undo)
       }
     } else {
       message("Open Penchant to log from here.")
@@ -100,74 +102,224 @@ struct LogView: View {
     Text(text).font(Typeface.text(13)).foregroundStyle(Palette.muted)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
   }
+}
 
-  @ViewBuilder
-  private func grid(_ habits: [HabitWeek]) -> some View {
+// Jack 2026-11-08: Hero with Glow. The first habit is a dial with a + badge;
+// the rest are pills with their count and a + button. Each sits on a soft glow
+// of its own colour.
+@available(iOS 17.0, macOS 14.0, *)
+struct LogFace: View {
+  let family: WidgetFamily
+  let habits: [HabitWeek]
+  let undo: LastLog?
+
+  var body: some View {
+    let hero = habits[0]
     switch family {
     case .systemSmall:
-      LogTile(habit: habits[0], undo: undo(for: habits[0]), large: true)
+      VStack(alignment: .leading, spacing: 4) {
+        Text(hero.habit.name).font(Typeface.display(13, .bold)).foregroundStyle(Palette.text).lineLimit(1)
+        HeroDial(habit: hero, undo: undo(for: hero), badge: 28)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
     case .systemMedium:
-      HStack(spacing: 8) {
-        ForEach(habits) { LogTile(habit: $0, undo: undo(for: $0), large: false) }
+      HStack(spacing: 14) {
+        HeroDial(habit: hero, undo: undo(for: hero), badge: 28)
+        VStack(alignment: .leading, spacing: 8) {
+          Text(hero.habit.name).font(Typeface.display(17, .bold)).foregroundStyle(Palette.text).lineLimit(1)
+          ForEach(habits.dropFirst().prefix(2)) { HabitPill(habit: $0, undo: undo(for: $0)) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
     default:
-      LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-        ForEach(habits) { LogTile(habit: $0, undo: undo(for: $0), large: false) }
+      VStack(spacing: 12) {
+        HStack(spacing: 14) {
+          HeroDial(habit: hero, undo: undo(for: hero), badge: 32)
+            .frame(height: 140)
+          VStack(alignment: .leading, spacing: 4) {
+            Text(hero.habit.name).font(Typeface.display(22, .heavy)).foregroundStyle(Palette.text).lineLimit(1)
+            Text("\(hero.today) today · \(hero.entryCount) this week").font(Typeface.text(12))
+              .foregroundStyle(Palette.muted).lineLimit(1)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+          ForEach(habits.dropFirst()) { HabitPill(habit: $0, undo: undo(for: $0)) }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
       }
-      .frame(maxHeight: .infinity, alignment: .top)
     }
   }
 
   private func undo(for habit: HabitWeek) -> LastLog? {
-    entry.undo?.viceID == habit.id ? entry.undo : nil
+    undo?.viceID == habit.id ? undo : nil
   }
 }
 
-// One habit: a tap logs one; for 5 seconds after, the same place offers Undo
+extension HabitWeek {
+  var today: Int { entries.last.flatMap { $0 } ?? 0 }
+  // Today against the habit's busiest day this week, so the ring fills as a
+  // day catches up with that week's high.
+  var todayShare: Double {
+    let peak = entries.compactMap { $0 }.max() ?? 0
+    return peak > 0 ? min(1, Double(today) / Double(peak)) : 0
+  }
+}
+
+// A tap logs one; for 5 seconds after, the same place offers Undo
 // (r10-widget-undo B).
 @available(iOS 17.0, macOS 14.0, *)
-private struct LogTile: View {
+private struct LogButton<Label: View>: View {
   let habit: HabitWeek
   let undo: LastLog?
-  let large: Bool
-
-  private var today: Int { habit.entries.last.flatMap { $0 } ?? 0 }
+  @ViewBuilder let label: () -> Label
 
   var body: some View {
     if let undo {
-      Button(intent: UndoLogIntent(activityID: undo.id)) {
-        tile {
-          Text("Logged").font(Typeface.text(large ? 13 : 11)).foregroundStyle(Palette.muted)
-          Text("Undo").font(Typeface.display(large ? 22 : 15, .bold)).foregroundStyle(Palette.ink(habit.habit.slot))
-        }
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Undo the log of \(habit.habit.name)")
+      Button(intent: UndoLogIntent(activityID: undo.id), label: label)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Undo the log of \(habit.habit.name)")
     } else {
-      Button(intent: LogOneIntent(habit: HabitEntity(habit.habit))) {
-        tile {
-          HStack(spacing: 4) {
-            Pip(slot: habit.habit.slot, style: habit.habit.style, size: large ? 10 : 8)
-            Text(habit.habit.name).font(Typeface.text(large ? 13 : 11, .medium)).foregroundStyle(Palette.text)
-              .lineLimit(1)
-          }
-          Text("\(today)").font(Typeface.mono(large ? 34 : 20)).foregroundStyle(Palette.ink(habit.habit.slot))
-            .invalidatableContent()
-            .contentTransition(.numericText())
-          Text(large ? "today · tap to log" : "+1").font(Typeface.text(large ? 11 : 10)).foregroundStyle(Palette.muted)
-        }
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Log 1 \(habit.habit.unitOne) of \(habit.habit.name). \(today) today.")
+      Button(intent: LogOneIntent(habit: HabitEntity(habit.habit)), label: label)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Log 1 \(habit.habit.unitOne) of \(habit.habit.name). \(habit.today) today.")
     }
   }
+}
 
-  private func tile<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-    VStack(alignment: .leading, spacing: 2, content: content)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-      .padding(large ? 0 : 8)
-      .background {
-        if !large { RoundedRectangle(cornerRadius: 12).fill(Palette.surface) }
+// The habit's colour, blurred, behind an element. Fainter on the light ground.
+@available(iOS 17.0, macOS 14.0, *)
+private struct Glow: View {
+  let slot: Int
+  let strength: Double
+
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    Ellipse()
+      .fill(Palette.fill(slot).opacity(strength * (colorScheme == .dark ? 1 : 0.6)))
+  }
+}
+
+// A disc like the dial's: a ring that fills with today against this week's
+// busiest day, the week's seven beads around its rim and the count at its hub.
+@available(iOS 17.0, macOS 14.0, *)
+private struct HeroDial: View {
+  let habit: HabitWeek
+  let undo: LastLog?
+  let badge: CGFloat
+
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    LogButton(habit: habit, undo: undo) {
+      ZStack(alignment: .bottomTrailing) {
+        GeometryReader { g in
+          let side = min(g.size.width, g.size.height)
+          let c = CGPoint(x: g.size.width / 2, y: g.size.height / 2)
+          let r = side / 2
+          let slot = habit.habit.slot
+          ZStack {
+            Glow(slot: slot, strength: 0.42)
+              .frame(width: side * 1.05, height: side * 1.05)
+              .blur(radius: side * 0.16)
+              .position(c)
+            Circle().fill(Palette.surface)
+              .overlay(Circle().stroke(Palette.line, lineWidth: 1))
+              .frame(width: side, height: side)
+              .position(c)
+            Circle().stroke(Palette.fill(slot).opacity(0.18), lineWidth: r * 0.13)
+              .frame(width: side * 0.74, height: side * 0.74)
+              .position(c)
+            Circle().trim(from: 0, to: max(0.02, habit.todayShare))
+              .stroke(Palette.fill(slot), style: StrokeStyle(lineWidth: r * 0.13, lineCap: .round))
+              .rotationEffect(.degrees(-90))
+              .frame(width: side * 0.74, height: side * 0.74)
+              .shadow(color: Palette.fill(slot).opacity(colorScheme == .dark ? 0.5 : 0.25), radius: 4)
+              .position(c)
+            ForEach(0..<Week.length, id: \.self) { day in
+              let v = habit.values[day] ?? 0
+              let s = v > 0 && habit.peak > 0 ? max(0.35, (v / habit.peak).squareRoot()) : 0
+              let angle = -Double.pi / 2 + 2 * Double.pi * (Double(day) + 0.5) / Double(Week.length)
+              Group {
+                if s > 0 {
+                  Pip(slot: slot, style: habit.habit.style, size: r * 0.12 * s + 2)
+                } else {
+                  Circle().fill(Palette.line).frame(width: 2.5, height: 2.5)
+                }
+              }
+              .position(x: c.x + r * 0.9 * cos(angle), y: c.y + r * 0.9 * sin(angle))
+            }
+            VStack(spacing: -2) {
+              if undo != nil {
+                Text("Undo").font(Typeface.display(r * 0.3, .bold)).foregroundStyle(Palette.ink(slot))
+                Text("logged").font(Typeface.text(max(8, r * 0.13))).foregroundStyle(Palette.muted)
+              } else {
+                Text("\(habit.today)").font(Typeface.mono(r * 0.42, .medium)).foregroundStyle(Palette.text)
+                  .invalidatableContent()
+                  .contentTransition(.numericText())
+                Text("today").font(Typeface.text(max(8, r * 0.13))).foregroundStyle(Palette.muted)
+              }
+            }
+            .position(c)
+          }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        PlusBadge(slot: habit.habit.slot, side: badge, undo: undo != nil)
       }
+    }
+  }
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct HabitPill: View {
+  let habit: HabitWeek
+  let undo: LastLog?
+
+  var body: some View {
+    let slot = habit.habit.slot
+    LogButton(habit: habit, undo: undo) {
+      HStack(spacing: 8) {
+        Pip(slot: slot, style: habit.habit.style, size: 10)
+        Text(habit.habit.name).font(Typeface.text(13, .medium)).foregroundStyle(Palette.text).lineLimit(1)
+        Spacer(minLength: 4)
+        if undo == nil {
+          Text("\(habit.today)").font(Typeface.mono(15)).foregroundStyle(Palette.ink(slot))
+            .invalidatableContent()
+            .contentTransition(.numericText())
+        } else {
+          Text("Undo").font(Typeface.text(13, .semibold)).foregroundStyle(Palette.ink(slot))
+        }
+        PlusBadge(slot: slot, side: 22, undo: undo != nil)
+      }
+      .padding(.leading, 10).padding(.trailing, 5).padding(.vertical, 5)
+      .background {
+        Capsule().fill(Palette.surface)
+          .overlay(alignment: .trailing) {
+            Glow(slot: slot, strength: 0.38)
+              .frame(width: 70, height: 44)
+              .blur(radius: 14)
+              .offset(x: 16)
+          }
+          .compositingGroup()
+          .clipShape(Capsule())
+      }
+      .overlay(Capsule().stroke(Palette.line, lineWidth: 1))
+    }
+  }
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct PlusBadge: View {
+  let slot: Int
+  let side: CGFloat
+  var undo = false
+
+  var body: some View {
+    Image(systemName: undo ? "arrow.uturn.backward" : "plus")
+      .font(.system(size: side * (undo ? 0.42 : 0.48), weight: .bold))
+      .foregroundStyle(Color.black.opacity(0.78))
+      .frame(width: side, height: side)
+      .background(Circle().fill(Palette.fill(slot)))
   }
 }
