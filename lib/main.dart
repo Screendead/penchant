@@ -16,6 +16,8 @@ import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/reminder/daily_nudge.dart';
+import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/font_licence.dart';
@@ -86,6 +88,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.listen(plaintextMigrationProvider, (_, _) {});
     ref.listen(widgetSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
+    ref.listen(dailyNudgeStartupProvider, (_, _) {});
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -180,6 +183,8 @@ Widget routePage(String? name) {
       return const AccountSettings();
     case ['settings', 'appearance']:
       return const AppearanceSettings();
+    case ['settings', 'reminder']:
+      return const ReminderSettings();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
     default:

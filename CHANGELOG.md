@@ -18,6 +18,8 @@ pull request titles (`gh pr list --state merged`).
 - "Log one" for Control Centre, the Lock Screen and the Action button (iOS 18), and for Siri and Shortcuts ("Log
   Coffee in Penchant").
 - The Last week and Log widgets on the Mac, in Notification Centre and on the desktop.
+- Settings › Reminder sends one quiet notification a day at a time you choose; it is off until you turn it on, and
+  only then asks to send notifications. Press and hold it to log something, or tap Clean day to close it.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
   habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
   latest entry, and its actions list every entry.

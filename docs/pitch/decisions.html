@@ -306,7 +306,7 @@ const GROUPS = [
         { k: "B", t: "Optional, plus a migrator and decimals", c: "Optional fields, a first-launch migrator for a vice category, and a decimal amount next to the whole-number quantity." },
         { k: "C", t: "Vices only (C18 as is)", c: "Rules out triggers and context on entries." } ],
       rec: "B", why: "Triggers and context can't be backfilled, so 1.0 has to capture them. Everything stays optional in the rules until the web site is down." },
-    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "ideas/v1-must-haves/evening-check-in-and-reminders.md",
+    { id: "r2-days", q: "How is “nothing logged today” recorded?", link: "HANDOVER.md",
       ctx: "C12 forbids zero-quantity entries, but the insights need to tell a confirmed zero day from a day you forgot to log.",
       opts: [
         { k: "A", t: "A days collection", c: "One document per day, written by an evening check-in; can later carry a note or mood." },
