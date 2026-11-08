@@ -47,9 +47,11 @@ enum WidgetBridge {
       case "backgroundDone":
         result(nil)
         // After the reply: ending the task destroys the engine that called.
+        let outcome = call.arguments as? String
         #if os(iOS)
-          let outcome = call.arguments as? String
           DispatchQueue.main.async { BackgroundFlush.finish(outcome: outcome) }
+        #else
+          DispatchQueue.main.async { FlushMode.finish(outcome: outcome) }
         #endif
         return
       case "removeLogs":
@@ -118,7 +120,8 @@ enum QueueListener {
   // A widget click while the app runs reaches it through QueueListener. This
   // only retries a flush that left the user's logs queued (the key not yet
   // loaded, say), every 15 minutes or more at utility priority, and stops once
-  // the queue is empty. With the app closed, the logs wait for its launch.
+  // the queue is empty. With the app closed, the menu bar helper launches it
+  // in FlushMode.
   enum MacFlushSchedule {
     private static var activity: NSBackgroundActivityScheduler?
 
@@ -140,6 +143,92 @@ enum QueueListener {
         }
       }
       activity = scheduler
+    }
+  }
+
+  // Penchant launched by the menu bar helper (macos/PenchantMenuBar) to write
+  // what was queued while it was closed: no Dock icon, no window, and a
+  // headless engine on backgroundFlushMain in lib/main.dart, which seals and
+  // writes through TrackerWrites or leaves the logs queued. It quits once the
+  // flush ends. The helper launches it only while no Penchant runs, and the
+  // user's own launch meanwhile reaches this process as a reopen
+  // (AppDelegate), so no second process opens the Firestore cache.
+  enum FlushMode {
+    // A sandboxed launcher's arguments are dropped (NSWorkspace.OpenConfiguration
+    // .arguments), so the helper leaves this stamp in the App Group first. Only
+    // a fresh one counts: a stale stamp must not hide a launch the user made.
+    static let argument = "--background-flush"
+    private static let stampFreshFor: TimeInterval = 10
+    // Session and key within 12 s, a write within 10 s more (backgroundReadyWithin).
+    private static let budget: TimeInterval = 25
+
+    static private(set) var active: Bool = launchedToFlush()
+    private static var engine: FlutterEngine?
+    private static var startedAt = Date()
+
+    private static func launchedToFlush() -> Bool {
+      if CommandLine.arguments.contains(argument) { return true }
+      guard let defaults = UserDefaults(suiteName: appGroup) else { return false }
+      let stamp = defaults.double(forKey: FlushModeStamp.key)
+      guard stamp > 0 else { return false }
+      defaults.removeObject(forKey: FlushModeStamp.key)
+      return abs(Date().timeIntervalSince1970 - stamp) < stampFreshFor
+    }
+
+    static func start() {
+      startedAt = Date()
+      DispatchQueue.main.asyncAfter(deadline: .now() + budget) {
+        if active { quit() }
+      }
+      run()
+    }
+
+    private static func run() {
+      guard active else { return }
+      if LogQueue.pending().isEmpty {
+        quit()
+        return
+      }
+      let headless = FlutterEngine(name: "background-flush", project: nil, allowHeadlessExecution: true)
+      RegisterGeneratedPlugins(registry: headless)
+      WidgetBridge.register(with: headless.registrar(forPlugin: "WidgetBridge"))
+      engine = headless
+      if !headless.run(withEntrypoint: "backgroundFlushMain") {
+        quit()
+      }
+    }
+
+    // backgroundDone: BackgroundFlushOutcome's name. A log still inside its
+    // Undo hold gets one more run, if it falls due within the budget; anything
+    // else left waits for the helper's next launch or the app's.
+    static func finish(outcome: String?) {
+      guard active else { return }
+      stopEngine()
+      let due = LogQueue.pending().map { $0.date.addingTimeInterval(queuedLogHold) }.max()
+      if outcome == "retry", let due, due > Date(),
+        due.timeIntervalSince(startedAt) < budget - 15
+      {
+        DispatchQueue.main.asyncAfter(deadline: .now() + due.timeIntervalSinceNow + 0.5) { run() }
+        return
+      }
+      quit()
+    }
+
+    // The user opened Penchant while it flushed: the app's own flush
+    // (widgetLogFlushProvider) writes what is left, to the same document ids.
+    static func leave() {
+      active = false
+      stopEngine()
+    }
+
+    private static func stopEngine() {
+      engine?.shutDownEngine()
+      engine = nil
+    }
+
+    private static func quit() {
+      stopEngine()
+      NSApp.terminate(nil)
     }
   }
 #else

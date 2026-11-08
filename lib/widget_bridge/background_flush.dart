@@ -14,12 +14,14 @@ import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
-// Inside a BGAppRefreshTask, which iOS ends after about 30 seconds: the
-// session and the key get this long, a write up to settleWrite's 10 s more.
+// Inside a BGAppRefreshTask, which iOS ends after about 30 seconds, or the
+// Mac's 25 s flush mode: the session and the key get this long, a write up to
+// settleWrite's 10 s more.
 const Duration backgroundReadyWithin = Duration(seconds: 12);
 
 /// One flush of the widgets' queue from a headless engine that iOS started for
-/// a background refresh (ios/Runner/WidgetBridge.swift). It writes only what
+/// a background refresh, or the Mac app started in flush mode
+/// (ios/Runner/WidgetBridge.swift). It writes only what
 /// the app would: the signed-in user's logs, sealed. Without the session or
 /// the key in time it writes nothing and the logs stay queued.
 Future<BackgroundFlushOutcome> runBackgroundFlush({

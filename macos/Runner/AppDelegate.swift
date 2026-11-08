@@ -6,10 +6,39 @@ import ServiceManagement
 class AppDelegate: FlutterAppDelegate {
   static let menuBarHelperID = "com.screendead.penchant.menubar"
 
+  // FlutterAppDelegate implements this one (it names the window and menus).
+  // The nib's window is hidden at launch (MainMenu.xib), so a flush-mode
+  // launch shows nothing and has no Dock icon.
+  override func applicationWillFinishLaunching(_ notification: Notification) {
+    super.applicationWillFinishLaunching(notification)
+    if FlushMode.active {
+      NSApp.setActivationPolicy(.prohibited)
+    } else {
+      mainFlutterWindow?.makeKeyAndOrderFront(nil)
+    }
+  }
+
   // No super: FlutterAppDelegate does not implement this on macOS, so the call
   // raises "unrecognized selector", which AppKit swallows along with the rest
   // of the method.
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    if FlushMode.active {
+      FlushMode.start()
+    } else {
+      startMenuBarHelper()
+    }
+  }
+
+  // The headless flush engine never answers a termination request.
+  override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+    FlushMode.active ? .terminateNow : super.applicationShouldTerminate(sender)
+  }
+
+  // The user opened Penchant while it ran to flush: it becomes the normal app.
+  private func leaveFlushMode() {
+    FlushMode.leave()
+    NSApp.setActivationPolicy(.regular)
+    (mainFlutterWindow as? MainFlutterWindow)?.attachFlutter()
     startMenuBarHelper()
   }
 
@@ -52,6 +81,9 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool)
     -> Bool
   {
+    if FlushMode.active {
+      leaveFlushMode()
+    }
     if !flag {
       mainFlutterWindow?.makeKeyAndOrderFront(nil)
       NSApp.activate(ignoringOtherApps: true)

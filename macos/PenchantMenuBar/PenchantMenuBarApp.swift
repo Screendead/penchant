@@ -5,12 +5,17 @@ import WidgetKit
 // A login item inside Penchant.app (Contents/Library/LoginItems), registered by
 // the app's AppDelegate, so the menu bar stays when the app quits. It reads the
 // snapshot the widgets read and queues logs in the widgets' LogQueue; only the
-// app writes to Firestore, sealed, when it next flushes.
+// app writes to Firestore, sealed. With the app closed, FlushLauncher starts it
+// hidden to do so.
 let mainAppID = "com.screendead.penchant"
 
 @main
 struct PenchantMenuBarApp: App {
   @StateObject private var model = MenuModel()
+
+  init() {
+    FlushLauncher.start()
+  }
 
   var body: some Scene {
     MenuBarExtra {
@@ -75,7 +80,7 @@ final class MenuModel: ObservableObject {
   }
 
   func openApp() {
-    guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: mainAppID) else { return }
+    guard let url = FlushLauncher.appURL else { return }
     let configuration = NSWorkspace.OpenConfiguration()
     configuration.activates = true
     NSWorkspace.shared.openApplication(at: url, configuration: configuration)
@@ -173,7 +178,73 @@ struct MenuContent: View {
         Button("Undo") { model.undo() }.buttonStyle(.borderless).font(Typeface.text(12, .bold))
       }
     } else if model.pending > 0 && !model.appRunning {
-      Text("Saved — syncs when Penchant opens").font(Typeface.text(12)).foregroundStyle(Palette.muted)
+      Text("Saved — syncs shortly").font(Typeface.text(12)).foregroundStyle(Palette.muted)
+    }
+  }
+}
+
+// A log queued with Penchant closed (here or in a widget, which posts the same
+// Darwin notification) launches Penchant once it is past its Undo hold, with
+// no window or Dock icon, to write it (FlushMode in ios/Runner/WidgetBridge.swift).
+// Nothing runs while the queue is empty, and nothing polls: a log that run
+// could not write (signed out, no key, offline) waits for the next log or the
+// app's own launch.
+enum FlushLauncher {
+  private static var due: DispatchWorkItem?
+  private static var launching = false
+  private static var lastLaunch = Date.distantPast
+
+  // The app this helper is bundled in, so a copy elsewhere drives its own app.
+  static var appURL: URL? {
+    let enclosing = Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent()
+      .deletingLastPathComponent().deletingLastPathComponent()
+    if Bundle(url: enclosing)?.bundleIdentifier == mainAppID { return enclosing }
+    return NSWorkspace.shared.urlForApplication(withBundleIdentifier: mainAppID)
+  }
+
+  static func start() {
+    CFNotificationCenterAddObserver(
+      CFNotificationCenterGetDarwinNotifyCenter(), nil,
+      { _, _, _, _, _ in DispatchQueue.main.async { FlushLauncher.schedule() } },
+      queueChangedNotification as CFString, nil, .deliverImmediately)
+    // A log made while that run was flushing, after it read the queue.
+    NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
+    ) { note in
+      let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+      guard app?.bundleIdentifier == mainAppID else { return }
+      if LogQueue.pending().contains(where: { $0.date > lastLaunch }) { schedule() }
+    }
+    schedule()
+  }
+
+  static func schedule() {
+    due?.cancel()
+    due = nil
+    let logs = LogQueue.pending()
+    guard let held = logs.map({ $0.date.addingTimeInterval(queuedLogHold) }).max() else { return }
+    let work = DispatchWorkItem { launch() }
+    due = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + max(held.timeIntervalSinceNow, 0) + 0.5, execute: work)
+  }
+
+  private static func launch() {
+    due = nil
+    guard !launching, !LogQueue.pending().isEmpty,
+      NSRunningApplication.runningApplications(withBundleIdentifier: mainAppID).isEmpty,
+      let url = appURL, let defaults = UserDefaults(suiteName: appGroup)
+    else { return }
+    launching = true
+    lastLaunch = Date()
+    defaults.set(Date().timeIntervalSince1970, forKey: FlushModeStamp.key)
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.activates = false
+    configuration.addsToRecentItems = false
+    NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
+      DispatchQueue.main.async {
+        launching = false
+        if error != nil { defaults.removeObject(forKey: FlushModeStamp.key) }
+      }
     }
   }
 }

@@ -9,9 +9,12 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- On the Mac, a log from the menu bar or a widget saves within seconds even while Penchant is closed: the menu bar
+  helper starts Penchant out of sight, with no window or Dock icon, to save it, and it quits again once done. Opening
+  Penchant meanwhile brings up the app as usual.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
   lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. Logs made while the
-  app is closed wait, marked "Saved — syncs when Penchant opens", and the app saves them when it next opens. Closing
+  app is closed are marked "Saved — syncs shortly". Closing
   the window no longer quits the app; click the Dock icon or Open Penchant to bring it back.
 - A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
   last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when

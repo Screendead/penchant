@@ -60,6 +60,14 @@ struct LastLog: Codable, Equatable {
 // Posted by whichever process changes the queue, heard by a running app.
 let queueChangedNotification = "com.screendead.penchant.log-queue-changed"
 
+#if os(macOS)
+  // The menu bar helper sets it, in seconds since 1970, just before it launches
+  // Penchant to flush (FlushMode in ios/Runner/WidgetBridge.swift).
+  enum FlushModeStamp {
+    static let key = "menubar.flushLaunchAt"
+  }
+#endif
+
 // queuedLogHold in lib/data/queued_log.dart: the app writes a log only once it
 // is this old, past the widget's Undo window.
 let queuedLogHold: TimeInterval = 7
@@ -139,9 +147,10 @@ enum LogQueue {
     return read().filter { $0.uid == uid }
   }
 
-  // Tells a running app at once (it flushes over its method channel), and on
-  // iOS asks for a background refresh, so a log made with the app closed can
-  // reach Firestore before the next launch. Only ever while logs are pending:
+  // Tells a running app at once (it flushes over its method channel). With the
+  // app closed, the Mac's menu bar helper hears it and launches the app hidden
+  // to flush, and iOS asks for a background refresh, so a log can reach
+  // Firestore before the next launch. Only ever while logs are pending:
   // an empty queue schedules nothing.
   static func requestFlush() {
     CFNotificationCenterPostNotification(
