@@ -25,6 +25,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
@@ -1344,6 +1345,43 @@ void main() {
       expect(wedge('h2'), findsNothing);
       expect(writes.writes.single.fields['viceID'], 'h2');
       expect(writes.writes.single.fields['quantity'], defaultQuantity);
+    });
+
+    testWidgets("the reminder's Log something opens the record dialog", (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: _today(habits(3), (_) => const <ViceActivity>[]),
+      );
+      // Pressed before Today was built, as from a cold start or signed out.
+      container.read(pendingNudgeLogProvider.notifier).request();
+      _useTallView(tester);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Scaffold(body: ViceTracker())),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<RecordNewActivityDialog>(
+              find.byType(RecordNewActivityDialog),
+            )
+            .initialViceID,
+        isNull,
+      );
+      expect(container.read(pendingNudgeLogProvider), isFalse);
+
+      // A press while something is open over Today closes it first.
+      container.read(pendingNudgeLogProvider.notifier).request();
+      await tester.pumpAndSettle();
+      expect(find.byType(RecordNewActivityDialog), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      container.dispose();
+      await tester.pump(const Duration(seconds: 10));
     });
 
     testWidgets('a hold on a wedge opens the record dialog with its habit', (

@@ -74,6 +74,7 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
                 onTap: () => _toggle(!settings.enabled),
                 trailing: Switch.adaptive(
                   value: settings.enabled,
+                  activeTrackColor: Theme.of(context).colorScheme.primary,
                   onChanged: _asking ? null : _toggle,
                 ),
               ),
