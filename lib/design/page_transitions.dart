@@ -38,3 +38,25 @@ class DialPageTransitionsBuilder extends PageTransitionsBuilder {
     );
   }
 }
+
+// A page route whose clock ignores the platform's Reduce Motion flag, which
+// scales a default controller to 5%. The Reduce motion setting decides instead:
+// DialPageTransitionsBuilder reads it through MediaQuery.
+class DialPageRoute<T> extends MaterialPageRoute<T> {
+  DialPageRoute({
+    required super.builder,
+    super.settings,
+    super.fullscreenDialog,
+  });
+
+  @override
+  AnimationController createAnimationController() {
+    return AnimationController(
+      duration: transitionDuration,
+      reverseDuration: reverseTransitionDuration,
+      debugLabel: debugLabel,
+      animationBehavior: AnimationBehavior.preserve,
+      vsync: navigator!,
+    );
+  }
+}

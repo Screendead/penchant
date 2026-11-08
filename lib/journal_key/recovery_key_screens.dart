@@ -7,6 +7,7 @@ import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/account_provider.dart';
@@ -562,7 +563,7 @@ class _RecoveryKeyEntryPageState extends ConsumerState<RecoveryKeyEntryPage> {
           onPressed: _busy
               ? null
               : () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                  DialPageRoute<void>(
                     builder: (_) => const RecoveryKeyLostPage(),
                   ),
                 ),
@@ -693,7 +694,7 @@ class RecoveryKeyGate extends ConsumerWidget {
     // Above the app's navigator: the entry page needs one of its own for its
     // dialogs and the lost-key page.
     return Navigator(
-      onGenerateRoute: (RouteSettings settings) => MaterialPageRoute<void>(
+      onGenerateRoute: (RouteSettings settings) => DialPageRoute<void>(
         settings: settings,
         builder: (_) => const RecoveryKeyEntryPage(),
       ),

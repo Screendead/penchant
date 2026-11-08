@@ -32,6 +32,7 @@ class _PillDropState extends State<PillDrop> with TickerProviderStateMixin {
   );
   late final AnimationController _fade = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     value: widget.shown ? 1 : 0,
   );
   late Widget _child = widget.child;

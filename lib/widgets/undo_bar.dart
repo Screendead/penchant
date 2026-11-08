@@ -65,6 +65,7 @@ class _UndoButtonState extends State<_UndoButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _countdown = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration: undoDuration,
   )..forward();
 

@@ -19,6 +19,9 @@ pull request titles (`gh pr list --state merged`).
 - "Log one" for Control Centre, the Lock Screen and the Action button (iOS 18), and for Siri and Shortcuts ("Log
   Coffee in Penchant").
 - The Last week and Log widgets on the Mac, in Notification Centre and on the desktop.
+- Settings has a Reduce motion row: Follow system, Reduce or Full, saved on each device. Reduce swaps travel and sweeps
+  for short fades; Full keeps the dial, log fan, tallies, Undo timer, status pills, the Trends chart's range morph and
+  page changes moving even when the system asks for less (sheets, dialogs and small fades still follow the system).
 - Settings › Reminder sends one quiet notification a day at a time you choose; it is off until you turn it on, and
   only then asks to send notifications. Press and hold it to log something, or tap Clean day to close it.
 - On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
