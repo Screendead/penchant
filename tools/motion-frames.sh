@@ -2,7 +2,8 @@
 # Renders 1f's motion scenes frame by frame (test/motion_frames_render_test.dart)
 # and writes, for each scene, <out>/<scene>.gif (real time), <scene>-slow.gif
 # (4x slower) and <scene>-sheet.png (one frame in two, 32 ms apart).
-# The snap sheet is cropped to the dial, since the drag moves it 12 pt at most.
+# The snap sheet is cropped to the dial, since the drag moves it 12 pt at most,
+# and the offline sheets to the top of the screen.
 #   tools/motion-frames.sh <out-dir>
 set -euo pipefail
 out=${1:?out dir}
@@ -18,7 +19,7 @@ for dir in "$frames"/*/; do
   ffmpeg -loglevel error -y -framerate 15 -i "$dir/frame-%03d.png" \
     -vf "scale=390:-1,$palette" "$out/$scene-slow.gif"
   crop=""
-  if [ "$scene" = snap ]; then crop="crop=390:330:0:20,"; fi
+  case "$scene" in snap) crop="crop=390:330:0:20," ;; offline*) crop="crop=390:200:0:0," ;; esac
   ffmpeg -loglevel error -y -framerate 1 -i "$dir/frame-%03d.png" \
     -vf "select='not(mod(n\,2))',${crop}scale=160:-1,tile=12x1:padding=4:color=gray" \
     -frames:v 1 "$out/$scene-sheet.png"
