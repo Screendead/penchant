@@ -151,10 +151,12 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    most logged in the last 30 days, overridable in the widget's settings); Undo after a widget or menu bar tap;
    Siri, Shortcuts and the Action button through the same App Intent; macOS desktop widgets from the same code.
    The idea file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
-   Status 2026-11-08: the Mac menu bar app is in review (`feat/mac-menu-bar`): the popover hosts the real Day Dial
-   in a second Flutter view on the main engine, and a click logs one with a 5-second Undo. Its runtime on a Mac is
-   unproven (the release build passes; CI's e2e is iOS only): the status item, the popover's first render, logging,
-   Undo, Cmd-1 to Cmd-9, closing the window and reopening it from the Dock.
+   Status 2026-11-08: the Mac menu bar app is a draft (`feat/mac-menu-bar`, #157), blocked at runtime. The popover
+   hosts a second `FlutterViewController` on the main engine, but at Flutter 3.44 the macOS engine accepts a second
+   controller only after `enableMultiView` (private), which has to run before any controller is attached. Then the
+   main window is no longer the implicit view, and the engine sends semantics (VoiceOver) to the implicit view alone
+   (`FlutterEngine.mm`, `update_semantics_callback2`). As built, opening the popover hits "The engine already has a
+   view controller for the implicit view." The options for the next step are in #157.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 
