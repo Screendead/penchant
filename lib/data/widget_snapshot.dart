@@ -44,6 +44,9 @@ Map<String, Object?> widgetSnapshot({
   final Map<String, List<num>> week = <String, List<num>>{
     for (final Vice v in shown) v.id: List<num>.filled(widgetWeekDays, 0),
   };
+  final Map<String, List<int>> weekEntries = <String, List<int>>{
+    for (final Vice v in shown) v.id: List<int>.filled(widgetWeekDays, 0),
+  };
   final Map<String, int> entries30 = <String, int>{
     for (final Vice v in shown) v.id: 0,
   };
@@ -59,6 +62,7 @@ Map<String, Object?> widgetSnapshot({
     if (!at.isBefore(weekStart)) {
       final int index = daysBetween(weekStart, at);
       week[a.viceID]![index] += a.measure;
+      weekEntries[a.viceID]![index] += 1;
     }
   }
 
@@ -83,6 +87,7 @@ Map<String, Object?> widgetSnapshot({
           'slot': marks[v.id]!.slot,
           'style': marks[v.id]!.style.name,
           'week': week[v.id],
+          'weekEntries': weekEntries[v.id],
           'entries30': entries30[v.id],
         },
     ],

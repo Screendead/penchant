@@ -88,6 +88,7 @@ void main() {
       ]);
       expect(habits[0]['week'], <num>[1, 0, 0, 0, 0, 0, 3]);
       expect(habits[1]['week'], <num>[0, 0, 0, 0.5, 0, 0, 0]);
+      expect(habits[0]['weekEntries'], <int>[1, 0, 0, 0, 0, 0, 2]);
       expect(habits[0]['unitOne'], 'drink');
       expect(habits[0]['unitOther'], 'drinks');
       expect(habits[0]['slot'], 0);

@@ -1,10 +1,14 @@
-# Adds the PenchantWidgets WidgetKit extension to ios/Runner.xcodeproj and gives Runner and the
-# extension the App Group entitlement. Run once on a clean project, with the xcodeproj gem that
-# Homebrew's CocoaPods bundles:
+# Adds the PenchantWidgets WidgetKit extension to ios/Runner.xcodeproj, gives Runner and the
+# extension the App Group entitlement, and adds Runner's WidgetBridge.swift. Run it on a project
+# without the target, with the xcodeproj gem that Homebrew's CocoaPods bundles:
 #   GEM_HOME=/opt/homebrew/Cellar/cocoapods/1.16.2_2/libexec ruby tools/add-widget-target.rb
+# To change the target's files, check out master's project.pbxproj and run it again.
 require 'xcodeproj'
 
 TEAM = '8N575942RT'
+SOURCES = %w[PenchantWidgets.swift Snapshot.swift Theme.swift WeekDial.swift LastWeekWidget.swift].freeze
+FONTS = %w[RedHatDisplay-Variable.ttf RedHatMono-Variable.ttf RedHatText-Variable.ttf].freeze
+
 project_path = File.expand_path('../ios/Runner.xcodeproj', __dir__)
 project = Xcodeproj::Project.open(project_path)
 runner = project.targets.find { |t| t.name == 'Runner' }
@@ -12,15 +16,24 @@ abort 'PenchantWidgets already exists' if project.targets.any? { |t| t.name == '
 
 ext = project.new_target(:app_extension, 'PenchantWidgets', :ios, '17.0')
 group = project.main_group.new_group('PenchantWidgets', 'PenchantWidgets')
-ext.add_file_references([group.new_reference('PenchantWidgets.swift')])
+ext.add_file_references(SOURCES.map { |f| group.new_reference(f) })
 group.new_reference('Info.plist')
 group.new_reference('PenchantWidgets.entitlements')
+# The app's fonts, referenced where Flutter keeps them rather than copied.
+fonts = group.new_group('Fonts', '../../assets/fonts')
+ext.add_resources(FONTS.map { |f| fonts.new_reference(f) })
 %w[WidgetKit SwiftUI].each { |f| ext.add_system_framework(f) }
+
+runner_group = project.main_group.find_subpath('Runner', false)
+runner.add_file_references([runner_group.new_reference('WidgetBridge.swift')])
+runner_group.new_reference('Runner.entitlements')
 
 xcconfig = ->(name) { project.files.find { |f| f.path == "Flutter/#{name}.xcconfig" } }
 runner.build_configurations.each do |runner_config|
   config = ext.build_configurations.find { |c| c.name == runner_config.name } ||
            ext.add_build_configuration(runner_config.name, runner_config.name == 'Debug' ? :debug : :release)
+  # Flutter's xcconfig carries FLUTTER_BUILD_NAME and FLUTTER_BUILD_NUMBER, which the extension's
+  # Info.plist takes as its version so that it always matches the app's.
   config.base_configuration_reference = runner_config.base_configuration_reference ||
                                         xcconfig.call(runner_config.name == 'Debug' ? 'Debug' : 'Release')
   config.build_settings.merge!(
@@ -39,7 +52,6 @@ runner.build_configurations.each do |runner_config|
   )
   runner_config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'Runner/Runner.entitlements'
 end
-project.main_group.find_subpath('Runner', false)&.new_reference('Runner.entitlements')
 
 runner.add_dependency(ext)
 embed = project.new(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase)
