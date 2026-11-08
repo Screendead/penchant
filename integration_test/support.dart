@@ -396,10 +396,13 @@ Future<void> recordActivity(
     of: find.byType(RecordNewActivityDialog),
     matching: find.byType(DropdownButtonFormField<String>),
   );
-  if (find
-      .descendant(of: chosen, matching: find.text(viceName))
-      .evaluate()
-      .isEmpty) {
+  // A held wedge titles the sheet with its habit and shows no dropdown; More
+  // opens it with the dropdown and no habit chosen.
+  if (chosen.evaluate().isNotEmpty &&
+      find
+          .descendant(of: chosen, matching: find.text(viceName))
+          .evaluate()
+          .isEmpty) {
     await tap(tester, chosen);
     await tap(tester, find.text(viceName).last);
   }

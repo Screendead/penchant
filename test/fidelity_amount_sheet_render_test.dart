@@ -51,7 +51,18 @@ void main() {
     createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
     archived: false,
   );
-  final List<Vice> habits = <Vice>[coffee, fakeVice('tea', name: 'Tea')];
+  // Coffee is the oldest habit, so it takes the first mark, as in the mock-up.
+  final List<Vice> habits = <Vice>[
+    coffee,
+    Vice(
+      id: 'tea',
+      name: 'Tea',
+      unit: Unit.drink,
+      ownerID: ownerID,
+      createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 2)),
+      archived: false,
+    ),
+  ];
 
   for (final Brightness brightness in Brightness.values) {
     for (final String name in <String>['new', 'edit']) {

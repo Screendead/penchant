@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -203,21 +205,37 @@ class _RecordNewActivityDialogState
     });
   }
 
-  String _submitLabel(Vice? vice) {
+  // The button's label in runs; the numbers in a run marked true set in Mono.
+  List<(String, bool)> _submitLabel(Vice? vice) {
     final num typed = parseAmount(quantityController.text) ?? 0;
     final DateTime? at = ActivityDateField.format.tryParse(dateController.text);
-    final String amount = vice == null
-        ? 'Record'
-        : 'Log ${vice.unit.label(typed)}';
+    final List<(String, bool)> runs = vice == null
+        ? <(String, bool)>[('Record', false)]
+        : <(String, bool)>[
+            ('Log ', false),
+            (formatCount(typed), true),
+            (' ${vice.unit.nameFor(typed)}', false),
+          ];
     if (at == null) {
-      return amount;
+      return runs;
     }
-    return '$amount at ${formatTime(at, alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}';
+    return <(String, bool)>[
+      ...runs,
+      (' at ', false),
+      (
+        formatTime(
+          at,
+          alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+        ),
+        true,
+      ),
+    ];
   }
 
   Widget _header(BuildContext context, List<Vice> vices, Vice? chosen) {
     final List<Vice> all = ref.watch(viceListProvider).value ?? vices;
     final Widget close = CircleButton(
+      flat: true,
       icon: DialGlyph.close,
       tooltip: 'Close',
       onPressed: loading ? null : () => Navigator.of(context).pop(),
@@ -362,10 +380,12 @@ class _RecordNewActivityDialogState
                           dateController,
                         ]),
                         builder: (BuildContext context, _) {
-                          final String label = _submitLabel(chosen);
+                          final List<(String, bool)> runs = _submitLabel(
+                            chosen,
+                          );
                           return Semantics(
                             label: RecordNewActivityDialog.submitLabel,
-                            hint: label,
+                            hint: runs.map(((String, bool) r) => r.$1).join(),
                             excludeSemantics: true,
                             button: true,
                             enabled: !loading,
@@ -373,8 +393,21 @@ class _RecordNewActivityDialogState
                             child: FilledButton(
                               key: RecordNewActivityDialog.submitKey,
                               onPressed: loading ? null : _record,
-                              child: Text(
-                                label,
+                              child: Text.rich(
+                                TextSpan(
+                                  children: <InlineSpan>[
+                                    for (final (String text, bool mono) in runs)
+                                      TextSpan(
+                                        text: text,
+                                        style: mono
+                                            ? DialTypeScale.monoM.copyWith(
+                                                fontSize: 17,
+                                                height: 1,
+                                              )
+                                            : null,
+                                      ),
+                                  ],
+                                ),
                                 style: DialTypeScale.label.copyWith(
                                   fontSize: 16,
                                 ),
@@ -427,7 +460,12 @@ class _SheetFrame extends StatelessWidget {
           22,
           12,
           22,
-          22 + MediaQuery.viewInsetsOf(context).bottom,
+          // Clear of the home indicator, as the mock-up's sheet is, or of
+          // the keyboard while it is up (the padding drops to 0 then).
+          math.max(
+            MediaQuery.viewInsetsOf(context).bottom + 22,
+            math.max(MediaQuery.paddingOf(context).bottom, 22),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
