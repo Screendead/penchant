@@ -10,13 +10,12 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
+import 'package:tracker/auth_form.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/register.dart';
 import 'package:tracker/settings.dart';
-import 'package:tracker/sign_in.dart';
 
 import 'fake_account.dart';
 import 'fake_writes.dart';
@@ -113,11 +112,11 @@ void main() {
       tester,
     ) async {
       await _pump(tester, FakeAccount(), const Authenticate());
-      expect(_hints(tester, SignIn, 0), <String>[
+      expect(_hints(tester, AuthForm, 0), <String>[
         AutofillHints.username,
         AutofillHints.email,
       ]);
-      expect(_hints(tester, SignIn, 1), <String>[AutofillHints.password]);
+      expect(_hints(tester, AuthForm, 1), <String>[AutofillHints.password]);
     });
 
     testWidgets('a successful sign-in commits the AutoFill context so iOS '
@@ -224,12 +223,12 @@ void main() {
     await _pump(tester, FakeAccount(), const Authenticate());
     await tester.tap(find.byKey(Authenticate.registerTab));
     await tester.pumpAndSettle();
-    expect(_hints(tester, Register, 0), <String>[
+    expect(_hints(tester, AuthForm, 0), <String>[
       AutofillHints.username,
       AutofillHints.email,
     ]);
-    expect(_hints(tester, Register, 1), <String>[AutofillHints.newPassword]);
-    expect(_hints(tester, Register, 2), <String>[AutofillHints.newPassword]);
+    expect(_hints(tester, AuthForm, 1), <String>[AutofillHints.newPassword]);
+    expect(_hints(tester, AuthForm, 2), <String>[AutofillHints.newPassword]);
   });
 
   testWidgets('a registration Firebase refuses says why', (tester) async {

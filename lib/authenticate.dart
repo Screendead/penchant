@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
+import 'package:tracker/auth_form.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
-import 'package:tracker/register.dart';
-import 'package:tracker/sign_in.dart';
 import 'package:tracker/widgets/auth_parts.dart';
 import 'package:tracker/widgets/penchant_mark.dart';
 import 'package:tracker/widgets/settings_card.dart';
@@ -33,9 +32,6 @@ class _AuthenticateState extends State<Authenticate> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Color muted = DialColors.of(context).muted;
-    final Duration fade = MediaQuery.disableAnimationsOf(context)
-        ? DialMotion.reducedFade
-        : const Duration(milliseconds: 260);
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -98,12 +94,7 @@ class _AuthenticateState extends State<Authenticate> {
                                     setState(() => _register = register),
                               ),
                               const SizedBox(height: 18),
-                              AnimatedSwitcher(
-                                duration: fade,
-                                child: _register
-                                    ? const Register(key: ValueKey<bool>(true))
-                                    : const SignIn(key: ValueKey<bool>(false)),
-                              ),
+                              AuthForm(register: _register),
                               const _GuestStart(),
                             ],
                           ),
@@ -152,7 +143,7 @@ class _AuthSegments extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final Duration slide = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
-        : const Duration(milliseconds: 260);
+        : authSwitchDuration;
     return Container(
       padding: const EdgeInsets.all(DialSpace.xxs),
       decoration: BoxDecoration(
@@ -164,7 +155,7 @@ class _AuthSegments extends StatelessWidget {
           Positioned.fill(
             child: AnimatedAlign(
               duration: slide,
-              curve: Curves.easeOutCubic,
+              curve: authSwitchCurve,
               alignment: register
                   ? Alignment.centerRight
                   : Alignment.centerLeft,

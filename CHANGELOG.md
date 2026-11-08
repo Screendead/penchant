@@ -18,6 +18,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Switching between Sign in and Create account is smooth: Email and Password stay put and keep what you typed,
+  while the password confirmation and checklist ease in or out in step with the tab instead of the screen jumping.
 - iOS AutoFill fills the email as well as the password on the sign-in screen, and offers to save the email and
   password after you sign in, so a changed email reaches the saved password.
 

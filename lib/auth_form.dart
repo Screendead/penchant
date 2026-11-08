@@ -11,51 +11,100 @@ import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/widgets/auth_parts.dart';
 
-class SignIn extends ConsumerStatefulWidget {
-  const SignIn({super.key});
+// Signing in and creating an account share one form, as in the mock-up, so
+// the Email and Password fields hold still (and keep what was typed) while
+// the confirmation and checklist, or Forgot password, come and go.
+class AuthForm extends ConsumerStatefulWidget {
+  const AuthForm({super.key, required this.register});
+
+  final bool register;
 
   @override
-  ConsumerState<SignIn> createState() => _SignInState();
+  ConsumerState<AuthForm> createState() => _AuthFormState();
 }
 
-class _SignInState extends ConsumerState<SignIn> {
+class _AuthFormState extends ConsumerState<AuthForm> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  bool passwordIsObscured = true;
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   bool? emailIsValid;
-  bool hasPassword = false;
+  Map<String, bool> checks = PasswordRules.check('', '');
   bool busy = false;
   String? error;
 
-  bool get isValid => (emailIsValid ?? false) && hasPassword && !busy;
+  bool get isValid =>
+      (emailIsValid ?? false) &&
+      (widget.register
+          ? checks.values.every((bool ok) => ok)
+          : passwordController.text.isNotEmpty) &&
+      !busy;
+
+  @override
+  void didUpdateWidget(AuthForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.register != widget.register) {
+      error = null;
+    }
+  }
 
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _signIn() async {
+  void _recheck() {
+    setState(() {
+      checks = PasswordRules.check(
+        passwordController.text,
+        confirmPasswordController.text,
+      );
+    });
+  }
+
+  void _submitIfValid() {
+    if (isValid) {
+      _submit();
+    }
+  }
+
+  Future<void> _submit() async {
     if (!formKey.currentState!.validate()) {
       setState(() => error = null);
       return;
     }
+    final bool register = widget.register;
     setState(() {
       busy = true;
       error = null;
     });
     try {
-      await ref
-          .read(accountProvider)
-          .signIn(
-            email: emailController.text.trim(),
-            password: passwordController.text,
-          );
-      TextInput.finishAutofillContext();
+      if (register) {
+        await ref
+            .read(accountProvider)
+            .register(
+              email: emailController.text.trim(),
+              password: passwordController.text,
+            );
+      } else {
+        await ref
+            .read(accountProvider)
+            .signIn(
+              email: emailController.text.trim(),
+              password: passwordController.text,
+            );
+        TextInput.finishAutofillContext();
+      }
     } catch (e, stack) {
-      reportError(e, stack, context: 'while signing in');
+      reportError(
+        e,
+        stack,
+        context: register ? 'while registering' : 'while signing in',
+      );
       if (mounted) {
         setState(() => error = authErrorMessage(e));
       }
@@ -91,6 +140,7 @@ class _SignInState extends ConsumerState<SignIn> {
 
   @override
   Widget build(BuildContext context) {
+    final bool register = widget.register;
     return AutofillGroup(
       child: Form(
         key: formKey,
@@ -122,33 +172,56 @@ class _SignInState extends ConsumerState<SignIn> {
               hint: 'Password',
               glyph: DialGlyph.lock,
               obscurable: true,
-              autofillHints: const <String>[AutofillHints.password],
-              textInputAction: TextInputAction.done,
-              onChanged: (String value) {
-                setState(() => hasPassword = value.isNotEmpty);
-              },
-              onSubmitted: (_) {
-                if (isValid) {
-                  _signIn();
-                }
-              },
+              autofillHints: register
+                  ? const <String>[AutofillHints.newPassword]
+                  : const <String>[AutofillHints.password],
+              textInputAction: register
+                  ? TextInputAction.next
+                  : TextInputAction.done,
+              onChanged: (_) => _recheck(),
+              onSubmitted: register ? null : (_) => _submitIfValid(),
+            ),
+            AuthReveal(
+              shown: register,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const SizedBox(height: 10),
+                  AuthField(
+                    controller: confirmPasswordController,
+                    hint: 'Confirm password',
+                    glyph: DialGlyph.lock,
+                    obscurable: true,
+                    autofillHints: const <String>[AutofillHints.newPassword],
+                    textInputAction: TextInputAction.done,
+                    onChanged: (_) => _recheck(),
+                    onSubmitted: (_) => _submitIfValid(),
+                  ),
+                  PasswordChecklist(checks: checks),
+                ],
+              ),
             ),
             if (error != null) AuthErrorPill(error!),
             AuthPrimaryButton(
-              label: 'Sign in',
+              label: register ? 'Create account' : 'Sign in',
               busy: busy,
-              onPressed: isValid ? _signIn : null,
+              onPressed: isValid ? _submit : null,
             ),
-            const SizedBox(height: DialSpace.xs),
-            Center(
-              child: TextButton(
-                onPressed: busy ? null : _resetPassword,
-                child: const Text(
-                  AccountCopy.forgotPassword,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    decoration: TextDecoration.underline,
+            AuthReveal(
+              shown: !register,
+              child: Padding(
+                padding: const EdgeInsets.only(top: DialSpace.xs),
+                child: Center(
+                  child: TextButton(
+                    onPressed: busy ? null : _resetPassword,
+                    child: const Text(
+                      AccountCopy.forgotPassword,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ),
               ),
