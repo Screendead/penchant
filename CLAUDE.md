@@ -57,7 +57,6 @@ flutter run                      # device picker; -d macos for the desktop build
 dart analyze --fatal-infos --fatal-warnings  # what CI runs; flutter analyze omits riverpod_lint
 dart format --output=none --set-exit-if-changed lib test integration_test  # CI's format check; not `.`, since build/ holds plugin copies
 flutter test
-flutter test test/widget_test.dart --plain-name 'Material app smoke test'
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
 flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
@@ -191,7 +190,7 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
 `firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
-(test targets `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
+(the macOS test target `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
 `macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
 **Native dependencies come from Swift Package Manager; there is no CocoaPods.** Every plugin with native code ships
@@ -490,6 +489,22 @@ the header's Synced/Syncing pill and the menu's footer: `TrackerWrites` reports 
 tracker calls `waitForPendingWrites()` again after each (a wait covers only writes issued before it, earlier
 sessions' included), so it says Synced only once every write has been acknowledged. The day's "not yet synced" note
 shows only offline.
+
+**Client API key.** One Firebase client key serves iOS and macOS, and it appears twice by design: in each
+`GoogleService-Info.plist` (which the native SDK reads before Dart runs) and in `lib/firebase_options.dart`
+(FlutterFire's output, which Dart's `initializeApp` reads). Neither copy can go without breaking one side, and
+regenerating either file restores the key. It is a public identifier, not a secret: Firebase says keys for its
+services "do not need to be treated as secrets" and are "OK to include in code or checked-in config files", on
+the condition that the key is restricted to Firebase APIs and the app's setup follows the page's guidelines
+(https://firebase.google.com/docs/projects/api-keys). Today the protection is Firestore rules. App Check is
+activated but enforced nowhere (see Emulator wiring), so it adds protection only once App Attest tokens are
+accepted and enforcement is on. The key's own restrictions live in the Google Cloud console of the production
+project, which Claude does not touch, and repository files cannot show them; they are not yet set, a call for
+Jack. Recommended there (Google Cloud, https://docs.cloud.google.com/docs/authentication/api-keys):
+an iOS application restriction to `com.screendead.penchant`, and an API restriction to the Firebase APIs the app
+calls; Google notes the bundle-ID check is easy to bypass, so it limits casual reuse only. The key of the earlier
+`com.screendead.tracker.tracker` registration stays valid until revoked there. Never commit a service-account
+file or `privateKey.json`; `admin/.gitignore` and the root `.gitignore` exclude them.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the
 `USE_FIREBASE_EMULATORS` dart-define it is the original `initializeApp` call against
