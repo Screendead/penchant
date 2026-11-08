@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'dart:ui' show Offset;
+import 'dart:ui' show Offset, Path, PathOperation, Radius, Rect;
 
 // The Day Dial's face in the units of the design's 320-unit viewBox, centred
 // on the origin; a painter scales by its side over [DialFace.side].
@@ -27,6 +27,9 @@ abstract final class DialFace {
   static const double beadHitSlop = 6;
   // At this many entries or fewer each bead carries its time.
   static const int timedBeads = 4;
+  // Above this many entries in a day, an hour holding more than one entry
+  // draws them as one arc labelled with its count.
+  static const int mergeAbove = 48;
 }
 
 // A spoke's opacity, as a fraction of the spoke token's, for [clear] from 0
@@ -189,4 +192,124 @@ class _Slot {
         ? 1
         : -1,
   );
+}
+
+// The hours, 0 to 23, whose entries merge into one arc: on a day of more than
+// [DialFace.mergeAbove] entries, each hour that holds more than one.
+Set<int> denseHours(Iterable<double> minutes) {
+  final List<double> all = minutes.toList();
+  if (all.length <= DialFace.mergeAbove) {
+    return const <int>{};
+  }
+  final Map<int, int> perHour = <int, int>{};
+  for (final double minute in all) {
+    final int hour = minute ~/ 60;
+    perHour[hour] = (perHour[hour] ?? 0) + 1;
+  }
+  return <int>{
+    for (final MapEntry<int, int>(:key, :value) in perHour.entries)
+      if (value > 1) key,
+  };
+}
+
+// An hour's arc on the first track, a bead wide, with round ends. [start] and
+// [end] are the angles of its ends' centres, inset so neighbouring hours'
+// arcs stay [DialFace.beadGap] apart.
+class HourArc {
+  HourArc(this.hour)
+    : start = dialAngle(hour * 60.0) + _inset,
+      end = dialAngle((hour + 1) * 60.0) - _inset;
+
+  static const double track = 100;
+  static const double half = DialFace.beadBase;
+  static const double _inset = (half + DialFace.beadGap / 2) / track;
+  // The angle a round end adds beyond its centre.
+  static const double _cap = half / track;
+
+  final int hour;
+  final double start;
+  final double end;
+
+  double get middle => (start + end) / 2;
+
+  // The arc's outline at [radius] from the centre and [width] across, both
+  // scaled from [track] and [half] as the dial contracts or the arc springs.
+  Path outline({double radius = track, double width = half}) {
+    final Path path = Path()..moveTo(0, 0);
+    if (radius <= 0 || width <= 0) {
+      return path;
+    }
+    final Offset outerStart = dialPoint(start, radius + width);
+    return Path()
+      ..moveTo(outerStart.dx, outerStart.dy)
+      ..arcTo(
+        Rect.fromCircle(center: Offset.zero, radius: radius + width),
+        start,
+        end - start,
+        false,
+      )
+      ..arcToPoint(
+        dialPoint(end, radius - width),
+        radius: Radius.circular(width),
+      )
+      ..arcTo(
+        Rect.fromCircle(center: Offset.zero, radius: radius - width),
+        end,
+        start - end,
+        false,
+      )
+      ..arcToPoint(outerStart, radius: Radius.circular(width))
+      ..close();
+  }
+
+  // The arc cut into consecutive pieces in proportion to [counts], from its
+  // start clockwise.
+  List<Path> shares(
+    List<int> counts, {
+    double radius = track,
+    double width = half,
+  }) {
+    final Path whole = outline(radius: radius, width: width);
+    final int total = counts.fold(0, (int sum, int n) => sum + n);
+    if (total == 0 || radius <= 0 || width <= 0) {
+      return <Path>[for (final int _ in counts) Path()];
+    }
+    final double from = start - _cap;
+    final double span = end + _cap - from;
+    final double reach = (radius + width) * 2;
+    final List<Path> out = <Path>[];
+    double at = from;
+    for (final int n in counts) {
+      final double next = at + span * n / total;
+      final Offset a = dialPoint(at, reach);
+      final Path wedge = Path()
+        ..moveTo(0, 0)
+        ..lineTo(a.dx, a.dy)
+        ..arcTo(
+          Rect.fromCircle(center: Offset.zero, radius: reach),
+          at,
+          next - at,
+          false,
+        )
+        ..close();
+      out.add(Path.combine(PathOperation.intersect, whole, wedge));
+      at = next;
+    }
+    return out;
+  }
+
+  // The minute of the day a point on the face points at, for a tap.
+  static double minuteAt(Offset point) {
+    final double turn = ((atan2(point.dy, point.dx) + pi / 2) / (2 * pi)) % 1;
+    return turn * minutesPerDay;
+  }
+
+  // Whether [point], in face units, is on the arc, give or take [slop].
+  bool contains(Offset point, double slop) {
+    if ((point.distance - track).abs() > half + slop) {
+      return false;
+    }
+    final double off = (atan2(point.dy, point.dx) - middle + 3 * pi) % (2 * pi);
+    return (off - pi).abs() <= (end - start) / 2 + (half + slop) / track;
+  }
 }

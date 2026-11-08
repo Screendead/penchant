@@ -124,20 +124,81 @@ class DayDial extends ConsumerStatefulWidget {
     };
   }
 
+  // Where each bead sits, by id; an entry merged into its hour's arc has none.
   static Map<String, BeadPlacement> layout(
     List<DialEntry> entries, {
     Map<String, double> stored = const <String, double>{},
   }) {
     final Map<String, double> typical = typicals(entries, stored: stored);
+    final Set<int> dense = denseHours(<double>[
+      for (final DialEntry e in entries) minuteOfDay(e.at),
+    ]);
     return layoutBeads(<DialBeadInput>[
       for (final DialEntry e in entries)
-        DialBeadInput(
-          id: e.id,
-          habit: e.vice.id,
-          minute: minuteOfDay(e.at),
-          radius: beadRadius(e.quantity, typical[e.vice.id]!),
-        ),
+        if (!dense.contains(e.at.hour))
+          DialBeadInput(
+            id: e.id,
+            habit: e.vice.id,
+            minute: minuteOfDay(e.at),
+            radius: beadRadius(e.quantity, typical[e.vice.id]!),
+          ),
     ]);
+  }
+
+  // The entries of each hour drawn as one arc, by hour, in time order.
+  static Map<int, List<DialEntry>> denseHourEntries(List<DialEntry> entries) {
+    final Set<int> dense = denseHours(<double>[
+      for (final DialEntry e in entries) minuteOfDay(e.at),
+    ]);
+    final Map<int, List<DialEntry>> byHour = <int, List<DialEntry>>{};
+    for (final DialEntry e in entries) {
+      if (dense.contains(e.at.hour)) {
+        (byHour[e.at.hour] ??= <DialEntry>[]).add(e);
+      }
+    }
+    for (final List<DialEntry> hour in byHour.values) {
+      hour.sort((DialEntry a, DialEntry b) => a.at.compareTo(b.at));
+    }
+    return byHour;
+  }
+
+  // An arc's habits in the face's habit order, each with its entry count and
+  // total.
+  static List<({Vice vice, HabitMark mark, int count, num total})> arcShares(
+    List<DialEntry> hour,
+  ) {
+    final Map<String, ({Vice vice, HabitMark mark, int count, num total})>
+    byHabit = <String, ({Vice vice, HabitMark mark, int count, num total})>{};
+    for (final DialEntry e in hour) {
+      final ({Vice vice, HabitMark mark, int count, num total})? seen =
+          byHabit[e.vice.id];
+      byHabit[e.vice.id] = (
+        vice: e.vice,
+        mark: e.mark,
+        count: (seen?.count ?? 0) + 1,
+        total: (seen?.total ?? 0) + e.quantity,
+      );
+    }
+    return byHabit.values.toList()
+      ..sort((a, b) => a.mark.creationIndex.compareTo(b.mark.creationIndex));
+  }
+
+  static String arcLabel(
+    int hour,
+    List<DialEntry> entries, {
+    required bool alwaysUse24Hour,
+  }) {
+    final DateTime at = entries.first.at;
+    String time(int h) => formatTime(
+      DateTime(at.year, at.month, at.day, h),
+      alwaysUse24HourFormat: alwaysUse24Hour,
+    );
+    final String habits = <String>[
+      for (final s in arcShares(entries))
+        '${s.vice.name} ${s.vice.unit.label(s.total)}',
+    ].join(', ');
+    return '${formatCount(entries.length)} entries from ${time(hour)} to '
+        '${time(hour + 1)}: $habits';
   }
 
   @override
@@ -382,10 +443,13 @@ class _DayDialState extends ConsumerState<DayDial>
       return;
     }
     final double scale = box.size.shortestSide / DialFace.side;
-    final BeadPlacement place = DayDial.layout(
-      widget.entries!,
-      stored: widget.storedTypicals,
-    )[id]!;
+    final BeadPlacement place =
+        DayDial.layout(widget.entries!, stored: widget.storedTypicals)[id] ??
+        BeadPlacement(
+          angle: HourArc(entry.at.hour).middle,
+          track: HourArc.track,
+          radius: HourArc.half,
+        );
     final Offset to = box.localToGlobal(
       box.size.center(Offset.zero) + place.position * scale,
     );
@@ -537,11 +601,30 @@ class _DayDialState extends ConsumerState<DayDial>
     DialEntry? nearest;
     double best = double.infinity;
     for (final DialEntry e in entries) {
-      final BeadPlacement p = layout[e.id]!;
+      final BeadPlacement? p = layout[e.id];
+      if (p == null) {
+        continue;
+      }
       final double d = (p.position - local).distance;
       if (d <= _hitRadius(p.radius, scale) / scale && d < best) {
         best = d;
         nearest = e;
+      }
+    }
+    if (nearest == null) {
+      // A tap on an arc opens the entry nearest the time tapped.
+      for (final MapEntry<int, List<DialEntry>>(key: hour, value: inHour)
+          in DayDial.denseHourEntries(entries).entries) {
+        if (HourArc(hour).contains(local, _hitRadius(0, scale) / scale)) {
+          final double minute = HourArc.minuteAt(local);
+          nearest = inHour.reduce(
+            (DialEntry a, DialEntry b) =>
+                (minuteOfDay(a.at) - minute).abs() <=
+                    (minuteOfDay(b.at) - minute).abs()
+                ? a
+                : b,
+          );
+        }
       }
     }
     if (nearest != null) {
@@ -610,6 +693,18 @@ class _DayDialState extends ConsumerState<DayDial>
               ),
         ];
 
+        final List<_PlacedArc> arcs = <_PlacedArc>[
+          for (final MapEntry<int, List<DialEntry>>(key: hour, value: inHour)
+              in DayDial.denseHourEntries(shown).entries)
+            _PlacedArc(
+              arc: HourArc(hour),
+              entries: inHour,
+              contract: contract,
+              scale: contracting ? 1 : _arcScale(hour, inHour),
+              opacity: contracting ? 1 : _beadOpacity('hour-$hour'),
+            ),
+        ];
+
         final Widget face = RepaintBoundary(
           child: CustomPaint(
             size: size,
@@ -645,6 +740,7 @@ class _DayDialState extends ConsumerState<DayDial>
             size: size,
             painter: _BeadsPainter(
               beads: beads,
+              arcs: arcs,
               colors: colors,
               surface: scheme.surfaceContainerLow,
               labelStyle: type.dialTime,
@@ -702,6 +798,8 @@ class _DayDialState extends ConsumerState<DayDial>
                     ExcludeSemantics(child: beadLayer),
                     for (final _PlacedBead b in beads)
                       _beadTarget(b, scale, alwaysUse24Hour),
+                    for (final _PlacedArc a in arcs)
+                      _arcTarget(a, centre, scale, alwaysUse24Hour),
                     Positioned.fromRect(
                       rect: Rect.fromCircle(
                         center: centre,
@@ -739,6 +837,58 @@ class _DayDialState extends ConsumerState<DayDial>
       return 1;
     }
     return DialMotion.enter.transform(k.clamp(0, 1));
+  }
+
+  // An arc pops in with the sweep as a bead does, and springs when one of
+  // its entries lands.
+  double _arcScale(int hour, List<DialEntry> inHour) {
+    final double popped = _beadScale('hour-$hour', HourArc(hour).start);
+    Duration? landed;
+    for (final DialEntry e in inHour) {
+      final Duration? at = _landAt[e.id];
+      if (at != null && (landed == null || at > landed)) {
+        landed = at;
+      }
+    }
+    if (landed != null && _t - landed < _springTail) {
+      return SpringSimulation(
+        _spring,
+        1.25,
+        1,
+        0,
+      ).x((_t - landed).inMicroseconds / 1e6);
+    }
+    return popped;
+  }
+
+  // An arc is one node for a screen reader, naming the hour and what it
+  // holds; its entries are in the tallies and the history.
+  Widget _arcTarget(
+    _PlacedArc a,
+    Offset centre,
+    double scale,
+    bool alwaysUse24Hour,
+  ) {
+    final Rect bounds = a.arc.outline().getBounds().inflate(
+      DialFace.beadHitSlop,
+    );
+    return Positioned.fromRect(
+      key: ValueKey<String>('arc-${a.arc.hour}'),
+      rect: Rect.fromLTRB(
+        centre.dx + bounds.left * scale,
+        centre.dy + bounds.top * scale,
+        centre.dx + bounds.right * scale,
+        centre.dy + bounds.bottom * scale,
+      ),
+      child: Semantics(
+        label: DayDial.arcLabel(
+          a.arc.hour,
+          a.entries,
+          alwaysUse24Hour: alwaysUse24Hour,
+        ),
+        child: const SizedBox.expand(),
+      ),
+    );
   }
 
   // Each bead is its own button for a screen reader; a pointer's tap goes to
@@ -862,6 +1012,24 @@ class _PlacedBead {
   final double opacity;
   final double fill;
   final ({String text, ({Offset offset, int align}) at})? label;
+}
+
+class _PlacedArc {
+  const _PlacedArc({
+    required this.arc,
+    required this.entries,
+    required this.contract,
+    required this.scale,
+    required this.opacity,
+  });
+
+  final HourArc arc;
+  final List<DialEntry> entries;
+  // The day-change contraction toward the hub, 1 at rest.
+  final double contract;
+  // The pop or landing spring of its width.
+  final double scale;
+  final double opacity;
 }
 
 class _FacePainter extends CustomPainter {
@@ -1074,6 +1242,7 @@ class _HandPainter extends CustomPainter {
 class _BeadsPainter extends CustomPainter {
   _BeadsPainter({
     required this.beads,
+    required this.arcs,
     required this.colors,
     required this.surface,
     required this.labelStyle,
@@ -1083,6 +1252,7 @@ class _BeadsPainter extends CustomPainter {
   }) : super(repaint: spin);
 
   final List<_PlacedBead> beads;
+  final List<_PlacedArc> arcs;
   final DialColors colors;
   final Color surface;
   final TextStyle labelStyle;
@@ -1131,16 +1301,62 @@ class _BeadsPainter extends CustomPainter {
         canvas.restore();
       }
     }
+    final Offset centre = size.center(Offset.zero);
+    for (final _PlacedArc a in arcs) {
+      if (a.scale <= 0 || a.opacity <= 0) {
+        continue;
+      }
+      canvas
+        ..save()
+        ..translate(centre.dx, centre.dy)
+        ..scale(scale);
+      if (a.opacity < 1) {
+        canvas.saveLayer(
+          a.arc.outline().getBounds().inflate(8),
+          Paint()..color = surface.withValues(alpha: a.opacity),
+        );
+      }
+      final List<({Vice vice, HabitMark mark, int count, num total})> shares =
+          DayDial.arcShares(a.entries);
+      final List<Path> pieces = a.arc.shares(
+        <int>[
+          for (final ({Vice vice, HabitMark mark, int count, num total}) s
+              in shares)
+            s.count,
+        ],
+        radius: HourArc.track * a.contract,
+        width: HourArc.half * a.scale * a.contract,
+      );
+      for (int i = 0; i < shares.length; i++) {
+        paintHabitBand(canvas, pieces[i], shares[i].mark, colors);
+      }
+      if (a.opacity < 1) {
+        canvas.restore();
+      }
+      canvas.restore();
+    }
     for (final _PlacedBead b in beads) {
       if (b.label case final label? when b.scale > 0.5) {
-        _paintLabel(canvas, b, label.text, label.at, scale);
+        _paintLabel(canvas, b.centre, label.text, label.at, scale);
+      }
+    }
+    for (final _PlacedArc a in arcs) {
+      if (a.scale > 0.5 && a.contract == 1) {
+        final double angle = a.arc.middle;
+        _paintLabel(
+          canvas,
+          centre + dialPoint(angle, HourArc.track) * scale,
+          formatCount(a.entries.length),
+          beadLabelOffset(angle, HourArc.half),
+          scale,
+        );
       }
     }
   }
 
   void _paintLabel(
     Canvas canvas,
-    _PlacedBead b,
+    Offset centre,
     String text,
     ({Offset offset, int align}) at,
     double scale,
@@ -1163,7 +1379,7 @@ class _BeadsPainter extends CustomPainter {
         ..color = surface,
     );
     final TextPainter label = layOut(null);
-    final Offset anchor = b.centre + at.offset * scale;
+    final Offset anchor = centre + at.offset * scale;
     final double dx = switch (at.align) {
       0 => -label.width / 2,
       1 => 0,
