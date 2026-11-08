@@ -336,7 +336,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                   child: dockLog(
                     ListView(
                       // Under a docked Log button the list ends at its height.
-                      shrinkWrap: split,
+                      shrinkWrap: split && logButton != null,
                       // The mock-up's spacing: 6 above the day row and the
                       // dial, 10 above the tallies.
                       padding: EdgeInsets.fromLTRB(

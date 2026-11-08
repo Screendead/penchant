@@ -84,31 +84,39 @@ class _HomepageState extends ConsumerState<Homepage> {
   }
 }
 
-class TodayHeader extends StatelessWidget {
+class TodayHeader extends ConsumerWidget {
   const TodayHeader({super.key});
 
-  // In the split view the pill sits on Trends' title row instead.
+  // In the split view the pill sits on Trends' title row, which is absent
+  // when the vice list is empty or failed. While it loads the pill shows
+  // nowhere, so it doesn't jump from here to the pane at launch.
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
-    child: Padding(
-      padding: const EdgeInsets.only(left: 14, right: 16),
-      child: Row(
-        children: <Widget>[
-          const Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: _AppMenu(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<Vice>> vices = ref.watch(viceListProvider);
+    final bool noPane =
+        vices.hasError || (vices.hasValue && vices.requireValue.isEmpty);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 14, right: 16),
+        child: Row(
+          children: <Widget>[
+            const Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _AppMenu(),
+              ),
             ),
-          ),
-          if (MediaQuery.sizeOf(context).width < ViceTracker.splitWidth) ...[
-            const SizedBox(width: DialSpace.xs),
-            const SyncPill(),
+            if (MediaQuery.sizeOf(context).width < ViceTracker.splitWidth ||
+                noPane) ...[
+              const SizedBox(width: DialSpace.xs),
+              const SyncPill(),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _AppMenu extends StatelessWidget {

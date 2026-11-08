@@ -101,13 +101,16 @@ class _Synced extends SyncTracker {
 }
 
 // Lays out the window at [size] (in points) and pumps the signed-in app into
-// it, inside [frame] when given.
+// it, inside [frame] when given, with [vices] in place of [macHabits]. A
+// loading list spins forever, so that pump doesn't wait for it to settle.
 Future<void> pumpMacWindow(
   WidgetTester tester,
   Size size, {
   Brightness brightness = Brightness.light,
   Key? frame,
+  AsyncValue<List<Vice>>? vices,
 }) async {
+  final AsyncValue<List<Vice>> list = vices ?? AsyncData(macHabits);
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
   tester.platformDispatcher.platformBrightnessTestValue = brightness;
@@ -123,8 +126,8 @@ Future<void> pumpMacWindow(
         syncStatusProvider.overrideWith(_Synced.new),
         trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
         memoryJournal(),
-        viceListProvider.overrideWith((ref) => AsyncData(macHabits)),
-        unarchivedViceListProvider.overrideWith((ref) => AsyncData(macHabits)),
+        viceListProvider.overrideWith((ref) => list),
+        unarchivedViceListProvider.overrideWith((ref) => list),
         viceActivityDayProvider.overrideWith(
           (ref, DateTime day) => AsyncData(_day(day)),
         ),
@@ -144,5 +147,9 @@ Future<void> pumpMacWindow(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (list.isLoading) {
+    await tester.pump();
+  } else {
+    await tester.pumpAndSettle();
+  }
 }

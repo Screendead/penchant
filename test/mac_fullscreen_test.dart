@@ -1,12 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/tally_row.dart';
 
@@ -122,6 +125,42 @@ void main() {
       moreOrLessEquals(DialSpace.xl, epsilon: 1),
     );
     await _expectCommonLayout(tester, chipsWrap: false);
+  });
+
+  testWidgets('while the habits load, Today stays at the top of its column', (
+    WidgetTester tester,
+  ) async {
+    await pumpMacWindow(
+      tester,
+      const Size(1200, 780),
+      vices: const AsyncLoading<List<Vice>>(),
+    );
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(LogButton), findsNothing);
+    // The list's 6 pt top padding, as when the habits are there.
+    expect(
+      _rect(tester, find.byType(DayPicker)).top,
+      _rect(tester, find.byType(ViceTracker)).top + 6,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a wide window whose habits failed to load shows Synced in the '
+      'header', (WidgetTester tester) async {
+    await pumpMacWindow(
+      tester,
+      const Size(1200, 780),
+      vices: AsyncError<List<Vice>>(StateError('offline'), StackTrace.empty),
+    );
+    expect(find.byType(TrendsSheet), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(TodayHeader),
+        matching: find.byType(SyncPill),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a taller window stops the chart at its largest', (
