@@ -129,7 +129,7 @@ void main() {
       }
 
       expect(tested, 400);
-    expect(reported / tested, lessThan(0.09));
+      expect(reported / tested, lessThan(0.09));
     },
   );
 
