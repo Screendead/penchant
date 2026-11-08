@@ -151,6 +151,10 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    most logged in the last 30 days, overridable in the widget's settings); Undo after a widget or menu bar tap;
    Siri, Shortcuts and the Action button through the same App Intent; macOS desktop widgets from the same code.
    The idea file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
+   Status 2026-11-08: the Mac menu bar app is in review (`feat/mac-menu-bar`): the popover hosts the real Day Dial
+   in a second Flutter view on the main engine, and a click logs one with a 5-second Undo. Its runtime on a Mac is
+   unproven (the release build passes; CI's e2e is iOS only): the status item, the popover's first render, logging,
+   Undo, Cmd-1 to Cmd-9, closing the window and reopening it from the Dock.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 

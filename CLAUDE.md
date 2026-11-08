@@ -412,6 +412,16 @@ anything else is `NotFound`. Only the forms (add or edit a vice, edit an activit
 fullscreen dialogs. When the signed-in user changes, `MyApp` pops every pushed route, since
 swapping `home` alone would leave the old session's pages on the stack.
 
+**Mac menu bar.** On macOS `startApp` renders through `runWidget`, not `runApp`: `AppViews`
+(`lib/menu_bar/app_views.dart`) puts the main window's tree in the implicit view and `MenuBarPopover`
+(`lib/menu_bar/menu_bar_popover.dart`) in any other view, under one `ProviderScope`, so both share every provider.
+`macos/Runner/StatusItemController.swift` makes the status item and, each time its popover opens, a second
+`FlutterViewController` on the main window's engine; closing the popover releases it, which removes the view and
+unmounts the popover's widgets. The popover waits for Bootstrap's Firebase start before reading a provider, logs
+through `logOne` with a 5-second Undo, and while open takes the Log menu's Cmd-1 to Cmd-9 (`TodayLogTarget` is a
+stack: the last registered wins). Closing the window keeps the app running; the Dock icon or the popover's Open
+Penchant (channel `penchant/menu_bar`) shows it again.
+
 **Today and Trends.** `ViceTracker` is Today: one day at a time as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`),
 a 24-hour face with a bead per entry at its local wall-clock time, a tally row per unarchived habit (`TallyRow`), and
 the Log button (`LogButton`, `lib/widgets/log_fan.dart`). The dial's geometry is pure functions in
