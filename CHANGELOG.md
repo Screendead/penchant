@@ -15,6 +15,8 @@ pull request titles (`gh pr list --state merged`).
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
+  three hours that hold the most.
 
 ### Fixed
 
