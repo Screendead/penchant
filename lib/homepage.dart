@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
@@ -21,6 +23,10 @@ class Homepage extends ConsumerStatefulWidget {
   static const Key menuKey = ValueKey<String>('penchant-menu');
   static const String habitsItem = 'Habits';
   static const String settingsItem = 'Settings';
+
+  // Past this size (and a margin) the app sits in a centred canvas of it.
+  static const Size canvas = Size(1320, 860);
+  static const double canvasMargin = 24;
 
   @override
   ConsumerState<Homepage> createState() => _HomepageState();
@@ -62,23 +68,72 @@ class _HomepageState extends ConsumerState<Homepage> {
 
     final double top = MediaQuery.paddingOf(context).top;
 
+    final Widget app = Column(
+      children: [
+        // The mock-up's bar: 44 pt, 7 pt under the status bar.
+        Padding(
+          padding: EdgeInsets.only(top: top + 7),
+          child: const TodayHeader(),
+        ),
+        const OfflineBanner(),
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: PageStorage(bucket: tabState, child: const ViceTracker()),
+          ),
+        ),
+      ],
+    );
+
     return Scaffold(
-      body: Column(
-        children: [
-          // The mock-up's bar: 44 pt, 7 pt under the status bar.
-          Padding(
-            padding: EdgeInsets.only(top: top + 7),
-            child: const TodayHeader(),
-          ),
-          const OfflineBanner(),
-          Expanded(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              child: PageStorage(bucket: tabState, child: const ViceTracker()),
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints box) {
+          if (box.maxWidth <=
+                  Homepage.canvas.width + 2 * Homepage.canvasMargin &&
+              box.maxHeight <=
+                  Homepage.canvas.height + 2 * Homepage.canvasMargin) {
+            return app;
+          }
+          final ThemeData theme = Theme.of(context);
+          final Color backdrop = Color.lerp(
+            theme.scaffoldBackgroundColor,
+            theme.colorScheme.onSurface,
+            0.05,
+          )!;
+          final Size fit = Size(
+            min(
+              Homepage.canvas.width,
+              box.maxWidth - 2 * Homepage.canvasMargin,
             ),
-          ),
-        ],
+            min(
+              Homepage.canvas.height,
+              box.maxHeight - 2 * Homepage.canvasMargin,
+            ),
+          );
+          // The canvas is its own window size, so the layout inside it
+          // reads the canvas, not the screen.
+          return ColoredBox(
+            color: backdrop,
+            child: Center(
+              child: Container(
+                width: fit.width,
+                height: fit.height,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(DialRadius.sheet),
+                  border: Border.all(color: DialColors.of(context).line),
+                  boxShadow: DialShadows.pop(theme.brightness),
+                ),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(size: fit),
+                  child: app,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
