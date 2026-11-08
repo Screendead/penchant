@@ -47,7 +47,7 @@ struct LogProvider: AppIntentTimelineProvider {
     }
     let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))!
     entries.append(LogEntry(date: midnight, snapshot: snapshot, chosen: chosen, undo: nil))
-    return Timeline(entries: entries, policy: .never)
+    return Timeline(entries: entries, policy: .atEnd)
   }
 
   private func ids(_ configuration: LogWidgetIntent) -> [String] {

@@ -40,10 +40,19 @@ struct LastWeekWidget: Widget {
     }
     .configurationDisplayName("Last week")
     .description("Every habit over the last 7 days.")
-    .supportedFamilies([
-      .systemSmall, .systemMedium, .systemLarge, .systemExtraLarge,
-      .accessoryCircular, .accessoryRectangular, .accessoryInline,
-    ])
+    .supportedFamilies(families)
+  }
+
+  // The Mac has no Lock Screen widgets.
+  private var families: [WidgetFamily] {
+    #if os(macOS)
+      [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge]
+    #else
+      [
+        .systemSmall, .systemMedium, .systemLarge, .systemExtraLarge,
+        .accessoryCircular, .accessoryRectangular, .accessoryInline,
+      ]
+    #endif
   }
 }
 
@@ -63,12 +72,14 @@ struct LastWeekView: View {
   @ViewBuilder
   private func content(_ week: Week, _ snapshot: Snapshot) -> some View {
     switch family {
-    case .accessoryCircular:
-      WeekDial(week: week, showsLabels: false)
-    case .accessoryRectangular:
-      RectangularView(week: week, top: snapshot.top)
-    case .accessoryInline:
-      InlineView(week: week, top: snapshot.top)
+    #if os(iOS)
+      case .accessoryCircular:
+        WeekDial(week: week, showsLabels: false)
+      case .accessoryRectangular:
+        RectangularView(week: week, top: snapshot.top)
+      case .accessoryInline:
+        InlineView(week: week, top: snapshot.top)
+    #endif
     case .systemSmall:
       WeekDial(week: week)
     case .systemMedium:
@@ -97,10 +108,12 @@ struct LastWeekView: View {
   @ViewBuilder
   private var empty: some View {
     switch family {
-    case .accessoryInline:
-      Text("Open Penchant")
-    case .accessoryCircular:
-      Image(systemName: "circle.dashed").font(.title)
+    #if os(iOS)
+      case .accessoryInline:
+        Text("Open Penchant")
+      case .accessoryCircular:
+        Image(systemName: "circle.dashed").font(.title)
+    #endif
     default:
       VStack(alignment: .leading, spacing: 4) {
         Text("Last week").font(Typeface.display(17, .bold)).foregroundStyle(Palette.text)
