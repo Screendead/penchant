@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/widgets/native_auth_field.dart';
 
 // The pieces of the sign-in screen: pill fields with a leading glyph, the
 // error pill, the password checklist and the full-width primary button.
@@ -26,6 +27,7 @@ class AuthField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.validator,
+    this.nativeKind,
   });
 
   final TextEditingController controller;
@@ -39,6 +41,10 @@ class AuthField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final FormFieldValidator<String>? validator;
 
+  /// Where native fields are in use (macOS), the field this one becomes;
+  /// null keeps it a Flutter field.
+  final NativeAuthFieldKind? nativeKind;
+
   @override
   State<AuthField> createState() => _AuthFieldState();
 }
@@ -49,47 +55,66 @@ class _AuthFieldState extends State<AuthField> {
   @override
   Widget build(BuildContext context) {
     final Color muted = DialColors.of(context).muted;
+    final bool obscured = widget.obscurable && _obscured;
+    final TextStyle style = _fieldText.copyWith(
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+    final InputDecoration decoration = InputDecoration(
+      hintText: widget.hint,
+      contentPadding: const EdgeInsets.symmetric(vertical: 17),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.only(left: 18, right: 10),
+        // The decorator stretches its prefix to the field's height.
+        child: Center(
+          widthFactor: 1,
+          child: StrokeIcon(widget.glyph, size: 19, color: muted),
+        ),
+      ),
+      prefixIconConstraints: const BoxConstraints(minHeight: 52),
+      suffixIcon: widget.obscurable
+          ? Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: IconButton(
+                tooltip: _obscured ? 'Show password' : 'Hide password',
+                icon: StrokeIcon(
+                  _obscured ? DialGlyph.eye : DialGlyph.eyeOff,
+                  size: 19,
+                  color: muted,
+                ),
+                onPressed: () => setState(() => _obscured = !_obscured),
+              ),
+            )
+          : null,
+    );
+    final NativeAuthFieldKind? nativeKind = widget.nativeKind;
+    if (nativeKind != null && useNativeAuthFields) {
+      return NativeAuthField(
+        controller: widget.controller,
+        kind: nativeKind,
+        hint: widget.hint,
+        // The native field draws its own placeholder.
+        decoration: decoration.copyWith(hintText: ''),
+        textStyle: style,
+        obscured: obscured,
+        textInputAction: widget.textInputAction,
+        onChanged: widget.onChanged,
+        onSubmitted: widget.onSubmitted,
+        validator: widget.validator,
+      );
+    }
     return TextFormField(
       controller: widget.controller,
-      obscureText: widget.obscurable && _obscured,
+      obscureText: obscured,
       keyboardType: widget.keyboardType,
       autocorrect: false,
       enableSuggestions: !widget.obscurable,
       autofillHints: widget.autofillHints,
       textInputAction: widget.textInputAction,
-      style: _fieldText.copyWith(
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
+      style: style,
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,
-      decoration: InputDecoration(
-        hintText: widget.hint,
-        contentPadding: const EdgeInsets.symmetric(vertical: 17),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 18, right: 10),
-          // The decorator stretches its prefix to the field's height.
-          child: Center(
-            widthFactor: 1,
-            child: StrokeIcon(widget.glyph, size: 19, color: muted),
-          ),
-        ),
-        prefixIconConstraints: const BoxConstraints(minHeight: 52),
-        suffixIcon: widget.obscurable
-            ? Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: IconButton(
-                  tooltip: _obscured ? 'Show password' : 'Hide password',
-                  icon: StrokeIcon(
-                    _obscured ? DialGlyph.eye : DialGlyph.eyeOff,
-                    size: 19,
-                    color: muted,
-                  ),
-                  onPressed: () => setState(() => _obscured = !_obscured),
-                ),
-              )
-            : null,
-      ),
+      decoration: decoration,
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/widgets/auth_parts.dart';
+import 'package:tracker/widgets/native_auth_field.dart';
 
 // Signing in and creating an account share one form, as in the mock-up, so
 // the Email and Password fields hold still (and keep what was typed) while
@@ -151,6 +152,7 @@ class _AuthFormState extends ConsumerState<AuthForm> {
               controller: emailController,
               hint: 'Email',
               glyph: DialGlyph.mail,
+              nativeKind: NativeAuthFieldKind.email,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const <String>[
                 AutofillHints.username,
@@ -172,6 +174,9 @@ class _AuthFormState extends ConsumerState<AuthForm> {
               hint: 'Password',
               glyph: DialGlyph.lock,
               obscurable: true,
+              nativeKind: register
+                  ? NativeAuthFieldKind.newPassword
+                  : NativeAuthFieldKind.password,
               autofillHints: register
                   ? const <String>[AutofillHints.newPassword]
                   : const <String>[AutofillHints.password],
