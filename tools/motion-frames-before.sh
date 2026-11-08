@@ -8,7 +8,8 @@ ref=${2:-origin/master}
 cd "$(dirname "$0")/.."
 saved=$(mktemp -d)
 cp -R lib "$saved/lib"
-trap 'trash lib && cp -R "$saved/lib" lib && trash "$saved"' EXIT
+# Only files that exist at <ref> are swapped, so copying back restores all.
+trap 'cp -R "$saved/lib/." lib/ && trash "$saved"' EXIT
 git diff --name-only "$ref" -- lib | while read -r f; do
   if git cat-file -e "$ref:$f" 2>/dev/null; then git show "$ref:$f" >"$f"; fi
 done

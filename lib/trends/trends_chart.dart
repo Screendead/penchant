@@ -651,7 +651,6 @@ class _RangeMorphState extends State<RangeMorph>
   @override
   void didUpdateWidget(RangeMorph old) {
     super.didUpdateWidget(old);
-    _handoff = false;
     if (old.shape == widget.shape || MediaQuery.disableAnimationsOf(context)) {
       return;
     }
@@ -667,12 +666,18 @@ class _RangeMorphState extends State<RangeMorph>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _t,
-    builder: (BuildContext context, _) => widget.builder(
-      context,
-      _from == null ? null : _towards(widget),
-      _from == null && !_handoff,
-    ),
-  );
+  Widget build(BuildContext context) {
+    // Cleared only once the swap has been built, whatever rebuilds first.
+    if (_handoff) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handoff = false);
+    }
+    return AnimatedBuilder(
+      animation: _t,
+      builder: (BuildContext context, _) => widget.builder(
+        context,
+        _from == null ? null : _towards(widget),
+        _from == null && !_handoff,
+      ),
+    );
+  }
 }
