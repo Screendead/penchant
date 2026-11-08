@@ -48,7 +48,8 @@ int _latestLog = 0;
 /// entry is on the device as soon as it is written, and says it is queued if
 /// the server has not answered by [writeTimeout]. Each call takes its own id,
 /// so two taps are two entries. [from], in global coordinates, is where the
-/// dial's bead flies in from.
+/// dial's bead flies in from. Given [offerUndo], the caller shows the Undo
+/// where the log was made, and the bar carries notices only.
 Future<void> logOne(
   WidgetRef ref,
   ScaffoldMessengerState messenger,
@@ -56,7 +57,7 @@ Future<void> logOne(
   Offset? from,
   required bool alwaysUse24HourFormat,
   double bottomClearance = 0,
-  Duration undoWindow = undoDuration,
+  void Function(VoidCallback undo)? offerUndo,
 }) async {
   final User? user = ref.read(userProvider).value;
   if (user == null) {
@@ -79,22 +80,23 @@ Future<void> logOne(
   final int log = ++_latestLog;
   bool undone = false;
 
+  void undo() {
+    undone = true;
+    undoLog(
+      messenger,
+      writes,
+      rejected,
+      activityID,
+      entry,
+      bottomClearance: bottomClearance,
+    );
+  }
+
   void showBar(InlineSpan message) => showUndoBar(
     messenger,
     message,
     bottomClearance: bottomClearance,
-    undoWindow: undoWindow,
-    onUndo: () {
-      undone = true;
-      undoLog(
-        messenger,
-        writes,
-        rejected,
-        activityID,
-        entry,
-        bottomClearance: bottomClearance,
-      );
-    },
+    onUndo: offerUndo == null ? undo : null,
   );
 
   if (from != null) {
@@ -107,16 +109,23 @@ Future<void> logOne(
     quantity: defaultQuantity,
     createdAt: at,
   );
-  showBar(
-    offline
-        ? const TextSpan(text: queuedMessage)
-        : loggedMessage(
-            vice,
-            defaultQuantity,
-            at,
-            alwaysUse24HourFormat: alwaysUse24HourFormat,
-          ),
-  );
+  if (offerUndo == null) {
+    showBar(
+      offline
+          ? const TextSpan(text: queuedMessage)
+          : loggedMessage(
+              vice,
+              defaultQuantity,
+              at,
+              alwaysUse24HourFormat: alwaysUse24HourFormat,
+            ),
+    );
+  } else {
+    offerUndo(undo);
+    if (offline) {
+      showBar(const TextSpan(text: queuedMessage));
+    }
+  }
 
   try {
     final bool synced = await rejected.settle(write, 'Not saved: $entry');
@@ -148,6 +157,7 @@ Future<void> undoLog(
   String activityID,
   String entry, {
   double bottomClearance = 0,
+  void Function(VoidCallback undo)? offerUndo,
 }) async {
   String? message;
 

@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -11,6 +16,7 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -24,13 +30,31 @@ import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/penchant_mark.dart';
 import 'package:tracker/widgets/tally_row.dart';
+import 'package:tracker/widgets/undo_bar.dart';
 import 'package:tracker/writes/log_one.dart';
 
 // Shared with macos/Runner/StatusItemController.swift.
 const MethodChannel menuBarChannel = MethodChannel('penchant/menu_bar');
 
-// r10-widget-undo B: a log from outside the main window has a 5-second Undo.
+// r10-widget-undo B: after a log the habit's row offers Undo for 5 seconds.
 const Duration menuBarUndoWindow = Duration(seconds: 5);
+
+// As RecoveryKeyGate: until this device holds the journal key, a log would
+// skip the sealer and names would not decrypt, so the popover lists nothing.
+enum _KeyState { ready, loading, needsRecoveryKey }
+
+// [get] is ref.watch in a build and ref.read in a callback.
+_KeyState _keyState(T Function<T>(ProviderListenable<T> provider) get) {
+  if (!get(e2eeEnabledProvider) || get(userProvider).value == null) {
+    return _KeyState.ready;
+  }
+  if (get(journalKeyPendingProvider)) {
+    return _KeyState.loading;
+  }
+  return get(journalNeedsRecoveryKeyProvider)
+      ? _KeyState.needsRecoveryKey
+      : _KeyState.ready;
+}
 
 /// The popover under the macOS status item: today's dial above the habits,
 /// and a click on a habit logs one of it now. It runs in its own Flutter view
@@ -45,6 +69,8 @@ class MenuBarPopover extends ConsumerWidget {
   static const String signedOut = 'Sign in to Penchant to log from here.';
   static const String noHabits = 'No habits yet. Add one in Penchant.';
   static const String openLabel = 'Open Penchant';
+  static const String needsRecoveryKey =
+      'Open Penchant to enter your recovery key.';
 
   // True once Firebase has started; no provider may be read before.
   final ValueListenable<bool> started;
@@ -68,11 +94,46 @@ class MenuBarPopover extends ConsumerWidget {
           localeListResolutionCallback: resolveAppLocale,
           home: Scaffold(
             body: ready
-                ? _PopoverBody(openApp: openApp)
+                ? _KeyGate(openApp: openApp)
                 : const Center(child: CircularProgressIndicator()),
           ),
         ),
       );
+}
+
+class _KeyGate extends ConsumerWidget {
+  const _KeyGate({required this.openApp});
+
+  final VoidCallback openApp;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      switch (_keyState(ref.watch)) {
+        _KeyState.ready => _PopoverBody(openApp: openApp),
+        _KeyState.loading => Column(
+          children: <Widget>[
+            _Header(openApp: openApp),
+            const Expanded(child: Center(child: CircularProgressIndicator())),
+          ],
+        ),
+        _KeyState.needsRecoveryKey => Column(
+          children: <Widget>[
+            _Header(openApp: openApp),
+            const Expanded(
+              child: InfoBox(message: MenuBarPopover.needsRecoveryKey),
+            ),
+          ],
+        ),
+      };
+}
+
+// An Undo a log offered on its habit's row.
+class _OfferedUndo {
+  _OfferedUndo(this.serial, this.undo, this.expiry);
+
+  final int serial;
+  final VoidCallback undo;
+  final Timer expiry;
 }
 
 class _PopoverBody extends ConsumerStatefulWidget {
@@ -94,20 +155,58 @@ class _PopoverBodyState extends ConsumerState<_PopoverBody> {
     _logTarget.add(_log);
   }
 
+  final Map<String, _OfferedUndo> _undos = <String, _OfferedUndo>{};
+  int _serial = 0;
+
   @override
   void dispose() {
     _logTarget.remove(_log);
+    for (final _OfferedUndo offered in _undos.values) {
+      offered.expiry.cancel();
+    }
     super.dispose();
   }
 
   void _log(Vice vice) {
+    if (!mounted || _keyState(ref.read) != _KeyState.ready) {
+      return;
+    }
     logOne(
       ref,
       ScaffoldMessenger.of(context),
       vice,
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-      undoWindow: menuBarUndoWindow,
+      offerUndo: (VoidCallback undo) => _offer(vice.id, undo),
     );
+  }
+
+  void _offer(String viceID, VoidCallback undo) {
+    if (!mounted) {
+      return;
+    }
+    final int serial = ++_serial;
+    setState(() {
+      _undos[viceID]?.expiry.cancel();
+      _undos[viceID] = _OfferedUndo(
+        serial,
+        undo,
+        Timer(menuBarUndoWindow, () {
+          if (mounted && _undos[viceID]?.serial == serial) {
+            setState(() => _undos.remove(viceID));
+          }
+        }),
+      );
+    });
+  }
+
+  void _undo(String viceID) {
+    final _OfferedUndo? offered = _undos[viceID];
+    if (offered == null) {
+      return;
+    }
+    offered.expiry.cancel();
+    setState(() => _undos.remove(viceID));
+    offered.undo();
   }
 
   @override
@@ -168,6 +267,10 @@ class _PopoverBodyState extends ConsumerState<_PopoverBody> {
         totals: totals,
         markOf: markOf,
         onLog: _log,
+        undos: <String, (int, VoidCallback)>{
+          for (final MapEntry<String, _OfferedUndo> e in _undos.entries)
+            e.key: (e.value.serial, () => _undo(e.key)),
+        },
       );
     }
 
@@ -217,6 +320,7 @@ class _Today extends ConsumerWidget {
     required this.totals,
     required this.markOf,
     required this.onLog,
+    required this.undos,
   });
 
   // The popover is about 340 pt wide; the dial leaves the habits room below.
@@ -228,6 +332,8 @@ class _Today extends ConsumerWidget {
   final Map<String, num> totals;
   final HabitMark Function(Vice vice) markOf;
   final void Function(Vice vice) onLog;
+  // By habit: the log's serial, which restarts the countdown, and its Undo.
+  final Map<String, (int, VoidCallback)> undos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -292,6 +398,7 @@ class _Today extends ConsumerWidget {
                   total: entries == null ? null : totals[vice.id],
                   day: today,
                   onLog: () => onLog(vice),
+                  undo: undos[vice.id],
                 ),
           ],
         ),
@@ -301,7 +408,7 @@ class _Today extends ConsumerWidget {
 }
 
 /// A habit in the popover: Today's tally row, and a click anywhere on it logs
-/// one, as its + does.
+/// one, as its + does. For [menuBarUndoWindow] after a log its + is Undo.
 class MenuBarHabitRow extends StatelessWidget {
   const MenuBarHabitRow({
     super.key,
@@ -310,6 +417,7 @@ class MenuBarHabitRow extends StatelessWidget {
     required this.total,
     required this.day,
     required this.onLog,
+    this.undo,
   });
 
   final Vice vice;
@@ -317,6 +425,8 @@ class MenuBarHabitRow extends StatelessWidget {
   final num? total;
   final DateTime day;
   final VoidCallback onLog;
+  // The log's serial and its Undo, while it can be undone.
+  final (int, VoidCallback)? undo;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -330,6 +440,29 @@ class MenuBarHabitRow extends StatelessWidget {
         total: total,
         day: day,
         onLog: (_) => onLog(),
+        trailing: switch (undo) {
+          (final int serial, final VoidCallback onUndo) => SizedBox(
+            height: DialSize.tallyRow,
+            // Its ink overhangs the row, as the +'s does.
+            child: OverflowBox(
+              maxHeight: DialSize.minTapTarget,
+              fit: OverflowBoxFit.deferToChild,
+              child: Semantics(
+                label: 'Undo: ${logOneLabel(vice)}',
+                button: true,
+                onTap: onUndo,
+                excludeSemantics: true,
+                child: UndoCountdownButton(
+                  key: ValueKey<int>(serial),
+                  window: menuBarUndoWindow,
+                  ink: Theme.of(context).colorScheme.onSurface,
+                  onPressed: onUndo,
+                ),
+              ),
+            ),
+          ),
+          null => null,
+        },
       ),
     ),
   );
