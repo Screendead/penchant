@@ -60,19 +60,31 @@ List<ViceActivity> _entries(DateTime day) => <ViceActivity>[
     ),
 ];
 
-List<Override> _overrides(Stream<bool> offline) => <Override>[
-  ...habitOverrides(_vices),
-  userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-  offlineProvider.overrideWith((ref) => offline),
-  trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
-  memoryJournal(),
-  viceActivityDayProvider.overrideWith(
-    (ref, DateTime day) => AsyncData(_entries(day)),
-  ),
-  viceActivityGraphProvider.overrideWith(
-    (ref, ViceActivityGraphQuery query) => _graph(query),
-  ),
-];
+List<Override> _overrides(Stream<bool> offline, {bool liveGraph = false}) =>
+    <Override>[
+      ...habitOverrides(_vices),
+      userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+      offlineProvider.overrideWith((ref) => offline),
+      trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+      memoryJournal(),
+      viceActivityDayProvider.overrideWith(
+        (ref, DateTime day) => AsyncData(_entries(day)),
+      ),
+      // Live, a new range's query starts with no value, as Firestore's does.
+      if (liveGraph)
+        viceActivityGraphForUserProvider.overrideWith(
+          (ref, key) => Stream<List<ViceActivity>>.fromFuture(
+            Future<List<ViceActivity>>.delayed(
+              const Duration(milliseconds: 48),
+              () => _graph(key.query).requireValue,
+            ),
+          ),
+        )
+      else
+        viceActivityGraphProvider.overrideWith(
+          (ref, ViceActivityGraphQuery query) => _graph(query),
+        ),
+    ];
 
 final AsyncValue<List<ViceActivity>> Function(ViceActivityGraphQuery) _graph =
     inRange(_history());
@@ -124,6 +136,7 @@ Future<GlobalKey> _pumpToday(
   Brightness brightness = Brightness.light,
   List<Override> overrides = const <Override>[],
   bool statusBar = false,
+  bool liveGraph = false,
 }) async {
   debugDisableShadows = false;
   tester.view.devicePixelRatio = 2;
@@ -133,7 +146,10 @@ Future<GlobalKey> _pumpToday(
   await tester.pumpWidget(
     ProviderScope(
       overrides: <Override>[
-        ..._overrides(offline ?? Stream<bool>.value(false)),
+        ..._overrides(
+          offline ?? Stream<bool>.value(false),
+          liveGraph: liveGraph,
+        ),
         ...overrides,
       ],
       child: RepaintBoundary(
@@ -262,20 +278,10 @@ void main() {
   }
 
   testWidgets('chart morph between ranges', (WidgetTester tester) async {
-    // As Firestore answers: a new range's query starts with no value.
     final GlobalKey frame = await _pumpToday(
       tester,
       reduced: false,
-      overrides: <Override>[
-        viceActivityGraphForUserProvider.overrideWith(
-          (ref, key) => Stream<List<ViceActivity>>.fromFuture(
-            Future<List<ViceActivity>>.delayed(
-              const Duration(milliseconds: 48),
-              () => _graph(key.query).requireValue,
-            ),
-          ),
-        ),
-      ],
+      liveGraph: true,
     );
     await openTrends(tester);
     final Future<void> Function() capture = _recorder(tester, frame, 'morph');

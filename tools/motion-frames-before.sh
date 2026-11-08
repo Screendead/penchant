@@ -8,9 +8,15 @@ ref=${2:-origin/master}
 cd "$(dirname "$0")/.."
 saved=$(mktemp -d)
 cp -R lib "$saved/lib"
-# Only files that exist at <ref> are swapped, so copying back restores all.
-trap 'cp -R "$saved/lib/." lib/ && trash "$saved"' EXIT
+# Files <ref> has and this tree does not are listed here, and removed after,
+# since copying the saved lib back would leave them.
+touch "$saved/added"
+trap 'while read -r f; do rm -f "$f"; done <"$saved/added"; cp -R "$saved/lib/." lib/ && trash "$saved"' EXIT
 git diff --name-only "$ref" -- lib | while read -r f; do
-  if git cat-file -e "$ref:$f" 2>/dev/null; then git show "$ref:$f" >"$f"; fi
+  if git cat-file -e "$ref:$f" 2>/dev/null; then
+    [ -e "$f" ] || echo "$f" >>"$saved/added"
+    mkdir -p "$(dirname "$f")"
+    git show "$ref:$f" >"$f"
+  fi
 done
 tools/motion-frames.sh "$out"
