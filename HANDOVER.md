@@ -167,7 +167,7 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
 
 **DECIDED** (the goal is set by a recorded call or a convention):
 
-- **D1.** Amount sheet replacing the record dialog for new entries, reused by the entry editor (1b and 1d leftover).
+- **D1.** DONE (#148, merged 2026-11-08; the leftovers below are follow-ups). Amount sheet replacing the record dialog for new entries, reused by the entry editor (1b and 1d leftover).
   PR #148: the sheet (title, stepper, pill button) replaces the dialog, and the editor page builds the same
   `AmountFields`. Left: the mini dial for the time, which replaces `ActivityDateField` in the mock-up (next; D2's
   edited bead travel needs it); the step of 5 for habits whose typical entry is 10 or more; the editor as the sheet
@@ -176,8 +176,11 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   Trends day point, the chart morph between ranges, the offline and refused-write pills on a spring, an edited bead
   travelling to its new time (needs D1), the reduce-motion day fade, the dial's drag snap-back. `lib/widgets/`. L.
 - **D3.** A dense hour's beads merge into one arc above about 48 entries (1b leftover). `lib/widgets/day_dial.dart`. S.
+  Built in `feat/dense-hour-arc` (stills in `docs/pitch/dense-hour/`): above 48 entries, an hour with more than one
+  entry is one arc; an hour's lone entry stays a bead, pushed clear of the arcs. The arc draws no pending rim for
+  unsynced entries in it (register, `dense-hour-arc-shows-no-pending-entries`).
 - **D4.** The history page's "Last 30 days" summary card (1d leftover). History page. S.
-- **D5.** The rest of 1g: rebuild `integration_test/` around the fan gestures, dial semantics and sheets, on iOS and
+- **D5.** DONE (#145, merged 2026-11-08; the leftovers below are follow-ups). The rest of 1g: rebuild `integration_test/` around the fan gestures, dial semantics and sheets, on iOS and
   `E2E_DEVICE=macos` (#119 did the finders and the one-build suite). #145 (`feat/e2e-1g-mac-window`):
   `log_fan_test.dart` (press-drag-release onto a wedge, a release off the fan, Escape, Log's screen-reader actions, a
   wedge's tap and hold through semantics), and the Trends helpers and checks follow the sheet or the split pane.
@@ -185,7 +188,7 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   hand run of `E2E_DEVICE=macos tools/e2e.sh`. `integration_test/`. M.
 - **D6.** Run the macOS e2e suite in CI after merge, beside iOS (`e2e.yml` runs iOS only; C10 puts e2e in CI and
   `r2-mac` ships the Mac only if its e2e is green). `.github/workflows/e2e.yml`. M.
-- **D7.** #108 (`r8-mac-window` B, 1200 x 780): carried onto #145 (with D5) without its 800 x 600 test override;
+- **D7.** DONE (#145, merged 2026-11-08; #108 closed). #108 (`r8-mac-window` B, 1200 x 780): carried onto #145 (with D5) without its 800 x 600 test override;
   close #108 when #145 merges. `macos/Runner/MainFlutterWindow.swift`. S.
 - **D8.** Queue item 6, widgets, Control Centre controls and the Mac menu bar app. First check that the free signing
   team can sign App Groups and app extensions (if not, it moves to BLOCKED with B2), then build. New native targets. L.
@@ -193,12 +196,12 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   with `ARCHS=arm64`. Likely cause (inferred, unverified): the machine's Homebrew Flutter is 3.44.7, and the release
   build needs 3.44.8 or later (flutter/flutter#188346); CI's pin is 3.44.9. Move the machine to 3.44.9 while no agent
   is building, and rebuild. Machine setup. S.
-- **D10.** `flags=$(tools/build-version.sh) && flutter build ipa $flags` passes the flags as one word in zsh.
+- **D10.** DONE (#136, merged 2026-11-08). `flags=$(tools/build-version.sh) && flutter build ipa $flags` passes the flags as one word in zsh.
   `CLAUDE.md` already notes `${=flags}`; make the tool shell-safe (for example, it runs the build command it is given).
   `tools/build-version.sh`, `CLAUDE.md`. S.
 - **D11.** Flutter 3.47 (Dart 3.13) and riverpod_lint 3.1.9, the separate step `CLAUDE.md` records.
   `.github/actions/setup-flutter/action.yml`, `analysis_options.yaml`. M.
-- **D12.** DONE (PR from `docs/register-ideas-refresh`; the rules-and-indexes entry stays: console drift and the unused `archived` index are still unchecked). Close the register entries that recorded a call Jack has since made, or that no longer hold:
+- **D12.** DONE (#139, merged 2026-11-08; the rules-and-indexes entry stays: console drift and the unused `archived` index are still unchecked). Close the register entries that recorded a call Jack has since made, or that no longer hold:
   `activity-timestamps-come-from-the-device-clock` (`r4-server-time`: as built), `vice-lists-are-unbounded`
   (`r4-vice-cap`: no cap for 1.0), `no-email-verification` (`r3-verify`), `every-firebase-command-targets-production`
   (the CLI's configstore no longer maps the checkout, checked 2026-11-08; `r2-testflight`: no beta project). Re-check
@@ -206,7 +209,7 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   `tech-debt/`. S.
 - **D13.** The rest of the register, one class per PR: the generated plugin registrant tracked on macOS only
   (medium), the duplicated client API key, the template tests, the e2e record helper flake (low). `tech-debt/`. S each.
-- **D14.** DONE (same PR). Refresh `ideas/`: its "Needs Jack" section asks calls Jack has made (E2EE, age, Mac, Pro, billing,
+- **D14.** DONE (#139, merged 2026-11-08). Refresh `ideas/`: its "Needs Jack" section asks calls Jack has made (E2EE, age, Mac, Pro, billing,
   TestFlight, icon, guests, check-in, presets, triggers, Today, app lock), and idea files for shipped work remain
   (`end-to-end-encryption`, `one-tap-quick-logging`, `trigger-tagging`, `granular-logging-and-data-model`, part of
   `guest-mode-and-sign-in`): delete or trim each. `ideas/`. S. The deleted E2EE file's open items moved to
@@ -478,8 +481,7 @@ CLI's configstore no longer maps the main checkout to production (`firebase use 
 - `npm --prefix tests/firestore-rules test` runs the rules suite; CI runs it on every PR.
 - Only one agent at a time may use the simulator and the default emulator ports. Parallel agents that need an
   emulator use other ports (Firestore 8180, hub 4410, logging 4510, UI off) through a config outside the repo.
-- `macos/Flutter/GeneratedPluginRegistrant.swift` is tracked (iOS gitignores its own; in the register).
-  `flutter pub get` rewrites it only when the plugin set changes; commit the rewrite with the change that caused it.
+- `GeneratedPluginRegistrant` is gitignored on both platforms; `flutter pub get` and every flutter build regenerate it.
 - Read the Firebase documentation before any change to rules, indexes, queries or emulator wiring, and cite it in
   the PR.
 

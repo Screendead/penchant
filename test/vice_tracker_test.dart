@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/dial_layout.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -544,6 +545,230 @@ void main() {
       await tester.tap(find.byKey(ValueKey<String>('bead-${entry.id}')));
       await tester.pumpAndSettle();
       expect(pushed, ['/vices/${coffee.id}/activities/${entry.id}']);
+    });
+
+    // 30 Coffee entries from 08:00 two minutes apart, 19 Tea from 10:00 three
+    // apart and one Coffee at 14:00: 50 in all, over the merge threshold.
+    List<ViceActivity> dense(DateTime day, {int coffeeAtEight = 30}) =>
+        <ViceActivity>[
+          for (int i = 0; i < coffeeAtEight; i++)
+            fakeActivity(coffee.id, 1, day.add(Duration(minutes: 480 + 2 * i))),
+          for (int i = 0; i < 19; i++)
+            fakeActivity(tea.id, 1, day.add(Duration(minutes: 600 + 3 * i))),
+          fakeActivity(coffee.id, 2, day.add(const Duration(hours: 14))),
+        ];
+
+    testWidgets('a tap on one of two adjacent arcs opens an entry of its own '
+        'hour', (WidgetTester tester) async {
+      final List<String?> pushed = <String?>[];
+      await _pumpApp(
+        tester,
+        _today(
+          [coffee, tea],
+          (DateTime day) => <ViceActivity>[
+            ...dense(day),
+            for (int i = 0; i < 3; i++)
+              fakeActivity(tea.id, 2, day.add(Duration(minutes: 540 + 20 * i))),
+          ],
+        ),
+        const ViceTracker(),
+        onGenerateRoute: (RouteSettings settings) {
+          pushed.add(settings.name);
+          return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+        },
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('arc-9')), findsOneWidget);
+
+      final Rect dial = tester.getRect(find.byType(DayDial));
+      final double scale = dial.shortestSide / DialFace.side;
+      await tester.tapAt(
+        dial.center + dialPoint(dialAngle(541), HourArc.track) * scale,
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity nine = fakeActivity(
+        tea.id,
+        2,
+        today.add(const Duration(minutes: 540)),
+      );
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+      // Late in 08's arc, whose neighbour is a quarter of an hour away.
+      await tester.tapAt(
+        dial.center + dialPoint(dialAngle(530), HourArc.track) * scale,
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity late = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 530)),
+      );
+      expect(pushed, [
+        '/vices/${tea.id}/activities/${nine.id}',
+        '/vices/${coffee.id}/activities/${late.id}',
+      ]);
+    });
+
+    testWidgets('above 48 entries a dense hour is one arc, and the dial still '
+        'says every entry', (WidgetTester tester) async {
+      await _pumpApp(
+        tester,
+        _today([coffee, tea, old], (DateTime day) => dense(day)),
+        const ViceTracker(),
+      );
+      await tester.pumpAndSettle();
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      expect(find.byKey(const ValueKey<String>('arc-8')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('arc-10')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('arc-14')), findsNothing);
+      final ViceActivity lone = fakeActivity(
+        coffee.id,
+        2,
+        today.add(const Duration(hours: 14)),
+      );
+      expect(find.byKey(ValueKey<String>('bead-${lone.id}')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('bead-'),
+        ),
+        findsOneWidget,
+      );
+
+      String time(int h) => formatTime(
+        today.add(Duration(hours: h)),
+        alwaysUse24HourFormat: false,
+      );
+      expect(
+        find.bySemanticsLabel(
+          '30 entries from ${time(8)} to ${time(9)}: Coffee 30 drinks',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          '19 entries from ${time(10)} to ${time(11)}: Tea 19 times',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        _summary(tester),
+        'Today, ${dayPillDate(today, today)}. Coffee 32 drinks, Tea 19 times. '
+        'First entry ${time(8)}, last ${time(14)}.',
+      );
+      expect(find.text('50 entries'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('at 48 entries every entry is still a bead', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(
+        tester,
+        _today([coffee, tea], (DateTime day) => dense(day, coffeeAtEight: 28)),
+        const ViceTracker(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey<String>('arc-8')), findsNothing);
+      expect(find.text('48 entries'), findsOneWidget);
+    });
+
+    testWidgets('a tap on an arc opens the entry nearest the time tapped', (
+      WidgetTester tester,
+    ) async {
+      final List<String?> pushed = <String?>[];
+      await _pumpApp(
+        tester,
+        _today([coffee, tea], (DateTime day) => dense(day)),
+        const ViceTracker(),
+        onGenerateRoute: (RouteSettings settings) {
+          pushed.add(settings.name);
+          return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+        },
+      );
+      await tester.pumpAndSettle();
+
+      final Rect dial = tester.getRect(find.byType(DayDial));
+      final double scale = dial.shortestSide / DialFace.side;
+      // 08:31 on the arc's middle line; the nearest entry is 08:30's.
+      await tester.tapAt(
+        dial.center + dialPoint(dialAngle(511), HourArc.track) * scale,
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity half = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 510)),
+      );
+      expect(pushed, ['/vices/${coffee.id}/activities/${half.id}']);
+    });
+
+    testWidgets('a screen reader opens the latest entry from an arc, and any '
+        'entry from its actions', (WidgetTester tester) async {
+      final List<String?> pushed = <String?>[];
+      await _pumpApp(
+        tester,
+        _today([coffee, tea], (DateTime day) => dense(day)),
+        const ViceTracker(),
+        onGenerateRoute: (RouteSettings settings) {
+          pushed.add(settings.name);
+          return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+        },
+      );
+      await tester.pumpAndSettle();
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      String time(int h) => formatTime(
+        today.add(Duration(hours: h)),
+        alwaysUse24HourFormat: false,
+      );
+      final FinderBase<SemanticsNode> arc = find.semantics.byLabel(
+        '30 entries from ${time(8)} to ${time(9)}: Coffee 30 drinks',
+      );
+      final SemanticsData data = arc.evaluate().single.getSemanticsData();
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.hint, DayDial.arcHint);
+      expect(data.customSemanticsActionIds, hasLength(30));
+
+      tester.semantics.tap(arc);
+      await tester.pumpAndSettle();
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+
+      final ViceActivity half = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 510)),
+      );
+      tester.semantics.customAction(
+        arc,
+        CustomSemanticsAction(
+          label: DayDial.beadLabel(
+            DialEntry(
+              id: half.id,
+              vice: coffee,
+              mark: _mark,
+              quantity: 1,
+              at: half.createdAt.toDate(),
+            ),
+            alwaysUse24Hour: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final ViceActivity latest = fakeActivity(
+        coffee.id,
+        1,
+        today.add(const Duration(minutes: 538)),
+      );
+      expect(pushed, [
+        '/vices/${coffee.id}/activities/${latest.id}',
+        '/vices/${coffee.id}/activities/${half.id}',
+      ]);
+      semantics.dispose();
     });
 
     testWidgets("shows today's clock in the hub, and a past day's weekday", (

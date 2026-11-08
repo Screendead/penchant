@@ -6,6 +6,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/widgets/banner_scroll.dart';
 import 'package:tracker/widgets/pill_drop.dart';
 
 class NotSyncedMarker extends StatelessWidget {
@@ -75,34 +76,34 @@ class OfflineBanner extends ConsumerWidget {
 
     return PillDrop(
       shown: ref.watch(offlineProvider).value == true,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-        child: Semantics(
-          liveRegion: true,
-          child: DecoratedBox(
+      child: Semantics(
+        liveRegion: true,
+        child: BannerScroll(
+          margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          frame: (Widget scroll) => DecoratedBox(
             decoration: BoxDecoration(
               color: colors.surfaceContainerLow,
               borderRadius: BorderRadius.circular(PillDrop.radius),
               border: Border.all(color: DialColors.of(context).line),
               boxShadow: DialShadows.pop(Theme.of(context).brightness),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 16, 10),
-              child: Row(
-                children: [
-                  Icon(Icons.cloud_off, size: 18, color: colors.onSurface),
-                  const SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: DialTypeScale.bodyS.copyWith(
-                        color: colors.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(PillDrop.radius),
+              child: scroll,
             ),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 16, 10),
+          child: Row(
+            children: [
+              Icon(Icons.cloud_off, size: 18, color: colors.onSurface),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  message,
+                  style: DialTypeScale.bodyS.copyWith(color: colors.onSurface),
+                ),
+              ),
+            ],
           ),
         ),
       ),
