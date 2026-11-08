@@ -172,7 +172,8 @@ The inventory of open work as of 2026-11-08, from `origin/master` at 82f69f0, th
   travelling to its new time (needs D1), the reduce-motion day fade, the dial's drag snap-back. `lib/widgets/`. L.
 - **D3.** A dense hour's beads merge into one arc above about 48 entries (1b leftover). `lib/widgets/day_dial.dart`. S.
   Built in `feat/dense-hour-arc` (stills in `docs/pitch/dense-hour/`): above 48 entries, an hour with more than one
-  entry is one arc; an hour's lone entry stays a bead. The arc draws no pending rim for unsynced entries in it.
+  entry is one arc; an hour's lone entry stays a bead, pushed clear of the arcs. The arc draws no pending rim for
+  unsynced entries in it (register, `dense-hour-arc-shows-no-pending-entries`).
 - **D4.** The history page's "Last 30 days" summary card (1d leftover). History page. S.
 - **D5.** The rest of 1g: rebuild `integration_test/` around the fan gestures, dial semantics and sheets, on iOS and
   `E2E_DEVICE=macos` (#119 did the finders and the one-build suite). `integration_test/`. M.

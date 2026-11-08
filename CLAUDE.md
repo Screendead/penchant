@@ -424,8 +424,10 @@ apart along the arc, never off it), and the fan's in `lib/data/fan_layout.dart` 
 More). The face, hand and beads are `CustomPainter`s; each bead is also its own `Semantics` button opening its entry's
 editor, and a pointer tap goes to the nearest bead within a 44 pt target. On a day of more than 48 entries
 (`DialFace.mergeAbove`), each hour holding more than one becomes one `HourArc` on the first track, shared out by habit
-in proportion to entry count and labelled with its count; a tap on it opens the entry nearest the time tapped, and
-for a screen reader it is one label naming the hour and each habit's total. The dial is one `Semantics` node labelled
+in proportion to entry count and labelled with its count. The arcs hold still in `layoutBeads` and push the hour's
+lone beads clear (a bead too wide for the gap between two arcs overlaps both). A tap on an arc opens the entry nearest
+the time tapped; for a screen reader it is one button naming the hour and each habit's total, which opens the hour's
+latest entry and has one custom action per entry. The dial is one `Semantics` node labelled
 `DayDial.summary` (the day, each total, the first and last entry times). Motion follows `DialMotion`: the day change
 contracts the beads, then sweeps a hand round with each bead springing in as it passes; a logged bead flies in from
 the `+` or wedge through `beadArrivalsProvider`; a pending bead's dashed rim turns until it syncs; under

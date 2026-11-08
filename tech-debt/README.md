@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**11 issues: 0 critical, 0 high, 4 medium, 7 low.**
+**12 issues: 0 critical, 0 high, 4 medium, 8 low.**
 
 ## Firebase Data Layer (5)
 
@@ -35,10 +35,11 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 
-## Offline and Write Reliability (0)
+## Offline and Write Reliability (1)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
+- **low** — [A dense hour's arc does not show which of its entries are unsynced](offline-and-write-reliability/dense-hour-arc-shows-no-pending-entries.md)
 
 ## Accessibility and Localization (1)
 
