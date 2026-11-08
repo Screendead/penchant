@@ -14,7 +14,7 @@ clutter.
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
 citations drift as code moves.
 
-**9 issues: 0 critical, 0 high, 1 medium, 8 low.**
+**8 issues: 0 critical, 0 high, 1 medium, 7 low.**
 
 ## Firebase Data Layer (5)
 
