@@ -35,6 +35,9 @@ Future<BackgroundFlushOutcome> runBackgroundFlush({
       rejectedWritesProvider.overrideWith(BackgroundRejectedWrites.new),
     ],
   );
+  // Holds the key chain (autoDispose) for the whole run, so the sealer read
+  // below is the one the key resolved to.
+  container.listen(sealerProvider, (_, _) {});
   try {
     final AsyncValue<User?> user = await _settled(
       container,
