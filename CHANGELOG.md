@@ -37,6 +37,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
+
 - With large text, the offline and refused-change banners no longer push Today off the screen: each stops at a third
   of the screen and scrolls, and the sync status beside the menu stops growing at twice its size.
 - A device that opens on "Unlock your journal" because iCloud Keychain has not yet brought the key from your
