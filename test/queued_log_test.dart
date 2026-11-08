@@ -4,10 +4,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
+import 'package:tracker/crypto/key_service.dart';
+import 'package:tracker/crypto/key_wiring.dart';
 import 'package:tracker/data/queued_log.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widget_bridge/background_flush.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/rejected_writes.dart';
@@ -52,6 +56,14 @@ class _QueueBridge implements WidgetBridge {
         if (!done.any((QueuedLog d) => d.id == l.id && d.op == l.op)) l,
     ];
   }
+
+  Future<void> Function()? flushRequest;
+
+  @override
+  void onFlushRequest(Future<void> Function()? flush) => flushRequest = flush;
+
+  @override
+  Future<void> backgroundDone(BackgroundFlushOutcome outcome) async {}
 }
 
 QueuedLog _log(
@@ -244,5 +256,133 @@ void main() {
       'recordActivity:a',
     ]);
     expect(bridge.queue, isEmpty);
+  });
+
+  test('a flush native asks for writes logs queued while the app runs, '
+      'and nothing polls', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final FakeTrackerWrites writes = FakeTrackerWrites();
+    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[]);
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
+        memoryJournal(),
+        widgetBridgeProvider.overrideWithValue(bridge),
+        trackerWritesProvider.overrideWithValue(writes),
+        sealerProvider.overrideWith((ref) => FakeSealer()),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(widgetLogFlushProvider, (_, _) {});
+    await container.read(userProvider.future);
+    await pumpEventQueue();
+    expect(bridge.flushRequest, isNotNull);
+
+    bridge.queue = <QueuedLog>[
+      _log('a', DateTime.now().subtract(const Duration(minutes: 1))),
+    ];
+    await bridge.flushRequest!();
+    expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
+      'recordActivity:a',
+    ]);
+    expect(bridge.queue, isEmpty);
+
+    container.dispose();
+    expect(bridge.flushRequest, isNull);
+  });
+
+  // testWidgets, which demangles the stack reportError prints.
+  testWidgets('flushQueuedLogs with keepRefused leaves a refused log queued '
+      'and reports nothing', (tester) async {
+    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+      _log('a', DateTime(2026, 11, 8, 9)),
+    ]);
+    final FakeTrackerWrites writes = FakeTrackerWrites()
+      ..respond = (Write w) => Future<void>.error(
+        FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied'),
+      );
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
+        memoryJournal(),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(userProvider.future);
+    await flushQueuedLogs(
+      bridge: bridge,
+      writes: writes,
+      rejected: container.read(rejectedWritesProvider.notifier),
+      uid: 'u1',
+      now: DateTime(2026, 11, 8, 10),
+      keepRefused: true,
+    );
+    expect(bridge.queue.map((QueuedLog l) => l.id), <String>['a']);
+    expect(container.read(rejectedWritesProvider), isEmpty);
+  });
+
+  group('runBackgroundFlush', () {
+    Future<(BackgroundFlushOutcome, _QueueBridge, FakeTrackerWrites)> run({
+      String? uid = 'u1',
+      bool e2ee = true,
+      JournalKeyState? key,
+    }) async {
+      final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+        _log('a', DateTime(2026, 11, 8, 9)),
+      ]);
+      final FakeTrackerWrites writes = FakeTrackerWrites();
+      final BackgroundFlushOutcome outcome = await runBackgroundFlush(
+        initialize: () async {},
+        overrides: [
+          userProvider.overrideWith(
+            (ref) => Stream.value(uid == null ? null : FakeUser(uid)),
+          ),
+          memoryJournal(),
+          widgetBridgeProvider.overrideWithValue(bridge),
+          trackerWritesProvider.overrideWithValue(writes),
+          e2eeEnabledProvider.overrideWithValue(e2ee),
+          journalKeyProvider.overrideWithValue(
+            key == null
+                ? const AsyncLoading<JournalKeyState>()
+                : AsyncData<JournalKeyState>(key),
+          ),
+        ],
+        now: () => DateTime(2026, 11, 8, 10),
+        readyWithin: const Duration(milliseconds: 50),
+      );
+      return (outcome, bridge, writes);
+    }
+
+    test('signed out: blocked, the queue untouched', () async {
+      final (outcome, bridge, writes) = await run(uid: null);
+      expect(outcome, BackgroundFlushOutcome.blocked);
+      expect(writes.writes, isEmpty);
+      expect(bridge.queue, hasLength(1));
+    });
+
+    test('no key on the device yet: retry, nothing written unsealed', () async {
+      final (outcome, bridge, writes) = await run(key: const KeyUnknown());
+      expect(outcome, BackgroundFlushOutcome.retry);
+      expect(writes.writes, isEmpty);
+      expect(bridge.queue, hasLength(1));
+    });
+
+    test('the key never loads in time: retry, the queue untouched', () async {
+      final (outcome, bridge, writes) = await run();
+      expect(outcome, BackgroundFlushOutcome.retry);
+      expect(writes.writes, isEmpty);
+      expect(bridge.queue, hasLength(1));
+    });
+
+    test('E2EE off: writes the queue and empties it', () async {
+      final (outcome, bridge, writes) = await run(e2ee: false);
+      expect(outcome, BackgroundFlushOutcome.flushed);
+      expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
+        'recordActivity:a',
+      ]);
+      expect(bridge.queue, isEmpty);
+    });
   });
 }

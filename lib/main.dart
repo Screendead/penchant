@@ -24,6 +24,7 @@ import 'package:tracker/design/font_licence.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widget_bridge/background_flush.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
@@ -37,6 +38,22 @@ void main() {
   installErrorHandlers();
   registerFontLicence();
   startApp();
+}
+
+/// The headless engine's entrypoint, for an iOS background refresh with the
+/// queue non-empty (ios/Runner/WidgetBridge.swift). It flushes once and tells
+/// native, which ends the task.
+@pragma('vm:entry-point')
+Future<void> backgroundFlushMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  installErrorHandlers();
+  const WidgetBridge bridge = WidgetBridge();
+  final BackgroundFlushOutcome outcome = await runBackgroundFlush(
+    initialize: initializeFirebase,
+    overrides: keyServiceOverrides,
+    now: DateTime.now,
+  );
+  await bridge.backgroundDone(outcome);
 }
 
 // main() without the global error handlers, which flutter_test owns.

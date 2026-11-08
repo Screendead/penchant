@@ -48,6 +48,12 @@ class _FakeBridge implements WidgetBridge {
 
   @override
   Future<void> removeLogs(List<QueuedLog> done) async => calls.add('remove');
+
+  @override
+  void onFlushRequest(Future<void> Function()? flush) {}
+
+  @override
+  Future<void> backgroundDone(BackgroundFlushOutcome outcome) async {}
 }
 
 class _FixedToday extends Today {

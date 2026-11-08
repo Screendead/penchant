@@ -46,6 +46,27 @@ class WidgetBridge {
     jsonEncode(<Object?>[for (final l in done) l.toJson()]),
   );
 
+  /// Answers the native side's 'flush' call: a log queued by a widget, a
+  /// control or Siri while the app runs, or a background refresh that found
+  /// this engine alive. Null removes the handler, and the call then comes back
+  /// not implemented, which native reads as nothing to do here.
+  void onFlushRequest(Future<void> Function()? flush) {
+    _channel.setMethodCallHandler(
+      flush == null
+          ? null
+          : (MethodCall call) async {
+              if (call.method != 'flush') {
+                throw MissingPluginException();
+              }
+              await flush();
+            },
+    );
+  }
+
+  /// Ends the background refresh task that started this headless engine.
+  Future<void> backgroundDone(BackgroundFlushOutcome outcome) =>
+      _invoke('backgroundDone', outcome.name);
+
   Future<void> _invoke(String method, [Object? argument]) async {
     try {
       await _channel.invokeMethod<void>(method, argument);
@@ -54,6 +75,11 @@ class WidgetBridge {
     }
   }
 }
+
+/// How a background flush ended. Native asks for another refresh after
+/// [retry] while the queue still holds logs; [blocked] needs the app opened
+/// (signed out, or a journal that needs its recovery key).
+enum BackgroundFlushOutcome { flushed, retry, blocked }
 
 final widgetBridgeProvider = Provider<WidgetBridge>(
   (ref) => const WidgetBridge(),

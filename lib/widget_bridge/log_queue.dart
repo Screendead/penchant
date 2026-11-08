@@ -21,19 +21,27 @@ const String widgetLogWhat = 'a log from a widget or Shortcut';
 /// server answered or the write timed out into the SDK's own queue, so a
 /// launch that ends first leaves it to the next flush, which writes the same
 /// document again. Returns when to look again, if a log was held back.
+///
+/// With [keepRefused] a log the server refuses stays queued, for the app's
+/// next flush to show in its banner: a background engine has no banner.
 Future<DateTime?> flushQueuedLogs({
   required WidgetBridge bridge,
   required TrackerWrites writes,
   required RejectedWrites rejected,
   required String uid,
   required DateTime now,
+  bool keepRefused = false,
 }) async {
   final ({List<QueuedLog> ready, List<QueuedLog> cancelled, DateTime? next})
   batch = readyLogs(await bridge.pendingLogs(), uid: uid, now: now);
   final List<QueuedLog> done = <QueuedLog>[...batch.cancelled];
   await Future.wait(<Future<void>>[
     for (final QueuedLog log in batch.ready)
-      _write(log, writes, rejected).then((_) => done.add(log)),
+      _write(log, writes, rejected, keepRefused: keepRefused).then((bool ok) {
+        if (ok) {
+          done.add(log);
+        }
+      }),
   ]);
   if (done.isNotEmpty) {
     await bridge.removeLogs(done);
@@ -41,11 +49,13 @@ Future<DateTime?> flushQueuedLogs({
   return batch.next;
 }
 
-Future<void> _write(
+// Whether the log can leave the queue.
+Future<bool> _write(
   QueuedLog log,
   TrackerWrites writes,
-  RejectedWrites rejected,
-) async {
+  RejectedWrites rejected, {
+  required bool keepRefused,
+}) async {
   final SentWrite write = switch (log.op) {
     QueuedLogOp.log => writes.recordActivity(
       log.id,
@@ -62,25 +72,27 @@ Future<void> _write(
       : 'Not undone: $widgetLogWhat';
   try {
     await rejected.settle(write, what);
+    return true;
   } on FirebaseException catch (e, stack) {
     // Refused (a habit deleted since the tap, say): writing it again would
     // be refused again, so it goes to the banner and leaves the queue.
     reportError(e, stack, context: 'while writing $widgetLogWhat');
+    if (keepRefused) {
+      return false;
+    }
     rejected.reporter(
       what,
       creates: creates ? log.id : null,
       changes: creates ? null : log.id,
     )(e);
+    return true;
   }
 }
 
-// How often a running app looks for logs while it stays open, as the Mac app
-// does beside Notification Centre.
-const Duration queuedLogPoll = Duration(minutes: 1);
-
 /// Writes the widgets' queued logs while someone is signed in with the journal
 /// key loaded: at once, on every resume, when a held-back log comes due, and
-/// every [queuedLogPoll].
+/// when native asks (a log queued while the app runs, or a background
+/// refresh). Nothing polls: native hears each enqueue from the extension.
 final widgetLogFlushProvider = Provider<void>((ref) {
   if (!widgetsSupported) {
     return;
@@ -102,13 +114,10 @@ final widgetLogFlushProvider = Provider<void>((ref) {
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
 
   bool disposed = false;
-  bool running = false;
+  Future<void>? inFlight;
   Timer? due;
-  Future<void> flush() async {
-    if (disposed || running) {
-      return;
-    }
-    running = true;
+  late final Future<void> Function() flush;
+  Future<void> run() async {
     try {
       final DateTime? next = await flushQueuedLogs(
         bridge: bridge,
@@ -123,17 +132,23 @@ final widgetLogFlushProvider = Provider<void>((ref) {
       }
     } on Object catch (e, stack) {
       reportError(e, stack, context: 'while flushing $widgetLogWhat');
-    } finally {
-      running = false;
     }
   }
 
+  // A request during a flush waits for that one rather than starting another.
+  flush = () {
+    if (disposed) {
+      return Future<void>.value();
+    }
+    return inFlight ??= run().whenComplete(() => inFlight = null);
+  };
+
   final AppLifecycleListener lifecycle = AppLifecycleListener(onResume: flush);
-  final Timer poll = Timer.periodic(queuedLogPoll, (_) => flush());
+  bridge.onFlushRequest(flush);
   ref.onDispose(() {
     disposed = true;
     due?.cancel();
-    poll.cancel();
+    bridge.onFlushRequest(null);
     lifecycle.dispose();
   });
   unawaited(flush());
