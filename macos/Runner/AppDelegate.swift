@@ -7,14 +7,15 @@ class AppDelegate: FlutterAppDelegate {
   static let menuBarHelperID = "com.screendead.penchant.menubar"
 
   // FlutterAppDelegate implements this one (it names the window and menus).
-  // The nib's window is hidden at launch (MainMenu.xib), so a flush-mode
-  // launch shows nothing and has no Dock icon.
+  // Info.plist's LSUIElement and the nib's window hidden at launch
+  // (MainMenu.xib) keep a flush-mode launch out of the Dock and off screen: a
+  // regular app's Dock icon is up before this runs. Flush mode stays an
+  // accessory app rather than a prohibited one, which may not be activated,
+  // so the user's launch meanwhile can still bring it up.
   override func applicationWillFinishLaunching(_ notification: Notification) {
     super.applicationWillFinishLaunching(notification)
-    if FlushMode.active {
-      NSApp.setActivationPolicy(.prohibited)
-    } else {
-      mainFlutterWindow?.makeKeyAndOrderFront(nil)
+    if !FlushMode.active {
+      NSApp.setActivationPolicy(.regular)
     }
   }
 
@@ -25,6 +26,7 @@ class AppDelegate: FlutterAppDelegate {
     if FlushMode.active {
       FlushMode.start()
     } else {
+      showMainWindow()
       startMenuBarHelper()
     }
   }
@@ -39,7 +41,15 @@ class AppDelegate: FlutterAppDelegate {
     FlushMode.leave()
     NSApp.setActivationPolicy(.regular)
     (mainFlutterWindow as? MainFlutterWindow)?.attachFlutter()
+    showMainWindow()
     startMenuBarHelper()
+  }
+
+  // Launch Services does not activate an LSUIElement app it launches, and
+  // window restoration after a flush-mode run would leave the window hidden.
+  private func showMainWindow() {
+    mainFlutterWindow?.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
   }
 
   // The menu bar helper (macos/PenchantMenuBar) is a login item, so it starts
@@ -83,6 +93,7 @@ class AppDelegate: FlutterAppDelegate {
   {
     if FlushMode.active {
       leaveFlushMode()
+      return true
     }
     if !flag {
       mainFlutterWindow?.makeKeyAndOrderFront(nil)
