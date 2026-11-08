@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/widgets/banner_scroll.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
 // For MaterialApp.builder: a refusal can arrive on any screen, long after the
@@ -57,49 +58,39 @@ class RejectedWritesBanner extends ConsumerWidget {
       color: colors.errorContainer,
       child: SafeArea(
         bottom: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height / 3,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            child: Column(
-              children: [
-                for (final RejectedWrite item in rejected)
-                  Semantics(
-                    liveRegion: true,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.sync_problem,
-                          color: colors.onErrorContainer,
+        child: BannerScroll(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          child: Column(
+            children: [
+              for (final RejectedWrite item in rejected)
+                Semantics(
+                  liveRegion: true,
+                  child: Row(
+                    children: [
+                      Icon(Icons.sync_problem, color: colors.onErrorContainer),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.what,
+                              style: text.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(item.reason, style: text),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.what,
-                                style: text.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(item.reason, style: text),
-                            ],
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => ref
-                              .read(rejectedWritesProvider.notifier)
-                              .dismiss(item),
-                          child: Text(dismissLabel, style: text),
-                        ),
-                      ],
-                    ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(rejectedWritesProvider.notifier)
+                            .dismiss(item),
+                        child: Text(dismissLabel, style: text),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/widgets/banner_scroll.dart';
 
 class NotSyncedMarker extends StatelessWidget {
   const NotSyncedMarker({super.key, this.label = defaultLabel});
@@ -78,7 +79,7 @@ class OfflineBanner extends ConsumerWidget {
       liveRegion: true,
       child: Material(
         color: colors.tertiaryContainer,
-        child: Padding(
+        child: BannerScroll(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
