@@ -176,13 +176,17 @@ enum QueueListener {
       NotificationCenter.default.addObserver(
         forName: UIScene.didEnterBackgroundNotification, object: nil, queue: .main
       ) { _ in LogQueue.scheduleRefresh() }
-      LogQueue.flushInThisProcess = { DispatchQueue.main.async { soon() } }
+      // On the intent's thread, before perform() returns: UIKit grants the
+      // assertion asynchronously, and the app may be suspended soon after.
+      LogQueue.flushInThisProcess = {
+        let assertion = Assertion()
+        guard assertion.begin(onExpiry: { stop() }) else { return }
+        DispatchQueue.main.async { soon(assertion) }
+      }
     }
 
     // A log intent just changed the queue in this process.
-    private static func soon() {
-      let assertion = Assertion()
-      guard assertion.begin(onExpiry: { stop() }) else { return }
+    private static func soon(_ assertion: Assertion) {
       let wait = LogQueue.due(LogQueue.pending()).timeIntervalSinceNow
       DispatchQueue.main.asyncAfter(deadline: .now() + max(0, wait)) {
         guard assertion.active else { return }
@@ -297,6 +301,8 @@ enum QueueListener {
   }
 
   // One UIApplication background task, ended once whichever comes first.
+  // begin may run on any thread (Apple documents it as safe); the rest runs
+  // on the main queue, where UIKit calls the expiry handler.
   private final class Assertion {
     private var id = UIBackgroundTaskIdentifier.invalid
 
