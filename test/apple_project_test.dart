@@ -106,9 +106,9 @@ void main() {
     test('every $platform target signs automatically for team $_team', () {
       final String pbxproj = '$platform/Runner.xcodeproj/project.pbxproj';
       final List<String> configs = _targetBuildSettings(pbxproj);
-      // Runner and PenchantWidgets (and macOS's RunnerTests and Flutter
-      // Assemble), three configurations each.
-      expect(configs, hasLength(platform == 'ios' ? 6 : 12));
+      // Runner and PenchantWidgets (and macOS's RunnerTests, Flutter
+      // Assemble and PenchantMenuBar), three configurations each.
+      expect(configs, hasLength(platform == 'ios' ? 6 : 15));
       for (final String settings in configs) {
         expect(settings, contains('CODE_SIGN_STYLE = Automatic;'));
         expect(settings, contains('DEVELOPMENT_TEAM = $_team;'));

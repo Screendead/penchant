@@ -9,9 +9,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
-- On the Mac, Penchant sits in the menu bar: its popover shows today's dial with your habits below it. A click on a habit
-  logs one now, and that habit's row offers Undo for five seconds. Closing the window no longer quits the app; click the
-  Dock icon or Open Penchant to bring it back.
+- On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
+  lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. Logs made while the
+  app is closed wait, marked "Saved — syncs when Penchant opens", and the app saves them when it next opens. Closing
+  the window no longer quits the app; click the Dock icon or Open Penchant to bring it back.
 - A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
   last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
   you sign out.
@@ -54,8 +55,6 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
-- Mac: clicking the menu bar icon opens its popover. The engine now runs with multi-view enabled, so the popover can add its view.
-- The Mac menu bar icon now appears. It was never made, because the app never received the launch-finished event it waited for.
 
 - Opening or closing a page in dark mode no longer flashes white halfway through the transition.
 - A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
