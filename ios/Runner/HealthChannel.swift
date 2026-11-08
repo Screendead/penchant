@@ -147,7 +147,7 @@ enum HealthChannel {
         var found: [[String: Any]] = []
         collection?.enumerateStatistics(from: start, to: end) { stats, _ in
           let quantity = s.options == .cumulativeSum ? stats.sumQuantity() : stats.averageQuantity()
-          if let quantity {
+          if let quantity, stats.startDate < end {
             found.append(["date": key(stats.startDate), "metric": metric, "value": quantity.doubleValue(for: s.unit)])
           }
         }
