@@ -22,6 +22,7 @@ import 'package:tracker/design/font_licence.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
@@ -82,6 +83,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     // Kept alive here so sealing runs whichever screen is open.
     ref.listen(plaintextMigrationProvider, (_, _) {});
+    ref.listen(widgetSyncProvider, (_, _) {});
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
