@@ -15,15 +15,17 @@ import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
 // Inside a BGAppRefreshTask, which iOS ends after about 30 seconds, or the
-// Mac's 25 s flush mode: the session and the key get this long, a write up to
-// settleWrite's 10 s more.
+// Mac's flush mode: the session and the key get this long between them, a
+// write up to settleWrite's 10 s more.
 const Duration backgroundReadyWithin = Duration(seconds: 12);
 
 /// One flush of the widgets' queue from a headless engine that iOS started for
 /// a background refresh, or the Mac app started in flush mode
 /// (ios/Runner/WidgetBridge.swift). It writes only what
 /// the app would: the signed-in user's logs, sealed. Without the session or
-/// the key in time it writes nothing and the logs stay queued.
+/// the key in time it writes nothing and the logs stay queued. A log the
+/// server refused makes it [BackgroundFlushOutcome.blocked], for the app's
+/// banner; one held back or not yet acknowledged, [BackgroundFlushOutcome.retry].
 Future<BackgroundFlushOutcome> runBackgroundFlush({
   required Future<void> Function() initialize,
   required List<Override> overrides,
@@ -40,11 +42,12 @@ Future<BackgroundFlushOutcome> runBackgroundFlush({
   // Holds the key chain (autoDispose) for the whole run, so the sealer read
   // below is the one the key resolved to.
   container.listen(sealerProvider, (_, _) {});
+  final DateTime readyBy = DateTime.now().add(readyWithin);
   try {
     final AsyncValue<User?> user = await _settled(
       container,
       userProvider,
-      readyWithin,
+      readyBy,
     );
     final String? uid = user.value?.uid;
     if (uid == null) {
@@ -56,7 +59,7 @@ Future<BackgroundFlushOutcome> runBackgroundFlush({
       final AsyncValue<JournalKeyState> key = await _settled(
         container,
         journalKeyProvider,
-        readyWithin,
+        readyBy,
       );
       switch (key.value) {
         case KeyReady():
@@ -72,15 +75,18 @@ Future<BackgroundFlushOutcome> runBackgroundFlush({
         return BackgroundFlushOutcome.retry;
       }
     }
-    final DateTime? next = await flushQueuedLogs(
+    final FlushLeft left = await flushQueuedLogs(
       bridge: container.read(widgetBridgeProvider),
       writes: container.read(trackerWritesProvider),
       rejected: container.read(rejectedWritesProvider.notifier),
       uid: uid,
       now: now(),
-      keepRefused: true,
+      inBackground: true,
     );
-    return next == null
+    if (left.refused) {
+      return BackgroundFlushOutcome.blocked;
+    }
+    return left.next == null && !left.unacknowledged
         ? BackgroundFlushOutcome.flushed
         : BackgroundFlushOutcome.retry;
   } on Object catch (e, stack) {
@@ -92,11 +98,11 @@ Future<BackgroundFlushOutcome> runBackgroundFlush({
 }
 
 // The provider's first value that is not loading, kept listened to meanwhile:
-// a read alone would pause a stream provider. Loading if none came in time.
+// a read alone would pause a stream provider. Loading if none came by [by].
 Future<AsyncValue<T>> _settled<T>(
   ProviderContainer container,
   ProviderListenable<AsyncValue<T>> provider,
-  Duration within,
+  DateTime by,
 ) async {
   final Completer<AsyncValue<T>> settled = Completer<AsyncValue<T>>();
   final ProviderSubscription<AsyncValue<T>> sub = container.listen(provider, (
@@ -108,8 +114,9 @@ Future<AsyncValue<T>> _settled<T>(
     }
   }, fireImmediately: true);
   try {
+    final Duration left = by.difference(DateTime.now());
     return await settled.future.timeout(
-      within,
+      left.isNegative ? Duration.zero : left,
       onTimeout: () => AsyncValue<T>.loading(),
     );
   } finally {

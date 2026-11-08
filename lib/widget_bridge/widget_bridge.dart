@@ -78,7 +78,8 @@ class WidgetBridge {
 
 /// How a background flush ended. Native asks for another refresh after
 /// [retry] while the queue still holds logs; [blocked] needs the app opened
-/// (signed out, or a journal that needs its recovery key).
+/// (signed out, a journal that needs its recovery key, or a refused log for
+/// its banner).
 enum BackgroundFlushOutcome { flushed, retry, blocked }
 
 final widgetBridgeProvider = Provider<WidgetBridge>(

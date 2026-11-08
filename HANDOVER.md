@@ -501,7 +501,14 @@ Later the same day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None. U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
+- **`r11-ios-widget-sync`** (raised 2026-11-08, PR #167 review): iPhone widget and Shortcut logs reach Firestore only
+  when the app runs or iOS grants a `BGAppRefreshTask`, which it schedules at its own discretion (often hours later)
+  and never for an app the user force-quit. Options: (A) keep the background refresh as is; (B) run the widget's log
+  intent in the app's process so it writes at once, for example as a `LiveActivityIntent`, which Apple documents as
+  running in the app's process (unverified for widget buttons here: it needs a spike on a device first). Claude
+  recommends B, after the spike shows a widget tap writing within seconds with the app suspended or not running.
+
+U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
 
 Round 5 (`r5-radar-inset`, `r5-key-height`, `r5-key-always`) is moot: the radar and its key left Today in #83.
 

@@ -19,6 +19,15 @@ class AppDelegate: FlutterAppDelegate {
     }
   }
 
+  // Launch Services activates no LSUIElement app it launches, and from inside
+  // `open -a` and `open -g` look the same (an oapp event, a default launch),
+  // so only a login item's launch, which says so, stays in the background.
+  // Read in did-finish, while that event is current.
+  private var launchedAsLoginItem: Bool {
+    NSAppleEventManager.shared().currentAppleEvent?.paramDescriptor(forKeyword: keyAEPropData)?
+      .enumCodeValue == keyAELaunchedAsLogInItem
+  }
+
   // No super: FlutterAppDelegate does not implement this on macOS, so the call
   // raises "unrecognized selector", which AppKit swallows along with the rest
   // of the method.
@@ -26,7 +35,8 @@ class AppDelegate: FlutterAppDelegate {
     if FlushMode.active {
       FlushMode.start()
     } else {
-      showMainWindow()
+      FlushMode.clearOutcome()
+      showMainWindow(activating: !launchedAsLoginItem)
       startMenuBarHelper()
     }
   }
@@ -37,19 +47,30 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   // The user opened Penchant while it ran to flush: it becomes the normal app.
+  // An accessory app turned regular mid-session can keep the previous app's
+  // menus in the menu bar until it is activated again, so the window and the
+  // activation wait for the policy change to take, a runloop turn later.
   private func leaveFlushMode() {
     FlushMode.leave()
     NSApp.setActivationPolicy(.regular)
     (mainFlutterWindow as? MainFlutterWindow)?.attachFlutter()
-    showMainWindow()
+    DispatchQueue.main.async { self.showMainWindow(activating: true) }
     startMenuBarHelper()
   }
 
-  // Launch Services does not activate an LSUIElement app it launches, and
-  // window restoration after a flush-mode run would leave the window hidden.
-  private func showMainWindow() {
+  // The window is hidden at launch (MainMenu.xib), for flush mode, so every
+  // other launch shows it.
+  private func showMainWindow(activating: Bool) {
     mainFlutterWindow?.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    if activating { activate() }
+  }
+
+  private func activate() {
+    if #available(macOS 14.0, *) {
+      NSApp.activate()
+    } else {
+      NSApp.activate(ignoringOtherApps: true)
+    }
   }
 
   // The menu bar helper (macos/PenchantMenuBar) is a login item, so it starts
@@ -72,6 +93,10 @@ class AppDelegate: FlutterAppDelegate {
     }
     // Registering launches it; an item enabled earlier and quit since does not
     // relaunch until the next login, so the app opens it.
+    // A running helper whose item the user hid brings it back.
+    CFNotificationCenterPostNotification(
+      CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(showMenuBarNotification as CFString), nil, nil,
+      true)
     if NSRunningApplication.runningApplications(withBundleIdentifier: Self.menuBarHelperID).isEmpty {
       let helper = Bundle.main.bundleURL.appendingPathComponent(
         "Contents/Library/LoginItems/PenchantMenuBar.app")
@@ -96,8 +121,7 @@ class AppDelegate: FlutterAppDelegate {
       return true
     }
     if !flag {
-      mainFlutterWindow?.makeKeyAndOrderFront(nil)
-      NSApp.activate(ignoringOtherApps: true)
+      showMainWindow(activating: true)
     }
     return true
   }

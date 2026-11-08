@@ -61,11 +61,18 @@ struct LastLog: Codable, Equatable {
 let queueChangedNotification = "com.screendead.penchant.log-queue-changed"
 
 #if os(macOS)
-  // The menu bar helper sets it, in seconds since 1970, just before it launches
-  // Penchant to flush (FlushMode in ios/Runner/WidgetBridge.swift).
-  enum FlushModeStamp {
-    static let key = "menubar.flushLaunchAt"
+  // App Group keys between the menu bar helper and Penchant's FlushMode
+  // (ios/Runner/WidgetBridge.swift). The helper sets launchedAt, in seconds
+  // since 1970, just before it launches Penchant to flush; that run leaves
+  // BackgroundFlushOutcome's name in outcome as it quits.
+  enum FlushHandoff {
+    static let launchedAt = "menubar.flushLaunchAt"
+    static let outcome = "menubar.flushOutcome"
   }
+
+  // Penchant posts it at each launch, to bring back a menu bar item the user
+  // hid with its Quit (the helper keeps running, to go on flushing).
+  let showMenuBarNotification = "com.screendead.penchant.menubar.show"
 #endif
 
 // queuedLogHold in lib/data/queued_log.dart: the app writes a log only once it
