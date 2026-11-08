@@ -2,6 +2,7 @@
 //   flutter test test/motion_frames_render_test.dart --dart-define=RENDER_DIR=<dir>
 // Each scene writes <dir>/<scene>/frame-NNN.png; tools/motion-frames.sh turns
 // them into GIFs and contact sheets.
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -22,6 +23,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/sync_status.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -47,10 +49,10 @@ List<ViceActivity> _entries(DateTime day) => <ViceActivity>[
     ),
 ];
 
-List<Override> _overrides() => <Override>[
+List<Override> _overrides(Stream<bool> offline) => <Override>[
   ...habitOverrides(_vices),
   userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-  offlineProvider.overrideWith((ref) => Stream.value(false)),
+  offlineProvider.overrideWith((ref) => offline),
   trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
   memoryJournal(),
   viceActivityDayProvider.overrideWith(
@@ -83,6 +85,7 @@ Future<GlobalKey> _pumpToday(
   WidgetTester tester, {
   required bool reduced,
   GlobalKey<NavigatorState>? navigator,
+  Stream<bool>? offline,
 }) async {
   debugDisableShadows = false;
   tester.view.devicePixelRatio = 2;
@@ -91,7 +94,7 @@ Future<GlobalKey> _pumpToday(
   final GlobalKey frame = GlobalKey();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: _overrides(),
+      overrides: _overrides(offline ?? Stream<bool>.value(false)),
       child: RepaintBoundary(
         key: frame,
         child: MediaQuery(
@@ -105,7 +108,16 @@ Future<GlobalKey> _pumpToday(
             onGenerateRoute: generateRoute,
             debugShowCheckedModeBanner: false,
             theme: appTheme(Brightness.light),
-            home: const Scaffold(body: SafeArea(child: ViceTracker())),
+            home: const Scaffold(
+              body: SafeArea(
+                child: Column(
+                  children: <Widget>[
+                    OfflineBanner(),
+                    Expanded(child: ViceTracker()),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -178,6 +190,31 @@ void main() {
       navigator.currentState!.pushNamed('/manage-data');
       await _run(tester, capture, 22);
       debugDefaultTargetPlatformOverride = null;
+    }, skip: _dir.isEmpty);
+  }
+
+  for (final bool reduced in <bool>[false, true]) {
+    testWidgets('offline pill, reduce motion $reduced', (
+      WidgetTester tester,
+    ) async {
+      final StreamController<bool> offline = StreamController<bool>();
+      addTearDown(() => unawaited(offline.close()));
+      final GlobalKey frame = await _pumpToday(
+        tester,
+        reduced: reduced,
+        offline: offline.stream,
+      );
+      offline.add(false);
+      await tester.pumpAndSettle();
+      final Future<void> Function() capture = _recorder(
+        tester,
+        frame,
+        reduced ? 'offline-reduced' : 'offline',
+      );
+      await capture();
+      offline.add(true);
+      await tester.pump();
+      await _run(tester, capture, 22);
     }, skip: _dir.isEmpty);
   }
 }

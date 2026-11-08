@@ -18,6 +18,8 @@ pull request titles (`gh pr list --state merged`).
 - Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
   it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
   fade out before the new day's fade in).
+- The offline and "not saved" notices are rounded pills that drop in from the top on a spring and lift away when
+  they clear, instead of bars that appear and vanish at once. With Reduce Motion on they fade.
 
 ### Fixed
 

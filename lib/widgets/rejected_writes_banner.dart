@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/widgets/pill_drop.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
 // For MaterialApp.builder: a refusal can arrive on any screen, long after the
@@ -43,62 +44,69 @@ class RejectedWritesBanner extends ConsumerWidget {
   final List<RejectedWrite> rejected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (rejected.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  Widget build(BuildContext context, WidgetRef ref) =>
+      PillDrop(shown: rejected.isNotEmpty, child: _pill(context, ref));
 
+  Widget _pill(BuildContext context, WidgetRef ref) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final TextStyle text = TextStyle(color: colors.onErrorContainer);
 
     // Above the navigator there is no Overlay, so nothing here may show a
     // tooltip.
-    return Material(
-      color: colors.errorContainer,
-      child: SafeArea(
-        bottom: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height / 3,
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+        child: Material(
+          color: colors.errorContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(PillDrop.radius),
+            side: BorderSide(color: colors.error.withValues(alpha: 0.3)),
           ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            child: Column(
-              children: [
-                for (final RejectedWrite item in rejected)
-                  Semantics(
-                    liveRegion: true,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.sync_problem,
-                          color: colors.onErrorContainer,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.what,
-                                style: text.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(item.reason, style: text),
-                            ],
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height / 3,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Column(
+                children: [
+                  for (final RejectedWrite item in rejected)
+                    Semantics(
+                      liveRegion: true,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.sync_problem,
+                            color: colors.onErrorContainer,
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () => ref
-                              .read(rejectedWritesProvider.notifier)
-                              .dismiss(item),
-                          child: Text(dismissLabel, style: text),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.what,
+                                  style: text.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(item.reason, style: text),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => ref
+                                .read(rejectedWritesProvider.notifier)
+                                .dismiss(item),
+                            child: Text(dismissLabel, style: text),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
