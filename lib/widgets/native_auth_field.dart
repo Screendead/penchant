@@ -224,6 +224,13 @@ class _NativeAuthFieldState extends State<NativeAuthField> {
     _nativeFocused = focused;
     if (focused && !_focusNode.hasFocus) {
       _focusNode.requestFocus();
+      // Taking focus from a Flutter field ends that field's text input
+      // session, which may hand first responder back to the Flutter view.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_focusNode.hasFocus) {
+          _channel?.focus();
+        }
+      });
     } else if (!focused && _focusNode.hasFocus) {
       _focusNode.unfocus();
     }

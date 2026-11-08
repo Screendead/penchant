@@ -59,6 +59,7 @@ class _AuthFieldState extends State<AuthField> {
     final TextStyle style = _fieldText.copyWith(
       color: Theme.of(context).colorScheme.onSurface,
     );
+    final bool native = widget.nativeKind != null && useNativeAuthFields;
     final InputDecoration decoration = InputDecoration(
       hintText: widget.hint,
       contentPadding: const EdgeInsets.symmetric(vertical: 17),
@@ -74,23 +75,27 @@ class _AuthFieldState extends State<AuthField> {
       suffixIcon: widget.obscurable
           ? Padding(
               padding: const EdgeInsets.only(right: 4),
-              child: IconButton(
-                tooltip: _obscured ? 'Show password' : 'Hide password',
-                icon: StrokeIcon(
-                  _obscured ? DialGlyph.eye : DialGlyph.eyeOff,
-                  size: 19,
-                  color: muted,
+              // Tab from a native field goes field to field, Email to
+              // Password to Confirm, as AppKit's own key loop would.
+              child: ExcludeFocus(
+                excluding: native,
+                child: IconButton(
+                  tooltip: _obscured ? 'Show password' : 'Hide password',
+                  icon: StrokeIcon(
+                    _obscured ? DialGlyph.eye : DialGlyph.eyeOff,
+                    size: 19,
+                    color: muted,
+                  ),
+                  onPressed: () => setState(() => _obscured = !_obscured),
                 ),
-                onPressed: () => setState(() => _obscured = !_obscured),
               ),
             )
           : null,
     );
-    final NativeAuthFieldKind? nativeKind = widget.nativeKind;
-    if (nativeKind != null && useNativeAuthFields) {
+    if (native) {
       return NativeAuthField(
         controller: widget.controller,
-        kind: nativeKind,
+        kind: widget.nativeKind!,
         hint: widget.hint,
         // The native field draws its own placeholder.
         decoration: decoration.copyWith(hintText: ''),
