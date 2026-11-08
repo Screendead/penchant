@@ -25,7 +25,6 @@ class AmountFields extends StatelessWidget {
     required this.viceName,
     this.enabled = true,
     this.quantityValidator = quantityError,
-    this.onQuantityChanged,
     this.error,
   });
 
@@ -45,7 +44,6 @@ class AmountFields extends StatelessWidget {
   final String viceName;
   final bool enabled;
   final FormFieldValidator<String> quantityValidator;
-  final ValueChanged<num>? onQuantityChanged;
   final String? error;
 
   num get _typed => parseAmount(quantityController.text) ?? 0;
@@ -53,7 +51,6 @@ class AmountFields extends StatelessWidget {
   void _stepBy(int delta) {
     final num next = _typed + delta;
     quantityController.text = formatAmount(next < step ? step : next);
-    onQuantityChanged?.call(_typed);
   }
 
   @override
@@ -103,8 +100,6 @@ class AmountFields extends StatelessWidget {
                         isDense: true,
                       ),
                       validator: quantityValidator,
-                      onChanged: (String value) =>
-                          onQuantityChanged?.call(parseAmount(value) ?? 0),
                     ),
                     const SizedBox(height: 4),
                     Text(

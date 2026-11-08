@@ -87,7 +87,6 @@ class _RecordNewActivityDialogState
   final TextEditingController quantityController = TextEditingController(
     text: formatAmount(defaultQuantity),
   );
-  String unit = Unit.item.nameFor(0);
   List<String> triggers = const <String>[];
   bool loading = false;
   bool _initialApplied = false;
@@ -204,14 +203,6 @@ class _RecordNewActivityDialogState
     });
   }
 
-  void updateUnit(num quantity) {
-    setState(() {
-      unit = selectedVice == null
-          ? Unit.item.nameFor(quantity)
-          : selectedVice!.unit.nameFor(quantity);
-    });
-  }
-
   String _submitLabel(Vice? vice) {
     final num typed = parseAmount(quantityController.text) ?? 0;
     final DateTime? at = ActivityDateField.format.tryParse(dateController.text);
@@ -261,7 +252,6 @@ class _RecordNewActivityDialogState
             onChanged: (String? id) {
               setState(() {
                 selectedVice = vices.firstWhere((Vice v) => v.id == id);
-                updateUnit(parseAmount(quantityController.text) ?? 0);
               });
             },
             items: vices
@@ -327,9 +317,6 @@ class _RecordNewActivityDialogState
       selectedVice = vices
           .where((Vice v) => v.id == widget.initialViceID)
           .firstOrNull;
-      if (selectedVice != null) {
-        unit = selectedVice!.unit.nameFor(0);
-      }
     }
     selectedVice = vices
         .where((Vice v) => v.id == selectedVice?.id)
@@ -366,7 +353,6 @@ class _RecordNewActivityDialogState
                         viceID: chosen?.id,
                         viceName: chosen?.name ?? '',
                         enabled: !loading,
-                        onQuantityChanged: updateUnit,
                         error: error,
                       ),
                       const SizedBox(height: 14),
