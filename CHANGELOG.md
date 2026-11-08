@@ -54,6 +54,7 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Mac: clicking the menu bar icon opens its popover. The engine now runs with multi-view enabled, so the popover can add its view.
 - The Mac menu bar icon now appears. It was never made, because the app never received the launch-finished event it waited for.
 
 - Opening or closing a page in dark mode no longer flashes white halfway through the transition.

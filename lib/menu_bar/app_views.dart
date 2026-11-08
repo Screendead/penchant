@@ -1,8 +1,9 @@
+import 'dart:math' show min;
 import 'dart:ui' show FlutterView;
 
 import 'package:flutter/widgets.dart';
 
-/// The macOS app's views: the main window's (the implicit view) shows [main],
+/// The macOS app's views: the main window's shows [main],
 /// and any other, which the status item's popover adds while it is open and
 /// removes when it closes, shows [popover]. Providers sit above this widget,
 /// so both views share them.
@@ -17,6 +18,11 @@ class AppViews extends StatefulWidget {
 }
 
 class _AppViewsState extends State<AppViews> with WidgetsBindingObserver {
+  // The engine runs with multi-view enabled (MainFlutterWindow.swift), which
+  // still announces an implicit view, of size zero, that no window shows. The
+  // main window's view is the first sized one; the popover's come later.
+  int? _mainViewId;
+
   @override
   void initState() {
     super.initState();
@@ -35,16 +41,22 @@ class _AppViewsState extends State<AppViews> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final FlutterView? main =
-        WidgetsBinding.instance.platformDispatcher.implicitView;
+    final List<FlutterView> views = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .views
+        .where((FlutterView v) => !v.physicalSize.isEmpty)
+        .toList();
+    if (views.isNotEmpty) {
+      _mainViewId ??= views.map((FlutterView v) => v.viewId).reduce(min);
+    }
     return ViewCollection(
       views: <Widget>[
-        for (final FlutterView view
-            in WidgetsBinding.instance.platformDispatcher.views)
+        for (final FlutterView view in views)
           View(
             key: ValueKey<int>(view.viewId),
             view: view,
-            child: view == main ? widget.main : widget.popover,
+            child: view.viewId == _mainViewId ? widget.main : widget.popover,
           ),
       ],
     );
