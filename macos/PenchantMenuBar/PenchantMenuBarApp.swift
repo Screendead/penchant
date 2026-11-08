@@ -237,6 +237,9 @@ enum FlushLauncher {
     launching = true
     lastLaunch = Date()
     defaults.set(Date().timeIntervalSince1970, forKey: FlushModeStamp.key)
+    // The new process reads it before its window loads; a stamp it misses
+    // makes the launch a normal, focused one.
+    defaults.synchronize()
     let configuration = NSWorkspace.OpenConfiguration()
     configuration.activates = false
     configuration.addsToRecentItems = false
