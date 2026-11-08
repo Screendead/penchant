@@ -15,6 +15,8 @@ pull request titles (`gh pr list --state merged`).
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
+  you left it. It narrows to 390 pt, where the phone layout returns.
 - Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
   it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
   fade out before the new day's fade in).
@@ -25,6 +27,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- A device that opens on "Unlock your journal" because iCloud Keychain has not yet brought the key from your
+  other device now checks again every few seconds and when you return to the app, and opens the journal by itself
+  once the key arrives.
 - The recovery key box on the unlock screen is one line high where the key fits, instead of leaving an empty
   second line under it.
 - Switching between Sign in and Create account is smooth: Email and Password stay put and keep what you typed,
@@ -93,6 +98,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Holding a habit in the Log fan opens an amount sheet instead of the record dialog: the habit's name at the top, a
+  large amount with − and + to step it (or type a decimal), and one button that says what it will log and when.
+  Editing an entry uses the same amount stepper.
 - An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
   Craving) or typed in; exports include them as a "triggers" column.
 - On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is

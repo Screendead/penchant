@@ -604,10 +604,7 @@ void main() {
     ];
 
     final Finder dialog = find.byType(RecordNewActivityDialog);
-    final Finder record = find.descendant(
-      of: find.byType(AlertDialog),
-      matching: find.text('Record'),
-    );
+    final Finder record = find.byKey(RecordNewActivityDialog.submitKey);
 
     Future<void> fill(WidgetTester tester) async {
       await _pumpOpened(
@@ -1189,12 +1186,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '2',
       );
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.text('Record'),
-        ),
-      );
+      await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pump();
       await waitOutTimeout(tester);
     }

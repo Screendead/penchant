@@ -39,5 +39,4 @@ through CI on merge, never from an agent's machine.
   check"), so it is a variant (`getpenchant.app`, `penchantjournal.com`) or a purchase. Chosen before the first
   TestFlight upload.
 
-**Needs Jack:** yes — Which domain variant, which address is the support contact, and where do the pages live
-(Firebase Hosting or the brand domain)?
+**Needs Jack:** no call left. The pages wait on a release (`HANDOVER.md`, B3).
