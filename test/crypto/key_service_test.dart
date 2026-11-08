@@ -1,7 +1,8 @@
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
@@ -19,8 +20,16 @@ import '../fakes.dart';
 class FakeKeyStore extends Fake implements KeyStore {
   final Map<String, StoredKey> keys = <String, StoredKey>{};
 
+  /// Thrown by the next read, as by a keychain that refuses it once.
+  Exception? nextReadError;
+
   @override
-  Future<StoredKey?> read(String uid) async => keys[uid];
+  Future<StoredKey?> read(String uid) async {
+    final Exception? error = nextReadError;
+    nextReadError = null;
+    if (error != null) throw error;
+    return keys[uid];
+  }
 
   @override
   Future<StoredKey> save(
@@ -91,14 +100,18 @@ class FakeKeyDirectory implements KeyDirectory {
 const String uid = 'u1';
 final DateTime made = DateTime(2026, 11, 7, 9);
 
-KeyService serviceOver(FakeKeyStore store, FakeKeyDirectory directory) =>
-    KeyService(
-      store: store,
-      directory: directory,
-      aes128: AesGcm.with128bits(),
-      aes256: AesGcm.with256bits(),
-      now: () => made,
-    );
+KeyService serviceOver(
+  FakeKeyStore store,
+  FakeKeyDirectory directory, {
+  Stream<void> Function()? rechecks,
+}) => KeyService(
+  store: store,
+  directory: directory,
+  aes128: AesGcm.with128bits(),
+  aes256: AesGcm.with256bits(),
+  now: () => made,
+  rechecks: rechecks ?? () => const Stream<void>.empty(),
+);
 
 Future<KeyRecord> recordOf(KeyService service, StoredKey stored) async =>
     KeyRecord(
@@ -206,6 +219,90 @@ void main() {
 
     expect(states.first, isA<KeyReady>());
     expect(states.last, isA<KeyNeedsRecovery>());
+  });
+
+  group('while locked, the keychain is read again', () {
+    late StreamController<void> recheck;
+    late StoredKey elsewhere;
+    late KeyService rechecking;
+
+    setUp(() async {
+      recheck = StreamController<void>();
+      elsewhere = StoredKey(
+        journalKey: JournalKey.generate(),
+        recoveryKey: RecoveryKey.generate(),
+        location: KeyLocation.synced,
+      );
+      directory.records[uid] = await recordOf(service, elsewhere);
+      rechecking = serviceOver(
+        store,
+        directory,
+        rechecks: () => recheck.stream,
+      );
+    });
+
+    tearDown(() => recheck.close());
+
+    test(
+      'and the journal opens when iCloud Keychain delivers the key',
+      () async {
+        final StreamIterator<JournalKeyState> states =
+            StreamIterator<JournalKeyState>(rechecking.resolve(uid));
+        addTearDown(states.cancel);
+        expect(await states.moveNext(), isTrue);
+        expect(states.current, isA<KeyNeedsRecovery>());
+
+        final Future<bool> next = states.moveNext();
+        recheck.add(null);
+        await pumpEventQueue();
+        store.keys[uid] = elsewhere;
+        recheck.add(null);
+
+        expect(await next, isTrue);
+        final KeyReady ready = states.current as KeyReady;
+        expect(ready.stored.journalKey.sameAs(elsewhere.journalKey), isTrue);
+        expect(ready.record, same(directory.records[uid]));
+        expect(await states.moveNext(), isFalse);
+        expect(recheck.hasListener, isFalse);
+      },
+    );
+
+    test('past a refused read and another key, until the right one', () async {
+      final StreamIterator<JournalKeyState> states =
+          StreamIterator<JournalKeyState>(rechecking.resolve(uid));
+      addTearDown(states.cancel);
+      expect(await states.moveNext(), isTrue);
+      final Future<bool> next = states.moveNext();
+      bool moved = false;
+      unawaited(next.then((_) => moved = true));
+
+      store.nextReadError = PlatformException(code: '-25308');
+      recheck.add(null);
+      await pumpEventQueue();
+      store.keys[uid] = StoredKey(
+        journalKey: JournalKey.generate(),
+        location: KeyLocation.synced,
+      );
+      recheck.add(null);
+      await pumpEventQueue();
+      expect(moved, isFalse);
+
+      store.keys[uid] = elsewhere;
+      recheck.add(null);
+      expect(await next, isTrue);
+      expect(states.current, isA<KeyReady>());
+    });
+
+    test('and stops when nothing listens any more', () async {
+      final StreamSubscription<JournalKeyState> sub = rechecking
+          .resolve(uid)
+          .listen((_) {});
+      await pumpUntil(() => recheck.hasListener);
+
+      await sub.cancel();
+
+      expect(recheck.hasListener, isFalse);
+    });
   });
 
   test('a device that loses the race to make the first key adopts the '
@@ -362,6 +459,30 @@ void main() {
         isA<UnlockNotThisJournal>(),
       );
       expect(await actions.unlock(elsewhere.recoveryKey!), isA<UnlockOpened>());
+      await pumpUntil(() => container.read(sealerProvider) != null);
+      expect(container.read(journalNeedsRecoveryKeyProvider), isFalse);
+    });
+
+    test('with E2EE on, a key that syncs in later opens the journal with '
+        'nothing typed', () async {
+      final StreamController<void> recheck = StreamController<void>.broadcast();
+      addTearDown(recheck.close);
+      service = serviceOver(store, directory, rechecks: () => recheck.stream);
+      final StoredKey elsewhere = StoredKey(
+        journalKey: JournalKey.generate(),
+        recoveryKey: RecoveryKey.generate(),
+        location: KeyLocation.synced,
+      );
+      directory.records[uid] = await recordOf(service, elsewhere);
+      final ProviderContainer container = containerWith(enabled: true);
+      addTearDown(container.dispose);
+      container.listen(sealerProvider, (_, _) {});
+      container.listen(journalNeedsRecoveryKeyProvider, (_, _) {});
+      await pumpUntil(() => container.read(journalNeedsRecoveryKeyProvider));
+
+      store.keys[uid] = elsewhere;
+      recheck.add(null);
+
       await pumpUntil(() => container.read(sealerProvider) != null);
       expect(container.read(journalNeedsRecoveryKeyProvider), isFalse);
     });

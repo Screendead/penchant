@@ -108,8 +108,8 @@ Store release); its `+N` is a placeholder. The build number of any shipped build
 rises with every merge and App Store Connect never sees a repeat. Build with the helper's flags, never by hand:
 
 ```bash
-tools/build-version.sh            # --build-name=0.1.0 --build-number=212 (needs full history, not a shallow clone)
-flags=$(tools/build-version.sh) && flutter build ipa $flags   # bash; zsh needs ${=flags}
+tools/build-version.sh flutter build ipa   # appends --build-name=0.1.0 --build-number=212 as two arguments (needs full history, not a shallow clone)
+tools/build-version.sh                     # no arguments: prints the flags; in zsh expand them with ${=flags}
 ```
 
 To release: add the PR lines under `## [Unreleased]` in `CHANGELOG.md` as you go; in a release PR bump `version:`,
@@ -190,7 +190,7 @@ Flutter pin ships Dart 3.13 (3.1.9 needs it). Its warnings fail `dart analyze` a
 A Flutter app over Firebase Auth + Firestore. Firebase project `screendead-vice-tracker`.
 It targets iOS 15 and macOS 12 and up only (macOS 12 is Xcode 27's and Flutter's floor);
 `firebase_options.dart` throws on any other platform. Both platforms are bundle ID `com.screendead.penchant`
-and share one Firebase iOS app registration (`r2-mac-config`):
+(the macOS test target `com.screendead.penchant.RunnerTests`) and share one Firebase iOS app registration (`r2-mac-config`):
 `macos/Runner/GoogleService-Info.plist` is a copy of the iOS file, and the macOS options carry its `ios` app id.
 
 **Native dependencies come from Swift Package Manager; there is no CocoaPods.** Every plugin with native code ships
@@ -304,8 +304,7 @@ older entries exist), the calendar sheet reads one calendar month for its dots (
 index), the editor listens to its one document, and Manage Data counts each
 vice's activities with a server-side `count()` aggregation, which is not live, ignores
 writes still queued on the device, and fails offline. The vice lists have no limit, and
-nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack, 2026-11-06; register,
-`vice-lists-are-unbounded`).
+nothing caps how many vices a user creates: no cap for 1.0 (`r4-vice-cap`, Jack, 2026-11-06).
 
 **Data model.** The app is Penchant and its wording says "habit" (Jack, 2026-11-05); the Dart identifiers, routes,
 collections, fields and the export's column names keep "vice", so stored data and old exports stay compatible. Two
@@ -397,7 +396,7 @@ field, which `r2-data-model` allows as an optional one (not built). `createdAt` 
 user picked), not a server timestamp: a pending `FieldValue.serverTimestamp()` matches no `createdAt` range query
 until the server acknowledges it, so an entry logged offline would vanish from Today, and the server would stamp it
 with the time it synced. Jack kept the device clock (`r4-server-time`, 2026-11-06); a wrong or hand-set clock places
-an entry at that time (register, `activity-timestamps-come-from-the-device-clock`).
+an entry at that time.
 
 Any new composite query shape needs a matching entry in `firestore.indexes.json`;
 Firestore throws `failed-precondition` at runtime until the index is deployed, and the emulators never enforce

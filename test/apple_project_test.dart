@@ -106,12 +106,14 @@ void main() {
     test('every $platform target signs automatically for team $_team', () {
       final String pbxproj = '$platform/Runner.xcodeproj/project.pbxproj';
       final List<String> configs = _targetBuildSettings(pbxproj);
-      // Runner (and macOS's Flutter Assemble), three configurations each.
-      expect(configs, hasLength(platform == 'ios' ? 3 : 6));
+      // Runner (and macOS's RunnerTests and Flutter Assemble), three
+      // configurations each.
+      expect(configs, hasLength(platform == 'ios' ? 3 : 9));
       for (final String settings in configs) {
         expect(settings, contains('CODE_SIGN_STYLE = Automatic;'));
         expect(settings, contains('DEVELOPMENT_TEAM = $_team;'));
-        // Runner, not Flutter Assemble, which builds no bundle. The macOS project-level default is "-", ad hoc, no team.
+        // Runner and RunnerTests, not Flutter Assemble, which builds no
+        // bundle. The macOS project-level default is "-", ad hoc, no team.
         if (platform == 'macos' && settings.contains('INFOPLIST_FILE')) {
           expect(
             settings,

@@ -43,6 +43,6 @@ WidgetKit and App Intents docs before scoping. Logging surfaces stay free; a wid
 
 **Revenue impact:** Medium: retention, and good material for App Store featuring.
 
-**Depends on:** [quick logging](../v1-must-haves/one-tap-quick-logging.md); [macOS target](../v1-must-haves/macos-target.md).
+**Depends on:** the one-tap log (`lib/writes/log_one.dart`); [macOS target](../v1-must-haves/macos-target.md).
 
 **Needs Jack:** no (decided)
