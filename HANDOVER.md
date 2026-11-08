@@ -468,6 +468,19 @@ does not (Claude recommended B, later). Notes are Jack's.
   from `docs/round-10-picks`, for the main session to run after it merges.
 - **`r10-release`**: B, **wait** for the Mac fullscreen layout and AutoFill (#133) before cutting 0.2.0.
 
+Later the same day, in chat, on the widgets (#158) and the nudge (#156):
+
+- **Background refresh, battery-light.** Jack: "Background refresh now. Don't use up all of my phone's battery with
+  it." A log from a widget, control or Siri reaches Firestore without opening the app: on iOS a `BGAppRefreshTask`
+  asked for only while logs are queued, timed by the system; on the Mac, while the app runs, a retry every 15
+  minutes or more at utility priority, only while logs are queued. No polling, no silent push. Built in #158.
+- **Habit names and counts in the App Group, plaintext on the device, are acceptable.** The widgets' snapshot and
+  queue stay as built in #158 (they clear on sign-out).
+- **The Lock Screen shows the top 3.** As built in #158.
+- **The daily nudge fires every day regardless**, even on a day already logged. Jack: "in case something was
+  missed". As built in #156; no change.
+- **"Clean day" just dismisses** (option c). As built in #156; no change.
+
 ## Calls waiting on Jack (UNDECIDED)
 
 None. U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).

@@ -14,7 +14,8 @@ pull request titles (`gh pr list --state merged`).
   you sign out.
 - A "Log" widget in small, medium and large: tap a habit to log one, and tap Undo in the same place within 5 seconds
   to take it back. It shows your 1, 3 or 8 most logged habits of the last 30 days, or the ones you pick in its
-  settings. A tap is kept on the phone and saved to your journal the next time you open Penchant.
+  settings. A tap is kept on the device and saved to your journal in the background when iOS allows, or the next
+  time you open Penchant; on the Mac, while Penchant is open.
 - "Log one" for Control Centre, the Lock Screen and the Action button (iOS 18), and for Siri and Shortcuts ("Log
   Coffee in Penchant").
 - The Last week and Log widgets on the Mac, in Notification Centre and on the desktop.
