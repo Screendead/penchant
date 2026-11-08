@@ -54,6 +54,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- The Mac menu bar icon now appears. It was never made, because the app never received the launch-finished event it waited for.
+
 - Opening or closing a page in dark mode no longer flashes white halfway through the transition.
 - A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
 
