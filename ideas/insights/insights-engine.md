@@ -90,6 +90,6 @@ Health or Calendar, so it can light up for every Pro user from their 1.0 journal
 
 **Revenue impact:** High: it is what Pro sells.
 
-**Depends on:** [granular logging](granular-logging-and-data-model.md); [trigger tagging](trigger-tagging.md); [Apple Health](apple-health-correlation.md); [calendar](calendar-integration.md); [`weekly-bucketing-leaves-a-short-trailing-bucket`](../../tech-debt/widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md).
+**Depends on:** [granular logging](granular-logging-and-data-model.md); [Apple Health](apple-health-correlation.md); [calendar](calendar-integration.md); [`weekly-bucketing-leaves-a-short-trailing-bucket`](../../tech-debt/widget-state-and-view-logic/weekly-bucketing-leaves-a-short-trailing-bucket.md).
 
 **Needs Jack:** no

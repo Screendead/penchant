@@ -158,12 +158,10 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void _logNow(Vice vice) => _log(vice, null);
 
   void _record(Vice? vice) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => RecordNewActivityDialog(
-        initialViceID: vice?.id,
-        bottomClearance: ViceTracker.logClearance(context, split: _split),
-      ),
+    RecordNewActivityDialog.show(
+      context,
+      initialViceID: vice?.id,
+      bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
   }
 
