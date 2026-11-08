@@ -48,9 +48,17 @@ List<Vice> tallyOrder(List<Vice> listed, Map<String, HabitMark> marks) =>
 
 /// Where the menu bar's Log items send a habit: Today registers its log here
 /// while it is mounted, so a log from the menu also brings Today back to the
-/// current day. Held, not state: nothing rebuilds when it changes.
+/// current day, and the status item's popover does while it is open, so the
+/// Undo shows where it can be seen. The last registered wins. Held, not
+/// state: nothing rebuilds when it changes.
 class TodayLogTarget {
-  void Function(Vice vice)? log;
+  final List<void Function(Vice vice)> _targets = <void Function(Vice)>[];
+
+  void Function(Vice vice)? get log => _targets.isEmpty ? null : _targets.last;
+
+  void add(void Function(Vice vice) target) => _targets.add(target);
+
+  void remove(void Function(Vice vice) target) => _targets.remove(target);
 }
 
 final todayLogTargetProvider = Provider<TodayLogTarget>(
