@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Prints the flutter build flags for the current commit: the version from
+# Runs a build command with the flutter build flags for the current commit: the version from
 # pubspec.yaml and the number of commits on HEAD as the build number.
-# Usage: flags=$(tools/build-version.sh) && flutter build ipa $flags
-# In zsh, ${=flags}: zsh does not word-split $flags, and Flutter takes the pair as one build name.
-# Not `flutter build ipa $(tools/build-version.sh)`: a failed substitution expands to nothing and the build still runs.
+# Usage: tools/build-version.sh flutter build ipa
+# The flags are appended as two separate arguments, so no shell word-splitting is involved.
+# With no arguments it prints the flags instead, for a shell that splits them itself (bash: $flags;
+# zsh does not split $flags, and Flutter then takes the pair as one build name, so use ${=flags}).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,4 +14,9 @@ if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
   echo "shallow clone: fetch full history for a correct build number" >&2
   exit 1
 fi
-echo "--build-name=$name --build-number=$(git rev-list --count HEAD)"
+number=$(git rev-list --count HEAD)
+if [ $# -eq 0 ]; then
+  echo "--build-name=$name --build-number=$number"
+else
+  exec "$@" "--build-name=$name" "--build-number=$number"
+fi

@@ -4,15 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 
 import 'support.dart';
 
 // The dialog scrolls at large text sizes, so a control can sit below the fold.
 Future<void> _tapInDialog(WidgetTester tester, Finder finder) async {
+  // A focused field scrolls itself back into view, away from the button.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
   await pumpUntil(tester, finder);
   await tester.ensureVisible(finder);
   await pumpFor(tester, const Duration(milliseconds: 500));
@@ -68,13 +73,19 @@ void main() {
     expect(find.bySemanticsLabel('Water, 0 drinks'), findsOneWidget);
     expect(find.byTooltip('Log 1 drink of Water'), findsOneWidget);
 
-    // Coffee is the oldest habit, so Trends opens on it.
-    expect(
-      find.bySemanticsLabel(
-        'Trends. Coffee, last 30 days: ${formatAverage(2 / 30)} drinks a day',
-      ),
-      findsOneWidget,
-    );
+    // Coffee is the oldest habit, so Trends opens on it. The pane of the
+    // split view has no peek.
+    await pumpUntil(tester, find.byType(TrendsSheet));
+    final bool split = splitLayout(tester);
+    if (!split) {
+      expect(
+        find.bySemanticsLabel(
+          'Trends. Coffee, last 30 days: '
+          '${formatAverage(2 / 30)} drinks a day',
+        ),
+        findsOneWidget,
+      );
+    }
     await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
     expect(
@@ -85,9 +96,16 @@ void main() {
       ),
       findsOneWidget,
     );
-    // The Log button stays in the widget tree, out of the semantics tree.
-    expect(find.semantics.byLabel(LogButton.label), findsNothing);
-    expect(find.byType(LogButton).hitTestable(), findsNothing);
+    // Under the sheet the Log button stays in the widget tree, out of the
+    // semantics tree; beside the pane it stays in reach.
+    expect(
+      find.semantics.byLabel(LogButton.label),
+      split ? findsOneWidget : findsNothing,
+    );
+    expect(
+      find.byType(LogButton).hitTestable(),
+      split ? findsOneWidget : findsNothing,
+    );
     await closeTrends(tester);
     semantics.dispose();
   });
@@ -117,18 +135,15 @@ void main() {
     expect(tester.takeException(), isNull);
     await screenshot(tester, 'a11y-log-fan-text-3x');
     await tester.longPress(fanWedge('Water'));
-    final Finder dialog = find.byType(AlertDialog);
-    await pumpUntil(tester, dialog);
+    final Finder dialog = find.byType(RecordNewActivityDialog);
+    await pumpUntilRouteSettled(tester, dialog);
     await screenshot(tester, 'a11y-record-dialog-text-3x');
     final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
     await pumpUntil(tester, quantity);
     await tester.ensureVisible(quantity);
     await pumpFor(tester, const Duration(milliseconds: 500));
     await enterText(tester, 'Quantity', '4');
-    await _tapInDialog(
-      tester,
-      find.descendant(of: dialog, matching: find.text('Record')),
-    );
+    await _tapInDialog(tester, find.byKey(RecordNewActivityDialog.submitKey));
     await pumpUntil(tester, dialog, present: false);
 
     expect(tester.takeException(), isNull);

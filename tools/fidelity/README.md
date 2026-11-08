@@ -23,3 +23,8 @@ The onboarding has no Day Dial mock-up; it is compared with the stills it was pi
 Sign-in, sign-up, Settings and Account Settings: `flutter test test/fidelity_account_render_test.dart
 --dart-define=RENDER_DIR=<root>/app`. The mock-up has no Account Settings screen, so `fidelity/account-*.png` is the
 app alone.
+
+The amount sheet: `flutter test test/fidelity_amount_sheet_render_test.dart --dart-define=RENDER_DIR=<root>/app`, the
+mock-up with `"only=3&theme=<theme>&state=amount"` saved as `<root>/mock/mock-amount-sheet-new-<theme>.png`, then
+`pair.py`. The pairs are `fidelity/amount-sheet-new-*.png`; `fidelity/amount-sheet-edit-*.png` is the editor alone,
+since the mock-up shows editing only through the same sheet.

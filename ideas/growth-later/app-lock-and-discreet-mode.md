@@ -33,4 +33,4 @@ discreet one could be a Pro cosmetic.
 
 **Depends on:** [check-in](../v1-must-haves/evening-check-in-and-reminders.md), for the notification text; [widgets](widgets-and-shortcuts.md).
 
-**Needs Jack:** yes — Free or Pro?
+**Needs Jack:** no. App lock and discreet mode are both free (`r2-applock`, Jack, 2026-11-06); parked with the store work.
