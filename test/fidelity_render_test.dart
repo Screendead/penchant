@@ -471,6 +471,14 @@ void main() {
                   (ref, ViceActivityHistoryQuery q) =>
                       AsyncData(of(q.viceID).take(q.limit).toList()),
                 ),
+                viceActivityGraphProvider.overrideWith(
+                  (ref, ViceActivityGraphQuery q) => AsyncData(<ViceActivity>[
+                    for (final ViceActivity a in of(q.viceID))
+                      if (!a.createdAt.toDate().isBefore(q.start) &&
+                          a.createdAt.toDate().isBefore(q.end))
+                        a,
+                  ]),
+                ),
               ],
               child: RepaintBoundary(
                 key: frame,
