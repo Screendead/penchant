@@ -707,8 +707,26 @@ Future<void> pumpUntilNeverShowing(
   }, () => '$until to appear');
 }
 
+// Whether Trends is a pane beside Today (900 pt and up: the Mac window as it
+// opens, or an iPad on its side) rather than a sheet over it.
+bool splitLayout(WidgetTester tester) =>
+    find.byType(TrendsSheet).evaluate().isNotEmpty &&
+    find.byType(DraggableScrollableSheet).evaluate().isEmpty;
+
 // Opens the Trends sheet with a tap on its peek, and waits for it to settle.
+// The split view's pane is always open, so there it waits for the pane.
 Future<void> openTrends(WidgetTester tester) async {
+  await pumpUntil(tester, find.byType(TrendsSheet));
+  if (splitLayout(tester)) {
+    await pumpUntil(
+      tester,
+      find.descendant(
+        of: find.byType(TrendsSheet),
+        matching: find.text(TrendsSheet.title),
+      ),
+    );
+    return;
+  }
   await tap(
     tester,
     find.descendant(
@@ -720,7 +738,12 @@ Future<void> openTrends(WidgetTester tester) async {
   await pumpFor(tester, const Duration(milliseconds: 500));
 }
 
+// The pane has no Close; there this only checks Log is still in reach.
 Future<void> closeTrends(WidgetTester tester) async {
+  if (splitLayout(tester)) {
+    await pumpUntil(tester, find.byType(LogButton).hitTestable());
+    return;
+  }
   // Close sits at the top of the sheet, which may have scrolled.
   await scrollIntoView(tester, find.byTooltip(TrendsSheet.closeLabel));
   await tap(tester, find.byTooltip(TrendsSheet.closeLabel));

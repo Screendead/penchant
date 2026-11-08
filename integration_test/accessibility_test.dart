@@ -8,6 +8,7 @@ import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/trends/trends_sheet.dart';
 
 import 'support.dart';
 
@@ -68,13 +69,19 @@ void main() {
     expect(find.bySemanticsLabel('Water, 0 drinks'), findsOneWidget);
     expect(find.byTooltip('Log 1 drink of Water'), findsOneWidget);
 
-    // Coffee is the oldest habit, so Trends opens on it.
-    expect(
-      find.bySemanticsLabel(
-        'Trends. Coffee, last 30 days: ${formatAverage(2 / 30)} drinks a day',
-      ),
-      findsOneWidget,
-    );
+    // Coffee is the oldest habit, so Trends opens on it. The pane of the
+    // split view has no peek.
+    await pumpUntil(tester, find.byType(TrendsSheet));
+    final bool split = splitLayout(tester);
+    if (!split) {
+      expect(
+        find.bySemanticsLabel(
+          'Trends. Coffee, last 30 days: '
+          '${formatAverage(2 / 30)} drinks a day',
+        ),
+        findsOneWidget,
+      );
+    }
     await openTrends(tester);
     await pumpUntil(tester, find.byType(LineChart));
     expect(
@@ -85,9 +92,16 @@ void main() {
       ),
       findsOneWidget,
     );
-    // The Log button stays in the widget tree, out of the semantics tree.
-    expect(find.semantics.byLabel(LogButton.label), findsNothing);
-    expect(find.byType(LogButton).hitTestable(), findsNothing);
+    // Under the sheet the Log button stays in the widget tree, out of the
+    // semantics tree; beside the pane it stays in reach.
+    expect(
+      find.semantics.byLabel(LogButton.label),
+      split ? findsOneWidget : findsNothing,
+    );
+    expect(
+      find.byType(LogButton).hitTestable(),
+      split ? findsOneWidget : findsNothing,
+    );
     await closeTrends(tester);
     semantics.dispose();
   });
