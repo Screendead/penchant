@@ -43,6 +43,9 @@ class ViceTracker extends ConsumerStatefulWidget {
   // From this width Today and Trends sit side by side, Trends as a pane.
   static const double splitWidth = 900;
 
+  // From this width the dial, the tallies and Trends each take a column.
+  static const double threeColumnWidth = 1600;
+
   // Room below a snackbar for the Log button: on the sheet's peek, or at the
   // foot of Today's column in the split view.
   static double logClearance(BuildContext context, {bool split = false}) =>
@@ -412,6 +415,118 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             child: child,
           ),
         );
+        if (split && constraints.maxWidth >= ViceTracker.threeColumnWidth) {
+          final double dialColumn = constraints.maxWidth * 0.3;
+          // The dial's geometry is drawn for its 320 pt size, so a larger
+          // dial is that one scaled.
+          final double grown = min(dialColumn - 2 * DialSpace.xl, height - 140);
+          return dayKeys(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SizedBox(
+                  width: dialColumn,
+                  child: Padding(
+                    padding: const EdgeInsets.all(DialSpace.m),
+                    child: Column(
+                      children: <Widget>[
+                        ?guestBanner,
+                        const RecoveryKeyCard(),
+                        DayPicker(
+                          day: day,
+                          today: today,
+                          onSelect: _selectDay,
+                          habits: vices ?? const <Vice>[],
+                          marks: marks,
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: SizedBox.square(
+                              dimension: grown,
+                              child: FittedBox(
+                                child: SizedBox.square(
+                                  dimension: DialSize.dialDiameter,
+                                  child: DayDial(
+                                    day: day,
+                                    today: today,
+                                    entries: entries,
+                                    semanticsLabel: summary,
+                                    offline: offline,
+                                    storedTypicals: storedTypicals,
+                                    onBeadTap: _openEntry,
+                                    onSwipe: (int days) =>
+                                        _selectDay(addDays(day, days)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        PendingDayNote(selectedDate: day),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 400,
+                  decoration: BoxDecoration(
+                    border: BorderDirectional(
+                      start: BorderSide(color: colors.line),
+                    ),
+                  ),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      DialSpace.m,
+                      DialSpace.xl,
+                      DialSpace.m,
+                      DialSpace.xl,
+                    ),
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: 10,
+                          bottom: DialSpace.s,
+                        ),
+                        child: Text(
+                          'Habits',
+                          style: DialType.of(context).displayL,
+                        ),
+                      ),
+                      if (vices == null)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        for (final Vice vice in vices)
+                          TallyRow(
+                            key: ValueKey<String>('tally-${vice.id}'),
+                            vice: vice,
+                            mark: markOf(vice),
+                            total: entries == null ? null : totals[vice.id],
+                            day: day,
+                            onLog: (Offset from) => _log(vice, from),
+                          ),
+                      if (logButton != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: DialSpace.l),
+                          child: Center(child: logButton),
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: allVices == null || allVices.isEmpty
+                      ? const SizedBox.shrink()
+                      : TrendsSheet.pane(
+                          contentWidth: 1000,
+                          habits: trendsOrder(allVices, marks),
+                          marks: marks,
+                          onOpenDay: _selectDay,
+                        ),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (split) {
           return dayKeys(
             Row(
