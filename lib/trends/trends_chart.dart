@@ -12,6 +12,7 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/trends/pane_fill.dart';
 import 'package:tracker/widgets/chart_text.dart';
 
 // One habit's totals over a range as a line, its moving average as a curve
@@ -31,6 +32,7 @@ class TrendsChart extends StatelessWidget {
     required this.onCursor,
     this.onOpenBucket,
     this.focusNode,
+    this.fill = false,
   });
 
   final Vice vice;
@@ -44,6 +46,9 @@ class TrendsChart extends StatelessWidget {
   final ValueChanged<int> onCursor;
   final ValueChanged<int>? onOpenBucket;
   final FocusNode? focusNode;
+  // The plot takes the height a [PaneFill] gives it, rather than
+  // [plotHeight]; the chart then sits under an [Expanded].
+  final bool fill;
 
   static const String focusLabel = 'Trends chart';
   static const double plotHeight = 220;
@@ -222,6 +227,10 @@ class TrendsChart extends StatelessWidget {
     );
   }
 
+  Widget _plotBox(Widget chart) => fill
+      ? Expanded(child: PaneFillSlot(child: chart))
+      : SizedBox(height: plotHeight, child: chart);
+
   Widget _plot(
     BuildContext context,
     int n,
@@ -242,7 +251,11 @@ class TrendsChart extends StatelessWidget {
       largest,
       min(
         maxYSteps,
-        max(1, (plotHeight - bottomTitlesHeight) ~/ (numberHeight + labelGap)),
+        max(
+          1,
+          // A filled plot is at least this tall, so the labels still fit.
+          (plotHeight - bottomTitlesHeight) ~/ (numberHeight + labelGap),
+        ),
       ),
     );
     final double leftTitlesWidth =
@@ -268,9 +281,8 @@ class TrendsChart extends StatelessWidget {
           children: <Widget>[
             _readout(context, today, shown, colors, type, cursorX),
             const SizedBox(height: DialSpace.xs),
-            SizedBox(
-              height: plotHeight,
-              child: RangeMorph(
+            _plotBox(
+              RangeMorph(
                 shape: (days: range.days, stepDays: range.stepDays),
                 totals: totals,
                 smoothed: window > 1 ? smoothed : null,

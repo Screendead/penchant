@@ -20,6 +20,9 @@ pull request titles (`gh pr list --state merged`).
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- A large or fullscreen Mac window uses its room: the dial grows with the window's height (up to 480 pt), Today's
+  column widens, and the Trends chart takes the height the rest of the pane leaves. Trends' habit chips wrap onto
+  more rows, Synced sits beside the Trends title, and the Log button sits under your last habit.
 - The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
   you left it. It narrows to 390 pt, where the phone layout returns.
 - Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
