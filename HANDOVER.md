@@ -53,6 +53,27 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
+## Pick up here (session restart, 2026-11-09 ~22:00 UTC)
+
+In flight when the session restarted; do these first, in order:
+
+1. Check e2e runs 42690070034 (`master` at ac2b781, the first since #213 fixed the iOS Swift type-check break from
+   #206) and 42694948177 (#209 at a307dbd). One watcher, main session only, polls of 60 s or more: parallel
+   `gh run watch` loops used up Jack's hourly GitHub API allowance on 2026-11-09.
+2. When `master` is green, merge #207 (edge swipe back) and #208 (Deleted habit row); both reviewed, checks green.
+3. When 42694948177 is green, update #209's description (its last line says that run is in progress), then merge it;
+   the merge deploys the sealed-only create rules to production through CI. If red, fix forward.
+4. Install `master` on the iPhone and Mac (`~/development/tracker-tools/install-devices.sh`).
+5. Build the native compile check Jack approved (2026-11-09): give `macos-build.yml` a `pull_request` trigger for
+   `ios/**`, `macos/**`, `pubspec.*`, plus an unsigned iOS build, using e2e's cache. It would have caught #206.
+
+Minor calls made as built (Claude's, recommended; Jack may overturn): deleting an entry while the key is missing makes
+Undo say "Not restored"; keep the `e2eeEnabled` constant; no Undo on Deleted-habit deletes; the same-bedtime part sits
+outside the BH family; the bedtime "can't be told" wording; the entry editor is a fullscreen dialog, so it gets no
+edge swipe; under Reduce motion the page below a Back pop ignores taps for the full 320 ms (#207 review; one-line fix
+in the PR's review notes if wanted). Out-of-scope follow-ups from #209's review: Save on a locked habit returns
+silently; a key whose publish failed is used unchecked for the session.
+
 ## The queue (DECIDED work, in order)
 
 Each goal is clear or follows from Jack's calls below. Subagents write PR bodies to uniquely named scratchpad
