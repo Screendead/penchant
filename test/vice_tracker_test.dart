@@ -1397,6 +1397,32 @@ void main() {
       expect(writes.writes.single.fields['quantity'], defaultQuantity);
     });
 
+    testWidgets('has no wedge for an archived habit', (
+      WidgetTester tester,
+    ) async {
+      final List<Vice> vices = habits(3);
+      final Vice archived = vices[1];
+      vices[1] = Vice(
+        id: archived.id,
+        name: archived.name,
+        unit: archived.unit,
+        ownerID: ownerID,
+        createdAt: archived.createdAt,
+        archived: true,
+      );
+      await _pumpApp(
+        tester,
+        _today(vices, (_) => const <ViceActivity>[], writes: writes),
+        const ViceTracker(),
+      );
+
+      await tester.tap(find.byType(LogButton));
+      await tester.pumpAndSettle();
+      expect(wedge('h0'), findsOneWidget);
+      expect(wedge('h1'), findsNothing);
+      expect(wedge('h2'), findsOneWidget);
+    });
+
     testWidgets("the reminder's Log something opens the record dialog", (
       WidgetTester tester,
     ) async {
@@ -1490,6 +1516,35 @@ void main() {
       expect(wedge('h0'), findsNothing);
     });
 
+    testWidgets('a press released above the fan logs nothing and leaves it '
+        'open, and Escape closes it', (WidgetTester tester) async {
+      await _pumpApp(
+        tester,
+        _today(habits(3), (_) => const <ViceActivity>[], writes: writes),
+        const ViceTracker(),
+      );
+
+      final Offset start = tester.getCenter(find.byType(LogButton));
+      final TestGesture gesture = await tester.startGesture(start);
+      await tester.pumpAndSettle();
+      expect(wedge('h0'), findsOneWidget);
+      await gesture.moveTo(start + const Offset(0, -30));
+      await tester.pump();
+      await gesture.moveTo(Offset(start.dx, 4));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, isEmpty);
+      // A wedge's box is wider than its arc, so its label is what a tap hits.
+      expect(label('h0', 'Habit 0').hitTestable(), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(wedge('h0'), findsNothing);
+      expect(writes.writes, isEmpty);
+    });
+
     testWidgets('past eight habits, the eighth wedge is More', (
       WidgetTester tester,
     ) async {
@@ -1575,6 +1630,64 @@ void main() {
       expect(actions, ['Log 1 drink of Habit 0', 'Log 1 drink of Habit 1']);
       semantics.dispose();
       await tester.pumpAndSettle();
+    });
+
+    testWidgets("a screen reader logs one from Log's action and from a "
+        "wedge's tap, and a wedge's long press opens the record dialog on "
+        'its habit', (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await _pumpApp(
+        tester,
+        _today(habits(3), (_) => const <ViceActivity>[], writes: writes),
+        const ViceTracker(),
+      );
+
+      // The tally's + under the fan reads the same label; only the wedge
+      // carries the hold hint.
+      SemanticsFinder wedgeNode(String label) => find.semantics.byPredicate(
+        (SemanticsNode node) =>
+            node.label == label && node.hint == 'Hold to set amount and time',
+        describeMatch: (_) => 'the wedge "$label"',
+      );
+
+      tester.semantics.customAction(
+        find.semantics.byLabel(LogButton.label),
+        const CustomSemanticsAction(label: 'Log 1 drink of Habit 0'),
+      );
+      await tester.pumpAndSettle();
+      expect(writes.writes.single.fields['viceID'], 'h0');
+      expect(wedge('h0'), findsNothing);
+
+      tester.semantics.tap(find.semantics.byLabel(LogButton.label));
+      await tester.pumpAndSettle();
+      tester.semantics.tap(wedgeNode('Log 1 drink of Habit 2'));
+      await tester.pumpAndSettle();
+      expect(writes.writes, hasLength(2));
+      expect(writes.writes.last.fields['viceID'], 'h2');
+      expect(wedge('h2'), findsNothing);
+
+      tester.semantics.tap(find.semantics.byLabel(LogButton.label));
+      await tester.pumpAndSettle();
+      tester.semantics.longPress(wedgeNode('Log 1 drink of Habit 1'));
+      await tester.pumpAndSettle();
+      final Finder dialog = find.byType(RecordNewActivityDialog);
+      expect(
+        tester.widget<RecordNewActivityDialog>(dialog).initialViceID,
+        'h1',
+      );
+      expect(
+        find.descendant(
+          of: dialog,
+          matching: find.byType(DropdownButtonFormField<String>),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Habit 1')),
+        findsOneWidget,
+      );
+      expect(writes.writes, hasLength(2));
+      semantics.dispose();
     });
   });
 
