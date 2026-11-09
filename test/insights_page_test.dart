@@ -267,6 +267,9 @@ void main() {
 
     expect(find.text('Coffee · activity'), findsOneWidget);
     expect(find.text('Tea · sleep'), findsOneWidget);
+    // The activity card's headline is steps: one line for what 500 steps a
+    // day have been shown to do.
+    expect(find.text(metricEvidence('stepCount')!), findsOneWidget);
     expect(find.text('Tea · heart'), findsNothing);
     await tester.tap(find.text(InsightsPage.showMore(4)));
     await tester.pumpAndSettle();

@@ -261,7 +261,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     final List<InsightCard> cards = insightCards(<HabitFinding>[
       for (final HabitFinding f in report.findings)
         if (names.containsKey(f.habitId)) f,
-    ]);
+    ], floors: report.floors);
     final int hidden = _showAll
         ? 0
         : max(0, cards.length - InsightsPage.shownCards);
@@ -314,7 +314,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             for (final HabitRefusal r in refused)
               CardRow(
                 label: nameOf(r.habitId),
-                subtitle: refusalReason(r, nameOf),
+                subtitle: refusalReason(r, nameOf, floors: report.floors),
               ),
           ],
         ),
@@ -328,6 +328,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               insightsText(
                 cards: cards,
                 refused: refused,
+                floors: report.floors,
                 firstDay: firstDay,
                 nameOf: nameOf,
                 unitOf: unitOf,
@@ -355,6 +356,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
 String insightsText({
   required List<InsightCard> cards,
   required List<HabitRefusal> refused,
+  Map<String, double> floors = const <String, double>{},
   required DateTime? firstDay,
   required String Function(String habitId) nameOf,
   Unit Function(String habitId) unitOf = _anyUnit,
@@ -377,6 +379,9 @@ String insightsText({
       ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
       ..write('${findingRange(f, locale)}\n')
       ..write('${findingBasis(f, habit)}\n');
+    if (findingEvidence(f) case final String evidence) {
+      out.write('$evidence\n');
+    }
     for (final HabitFinding other in card.others) {
       out.write('${findingLine(other, locale, unit: unit)}\n');
     }
@@ -384,7 +389,9 @@ String insightsText({
   if (refused.isNotEmpty) {
     out.write('\n${InsightsPage.refusedHeading}\n');
     for (final HabitRefusal r in refused) {
-      out.write('${nameOf(r.habitId)}: ${refusalReason(r, nameOf)}\n');
+      out.write(
+        '${nameOf(r.habitId)}: ${refusalReason(r, nameOf, floors: floors)}\n',
+      );
     }
   }
   out.write('\n${InsightsPage.foot}\n');
@@ -598,6 +605,8 @@ class _FindingCard extends StatelessWidget {
               const SizedBox(height: DialSpace.xs),
               Text(findingRange(finding, locale), style: small),
               Text(findingBasis(finding, habit), style: small),
+              if (findingEvidence(finding) case final String evidence)
+                Text(evidence, style: small),
               if (card.others.isNotEmpty) const SizedBox(height: DialSpace.s),
               for (final HabitFinding other in card.others)
                 Text(
