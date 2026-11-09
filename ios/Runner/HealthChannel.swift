@@ -225,8 +225,12 @@ enum HealthChannel {
         predicate: HKQuery.predicateForSamples(withStart: from, end: to), limit: HKObjectQueryNoLimit,
         sortDescriptors: nil
       ) { _, samples, error in
-        let sleep = ((samples as? [HKCategorySample]) ?? []).map {
-          HealthDays.SleepSample(start: $0.startDate, end: $0.endDate, value: $0.value)
+        let sleep = ((samples as? [HKCategorySample]) ?? []).map { sample in
+          let source = sample.sourceRevision.source.bundleIdentifier
+          let product = sample.sourceRevision.productType
+          return HealthDays.SleepSample(
+            start: sample.startDate, end: sample.endDate, value: sample.value, source: source,
+            watch: product?.hasPrefix("Watch") == true && source.hasPrefix("com.apple.health"))
         }
         let sleepRows = HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar)
         let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: start, end: end, calendar))
