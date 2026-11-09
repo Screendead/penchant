@@ -346,11 +346,14 @@ production since deploys never `--force`). T5: 18 `archive/*` tags pushed and ve
 branches was refused by the permission check ("Git Destructive") and waits for Jack. #128 stays open while P2 is
 unresolved. None of #197, #198 or #199 has run on a device.
 
-**Calls waiting on Jack:** round 13, https://claude.ai/artifact/WvhfWBfk8xUfzqwHXpWzMF (source
-`docs/pitch/round-13/`, picks in its `picks` collection): heart-rate floor, noise rule, active-energy floor, what
-"your usual" means for last night, Today's last-night line copy, empty question sections, the time dial's day button,
-the bedtime part in the false-discovery family, refusing plaintext creates, entries of deleted habits, the API key
-restrictions.
+**Round 13, picked by Jack 2026-11-09** (https://claude.ai/artifact/WvhfWBfk8xUfzqwHXpWzMF, `picks`): `hr-floor` A
+(5 bpm), `noise-rule` A (half the person's typical change), `energy-floor` A (85 kcal), `empty-sections` A (shown),
+`time-dial-day` B (day word opens the calendar), `bedtime-family` A (outside the BH family): all as built, no work.
+To build: `usual-range` B (10th to 90th percentile of the last 28 nights), `today-line` B ("Last night · heart rate
+3 bpm above usual"), `plaintext-creates` C (rules refuse a vice or activity create without `sealed`, now; the app
+writes no plaintext create), `orphan-entries` B (a "Deleted habit" row in Habits to see, export or delete entries
+whose habit is gone). For Jack: `api-key` A (restrict the key in the Cloud console). Open: `live-indexes` (added
+after he answered).
 
 **Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6, the
 branch deletions above.
