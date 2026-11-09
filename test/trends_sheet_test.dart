@@ -161,10 +161,14 @@ void main() {
       // The chart is built only once the sheet leaves its peek.
       expect(find.byType(LineChart), findsNothing);
       expect(_opacityOf(tester, find.byType(LogButton)), 1);
+      expect(find.semantics.byLabel(LogButton.label), findsOneWidget);
 
       await openTrends(tester);
       expect(find.byType(LineChart), findsOneWidget);
       expect(_opacityOf(tester, find.byType(LogButton)), 0);
+      // Under the open sheet Log stays in the widget tree, out of reach.
+      expect(find.semantics.byLabel(LogButton.label), findsNothing);
+      expect(find.byType(LogButton).hitTestable(), findsNothing);
       expect(
         find.bySemanticsLabel(RegExp('^Daily totals of Coffee')),
         findsOneWidget,

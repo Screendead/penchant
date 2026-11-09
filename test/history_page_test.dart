@@ -152,6 +152,29 @@ void main() {
     expect(find.text('11:00\u202fAM'), findsOneWidget);
   });
 
+  testWidgets("a row names its entry's trigger", (tester) async {
+    await pumpHistory(
+      tester,
+      0,
+      entries: [
+        fakeActivity(
+          coffee.id,
+          1,
+          newest,
+          triggers: const <String>['work/meeting'],
+        ),
+      ],
+    );
+
+    expect(
+      find.descendant(
+        of: find.byType(Dismissible),
+        matching: find.text('Meeting'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   group('Last 30 days card', () {
     final DateTime now = DateTime(2026, 11, 2, 13);
 

@@ -9,6 +9,7 @@ import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -21,6 +22,7 @@ import 'package:tracker/widgets/log_fan.dart';
 
 import 'package:tracker/deleted_habit_page.dart';
 
+import 'fake_account.dart';
 import 'fakes.dart';
 import 'trends_harness.dart';
 
@@ -63,6 +65,34 @@ void main() {
     test('the edit route passes the vice id through', () {
       expect((routePage('/vices/v1/edit') as EditVice).viceID, 'v1');
     });
+  });
+
+  testWidgets('Settings lists only real pages, and Account opens Account '
+      'Settings', (WidgetTester tester) async {
+    final FakeUser user = FakeUser(ownerID, email: 'me@example.com');
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountProvider.overrideWithValue(FakeAccount()),
+          userProvider.overrideWith((ref) => Stream.value(user)),
+          userProfileProvider.overrideWith((ref) => Stream.value(user)),
+        ],
+        child: const MaterialApp(
+          home: Settings(),
+          onGenerateRoute: generateRoute,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Notifications'), findsNothing);
+    expect(find.text('Privacy'), findsNothing);
+
+    await tester.tap(find.text('Account'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AccountSettings), findsOneWidget);
+    expect(find.byType(NotFound), findsNothing);
   });
 
   group('the home screen', () {
