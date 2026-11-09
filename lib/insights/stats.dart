@@ -26,6 +26,14 @@ double interquartileRange(List<double> values) {
   return at(0.75) - at(0.25);
 }
 
+double median(List<double> values) {
+  final List<double> sorted = values.toList()..sort();
+  final int mid = sorted.length ~/ 2;
+  return sorted.length.isOdd
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 class Interval {
   const Interval(this.low, this.high);
 

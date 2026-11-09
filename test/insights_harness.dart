@@ -137,7 +137,7 @@ final List<Vice> insightsVices = <Vice>[
 /// nothing follows Tea.
 ({List<ViceActivity> activities, List<DailyOutcome> health}) insightsJournal({
   double deepSleepEffect = -18,
-  double heartRateEffect = 2,
+  double heartRateEffect = 6,
   bool teaWithCoffee = false,
   int seed = 7,
 }) {

@@ -169,6 +169,12 @@ class OutcomeSeries {
 
   double? value(String metricId, DateTime day) =>
       _values[metricId]?[startOfDay(day)];
+
+  /// [metricId]'s value on each day that has one, in no order.
+  Map<DateTime, double> days(String metricId) =>
+      Map<DateTime, double>.unmodifiable(
+        _values[metricId] ?? const <DateTime, double>{},
+      );
 }
 
 /// Every local calendar day from [from] to [through], both included.
