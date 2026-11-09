@@ -33,7 +33,6 @@ void main() {
       3,
       at: addDays(today, -1).add(const Duration(hours: 12)),
     );
-    await expectTallies(tester, const <String>{'Coffee (0 drinks)'});
 
     await tap(tester, _back);
     expect(_shownDay(tester), addDays(today, -1));

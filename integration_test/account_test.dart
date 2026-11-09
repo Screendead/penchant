@@ -234,6 +234,7 @@ void main() {
     await register(tester, 'e2e-export@example.com');
     await addVicesThroughManageData(tester);
     await recordActivity(tester, 'Coffee', 2);
+    await recordActivity(tester, 'Tea', 1);
 
     await _openAccountSettings(tester);
     await tester.ensureVisible(find.text(AccountCopy.exportTitle));
@@ -245,8 +246,8 @@ void main() {
     );
 
     final List<ExportFile> files = share.shared.single;
-    // Header and one row; export_test checks the format.
-    expect(files.first.contents.trim().split('\r\n'), hasLength(2));
+    // Header and a row per entry; export_test checks the format.
+    expect(files.first.contents.trim().split('\r\n'), hasLength(3));
 
     final Map<String, dynamic> json =
         jsonDecode(files.last.contents) as Map<String, dynamic>;
@@ -254,7 +255,7 @@ void main() {
       <Object?>{for (final dynamic vice in json['vices']) vice['name']},
       <String>{'Coffee', 'Tea', 'Water'},
     );
-    expect(json['activities'], hasLength(1));
+    expect(json['activities'], hasLength(2));
 
     await FirebaseFirestore.instance.disableNetwork();
     addTearDown(FirebaseFirestore.instance.enableNetwork);

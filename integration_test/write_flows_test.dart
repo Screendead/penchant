@@ -142,12 +142,12 @@ void main() {
           .text,
       formatAmount(1.5),
     );
-    await enterText(tester, 'Quantity', formatAmount(2.25));
     final DateTime moved = addDays(
       startOfDay(DateTime.now()),
       -1,
     ).add(const Duration(hours: 9));
     await setEntryTime(tester, moved);
+    await enterText(tester, 'Quantity', formatAmount(2.25));
     await tap(tester, find.widgetWithText(TextButton, 'Save'));
     await pumpUntil(
       tester,
