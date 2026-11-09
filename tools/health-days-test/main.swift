@@ -581,5 +581,47 @@ check(
     Double(HealthDays.micros(at(2026, 11, 8))), Double(HealthDays.micros(at(2026, 11, 8))) + 1_000_000, 61.5,
   ])
 
+// Sleep onset and end: the main sleep's first and last asleep moment, in
+// clock minutes after the noon that opens the night.
+func timing(_ samples: [HealthDays.SleepSample], _ metrics: Set<String> = HealthDays.sleepTimingMetrics)
+  -> [String: Double]
+{
+  values(HealthDays.sleepTimingRows(samples, metrics: metrics, start: at(2026, 1, 1), end: at(2027, 1, 1), calendar))
+}
+do {
+  // A nap before the night's main sleep moves neither time.
+  let rows = timing([
+    sample(at(2026, 11, 7, 15), at(2026, 11, 7, 15, 40), 1),
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 1),
+  ])
+  check("onset of the main sleep", rows["2026-11-08 sleepOnset"] == 660, "\(rows)")
+  check("end of the main sleep", rows["2026-11-08 sleepEnd"] == 1140, "\(rows)")
+}
+do {
+  // Past midnight runs on from 24:00; in bed alone stands in for asleep.
+  let late = timing([sample(at(2026, 11, 8, 1), at(2026, 11, 8, 8, 30), 3)])
+  check("onset past midnight", late["2026-11-08 sleepOnset"] == 780, "\(late)")
+  check("end past midnight", late["2026-11-08 sleepEnd"] == 1230, "\(late)")
+  let bed = timing([sample(at(2026, 11, 7, 22, 30), at(2026, 11, 8, 6, 30), 0)])
+  check("onset from in bed", bed["2026-11-08 sleepOnset"] == 630, "\(bed)")
+  // In bed before falling asleep is not the onset.
+  let both = timing([
+    sample(at(2026, 11, 7, 22), at(2026, 11, 8, 7), 0),
+    sample(at(2026, 11, 7, 23, 15), at(2026, 11, 8, 6, 45), 3),
+  ])
+  check("onset is asleep, not in bed", both["2026-11-08 sleepOnset"] == 675, "\(both)")
+  let onsetOnly = timing([sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 1)], ["sleepOnset"])
+  check("only the times asked for", onsetOnly.keys.sorted() == ["2026-11-08 sleepOnset"], "\(onsetOnly)")
+}
+do {
+  // Clock time across the 2026 UK changes: 23:00 is 660 and 07:00 is 1140.
+  for (month, night, label) in [(10, 25, "autumn"), (3, 29, "spring")] {
+    let rows = timing([sample(at(2026, month, night - 1, 23), at(2026, month, night, 7), 1)])
+    let key = String(format: "2026-%02d-%02d", month, night)
+    check("onset across DST, \(label)", rows["\(key) sleepOnset"] == 660, "\(rows)")
+    check("end across DST, \(label)", rows["\(key) sleepEnd"] == 1140, "\(rows)")
+  }
+}
+
 if failures > 0 { exit(1) }
 print("ok")
