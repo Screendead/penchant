@@ -50,7 +50,7 @@ enum HealthMetric {
 
   /// When the night's main sleep (the one with the most asleep time, or in
   /// bed when none has any, so not a nap) began, with any part of the night
-  /// less than an hour before it: its first asleep moment, or its first in
+  /// less than an hour before or after it joined to it: its first asleep moment, or its first in
   /// bed when it has no asleep time, from the same source as the minutes
   /// above. In clock minutes after the last noon before it, so 23:00 is 660,
   /// 01:00 is 780, and a sleep that ends after noon still reads 0 to 1440.
