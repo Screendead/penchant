@@ -20,6 +20,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -1636,7 +1637,10 @@ void main() {
     testWidgets('can reach Add vice from Manage Data', (
       WidgetTester tester,
     ) async {
-      await _pumpApp(tester, overrides(), const ManageData());
+      await _pumpApp(tester, [
+        ...overrides(),
+        activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
+      ], const ManageData());
       await tester.pumpAndSettle();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);

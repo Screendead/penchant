@@ -308,6 +308,7 @@ void main() {
     ) async {
       await _pump(tester, [
         viceListProvider.overrideWithValue(AsyncData([coffee, tea])),
+        activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
         viceActivityCountProvider.overrideWith(
           (ref, String viceID) =>
               const AsyncData((count: 2, source: CountSource.server)),

@@ -111,6 +111,7 @@ List<Override> _overrides({bool empty = false}) {
     viceActivityProvider.overrideWith(
       (ref, String id) => AsyncData(activities.isEmpty ? null : activities[0]),
     ),
+    activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
     viceActivityCountProvider.overrideWith(
       (ref, String id) =>
           const AsyncData((count: 12, source: CountSource.server)),
