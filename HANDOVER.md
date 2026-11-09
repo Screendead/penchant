@@ -173,9 +173,11 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **Whole history and Copy as text** (Jack, 2026-11-09: "i've got more than a year's worth of data"; #179, open,
      `feat/insights-whole-history`): the journal query runs from 2000 (the date picker's floor) to today, keyed on
      the day; Health is read from September 2014 (HealthKit's launch) in calendar-year calls, 13 today; the page says
-     "From <first entry> to today", and "Copy as text" puts the findings and refusals on the clipboard on a tap. Not
-     run on a device: the 13 HealthKit calls' time on a phone with years of data, and the live listener's cost over a
-     multi-year journal (every document read once per open), are unmeasured.
+     "From <first entry> to today" (the earliest entry of a habit the page shows), and "Copy as text" puts the
+     findings and refusals on the clipboard on a tap. The journal is read once per open with `get()`, not listened
+     to, and the Health loop stops when the page is left. Not run on a device: the 13 HealthKit calls' time on a
+     phone with years of data, and the one-time read's cost over a multi-year journal (every document once per
+     open), are unmeasured.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether

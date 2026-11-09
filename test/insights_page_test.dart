@@ -16,6 +16,7 @@ import 'package:tracker/insights_page.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
+import 'fakes.dart';
 import 'insights_harness.dart';
 
 Future<void> _pump(WidgetTester tester, List<Override> overrides) async {
@@ -312,6 +313,30 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
+  testWidgets('an entry of a habit that is gone does not date the span', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    final List<ViceActivity> journal = insightsJournal().activities;
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        activities: AsyncData<List<ViceActivity>>(<ViceActivity>[
+          ...journal,
+          fakeActivity('gone', 1, DateTime(2001, 5, 6)),
+        ]),
+      ),
+    );
+
+    final DateTime first = insightsFirstDay(
+      insightsFirstDays(journal),
+      (_) => true,
+    )!;
+    expect(find.text(InsightsPage.span(first)), findsOneWidget);
+    expect(find.text(InsightsPage.span(DateTime(2001, 5, 6))), findsNothing);
+  });
+
   testWidgets('the page says where the journal starts, and copies its '
       'findings and refusals as text', (WidgetTester tester) async {
     _connected();
@@ -340,7 +365,10 @@ void main() {
       ),
     );
 
-    final DateTime first = insightsFirstDay(insightsJournal().activities)!;
+    final DateTime first = insightsFirstDay(
+      insightsFirstDays(insightsJournal().activities),
+      (_) => true,
+    )!;
     expect(find.text(InsightsPage.span(first)), findsOneWidget);
 
     await tester.tap(find.text(InsightsPage.copyLabel));

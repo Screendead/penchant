@@ -103,6 +103,8 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
     for (final ({DateTime start, DateTime end}) chunk in insightsHealthChunks(
       range,
     )) {
+      // Left before the read finished: the value would be thrown away.
+      if (!ref.mounted) return const HealthFailed();
       switch (await source.dailyValues(
         HealthMetric.values.toSet(),
         chunk.start,
@@ -143,12 +145,15 @@ sealed class InsightsResult {
 }
 
 final class InsightsComputed extends InsightsResult {
-  const InsightsComputed(this.report, {this.firstDay});
+  const InsightsComputed(
+    this.report, {
+    this.firstDays = const <String, DateTime>{},
+  });
 
   final InsightsReport report;
 
-  /// The day of the journal's first entry; null when it has none.
-  final DateTime? firstDay;
+  /// Each habit's first day in the journal, by vice ID.
+  final Map<String, DateTime> firstDays;
 }
 
 final class InsightsFailed extends InsightsResult {
@@ -174,7 +179,7 @@ final _engineProvider = FutureProvider.autoDispose
               today: key.today,
             ),
           ),
-          firstDay: insightsFirstDay(key.activities),
+          firstDays: insightsFirstDays(key.activities),
         );
       } catch (_) {
         return const InsightsFailed();
@@ -189,8 +194,8 @@ typedef InsightsView = ({HealthState health, InsightsResult? result});
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   final HealthState? state = ref.watch(healthStateProvider).value;
   if (state == null) return const AsyncLoading<InsightsView>();
-  // The whole journal is a live query billed per document, so it is opened
-  // only when there is Health data to compare it with.
+  // The whole journal is read once per open, billed per document, so it is
+  // read only when there is Health data to compare it with.
   if (state case HealthReady(
     :final List<DailyOutcome> values,
   ) when values.isNotEmpty) {

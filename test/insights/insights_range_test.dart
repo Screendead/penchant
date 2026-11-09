@@ -66,17 +66,43 @@ void main() {
   });
 
   group('insightsFirstDay', () {
+    final List<ViceActivity> activities = <ViceActivity>[
+      fakeActivity('coffee', 1, DateTime(2025, 6, 2, 8)),
+      fakeActivity('tea', 1, DateTime(2024, 3, 9, 23, 59)),
+      fakeActivity('coffee', 1, DateTime(2025, 1, 4, 7)),
+      fakeActivity('water', 1, DateTime(2026, 1, 1)),
+    ];
+
     test('is the local day of the earliest entry, in any order', () {
-      final List<ViceActivity> activities = <ViceActivity>[
-        fakeActivity('coffee', 1, DateTime(2025, 6, 2, 8)),
-        fakeActivity('tea', 1, DateTime(2024, 3, 9, 23, 59)),
-        fakeActivity('water', 1, DateTime(2026, 1, 1)),
-      ];
-      expect(insightsFirstDay(activities), DateTime(2024, 3, 9));
+      expect(insightsFirstDays(activities), <String, DateTime>{
+        'coffee': DateTime(2025, 1, 4),
+        'tea': DateTime(2024, 3, 9),
+        'water': DateTime(2026, 1, 1),
+      });
+      expect(
+        insightsFirstDay(insightsFirstDays(activities), (_) => true),
+        DateTime(2024, 3, 9),
+      );
+    });
+
+    test('skips the habits the page leaves out', () {
+      expect(
+        insightsFirstDay(
+          insightsFirstDays(activities),
+          (String id) => id != 'tea',
+        ),
+        DateTime(2025, 1, 4),
+      );
     });
 
     test('is null for an empty journal', () {
-      expect(insightsFirstDay(const <ViceActivity>[]), isNull);
+      expect(
+        insightsFirstDay(
+          insightsFirstDays(const <ViceActivity>[]),
+          (_) => true,
+        ),
+        isNull,
+      );
     });
 
     test(
@@ -84,8 +110,8 @@ void main() {
       () {
         final DateTime at = transition!.add(const Duration(minutes: 30));
         expect(
-          insightsFirstDay(<ViceActivity>[fakeActivity('coffee', 1, at)]),
-          transition,
+          insightsFirstDays(<ViceActivity>[fakeActivity('coffee', 1, at)]),
+          <String, DateTime>{'coffee': transition!},
         );
       },
       skip: transition == null ? noDstSkipReason : false,

@@ -40,14 +40,32 @@ List<({DateTime start, DateTime end})> insightsHealthChunks(
   return chunks;
 }
 
-/// The local day of the journal's first entry; null with none.
-DateTime? insightsFirstDay(Iterable<ViceActivity> activities) {
-  DateTime? first;
+/// The local day of each vice's first entry, by vice ID.
+Map<String, DateTime> insightsFirstDays(Iterable<ViceActivity> activities) {
+  final Map<String, DateTime> first = <String, DateTime>{};
   for (final ViceActivity a in activities) {
     final DateTime at = a.createdAt.toDate();
-    if (first == null || at.isBefore(first)) first = at;
+    final DateTime? seen = first[a.viceID];
+    if (seen == null || at.isBefore(seen)) first[a.viceID] = at;
   }
-  return first == null ? null : startOfDay(first);
+  return <String, DateTime>{
+    for (final MapEntry<String, DateTime> e in first.entries)
+      e.key: startOfDay(e.value),
+  };
+}
+
+/// The earliest of [firstDays] among the vices [keep] accepts; null with none.
+DateTime? insightsFirstDay(
+  Map<String, DateTime> firstDays,
+  bool Function(String viceID) keep,
+) {
+  DateTime? first;
+  for (final MapEntry<String, DateTime> e in firstDays.entries) {
+    if (keep(e.key) && (first == null || e.value.isBefore(first))) {
+      first = e.value;
+    }
+  }
+  return first;
 }
 
 /// What the engine runs on. Sendable to another isolate.

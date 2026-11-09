@@ -39,7 +39,7 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String copied = 'Insights copied';
   static const String foot =
       'Worked out on this device from your journal and Apple Health; '
-      'Health data never leaves it. These are patterns in your own days, '
+      'Penchant sends none of it anywhere. These are patterns in your own days, '
       'not medical advice, and a pattern doesn’t show that one thing '
       'causes another.';
 
@@ -232,7 +232,12 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         if (names.containsKey(r.habitId)) r,
     ]..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
     final String locale = formatLocale;
-    final DateTime? firstDay = computed.firstDay;
+    // A legacy entry of a vice that is gone would date the span from a habit
+    // the page doesn't show.
+    final DateTime? firstDay = insightsFirstDay(
+      computed.firstDays,
+      names.containsKey,
+    );
     return <Widget>[
       if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
       const CardSectionLabel(InsightsPage.foundHeading),
