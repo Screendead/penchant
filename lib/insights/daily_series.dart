@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:tracker/data/day.dart';
 
 /// One logged use of a habit, at a local time.
@@ -29,19 +31,39 @@ class DailyOutcome {
   final double value;
 }
 
+/// The hour before which a use counts as the previous day's late use: a 01:00
+/// entry ends the evening before it, so it is read as 25:00 of that day and
+/// adds to that day's [DailyHabitSeries.lateDayTotal]. [DailyHabitSeries.total]
+/// stays on the calendar day.
+const int lateUseCutoffHour = 5;
+
+/// The day whose evening [at] belongs to: its calendar day, or the day before
+/// when it falls before [lateUseCutoffHour].
+DateTime lateDayOf(DateTime at) =>
+    at.hour < lateUseCutoffHour ? addDays(startOfDay(at), -1) : startOfDay(at);
+
 /// Each habit's total per local calendar day. A day with no entry for a habit
 /// is a day it was not used.
 ///
 /// Only entries with a positive amount count as use: a zero-quantity entry
 /// (legacy data has them) adds nothing and moves no first or last day.
 class DailyHabitSeries {
-  DailyHabitSeries._(this._totals, this._spans);
+  DailyHabitSeries._(
+    this._totals,
+    this._spans,
+    this._lastUse,
+    this._lateTotals,
+  );
 
   factory DailyHabitSeries.fromUses(Iterable<HabitUse> uses) {
     final Map<String, Map<DateTime, double>> totals =
         <String, Map<DateTime, double>>{};
     final Map<String, (DateTime, DateTime)> spans =
         <String, (DateTime, DateTime)>{};
+    final Map<String, Map<DateTime, int>> lastUse =
+        <String, Map<DateTime, int>>{};
+    final Map<String, Map<DateTime, double>> lateTotals =
+        <String, Map<DateTime, double>>{};
     for (final HabitUse use in uses) {
       final Map<DateTime, double> days = totals.putIfAbsent(
         use.habitId,
@@ -50,6 +72,23 @@ class DailyHabitSeries {
       if (use.amount <= 0) continue;
       final DateTime day = startOfDay(use.at);
       days[day] = (days[day] ?? 0) + use.amount;
+      final DateTime lateDay = lateDayOf(use.at);
+      // Clock time, so a DST change moves no use; past midnight it runs on
+      // from 24:00.
+      final int minutes =
+          use.at.hour * 60 +
+          use.at.minute +
+          (lateDay == day ? 0 : Duration.minutesPerDay);
+      final Map<DateTime, int> last = lastUse.putIfAbsent(
+        use.habitId,
+        () => <DateTime, int>{},
+      );
+      last[lateDay] = max(last[lateDay] ?? minutes, minutes);
+      final Map<DateTime, double> late = lateTotals.putIfAbsent(
+        use.habitId,
+        () => <DateTime, double>{},
+      );
+      late[lateDay] = (late[lateDay] ?? 0) + use.amount;
       final (DateTime, DateTime)? span = spans[use.habitId];
       spans[use.habitId] = span == null
           ? (day, day)
@@ -58,17 +97,32 @@ class DailyHabitSeries {
               day.isAfter(span.$2) ? day : span.$2,
             );
     }
-    return DailyHabitSeries._(totals, spans);
+    return DailyHabitSeries._(totals, spans, lastUse, lateTotals);
   }
 
   final Map<String, Map<DateTime, double>> _totals;
   final Map<String, (DateTime, DateTime)> _spans;
+  final Map<String, Map<DateTime, int>> _lastUse;
+  final Map<String, Map<DateTime, double>> _lateTotals;
 
   /// Every habit with an entry, including one whose entries are all zero.
   Iterable<String> get habitIds => _totals.keys;
 
   double total(String habitId, DateTime day) =>
       _totals[habitId]?[startOfDay(day)] ?? 0;
+
+  /// Minutes after [day]'s midnight of [habitId]'s last use that day, on the
+  /// day [lateDayOf] gives it; null on a day without one.
+  int? lastUseMinutes(String habitId, DateTime day) =>
+      _lastUse[habitId]?[startOfDay(day)];
+
+  /// [habitId]'s total over the uses [lastUseMinutes] counts on [day].
+  double lateDayTotal(String habitId, DateTime day) =>
+      _lateTotals[habitId]?[startOfDay(day)] ?? 0;
+
+  /// The days [lastUseMinutes] has a value for, in no order.
+  Iterable<DateTime> lateDays(String habitId) =>
+      _lastUse[habitId]?.keys ?? const <DateTime>[];
 
   /// The first and last days [habitId] was used; null when it never was.
   DateTime? firstUse(String habitId) => _spans[habitId]?.$1;
