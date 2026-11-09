@@ -19,6 +19,9 @@ pull request titles (`gh pr list --state merged`).
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
   backoff for about an hour. Opening Penchant meanwhile brings up the app as usual.
+- Groundwork for finer-grained insights on iPhone: Penchant can read heart rate, heart rate variability and breathing
+  rate readings with their times from Apple Health, not only daily totals, and works out your heart rate while
+  asleep each night. Insights now also asks for access to heart rate. Read-only and kept on the device.
 - Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
   step and energy totals from Apple Health, read-only and kept on the device. Insights asks for access.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login

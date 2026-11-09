@@ -179,6 +179,12 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        finish against an early one).
      - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
        each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
+       The sample read is `feat/health-samples` (PR pending): `HealthSource.samples` and `healthSamplePages` page heart
+       rate, HRV and respiratory rate by start time, 20,000 a call; `HealthMetric.sleepingHeartRate` is the night's
+       mean heart rate inside its asleep intervals, keyed like the sleep metrics. The engine does not use either yet:
+       `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`. A
+       person who connected Health before this build is not asked for heart rate again, so it reads as no data for
+       them until the sheet is shown once more.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.
