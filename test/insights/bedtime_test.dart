@@ -268,6 +268,29 @@ void main() {
     expect(held, lessThanOrEqualTo(4));
   });
 
+  test('with a bedtime read on too few nights, the whole effect still says '
+      'the part could not be told', () {
+    // Only 10 of the 200 nights read an onset inside the night.
+    final HabitInsight r = timing(
+      evenings(
+        0,
+        last: evening,
+        bed: (_, int l, _) => l + 30,
+        misread: (int i) => i < 10 ? 0 : -1440,
+      ),
+    );
+    expect((r as HabitFinding).effect, closeTo(-33, 1));
+    expect((part(r) as HabitRefusal).reason, RefusalReason.tooFewDays);
+    expect(part(r)!.usableDays, 10);
+    expect(
+      bedtimeLine(r, 'en'),
+      endsWith(
+        'per hour later, too few nights with a bedtime to tell the part at '
+        'the same bedtime',
+      ),
+    );
+  });
+
   test('the part at the same bedtime is per the whole effect’s step', () {
     // One use a day of 1 to 30 minutes, bed a minute later for each; the
     // longest days' onsets are misread, so those left would pick a smaller
@@ -411,13 +434,36 @@ void main() {
       ),
       '11 min less per extra 10 minutes, 4 min of it at the same bedtime',
     );
+    // A part refused before any fit still gets a line.
     expect(
       bedtimeLine(
         whole(InsightKind.lastUse, 60, refused(RefusalReason.tooFewDays)),
         'en',
       ),
-      isNull,
+      '11 min less per hour later, too few nights with a bedtime to tell the '
+      'part at the same bedtime',
     );
+    for (final RefusalReason reason in <RefusalReason>[
+      RefusalReason.uneven,
+      RefusalReason.steadyTiming,
+      RefusalReason.followsAmount,
+      RefusalReason.entangled,
+    ]) {
+      expect(
+        bedtimeLine(whole(InsightKind.lastUse, 60, refused(reason)), 'en'),
+        '11 min less per hour later, the part at the same bedtime can’t be '
+        'told',
+      );
+    }
+    expect(
+      findingLine(
+        whole(InsightKind.lastUse, 60, refused(RefusalReason.tooFewDays)),
+        'en',
+      ),
+      'Later last use: time asleep 11 min less per hour, too few nights with '
+      'a bedtime to tell the part at the same bedtime',
+    );
+    // Only a finding that was never checked against bedtime has no line.
     expect(bedtimeLine(whole(InsightKind.lastUse, 60, null), 'en'), isNull);
   });
 

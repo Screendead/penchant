@@ -94,10 +94,10 @@ pull request titles (`gh pr list --state merged`).
 - Insights splits off what bedtime does on the minutes of sleep. An amount or a time of last use still leads with
   the whole difference, and a line under it says how much of that is left when you fall asleep at the same time
   (read from Apple Health): "11 min less per hour later, 4 min of it at the same bedtime", or "none of it clear at
-  the same bedtime" when a late habit only means a later night. A night whose bedtime reads more than six hours from
-  your usual one is left out of that line. A result that hangs on one unusual day now says "rests on one unusual
-  day" rather than "within the noise", and the sentences read for any habit name ("On days your last use of Gummies
-  is an hour later, ...") (#190).
+  the same bedtime" when a late habit only means a later night, or "too few nights with a bedtime to tell the part at
+  the same bedtime". A night whose bedtime reads more than six hours from your usual one is left out of that line. A
+  result that hangs on one unusual day now says "rests on one unusual day" rather than "within the noise", and the
+  sentences read for any habit name ("On days your last use of Gummies is an hour later, ...") (#190).
 - Insights says nothing about an archived habit: no finding and no "Not enough to say" row, on the page or in Copy as
   text. Its entries still count, so a habit you had on the same days is not credited with what it did (#189).
 - Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,

@@ -579,8 +579,10 @@ String findingLine(
 
 /// Under an amount's or a time's headline on the minutes of sleep, the whole
 /// effect and then the part of it left at the same bedtime: "11 min less per
-/// hour later, 4 min of it at the same bedtime". Null when there is no such
-/// part ([HabitFinding.sameBedtime]).
+/// hour later, 4 min of it at the same bedtime". Null only when the part was
+/// never looked for ([HabitFinding.sameBedtime] null); a part that could not
+/// be told still gets a line, so a sleep card never reads as if bedtime were
+/// not in question.
 String? bedtimeLine(
   HabitFinding finding,
   String locale, {
@@ -599,6 +601,9 @@ String? bedtimeLine(
 
 // "4 min of it at the same bedtime" when the part is clear, on the same side
 // and no larger; "2 min more at the same bedtime" when it is clear otherwise.
+// A part refused before it was fitted (too few nights with a bedtime read,
+// a steady amount or time among them, an uneven span, an entanglement) still
+// says so: its headline is a sleep effect that bedtime may carry.
 String? _bedtimePart(HabitFinding finding, MetricCopy copy, String locale) {
   switch (finding.sameBedtime) {
     case final HabitFinding part:
@@ -612,7 +617,12 @@ String? _bedtimePart(HabitFinding finding, MetricCopy copy, String locale) {
       return 'which can’t be told apart from your bedtime';
     case HabitRefusal(effect: _?):
       return 'none of it clear at the same bedtime';
-    case HabitRefusal() || null:
+    case HabitRefusal(reason: RefusalReason.tooFewDays):
+      return 'too few nights with a bedtime to tell the part at the same '
+          'bedtime';
+    case HabitRefusal():
+      return 'the part at the same bedtime can’t be told';
+    case null:
       return null;
   }
 }
