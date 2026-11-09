@@ -181,7 +181,7 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      screen only, daily and nightly aggregates (`HKStatisticsCollectionQuery`) for sleep stages, HRV, resting heart
      rate, respiratory rate, oxygen, wrist temperature, steps and energy, kept in an on-device store
      (`ideas/insights/apple-health-correlation.md`, recommendation B with C's aggregates).
-   - **c. Insights screen** (PR open, `feat/insights-screen`): connect Health, then show the engine's findings;
+   - **c. Insights screen** (#173, open): connect Health, then show the engine's findings;
      empty Health reads as "no data yet". Stills in `docs/pitch/round-11/insights/`. Not run on a device: the real
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
