@@ -499,7 +499,7 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 None on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
-`r7-ci` are moot.
+`r7-ci` are moot. One call is open off the pitch page:
 
 - **The client API key's restrictions** (UNDECIDED; not yet set): they live in the production project's Google Cloud
   console, which Claude does not touch. Recommended, not decided: an iOS application restriction to
