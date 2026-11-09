@@ -321,6 +321,120 @@ void main() {
     );
   });
 
+  // Core sleep is 0.55 of the minutes in bed (wake at 07:00) plus [direct]
+  // per hour later or per unit, plus noise of sd 10 min; Coffee every evening,
+  // its last use between 19:00 and 24:00. Each scenario runs with the night's
+  // sleep onset in the outcomes, and without it (as before it was exported).
+  test('bedtime', () {
+    void bedtime(
+      String name,
+      Judge judge, {
+      required int Function(Random r, int last, int amount) bed,
+      bool varyAmount = false,
+      double direct = 0,
+    }) {
+      for (final bool onset in <bool>[true, false]) {
+        final Map<String, int> counts = <String, int>{};
+        double sum = 0;
+        int found = 0;
+        for (int seed = 0; seed < 200; seed++) {
+          final Random random = Random(seed);
+          final List<HabitUse> uses = <HabitUse>[];
+          final List<DailyOutcome> outcomes = <DailyOutcome>[];
+          for (int i = 0; i < 200; i++) {
+            final DateTime day = addDays(january5, i);
+            final int a = varyAmount ? 1 + random.nextInt(4) : 1;
+            final int l = varyAmount
+                ? 20 * 60
+                : 19 * 60 + random.nextInt(5 * 60);
+            uses.addAll(dayOfUse('Coffee', day, a, l));
+            final int b = bed(random, l, a);
+            outcomes.add(
+              DailyOutcome(
+                date: addDays(day, 1),
+                metricId: 'sleepCore',
+                value:
+                    0.55 * (31 * 60 - b) +
+                    direct * (varyAmount ? a : l / 60) +
+                    10 * gaussian(random),
+              ),
+            );
+            if (onset) {
+              outcomes.add(
+                DailyOutcome(
+                  date: addDays(day, 1),
+                  metricId: sleepOnsetId,
+                  value: b - 720.0,
+                ),
+              );
+            }
+          }
+          final HabitInsight r = judge(
+            habits: DailyHabitSeries.fromUses(uses),
+            outcomes: OutcomeSeries.fromOutcomes(outcomes),
+            metricId: 'sleepCore',
+          ).single;
+          final String key = switch (r) {
+            HabitFinding(:final double effect) => () {
+              sum += effect;
+              found++;
+              return 'finding';
+            }(),
+            HabitRefusal(:final RefusalReason reason) => reason.name,
+          };
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+        final String mean = found == 0
+            ? ''
+            : ' mean effect ${(sum / found).toStringAsFixed(1)}';
+        stdout.writeln(
+          '$name, ${onset ? 'onset held' : 'no onset'} (n=200): $counts$mean',
+        );
+      }
+    }
+
+    int halfway(Random r, int l, int _) =>
+        22 * 60 + 30 + (l - 19 * 60) ~/ 2 + r.nextInt(91);
+    int fixedBed(Random r, int _, int _) => 23 * 60 + r.nextInt(60);
+    bedtime(
+      'time: bed 30 min after the last use, no effect',
+      lastUseFollows,
+      bed: (_, l, _) => l + 30,
+    );
+    bedtime(
+      'time: bed half an hour later per hour, +0-90 min, no effect',
+      lastUseFollows,
+      bed: halfway,
+    );
+    for (final double direct in <double>[-2, -5, -10]) {
+      bedtime(
+        'time: bed 23:00-24:00, $direct min per hour',
+        lastUseFollows,
+        bed: fixedBed,
+        direct: direct,
+      );
+    }
+    bedtime(
+      'time: bed half an hour later per hour, -5 min per hour',
+      lastUseFollows,
+      bed: halfway,
+      direct: -5,
+    );
+    bedtime(
+      'dose: bed 20 min later per unit +-10, no effect',
+      doseFollows,
+      bed: (r, _, a) => 22 * 60 + 20 * a + r.nextInt(21) - 10,
+      varyAmount: true,
+    );
+    bedtime(
+      'dose: bed 23:00-24:00, -5 min per unit',
+      doseFollows,
+      bed: fixedBed,
+      varyAmount: true,
+      direct: -5,
+    );
+  });
+
   test('the page on noise, every kind in one family', () {
     page(400);
   });
