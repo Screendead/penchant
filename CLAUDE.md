@@ -144,8 +144,10 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
 - `functions.yml` tests (`npm --prefix functions test`) PRs touching `functions/`, `firebase.json` or itself; on such
   a push to `master` it deploys (`firebase deploy --only functions`, same pinned firebase-tools,
   `firestore-production` environment) only while repository variable `DEPLOY_FUNCTIONS` is `true` (unset, skipped).
-- `macos-build.yml`, by hand only (`gh workflow run macos-build.yml`), builds the macOS app unsigned (debug, release,
-  debug with the emulator define) on a `macos-26` runner.
+- `macos-build.yml` (Native build), on PRs touching `ios/`, `macos/`, `pubspec.*`, the Flutter pin or itself, builds
+  the iOS Simulator app (debug, emulator define, e2e's Swift and DerivedData caches restored, never saved) and the
+  macOS app unsigned (debug) on `macos-26` runners, since nothing else before merge compiles Swift (#213). By hand
+  (`gh workflow run macos-build.yml`) it also builds macOS release and debug with the emulator define.
 
 Nothing builds an iOS release or deploys either app. Flutter is pinned in `.github/actions/setup-flutter/action.yml`;
 bump it when the local `flutter --version` changes. CI uses `dart analyze` because riverpod_lint, an analyzer plugin

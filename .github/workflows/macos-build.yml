@@ -1,17 +1,50 @@
-name: macOS build
+name: Native build
 on:
-  # Run by hand only: macOS runners are the costliest when minutes are billed.
+  # checks.yml compiles no Xcode project, so a Swift error first showed in the e2e run after merge (#213).
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "ios/**"
+      - "macos/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - ".github/actions/setup-flutter/**"
+      - ".github/workflows/macos-build.yml"
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: native-build-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 jobs:
-  build:
-    # macOS runners are the costliest when minutes are billed, so this job is manual-only.
+  ios:
     runs-on: macos-26
     timeout-minutes: 45
-    concurrency:
-      group: macos-build-${{ github.head_ref || github.run_id }}
-      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-flutter
+      # e2e.yml's caches, restored and never saved, so PR builds don't evict master's entries.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-
+      # The Simulator debug build the e2e run makes.
+      - name: Build (iOS Simulator, debug)
+        run: flutter build ios --simulator --debug --dart-define=USE_FIREBASE_EMULATORS=true
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -24,12 +57,14 @@ jobs:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: flutter build macos --debug
       # Universal (arm64 and x86_64), unlike a debug build; Flutter before
-      # 3.44.8 fails it under Xcode 27 (flutter/flutter#188346).
+      # 3.44.8 fails it under Xcode 27 (flutter/flutter#188346). By hand only.
       - name: Build (release, unsigned)
+        if: github.event_name == 'workflow_dispatch'
         env:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: flutter build macos --release
       - name: Build with the emulator define (debug, unsigned)
+        if: github.event_name == 'workflow_dispatch'
         env:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: |
