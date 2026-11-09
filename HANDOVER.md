@@ -199,13 +199,13 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         asleep, bundle id), whose span takes in 3/4 of the sleep's asleep time from every source, else the one with
         the most asleep; in bed from that source or else the one with the most; the sleep is keyed by its chosen
         source's end; sleeping heart rate uses the same choice. Review, merge, install.
-     5. **i. Dose and timing: done when this PR merges** (`feat/insights-dose-timing`). Jack, 2026-11-09: a habit
+     5. **i. Dose and timing: done when this PR merges** (#185, `feat/insights-dose-timing`). Jack, 2026-11-09: a habit
         used every day must still yield insights: amount per day, time of first and last use, the hours around each
         use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
-     - **i. Dose and timing: this PR** (`feat/insights-dose-timing`). Two more comparisons per habit and outcome, in
+     - **i. Dose and timing: this PR** (#185, `feat/insights-dose-timing`). Two more comparisons per habit and outcome, in
        the same report and the same Benjamini-Hochberg family, both among days with the habit so a daily habit gets
        a slope: the day's amount (`doseFollows`, per unit, or per a 1-2-5 step when the totals spread over more than
        3 units or under half of one), and the clock time of the day's last use (`lastUseFollows`, per hour later; a
