@@ -172,6 +172,20 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
+   - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
+     many-comparisons correction #175 (Benjamini-Hochberg, q = 0.1). Open or in flight, in merge order:
+     1. **#178** `feat/health-samples`: timestamped samples, paged; nightly sleeping heart rate. Review, merge, install.
+     2. **#179** `feat/insights-whole-history`: whole journal history, Health in yearly calls, Copy as text.
+     3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "logged unevenly over
+        time" refusal, so a habit whose logging fades is not credited with a step change in an outcome; and a
+        too-few-days refusal that says which side is short.
+     4. **Sleep double count, after #178:** `HealthDays.sleepRows` unions every source's asleep periods, so another
+        app's single asleep span over a night covers the Watch's awake periods (synthetic: Watch core 23:00-03:00,
+        awake 03:00-04:00, core 04:00-07:00 gives asleep 420; add another source's asleep 23:00-07:00 and it gives
+        480 with awake 60). Fix: per night, take stages from the source that writes them, or subtract awake.
+     5. **i. Dose and timing** next (after 3; same engine files). Jack, 2026-11-09: a habit used every day must still
+        yield insights: amount per day, time of first and last use, the hours around each use (j), co-occurrence
+        with other habits (l), and the before and after of a streak's start (m).
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
