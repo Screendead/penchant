@@ -18,6 +18,7 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -30,6 +31,7 @@ import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/last_night_line.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/tally_row.dart';
@@ -38,6 +40,7 @@ import 'package:tracker/writes/settle_write.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'last_night_fakes.dart';
 
 const HabitMark _mark = HabitMark(0);
 
@@ -232,6 +235,36 @@ void main() {
           .x,
       0,
     );
+
+    testWidgets('last night\'s line shows on today alone', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, <Override>[
+        ...overrides(),
+        ...lastNightLineOverrides(
+          const LastNight(
+            sleepingHeartRate: NightCompare(
+              value: 57,
+              usual: 54,
+              low: 53,
+              high: 55,
+            ),
+          ),
+        ),
+      ], const ViceTracker());
+      await tester.pump();
+      expect(find.byType(LastNightLine), findsOneWidget);
+      expect(
+        find.textContaining('3 bpm above your usual', findRichText: true),
+        findsOneWidget,
+      );
+
+      await tester.tap(_button('Previous day'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(LastNightLine), findsNothing);
+      await tester.pumpAndSettle();
+    });
 
     testWidgets('the day label slides in from the side of the new day', (
       WidgetTester tester,
