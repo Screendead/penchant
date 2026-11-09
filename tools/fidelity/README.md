@@ -4,9 +4,9 @@ Today, rendered by the app and by the Day Dial mock-up in the same states, side 
 
 1. The mock-up: from a checkout of `master`, for each state and theme,
    `node tools/fidelity/mockshot.mjs <checkout>/docs/pitch/mockups/ui-overhaul/day-dial/index.html <root>/mock/mock-<state>-<theme>.png "<query>" 3500 [js]`.
-   The busy day is `only=1&theme=<theme>`, the menu adds `&state=menu`, the fan is frame 3 with `state=fan`. The sweep is the busy
-   day's query with `"$(cat tools/fidelity/sweep-frame.js)"` as `[js]`, half way round the sweep into the day before. It
-   needs Google Chrome and Node 22.
+   The busy day is `only=1&theme=<theme>`, the menu adds `&state=menu`, the fan is frame 3 with `state=fan`. The
+   sweep is the busy day's query with `"$(cat tools/fidelity/sweep-frame.js)"` as `[js]`, half way round the sweep
+   into the day before. It needs Google Chrome and Node 22.
 2. The app: `flutter test test/fidelity_render_test.dart --dart-define=RENDER_DIR=<root>/app`. It pins the
    mock-up's clock (21:10, Thu 5 Nov 2026), its data (the busy, sparse and record days, and its generator for the
    rest) and en_GB dates, on a 390 x 844 pt phone at 3x, and prints each block's rect for the busy light shot.

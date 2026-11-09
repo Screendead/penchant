@@ -1,20 +1,21 @@
 # Tech-debt register
 
-An exhaustive catalogue of this repository's technical debt as of 2026-08-11. Each
-subdirectory is one class of debt; each file inside is one issue — what it is, what it
-costs, and the evidence, never a prescription for how to fix it. The register burns
-down by deletion: when an issue stops being true its file goes, when a directory
-empties it goes too, and when this directory is gone the debt is gone.
+An exhaustive catalogue of this repository's technical debt as of 2026-08-11. Each subdirectory is one class of debt;
+each file inside is one issue: what it is, what it costs, and the evidence, never a prescription for the fix, which is
+the PR's to design. The register burns down by deletion: when an issue is fixed or stops being true, the PR deletes its
+file and its line below (and a directory it empties). When this directory is gone the debt is gone.
 
-Severity: **critical** — broken right now, or a real security or data-integrity
-exposure. **high** — actively costs correctness or velocity, or breaks the next
-routine action. **medium** — drift, friction, or risk that compounds. **low** —
-clutter.
+`tools/tech-debt-recount.py` recomputes the counts, drops lines whose file is gone, keeps both sides of a merge
+conflict in this file, and fails if a report file has no line (`--check` exits 1 if a rewrite would change the file).
+It resolves paths from its own location, so run the copy inside the worktree you are changing.
 
-Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B);
-citations drift as code moves.
+Severity: **critical**: broken right now, or a real security or data-integrity exposure. **high**: actively costs
+correctness or velocity, or breaks the next routine action. **medium**: drift, friction, or risk that compounds.
+**low**: clutter.
 
-**12 issues: 0 critical, 0 high, 1 medium, 11 low.**
+Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
+drift as code moves.
+
 **12 issues: 0 critical, 0 high, 1 medium, 11 low.**
 
 ## Firebase Data Layer (5)
