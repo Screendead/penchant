@@ -15,7 +15,10 @@ import 'package:tracker/writes/tracker_writes.dart';
 
 import 'support.dart';
 
-final TrackerWrites _writes = TrackerWrites(FirebaseFirestore.instance);
+final TrackerWrites _writes = TrackerWrites(
+  FirebaseFirestore.instance,
+  sealer: e2eSealer,
+);
 
 String get _uid => FirebaseAuth.instance.currentUser!.uid;
 
