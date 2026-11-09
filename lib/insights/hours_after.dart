@@ -43,7 +43,8 @@ class HoursAfterGates {
     this.minSamples = 3,
     this.minEventDays = 10,
     this.minControlDays = 10,
-    this.maxStepsPerMinute = 40,
+    this.maxStepsPerMinute = 60,
+    this.activityLingerMinutes = 30,
     this.level = 0.95,
   });
 
@@ -52,9 +53,12 @@ class HoursAfterGates {
   final int minEventDays;
   final int minControlDays;
 
-  /// A baseline or window walked through at more than this, on average, is
-  /// left out: the heart rate then says how far you walked.
+  /// A moment is left out for a window when any 10 minutes of its baseline,
+  /// or from [activityLingerMinutes] before the window to its end, averaged
+  /// more steps a minute than this: the heart rate then says how far you
+  /// walked, and it stays up for a while after.
   final double maxStepsPerMinute;
+  final int activityLingerMinutes;
   final double level;
 }
 
@@ -85,7 +89,8 @@ class HoursAfterPlan {
 /// [hoursAfterLookbackDays] days, at most [hoursAfterMaxEvents] of them, most
 /// recent first. Each event gets one control: the same clock time on the
 /// nearest day, within [hoursAfterControlReachDays], with no use of the habit
-/// within [hoursAfterClearMinutes] either side of it. A day with the habit at
+/// within [hoursAfterClearMinutes] either side of it, inside the habit's span
+/// from its first use to its last. A day with the habit at
 /// another time can serve, so a habit used every day still has controls
 /// unless it is used at nearly the same time every day.
 HoursAfterPlan planHoursAfter(List<HabitUse> uses, DateTime through) {
@@ -124,8 +129,12 @@ HoursAfterPlan planHoursAfter(List<HabitUse> uses, DateTime through) {
           at.minute,
           at.second,
         );
+        // Days before the first logged use or after the last are not days
+        // clear of it: it may have gone unlogged.
         if (!p.add(const Duration(minutes: 240)).isBefore(through) ||
             p.isBefore(since) ||
+            p.isBefore(startOfDay(times.first)) ||
+            !p.isBefore(times.last) ||
             taken.contains(p) ||
             !clearAround(p, clear, clear)) {
           continue;
@@ -214,6 +223,8 @@ List<double> _values(List<HealthSample> samples, DateTime from, DateTime to) {
   return out;
 }
 
+const Duration _bin = Duration(minutes: 10);
+
 // Step samples are counts over an interval, shared out by overlap. iPhone and
 // Watch both record steps and raw samples are not merged, so a span both
 // carried counts twice: too high, never too low, which errs towards leaving a
@@ -252,9 +263,9 @@ double _stepsPerMinute(
 /// climbs through a morning with or without coffee. Either alone fails one of
 /// those. A moment is left out when another habit was used from its baseline
 /// to its window's end, when its baseline or window holds under
-/// [HoursAfterGates.minSamples] readings, or when either was walked through
-/// faster than [HoursAfterGates.maxStepsPerMinute]; the change in steps per
-/// minute between them is in the model when it varies.
+/// [HoursAfterGates.minSamples] readings, or when it holds a walk (see
+/// [HoursAfterGates.maxStepsPerMinute]); the change in steps per minute
+/// between window and baseline is in the model when it varies.
 ///
 /// Samples within a day are not independent, so moments are averaged per day
 /// and the model is fitted on days: one row per day of use and per control
@@ -330,8 +341,23 @@ List<HabitInsight> hoursAfter({
             to,
             longestMinutes: longestStep,
           );
-          if (stepsBefore > gates.maxStepsPerMinute ||
-              stepsAfter > gates.maxStepsPerMinute) {
+          final DateTime lingerFrom = from.subtract(
+            Duration(minutes: gates.activityLingerMinutes),
+          );
+          bool walked(DateTime a, DateTime b) {
+            for (DateTime t = a; t.isBefore(b); t = t.add(_bin)) {
+              final DateTime end = t.add(_bin).isBefore(b) ? t.add(_bin) : b;
+              if (_stepsPerMinute(steps, t, end, longestMinutes: longestStep) >
+                  gates.maxStepsPerMinute) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          if (steps.isNotEmpty &&
+              (walked(baseFrom, p.at) ||
+                  walked(lingerFrom.isBefore(p.at) ? p.at : lingerFrom, to))) {
             continue;
           }
           final List<double> sums = days.putIfAbsent((
