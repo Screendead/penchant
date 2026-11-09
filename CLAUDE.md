@@ -454,8 +454,9 @@ checked-in config files", provided the key is restricted to Firebase APIs and se
 (https://firebase.google.com/docs/projects/api-keys). Today Firestore rules are the protection (App Check: Emulator
 wiring). The key's restrictions live in the production project's Google Cloud console, which Claude does not touch and
 repo files cannot show. Seen there by Jack on 2026-11-09: the key Firebase made on 2026-11-05 allows the iOS app
-`com.screendead.penchant` only and 7 Firebase APIs (Firestore, Logging, App Check, Firebase Management, Identity
-Toolkit, Token Service, and one more); the macOS app uses it under the same bundle ID. Google notes the bundle-ID check
+`com.screendead.penchant` only and 7 APIs (Cloud Firestore, Cloud Datastore, Cloud Logging, Firebase App Check,
+Firebase Management, Identity Toolkit, Token Service); the macOS app uses it under the same bundle ID. Firebase's list
+also names Firebase Installations, which Crashlytics and App Check use; recommended to Jack to add it. Google notes the bundle-ID check
 is easy to bypass, so it stops only casual reuse (https://docs.cloud.google.com/docs/authentication/api-keys). The
 other key, "Auth email links - do not delete" (HTTP referrers), serves the auth email links; the old
 `com.screendead.tracker.tracker` key no longer appears. Never commit a service-account file or `privateKey.json`;
