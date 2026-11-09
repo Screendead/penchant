@@ -193,6 +193,18 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
+   - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
+     health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
+     after the many-comparisons correction and the whole-history range:
+     - **i. Dose and timing:** the day's amount instead of used/not used, and the time of the last use (a late
+       finish against an early one).
+     - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
+       each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
+     - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
+       day's use, and heart rate in the hour before an entry.
+     - **l. One habit after another:** how often a habit follows another within minutes, against chance.
+     - **m. Step changes:** a level shift in a measure (an illness, a new routine) found and modelled, so it is not
+       pinned on a habit that began at the same time.
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
