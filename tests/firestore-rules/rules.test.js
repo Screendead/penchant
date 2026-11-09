@@ -70,6 +70,21 @@ const activity = (overrides = {}) => ({
   ...overrides,
 });
 
+// A Sealer envelope's size: 29 bytes of version, nonce and tag around a padded plaintext.
+const bytesOf = (length, fill = 1) => Bytes.fromUint8Array(new Uint8Array(length).fill(fill));
+const envelope = bytesOf(29 + 64);
+
+// What the app creates: content only inside `sealed`.
+const newVice = (overrides = {}) => ({
+  sealed: envelope,
+  ownerID: ALICE,
+  createdAt: serverTimestamp(),
+  archived: false,
+  ...overrides,
+});
+
+const newActivity = (overrides = {}) => activity({ sealed: envelope, ...overrides });
+
 const without = (data, key) => {
   const copy = { ...data };
   delete copy[key];
@@ -134,73 +149,63 @@ after(async () => {
 
 describe('vices', () => {
   describe('create', () => {
-    it('allows the shape add_vice.dart writes, with a server timestamp', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice()));
+    it('allows the sealed shape TrackerWrites.addVice writes, with a server timestamp', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), newVice()));
+      await assertSucceeds(setDoc(doc(collection(asAlice(), 'vices')), newVice()));
     });
 
-    it('allows every unit in the Unit enum', async () => {
-      for (const unit of ['item', 'time', 'puff', 'drink', 'minute', 'hour']) {
-        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ unit })));
+    it('allows an envelope at either padding bound (64 and 4096 bytes of plaintext)', async () => {
+      for (const sealed of [bytesOf(29 + 64), bytesOf(29 + 4096)]) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), newVice({ sealed })));
       }
     });
 
-    it('allows every category in the ViceCategory enum', async () => {
-      for (const category of ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other']) {
-        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ category })));
+    it('denies a plaintext vice, however valid its content', async () => {
+      const plaintext = [
+        vice(),
+        without(vice(), 'category'),
+        ...['item', 'time', 'puff', 'drink', 'minute', 'hour'].map((unit) => vice({ unit })),
+      ];
+      for (const data of plaintext) {
+        await assertFails(addDoc(collection(asAlice(), 'vices'), data));
       }
     });
 
-    it('allows a legacy create without a category', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), without(vice(), 'category')));
-    });
-
-    it('denies a category outside the enum or of the wrong type', async () => {
-      for (const category of ['sugar', '', 3, null]) {
-        await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ category })));
+    it('denies plaintext content beside the envelope', async () => {
+      for (const content of [{ name: 'Coffee' }, { unit: 'drink' }, { category: 'caffeine' }]) {
+        await assertFails(addDoc(collection(asAlice(), 'vices'), newVice(content)));
       }
     });
 
     it('denies creating a vice owned by someone else', async () => {
-      await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ ownerID: BOB })));
+      await assertFails(addDoc(collection(asAlice(), 'vices'), newVice({ ownerID: BOB })));
     });
 
     it('denies unauthenticated creates', async () => {
-      await assertFails(addDoc(collection(asGuest(), 'vices'), vice()));
+      await assertFails(addDoc(collection(asGuest(), 'vices'), newVice()));
     });
 
     it('denies a missing required field', async () => {
-      for (const key of ['name', 'unit', 'ownerID', 'createdAt', 'archived']) {
-        await assertFails(addDoc(collection(asAlice(), 'vices'), without(vice(), key)));
+      for (const key of ['sealed', 'ownerID', 'createdAt', 'archived']) {
+        await assertFails(addDoc(collection(asAlice(), 'vices'), without(newVice(), key)));
       }
     });
 
     it('denies an unknown field', async () => {
-      await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ colour: 'red' })));
-    });
-
-    it('allows a name of 60 characters and denies 61', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ name: 'x'.repeat(60) })));
-      await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ name: 'x'.repeat(61) })));
-    });
-
-    // Pins the unit lib/data/limits.dart measures in: each emoji is two UTF-16 code units.
-    it('counts the name in UTF-16 code units', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'vices'), vice({ name: '😀'.repeat(30) })));
-      await assertFails(addDoc(collection(asAlice(), 'vices'), vice({ name: '😀'.repeat(31) })));
+      await assertFails(addDoc(collection(asAlice(), 'vices'), newVice({ colour: 'red' })));
     });
 
     it('denies wrong types and invalid values', async () => {
       const bad = [
-        { name: 42 },
-        { name: '' },
-        { unit: 'pouch' },
-        { unit: 3 },
         { createdAt: '2026-01-01' },
         { archived: 'false' },
         { ownerID: null },
+        { sealed: 'not bytes' },
+        { sealed: bytesOf(29) },
+        { sealed: bytesOf(4126) },
       ];
       for (const overrides of bad) {
-        await assertFails(addDoc(collection(asAlice(), 'vices'), vice(overrides)));
+        await assertFails(addDoc(collection(asAlice(), 'vices'), newVice(overrides)));
       }
     });
   });
@@ -290,6 +295,13 @@ describe('vices', () => {
       );
     });
 
+    // Pins the unit lib/data/limits.dart measures in: each emoji is two UTF-16 code units.
+    it('counts a new name in UTF-16 code units', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertSucceeds(updateDoc(ref, { name: '😀'.repeat(30) }));
+      await assertFails(updateDoc(ref, { name: '😀'.repeat(31) }));
+    });
+
     it('denies a non-bool archived', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: 'yes' }));
     });
@@ -367,46 +379,52 @@ describe('vices', () => {
 
 describe('activities', () => {
   describe('create', () => {
-    it('allows the shape record_new_activity_dialog.dart writes with add()', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity()));
+    it('allows the sealed shape TrackerWrites.recordActivity writes, with add()', async () => {
+      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), newActivity()));
     });
 
     it('allows the same shape written with doc().set()', async () => {
-      await assertSucceeds(setDoc(doc(collection(asAlice(), 'activities')), activity()));
+      await assertSucceeds(setDoc(doc(collection(asAlice(), 'activities')), newActivity()));
+    });
+
+    it('allows an envelope at either padding bound (64 and 4096 bytes of plaintext)', async () => {
+      for (const sealed of [bytesOf(29 + 64), bytesOf(29 + 4096)]) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'activities'), newActivity({ sealed })));
+      }
     });
 
     it('allows a quantity of 1', async () => {
-      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ quantity: 1 })));
+      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), newActivity({ quantity: 1 })));
     });
 
     it('denies a zero or negative quantity', async () => {
-      await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ quantity: 0 })));
-      await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ quantity: -1 })));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ quantity: 0 })));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ quantity: -1 })));
     });
 
     it("allows recording against the owner's legacy or archived vice", async () => {
       await assertSucceeds(
-        addDoc(collection(asAlice(), 'activities'), activity({ viceID: 'aliceLegacyVice' })),
+        addDoc(collection(asAlice(), 'activities'), newActivity({ viceID: 'aliceLegacyVice' })),
       );
       await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: true }));
-      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity()));
+      await assertSucceeds(addDoc(collection(asAlice(), 'activities'), newActivity()));
     });
 
     it("denies recording against another user's vice", async () => {
       await assertFails(
-        addDoc(collection(asAlice(), 'activities'), activity({ viceID: 'bobVice' })),
+        addDoc(collection(asAlice(), 'activities'), newActivity({ viceID: 'bobVice' })),
       );
     });
 
     it('denies recording against a vice that does not exist', async () => {
       for (const viceID of ['gone', '', 'aliceVice/activities/x']) {
-        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ viceID })));
+        await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ viceID })));
       }
     });
 
     it('denies recording against a vice deleted earlier', async () => {
       await assertSucceeds(deleteDoc(doc(asAlice(), 'vices/aliceVice')));
-      await assertFails(addDoc(collection(asAlice(), 'activities'), activity()));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity()));
     });
 
     // get() reads committed state; seeing the batch's own vice would need getAfter().
@@ -414,40 +432,40 @@ describe('activities', () => {
       const db = asAlice();
       const viceRef = doc(collection(db, 'vices'));
       const batch = writeBatch(db);
-      batch.set(viceRef, vice());
-      batch.set(doc(collection(db, 'activities')), activity({ viceID: viceRef.id }));
+      batch.set(viceRef, newVice());
+      batch.set(doc(collection(db, 'activities')), newActivity({ viceID: viceRef.id }));
       await assertFails(batch.commit());
     });
 
     it('denies creating an activity owned by someone else', async () => {
-      await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ ownerID: BOB })));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ ownerID: BOB })));
     });
 
     it('denies unauthenticated creates', async () => {
-      await assertFails(addDoc(collection(asGuest(), 'activities'), activity()));
+      await assertFails(addDoc(collection(asGuest(), 'activities'), newActivity()));
     });
 
     it('denies a missing required field', async () => {
-      for (const key of ['viceID', 'quantity', 'ownerID', 'createdAt']) {
-        await assertFails(addDoc(collection(asAlice(), 'activities'), without(activity(), key)));
+      for (const key of ['viceID', 'quantity', 'ownerID', 'createdAt', 'sealed']) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), without(newActivity(), key)));
       }
     });
 
     it('denies an unknown field', async () => {
-      await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ note: 'hi' })));
+      await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ note: 'hi' })));
     });
 
     it('allows an optional positive amount, whole or decimal', async () => {
       for (const amount of [1.5, 0.25, 2]) {
         await assertSucceeds(
-          addDoc(collection(asAlice(), 'activities'), activity({ amount, quantity: Math.ceil(amount) })),
+          addDoc(collection(asAlice(), 'activities'), newActivity({ amount, quantity: Math.ceil(amount) })),
         );
       }
     });
 
     it('denies a zero, negative or non-number amount', async () => {
       for (const amount of [0, -1.5, '1.5', null, true]) {
-        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ amount })));
+        await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ amount })));
       }
     });
 
@@ -457,41 +475,24 @@ describe('activities', () => {
         { quantity: '2' },
         { viceID: 7 },
         { createdAt: '2026-01-02' },
+        { sealed: 'not bytes' },
+        { sealed: bytesOf(29) },
+        { sealed: bytesOf(4126) },
       ];
       for (const overrides of bad) {
-        await assertFails(addDoc(collection(asAlice(), 'activities'), activity(overrides)));
+        await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity(overrides)));
       }
     });
 
-    it('allows triggers: tree paths and free text, up to 10, each 1 to 60 long', async () => {
-      const valid = [
-        [],
-        ['work/meeting'],
-        ['feeling/stressed', 'Late train'],
-        Array.from({ length: 10 }, (_, i) => `custom ${i}`),
-        ['x'.repeat(60)],
-      ];
-      for (const triggers of valid) {
-        await assertSucceeds(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+    it('denies a plaintext activity, with or without triggers', async () => {
+      for (const data of [activity(), activity({ triggers: ['work/meeting'] }), activity({ triggers: [] })]) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), data));
       }
     });
 
-    it('denies more than 10 triggers, or one empty or over 60 long', async () => {
-      const invalid = [
-        Array.from({ length: 11 }, (_, i) => `t${i}`),
-        [''],
-        ['x'.repeat(61)],
-        ['work', 'x'.repeat(61)],
-        [...Array.from({ length: 9 }, (_, i) => `t${i}`), 'x'.repeat(61)],
-      ];
-      for (const triggers of invalid) {
-        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
-      }
-    });
-
-    it('denies triggers of the wrong type', async () => {
-      for (const triggers of ['work/meeting', 7, { work: true }, [7], ['work', null], [{ path: 'work' }]]) {
-        await assertFails(addDoc(collection(asAlice(), 'activities'), activity({ triggers })));
+    it('denies plaintext triggers beside the envelope, valid or not', async () => {
+      for (const triggers of [[], ['work/meeting'], ['feeling/stressed', 'Late train'], [''], 'work/meeting']) {
+        await assertFails(addDoc(collection(asAlice(), 'activities'), newActivity({ triggers })));
       }
     });
   });
@@ -780,7 +781,7 @@ describe('activities', () => {
   describe('delete', () => {
     it('allows Undo: the owner deletes the activity they just recorded', async () => {
       const ref = doc(collection(asAlice(), 'activities'));
-      await assertSucceeds(setDoc(ref, activity()));
+      await assertSucceeds(setDoc(ref, newActivity()));
       await assertSucceeds(deleteDoc(ref));
     });
 
@@ -992,10 +993,7 @@ describe('sealing plaintext on first launch', () => {
 // (lib/data/sealed.dart); the structural fields stay plaintext. An envelope is
 // bytes: 29 bytes of version, nonce and tag around a padded plaintext of at
 // most 4096 (lib/crypto/sealer.dart).
-const bytesOf = (length, fill = 1) => Bytes.fromUint8Array(new Uint8Array(length).fill(fill));
-
 describe('sealed documents', () => {
-  const envelope = bytesOf(29 + 64);
   const resealed = bytesOf(29 + 256, 2);
   const sealedVice = (overrides = {}) => ({
     sealed: envelope,
@@ -1026,8 +1024,8 @@ describe('sealed documents', () => {
       await assertSucceeds(setDoc(doc(asAlice(), 'vices/new'), sealedVice()));
     });
 
-    it('still creates a plaintext vice', async () => {
-      await assertSucceeds(setDoc(doc(asAlice(), 'vices/new'), vice()));
+    it('refuses a plaintext vice', async () => {
+      await assertFails(setDoc(doc(asAlice(), 'vices/new'), vice()));
     });
 
     it('refuses a sealed vice that also carries a plaintext name or unit', async () => {
@@ -1137,8 +1135,7 @@ describe('sealed documents', () => {
     });
   });
 
-  // The quantity stays plaintext (Jack, 2026-11-06); no activity field is
-  // sealed yet, but an envelope may sit beside the plaintext structure.
+  // The quantity and amount stay plaintext beside the envelope (Jack, 2026-11-06).
   describe('activities', () => {
     it('creates an activity with an envelope beside its plaintext quantity', async () => {
       const db = asAlice();
@@ -1148,8 +1145,8 @@ describe('sealed documents', () => {
       );
     });
 
-    it('still creates a plaintext activity', async () => {
-      await assertSucceeds(setDoc(doc(asAlice(), 'activities/new'), activity()));
+    it('refuses a plaintext activity', async () => {
+      await assertFails(setDoc(doc(asAlice(), 'activities/new'), activity()));
     });
 
     it("refuses an activity on a vice the writer doesn't own or that is gone", async () => {
@@ -1381,11 +1378,11 @@ describe('a guest signed in anonymously', () => {
 
   it('creates, reads, edits and deletes its own vice and activity', async () => {
     const db = asAnonymous();
-    await assertSucceeds(setDoc(doc(db, 'vices/guestVice'), vice({ ownerID: GUEST })));
+    await assertSucceeds(setDoc(doc(db, 'vices/guestVice'), newVice({ ownerID: GUEST })));
     await assertSucceeds(
       setDoc(
         doc(db, 'activities/guestActivity'),
-        activity({ ownerID: GUEST, viceID: 'guestVice' }),
+        newActivity({ ownerID: GUEST, viceID: 'guestVice' }),
       ),
     );
     const mine = await assertSucceeds(
@@ -1399,7 +1396,7 @@ describe('a guest signed in anonymously', () => {
 
   it('cannot write as another owner or read another owner\'s data', async () => {
     const db = asAnonymous();
-    await assertFails(addDoc(collection(db, 'vices'), vice()));
+    await assertFails(addDoc(collection(db, 'vices'), newVice()));
     await assertFails(getDoc(doc(db, 'vices/aliceVice')));
     await assertFails(
       getDocs(query(collection(db, 'activities'), where('ownerID', '==', ALICE))),
@@ -1408,7 +1405,7 @@ describe('a guest signed in anonymously', () => {
 
   it('keeps its data once linked, since linking keeps the uid', async () => {
     await assertSucceeds(
-      setDoc(doc(asAnonymous(), 'vices/guestVice'), vice({ ownerID: GUEST })),
+      setDoc(doc(asAnonymous(), 'vices/guestVice'), newVice({ ownerID: GUEST })),
     );
     const linked = testEnv
       .authenticatedContext(GUEST, {

@@ -88,18 +88,15 @@ service cloud.firestore {
     match /vices/{viceID} {
       allow read, delete: if ownsExisting();
 
+      // Sealed only (Jack, 2026-11-09, `plaintext-creates` C): a new vice's
+      // name, unit and category exist only inside the envelope. Plaintext
+      // vices written earlier stay readable and editable below.
       allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt', 'archived'])
+        && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt', 'archived'])
         && request.resource.data.createdAt is timestamp
         && request.resource.data.archived is bool
-        && ((request.resource.data.keys().hasAll(['name', 'unit', 'ownerID', 'createdAt', 'archived'])
-            && request.resource.data.keys().hasOnly(['name', 'unit', 'ownerID', 'createdAt', 'archived', 'category'])
-            && validName(request.resource.data.name)
-            && validUnit(request.resource.data.unit)
-            // Optional: app versions before the field still create without it.
-            && validCategory(request.resource.data.get('category', 'other')))
-          || (request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt', 'archived'])
-            && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt', 'archived'])
-            && validSealed(request.resource.data.sealed)));
+        && validSealed(request.resource.data.sealed);
 
       allow update: if ownsExisting()
         && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'sealed'])
@@ -120,21 +117,20 @@ service cloud.firestore {
     match /activities/{activityID} {
       allow read, delete: if ownsExisting();
 
-      // The quantity and amount stay plaintext beside any envelope (Jack,
+      // The quantity and amount stay plaintext beside the envelope (Jack,
       // 2026-11-06), so a server-side job can sum them; the triggers are
-      // sealed. ownsVice() last, so a request the other checks deny costs no
-      // read.
+      // sealed, and a create without the envelope is refused (Jack,
+      // 2026-11-09, `plaintext-creates` C). ownsVice() last, so a request the
+      // other checks deny costs no read.
       allow create: if createsOwn()
-        && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt'])
-        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'triggers', 'sealed'])
+        && request.resource.data.keys().hasAll(['viceID', 'quantity', 'ownerID', 'createdAt', 'sealed'])
+        && request.resource.data.keys().hasOnly(['viceID', 'quantity', 'ownerID', 'createdAt', 'amount', 'sealed'])
         && request.resource.data.viceID is string
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
         && request.resource.data.createdAt is timestamp
         && validAmount(request.resource.data)
-        && (!('triggers' in request.resource.data) || validTriggers(request.resource.data.triggers))
-        && (!('sealed' in request.resource.data) || validSealed(request.resource.data.sealed))
-        && sealedAlone(request.resource.data, ['triggers'])
+        && validSealed(request.resource.data.sealed)
         && ownsVice(request.resource.data.viceID);
 
       allow update: if ownsExisting()

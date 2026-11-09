@@ -90,6 +90,9 @@ class _OnboardingState extends ConsumerState<Onboarding> {
       return;
     }
     final TrackerWrites writes = ref.read(trackerWritesProvider);
+    if (!writes.canCreate) {
+      return;
+    }
     final Set<String> existing = <String>{
       for (final Vice v in ref.read(viceListProvider).value ?? const <Vice>[])
         v.name,
@@ -120,6 +123,12 @@ class _OnboardingState extends ConsumerState<Onboarding> {
       return;
     }
     final TrackerWrites writes = ref.read(trackerWritesProvider);
+    if (!writes.canCreate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not logged. $noJournalKeyMessage')),
+      );
+      return;
+    }
     final int quantity = quantities[vice.id] ?? 1;
     final DateTime at = clock.now();
     final SentWrite write = writes.recordActivity(
@@ -149,6 +158,8 @@ class _OnboardingState extends ConsumerState<Onboarding> {
   @override
   Widget build(BuildContext context) {
     final List<Vice> habits = _habits;
+    final bool waitingForKey =
+        selected.isNotEmpty && !ref.watch(trackerWritesProvider).canCreate;
     return switch (step) {
       OnboardingStep.intro => _Frame(
         step: 1,
@@ -175,11 +186,13 @@ class _OnboardingState extends ConsumerState<Onboarding> {
         ),
         actions: <Widget>[
           FilledButton(
-            onPressed: selected.isEmpty && habits.isEmpty
+            onPressed: (selected.isEmpty && habits.isEmpty) || waitingForKey
                 ? null
                 : _createPicked,
             child: Text(
-              selected.isEmpty
+              waitingForKey
+                  ? OnboardingCopy.waitingForKey
+                  : selected.isEmpty
                   ? OnboardingCopy.continueLabel
                   : OnboardingCopy.continueWith(selected.length),
             ),

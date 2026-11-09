@@ -310,23 +310,26 @@ An activity seals only `triggers`; `quantity`, `amount`, `createdAt`, `viceID`, 
 2026-11-06: a server job aggregates amounts), and `monthlySummaries` reads only `viceID` and `quantity`. A vice's
 `ownerID`, `createdAt` and `archived` stay plaintext, so queries, indexes and `count()` are unchanged. A new content
 field joins both `contentFields` (`lib/data/sealed.dart`) and the rules' `sealedAlone` and `changedContent` calls.
-Rules accept either shape on create, never content beside `sealed`, bound `sealed` to 30 to 4125 bytes, refuse
-removing it, and let an update convert a plaintext document by setting `sealed` and deleting the plaintext fields (a
-deleted field is an affected key). They cannot read sealed content, so there `lib/data/limits.dart` is the only guard.
+Rules refuse a create without `sealed` or with content beside it (Jack, 2026-11-09, `plaintext-creates` C), bound
+`sealed` to 30 to 4125 bytes, refuse removing it, still let legacy plaintext documents be read and edited, and let an
+update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They
+cannot read sealed content, so there `lib/data/limits.dart` is the only guard.
 
 `lib/data/sealed.dart` holds `FieldSealer` (sole implementation `lib/crypto/journal_field_sealer.dart`),
-`sealerProvider` (null while no key exists, so writes stay plaintext; `e2eeEnabled` in `lib/crypto/e2ee_enabled.dart`
-is true, and turning it off would strand every sealed journal) and `SealedOpener`, run by each query provider over its
-snapshots (`asyncMap`) and by the export. It never throws: a document that will not open parses as `locked`, with a
-placeholder name and default content, reported once per listener. With a sealer, `TrackerWrites` reseals all content
-on a vice update (`updateVice` takes the `Vice`, refuses a locked one), seals every new activity, even without
-triggers, and reseals an activity update only when triggers change (the editor never sends a locked entry's triggers).
-A locked vice counts as `categoryStored`; `fillViceCategory` skips sealed vices. `SentWrite.fields` holds only
-plaintext fields, since the envelope does not exist yet when the write is handed back. Tests override `sealerProvider`
-with `test/fake_sealer.dart` (real envelope, fixed key). First-launch sealing (`lib/crypto/plaintext_migrator.dart`)
-uses the same conversion: once `sealerProvider` has a key and `offlineProvider` says online, once per uid and app
-version, it pages each collection with content fields from the server and seals each document lacking `sealed`, so the
-next run finishes a cut-short one.
+`sealerProvider` (null while no key exists: `TrackerWrites.canCreate` is false and `addVice`/`recordActivity` throw, so
+every create path checks it first, says the journal key has not loaded and keeps the input; onboarding's Continue
+waits; widget logs stay queued; updates stay plaintext. `e2eeEnabled` in `lib/crypto/e2ee_enabled.dart` is true, and
+turning it off would strand every sealed journal and leave nothing creatable) and `SealedOpener`, run by each query
+provider over its snapshots (`asyncMap`) and by the export. It never throws: a document that will not open parses as
+`locked`, with a placeholder name and default content, reported once per listener. With a sealer, `TrackerWrites`
+reseals all content on a vice update (`updateVice` takes the `Vice`, refuses a locked one), seals every new activity,
+even without triggers, and reseals an activity update only when triggers change (the editor never sends a locked
+entry's triggers). A locked vice counts as `categoryStored`; `fillViceCategory` skips sealed vices. `SentWrite.fields`
+holds only plaintext fields, since the envelope does not exist yet when the write is handed back. Tests override
+`sealerProvider` with `test/fake_sealer.dart` (real envelope, fixed key). First-launch sealing
+(`lib/crypto/plaintext_migrator.dart`) uses the same conversion: once `sealerProvider` has a key and `offlineProvider`
+says online, once per uid and app version, it pages each collection with content fields from the server and seals each
+document lacking `sealed`, so the next run finishes a cut-short one.
 
 The key service (`lib/crypto/key_service.dart`; `keyServiceOverrides` in `lib/crypto/key_wiring.dart` wires it, and
 `startApp` passes them to its `ProviderScope`) supplies `sealerProvider` and the three recovery-key providers, each
@@ -338,10 +341,12 @@ key anywhere it makes one, saves it to the keychain, then creates the record in 
 devices the loser adopts the winner's record and asks for its recovery key. A `keyID` that differs from the keychain's
 (or no key here) locks the journal behind `RecoveryKeyGate`, which also holds every route while
 `journalKeyPendingProvider` says no key is here and the server has not answered. Offline with no key: `KeyUnknown`, no
-gate, plaintext writes. `deleteAccount` deletes the record. Most of `integration_test/` pumps `ProviderScope(child:
-MyApp())` without `keyServiceOverrides`, so runs keyless and writes plaintext; files launching through `startApp`, and
-`key_service_test.dart`, seal with the real key, so `storedViceID` opens sealed vices with the keychain key to match a
-name.
+gate, nothing creatable; each recheck (every 5 s and on resume) reads the keychain and asks the server again.
+`deleteAccount` deletes the record. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
+`MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
+legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
+`startApp`, and `key_service_test.dart`, seal with the real key. `storedContent` and `storedViceID` open sealed
+documents with either key.
 
 **Days.** An entry counts on the local day, in the viewer's current zone, of its `createdAt` instant. Day windows and
 graph buckets are local midnights from `lib/data/day.dart` (never `Duration(days:)`, which drifts an hour across DST).

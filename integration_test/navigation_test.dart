@@ -1,15 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Settings;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/vice_activity_history_page.dart';
@@ -44,7 +43,7 @@ void main() {
   testWidgets("Manage Data's Edit renames a vice and changes its unit", (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-edit-vice@example.com');
     await addVicesThroughManageData(tester);
     await recordActivity(tester, 'Coffee', 2);
@@ -79,11 +78,16 @@ void main() {
     expect(find.text('Coffee'), findsNothing);
 
     await FirebaseFirestore.instance.waitForPendingWrites().timeout(timeout);
-    expect((await stored.get(server)).data(), <String, dynamic>{
-      ...before,
-      'name': 'Espresso',
-      'unit': 'hour',
-    });
+    final DocumentSnapshot<Map<String, dynamic>> after = await stored.get(
+      server,
+    );
+    expect(
+      <String, dynamic>{...after.data()!}..remove(sealedField),
+      <String, dynamic>{...before}..remove(sealedField),
+    );
+    final Map<String, Object?> content = await storedContent(after);
+    expect(content['name'], 'Espresso');
+    expect(content['unit'], 'hour');
 
     // History opens from Habits, so its Back returns there first.
     await tap(tester, find.byTooltip('Back'));
@@ -103,7 +107,7 @@ void main() {
 
   testWidgets('Trends opens over Today, and Log comes back on its edge once '
       'it closes', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-trends-record@example.com');
     await addVicesThroughManageData(tester);
 
@@ -129,7 +133,7 @@ void main() {
 
   testWidgets('Settings opens only real pages, and signing out from it lands '
       'on sign-in', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-settings-nav@example.com');
 
     await openFromMenu(tester, Homepage.settingsItem);
@@ -150,7 +154,7 @@ void main() {
   testWidgets('a session that ends under pushed pages returns to sign-in', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-session-end@example.com');
     await addVicesThroughManageData(tester);
 

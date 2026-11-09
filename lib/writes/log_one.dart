@@ -66,6 +66,14 @@ Future<void> logOne(
   }
 
   final TrackerWrites writes = ref.read(trackerWritesProvider);
+  if (!writes.canCreate) {
+    showUndoBar(
+      messenger,
+      const TextSpan(text: 'Not logged. $noJournalKeyMessage'),
+      bottomClearance: bottomClearance,
+    );
+    return;
+  }
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
   final bool offline = ref.read(offlineProvider).value ?? false;
   final String activityID = writes.newActivityID();

@@ -118,6 +118,13 @@ class _RecordNewActivityDialogState
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final TrackerWrites writes = ref.read(trackerWritesProvider);
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+    // The sheet stays open with what was typed, to save once the key loads.
+    if (!writes.canCreate) {
+      setState(() {
+        error = 'Not recorded. $noJournalKeyMessage';
+      });
+      return;
+    }
 
     setState(() {
       loading = true;

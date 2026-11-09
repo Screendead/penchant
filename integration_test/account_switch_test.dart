@@ -1,9 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/onboarding/presets.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 
@@ -23,7 +21,7 @@ void main() {
     const String second = 'e2e-switch-second@example.com';
     const List<String> firstVices = <String>['Coffee', 'Tea', 'Water'];
 
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, second);
     await signOutThroughSettings(tester);
 

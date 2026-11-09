@@ -1170,6 +1170,22 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('+ without the journal key logs nothing and says why', (
+      WidgetTester tester,
+    ) async {
+      writes.canCreate = false;
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      await tester.tap(_button(logOneLabel(tea)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(writes.writes, isEmpty);
+      expect(find.text('Not logged. $noJournalKeyMessage'), findsOneWidget);
+      expect(find.text('Undo'), findsNothing);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a log that outlasts the timeout says it will sync', (
       WidgetTester tester,
     ) async {

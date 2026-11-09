@@ -148,7 +148,8 @@ class KeyNeedsRecovery extends JournalKeyState {
 }
 
 /// No key on this device and no answer from the server, so whether one
-/// exists is unknown. Writes stay plaintext; the migrator seals them later.
+/// exists is unknown. Nothing new can be saved meanwhile, since the rules
+/// refuse a create without its sealed field; each recheck asks again.
 class KeyUnknown extends JournalKeyState {
   const KeyUnknown();
 }
@@ -188,27 +189,70 @@ class KeyService {
       yield KeyReady(stored, null, aes256);
     }
 
-    final KeyRecord? record;
-    try {
-      record = await directory.fetch(uid).timeout(serverWait);
-    } on TimeoutException {
-      if (stored == null) yield const KeyUnknown();
-      return;
-    } on FirebaseException catch (e) {
-      // Denied: the user signed out while the read was on its way, and this
-      // provider is being thrown away.
-      if (e.code != 'unavailable' && e.code != 'permission-denied') rethrow;
-      if (stored == null) yield const KeyUnknown();
+    final JournalKeyState? state = await _ask(uid, stored);
+    if (state == null) {
+      if (stored == null) {
+        yield const KeyUnknown();
+        yield* _retryUnknown(uid);
+      }
       return;
     }
-
-    final JournalKeyState state = record != null
-        ? _against(stored, record)
-        : await _publish(uid, stored);
     yield state;
     if (state is KeyNeedsRecovery) {
       yield* _awaitKey(uid, state.record);
     }
+  }
+
+  // What the server says about [stored], or null when it did not answer.
+  Future<JournalKeyState?> _ask(String uid, StoredKey? stored) async {
+    final KeyRecord? record;
+    try {
+      record = await directory.fetch(uid).timeout(serverWait);
+    } on TimeoutException {
+      return null;
+    } on FirebaseException catch (e) {
+      // Denied: the user signed out while the read was on its way, and this
+      // provider is being thrown away.
+      if (e.code != 'unavailable' && e.code != 'permission-denied') rethrow;
+      return null;
+    }
+    if (record != null) {
+      return _against(stored, record);
+    }
+    try {
+      return await _publish(uid, stored);
+    } on FirebaseException catch (e) {
+      // The connection dropped between the read and the publishing
+      // transaction; the key saved meanwhile is published on a later ask. A
+      // denial here would be a rules bug, and stays loud.
+      if (e.code != 'unavailable') rethrow;
+      return null;
+    }
+  }
+
+  // After KeyUnknown, each recheck reads the keychain and asks the server
+  // again, until either gives a key or the server answers. Not an async*
+  // loop, for the reason given at _awaitKey.
+  Stream<JournalKeyState> _retryUnknown(String uid) => rechecks()
+      .asyncMap((_) async {
+        final StoredKey? stored = await _readQuietly(uid);
+        return await _ask(uid, stored) ??
+            (stored == null ? null : KeyReady(stored, null, aes256));
+      })
+      .where((JournalKeyState? state) => state != null)
+      .take(1)
+      .asyncExpand(
+        (JournalKeyState? state) => state is KeyNeedsRecovery
+            ? _followedByKey(uid, state)
+            : Stream<JournalKeyState>.value(state!),
+      );
+
+  Stream<JournalKeyState> _followedByKey(
+    String uid,
+    KeyNeedsRecovery state,
+  ) async* {
+    yield state;
+    yield* _awaitKey(uid, state.record);
   }
 
   // Not an async* loop: a cancel reaches an async* body only at a yield, so

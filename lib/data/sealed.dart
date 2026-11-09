@@ -40,8 +40,9 @@ abstract interface class FieldSealer {
   });
 }
 
-/// Null while no key is available, and then writes stay plaintext. Only the
-/// key service overrides it, and only while `e2eeEnabled` is true.
+/// Null while no key is available: updates stay plaintext and nothing can be
+/// created (TrackerWrites.canCreate). Only the key service overrides it, and
+/// only while `e2eeEnabled` is true.
 final sealerProvider = Provider<FieldSealer?>((ref) => null);
 
 String sealContext(String collection, String id) => '$collection/$id';

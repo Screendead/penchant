@@ -27,14 +27,22 @@ final keyServiceProvider = Provider<KeyService>(
 
 /// Every few seconds and on app resume, for as long as it is listened to.
 /// iOS suspends timers in the background, so the resume event matters there.
+/// Used while the journal is locked, and while no key is known.
 Stream<void> keychainRechecks({Duration every = const Duration(seconds: 5)}) {
   Timer? timer;
   AppLifecycleListener? lifecycle;
   late final StreamController<void> controller;
   controller = StreamController<void>(
     onListen: () {
-      timer = Timer.periodic(every, (_) => controller.add(null));
-      lifecycle = AppLifecycleListener(onResume: () => controller.add(null));
+      // A recheck while the last one runs is dropped, not queued behind it.
+      void recheck() {
+        if (!controller.isPaused) {
+          controller.add(null);
+        }
+      }
+
+      timer = Timer.periodic(every, (_) => recheck());
+      lifecycle = AppLifecycleListener(onResume: recheck);
     },
     onCancel: () {
       timer?.cancel();
@@ -144,8 +152,8 @@ final List<Override> keyServiceOverrides = <Override>[
   journalNeedsRecoveryKeyProvider.overrideWith(
     (ref) => _enabledState(ref) is KeyNeedsRecovery,
   ),
-  // No key here and the server not yet asked: a write now would go out
-  // plaintext under a journal that may already be sealed.
+  // No key here and the server not yet asked: nothing can be saved, since the
+  // rules refuse a create without its sealed field.
   journalKeyPendingProvider.overrideWith(
     (ref) =>
         ref.watch(e2eeEnabledProvider) &&

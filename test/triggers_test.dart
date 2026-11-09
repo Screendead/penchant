@@ -102,33 +102,19 @@ void main() {
     Map<Object?, Object?> captured(void Function() verifyCall) =>
         verify(verifyCall).captured.single as Map<Object?, Object?>;
 
-    test('a record without triggers writes no triggers field', () {
-      writes.recordActivity(
-        'a',
-        ownerID: 'owner',
-        viceID: 'v',
-        quantity: 1,
-        createdAt: DateTime(2026, 11, 6),
-      );
+    test('without a sealer a record is refused before reaching the SDK', () {
       expect(
-        captured(() => document.set(captureAny())).containsKey('triggers'),
-        isFalse,
+        () => writes.recordActivity(
+          'a',
+          ownerID: 'owner',
+          viceID: 'v',
+          quantity: 1,
+          createdAt: DateTime(2026, 11, 6),
+          triggers: <String>['work/meeting'],
+        ),
+        throwsStateError,
       );
-    });
-
-    test('a record with triggers writes them as a list', () {
-      writes.recordActivity(
-        'a',
-        ownerID: 'owner',
-        viceID: 'v',
-        quantity: 1,
-        createdAt: DateTime(2026, 11, 6),
-        triggers: <String>['work/meeting', 'Late train'],
-      );
-      expect(captured(() => document.set(captureAny()))['triggers'], [
-        'work/meeting',
-        'Late train',
-      ]);
+      verifyNever(() => document.set(any()));
     });
 
     test('an update sets triggers only when given, and an empty list clears '

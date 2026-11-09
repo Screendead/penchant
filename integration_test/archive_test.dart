@@ -1,8 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_sheet.dart';
@@ -23,7 +21,7 @@ void main() {
 
   testWidgets('an archived vice leaves recording and Today, and keeps its '
       'history in Manage Data and in Trends', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-archive@example.com');
     await addVicesThroughManageData(tester, <String>[
       'Coffee',

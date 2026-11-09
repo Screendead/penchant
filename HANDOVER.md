@@ -59,10 +59,8 @@ In flight when the session restarted; do these first, in order:
 
 1. Done: `master` e2e 42690070034 green; #207 and #208 merged (7b8e870) and installed on the iPhone and Mac; the
    native compile check is `macos-build.yml` on PRs (this PR).
-2. When e2e run 42694948177 (#209 at a307dbd) is green, update #209's description (its last line says that run is in
-   progress), then merge it; the merge deploys the sealed-only create rules to production through CI. If red, fix
-   forward. One watcher, main session only, polls of 60 s or more (parallel `gh run watch` loops used up Jack's
-   hourly GitHub API allowance on 2026-11-09). #209 is an encryption change: ask Jack before installing it.
+2. Done: #209 (sealed-only creates) merged after e2e run 42694948177 passed; CI deploys its rules. It is an
+   encryption change, so ask Jack before installing it on the devices.
 
 Minor calls made as built (Claude's, recommended; Jack may overturn): deleting an entry while the key is missing makes
 Undo say "Not restored"; keep the `e2eeEnabled` constant; no Undo on Deleted-habit deletes; the same-bedtime part sits

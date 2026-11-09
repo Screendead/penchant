@@ -4,14 +4,12 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/auth_form.dart';
 
@@ -139,7 +137,7 @@ void main() {
       'sign-in sets a new password that signs in', (tester) async {
     const String email = 'e2e-reset@example.com';
     const String newPassword = 'N3wPassw0rdE2E';
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, email);
     await _oobCodes(email, 'VERIFY_EMAIL');
 
@@ -193,7 +191,7 @@ void main() {
       'made outside the app', (tester) async {
     await clearEmulators();
     const String email = 'e2e-profile@example.com';
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, email);
 
     await _openAccountSettings(tester);
@@ -231,10 +229,7 @@ void main() {
     await clearEmulators();
     final _CapturedShare share = _CapturedShare();
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [exportShareProvider.overrideWithValue(share)],
-        child: const MyApp(),
-      ),
+      e2eApp(overrides: [exportShareProvider.overrideWithValue(share)]),
     );
     await register(tester, 'e2e-export@example.com');
     await addVicesThroughManageData(tester);
@@ -290,7 +285,7 @@ void main() {
       "leaves another account's data alone", (tester) async {
     await clearEmulators();
     const String email = 'e2e-delete@example.com';
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
 
     await register(tester, 'e2e-bystander@example.com');
     await addVicesThroughManageData(tester, const <String>['Kept']);

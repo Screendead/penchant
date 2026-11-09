@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart' show LineChart;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -8,7 +7,6 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 
 import 'support.dart';
@@ -36,7 +34,7 @@ void main() {
   testWidgets('screen readers hear the dial, each bead and tally, and the '
       'graph', (WidgetTester tester) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-a11y-charts@example.com');
     await addVicesThroughManageData(tester);
 
@@ -114,7 +112,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-a11y-text@example.com');
     const List<String> names = <String>[
       'Coffee',

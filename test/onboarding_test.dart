@@ -24,6 +24,15 @@ import 'package:tracker/vice_tracker.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
 
+class _KeyLoaded extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void load() => state = true;
+}
+
+final _keyLoaded = NotifierProvider<_KeyLoaded, bool>(_KeyLoaded.new);
+
 void main() {
   late StreamController<List<Vice>> habits;
   late FakeTrackerWrites writes;
@@ -43,6 +52,7 @@ void main() {
     WidgetTester tester, {
     List<Vice>? initial,
     Stream<bool>? offline,
+    Override? writesOverride,
   }) async {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
@@ -56,7 +66,7 @@ void main() {
             offlineProvider.overrideWithValue(const AsyncData(false))
           else
             offlineProvider.overrideWith((ref) => offline),
-          trackerWritesProvider.overrideWithValue(writes),
+          writesOverride ?? trackerWritesProvider.overrideWithValue(writes),
           memoryJournal(),
           viceActivityDayProvider.overrideWith(
             (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
@@ -182,6 +192,42 @@ void main() {
         'unit': Unit.puff,
         'category': ViceCategory.nicotine,
       }),
+    ]);
+    expect(find.text(OnboardingCopy.disclaimer), findsOneWidget);
+  });
+
+  testWidgets('without the journal key Continue waits, keeping the picks, '
+      'and creates them once the key loads', (WidgetTester tester) async {
+    final FakeTrackerWrites keyless = FakeTrackerWrites()..canCreate = false;
+    await pumpHome(
+      tester,
+      initial: const <Vice>[],
+      writesOverride: trackerWritesProvider.overrideWith(
+        (ref) => ref.watch(_keyLoaded) ? writes : keyless,
+      ),
+    );
+    await tester.tap(find.text(OnboardingCopy.start));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Coffee'));
+    await tester.pump();
+
+    final Finder waiting = find.widgetWithText(
+      FilledButton,
+      OnboardingCopy.waitingForKey,
+    );
+    expect(waiting, findsOneWidget);
+    expect(tester.widget<FilledButton>(waiting).onPressed, isNull);
+
+    ProviderScope.containerOf(
+      tester.element(find.byType(Homepage)),
+    ).read(_keyLoaded.notifier).load();
+    await tester.pump();
+    await tester.tap(find.text(OnboardingCopy.continueWith(1)));
+    await tester.pumpAndSettle();
+
+    expect(keyless.writes, isEmpty);
+    expect(writes.writes.map((Write w) => w.fields['name']), <String>[
+      'Coffee',
     ]);
     expect(find.text(OnboardingCopy.disclaimer), findsOneWidget);
   });

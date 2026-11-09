@@ -23,6 +23,25 @@ void main() {
     expect(ticks, 1);
   });
 
+  testWidgets('drops the ticks that come while paused', (
+    WidgetTester tester,
+  ) async {
+    int ticks = 0;
+    final StreamSubscription<void> sub = keychainRechecks(
+      every: const Duration(seconds: 5),
+    ).listen((_) => ticks++);
+
+    sub.pause();
+    await tester.pump(const Duration(seconds: 30));
+    sub.resume();
+    await tester.pump();
+    expect(ticks, 0);
+    await tester.pump(const Duration(seconds: 5));
+    expect(ticks, 1);
+
+    unawaited(sub.cancel());
+  });
+
   testWidgets('ticks on resume until cancelled', (WidgetTester tester) async {
     int ticks = 0;
     final StreamSubscription<void> sub = keychainRechecks().listen(

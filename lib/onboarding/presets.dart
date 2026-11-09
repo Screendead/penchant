@@ -49,6 +49,8 @@ class OnboardingCopy {
   static const String somethingElseHint = 'Name it yourself';
   static const String continueLabel = 'Continue';
   static String continueWith(int count) => 'Continue with $count';
+  // Continue waits, picks kept, until the key can seal the new habits.
+  static const String waitingForKey = 'Waiting for your journal key';
   static String countedIn(Unit unit) => 'Counted in ${unit.plural}';
   static const String disclaimerTitle = 'Before you start';
   // Fixed by ideas/release-blockers/neutral-framing-and-age-rating.md.

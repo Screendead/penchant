@@ -1,11 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/firebase_init.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
@@ -59,7 +57,7 @@ void main() {
 
   testWidgets('from 900 pt Trends is a pane beside Today, and resizing '
       'across 900 pt keeps the day and the habit', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-split@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
     addTearDown(tester.view.reset);

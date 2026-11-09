@@ -197,6 +197,31 @@ void main() {
       expect(next, isNotNull);
     });
 
+    test('without the journal key writes deletes only, and keeps the logs '
+        'queued', () async {
+      final ProviderContainer container = await signedIn();
+      final FakeTrackerWrites writes = FakeTrackerWrites()..canCreate = false;
+      final DateTime tapped = now.subtract(const Duration(hours: 3));
+      final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+        _log('a', tapped),
+        _log('gone', tapped, op: QueuedLogOp.delete),
+      ]);
+
+      final FlushLeft left = await flushQueuedLogs(
+        bridge: bridge,
+        writes: writes,
+        rejected: container.read(rejectedWritesProvider.notifier),
+        uid: 'u1',
+        now: now,
+      );
+
+      expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
+        'deleteActivity:gone',
+      ]);
+      expect(bridge.queue.map((QueuedLog l) => l.id), <String>['a']);
+      expect(left.unacknowledged, isTrue);
+    });
+
     // testWidgets, which demangles the stack reportError prints.
     testWidgets('a refused write leaves the queue too', (tester) async {
       final ProviderContainer container = await signedIn();
@@ -371,11 +396,14 @@ void main() {
       bool e2ee = true,
       JournalKeyState? key,
       Future<void> Function(Write write)? respond,
+      bool canCreate = true,
     }) async {
       final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
         _log('a', DateTime(2026, 11, 8, 9)),
       ]);
-      final FakeTrackerWrites writes = FakeTrackerWrites()..respond = respond;
+      final FakeTrackerWrites writes = FakeTrackerWrites()
+        ..respond = respond
+        ..canCreate = canCreate;
       final BackgroundFlushOutcome outcome = await runBackgroundFlush(
         initialize: () async {},
         overrides: [
@@ -437,13 +465,14 @@ void main() {
       expect(bridge.queue, hasLength(1));
     });
 
-    test('E2EE off: writes the queue and empties it', () async {
-      final (outcome, bridge, writes) = await run(e2ee: false);
-      expect(outcome, BackgroundFlushOutcome.flushed);
-      expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
-        'recordActivity:a',
-      ]);
-      expect(bridge.queue, isEmpty);
+    test('E2EE off, so no sealer: retry, the queue untouched', () async {
+      final (outcome, bridge, writes) = await run(
+        e2ee: false,
+        canCreate: false,
+      );
+      expect(outcome, BackgroundFlushOutcome.retry);
+      expect(writes.writes, isEmpty);
+      expect(bridge.queue, hasLength(1));
     });
   });
 }
