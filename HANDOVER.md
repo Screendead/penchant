@@ -232,31 +232,52 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        outcome inside one month (step at day 50: 19% false findings; step m). The time of the first use against the
        previous night's sleep is k.
      - **j. Hours after a use: this PR** (#187, `feat/insights-hours-after`). `lib/insights/hours_after.dart`: for each use
-       with none of the habit in the 4 h before, heart rate (and HRV) in 0-30, 30-60, 60-120 and 120-240 min after,
-       less the hour before; the same difference at the same clock time on the nearest day within 7, inside the
-       habit's span and clear of it for 4 h either side, is the control (a day with the habit at another time
-       serves, so a daily habit at varied times has controls; one at the same time daily is refused in words). A
-       moment is dropped for a window when another habit was used from its baseline to the window's end, under 3
-       readings in baseline or window, or any 10 min of the baseline, or from 30 min before the window to its end,
-       over 60 steps a minute; the change in steps a minute is a covariate. Moments are averaged per day, one OLS
-       per window on days (intercept, use indicator, steps); at least 10 days each side. Results join the page's
-       Benjamini-Hochberg family. Cost: the last 120 uses per habit in the last 365 days, one control each, one
-       sample read a day per measure (heart rate, HRV, steps; `HealthSampleMetric.stepCount` added, one Swift
-       line); the page says so. Synthetic year (Coffee, Tea, Water): 720 moments, 249 spans, 747 channel calls,
-       65,764 samples. `sleepingHeartRate` is in the report ("heart rate while asleep", a night metric) and back in
-       `healthStateProvider`'s read. A `not-determined` sample read leaves hours-after out, not the page; the
-       Health card's "Allow new Health data" (#184) offers the sheet. Measured
-       (`tools/insights-calibration/hours_after_test.dart`, 400 seeds, 120 days, heart rate climbing 16 to 20 bpm
-       over the morning, AR(1) wander): false findings per check 4.3% (0-30), 2.8%, 1.8%, 1.3% (120-240); with the
-       morning rise 20 bpm the same; with a 15-min walk after 70% of Coffees, 4.5%, 5.5%, 1.8%, 1.3%; a +1 bpm
-       rise at 60-120 found 58%, +3 bpm 100%; +1.5 bpm at 0-30 over 60 days 81%. Whole page on noise (9 day
-       outcomes, Coffee, Tea, Water): hours-after raw 3.1% of 4,793 checks, 0.1% after BH; 8.3% of reports show any
-       finding, 1.0% an hours-after one. Not run on a device: 747 HealthKit calls' time, real Watch sampling
-       density (synthetic is a reading every 5 min; Watch at rest samples less often, which the 3-reading gate
-       may refuse), iPhone and Watch step samples double-counted (raw samples are not merged; errs toward dropping
-       a moment), and the sleeping heart rate query's cost over years of nights. HRV at Watch density (a few a day)
-       is refused for too few readings. The Swift line is not built; with no step samples at all the walk guard and
-       the steps covariate drop out.
+       with none of the habit in the 4 h before and every window ended by today's start, heart rate (and HRV) in 0-30,
+       30-60, 60-120 and 120-240 min after, less the hour before. Heart rate climbs after waking whatever the clock
+       says (review of the first version: same-clock controls gave Coffee-on-waking a false finding in 40 of 40
+       whole-day reports, through BH), so moments are timed from waking: the time in bed comes from Health
+       (`HealthSampleMetric.bed`, a new `samples` branch in `HealthChannel.swift` over `HealthDays.nights`, one call
+       for the year, no new read type), a day's waking is the end of its longest span ending 18:00 the day before to
+       15:00, and a moment needs a known waking before its hour before and no time in bed to its last window's end.
+       The control is the same difference as long after waking on the nearest day within 7 whose waking is within
+       2 h of the use day's (by clock), inside the habit's span and clear of it 4 h either side. So Coffee within an
+       hour of waking, or anything within 4 h of bed, is refused in words; a day with no night recorded gives no
+       moment (a Watch charged overnight gives no hours-after at all: steps-based waking is the named fallback, not
+       built). A window is dropped when another habit was used from its baseline to its end, the habit again before
+       its end, under 3 readings in baseline or window, or a walk (any 10 min over 60 steps a minute in the
+       baseline, or from 30 min before the window to its end); the change in steps a minute is a covariate.
+       Moments are averaged per day, one OLS per window on days (intercept, use, steps); at least 10 days each side.
+       Results join the page's Benjamini-Hochberg family. A too-few-days refusal names the cause that left out the
+       most moments on the short side (few uses, no sleep recorded, near waking or bed, another habit, the habit
+       again, readings, walks, no clear nearby days). Copy: "One to two hours after Coffee, your heart rate, set
+       against the hour before, averages 6 bpm higher than at the same time after waking without it." Cost: the
+       last 120 uses per habit in the last 365 days, one control each, one call for bed then one sample read a day
+       per measure (heart rate, HRV, steps; `HealthSampleMetric.stepCount` added), the measures side by side, capped
+       at 60 s; the page says so. The page shows the daily report while that runs ("Still reading heart rate ...")
+       and recomputes when it lands, so a daily finding can then move to "could be chance". Synthetic year (Coffee,
+       Tea, Water): 702 moments, 249 spans, 748 channel calls, 64,729 samples. `sleepingHeartRate` has copy ("heart
+       rate while asleep", a night metric) but stays out of `healthStateProvider`'s read: its query holds up the
+       whole read and its cost over a year of nights is unmeasured; measure on a device when adding it back. A
+       `not-determined` sample read leaves hours-after out, not the page; the Health card's "Allow new Health data"
+       (#184) offers the sheet. Measured (`tools/insights-calibration/hours_after_test.dart`, false or true findings
+       per window before BH, 0-30 / 30-60 / 60-120 / 120-240): clock-tied morning climb, 400 seeds: noise 2.8 / 3.0 /
+       1.5 / 1.0%; walk after 70% of Coffees 4.5 / 5.5 / 1.5 / 1.0%; +1 bpm at 60-120 found 56%, +3 bpm 100%; +1.5
+       bpm at 0-30 over 60 days 80%. Whole days with sleep (heart rate 52 asleep, 62 plus a 10 bpm climb over 2 h
+       after waking; weekday waking 06:30, weekend 08:30), 200 seeds: Coffee 15-60 min after waking 0 / 0 / 0 / 0%
+       (refused near waking; 0 of 40 whole reports, from 40 of 40), Coffee 2-3 h after waking 1.0 / 3.5 / 2.5 / 1.0%,
+       weekdays 07:00 2.0 / 1.0 / 0 / 0%, random 09:00-15:00 4.5 / 3.0 / 1.5 / 4.0%, heart rate every 10 min with 30%
+       missing 4.0 / 3.0 / 3.0 / 3.0%, 30% of nights missing and 30% split 6.0 / 3.5 / 2.0 / 2.5%, beside Cigarettes
+       8 a day 3.5 / 3.5 / 0 / 0%, Cigarettes 8 a day itself 0.5 / 0 / 0 / 0% (refused: no clear days, the habit
+       again), bedtime Coffee refused; +3 bpm at 60-120 found 87% (2-3 h after waking) and 100% (random). Whole
+       page on noise (9 day outcomes, Coffee, Tea, Water): hours-after raw 3.0% of 4,792 checks, 0.1% after BH; 8.5%
+       of reports show any finding, 1.3% an hours-after one. Known limit, not fixed: a use timed by how the person
+       feels (Coffee at the day's low point) gives 16 / 5.5 / 14 / 32.5% false findings (regression to the mean
+       from a baseline picked low; the first version gave 12 / 7.5 / 7.5 / 18%); it needs another estimator, and the
+       page note says so. Not run on a device: the bed read and the 748 calls' time, real Watch sampling density
+       (synthetic is a reading every 5 min; the 3-reading gate may refuse sparser data), real sleep records
+       (sources, naps, the 18:00-15:00 waking rule), iPhone and Watch step samples double-counted (errs toward
+       dropping a moment). HRV at Watch density (a few a day) is refused for too few readings. With no step samples
+       at all the walk guard and the steps covariate drop out.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.
