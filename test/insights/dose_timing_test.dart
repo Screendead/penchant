@@ -231,6 +231,156 @@ void main() {
     }
   });
 
+  test('an entry after midnight adds to the evening before it, for the '
+      'amount as for the time', () {
+    const int seeds = 30;
+    double sum = 0;
+    for (int seed = 0; seed < seeds; seed++) {
+      final InsightsInput input = dailyCoffee(
+        seed,
+        (d) => 80 - 6.0 * d.amount,
+        // Every day ends between 23:00 and 02:00, so most split at midnight.
+        lastOf: (random) => 23 * 60 + random.nextInt(3 * 60),
+      );
+      final HabitFinding dose =
+          doseFollows(
+                habits: DailyHabitSeries.fromUses(input.uses),
+                outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+                metricId: deep,
+              ).single
+              as HabitFinding;
+      sum += dose.effect;
+    }
+    // Summed per calendar day, half of each split day's amount lands on the
+    // wrong night and the mean shrinks towards zero.
+    expect(sum / seeds, inInclusiveRange(-7, -5));
+  });
+
+  test('a habit taken once or twice a day reads per whole unit', () {
+    final InsightsInput input = dailyCoffee(
+      1,
+      (d) => 80 - 20.0 * d.amount,
+      amountOf: (random, i) => i % 8 == 0 ? 2 : 1,
+      lastOf: (random) => 9 * 60,
+    );
+    final HabitFinding dose =
+        doseFollows(
+              habits: DailyHabitSeries.fromUses(input.uses),
+              outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+              metricId: deep,
+            ).single
+            as HabitFinding;
+    expect(dose.step, 1);
+    expect(dose.effect, inInclusiveRange(-30, -10));
+    expect(
+      findingSentence(dose, 'Coffee', 'en', unit: Unit.drink),
+      startsWith('Each extra drink of Coffee goes with'),
+    );
+  });
+
+  test('a last use that comes later by as much as the amount grows is '
+      'refused as following the amount, naming no other habit', () {
+    for (int seed = 0; seed < 20; seed++) {
+      final Random random = Random(seed);
+      final List<HabitUse> uses = <HabitUse>[];
+      final List<DailyOutcome> outcomes = <DailyOutcome>[];
+      for (int i = 0; i < days; i++) {
+        final DateTime day = addDays(start, i);
+        // From 18:00, 90 minutes apart, so the last use is set by the count.
+        final int n = 1 + random.nextInt(4);
+        for (int k = 0; k < n; k++) {
+          uses.add(
+            HabitUse(
+              habitId: 'Beer',
+              at: day.add(Duration(minutes: 18 * 60 + 90 * k)),
+              amount: 1,
+            ),
+          );
+        }
+        if (random.nextBool()) {
+          uses.add(
+            HabitUse(
+              habitId: 'Tea',
+              at: day.add(const Duration(hours: 9)),
+              amount: 1,
+            ),
+          );
+        }
+        outcomes.add(
+          DailyOutcome(
+            date: addDays(day, 1),
+            metricId: deep,
+            value: 60 + 10 * gaussian(random),
+          ),
+        );
+      }
+      final InsightsInput input = InsightsInput(
+        uses: uses,
+        outcomes: outcomes,
+        from: start,
+        through: addDays(start, days),
+      );
+      final HabitRefusal time =
+          lastUseFollows(
+                habits: DailyHabitSeries.fromUses(input.uses),
+                outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+                metricId: deep,
+              ).singleWhere((r) => r.habitId == 'Beer')
+              as HabitRefusal;
+      expect(time.reason, RefusalReason.followsAmount);
+      expect(time.entangledWith, isNull);
+      expect(
+        refusalReason(time, (id) => id),
+        'Time of last use: later on days with more, so it can’t be told '
+        'apart from the amount',
+      );
+      for (final HabitRefusal shown in computeInsights(
+        input,
+      ).refused.where((r) => r.habitId == 'Beer')) {
+        expect(refusalReason(shown, (id) => id), isNot(contains('Tea')));
+      }
+    }
+  });
+
+  test('an amount or time effect that rests on one day is refused', () {
+    int doseFound = 0, timeFound = 0;
+    const int seeds = 100;
+    for (int seed = 0; seed < seeds; seed++) {
+      final int odd = 30 + seed % 60;
+      for (final bool timing in <bool>[false, true]) {
+        final InsightsInput input = dailyCoffee(
+          seed,
+          // One day far from the rest, with a night 3 sd off after it.
+          (d) => d.index == odd ? 90 : 60,
+          amountOf: (random, i) =>
+              !timing && i == odd ? 12 : 1 + random.nextInt(4),
+          lastOf: (random) => 18 * 60 + random.nextInt(4 * 60),
+        );
+        final List<HabitUse> uses = timing
+            ? <HabitUse>[
+                for (final HabitUse u in input.uses)
+                  if (startOfDay(u.at) != addDays(start, odd)) u,
+                HabitUse(
+                  habitId: 'Coffee',
+                  at: addDays(start, odd).add(const Duration(hours: 6)),
+                  amount: 1,
+                ),
+              ]
+            : input.uses;
+        final Judge judge = timing ? lastUseFollows : doseFollows;
+        final HabitInsight r = judge(
+          habits: DailyHabitSeries.fromUses(uses),
+          outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+          metricId: deep,
+        ).single;
+        if (r is HabitFinding) timing ? timeFound++ : doseFound++;
+      }
+    }
+    // Without the check, about 40% (amount) and 50% (time) were findings.
+    expect(doseFound / seeds, lessThan(0.15));
+    expect(timeFound / seeds, lessThan(0.15));
+  });
+
   test('an amount that rises with the months while the outcome steps with '
       'them is not a finding', () {
     const int seeds = 200;
@@ -290,7 +440,7 @@ void main() {
     expect(shown.kind, InsightKind.lastUse);
     expect(
       refusalReason(shown, (id) => id),
-      'Time of last use: within the noise: no clear difference',
+      'Time of last use: within the noise, no clear difference',
     );
   });
 
@@ -374,3 +524,14 @@ void main() {
     });
   });
 }
+
+typedef Judge =
+    List<HabitInsight> Function({
+      required DailyHabitSeries habits,
+      required OutcomeSeries outcomes,
+      required String metricId,
+      int lagDays,
+      DateTime? from,
+      DateTime? through,
+      InsightGates gates,
+    });

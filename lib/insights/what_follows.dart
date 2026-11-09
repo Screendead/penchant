@@ -121,6 +121,11 @@ enum RefusalReason {
   /// each day.
   steadyTiming,
 
+  /// For [InsightKind.lastUse]: the last use comes later by about as much as
+  /// the day's amount is larger (uses spaced through an evening from a set
+  /// start), so the time cannot be told apart from the amount.
+  followsAmount,
+
   /// The adjusted interval excludes zero, but not by enough to stand out
   /// among every comparison in the report. Set by the report, never by
   /// [whatFollows].
@@ -441,11 +446,18 @@ HabitInsight _whatFollowsOne(
 /// For each habit, what [metricId] looks like [lagDays] days after a day it
 /// was used, by how much it was used: among the days of its span (see
 /// [whatFollows]) that it was used, the day's total as the habit's column of
-/// the same model, so a habit used every day still has days to compare.
-/// [HabitInsight.step] is the amount the effect is per: one of the habit's
-/// unit, or for totals spread more widely than 3 units (minutes, say) or
-/// narrowly than half of one, the largest 1, 2 or 5 times a power of ten
-/// within one standard deviation of them.
+/// the same model, so a habit used every day still has days to compare. The
+/// day is the one [lateDayOf] gives, so an entry after midnight adds to the
+/// evening before it, as in [lastUseFollows]; [whatFollows] still counts it
+/// on its calendar day. [HabitInsight.step] is the amount the effect is per:
+/// one of the habit's unit, or for totals spread more widely than 3 units
+/// (minutes, say) or narrowly than half of one, the largest 1, 2 or 5 times a
+/// power of ten within one standard deviation of them, never under one when
+/// every total is a whole number.
+///
+/// A result that one day decides is refused as [RefusalReason.withinNoise]:
+/// the fit without the day that pulls the effect furthest from zero must
+/// still exclude zero.
 ///
 /// Refused as [RefusalReason.steadyAmount] when the totals barely vary (see
 /// [InsightGates.minAmountSpread]), and as [RefusalReason.uneven] when
@@ -488,7 +500,9 @@ List<HabitInsight> doseFollows({
 /// varies, so a later finish is not credited with what a larger amount does.
 ///
 /// Refused as [RefusalReason.steadyTiming] when the last use comes at nearly
-/// the same time each day ([InsightGates.minTimingSpreadMinutes]).
+/// the same time each day ([InsightGates.minTimingSpreadMinutes]), and as
+/// [RefusalReason.followsAmount] when it moves so closely with the day's
+/// amount that the two cannot be told apart.
 List<HabitInsight> lastUseFollows({
   required DailyHabitSeries habits,
   required OutcomeSeries outcomes,
@@ -529,13 +543,7 @@ HabitInsight _amongDaysOfUse(
   required InsightGates gates,
 }) {
   final bool timing = kind == InsightKind.lastUse;
-  final List<DateTime> useDays = timing
-      ? (habits.lateDays(id).toList()..sort())
-      : <DateTime>[
-          if (habits.firstUse(id) case final DateTime first)
-            for (final DateTime day in daysFrom(first, habits.lastUse(id)!))
-              if (habits.total(id, day) > 0) day,
-        ];
+  final List<DateTime> useDays = habits.lateDays(id).toList()..sort();
   final (:DateTime? start, :DateTime? end) = _span(
     useDays.firstOrNull,
     useDays.lastOrNull,
@@ -551,12 +559,8 @@ HabitInsight _amongDaysOfUse(
     if (value == null) continue;
     days.add(day);
     y.add(value);
-    x.add(
-      timing
-          ? habits.lastUseMinutes(id, day)!.toDouble()
-          : habits.total(id, day),
-    );
-    if (timing) amount.add(habits.lateDayTotal(id, day));
+    amount.add(habits.lateDayTotal(id, day));
+    x.add(timing ? habits.lastUseMinutes(id, day)!.toDouble() : amount.last);
   }
   final _Judged judged = _Judged(
     id: id,
@@ -591,7 +595,7 @@ HabitInsight _amongDaysOfUse(
         sd < gates.minAmountSpread * mean(x)) {
       return judged.refuse(RefusalReason.steadyAmount);
     }
-    judged.step = _doseStep(sd);
+    judged.step = _doseStep(sd, whole: x.every((v) => v == v.roundToDouble()));
   }
   final List<int> period = _periods(days, gates.minPeriodDays);
   if (period.last > 0 && _varyingPeriods(x, period) < gates.minMixedPeriods) {
@@ -606,13 +610,56 @@ HabitInsight _amongDaysOfUse(
   );
 }
 
-double _doseStep(double sd) {
-  if (sd >= 0.5 && sd <= 3) return 1;
+// A fraction of a whole-number unit is an amount nobody logged.
+double _doseStep(double sd, {required bool whole}) {
+  if (sd >= 0.5 && sd <= 3 || whole && sd < 0.5) return 1;
   double step = pow(10, (log(sd) / ln10).floor()).toDouble();
   for (final int m in <int>[5, 2]) {
     if (step * m <= sd) return step * m;
   }
   return step;
+}
+
+// Whether [fit]'s interval for [column] crosses zero once the day that pulls
+// it furthest from zero is left out, by its DFBETA, (X'X)^-1 x_i e_i /
+// (1 - h_i), the change that day makes to the coefficients.
+bool _withoutMostTelling(
+  List<List<double>> rows,
+  List<double> y,
+  LinearFit fit,
+  int column,
+  double level,
+) {
+  final List<List<double>> a = fit.inverseGram;
+  final double sign = fit.coefficients[column].sign;
+  int most = 0;
+  double largest = double.negativeInfinity;
+  for (int r = 0; r < rows.length; r++) {
+    final List<double> row = rows[r];
+    double fitted = 0, leverage = 0, toward = 0;
+    for (int i = 0; i < row.length; i++) {
+      fitted += row[i] * fit.coefficients[i];
+      double ai = 0;
+      for (int j = 0; j < row.length; j++) {
+        ai += a[i][j] * row[j];
+      }
+      leverage += row[i] * ai;
+      if (i == column) toward = ai;
+    }
+    final double pull = sign * toward * (y[r] - fitted) / (1 - leverage);
+    if (pull > largest) {
+      largest = pull;
+      most = r;
+    }
+  }
+  // A day worth less than one standard error of the effect is ordinary
+  // weight: leaving out the strongest of many such days only costs power.
+  if (largest < fit.standardError(column)) return false;
+  final LinearFit? without = fitLeastSquares(
+    <List<double>>[...rows.sublist(0, most), ...rows.sublist(most + 1)],
+    <double>[...y.sublist(0, most), ...y.sublist(most + 1)],
+  );
+  return without == null || without.interval(column, level: level).crossesZero;
 }
 
 // Periods in which the habit's column takes more than one value.
@@ -657,19 +704,6 @@ HabitInsight _attribute(
       return byUse != 0 ? byUse : a.compareTo(b);
     });
 
-  String? closestPartner(Iterable<String> among) {
-    String? best;
-    double bestR = -1;
-    for (final String other in among) {
-      final double r = correlation(x, others[other]!).abs();
-      if (r > bestR) {
-        bestR = r;
-        best = other;
-      }
-    }
-    return best;
-  }
-
   List<List<double>> design(List<String> ids, {required bool withOwn}) =>
       <List<double>>[
         for (int r = 0; r < days.length; r++)
@@ -696,13 +730,20 @@ HabitInsight _attribute(
   // so this is 1 / (1 - R_j^2).
   final double mx = mean(x);
   final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
-  final List<List<double>> timeOnly = design(const <String>[], withOwn: false);
-  if ((invert(gram(timeOnly))?[1][1] ?? double.infinity) * ss >
+  double inflation(List<String> ids, {required bool withOwn}) =>
+      (invert(gram(design(ids, withOwn: withOwn)))?[1][1] ?? double.infinity) *
+      ss;
+  if (inflation(const <String>[], withOwn: false) >
       gates.maxVarianceInflation) {
     return judged.refuse(RefusalReason.uneven);
   }
   final bool withOwn =
       own != null && addsSomething(design(const <String>[], withOwn: true));
+  // The time terms alone passed, so what inflates the column here is [own].
+  if (withOwn &&
+      inflation(const <String>[], withOwn: true) > gates.maxVarianceInflation) {
+    return judged.refuse(RefusalReason.followsAmount);
+  }
   final int fixedColumns = time.first.length + (withOwn ? 1 : 0);
 
   // Covariates join the most used first; one more column than would leave a
@@ -714,12 +755,27 @@ HabitInsight _attribute(
       inModel.add(other);
     }
   }
+  // The habit whose leaving out frees the column most; the time terms and
+  // [own] alone were checked above, so one of [inModel] is the cause.
+  String? partner() {
+    String? best;
+    double lowest = double.infinity;
+    for (final String other in inModel) {
+      final double v = inflation(<String>[
+        for (final String id in inModel)
+          if (id != other) id,
+      ], withOwn: withOwn);
+      if (best == null || v < lowest) {
+        lowest = v;
+        best = other;
+      }
+    }
+    return best;
+  }
+
   final List<List<double>> rows = design(inModel, withOwn: withOwn);
   if (invert(gram(rows)) == null) {
-    return judged.refuse(
-      RefusalReason.entangled,
-      entangledWith: closestPartner(covariates),
-    );
+    return judged.refuse(RefusalReason.entangled, entangledWith: partner());
   }
 
   final LinearFit? fit = fitLeastSquares(rows, y);
@@ -730,17 +786,20 @@ HabitInsight _attribute(
   final Interval perUnit = fit.interval(column, level: gates.level);
   final Interval interval = Interval(perUnit.low * step, perUnit.high * step);
   final double pValue = fit.pValue(column);
-  final double inflation = fit.inverseGram[column][column] * ss;
-  if (inflation > gates.maxVarianceInflation) {
+  if (fit.inverseGram[column][column] * ss > gates.maxVarianceInflation) {
     return judged.refuse(
       RefusalReason.entangled,
-      entangledWith: closestPartner(inModel),
+      entangledWith: partner(),
       effect: effect,
       interval: interval,
       pValue: pValue,
     );
   }
-  if (interval.crossesZero) {
+  // A use comparison has a week of days on each side; an amount or a time
+  // can hang on one extreme day.
+  if (interval.crossesZero ||
+      judged.kind != InsightKind.use &&
+          _withoutMostTelling(rows, y, fit, column, gates.level)) {
     return judged.refuse(
       RefusalReason.withinNoise,
       effect: effect,

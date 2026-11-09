@@ -300,6 +300,27 @@ void main() {
     );
   });
 
+  // One day far from the rest, with a night 3 sd off after it: the
+  // leave-one-out check is what keeps these near the noise rate.
+  test('one extreme day', () {
+    scenario(
+      'dose: one day of 12 against 1-4, outcome +3 sd after it',
+      doseFollows,
+      400,
+      amount: (r, i) => i == 75 ? 12 : 1 + r.nextInt(4),
+      value: (d) => d.index == 75 ? 3 : 0,
+    );
+    scenario(
+      'time: one day whose only use is at 06:00 against 19:00-24:00, '
+      'outcome +3 sd after it',
+      lastUseFollows,
+      400,
+      amount: (r, i) => i == 75 ? 1 : 1 + r.nextInt(2),
+      last: (r, i) => i == 75 ? 6 * 60 : 19 * 60 + r.nextInt(5 * 60),
+      value: (d) => d.index == 75 ? 3 : 0,
+    );
+  });
+
   test('the page on noise, every kind in one family', () {
     page(400);
   });

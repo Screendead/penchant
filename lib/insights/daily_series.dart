@@ -31,9 +31,10 @@ class DailyOutcome {
   final double value;
 }
 
-/// The hour before which a use counts as the previous day's late use, for
-/// the time of the last use alone: a 01:00 entry ends the evening before it,
-/// so it is read as 25:00 of that day. Day totals stay on the calendar day.
+/// The hour before which a use counts as the previous day's late use: a 01:00
+/// entry ends the evening before it, so it is read as 25:00 of that day and
+/// adds to that day's [DailyHabitSeries.lateDayTotal]. [DailyHabitSeries.total]
+/// stays on the calendar day.
 const int lateUseCutoffHour = 5;
 
 /// The day whose evening [at] belongs to: its calendar day, or the day before

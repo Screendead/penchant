@@ -116,8 +116,8 @@ class InsightsReport {
 
   /// One refusal for each habit with no finding of any kind on any outcome,
   /// the one that says most: entangled, then possibly chance, then logged
-  /// unevenly, then within the noise, then a steady amount or time, then too
-  /// few days; on a tie, the days-with-and-without comparison's, then the one
+  /// unevenly, then within the noise, then a steady amount or time or a time
+  /// that follows the amount, then too few days; on a tie, the days-with-and-without comparison's, then the one
   /// from the most days.
   final List<HabitRefusal> refused;
 }
@@ -192,7 +192,9 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
     RefusalReason.chance => 1,
     RefusalReason.uneven => 2,
     RefusalReason.withinNoise => 3,
-    RefusalReason.steadyAmount || RefusalReason.steadyTiming => 4,
+    RefusalReason.steadyAmount ||
+    RefusalReason.steadyTiming ||
+    RefusalReason.followsAmount => 4,
     RefusalReason.tooFewDays => 5,
   };
   return refusals.reduce((a, b) {
@@ -403,12 +405,19 @@ String _amongUseRefusal(
     'nearly the same each day, so there’s no difference to compare',
   RefusalReason.steadyTiming =>
     'nearly the same each day, so there’s no difference to compare',
+  RefusalReason.followsAmount =>
+    'later on days with more, so it can’t be told apart from the amount',
   RefusalReason.uneven =>
     'changed with the months, so it can’t be told apart from other changes',
-  _ => _lowerFirst(_useRefusal(refusal, nameOf, gates)),
+  RefusalReason.entangled => switch (refusal.entangledWith) {
+    final String other =>
+      'moves with the days of ${nameOf(other)}, so the two can’t be told '
+          'apart',
+    null => 'moves with other habits’ days, so they can’t be told apart',
+  },
+  RefusalReason.withinNoise => 'within the noise, no clear difference',
+  RefusalReason.chance => 'could be chance, one of many comparisons',
 };
-
-String _lowerFirst(String s) => s[0].toLowerCase() + s.substring(1);
 
 String _useRefusal(
   HabitRefusal refusal,
@@ -436,4 +445,6 @@ String _useRefusal(
   // Set only on an amount or a time.
   RefusalReason.steadyAmount || RefusalReason.steadyTiming =>
     'Nearly the same each day, so there’s no difference to compare',
+  RefusalReason.followsAmount =>
+    'Later on days with more, so it can’t be told apart from the amount',
 };

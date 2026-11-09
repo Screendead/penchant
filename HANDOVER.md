@@ -208,19 +208,25 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      - **i. Dose and timing: this PR** (#185, `feat/insights-dose-timing`). Two more comparisons per habit and outcome, in
        the same report and the same Benjamini-Hochberg family, both among days with the habit so a daily habit gets
        a slope: the day's amount (`doseFollows`, per unit, or per a 1-2-5 step when the totals spread over more than
-       3 units or under half of one), and the clock time of the day's last use (`lastUseFollows`, per hour later; a
-       use before 05:00, `lateUseCutoffHour`, is the evening before; the day's amount is a covariate). Same trend and
-       month terms and other habits' indicators. Refused as steady when the amount has under 7 days off its
-       commonest value or a spread under 10% of its mean, or the time has an sd under 30 min or under 7 days an
-       hour from its median. The page keeps one reason per habit: a habit with any finding is not listed; otherwise
-       entangled, chance, uneven, noise, steady, too few days, and on a tie the used/not-used comparison's.
+       3 units or under half of one, never a fraction of a unit when every total is whole), and the clock time of the
+       day's last use (`lastUseFollows`, per hour later; the day's amount is a covariate). Both key a use before
+       05:00 (`lateUseCutoffHour`) to the evening before, for the amount as for the time; the used/not-used
+       comparison still keys on the calendar day. Same trend and month terms and other habits' indicators. Refused
+       as steady when the amount has under 7 days off its commonest value or a spread under 10% of its mean, or the
+       time has an sd under 30 min or under 7 days an hour from its median; a time that moves with the amount
+       (uses spaced through an evening from a set start) is refused as "later on days with more" rather than
+       blamed on another habit; an entangled refusal names the habit whose removal frees the column. An amount or
+       time finding that one day decides is refused as within the noise: when the most influential day (by DFBETA)
+       moves the effect by over one standard error, the fit without it must still exclude zero. The page keeps one
+       reason per habit: a habit with any finding is not listed; otherwise entangled, chance, uneven, noise,
+       steady or follows-the-amount, too few days, and on a tie the used/not-used comparison's.
        Measured (`tools/insights-calibration/dose_timing_test.dart`, sd-1 noise, 120 days): one check alone finds
        5.1% (dose) and 5.1% (time) on noise; dose 0.2 sd per unit found 70% (60 days: 41%), time 0.1 sd per hour
-       93%; amount rising with the months while the outcome steps 1 sd a month: 5.8% (chance only). Whole page on
-       noise (Coffee, Tea every other day, Water daily; 9 outcomes; 28,809 checks over 400 seeds): 5.2% raw, 0.15%
-       of checks and 8.5% of reports after BH. Not covered: a change in amount and outcome inside one month (step
-       at day 50: 19% false findings; step m); the dose is summed per calendar day, so a 00:30 entry adds to the
-       next day's amount while timing counts it as the evening before. The time of the first use against the
+       93%; amount rising with the months while the outcome steps 1 sd a month: 5.6% (chance only). One extreme day
+       (a 12 among 1 to 4, or a lone 06:00 use, with a 3 sd night after it): 7.5% each, from 39% and 50% before the
+       one-day check. Whole page on noise (Coffee, Tea every other day, Water daily; 9 outcomes; 28,809 checks over
+       400 seeds): 5.3% raw, 0.17% of checks and 9.8% of reports after BH. Not covered: a change in amount and
+       outcome inside one month (step at day 50: 19% false findings; step m). The time of the first use against the
        previous night's sleep is k.
      - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
        each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
