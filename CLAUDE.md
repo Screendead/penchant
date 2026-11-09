@@ -453,11 +453,12 @@ a public identifier: Firebase says such keys "do not need to be treated as secre
 checked-in config files", provided the key is restricted to Firebase APIs and setup follows the page's guidelines
 (https://firebase.google.com/docs/projects/api-keys). Today Firestore rules are the protection (App Check: Emulator
 wiring). The key's restrictions live in the production project's Google Cloud console, which Claude does not touch and
-repo files cannot show; they are not yet set (HANDOVER.md). Recommended there
-(https://docs.cloud.google.com/docs/authentication/api-keys): an iOS application restriction to
-`com.screendead.penchant` and an API restriction to the Firebase APIs the app calls; Google notes the bundle-ID check
-is easy to bypass, so it stops only casual reuse. The earlier `com.screendead.tracker.tracker` registration's key
-stays valid until revoked there (HANDOVER.md). Never commit a service-account file or `privateKey.json`;
+repo files cannot show. Seen there by Jack on 2026-11-09: the key Firebase made on 2026-11-05 allows the iOS app
+`com.screendead.penchant` only and 7 Firebase APIs (Firestore, Logging, App Check, Firebase Management, Identity
+Toolkit, Token Service, and one more); the macOS app uses it under the same bundle ID. Google notes the bundle-ID check
+is easy to bypass, so it stops only casual reuse (https://docs.cloud.google.com/docs/authentication/api-keys). The
+other key, "Auth email links - do not delete" (HTTP referrers), serves the auth email links; the old
+`com.screendead.tracker.tracker` key no longer appears. Never commit a service-account file or `privateKey.json`;
 `admin/.gitignore` and the root `.gitignore` exclude them.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the `USE_FIREBASE_EMULATORS`
