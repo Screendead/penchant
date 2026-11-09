@@ -183,6 +183,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      phone with years of data, and the one-time read's cost over a multi-year journal (every document once per
      open), are unmeasured.
    - **Ask again for new Health types** (`fix/health-reask`, #184, open): Health connected before #178 was never asked for heart rate; the card now offers "Allow new Health data" when HealthKit's `getRequestStatusForAuthorization` says `.shouldRequest` (a stored read-types version decides when it can't tell), and names where to manage access. Not run on a device.
+   - **Archived habits hidden** (Jack, 2026-11-09: "Archived habits shouldn't show any cards"; `fix/insights-hide-archived`, #189, open): no card, no refusal row, out of the Benjamini-Hochberg family; their uses stay as covariates.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
@@ -284,6 +285,14 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.
      - **m. Step changes:** a level shift in a measure (an illness, a new routine) found and modelled, so it is not
        pinned on a habit that began at the same time.
+   - **Direction (Jack, 2026-11-09, "sounds good" to Claude's recommendation):** Insights becomes question-led, not a
+     list of "days after X, Y differs" cards. Archived habits show no cards (they stay in the model as covariates).
+     Build order after the steps in flight (j, the bedtime fix): **n. where's the line** (a dose threshold instead of
+     one straight line, and a time cut-off), **o. recovery time** (nights until a measure returns to baseline after a
+     heavy day), **p. payoff from cutting down** (measures since a habit fell, against the old baseline), **q.
+     replacement** (one habit rising as another falls), then **k. triggers**, where calendar, places and daylight add
+     most; plus a daily "last night against your usual". Page structure and where the daily check lives are pitched
+     in round 12 (`docs/pitch/round-12/insights/`).
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.

@@ -79,6 +79,7 @@ class InsightsInput {
     required this.from,
     required this.through,
     this.samples = const <String, List<hs.HealthSample>>{},
+    this.archived = const <String>{},
   });
 
   factory InsightsInput.from({
@@ -87,6 +88,7 @@ class InsightsInput {
     required DateTime today,
     Map<String, List<hs.HealthSample>> samples =
         const <String, List<hs.HealthSample>>{},
+    Set<String> archived = const <String>{},
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -104,6 +106,7 @@ class InsightsInput {
       from: range.start,
       through: addDays(range.end, -1),
       samples: samples,
+      archived: archived,
     );
   }
 
@@ -115,6 +118,10 @@ class InsightsInput {
   /// What [insightsHoursAfterPlan] asked for, by [hs.HealthSampleMetric.id],
   /// each sorted by start.
   final Map<String, List<hs.HealthSample>> samples;
+
+  /// Habits the report says nothing about. Their uses stay in [uses], so they
+  /// are still held constant when judging the others.
+  final Set<String> archived;
 }
 
 /// The moments around uses whose samples Insights reads, with every window
@@ -199,21 +206,24 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<HabitFinding> findings = <HabitFinding>[];
   final Map<String, List<HabitRefusal>> refusals =
       <String, List<HabitRefusal>>{};
-  // The family for false-discovery control is the whole page: every habit
-  // against every outcome, by use, amount and time, not one at a time.
+  // The family for false-discovery control is the whole page: every habit it
+  // shows against every outcome, by use, amount and time, not one at a time.
+  // An archived habit's comparisons are never shown, so they are not counted.
   for (final HabitInsight insight in controlFalseDiscoveries(<HabitInsight>[
     for (final String metricId in outcomes.metricIds)
       if (metricCopy(metricId) != null)
         for (final _Comparison comparison in _comparisons)
-          ...comparison(
+          for (final HabitInsight result in comparison(
             habits: habits,
             outcomes: outcomes,
             metricId: metricId,
             lagDays: insightsLagDays,
             from: input.from,
             through: input.through,
-          ),
-    ...hours,
+          ))
+            if (!input.archived.contains(result.habitId)) result,
+    for (final HabitInsight result in hours)
+      if (!input.archived.contains(result.habitId)) result,
   ])) {
     switch (insight) {
       case HabitFinding():

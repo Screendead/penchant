@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -12,6 +13,7 @@ import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 
 // Health values stay on the device: ReportProviderErrors sends every provider
 // failure to Crashlytics, so nothing below that reads or derives from Health
@@ -283,13 +285,18 @@ final class InsightsFailed extends InsightsResult {
 }
 
 // Keyed on the very lists the watched providers hold, so a rebuild that
-// changes neither reuses the result.
+// changes neither reuses the result. The archived habits are a string, since a
+// Set is equal only to itself, so renaming a habit doesn't run the engine again.
 typedef _EngineKey = ({
   List<ViceActivity> activities,
   List<DailyOutcome> health,
   Map<String, List<HealthSample>> samples,
   DateTime today,
+  String archived,
 });
+
+// A Firestore document ID never holds a '/', so it parts the IDs.
+const String _archivedSeparator = '/';
 
 final _engineProvider = FutureProvider.autoDispose
     .family<InsightsResult, _EngineKey>((ref, key) async {
@@ -301,6 +308,10 @@ final _engineProvider = FutureProvider.autoDispose
               health: key.health,
               today: key.today,
               samples: key.samples,
+              archived: <String>{
+                if (key.archived.isNotEmpty)
+                  ...key.archived.split(_archivedSeparator),
+              },
             ),
           ),
           firstDays: insightsFirstDays(key.activities),
@@ -342,7 +353,15 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
       return AsyncError<InsightsView>(error, stackTrace);
     }
     final List<ViceActivity>? journal = activities.value;
-    if (journal == null) return const AsyncLoading<InsightsView>();
+    // The page says when the habits fail to load.
+    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    if (journal == null || vices == null) {
+      return const AsyncLoading<InsightsView>();
+    }
+    final String archived = ([
+      for (final Vice v in vices)
+        if (v.archived) v.id,
+    ]..sort()).join(_archivedSeparator);
     final Map<String, List<HealthSample>>? samples = ref
         .watch(_samplesProvider((activities: journal, today: today)))
         .value;
@@ -353,6 +372,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
             health: values,
             samples: read,
             today: today,
+            archived: archived,
           )),
         )
         .value;
