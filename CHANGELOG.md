@@ -28,7 +28,7 @@ pull request titles (`gh pr list --state merged`).
   6 bpm higher than before it", against the same hours on nearby days, so the usual climb through a morning and a
   walk don't count. It reads heart rate from Apple Health around your last 120 uses of each habit in the past year,
   and adds your heart rate while asleep as a measure of its own. Worked out on the device; Health data never leaves
-  it.
+  it (#187).
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a

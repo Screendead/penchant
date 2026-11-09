@@ -202,7 +202,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         source's end; sleeping heart rate uses the same choice. Review, merge, install.
         Then **#186** `fix/health-sleep-sessions`: Watch-less sleeps before a Watch main sleep drop; Jack picked B (2026-11-09): drop app-only sleeps before the Watch's main sleep; later ones stay.
      5. **i. Dose and timing: done when this PR merges** (#185, `feat/insights-dose-timing`). Then **j**
-        (`feat/insights-hours-after`, below). Jack, 2026-11-09: a habit
+        (#187, `feat/insights-hours-after`, below). Jack, 2026-11-09: a habit
         used every day must still yield insights: amount per day, time of first and last use, the hours around each
         use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
@@ -231,7 +231,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        400 seeds): 5.3% raw, 0.17% of checks and 9.8% of reports after BH. Not covered: a change in amount and
        outcome inside one month (step at day 50: 19% false findings; step m). The time of the first use against the
        previous night's sleep is k.
-     - **j. Hours after a use: this PR** (`feat/insights-hours-after`). `lib/insights/hours_after.dart`: for each use
+     - **j. Hours after a use: this PR** (#187, `feat/insights-hours-after`). `lib/insights/hours_after.dart`: for each use
        with none of the habit in the 4 h before, heart rate (and HRV) in 0-30, 30-60, 60-120 and 120-240 min after,
        less the hour before; the same difference at the same clock time on the nearest day within 7, inside the
        habit's span and clear of it for 4 h either side, is the control (a day with the habit at another time
