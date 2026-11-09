@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -116,6 +117,58 @@ void main() {
       find.text('Could be chance: one of many comparisons'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('an amount and a time of last use read in their own words, in '
+      'the habit\'s unit', (WidgetTester tester) async {
+    _connected();
+    HabitFinding finding(InsightKind kind, double step) => HabitFinding(
+      habitId: 'coffee',
+      metricId: 'sleepDeep',
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 120,
+      raw: null,
+      kind: kind,
+      step: step,
+      effect: -6,
+      interval: const stats.Interval(-9, -3),
+      standardized: -0.5,
+      pValue: 0.001,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee', unit: Unit.drink),
+        ]),
+        runner: (_) async => InsightsReport(
+          findings: <HabitFinding>[
+            finding(InsightKind.dose, 1),
+            finding(InsightKind.lastUse, 60),
+          ],
+          refused: const <HabitRefusal>[],
+        ),
+      ),
+    );
+
+    expect(
+      find.text(
+        'Each extra drink of Coffee goes with your deep sleep that night '
+        'averaging 6 min less.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'A last Coffee an hour later goes with your deep sleep that night '
+        'averaging 6 min less.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('From 120 days with Coffee'), findsNWidgets(2));
+    expect(find.text(InsightsPage.refusedHeading), findsNothing);
   });
 
   testWidgets('two habits used on the same days are refused as entangled', (

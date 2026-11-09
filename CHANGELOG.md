@@ -19,6 +19,10 @@ pull request titles (`gh pr list --state merged`).
   starts ("From 3 March 2024 to today"). "Copy as text" puts the findings and the reasons for the rest on the
   clipboard, for a note or a message. Penchant sends none of it anywhere; the text goes where you paste it, and with
   Handoff on, the clipboard also reaches your other Apple devices (#179).
+- Insights now finds things about a habit you keep up every day: how the amount goes with what follows ("Each extra
+  drink of Coffee goes with your deep sleep that night averaging 6 min less") and how the time of your last one does
+  ("A last Coffee an hour later goes with ..."), among the days you had it. An entry before 05:00 counts as a late one
+  of the day before. A habit whose amount or time barely changes says so instead.
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a

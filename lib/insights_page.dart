@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -108,6 +109,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     final Map<String, String> names = <String, String>{
       for (final Vice v in vices ?? const <Vice>[]) v.id: v.name,
     };
+    final Map<String, Unit> units = <String, Unit>{
+      for (final Vice v in vices ?? const <Vice>[]) v.id: v.unit,
+    };
     // Health's state is known before the journal loads, so the card shows it.
     final HealthState? health =
         view.value?.health ?? ref.watch(healthStateProvider).value;
@@ -140,6 +144,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           AsyncData(:final InsightsView value) when vices != null => _body(
             value,
             names,
+            units,
           ),
           _ => const <Widget>[
             _MessageCard(InsightsPage.loadingLabel, busy: true),
@@ -150,8 +155,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     );
   }
 
-  List<Widget> _body(InsightsView view, Map<String, String> names) {
+  List<Widget> _body(
+    InsightsView view,
+    Map<String, String> names,
+    Map<String, Unit> units,
+  ) {
     String nameOf(String id) => names[id] ?? 'a removed habit';
+    Unit unitOf(String id) => units[id] ?? Unit.fallback;
     switch (view.health) {
       case HealthOnIPhone():
         return const <Widget>[
@@ -251,6 +261,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         _FindingCard(
           finding: findings[i],
           habit: nameOf(findings[i].habitId),
+          unit: unitOf(findings[i].habitId),
           locale: locale,
           top: i == 0 ? 0 : DialSpace.s,
         ),
@@ -278,6 +289,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                 refused: refused,
                 firstDay: firstDay,
                 nameOf: nameOf,
+                unitOf: unitOf,
                 locale: locale,
               ),
             ),
@@ -304,6 +316,7 @@ String insightsText({
   required List<HabitRefusal> refused,
   required DateTime? firstDay,
   required String Function(String habitId) nameOf,
+  Unit Function(String habitId) unitOf = _anyUnit,
   required String locale,
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
@@ -318,7 +331,7 @@ String insightsText({
     final String habit = nameOf(f.habitId);
     out
       ..write('\n$habit · ${metricCopy(f.metricId)!.name}\n')
-      ..write('${findingSentence(f, habit, locale)}\n')
+      ..write('${findingSentence(f, habit, locale, unit: unitOf(f.habitId))}\n')
       ..write('${findingRange(f, locale)}\n')
       ..write('${findingBasis(f, habit)}\n');
   }
@@ -331,6 +344,8 @@ String insightsText({
   out.write('\n${InsightsPage.foot}\n');
   return out.toString();
 }
+
+Unit _anyUnit(String _) => Unit.fallback;
 
 class _HealthCard extends StatelessWidget {
   const _HealthCard({
@@ -461,12 +476,14 @@ class _FindingCard extends StatelessWidget {
   const _FindingCard({
     required this.finding,
     required this.habit,
+    required this.unit,
     required this.locale,
     required this.top,
   });
 
   final HabitFinding finding;
   final String habit;
+  final Unit unit;
   final String locale;
   final double top;
 
@@ -490,7 +507,7 @@ class _FindingCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                findingSentence(finding, habit, locale),
+                findingSentence(finding, habit, locale, unit: unit),
                 style: DialTypeScale.bodyL.copyWith(color: scheme.onSurface),
               ),
               const SizedBox(height: DialSpace.s),

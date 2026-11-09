@@ -34,10 +34,10 @@ class FakeUser extends Mock implements User {
 
 const String ownerID = 'owner';
 
-Vice fakeVice(String id, {String? name}) => Vice(
+Vice fakeVice(String id, {String? name, Unit unit = Unit.item}) => Vice(
   id: id,
   name: name ?? id,
-  unit: Unit.values.first,
+  unit: unit,
   ownerID: ownerID,
   createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
   archived: false,

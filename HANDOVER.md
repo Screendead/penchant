@@ -199,14 +199,29 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         asleep, bundle id), whose span takes in 3/4 of the sleep's asleep time from every source, else the one with
         the most asleep; in bed from that source or else the one with the most; the sleep is keyed by its chosen
         source's end; sleeping heart rate uses the same choice. Review, merge, install.
-     5. **i. Dose and timing** next (after 3; same engine files). Jack, 2026-11-09: a habit used every day must still
-        yield insights: amount per day, time of first and last use, the hours around each use (j), co-occurrence
-        with other habits (l), and the before and after of a streak's start (m).
+     5. **i. Dose and timing: done when this PR merges** (`feat/insights-dose-timing`). Jack, 2026-11-09: a habit
+        used every day must still yield insights: amount per day, time of first and last use, the hours around each
+        use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
-     - **i. Dose and timing:** the day's amount instead of used/not used, and the time of the last use (a late
-       finish against an early one).
+     - **i. Dose and timing: this PR** (`feat/insights-dose-timing`). Two more comparisons per habit and outcome, in
+       the same report and the same Benjamini-Hochberg family, both among days with the habit so a daily habit gets
+       a slope: the day's amount (`doseFollows`, per unit, or per a 1-2-5 step when the totals spread over more than
+       3 units or under half of one), and the clock time of the day's last use (`lastUseFollows`, per hour later; a
+       use before 05:00, `lateUseCutoffHour`, is the evening before; the day's amount is a covariate). Same trend and
+       month terms and other habits' indicators. Refused as steady when the amount has under 7 days off its
+       commonest value or a spread under 10% of its mean, or the time has an sd under 30 min or under 7 days an
+       hour from its median. The page keeps one reason per habit: a habit with any finding is not listed; otherwise
+       entangled, chance, uneven, noise, steady, too few days, and on a tie the used/not-used comparison's.
+       Measured (`tools/insights-calibration/dose_timing_test.dart`, sd-1 noise, 120 days): one check alone finds
+       5.1% (dose) and 5.1% (time) on noise; dose 0.2 sd per unit found 70% (60 days: 41%), time 0.1 sd per hour
+       93%; amount rising with the months while the outcome steps 1 sd a month: 5.8% (chance only). Whole page on
+       noise (Coffee, Tea every other day, Water daily; 9 outcomes; 28,809 checks over 400 seeds): 5.2% raw, 0.15%
+       of checks and 8.5% of reports after BH. Not covered: a change in amount and outcome inside one month (step
+       at day 50: 19% false findings; step m); the dose is summed per calendar day, so a 00:30 entry adds to the
+       next day's amount while timing counts it as the evening before. The time of the first use against the
+       previous night's sleep is k.
      - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
        each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
        The sample read is #178 (`feat/health-samples`): `HealthSource.samples` and `healthSamplePages` page heart
