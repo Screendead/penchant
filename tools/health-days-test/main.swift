@@ -575,6 +575,23 @@ for (dates, label) in [(subSecond, "sub-second"), (wholeMilli, "whole-millisecon
   check("\(label) adjacent windows split each sample once", halves.sorted() == all.map(\.value), "\(halves.count)")
 }
 
+// bedSpans: in bed, asleep and awake join into one span a night; a nap is its own.
+do {
+  let night = [
+    sample(at(2026, 3, 2, 22, 30), at(2026, 3, 2, 23, 0), 0),
+    sample(at(2026, 3, 2, 23, 0), at(2026, 3, 3, 3, 0), 3),
+    sample(at(2026, 3, 3, 3, 0), at(2026, 3, 3, 3, 20), 2),
+    sample(at(2026, 3, 3, 3, 20), at(2026, 3, 3, 6, 40), 4),
+    sample(at(2026, 3, 3, 14, 0), at(2026, 3, 3, 14, 40), 3),
+  ]
+  let spans = HealthDays.bedSpans(HealthDays.nights(night, start: at(2026, 3, 1), end: at(2026, 3, 8), calendar))
+  check(
+    "bedSpans",
+    spans.map { [$0.0, $0.1] } == [
+      [at(2026, 3, 2, 22, 30), at(2026, 3, 3, 6, 40)], [at(2026, 3, 3, 14, 0), at(2026, 3, 3, 14, 40)],
+    ], "\(spans)")
+}
+
 // flatten writes start, end, value triples.
 check(
   "flatten", HealthDays.flatten([hr(at(2026, 11, 8), 61.5, 1)]) == [

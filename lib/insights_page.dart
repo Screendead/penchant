@@ -54,7 +54,12 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String hoursAfterNote =
       'Heart rate in the hours after a use comes from the last '
       '$hoursAfterMaxEvents uses of each habit in the past year, against '
-      'the same hours on nearby days.';
+      'the same time after waking on nearby days. Uses you time by how you '
+      'feel, such as coffee when tired, can show a change that would have '
+      'come anyway.';
+
+  static const String hoursAfterPending =
+      'Still reading heart rate around your uses from Apple Health.';
 
   static String span(DateTime firstDay) =>
       'From ${formatDate(firstDay)} to today';
@@ -263,7 +268,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     );
     return <Widget>[
       if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
-      if (report.hoursAfterChecks > 0)
+      if (view.hoursPending)
+        const CardFoot(InsightsPage.hoursAfterPending)
+      else if (report.hoursAfterChecks > 0)
         const CardFoot(InsightsPage.hoursAfterNote),
       const CardSectionLabel(InsightsPage.foundHeading),
       if (findings.isEmpty)

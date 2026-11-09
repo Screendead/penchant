@@ -80,6 +80,34 @@ enum InsightKind {
 /// Minutes after a use, from [start] up to [end].
 typedef HourWindow = ({int start, int end});
 
+/// Why an [InsightKind.hoursAfter] comparison had too few days: the cause
+/// that left out the most moments.
+enum HoursAfterShortfall {
+  /// Too few uses clear of the habit in the 4 hours before.
+  uses,
+
+  /// No night's sleep recorded before the moment, so no time awake to match.
+  noSleep,
+
+  /// The hour before or the window touched sleep, waking included.
+  nearSleep,
+
+  /// Another habit was used from the hour before to the window's end.
+  otherHabit,
+
+  /// The habit again before the window's end.
+  sameHabit,
+
+  /// Under the readings needed before and after.
+  readings,
+
+  /// A walk in the hour before or the window.
+  walk,
+
+  /// Too few nearby moments clear of the habit to compare with.
+  controls,
+}
+
 /// The outcome after days a habit was used against after days it was not,
 /// with no other habit taken into account.
 class Comparison {
@@ -224,9 +252,13 @@ class HabitRefusal extends HabitInsight {
     this.effect,
     this.interval,
     this.pValue,
+    this.shortfall,
   });
 
   final RefusalReason reason;
+
+  /// Set for [InsightKind.hoursAfter] with [RefusalReason.tooFewDays].
+  final HoursAfterShortfall? shortfall;
   final String? entangledWith;
   final double? effect;
   final Interval? interval;

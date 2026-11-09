@@ -111,8 +111,9 @@ void main() {
     expect(
       find.textContaining(
         RegExp(
-          r'^One to two hours after Coffee, your heart rate is \d bpm higher '
-          r'than before it\.$',
+          r'^One to two hours after Coffee, your heart rate, set against the '
+          r'hour before, averages \d bpm higher than at the same time after '
+          r'waking without it\.$',
         ),
       ),
       findsOneWidget,
@@ -120,8 +121,8 @@ void main() {
     expect(
       find.textContaining(
         RegExp(
-          r'^From \d+ days with Coffee, against the same hours on \d+ '
-          r'other days$',
+          r'^From \d+ days with Coffee, against \d+ days at the same time '
+          r'after waking with none of it within 4 hours$',
         ),
       ),
       findsOneWidget,

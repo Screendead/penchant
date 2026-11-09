@@ -41,9 +41,13 @@ class FakeHealthSource implements HealthSource {
     this.status = HealthRequestStatus.unnecessary,
     this.sampleData = const <HealthSampleMetric, List<HealthSample>>{},
     this.sampleFailure,
+    this.sampleGate,
   });
 
   final PlatformException? sampleFailure;
+
+  /// When set, every sample read waits for it.
+  final Future<void>? sampleGate;
 
   final bool available;
 
@@ -105,6 +109,7 @@ class FakeHealthSource implements HealthSource {
     int limit = maxHealthSamplesPerCall,
   }) async {
     sampleCalls++;
+    if (sampleGate case final Future<void> gate) await gate;
     if (failure ?? sampleFailure case final PlatformException e) throw e;
     final List<HealthSample> page = <HealthSample>[];
     for (final HealthSample s in sampleData[metric] ?? const <HealthSample>[]) {

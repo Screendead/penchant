@@ -117,13 +117,21 @@ class InsightsInput {
   final Map<String, List<hs.HealthSample>> samples;
 }
 
-/// The moments around uses whose samples Insights reads, up to the start of
-/// [today], so that every window read has ended.
-HoursAfterPlan insightsHoursAfterPlan(List<HabitUse> uses, DateTime today) =>
-    planHoursAfter(uses, startOfDay(today));
+/// The moments around uses whose samples Insights reads, with every window
+/// ended by the start of [today], given [bed] ([hs.HealthSampleMetric.bed]).
+HoursAfterPlan insightsHoursAfterPlan(
+  List<HabitUse> uses,
+  DateTime today, {
+  List<hs.HealthSample> bed = const <hs.HealthSample>[],
+}) => planHoursAfter(uses, startOfDay(today), bed: bed);
 
-/// The sample measures read for [insightsHoursAfterPlan]: the judged ones
-/// and steps.
+/// Where [insightsHoursAfterPlan] reads [hs.HealthSampleMetric.bed] from: the
+/// evening before the first day a use can be judged.
+DateTime insightsBedFrom(DateTime today) =>
+    addDays(startOfDay(today), -hoursAfterLookbackDays - 1);
+
+/// The sample measures read for [insightsHoursAfterPlan]'s spans: the judged
+/// ones and steps.
 const List<hs.HealthSampleMetric> insightsSampleMetrics =
     <hs.HealthSampleMetric>[
       ...hoursAfterMetrics,
@@ -177,7 +185,13 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<HabitInsight> hours = input.samples.isEmpty
       ? const <HabitInsight>[]
       : hoursAfter(
-          plan: insightsHoursAfterPlan(input.uses, input.through),
+          plan: insightsHoursAfterPlan(
+            input.uses,
+            input.through,
+            bed:
+                input.samples[hs.HealthSampleMetric.bed.id] ??
+                const <hs.HealthSample>[],
+          ),
           uses: input.uses,
           samples: input.samples,
         );
@@ -386,8 +400,9 @@ String findingSentence(
       'A last $habit an hour later goes with your ${copy.name} $then '
           'averaging $amount $direction.',
     InsightKind.hoursAfter =>
-      '${_windowWords(finding.window!)} $habit, your ${copy.name} is '
-          '$amount $direction than before it.',
+      '${_windowWords(finding.window!)} $habit, your ${copy.name}, set '
+          'against the hour before, averages $amount $direction than at the '
+          'same time after waking without it.',
   };
 }
 
@@ -430,8 +445,9 @@ String findingRange(HabitFinding finding, String locale) {
 /// amount or a time, which compare days of use alone.
 String findingBasis(HabitFinding finding, String habit) {
   if (finding.kind == InsightKind.hoursAfter) {
-    return 'From ${finding.exposedDays} days with $habit, against the same '
-        'hours on ${finding.usableDays - finding.exposedDays} other days';
+    return 'From ${finding.exposedDays} days with $habit, against '
+        '${finding.usableDays - finding.exposedDays} days at the same time '
+        'after waking with none of it within 4 hours';
   }
   if (finding.kind != InsightKind.use) {
     return 'From ${finding.usableDays} days with $habit';
@@ -458,14 +474,31 @@ String refusalReason(
 
 String _hoursAfterRefusal(HabitRefusal refusal) {
   const HoursAfterGates gates = HoursAfterGates();
-  final String readings = '${metricCopy(refusal.metricId)?.name} readings';
+  final String name = metricCopy(refusal.metricId)?.name ?? 'Health';
+  final String days = '${refusal.exposedDays} days of ${gates.minEventDays}';
   return switch (refusal.reason) {
-    RefusalReason.tooFewDays when refusal.exposedDays < gates.minEventDays =>
-      'too few uses with $readings around them yet: ${refusal.exposedDays} '
-          'days of ${gates.minEventDays}',
-    RefusalReason.tooFewDays =>
-      'used at about the same time each day, so there are too few other '
-          'days at that time to compare',
+    RefusalReason.tooFewDays => switch (refusal.shortfall) {
+      HoursAfterShortfall.uses ||
+      null => 'too few uses with none of it in the 4 hours before yet: $days',
+      HoursAfterShortfall.noSleep =>
+        'needs your sleep in Health, to time each use from waking: most uses '
+            'have no night recorded before them',
+      HoursAfterShortfall.nearSleep =>
+        'most uses come within an hour of waking or within 4 hours of bed, '
+            'when $name moves anyway',
+      HoursAfterShortfall.otherHabit =>
+        'another habit is logged within 4 hours of most of its uses',
+      HoursAfterShortfall.sameHabit =>
+        'used again within a few hours most times, so the hours after one '
+            'use run into the next',
+      HoursAfterShortfall.readings =>
+        'Health holds too few $name readings around its uses, '
+            '${gates.minSamples} before and after each',
+      HoursAfterShortfall.walk => 'most of its uses come with a walk',
+      HoursAfterShortfall.controls =>
+        'too few nearby days clear of it at the same time after waking to '
+            'compare with',
+    },
     RefusalReason.chance => 'could be chance, one of many comparisons',
     _ => 'within the noise, no clear difference',
   };

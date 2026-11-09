@@ -241,6 +241,12 @@ enum HealthDays {
     return result
   }
 
+  // Every night's time in bed, asleep or awake, from the night's one source,
+  // merged across nights and naps: when the person was not up and about.
+  static func bedSpans(_ byNight: [String: [SleepSample]]) -> [(Date, Date)] {
+    merged(byNight.values.flatMap { $0.map { ($0.start, $0.end) } })
+  }
+
   // A sample is inside an interval [s, e) when its midpoint is, so an
   // instant sample (start == end) counts by its moment and one with a
   // duration is counted once, by where most of it falls.

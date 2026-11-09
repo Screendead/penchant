@@ -1,19 +1,34 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/health_source.dart'
-    show HealthMetric, HealthSample;
+    show HealthMetric, HealthSample, HealthSampleMetric;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 import 'hours_after_synthetic.dart';
 
-List<HabitInsight> judge(Synthetic s) => hoursAfter(
-  plan: planHoursAfter(s.uses, s.through),
-  uses: s.uses,
-  samples: s.samples,
+HoursAfterPlan plan(Synthetic s) => planHoursAfter(
+  s.uses,
+  s.through,
+  bed: s.samples[HealthSampleMetric.bed.id]!,
 );
+
+List<HabitInsight> judge(Synthetic s) =>
+    hoursAfter(plan: plan(s), uses: s.uses, samples: s.samples);
+
+String reason(HabitInsight i) => refusalReason(i as HabitRefusal, (id) => id);
+
+// Coffee 15 to 60 minutes after waking on 85% of days.
+int? afterWaking(int wake, bool weekend, List<double> w, Random r) =>
+    r.nextDouble() < 0.85 ? wake + 15 + r.nextInt(45) : null;
+
+// Coffee at a random time from 09:00 to 15:00 on 70% of days.
+int? midday(int wake, bool weekend, List<double> w, Random r) =>
+    r.nextDouble() < 0.7 ? 9 * 60 + 5 * r.nextInt(72) : null;
 
 HabitInsight at(
   List<HabitInsight> insights,
@@ -34,21 +49,24 @@ void main() {
   group('planHoursAfter', () {
     test('reads one span a day at most, and caps the events', () {
       final Synthetic s = synthetic(1, days: 400);
-      final HoursAfterPlan plan = planHoursAfter(s.uses, s.through);
+      final HoursAfterPlan planned = plan(s);
       final List<HoursAfterPoint> events = <HoursAfterPoint>[
-        for (final HoursAfterPoint p in plan.points)
+        for (final HoursAfterPoint p in planned.points)
           if (!p.control) p,
       ];
       expect(events, hasLength(hoursAfterMaxEvents));
       final Set<DateTime> days = <DateTime>{
-        for (final HoursAfterPoint p in plan.points) startOfDay(p.at),
+        for (final HoursAfterPoint p in planned.points) startOfDay(p.at),
       };
-      expect(plan.reads.length, lessThanOrEqualTo(days.length));
-      for (int i = 1; i < plan.reads.length; i++) {
-        expect(plan.reads[i].start.isAfter(plan.reads[i - 1].end), isTrue);
+      expect(planned.reads.length, lessThanOrEqualTo(days.length));
+      for (int i = 1; i < planned.reads.length; i++) {
+        expect(
+          planned.reads[i].start.isAfter(planned.reads[i - 1].end),
+          isTrue,
+        );
       }
-      // A control lies on another day, at the same clock time, clear of it.
-      for (final HoursAfterPoint p in plan.points.where((p) => p.control)) {
+      // A control lies on another day clear of it.
+      for (final HoursAfterPoint p in planned.points.where((p) => p.control)) {
         for (final HabitUse u in s.uses) {
           expect(u.at.difference(p.at).inMinutes.abs(), greaterThan(239));
         }
@@ -56,6 +74,7 @@ void main() {
     });
 
     test('a habit at the same time every day has no controls', () {
+      final Synthetic s = synthetic(1, days: 60);
       final List<HabitUse> uses = <HabitUse>[
         for (int i = 0; i < 60; i++)
           HabitUse(
@@ -64,12 +83,109 @@ void main() {
             amount: 1,
           ),
       ];
-      final HoursAfterPlan plan = planHoursAfter(
+      final HoursAfterPlan planned = planHoursAfter(
         uses,
-        addDays(syntheticStart, 60),
+        s.through,
+        bed: s.samples[HealthSampleMetric.bed.id]!,
       );
-      expect(plan.points.where((p) => p.control), isEmpty);
+      expect(planned.points.where((p) => !p.control), isNotEmpty);
+      expect(planned.points.where((p) => p.control), isEmpty);
     });
+
+    test('a control sits as long after waking as its use', () {
+      final Synthetic s = wakingSynthetic(
+        6,
+        habits: const <String, UsePolicy>{'Coffee': midday},
+      );
+      final List<HealthSample> bed = s.samples[HealthSampleMetric.bed.id]!;
+      DateTime wakeBefore(DateTime t) => bed
+          .where((b) => b.end.isBefore(t))
+          .map((b) => b.end)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      final List<HoursAfterPoint> points = plan(s).points;
+      int controls = 0;
+      for (int i = 0; i < points.length; i++) {
+        if (!points[i].control) continue;
+        controls++;
+        final HoursAfterPoint event = points[i - 1];
+        expect(event.control, isFalse);
+        expect(
+          points[i].at.difference(wakeBefore(points[i].at)),
+          event.at.difference(wakeBefore(event.at)),
+        );
+      }
+      expect(controls, greaterThan(40));
+    });
+
+    test('a use within the hour after waking, or near bed, is left out', () {
+      final Synthetic s = wakingSynthetic(
+        7,
+        habits: const <String, UsePolicy>{'Coffee': afterWaking},
+      );
+      expect(plan(s).points, isEmpty);
+      expect(
+        reason(at(judge(s), (start: 0, end: 30))),
+        'Hours after it: most uses come within an hour of waking or within '
+        '4 hours of bed, when heart rate moves anyway',
+      );
+    });
+
+    test('with no sleep recorded nothing is planned, and it says why', () {
+      final Synthetic s = wakingSynthetic(
+        8,
+        missingNight: 1,
+        habits: const <String, UsePolicy>{'Coffee': midday},
+      );
+      expect(plan(s).points, isEmpty);
+      expect(
+        reason(at(judge(s), (start: 0, end: 30))),
+        'Hours after it: needs your sleep in Health, to time each use from '
+        'waking: most uses have no night recorded before them',
+      );
+    });
+
+    test('an event whose windows run past the cut-off waits', () {
+      final Synthetic s = synthetic(1, days: 30);
+      final DateTime late = addDays(
+        s.through,
+        -1,
+      ).add(const Duration(hours: 21));
+      final HoursAfterPlan planned = planHoursAfter(
+        <HabitUse>[...s.uses, HabitUse(habitId: 'Coffee', at: late, amount: 1)],
+        s.through,
+        bed: s.samples[HealthSampleMetric.bed.id]!,
+      );
+      expect(planned.points.map((p) => p.at), isNot(contains(late)));
+    });
+  });
+
+  test('a second use cuts the windows after the first short', () {
+    final Synthetic s = synthetic(9);
+    final List<HabitUse> again = <HabitUse>[
+      ...s.uses,
+      for (final HabitUse u in s.uses)
+        if (u.habitId == 'Coffee')
+          HabitUse(
+            habitId: 'Coffee',
+            at: u.at.add(const Duration(minutes: 90)),
+            amount: 1,
+          ),
+    ]..sort((a, b) => a.at.compareTo(b.at));
+    final List<HabitInsight> insights = hoursAfter(
+      plan: planHoursAfter(
+        again,
+        s.through,
+        bed: s.samples[HealthSampleMetric.bed.id]!,
+      ),
+      uses: again,
+      samples: s.samples,
+    );
+    expect(at(insights, (start: 0, end: 30)).exposedDays, greaterThan(20));
+    expect(
+      reason(at(insights, (start: 120, end: 240))),
+      'Hours after it: used again within a few hours most times, so the '
+      'hours after one use run into the next',
+    );
   });
 
   test('a rise one to two hours after Coffee is found there alone', () {
@@ -87,17 +203,17 @@ void main() {
       findingSentence(hit, 'Coffee', 'en'),
       matches(
         RegExp(
-          r'^One to two hours after Coffee, your heart rate is \d bpm higher '
-          r'than before it\.$',
+          r'^One to two hours after Coffee, your heart rate, set against the '
+          r'hour before, averages \d bpm higher than at the same time after '
+          r'waking without it\.$',
         ),
       ),
     );
     expect(
       findingBasis(hit, 'Coffee'),
-      startsWith(
-        'From ${hit.exposedDays} days with Coffee, against the same '
-        'hours on ',
-      ),
+      'From ${hit.exposedDays} days with Coffee, against '
+      '${hit.usableDays - hit.exposedDays} days at the same time after '
+      'waking with none of it within 4 hours',
     );
   });
 
@@ -110,6 +226,18 @@ void main() {
   test('a morning rise with no habit effect is not a finding', () {
     expect(
       falseFindings((seed) => synthetic(seed, morningRise: 20)),
+      lessThan(10),
+    );
+  });
+
+  test('Coffee soon after waking, a lie-in at weekends, is not a finding', () {
+    expect(
+      falseFindings(
+        (seed) => wakingSynthetic(
+          seed,
+          habits: const <String, UsePolicy>{'Coffee': _twoHoursAfterWaking},
+        ),
+      ),
       lessThan(10),
     );
   });
@@ -129,9 +257,9 @@ void main() {
     ), metric: 'heartRateVariabilitySDNN');
     expect(hrv, isA<HabitRefusal>());
     expect(
-      refusalReason(hrv as HabitRefusal, (id) => id),
-      'Hours after it: too few uses with heart rate variability readings '
-      'around them yet: 0 days of 10',
+      reason(hrv),
+      'Hours after it: Health holds too few heart rate variability readings '
+      'around its uses, 3 before and after each',
     );
   });
 
@@ -142,11 +270,23 @@ void main() {
         'Coffee': (chance: 1, from: 7 * 60, to: 7 * 60 + 20),
       },
     );
-    final HabitRefusal r = at(judge(s), (start: 0, end: 30)) as HabitRefusal;
     expect(
-      refusalReason(r, (id) => id),
-      'Hours after it: used at about the same time each day, so there are '
-      'too few other days at that time to compare',
+      reason(at(judge(s), (start: 0, end: 30))),
+      'Hours after it: too few nearby days clear of it at the same time '
+      'after waking to compare with',
+    );
+  });
+
+  test('another habit through the day is named as the cause', () {
+    final Synthetic s = wakingSynthetic(
+      10,
+      habits: const <String, UsePolicy>{'Coffee': midday},
+      frequent: const <String, int>{'Cigarettes': 8},
+    );
+    expect(
+      reason(at(judge(s), (start: 60, end: 120))),
+      'Hours after it: another habit is logged within 4 hours of most of its '
+      'uses',
     );
   });
 
@@ -154,7 +294,7 @@ void main() {
     final Synthetic s = synthetic(5);
     expect(
       hoursAfter(
-        plan: planHoursAfter(s.uses, s.through),
+        plan: plan(s),
         uses: s.uses,
         samples: const <String, List<HealthSample>>{},
       ),
@@ -189,3 +329,8 @@ void main() {
     expect(copy.unit, 'bpm');
   });
 }
+
+// Coffee two to three hours after waking on 85% of days, so its hour before
+// is past waking.
+int? _twoHoursAfterWaking(int wake, bool weekend, List<double> w, Random r) =>
+    r.nextDouble() < 0.85 ? wake + 120 + r.nextInt(60) : null;
