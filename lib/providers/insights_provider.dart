@@ -208,6 +208,7 @@ final _samplesProvider = FutureProvider.autoDispose
             span.start,
             span.end,
           )) {
+            if (!ref.mounted) return null;
             switch (page) {
               case HealthUnavailable():
                 return null;

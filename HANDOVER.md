@@ -242,8 +242,9 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        The control is the same difference as long after waking on the nearest day within 7 whose waking is within
        2 h of the use day's (by clock), inside the habit's span and clear of it 4 h either side. So Coffee within an
        hour of waking, or anything within 4 h of bed, is refused in words; a day with no night recorded gives no
-       moment (a Watch charged overnight gives no hours-after at all: steps-based waking is the named fallback, not
-       built). A window is dropped when another habit was used from its baseline to its end, the habit again before
+       moment (a Watch charged overnight gives no hours-after at all, and the page does not say why: the "needs your
+       sleep" refusal exists, but with nothing planned the provider reads no heart rate and the engine skips the
+       comparison; steps-based waking is the named fallback, not built). A window is dropped when another habit was used from its baseline to its end, the habit again before
        its end, under 3 readings in baseline or window, or a walk (any 10 min over 60 steps a minute in the
        baseline, or from 30 min before the window to its end); the change in steps a minute is a covariate.
        Moments are averaged per day, one OLS per window on days (intercept, use, steps); at least 10 days each side.
