@@ -92,7 +92,7 @@ jobs:
       - name: End to end (iOS Simulator)
         run: |
           set -o pipefail
-          tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
+          tools/e2e.sh integration_test/all_test.dart --dart-define=WRITE_TIMEOUT_MS=3000 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
       - name: Cache sizes
         if: always()
         run: du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.pub-cache build/ios 2>/dev/null || true
@@ -159,7 +159,7 @@ jobs:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: |
           set -o pipefail
-          tools/e2e.sh 2>&1 | tee "$RUNNER_TEMP/e2e-macos.log"
+          tools/e2e.sh integration_test --dart-define=WRITE_TIMEOUT_MS=3000 2>&1 | tee "$RUNNER_TEMP/e2e-macos.log"
       - name: Restore the pub cache
         if: always()
         run: |
