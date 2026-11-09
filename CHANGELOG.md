@@ -17,8 +17,7 @@ pull request titles (`gh pr list --state merged`).
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
   backoff for about an hour. Opening Penchant meanwhile brings up the app as usual.
 - Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
-  step and energy totals from Apple Health, read-only and kept on the device. Nothing asks for access or shows them
-  yet.
+  step and energy totals from Apple Health, read-only and kept on the device. Insights asks for access.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
   lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. A log made while the
   app is closed is marked "Saved — syncs shortly", or "Saved — open Penchant to sync" when only the app can save it
