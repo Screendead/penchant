@@ -13,6 +13,7 @@ class InsightGates {
     this.minUnexposedDays = 7,
     this.maxVarianceInflation = 5,
     this.level = 0.95,
+    this.falseDiscoveryRate = 0.1,
   });
 
   final int minDays;
@@ -20,6 +21,9 @@ class InsightGates {
   final int minUnexposedDays;
   final double maxVarianceInflation;
   final double level;
+
+  /// Benjamini-Hochberg's q across every comparison in one report.
+  final double falseDiscoveryRate;
 }
 
 /// The outcome after days a habit was used against after days it was not,
@@ -54,6 +58,11 @@ enum RefusalReason {
 
   /// The adjusted interval includes zero.
   withinNoise,
+
+  /// The adjusted interval excludes zero, but not by enough to stand out
+  /// among every comparison in the report. Set by the report, never by
+  /// [whatFollows].
+  chance,
 }
 
 sealed class HabitInsight {
@@ -84,6 +93,7 @@ class HabitFinding extends HabitInsight {
     required this.effect,
     required this.interval,
     required this.standardized,
+    required this.pValue,
   });
 
   /// The outcome's difference after a day with the habit, holding every other
@@ -94,6 +104,9 @@ class HabitFinding extends HabitInsight {
   /// [effect] in units of the outcome's standard deviation over the usable
   /// days.
   final double standardized;
+
+  /// Two-sided, for [effect] being zero.
+  final double pValue;
 }
 
 class HabitRefusal extends HabitInsight {
@@ -107,12 +120,17 @@ class HabitRefusal extends HabitInsight {
     this.entangledWith,
     this.effect,
     this.interval,
+    this.pValue,
   });
 
   final RefusalReason reason;
   final String? entangledWith;
   final double? effect;
   final Interval? interval;
+
+  /// Set with [effect]: the habit was fitted, so it counts among the
+  /// report's comparisons.
+  final double? pValue;
 }
 
 /// For each habit, what [metricId] looks like [lagDays] days after a day it was
@@ -131,6 +149,10 @@ class HabitRefusal extends HabitInsight {
 /// along with another gets no credit. Another habit counts as not used on the
 /// days outside its own span: that can make its coefficient a proxy for time,
 /// but its coefficient is never the one reported here.
+///
+/// Each result is judged alone, at [InsightGates.level]; across many habits
+/// and outcomes some will clear it by chance, so a report runs every result
+/// through [controlFalseDiscoveries].
 List<HabitInsight> whatFollows({
   required DailyHabitSeries habits,
   required OutcomeSeries outcomes,
@@ -205,6 +227,7 @@ HabitInsight _whatFollowsOne(
     String? entangledWith,
     double? effect,
     Interval? interval,
+    double? pValue,
   }) => HabitRefusal(
     habitId: id,
     metricId: metricId,
@@ -215,6 +238,7 @@ HabitInsight _whatFollowsOne(
     entangledWith: entangledWith,
     effect: effect,
     interval: interval,
+    pValue: pValue,
   );
 
   if (days.length < gates.minDays || !clearsSampleGates(x)) {
@@ -276,6 +300,7 @@ HabitInsight _whatFollowsOne(
   const int column = 1;
   final double effect = fit.coefficients[column];
   final Interval interval = fit.interval(column, level: gates.level);
+  final double pValue = fit.pValue(column);
   // With an intercept in the model, (X'X)^-1 at j is 1 / (SS_j (1 - R_j^2)),
   // so this is 1 / (1 - R_j^2).
   final double mx = mean(x);
@@ -287,6 +312,7 @@ HabitInsight _whatFollowsOne(
       entangledWith: closestPartner(inModel),
       effect: effect,
       interval: interval,
+      pValue: pValue,
     );
   }
   if (interval.crossesZero) {
@@ -294,6 +320,7 @@ HabitInsight _whatFollowsOne(
       RefusalReason.withinNoise,
       effect: effect,
       interval: interval,
+      pValue: pValue,
     );
   }
   final double sd = sqrt(sampleVariance(y));
@@ -306,7 +333,50 @@ HabitInsight _whatFollowsOne(
     effect: effect,
     interval: interval,
     standardized: sd == 0 ? 0 : effect / sd,
+    pValue: pValue,
   );
+}
+
+/// [insights] with every finding that fails Benjamini-Hochberg at
+/// [InsightGates.falseDiscoveryRate] refused as [RefusalReason.chance]. The
+/// family is every result with a p-value, so a fitted habit refused for its
+/// entanglement or its noise still counts as a comparison made.
+List<HabitInsight> controlFalseDiscoveries(
+  List<HabitInsight> insights, {
+  InsightGates gates = const InsightGates(),
+}) {
+  double? pValueOf(HabitInsight insight) => switch (insight) {
+    HabitFinding(:final double pValue) => pValue,
+    HabitRefusal(:final double? pValue) => pValue,
+  };
+  final List<int> tested = <int>[
+    for (int i = 0; i < insights.length; i++)
+      if (pValueOf(insights[i]) != null) i,
+  ];
+  final List<bool> kept = benjaminiHochberg(<double>[
+    for (final int i in tested) pValueOf(insights[i])!,
+  ], gates.falseDiscoveryRate);
+  final Set<int> rejected = <int>{
+    for (int k = 0; k < tested.length; k++)
+      if (!kept[k]) tested[k],
+  };
+  return <HabitInsight>[
+    for (int i = 0; i < insights.length; i++)
+      switch (insights[i]) {
+        final HabitFinding f when rejected.contains(i) => HabitRefusal(
+          habitId: f.habitId,
+          metricId: f.metricId,
+          lagDays: f.lagDays,
+          usableDays: f.usableDays,
+          raw: f.raw,
+          reason: RefusalReason.chance,
+          effect: f.effect,
+          interval: f.interval,
+          pValue: f.pValue,
+        ),
+        final HabitInsight other => other,
+      },
+  ];
 }
 
 Comparison? _welch(List<double> exposure, List<double> y, double level) {

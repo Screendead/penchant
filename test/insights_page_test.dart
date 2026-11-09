@@ -81,6 +81,41 @@ void main() {
     expect(find.textContaining('Too few days yet'), findsOneWidget);
   });
 
+  testWidgets('a habit that may be chance among many comparisons says so', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        runner: (_) async => const InsightsReport(
+          findings: <HabitFinding>[],
+          refused: <HabitRefusal>[
+            HabitRefusal(
+              habitId: 'tea',
+              metricId: 'sleepDeep',
+              lagDays: 1,
+              usableDays: 120,
+              raw: null,
+              reason: RefusalReason.chance,
+              effect: -6,
+              interval: stats.Interval(-11, -1),
+              pValue: 0.03,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text(InsightsPage.nothingClear), findsOneWidget);
+    expect(find.text('Tea'), findsOneWidget);
+    expect(
+      find.text('Could be chance: one of many comparisons'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('two habits used on the same days are refused as entangled', (
     WidgetTester tester,
   ) async {
@@ -318,6 +353,7 @@ void main() {
       effect: effect,
       interval: interval,
       standardized: 1,
+      pValue: 0.001,
     );
 
     test('a finding names the habit, the outcome, the size and the range', () {
