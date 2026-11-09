@@ -9,6 +9,7 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/stats.dart' as stats;
@@ -18,6 +19,7 @@ import 'package:tracker/main.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
 import 'fakes.dart';
+import 'insights/hours_after_synthetic.dart';
 import 'insights_harness.dart';
 
 Future<void> _pump(WidgetTester tester, List<Override> overrides) async {
@@ -81,6 +83,48 @@ void main() {
     expect(find.text('Within the noise: no clear difference'), findsOneWidget);
     expect(find.text('Water'), findsOneWidget);
     expect(find.textContaining('Too few days yet'), findsOneWidget);
+  });
+
+  testWidgets('heart rate in the hours after a use reads in its own words', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    final Synthetic s = insightsHoursYear();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(
+          read: HealthValues(insightsJournal().health),
+          sampleData: <HealthSampleMetric, List<HealthSample>>{
+            for (final HealthSampleMetric m in HealthSampleMetric.values)
+              if (s.samples[m.id] case final List<HealthSample> list) m: list,
+          },
+        ),
+        activities: AsyncData<List<ViceActivity>>(<ViceActivity>[
+          for (final HabitUse u in s.uses) fakeActivity(u.habitId, 1, u.at),
+        ]),
+      ),
+    );
+
+    expect(
+      find.textContaining(
+        RegExp(
+          r'^One to two hours after Coffee, your heart rate is \d bpm higher '
+          r'than before it\.$',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        RegExp(
+          r'^From \d+ days with Coffee, against the same hours on \d+ '
+          r'other days$',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(InsightsPage.hoursAfterNote), findsOneWidget);
   });
 
   testWidgets('a habit that may be chance among many comparisons says so', (

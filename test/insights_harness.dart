@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -14,6 +15,7 @@ import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 
 import 'fakes.dart';
+import 'insights/hours_after_synthetic.dart';
 
 final DateTime insightsToday = DateTime(2026, 11, 8);
 
@@ -37,9 +39,18 @@ class FakeHealthSource implements HealthSource {
     this.read,
     this.failure,
     this.status = HealthRequestStatus.unnecessary,
+    this.sampleData = const <HealthSampleMetric, List<HealthSample>>{},
+    this.sampleFailure,
   });
 
+  final PlatformException? sampleFailure;
+
   final bool available;
+
+  /// Sorted by start; served in pages as the channel does.
+  final Map<HealthSampleMetric, List<HealthSample>> sampleData;
+  int sampleCalls = 0;
+  int samplesServed = 0;
   final HealthRead? read;
   final PlatformException? failure;
 
@@ -93,8 +104,19 @@ class FakeHealthSource implements HealthSource {
     DateTime end, {
     int limit = maxHealthSamplesPerCall,
   }) async {
-    if (failure case final PlatformException e) throw e;
-    return const HealthSamples(<HealthSample>[]);
+    sampleCalls++;
+    if (failure ?? sampleFailure case final PlatformException e) throw e;
+    final List<HealthSample> page = <HealthSample>[];
+    for (final HealthSample s in sampleData[metric] ?? const <HealthSample>[]) {
+      if (s.start.isBefore(start) || !s.start.isBefore(end)) continue;
+      if (page.length == limit) {
+        samplesServed += page.length;
+        return HealthSamples(page, next: s.start);
+      }
+      page.add(s);
+    }
+    samplesServed += page.length;
+    return HealthSamples(page);
   }
 }
 
@@ -170,3 +192,36 @@ List<Override> insightsOverrides({
         AsyncData<List<ViceActivity>>(insightsJournal().activities);
   }),
 ];
+
+// A year of Coffee, Tea and Water ending the day before insightsToday, with
+// heart rate rising one to two hours after Coffee.
+Synthetic insightsHoursYear() {
+  final Synthetic s = synthetic(
+    11,
+    days: 365,
+    habits: const <String, HabitPattern>{
+      'coffee': (chance: 0.6, from: 6 * 60, to: 11 * 60),
+      'tea': (chance: 0.5, from: 13 * 60, to: 18 * 60),
+      'water': (chance: 1, from: 8 * 60, to: 20 * 60),
+    },
+    effect: (h, m) => h == 'coffee' && m >= 60 && m < 120 ? 6 : 0,
+  );
+  // Shift so the last day is the day before insightsToday.
+  final Duration shift = addDays(
+    insightsToday,
+    -365,
+  ).difference(syntheticStart);
+  HealthSample moved(HealthSample x) =>
+      HealthSample(x.start.add(shift), x.end.add(shift), x.value);
+  return Synthetic(
+    <HabitUse>[
+      for (final HabitUse u in s.uses)
+        HabitUse(habitId: u.habitId, at: u.at.add(shift), amount: u.amount),
+    ],
+    <String, List<HealthSample>>{
+      for (final MapEntry<String, List<HealthSample>> e in s.samples.entries)
+        e.key: <HealthSample>[for (final x in e.value) moved(x)],
+    },
+    insightsToday,
+  );
+}
