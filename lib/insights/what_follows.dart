@@ -149,6 +149,16 @@ enum RefusalReason {
   /// The adjusted interval includes zero.
   withinNoise,
 
+  /// For [InsightKind.dose] or [InsightKind.lastUse] on a sleep outcome: the
+  /// amount or time moves so closely with when sleep began that the two
+  /// cannot be told apart.
+  followsBedtime,
+
+  /// For [InsightKind.dose] or [InsightKind.lastUse]: the adjusted interval
+  /// excludes zero, but the fit without the day that pulls the effect
+  /// furthest from zero does not.
+  oneDay,
+
   /// For [InsightKind.dose]: the day totals barely vary.
   steadyAmount,
 
@@ -223,6 +233,7 @@ class HabitFinding extends HabitInsight {
     required this.standardized,
     required this.pValue,
     this.spread,
+    this.sameBedtime,
   });
 
   /// The outcome's difference after a day with the habit, or per [step] more
@@ -245,6 +256,15 @@ class HabitFinding extends HabitInsight {
   /// amount, or minutes), so [effect] / [step] × [spread] is the difference
   /// across a typical spread of days. Null for the other kinds.
   final double? spread;
+
+  /// For [InsightKind.dose] and [InsightKind.lastUse] on the minutes of sleep
+  /// ([sleepMinutesIds]): the same comparison with bedtime ([sleepOnsetId])
+  /// held fixed, per the same [step], so the part of [effect] that does not
+  /// work by moving bedtime. A refusal when that part is unclear or bedtime
+  /// moves too closely with the habit to hold; null when it was not run. It
+  /// describes a finding already made, so it is not one of the report's
+  /// comparisons.
+  final HabitInsight? sameBedtime;
 }
 
 class HabitRefusal extends HabitInsight {
@@ -499,6 +519,28 @@ HabitInsight _whatFollowsOne(
   );
 }
 
+/// The outcome, in clock minutes after the noon that opens the night, of when
+/// a night's main sleep began (`HealthMetric.sleepOnset`).
+const String sleepOnsetId = 'sleepOnset';
+
+/// How far from the median onset of a comparison's days a night's
+/// [sleepOnsetId] may be before that day is left out.
+const int maxOnsetFromMedianMinutes = 6 * 60;
+
+/// The sleep outcomes that are minutes of a night (`HealthMetric`'s sleep
+/// minutes), for which [doseFollows] and [lastUseFollows] hold [sleepOnsetId]
+/// fixed. With a set wake time, every minute later to bed is a minute less in
+/// bed and some share of a minute less of each stage, so a habit used later
+/// on the evenings bed comes later would be credited with that arithmetic.
+const Set<String> sleepMinutesIds = <String>{
+  'sleepInBed',
+  'sleepAsleep',
+  'sleepAwake',
+  'sleepCore',
+  'sleepDeep',
+  'sleepREM',
+};
+
 /// For each habit, what [metricId] looks like [lagDays] days after a day it
 /// was used, by how much it was used: among the days of its span (see
 /// [whatFollows]) that it was used, the day's total as the habit's column of
@@ -511,9 +553,18 @@ HabitInsight _whatFollowsOne(
 /// power of ten within one standard deviation of them, never under one when
 /// every total is a whole number.
 ///
-/// A result that one day decides is refused as [RefusalReason.withinNoise]:
-/// the fit without the day that pulls the effect furthest from zero must
-/// still exclude zero.
+/// A result that one day decides is refused as [RefusalReason.oneDay]: the
+/// fit without the day that pulls the effect furthest from zero must still
+/// exclude zero.
+///
+/// The effect is the whole of it, bedtime included. For the minutes of sleep
+/// ([sleepMinutesIds]), a finding also carries the part left at the same
+/// bedtime ([HabitFinding.sameBedtime]): the same model with the time sleep
+/// began that night ([sleepOnsetId]) in it, over the days with an onset
+/// inside 0 to 1440 and within [maxOnsetFromMedianMinutes] of their median,
+/// refused as [RefusalReason.followsBedtime] when the amount moves so closely
+/// with bedtime that the two cannot be told apart. When [outcomes] hold no
+/// [sleepOnsetId], there is no such part.
 ///
 /// Refused as [RefusalReason.steadyAmount] when the totals barely vary (see
 /// [InsightGates.minAmountSpread]), and as [RefusalReason.uneven] when
@@ -554,6 +605,8 @@ List<HabitInsight> doseFollows({
 /// ([lateDayOf]). [HabitInsight.step] is 60, so an effect is per hour later.
 /// The day's total amount (over the same uses) is in the model too when it
 /// varies, so a later finish is not credited with what a larger amount does.
+/// For the minutes of sleep, a finding carries the part left at the same
+/// bedtime, as for [doseFollows].
 ///
 /// Refused as [RefusalReason.steadyTiming] when the last use comes at nearly
 /// the same time each day ([InsightGates.minTimingSpreadMinutes]), and as
@@ -606,8 +659,12 @@ HabitInsight _amongDaysOfUse(
     from,
     through,
   );
+  final bool bedtime =
+      sleepMinutesIds.contains(metricId) &&
+      outcomes.metricIds.contains(sleepOnsetId);
   final List<DateTime> days = <DateTime>[];
   final List<double> y = <double>[], x = <double>[], amount = <double>[];
+  final List<double?> onset = <double?>[];
   for (final DateTime day in useDays) {
     if (start == null || end == null) break;
     if (day.isBefore(start) || day.isAfter(end)) continue;
@@ -617,19 +674,93 @@ HabitInsight _amongDaysOfUse(
     y.add(value);
     amount.add(habits.lateDayTotal(id, day));
     x.add(timing ? habits.lastUseMinutes(id, day)!.toDouble() : amount.last);
+    if (bedtime) {
+      onset.add(outcomes.value(sleepOnsetId, addDays(day, lagDays)));
+    }
   }
-  final _Judged judged = _Judged(
+  _Judged judgedOn(List<int> rows, double step) => _Judged(
     id: id,
     metricId: metricId,
     lagDays: lagDays,
     kind: kind,
-    days: days,
-    y: y,
-    x: x,
-    exposed: days.length,
+    days: <DateTime>[for (final int r in rows) days[r]],
+    y: <double>[for (final int r in rows) y[r]],
+    x: <double>[for (final int r in rows) x[r]],
+    exposed: rows.length,
     raw: null,
-    step: timing ? 60 : 1,
+    step: step,
   );
+  final List<int> all = <int>[for (int r = 0; r < days.length; r++) r];
+  final HabitInsight total = _amongDaysJudged(
+    judgedOn(all, timing ? 60 : 1),
+    amount: amount,
+    habitIds: habitIds,
+    habits: habits,
+    gates: gates,
+    pickStep: !timing,
+  );
+  if (!bedtime || total is! HabitFinding) return total;
+  final List<int> usual = _usualOnsets(onset);
+  final HabitInsight held = _amongDaysJudged(
+    judgedOn(usual, total.step),
+    amount: <double>[for (final int r in usual) amount[r]],
+    onset: <double>[for (final int r in usual) onset[r]!],
+    habitIds: habitIds,
+    habits: habits,
+    gates: gates,
+    pickStep: false,
+  );
+  return HabitFinding(
+    habitId: total.habitId,
+    metricId: total.metricId,
+    lagDays: total.lagDays,
+    usableDays: total.usableDays,
+    exposedDays: total.exposedDays,
+    raw: total.raw,
+    kind: total.kind,
+    step: total.step,
+    effect: total.effect,
+    interval: total.interval,
+    standardized: total.standardized,
+    pValue: total.pValue,
+    spread: total.spread,
+    sameBedtime: held,
+  );
+}
+
+// The rows of [onset] that read as a night's bedtime: present, inside the
+// noon-to-noon night it is read in, and within [maxOnsetFromMedianMinutes] of
+// the median of those. One misread or nap held fixed would carry the fit.
+List<int> _usualOnsets(List<double?> onset) {
+  final List<int> read = <int>[
+    for (int r = 0; r < onset.length; r++)
+      if (onset[r] case final double v when v >= 0 && v <= 24 * 60) r,
+  ];
+  if (read.isEmpty) return read;
+  final List<double> sorted = <double>[for (final int r in read) onset[r]!]
+    ..sort();
+  final double median = sorted[sorted.length ~/ 2];
+  return <int>[
+    for (final int r in read)
+      if ((onset[r]! - median).abs() <= maxOnsetFromMedianMinutes) r,
+  ];
+}
+
+// The gates and the model for an amount or a time over [judged]'s days, with
+// [amount] (for a time) and [onset] held fixed when they vary. With
+// [pickStep], an amount's step is chosen from its spread here.
+HabitInsight _amongDaysJudged(
+  _Judged judged, {
+  required List<double> amount,
+  List<double>? onset,
+  required List<String> habitIds,
+  required DailyHabitSeries habits,
+  required InsightGates gates,
+  required bool pickStep,
+}) {
+  final bool timing = judged.kind == InsightKind.lastUse;
+  final List<DateTime> days = judged.days;
+  final List<double> x = judged.x;
   if (days.length < gates.minDays) {
     return judged.refuse(RefusalReason.tooFewDays);
   }
@@ -651,7 +782,12 @@ HabitInsight _amongDaysOfUse(
         sd < gates.minAmountSpread * mean(x)) {
       return judged.refuse(RefusalReason.steadyAmount);
     }
-    judged.step = _doseStep(sd, whole: x.every((v) => v == v.roundToDouble()));
+    if (pickStep) {
+      judged.step = _doseStep(
+        sd,
+        whole: x.every((v) => v == v.roundToDouble()),
+      );
+    }
   }
   final List<int> period = _periods(days, gates.minPeriodDays);
   if (period.last > 0 && _varyingPeriods(x, period) < gates.minMixedPeriods) {
@@ -660,8 +796,13 @@ HabitInsight _amongDaysOfUse(
   return _attribute(
     judged,
     period: period,
-    others: _otherHabits(id, habitIds, habits, days, gates),
-    own: timing && sampleVariance(amount) > 0 ? amount : null,
+    others: _otherHabits(judged.id, habitIds, habits, days, gates),
+    own: <_Own>[
+      if (timing && sampleVariance(amount) > 0)
+        (column: amount, reason: RefusalReason.followsAmount),
+      if (onset != null && sampleVariance(onset) > 0)
+        (column: onset, reason: RefusalReason.followsBedtime),
+    ],
     gates: gates,
   );
 }
@@ -727,14 +868,18 @@ int _varyingPeriods(List<double> x, List<int> period) {
   return seen.values.where((s) => s.length > 1).length;
 }
 
+// A column held fixed beside the habit's own (its amount, or bedtime), and
+// the refusal when the habit's column cannot be told apart from it.
+typedef _Own = ({List<double> column, RefusalReason reason});
+
 // One least-squares model of the outcome on an intercept, the habit's
-// column, the time terms, [own] (another column of this habit's, when given)
-// and the other habits' use, and the habit's coefficient judged.
+// column, the time terms, [own] and the other habits' use, and the habit's
+// coefficient judged.
 HabitInsight _attribute(
   _Judged judged, {
   required List<int> period,
   required Map<String, List<double>> others,
-  List<double>? own,
+  List<_Own> own = const <_Own>[],
   required InsightGates gates,
 }) {
   final List<DateTime> days = judged.days;
@@ -760,14 +905,14 @@ HabitInsight _attribute(
       return byUse != 0 ? byUse : a.compareTo(b);
     });
 
-  List<List<double>> design(List<String> ids, {required bool withOwn}) =>
+  List<List<double>> design(List<String> ids, {required List<_Own> held}) =>
       <List<double>>[
         for (int r = 0; r < days.length; r++)
           <double>[
             1,
             x[r],
             ...time[r],
-            if (withOwn) own![r],
+            for (final _Own o in held) o.column[r],
             for (final String other in ids) others[other]![r],
           ],
       ];
@@ -786,33 +931,36 @@ HabitInsight _attribute(
   // so this is 1 / (1 - R_j^2).
   final double mx = mean(x);
   final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
-  double inflation(List<String> ids, {required bool withOwn}) =>
-      (invert(gram(design(ids, withOwn: withOwn)))?[1][1] ?? double.infinity) *
-      ss;
-  if (inflation(const <String>[], withOwn: false) >
+  double inflation(List<String> ids, {required List<_Own> held}) =>
+      (invert(gram(design(ids, held: held)))?[1][1] ?? double.infinity) * ss;
+  if (inflation(const <String>[], held: const <_Own>[]) >
       gates.maxVarianceInflation) {
     return judged.refuse(RefusalReason.uneven);
   }
-  final bool withOwn =
-      own != null && addsSomething(design(const <String>[], withOwn: true));
-  // The time terms alone passed, so what inflates the column here is [own].
-  if (withOwn &&
-      inflation(const <String>[], withOwn: true) > gates.maxVarianceInflation) {
-    return judged.refuse(RefusalReason.followsAmount);
+  final List<_Own> held = <_Own>[];
+  for (final _Own o in own) {
+    if (!addsSomething(design(const <String>[], held: <_Own>[...held, o]))) {
+      continue;
+    }
+    held.add(o);
+    // What came before passed, so what inflates the column now is [o].
+    if (inflation(const <String>[], held: held) > gates.maxVarianceInflation) {
+      return judged.refuse(o.reason);
+    }
   }
-  final int fixedColumns = time.first.length + (withOwn ? 1 : 0);
+  final int fixedColumns = time.first.length + held.length;
 
   // Covariates join the most used first; one more column than would leave a
   // residual degree of freedom is skipped.
   final List<String> inModel = <String>[];
   for (final String other in covariates) {
     if (inModel.length + fixedColumns + 4 > days.length) break;
-    if (addsSomething(design(<String>[...inModel, other], withOwn: withOwn))) {
+    if (addsSomething(design(<String>[...inModel, other], held: held))) {
       inModel.add(other);
     }
   }
   // The habit whose leaving out frees the column most; the time terms and
-  // [own] alone were checked above, so one of [inModel] is the cause.
+  // [held] alone were checked above, so one of [inModel] is the cause.
   String? partner() {
     String? best;
     double lowest = double.infinity;
@@ -820,7 +968,7 @@ HabitInsight _attribute(
       final double v = inflation(<String>[
         for (final String id in inModel)
           if (id != other) id,
-      ], withOwn: withOwn);
+      ], held: held);
       if (best == null || v < lowest) {
         lowest = v;
         best = other;
@@ -829,7 +977,7 @@ HabitInsight _attribute(
     return best;
   }
 
-  final List<List<double>> rows = design(inModel, withOwn: withOwn);
+  final List<List<double>> rows = design(inModel, held: held);
   if (invert(gram(rows)) == null) {
     return judged.refuse(RefusalReason.entangled, entangledWith: partner());
   }
@@ -851,13 +999,20 @@ HabitInsight _attribute(
       pValue: pValue,
     );
   }
-  // A use comparison has a week of days on each side; an amount or a time
-  // can hang on one extreme day.
-  if (interval.crossesZero ||
-      judged.kind != InsightKind.use &&
-          _withoutMostTelling(rows, y, fit, column, gates.level)) {
+  if (interval.crossesZero) {
     return judged.refuse(
       RefusalReason.withinNoise,
+      effect: effect,
+      interval: interval,
+      pValue: pValue,
+    );
+  }
+  // A use comparison has a week of days on each side; an amount or a time
+  // can hang on one extreme day.
+  if (judged.kind != InsightKind.use &&
+      _withoutMostTelling(rows, y, fit, column, gates.level)) {
+    return judged.refuse(
+      RefusalReason.oneDay,
       effect: effect,
       interval: interval,
       pValue: pValue,

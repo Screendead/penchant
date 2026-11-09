@@ -100,7 +100,8 @@ class InsightsInput {
           // Today's day totals and averages cover only part of it; the night
           // that ended today is whole.
           if (o.date.isBefore(unfinished) ||
-              (metricCopy(o.metricId)?.night ?? false))
+              (metricCopy(o.metricId)?.night ?? false) ||
+              o.metricId == sleepOnsetId)
             DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
       ],
       from: range.start,
@@ -160,10 +161,11 @@ class InsightsReport {
   final List<HabitFinding> findings;
 
   /// One refusal for each habit with no finding of any kind on any outcome,
-  /// the one that says most: too small to matter, then entangled, then possibly chance, then logged
-  /// unevenly, then within the noise, then a steady amount or time or a time
-  /// that follows the amount, then too few days; on a tie, the days-with-and-without comparison's, then the one
-  /// from the most days.
+  /// the one that says most: too small to matter, then entangled, then
+  /// possibly chance, then logged unevenly, then resting on one day, then
+  /// within the noise, then a steady amount or time or a time that follows the
+  /// amount, then too few days; on a tie, the days-with-and-without
+  /// comparison's, then the one from the most days.
   final List<HabitRefusal> refused;
 }
 
@@ -386,11 +388,13 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
     RefusalReason.entangled => 0,
     RefusalReason.chance => 1,
     RefusalReason.uneven => 2,
-    RefusalReason.withinNoise => 3,
+    RefusalReason.oneDay => 3,
+    RefusalReason.withinNoise => 4,
     RefusalReason.steadyAmount ||
     RefusalReason.steadyTiming ||
-    RefusalReason.followsAmount => 4,
-    RefusalReason.tooFewDays => 5,
+    RefusalReason.followsAmount ||
+    RefusalReason.followsBedtime => 5,
+    RefusalReason.tooFewDays => 6,
   };
   return refusals.reduce((a, b) {
     final int byReason = rank(a.reason).compareTo(rank(b.reason));
@@ -502,11 +506,7 @@ String _amount(double value, MetricCopy copy, int decimals, String locale) {
 int _digits(HabitFinding finding, MetricCopy copy) {
   int digits = copy.decimals;
   final double nearest =
-      [
-        finding.interval.low.abs(),
-        finding.interval.high.abs(),
-      ].reduce((a, b) => a < b ? a : b) *
-      copy.scale;
+      min(finding.interval.low.abs(), finding.interval.high.abs()) * copy.scale;
   while (digits < 3 && nearest < 0.5 * pow(10, -digits)) {
     digits++;
   }
@@ -514,9 +514,13 @@ int _digits(HabitFinding finding, MetricCopy copy) {
 }
 
 /// "On nights after Coffee, your deep sleep averages 18 min less."; for an
-/// amount, "Each extra drink of Coffee goes with your deep sleep that night
-/// averaging 6 min less."; for a time, "A last Coffee an hour later goes
-/// with ...". [unit] is the habit's, for an amount.
+/// amount, "On days with one more drink logged for Coffee, your deep sleep
+/// that night averages 6 min less."; for a time, "On days your last use of
+/// Coffee is an hour later, ...". [unit] is the habit's, for an amount. The
+/// habit's name only ever follows "after", "for" or "of", and no verb agrees
+/// with it, so a plural or uncountable name (Gummies, Water) reads as well.
+/// The effect is the whole of it; [bedtimeLine] gives the part left at the
+/// same bedtime.
 String findingSentence(
   HabitFinding finding,
   String habit,
@@ -537,11 +541,11 @@ String findingSentence(
       'On ${copy.night ? 'nights' : 'days'} after $habit, your ${copy.name} '
           'averages $amount $direction.',
     InsightKind.dose =>
-      'Each extra ${_stepWords(finding.step, unit, locale)} of $habit goes '
-          'with your ${copy.name} $then averaging $amount $direction.',
+      'On days with ${_stepWords(finding.step, unit, locale, more: true)} logged for '
+          '$habit, your ${copy.name} $then averages $amount $direction.',
     InsightKind.lastUse =>
-      'A last $habit an hour later goes with your ${copy.name} $then '
-          'averaging $amount $direction.',
+      'On days your last use of $habit is an hour later, your ${copy.name} '
+          '$then averages $amount $direction.',
     InsightKind.hoursAfter =>
       '${_windowWords(finding.window!)} $habit, your ${copy.name}, set '
           'against the hour before, averages $amount $direction than at the '
@@ -550,7 +554,9 @@ String findingSentence(
 }
 
 /// A card's line under its headline: "More per extra drink: REM sleep 4 min
-/// less", "Later last use: time asleep 11 min less per hour".
+/// less", "Later last use: time asleep 11 min less per hour", and on the
+/// minutes of sleep, the part left at the same bedtime after it (see
+/// [bedtimeLine]).
 String findingLine(
   HabitFinding finding,
   String locale, {
@@ -560,13 +566,65 @@ String findingLine(
   final String change =
       '${copy.name} ${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
       '${copy.direction(finding.effect)}';
-  return switch (finding.kind) {
+  final String line = switch (finding.kind) {
     InsightKind.use => 'On ${copy.night ? 'nights' : 'days'} after it: $change',
     InsightKind.dose =>
       'More per extra ${_stepWords(finding.step, unit, locale)}: $change',
     InsightKind.lastUse => 'Later last use: $change per hour',
     InsightKind.hoursAfter => '${_windowWords(finding.window!)} it: $change',
   };
+  final String? part = _bedtimePart(finding, copy, locale);
+  return part == null ? line : '$line, $part';
+}
+
+/// Under an amount's or a time's headline on the minutes of sleep, the whole
+/// effect and then the part of it left at the same bedtime: "11 min less per
+/// hour later, 4 min of it at the same bedtime". Null only when the part was
+/// never looked for ([HabitFinding.sameBedtime] null); a part that could not
+/// be told still gets a line, so a sleep card never reads as if bedtime were
+/// not in question.
+String? bedtimeLine(
+  HabitFinding finding,
+  String locale, {
+  Unit unit = Unit.fallback,
+}) {
+  final MetricCopy copy = metricCopy(finding.metricId)!;
+  final String? part = _bedtimePart(finding, copy, locale);
+  if (part == null) return null;
+  final String per = switch (finding.kind) {
+    InsightKind.lastUse => 'per hour later',
+    _ => 'per extra ${_stepWords(finding.step, unit, locale)}',
+  };
+  return '${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
+      '${copy.direction(finding.effect)} $per, $part';
+}
+
+// "4 min of it at the same bedtime" when the part is clear, on the same side
+// and no larger; "2 min more at the same bedtime" when it is clear otherwise.
+// A part refused before it was fitted (too few nights with a bedtime read,
+// a steady amount or time among them, an uneven span, an entanglement) still
+// says so: its headline is a sleep effect that bedtime may carry.
+String? _bedtimePart(HabitFinding finding, MetricCopy copy, String locale) {
+  switch (finding.sameBedtime) {
+    case final HabitFinding part:
+      final bool within =
+          part.effect.sign == finding.effect.sign &&
+          part.effect.abs() <= finding.effect.abs();
+      return '${_amount(part.effect, copy, _digits(part, copy), locale)} '
+          '${within ? 'of it' : copy.direction(part.effect)} at the same '
+          'bedtime';
+    case HabitRefusal(reason: RefusalReason.followsBedtime):
+      return 'which can’t be told apart from your bedtime';
+    case HabitRefusal(effect: _?):
+      return 'none of it clear at the same bedtime';
+    case HabitRefusal(reason: RefusalReason.tooFewDays):
+      return 'too few nights with a bedtime to tell the part at the same '
+          'bedtime';
+    case HabitRefusal():
+      return 'the part at the same bedtime can’t be told';
+    case null:
+      return null;
+  }
 }
 
 String _windowWords(HourWindow w) => switch ((w.start, w.end)) {
@@ -577,13 +635,15 @@ String _windowWords(HourWindow w) => switch ((w.start, w.end)) {
   _ => '${w.start} to ${w.end} minutes after',
 };
 
-// "drink", "10 minutes"; a count of times reads as uses.
-String _stepWords(double step, Unit unit, String locale) {
+// "drink", "10 minutes"; with [more], "one more drink", "10 more minutes". A
+// count of times reads as uses.
+String _stepWords(double step, Unit unit, String locale, {bool more = false}) {
   final String one = unit == Unit.time ? 'use' : unit.singular;
   final String other = unit == Unit.time ? 'uses' : unit.plural;
-  if (step == 1) return one;
+  final String word = more ? 'more ' : '';
+  if (step == 1) return more ? 'one more $one' : one;
   final String number = NumberFormat.decimalPattern(locale).format(step);
-  return '$number ${pluralWord(step, one: one, other: other)}';
+  return '$number $word${pluralWord(step, one: one, other: other)}';
 }
 
 /// "Range: 7 to 29 min less"; both ends share a sign, so one word serves.
@@ -681,6 +741,10 @@ String _amongUseRefusal(
     'nearly the same each day, so there’s no difference to compare',
   RefusalReason.followsAmount =>
     'later on days with more, so it can’t be told apart from the amount',
+  // A HabitFinding.sameBedtime alone refuses so, and shows as a card line.
+  RefusalReason.followsBedtime =>
+    'moves with when you fall asleep, so it can’t be told apart from '
+        'your bedtime',
   RefusalReason.uneven =>
     'changed with the months, so it can’t be told apart from other changes',
   RefusalReason.entangled => switch (refusal.entangledWith) {
@@ -690,6 +754,8 @@ String _amongUseRefusal(
     null => 'moves with other habits’ days, so they can’t be told apart',
   },
   RefusalReason.withinNoise => 'within the noise, no clear difference',
+  RefusalReason.oneDay =>
+    'rests on one unusual day, so it may not hold on the others',
   RefusalReason.chance => 'could be chance, one of many comparisons',
   RefusalReason.tooSmall =>
     'too small to matter, ${_underFloor(refusal)} across your usual range',
@@ -724,6 +790,12 @@ String _useRefusal(
     'Nearly the same each day, so there’s no difference to compare',
   RefusalReason.followsAmount =>
     'Later on days with more, so it can’t be told apart from the amount',
+  RefusalReason.oneDay =>
+    'Rests on one unusual day, so it may not hold on the others',
+  // Never reached, as in _amongUseRefusal.
+  RefusalReason.followsBedtime =>
+    'Moves with when you fall asleep, so it can’t be told apart from your '
+        'bedtime',
 };
 
 // "under 10 min a night of REM sleep", "under 1,000 a day of step count".
