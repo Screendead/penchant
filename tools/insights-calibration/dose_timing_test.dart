@@ -323,9 +323,9 @@ void main() {
 
   // Core sleep is 0.55 of the minutes in bed (wake at 07:00) plus [direct]
   // per hour later or per unit, plus noise of sd 10 min; Coffee every evening,
-  // its last use between 19:00 and 24:00. Each scenario runs with the night's
-  // sleep onset in the outcomes, and without it (as before it was exported).
-  // [misread] of nights (only those of 4 a day when [heavyOnly], at 4 times
+  // its last use between 19:00 and 24:00, the night's sleep onset in the
+  // outcomes. Each line counts the whole effect's results, then, among its
+  // findings, the part at the same bedtime's. [misread] of nights (only those of 4 a day when [heavyOnly], at 4 times
   // the rate) report onset [misreadAt] minutes off: -1440 is a sleep past
   // noon read from the wrong night, -480 an afternoon nap taken for the night.
   test('bedtime', () {
@@ -339,68 +339,72 @@ void main() {
       bool heavyOnly = false,
       double misreadAt = -1440,
     }) {
-      for (final bool onset in <bool>[true, false]) {
-        final Map<String, int> counts = <String, int>{};
-        double sum = 0;
-        int found = 0;
-        for (int seed = 0; seed < 200; seed++) {
-          final Random random = Random(seed);
-          final List<HabitUse> uses = <HabitUse>[];
-          final List<DailyOutcome> outcomes = <DailyOutcome>[];
-          for (int i = 0; i < 200; i++) {
-            final DateTime day = addDays(january5, i);
-            final int a = varyAmount ? 1 + random.nextInt(4) : 1;
-            final int l = varyAmount
-                ? 20 * 60
-                : 19 * 60 + random.nextInt(5 * 60);
-            uses.addAll(dayOfUse('Coffee', day, a, l));
-            final int b = bed(random, l, a);
-            outcomes.add(
-              DailyOutcome(
-                date: addDays(day, 1),
-                metricId: 'sleepCore',
-                value:
-                    0.55 * (31 * 60 - b) +
-                    direct * (varyAmount ? a : l / 60) +
-                    10 * gaussian(random),
-              ),
-            );
-            final double rate = heavyOnly
-                ? (a == 4 ? 4 * misread : 0)
-                : misread;
-            final bool off = random.nextDouble() < rate;
-            if (onset) {
-              outcomes.add(
-                DailyOutcome(
-                  date: addDays(day, 1),
-                  metricId: sleepOnsetId,
-                  value: b - 720.0 + (off ? misreadAt : 0),
-                ),
-              );
-            }
-          }
-          final HabitInsight r = judge(
-            habits: DailyHabitSeries.fromUses(uses),
-            outcomes: OutcomeSeries.fromOutcomes(outcomes),
-            metricId: 'sleepCore',
-          ).single;
-          final String key = switch (r) {
-            HabitFinding(:final double effect) => () {
-              sum += effect;
-              found++;
-              return 'finding';
-            }(),
-            HabitRefusal(:final RefusalReason reason) => reason.name,
-          };
-          counts[key] = (counts[key] ?? 0) + 1;
+      final Map<String, int> counts = <String, int>{};
+      final Map<String, int> parts = <String, int>{};
+      double sum = 0, partSum = 0;
+      int found = 0, partFound = 0;
+      for (int seed = 0; seed < 200; seed++) {
+        final Random random = Random(seed);
+        final List<HabitUse> uses = <HabitUse>[];
+        final List<DailyOutcome> outcomes = <DailyOutcome>[];
+        for (int i = 0; i < 200; i++) {
+          final DateTime day = addDays(january5, i);
+          final int a = varyAmount ? 1 + random.nextInt(4) : 1;
+          final int l = varyAmount ? 20 * 60 : 19 * 60 + random.nextInt(5 * 60);
+          uses.addAll(dayOfUse('Coffee', day, a, l));
+          final int b = bed(random, l, a);
+          outcomes.add(
+            DailyOutcome(
+              date: addDays(day, 1),
+              metricId: 'sleepCore',
+              value:
+                  0.55 * (31 * 60 - b) +
+                  direct * (varyAmount ? a : l / 60) +
+                  10 * gaussian(random),
+            ),
+          );
+          final double rate = heavyOnly ? (a == 4 ? 4 * misread : 0) : misread;
+          final bool off = random.nextDouble() < rate;
+          outcomes.add(
+            DailyOutcome(
+              date: addDays(day, 1),
+              metricId: sleepOnsetId,
+              value: b - 720.0 + (off ? misreadAt : 0),
+            ),
+          );
         }
-        final String mean = found == 0
-            ? ''
-            : ' mean effect ${(sum / found).toStringAsFixed(1)}';
-        stdout.writeln(
-          '$name, ${onset ? 'onset held' : 'no onset'} (n=200): $counts$mean',
-        );
+        final HabitInsight r = judge(
+          habits: DailyHabitSeries.fromUses(uses),
+          outcomes: OutcomeSeries.fromOutcomes(outcomes),
+          metricId: 'sleepCore',
+        ).single;
+        final String key = switch (r) {
+          HabitFinding(:final double effect) => () {
+            sum += effect;
+            found++;
+            return 'finding';
+          }(),
+          HabitRefusal(:final RefusalReason reason) => reason.name,
+        };
+        counts[key] = (counts[key] ?? 0) + 1;
+        if (r is! HabitFinding) continue;
+        final String part = switch (r.sameBedtime) {
+          HabitFinding(:final double effect) => () {
+            partSum += effect;
+            partFound++;
+            return 'finding';
+          }(),
+          HabitRefusal(:final RefusalReason reason) => reason.name,
+          null => 'none',
+        };
+        parts[part] = (parts[part] ?? 0) + 1;
       }
+      String mean(double total, int n) =>
+          n == 0 ? '' : ' mean ${(total / n).toStringAsFixed(1)}';
+      stdout.writeln(
+        '$name (n=200): whole $counts${mean(sum, found)}; '
+        'at the same bedtime $parts${mean(partSum, partFound)}',
+      );
     }
 
     int halfway(Random r, int l, int _) =>
