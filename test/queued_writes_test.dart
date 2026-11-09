@@ -171,9 +171,16 @@ void main() {
       },
     );
 
-    test('a journal it cannot parse reads as empty', () async {
+    test('entries it cannot parse are skipped', () async {
       final QueuedWriteJournal journal = QueuedWriteJournal(
         MemoryJournalStore('[{"uid": 3}, "x"]'),
+      );
+      expect(await journal.claimEarlier(ownerID), isEmpty);
+    });
+
+    test('a journal that is not JSON reads as empty', () async {
+      final QueuedWriteJournal journal = QueuedWriteJournal(
+        MemoryJournalStore('not json'),
       );
       expect(await journal.claimEarlier(ownerID), isEmpty);
     });

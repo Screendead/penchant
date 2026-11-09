@@ -142,25 +142,32 @@ void main() {
       expect(finishes, isEmpty);
     });
 
-    testWidgets('a wrong password reads the same as an unknown address and '
-        "never shows Firebase's message", (tester) async {
-      final FakeAccount account = FakeAccount()
-        ..respond = (_) async => throw _authError('user-not-found');
-      await _pump(tester, account, const Authenticate());
-      await _enter(tester, 'Email', _email);
-      await _enter(tester, 'Password', 'wrong');
-      await _tapText(tester, 'Sign in');
+    for (final String code in <String>[
+      'user-not-found',
+      'wrong-password',
+      'invalid-credential',
+      'invalid-login-credentials',
+    ]) {
+      testWidgets('$code reads the same as any wrong sign-in and never shows '
+          "Firebase's message", (tester) async {
+        final FakeAccount account = FakeAccount()
+          ..respond = (_) async => throw _authError(code);
+        await _pump(tester, account, const Authenticate());
+        await _enter(tester, 'Email', _email);
+        await _enter(tester, 'Password', 'wrong');
+        await _tapText(tester, 'Sign in');
 
-      expect(account.calls.single.fields, <String, Object?>{
-        'email': _email,
-        'password': 'wrong',
+        expect(account.calls.single.fields, <String, Object?>{
+          'email': _email,
+          'password': 'wrong',
+        });
+        expect(
+          find.text('That email and password do not match an account.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('no user record'), findsNothing);
       });
-      expect(
-        find.text('That email and password do not match an account.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('no user record'), findsNothing);
-    });
+    }
 
     testWidgets('forgot password sends a reset link to the address typed '
         'and says the same whether or not it has an account', (tester) async {

@@ -469,7 +469,13 @@ void main() {
         RecoveryKey.groupsOf(_formatted).join(' ').toLowerCase(),
       );
       expect(actions.unlocks.single, _key);
-      expect(find.byType(InputDecorator), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(RecoveryKeyEntryPage.field))
+            .decoration!
+            .errorText,
+        isNull,
+      );
     });
 
     testWidgets('an unlock that throws leaves Unlock usable', (tester) async {
