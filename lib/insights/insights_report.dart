@@ -155,11 +155,12 @@ class InsightsReport {
   /// How many hours-after comparisons ran: none without heart rate readings.
   final int hoursAfterChecks;
 
-  /// Strongest first, by [HabitFinding.standardized]'s size.
+  /// Strongest first, by [HabitFinding.standardized]'s size; only those at or
+  /// over their outcome's [metricFloor].
   final List<HabitFinding> findings;
 
   /// One refusal for each habit with no finding of any kind on any outcome,
-  /// the one that says most: entangled, then possibly chance, then logged
+  /// the one that says most: too small to matter, then entangled, then possibly chance, then logged
   /// unevenly, then within the noise, then a steady amount or time or a time
   /// that follows the amount, then too few days; on a tie, the days-with-and-without comparison's, then the one
   /// from the most days.
@@ -226,6 +227,8 @@ InsightsReport computeInsights(InsightsInput input) {
       if (!input.archived.contains(result.habitId)) result,
   ])) {
     switch (insight) {
+      case HabitFinding() when practicalSize(insight) < 1:
+        refusals.putIfAbsent(insight.habitId, () => []).add(_tooSmall(insight));
       case HabitFinding():
         findings.add(insight);
       case HabitRefusal():
@@ -248,8 +251,138 @@ InsightsReport computeInsights(InsightsInput input) {
   );
 }
 
+// Run after the many-comparisons correction, so it never changes which
+// findings count as discoveries; it only hides those too small to matter.
+HabitRefusal _tooSmall(HabitFinding f) => HabitRefusal(
+  habitId: f.habitId,
+  metricId: f.metricId,
+  lagDays: f.lagDays,
+  usableDays: f.usableDays,
+  exposedDays: f.exposedDays,
+  raw: f.raw,
+  kind: f.kind,
+  step: f.step,
+  window: f.window,
+  reason: RefusalReason.tooSmall,
+  effect: f.effect,
+  interval: f.interval,
+  pValue: f.pValue,
+);
+
+/// The family a card groups its outcomes under.
+enum MetricFamily {
+  sleep('sleep'),
+  heart('heart'),
+  breathing('breathing'),
+  temperature('temperature'),
+  activity('activity');
+
+  const MetricFamily(this.label);
+
+  final String label;
+}
+
+/// The smallest difference in each outcome worth a card, in its stored units,
+/// and its family. Claude's defaults (2026-11-09), pending Jack's review.
+const Map<String, ({double floor, MetricFamily family})> metricFloors =
+    <String, ({double floor, MetricFamily family})>{
+      // A sixth of an hour: the least change in a night's sleep anyone would
+      // plan around. The same for every stage and for time in bed or awake.
+      'sleepInBed': (floor: 10, family: MetricFamily.sleep),
+      'sleepAsleep': (floor: 10, family: MetricFamily.sleep),
+      'sleepAwake': (floor: 10, family: MetricFamily.sleep),
+      'sleepCore': (floor: 10, family: MetricFamily.sleep),
+      'sleepDeep': (floor: 10, family: MetricFamily.sleep),
+      'sleepREM': (floor: 10, family: MetricFamily.sleep),
+      // About a tenth of a typical Watch SDNN of 30 to 60 ms.
+      'heartRateVariabilitySDNN': (floor: 3, family: MetricFamily.heart),
+      // Health shows resting and sleeping heart rate in whole bpm.
+      'restingHeartRate': (floor: 1, family: MetricFamily.heart),
+      'sleepingHeartRate': (floor: 1, family: MetricFamily.heart),
+      // The hours-after sample measure: a minute's heart rate moves a few bpm
+      // with posture alone, so twice the resting floor.
+      'heartRate': (floor: 2, family: MetricFamily.heart),
+      // About 2% of the 12 to 20 breaths a minute of an adult asleep.
+      'respiratoryRate': (floor: 0.3, family: MetricFamily.breathing),
+      // Stored 0 to 1; a Watch reads blood oxygen in whole percentage points.
+      'oxygenSaturation': (floor: 0.01, family: MetricFamily.breathing),
+      // A tenth of a degree, against nightly deviations that run to tenths.
+      'appleSleepingWristTemperature': (
+        floor: 0.1,
+        family: MetricFamily.temperature,
+      ),
+      // About ten minutes' walk.
+      'stepCount': (floor: 1000, family: MetricFamily.activity),
+      // About ten minutes' brisk walk.
+      'activeEnergyBurned': (floor: 50, family: MetricFamily.activity),
+    };
+
+/// [metricId]'s floor; infinite for an outcome with none, so nothing shows.
+double metricFloor(String metricId) =>
+    metricFloors[metricId]?.floor ?? double.infinity;
+
+/// The difference [finding] stands for: an amount's or a time's effect across
+/// the habit's interquartile range of days, a use's as it is.
+double typicalEffect(HabitFinding finding) => switch (finding.spread) {
+  final double spread => finding.effect / finding.step * spread,
+  null => finding.effect,
+};
+
+/// [typicalEffect]'s size in [metricFloor]s: under 1 is too small to show.
+double practicalSize(HabitFinding finding) =>
+    typicalEffect(finding).abs() / metricFloor(finding.metricId);
+
+/// One habit's findings in one [MetricFamily]: the largest by
+/// [practicalSize] leads, the rest follow in the same order.
+class InsightCard {
+  const InsightCard({
+    required this.family,
+    required this.headline,
+    this.others = const <HabitFinding>[],
+  });
+
+  final MetricFamily family;
+  final HabitFinding headline;
+  final List<HabitFinding> others;
+
+  String get habitId => headline.habitId;
+}
+
+/// [findings] as one card per habit and family, largest headline first.
+List<InsightCard> insightCards(List<HabitFinding> findings) {
+  final Map<(String, MetricFamily), List<HabitFinding>> groups =
+      <(String, MetricFamily), List<HabitFinding>>{};
+  for (final HabitFinding f in findings) {
+    final MetricFamily? family = metricFloors[f.metricId]?.family;
+    if (family == null) continue;
+    groups.putIfAbsent((f.habitId, family), () => []).add(f);
+  }
+  final List<InsightCard> cards = <InsightCard>[
+    for (final MapEntry<(String, MetricFamily), List<HabitFinding>> group
+        in groups.entries)
+      () {
+        final List<HabitFinding> sorted = group.value.toList()
+          ..sort((a, b) => practicalSize(b).compareTo(practicalSize(a)));
+        return InsightCard(
+          family: group.key.$2,
+          headline: sorted.first,
+          others: sorted.sublist(1),
+        );
+      }(),
+  ];
+  return cards..sort((a, b) {
+    final int bySize = practicalSize(
+      b.headline,
+    ).compareTo(practicalSize(a.headline));
+    if (bySize != 0) return bySize;
+    final int byHabit = a.habitId.compareTo(b.habitId);
+    return byHabit != 0 ? byHabit : a.family.index.compareTo(b.family.index);
+  });
+}
+
 HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
   int rank(RefusalReason reason) => switch (reason) {
+    RefusalReason.tooSmall => -1,
     RefusalReason.entangled => 0,
     RefusalReason.chance => 1,
     RefusalReason.uneven => 2,
@@ -416,6 +549,26 @@ String findingSentence(
   };
 }
 
+/// A card's line under its headline: "More per extra drink: REM sleep 4 min
+/// less", "Later last use: time asleep 11 min less per hour".
+String findingLine(
+  HabitFinding finding,
+  String locale, {
+  Unit unit = Unit.fallback,
+}) {
+  final MetricCopy copy = metricCopy(finding.metricId)!;
+  final String change =
+      '${copy.name} ${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
+      '${copy.direction(finding.effect)}';
+  return switch (finding.kind) {
+    InsightKind.use => 'On ${copy.night ? 'nights' : 'days'} after it: $change',
+    InsightKind.dose =>
+      'More per extra ${_stepWords(finding.step, unit, locale)}: $change',
+    InsightKind.lastUse => 'Later last use: $change per hour',
+    InsightKind.hoursAfter => '${_windowWords(finding.window!)} it: $change',
+  };
+}
+
 String _windowWords(HourWindow w) => switch ((w.start, w.end)) {
   (0, 30) => 'In the half hour after',
   (30, 60) => 'Half an hour to an hour after',
@@ -510,6 +663,7 @@ String _hoursAfterRefusal(HabitRefusal refusal) {
             'compare with',
     },
     RefusalReason.chance => 'could be chance, one of many comparisons',
+    RefusalReason.tooSmall => 'too small to matter, ${_underFloor(refusal)}',
     _ => 'within the noise, no clear difference',
   };
 }
@@ -537,6 +691,8 @@ String _amongUseRefusal(
   },
   RefusalReason.withinNoise => 'within the noise, no clear difference',
   RefusalReason.chance => 'could be chance, one of many comparisons',
+  RefusalReason.tooSmall =>
+    'too small to matter, ${_underFloor(refusal)} across your usual range',
 };
 
 String _useRefusal(
@@ -562,9 +718,25 @@ String _useRefusal(
   },
   RefusalReason.withinNoise => 'Within the noise: no clear difference',
   RefusalReason.chance => 'Could be chance: one of many comparisons',
+  RefusalReason.tooSmall => 'Too small to matter: ${_underFloor(refusal)}',
   // Set only on an amount or a time.
   RefusalReason.steadyAmount || RefusalReason.steadyTiming =>
     'Nearly the same each day, so there’s no difference to compare',
   RefusalReason.followsAmount =>
     'Later on days with more, so it can’t be told apart from the amount',
 };
+
+// "under 10 min a night of REM sleep", "under 1,000 a day of step count".
+String _underFloor(HabitRefusal refusal) {
+  final MetricCopy copy = metricCopy(refusal.metricId)!;
+  final String floor = NumberFormat.decimalPattern(
+    'en',
+  ).format(metricFloor(refusal.metricId) * copy.scale);
+  final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
+  final String per = switch (metricFloors[refusal.metricId]?.family) {
+    MetricFamily.sleep => ' a night',
+    MetricFamily.activity => ' a day',
+    _ => '',
+  };
+  return 'under $floor$unit$per of ${copy.name}';
+}

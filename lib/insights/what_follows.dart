@@ -165,6 +165,10 @@ enum RefusalReason {
   /// among every comparison in the report. Set by the report, never by
   /// [whatFollows].
   chance,
+
+  /// Passed every other check, but the difference is under the outcome's
+  /// smallest one worth showing. Set by the report, after [chance].
+  tooSmall,
 }
 
 sealed class HabitInsight {
@@ -218,6 +222,7 @@ class HabitFinding extends HabitInsight {
     required this.interval,
     required this.standardized,
     required this.pValue,
+    this.spread,
   });
 
   /// The outcome's difference after a day with the habit, or per [step] more
@@ -234,6 +239,12 @@ class HabitFinding extends HabitInsight {
 
   /// Two-sided, for [effect] being zero.
   final double pValue;
+
+  /// For [InsightKind.dose] and [InsightKind.lastUse]: the interquartile
+  /// range of the habit's column over the usable days, in its units (the
+  /// amount, or minutes), so [effect] / [step] × [spread] is the difference
+  /// across a typical spread of days. Null for the other kinds.
+  final double? spread;
 }
 
 class HabitRefusal extends HabitInsight {
@@ -869,6 +880,7 @@ HabitInsight _attribute(
     interval: interval,
     standardized: sd == 0 ? 0 : perDeviation / sd,
     pValue: pValue,
+    spread: judged.kind == InsightKind.use ? null : interquartileRange(x),
   );
 }
 

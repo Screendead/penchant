@@ -40,8 +40,9 @@ says "can't tell coffee and alcohol apart yet" instead of a number. Sleep is ali
 1. at least 21 usable days, with at least 7 exposed and 7 unexposed days for that vice;
 2. the p-value, computed with an effective sample size corrected for autocorrelation, survives Benjamini–Hochberg
    false-discovery control at q = 0.1 across every vice × outcome × lag tested that week;
-3. the effect clears a practical size: at least 0.3 of the user's own day-to-day spread, or 15 minutes of sleep, or
-   3 ms of HRV;
+3. the effect clears a practical size (built: a floor per outcome, `metricFloors` in
+   `lib/insights/insights_report.dart`, such as 10 minutes of sleep or 3 ms of HRV; an amount or a time judged across
+   the habit's interquartile range of days);
 4. a 7-day moving-block bootstrap interval excludes zero.
 
 Each card shows the effect with its interval and the number of days behind it, uses "goes with", never "causes", and

@@ -11,6 +11,21 @@ double sampleVariance(List<double> values) {
       (values.length - 1);
 }
 
+// Linear interpolation between order statistics (R's type 7); 0 for fewer
+// than two values.
+double interquartileRange(List<double> values) {
+  if (values.length < 2) return 0;
+  final List<double> sorted = values.toList()..sort();
+  double at(double q) {
+    final double h = (sorted.length - 1) * q;
+    final int lo = h.floor();
+    final int hi = min(lo + 1, sorted.length - 1);
+    return sorted[lo] + (h - lo) * (sorted[hi] - sorted[lo]);
+  }
+
+  return at(0.75) - at(0.25);
+}
+
 class Interval {
   const Interval(this.low, this.high);
 

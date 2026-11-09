@@ -105,7 +105,14 @@ void main() {
       );
       final int found = corrected.length;
       if (seed < 20 || found > 0) {
-        expect(pairs(computeInsights(input).findings), corrected);
+        expect(
+          pairs(computeInsights(input).findings),
+          pairs(
+            controlFalseDiscoveries(
+              raw,
+            ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
+          ),
+        );
       }
       findings += found;
       if (found > 0) reports++;
@@ -209,7 +216,7 @@ void main() {
           controlFalseDiscoveries(<HabitInsight>[
             for (final HabitInsight r in raw)
               if (!archived.contains(r.habitId)) r,
-          ]).whereType<HabitFinding>(),
+          ]).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
         );
         final InsightsReport report = computeInsights(
           InsightsInput(
