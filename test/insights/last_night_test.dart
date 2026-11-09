@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,7 +41,7 @@ void main() {
         expect(c.usual, 52);
         expect(c.low, 51);
         expect(c.high, 53);
-        expect(c.side(1), NightSide.above);
+        expect(c.side, NightSide.above);
       },
     );
 
@@ -63,20 +65,36 @@ void main() {
       );
     });
 
-    test('a value outside the quartiles but within half a step is usual', () {
+    test('a value outside the quartiles but shown as the usual is usual', () {
       const NightCompare c = NightCompare(
         value: 54.4,
         usual: 54,
         low: 54,
         high: 54.2,
       );
-      expect(c.side(1), NightSide.usual);
+      expect(c.side, NightSide.usual);
       expect(
-        const NightCompare(value: 52, usual: 54, low: 53, high: 55).side(1),
+        const NightCompare(value: 52, usual: 54, low: 53, high: 55).side,
         NightSide.below,
       );
       expect(
-        const NightCompare(value: 53.5, usual: 54, low: 53, high: 55).side(1),
+        const NightCompare(value: 53.5, usual: 54, low: 53, high: 55).side,
+        NightSide.usual,
+      );
+    });
+
+    test('the difference is between the whole numbers shown', () {
+      const NightCompare c = NightCompare(
+        value: 56.6,
+        usual: 54.4,
+        low: 53,
+        high: 55,
+      );
+      expect((c.shownValue, c.shownUsual, c.shownBy), (57, 54, 3));
+      expect(c.side, NightSide.above);
+      // Shown at the range's edge, so inside it.
+      expect(
+        const NightCompare(value: 44.6, usual: 48, low: 45, high: 51).side,
         NightSide.usual,
       );
     });
@@ -184,11 +202,11 @@ void main() {
         () => c.read(lastNightProvider.future),
       ))!;
       expect(night.sleepingHeartRate!.value, 58);
-      expect(night.sleepingHeartRate!.side(1), NightSide.above);
-      expect(night.asleep!.side(1), NightSide.usual);
+      expect(night.sleepingHeartRate!.side, NightSide.above);
+      expect(night.asleep!.side, NightSide.usual);
       expect(night.heartRateVariability!.value, 30);
       expect(night.heartRateVariability!.usual, 49);
-      expect(night.heartRateVariability!.side(1), NightSide.below);
+      expect(night.heartRateVariability!.side, NightSide.below);
       expect(health.reads, 2);
       sub.close();
     });
@@ -208,7 +226,7 @@ void main() {
       );
       final LastNight night = (await c.read(lastNightProvider.future))!;
       expect(night.sleepingHeartRate, isNull);
-      expect(night.asleep!.side(1), NightSide.below);
+      expect(night.asleep!.side, NightSide.below);
       sub.close();
     });
 
@@ -229,6 +247,56 @@ void main() {
       expect(c.read(lastNightProvider).hasError, isFalse);
       sub.close();
     });
+
+    Future<void> resume() async {
+      final TestWidgetsFlutterBinding binding =
+          TestWidgetsFlutterBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    test('without last night\'s heart rate, reads again on resume', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        healthConnectedKey: true,
+      });
+      final FakeHealthSource health = FakeHealthSource(
+        read: HealthValues(nights(HealthMetric.sleepAsleep.id, 400, 430)),
+      );
+      final ProviderContainer c = container(health);
+      final ProviderSubscription<AsyncValue<LastNight?>> sub = c.listen(
+        lastNightProvider,
+        (_, _) {},
+      );
+      expect((await c.read(lastNightProvider.future))!.asleep, isNotNull);
+      final int reads = health.reads;
+
+      await resume();
+      await c.read(lastNightProvider.future);
+      expect(health.reads, reads * 2);
+      sub.close();
+    });
+
+    test('with it, a resume reads nothing', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        healthConnectedKey: true,
+      });
+      final FakeHealthSource health = FakeHealthSource(
+        read: HealthValues(nights(HealthMetric.sleepingHeartRate.id, 58, 54)),
+      );
+      final ProviderContainer c = container(health);
+      final ProviderSubscription<AsyncValue<LastNight?>> sub = c.listen(
+        lastNightProvider,
+        (_, _) {},
+      );
+      await c.read(lastNightProvider.future);
+      final int reads = health.reads;
+
+      await resume();
+      await c.read(lastNightProvider.future);
+      expect(health.reads, reads);
+      sub.close();
+    });
   });
 
   group('morningProvider', () {
@@ -246,6 +314,21 @@ void main() {
       );
       expect(morningAt(_today.add(const Duration(hours: 12))), isFalse);
       expect(morningAt(_today.add(const Duration(hours: 23))), isFalse);
+    });
+
+    test('moves at noon and at midnight', () {
+      fakeAsync((FakeAsync async) {
+        final ProviderContainer c = ProviderContainer();
+        expect(c.read(morningProvider), isTrue);
+        async.elapse(const Duration(hours: 6));
+        expect(c.read(morningProvider), isFalse);
+        async.elapse(const Duration(hours: 11, minutes: 59));
+        expect(c.read(morningProvider), isFalse);
+        async.elapse(const Duration(minutes: 1));
+        expect(c.read(morningProvider), isTrue);
+        c.dispose();
+        expect(async.pendingTimers, isEmpty);
+      }, initialTime: _today.add(const Duration(hours: 6)));
     });
   });
 }

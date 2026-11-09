@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -855,6 +857,141 @@ void main() {
     expect(find.text('usual 54 · in your usual range'), findsOneWidget);
     expect(find.text('HRV'), findsNothing);
     expect(find.text('Nothing logged yesterday'), findsOneWidget);
+  });
+
+  group('last night waits for no engine', () {
+    const LastNight night = LastNight(
+      sleepingHeartRate: NightCompare(value: 57, usual: 54, low: 53, high: 55),
+    );
+
+    testWidgets('it leads the page while the engine runs', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final Completer<InsightsReport> never = Completer<InsightsReport>();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: insightsOverrides(
+            health: FakeHealthSource(
+              read: HealthValues(insightsJournal().health),
+            ),
+            runner: (_) => never.future,
+            activities: const AsyncData<List<ViceActivity>>(<ViceActivity>[]),
+            lastNight: night,
+          ),
+          child: MaterialApp(
+            theme: appTheme(Brightness.light),
+            home: const InsightsPage(),
+          ),
+        ),
+      );
+      for (int i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+
+      expect(find.text(InsightsPage.loadingLabel), findsOneWidget);
+      expect(find.text(InsightsPage.lastNightHeading), findsOneWidget);
+      expect(find.text('usual 54 · 3 above'), findsOneWidget);
+      expect(find.text('Nothing logged yesterday'), findsOneWidget);
+    });
+
+    testWidgets('and when the engine fails', (WidgetTester tester) async {
+      _connected();
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          runner: (_) async => throw StateError('engine'),
+          lastNight: night,
+        ),
+      );
+
+      expect(find.text('Insights couldn’t be worked out'), findsOneWidget);
+      expect(find.text(InsightsPage.lastNightHeading), findsOneWidget);
+      expect(find.text('usual 54 · 3 above'), findsOneWidget);
+    });
+  });
+
+  group('last night notes', () {
+    test('agree with the whole numbers shown', () {
+      expect(
+        lastNightHeartNote(
+          const NightCompare(value: 56.6, usual: 54.4, low: 53, high: 55),
+        ),
+        'usual 54 · 3 above',
+      );
+      expect(
+        lastNightSleepNote(
+          const NightCompare(value: 409.6, usual: 435.4, low: 420, high: 450),
+        ),
+        'usual 7 h 15 m · 25 min under',
+      );
+      expect(
+        lastNightHrvNote(
+          const NightCompare(value: 44.4, usual: 48, low: 45, high: 51),
+        ),
+        'usual range 45–51 · below',
+      );
+    });
+
+    test('a range whose ends round to one number is one number', () {
+      expect(
+        lastNightHrvNote(
+          const NightCompare(value: 44.6, usual: 45.3, low: 45.2, high: 45.4),
+        ),
+        'usual 45 · in your usual range',
+      );
+    });
+
+    test('the check as text, one row a line', () {
+      const LastNight night = LastNight(
+        sleepingHeartRate: NightCompare(
+          value: 57,
+          usual: 54,
+          low: 53,
+          high: 55,
+        ),
+        heartRateVariability: NightCompare(
+          value: 41,
+          usual: 48,
+          low: 45,
+          high: 51,
+        ),
+        asleep: NightCompare(value: 410, usual: 435, low: 420, high: 450),
+      );
+      final List<String> lines = lastNightText(night, const <YesterdayLine>[
+        (mark: null, text: 'Yesterday: Wine 3 drinks, last at 22:05'),
+      ]);
+      expect(lines, <String>[
+        'Sleeping heart rate: 57 bpm, usual 54 · 3 above',
+        'HRV: 41 ms, usual range 45–51 · below',
+        'Sleep: 6 h 50 m, usual 7 h 15 m · 25 min under',
+        'Yesterday: Wine 3 drinks, last at 22:05',
+      ]);
+      expect(lastNightText(night, null), hasLength(3));
+      expect(
+        insightsText(
+          cards: const <InsightCard>[],
+          refused: const <HabitRefusal>[],
+          firstDay: null,
+          nameOf: (String id) => id,
+          locale: 'en',
+          lastNight: lines,
+          emptyTitle: InsightsPage.earlyTitle,
+          emptyBody: InsightsPage.earlyBody(9, 21),
+        ),
+        '${InsightsPage.title}\n\n'
+        '${InsightsPage.lastNightHeading}\n${lines.join('\n')}\n\n'
+        '${InsightsPage.costsHeading}\n'
+        '${InsightsPage.earlyTitle}: ${InsightsPage.earlyBody(9, 21)}\n\n'
+        '${InsightsPage.foot}\n',
+      );
+    });
   });
 
   group('copy', () {
