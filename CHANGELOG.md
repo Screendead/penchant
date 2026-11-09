@@ -81,6 +81,8 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Insights says nothing about an archived habit: no finding and no "Not enough to say" row, on the page or in Copy as
+  text. Its entries still count, so a habit you had on the same days is not credited with what it did.
 - Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,
   the Health card says "Allow new Health data", and a tap shows the Health sheet for the new types only. The card also
   says where to change Health access later (Settings > Privacy & Security > Health > Penchant).
