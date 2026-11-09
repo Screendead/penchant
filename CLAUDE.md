@@ -71,7 +71,7 @@ End to end on the Firebase emulators (Auth + Firestore, `demo-tracker`; needs th
 tools/e2e.sh                      # integration_test/all_test.dart (every file, one build) on the first available "iPhone 18 Pro" simulator; exits with the test status
 tools/e2e.sh integration_test/smoke_test.dart
 E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pro" exists; never let flutter pick (a physical iPhone may be attached)
-E2E_DEVICE=macos tools/e2e.sh     # integration_test/ as a macOS app; never on this Mac (Hard rules)
+E2E_DEVICE=macos tools/e2e.sh     # all_test.dart as a macOS app; never on this Mac (Hard rules)
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
 tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each screenshot(tester, name) call; needs a simulator
 ```
@@ -81,7 +81,8 @@ start if an emulator port (8080, 9099, 9150, 4000, 4400, 4500) is taken, and sta
 from `tools/emulator-env.sh`. One agent at a time runs `tools/e2e.sh`, the simulator or those ports; a parallel agent
 takes other ports (e.g. Firestore 8180, hub 4410, logging 4510, UI off) from a `firebase.json` outside the repo, like
 the rules tests' `--config`. Flutter's macOS runner cannot relaunch the app for a second file in one `flutter test`,
-so on macOS `e2e.sh` hands the targets to `tools/e2e-macos-each-file.sh`: each file alone in one emulator session,
+so on macOS `e2e.sh` runs one target (by default `all_test.dart`, one build for every file) directly and hands
+several named files to `tools/e2e-macos-each-file.sh`: each file alone in one emulator session, a build apiece,
 PASS or FAIL per file, failing if any failed. Every test file starts with `ensureE2EBinding()`
 (`integration_test/support.dart`), not the stock binding: while macOS reports the app hidden (window covered or on
 another Space) the framework schedules no frames and every pump would hang, so it forces them.
