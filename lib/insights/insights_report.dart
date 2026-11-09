@@ -59,7 +59,8 @@ class InsightsReport {
   final List<HabitFinding> findings;
 
   /// One refusal for each habit with no finding on any outcome, the one that
-  /// says most: entangled, then within the noise, then too few days.
+  /// says most: entangled, then possibly chance, then within the noise, then
+  /// too few days.
   final List<HabitRefusal> refused;
 }
 
@@ -73,22 +74,25 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<HabitFinding> findings = <HabitFinding>[];
   final Map<String, List<HabitRefusal>> refusals =
       <String, List<HabitRefusal>>{};
-  for (final String metricId in outcomes.metricIds) {
-    if (metricCopy(metricId) == null) continue;
-    for (final HabitInsight insight in whatFollows(
-      habits: habits,
-      outcomes: outcomes,
-      metricId: metricId,
-      lagDays: insightsLagDays,
-      from: input.from,
-      through: input.through,
-    )) {
-      switch (insight) {
-        case HabitFinding():
-          findings.add(insight);
-        case HabitRefusal():
-          refusals.putIfAbsent(insight.habitId, () => []).add(insight);
-      }
+  // The family for false-discovery control is the whole page: every habit
+  // against every outcome, not one outcome at a time.
+  for (final HabitInsight insight in controlFalseDiscoveries(<HabitInsight>[
+    for (final String metricId in outcomes.metricIds)
+      if (metricCopy(metricId) != null)
+        ...whatFollows(
+          habits: habits,
+          outcomes: outcomes,
+          metricId: metricId,
+          lagDays: insightsLagDays,
+          from: input.from,
+          through: input.through,
+        ),
+  ])) {
+    switch (insight) {
+      case HabitFinding():
+        findings.add(insight);
+      case HabitRefusal():
+        refusals.putIfAbsent(insight.habitId, () => []).add(insight);
     }
   }
   findings.sort((a, b) {
@@ -109,8 +113,9 @@ InsightsReport computeInsights(InsightsInput input) {
 HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
   int rank(RefusalReason reason) => switch (reason) {
     RefusalReason.entangled => 0,
-    RefusalReason.withinNoise => 1,
-    RefusalReason.tooFewDays => 2,
+    RefusalReason.chance => 1,
+    RefusalReason.withinNoise => 2,
+    RefusalReason.tooFewDays => 3,
   };
   return refusals.reduce((a, b) {
     final int byReason = rank(a.reason).compareTo(rank(b.reason));
@@ -278,4 +283,5 @@ String refusalReason(
     null => 'Used together with other habits, so they can’t be told apart',
   },
   RefusalReason.withinNoise => 'Within the noise: no clear difference',
+  RefusalReason.chance => 'Could be chance: one of many comparisons',
 };

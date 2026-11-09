@@ -105,6 +105,30 @@ double studentTCdf(double t, double degreesOfFreedom) {
   return t >= 0 ? 1 - tail : tail;
 }
 
+// P(|T| >= |t|), from the incomplete beta directly so that small values keep
+// their digits.
+double studentTTwoSided(double t, double degreesOfFreedom) =>
+    _regularizedIncompleteBeta(
+      degreesOfFreedom / 2,
+      0.5,
+      degreesOfFreedom / (degreesOfFreedom + t * t),
+    );
+
+/// Which of [pValues] Benjamini-Hochberg keeps at false-discovery rate [q]:
+/// with the values sorted, every one at or below the largest p(k) <= k q / m.
+List<bool> benjaminiHochberg(List<double> pValues, double q) {
+  final int m = pValues.length;
+  final List<double> sorted = pValues.toList()..sort();
+  double? cutoff;
+  for (int k = m; k >= 1; k--) {
+    if (sorted[k - 1] <= k * q / m) {
+      cutoff = sorted[k - 1];
+      break;
+    }
+  }
+  return <bool>[for (final double p in pValues) cutoff != null && p <= cutoff];
+}
+
 // The t value below which a fraction [p] of the distribution lies, for p in
 // [0.5, 1), found by bisection on the CDF.
 double studentTQuantile(double p, double degreesOfFreedom) {
@@ -198,6 +222,13 @@ class LinearFit {
         studentTQuantile(1 - (1 - level) / 2, degreesOfFreedom.toDouble()) *
         standardError(j);
     return Interval(coefficients[j] - half, coefficients[j] + half);
+  }
+
+  /// Two-sided, for the hypothesis that coefficient [j] is zero.
+  double pValue(int j) {
+    final double se = standardError(j);
+    if (se == 0) return coefficients[j] == 0 ? 1 : 0;
+    return studentTTwoSided(coefficients[j] / se, degreesOfFreedom.toDouble());
   }
 }
 

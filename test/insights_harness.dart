@@ -112,11 +112,12 @@ List<Override> insightsOverrides({
   AsyncValue<List<ViceActivity>>? activities,
   AsyncValue<List<Vice>>? vices,
   void Function()? onJournalOpened,
+  InsightsRunner? runner,
 }) => <Override>[
   todayProvider.overrideWith(() => FixedToday(insightsToday)),
   healthSourceProvider.overrideWithValue(health),
   insightsRunnerProvider.overrideWithValue(
-    (InsightsInput input) async => computeInsights(input),
+    runner ?? (InsightsInput input) async => computeInsights(input),
   ),
   viceListProvider.overrideWithValue(
     vices ?? AsyncData<List<Vice>>(insightsVices),

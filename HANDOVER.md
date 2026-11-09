@@ -191,6 +191,10 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    - **c. Insights screen** (#173, open): connect Health, then show the engine's findings;
      empty Health reads as "no data yet". Stills in `docs/pitch/round-11/insights/`. Not run on a device: the real
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
+     Findings are now corrected for many tests at once (#PR, open): Benjamini-Hochberg at q = 0.1 across every
+     habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
+     checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
+     floor and the block-bootstrap interval of gates 2 to 4 are still not built.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
