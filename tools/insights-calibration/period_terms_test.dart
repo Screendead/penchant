@@ -211,6 +211,12 @@ void main() {
       (r) => bernoulli(r, 119, (i) => 0.9 - 0.8 * i / 119),
       effect,
     );
+    scenario(
+      'one period, Jan 5 + 29 days: 80% then 25% from day 12',
+      200,
+      (r) => bernoulli(r, 29, (i) => i < 12 ? 0.8 : 0.25),
+      effect,
+    );
   });
 
   test('false refusals: even use, no effect, no trend', () {

@@ -561,8 +561,9 @@ round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, 
   5/1000 (0.5 over 30 days, as #181); episodic 0/982, episodic skips 11/1000; power 100/200 (#181 105). Pure noise:
   871/18000 raw, 41 after q = 0.1, 35/400 reports. Cost: a change in use and a step in the outcome inside the same
   month still read as an effect, worse than A: 70% to 97% from day 40 with a 2 sd step at day 40, 34/200 false
-  findings (#181 13), 10 sd 106 (#181 40); 30% to 3%, 20 (#181 15) and 80 (#181 60); and a span of one period refuses a
-  steep cut-down as A does. Recommended, not decided: A now, C as its own PR.
+  findings (#181 13), 10 sd 106 (#181 40); 30% to 3%, 20 (#181 15) and 80 (#181 60); and a span of one period refuses
+  a steep cut-down as A does (Jan 5 + 29 days, 80% to 25% at day 12, -1 sd effect: found / refused of 200, master
+  148 / 0, #181 94 / 56, #183 94 / 56). Recommended, not decided: A now, C as its own PR.
 - **The client API key's restrictions** (UNDECIDED; not yet set): they live in the production project's Google Cloud
   console, which Claude does not touch. Recommended, not decided: an iOS application restriction to
   `com.screendead.penchant` and an API restriction to the Firebase APIs the app calls. Reasoning in `CLAUDE.md`
