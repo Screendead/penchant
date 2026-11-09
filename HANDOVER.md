@@ -183,7 +183,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      phone with years of data, and the one-time read's cost over a multi-year journal (every document once per
      open), are unmeasured.
    - **Ask again for new Health types** (`fix/health-reask`, #184, open): Health connected before #178 was never asked for heart rate; the card now offers "Allow new Health data" when HealthKit's `getRequestStatusForAuthorization` says `.shouldRequest` (a stored read-types version decides when it can't tell), and names where to manage access. Not run on a device.
-   - **Archived habits hidden** (Jack, 2026-11-09: "Archived habits shouldn't show any cards"; `fix/insights-hide-archived`, open): no card, no refusal row, out of the Benjamini-Hochberg family; their uses stay as covariates.
+   - **Archived habits hidden** (Jack, 2026-11-09: "Archived habits shouldn't show any cards"; `fix/insights-hide-archived`, #189, open): no card, no refusal row, out of the Benjamini-Hochberg family; their uses stay as covariates.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
