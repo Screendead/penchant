@@ -104,10 +104,6 @@ String formatDayAndTime(
       .format(moment);
 }
 
-// Typed by hand and parsed back with the same instance, so it stays numeric
-// and 24-hour: a 12-hour pattern puts a narrow no-break space before AM/PM.
-DateFormat get entryDateFormat => DateFormat.yMd(formatLocale).add_Hms();
-
 String formatCount(num count) =>
     NumberFormat.decimalPattern(formatLocale).format(count);
 

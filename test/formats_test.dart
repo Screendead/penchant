@@ -76,7 +76,6 @@ void main() {
     expect(formatLocale, 'en_US');
     expect(formatDay(moment), 'Wednesday, November 4, 2026');
     expect(formatShortDay(moment), 'Nov 4');
-    expect(entryDateFormat.format(moment), '11/4/2026 14:03:22');
     expect(formatCount(12345), '12,345');
   });
 
