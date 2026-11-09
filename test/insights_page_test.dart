@@ -165,6 +165,7 @@ void main() {
     'on macOS the card says Health is on the iPhone and asks nothing',
     (WidgetTester tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       final FakeHealthSource health = FakeHealthSource();
       await _pump(tester, insightsOverrides(health: health));
 
