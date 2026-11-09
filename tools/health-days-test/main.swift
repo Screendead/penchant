@@ -143,5 +143,113 @@ do {
 
 check("merged minutes", HealthDays.mergedMinutes([(at(2026, 1, 1, 1), at(2026, 1, 1, 2)), (at(2026, 1, 1, 1, 30), at(2026, 1, 1, 3)), (at(2026, 1, 1, 4), at(2026, 1, 1, 4, 15))]) == 135)
 
+func hr(_ start: Date, _ value: Double, _ seconds: TimeInterval = 0) -> HealthDays.QuantitySample {
+  HealthDays.QuantitySample(start: start, end: start.addingTimeInterval(seconds), value: value)
+}
+
+func sleepingHeartRate(_ sleep: [HealthDays.SleepSample], _ heart: [HealthDays.QuantitySample]) -> [String: Double] {
+  let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: at(2026, 11, 1), end: at(2026, 11, 15), calendar))
+  return values(HealthDays.meanInsideRows(heart, asleep: asleep, metric: "sleepingHeartRate"))
+}
+
+// Sleeping heart rate is the mean of the samples inside the night's asleep
+// time: not in bed, not awake, not the evening before, and an interval's end
+// is outside it.
+do {
+  let sleep = [
+    sample(at(2026, 11, 7, 22, 30), at(2026, 11, 8, 7), 0),
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 2), 3),
+    sample(at(2026, 11, 8, 2), at(2026, 11, 8, 2, 30), 2),
+    sample(at(2026, 11, 8, 2, 30), at(2026, 11, 8, 6), 4),
+  ]
+  let rows = sleepingHeartRate(
+    sleep,
+    [
+      hr(at(2026, 11, 7, 21), 90),
+      hr(at(2026, 11, 7, 22, 45), 80),
+      hr(at(2026, 11, 7, 23), 50),
+      hr(at(2026, 11, 8, 1), 54),
+      hr(at(2026, 11, 8, 2, 10), 75),
+      hr(at(2026, 11, 8, 2), 70),
+      hr(at(2026, 11, 8, 4), 52),
+      hr(at(2026, 11, 8, 6), 66),
+    ])
+  check("sleeping heart rate mean", rows["2026-11-08 sleepingHeartRate"] == 52, "\(rows)")
+  check("sleeping heart rate one night", rows.count == 1, "\(rows)")
+}
+
+// A Watch's and a phone's overlapping asleep samples count a heart rate sample once.
+do {
+  let rows = sleepingHeartRate(
+    [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 5), 1), sample(at(2026, 11, 8, 0), at(2026, 11, 8, 6), 3)],
+    [hr(at(2026, 11, 8, 1), 50), hr(at(2026, 11, 8, 5, 30), 60)])
+  check("overlapping sources count once", rows["2026-11-08 sleepingHeartRate"] == 55, "\(rows)")
+}
+
+// A sample with a duration counts by its midpoint.
+do {
+  let rows = sleepingHeartRate(
+    [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 6), 1)],
+    [hr(at(2026, 11, 7, 22, 50), 70, 30 * 60), hr(at(2026, 11, 8, 5, 50), 90, 30 * 60), hr(at(2026, 11, 8, 3), 50)])
+  check("midpoint inside counts", rows["2026-11-08 sleepingHeartRate"] == 60, "\(rows)")
+}
+
+// No asleep time is no value, never zero: in bed alone, or no sleep at all;
+// and asleep time with no heart rate inside it is no value either.
+do {
+  check(
+    "in bed only is no value",
+    sleepingHeartRate([sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 0)], [hr(at(2026, 11, 8, 3), 50)]).isEmpty)
+  check("no sleep is no value", sleepingHeartRate([], [hr(at(2026, 11, 8, 3), 50)]).isEmpty)
+  check(
+    "no heart rate is no value",
+    sleepingHeartRate([sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 1)], [hr(at(2026, 11, 8, 9), 50)]).isEmpty)
+}
+
+// Two nights and a nap: each keyed like the sleep metrics, the nap to the next night.
+do {
+  let sleep = [
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 1),
+    sample(at(2026, 11, 8, 15), at(2026, 11, 8, 16), 1),
+    sample(at(2026, 11, 8, 23), at(2026, 11, 9, 7), 1),
+  ]
+  let rows = sleepingHeartRate(
+    sleep, [hr(at(2026, 11, 8, 3), 50), hr(at(2026, 11, 8, 15, 30), 70), hr(at(2026, 11, 9, 3), 60), hr(at(2026, 11, 8, 12), 99)])
+  check("first night", rows["2026-11-08 sleepingHeartRate"] == 50, "\(rows)")
+  check("nap joins the next night", rows["2026-11-09 sleepingHeartRate"] == 65, "\(rows)")
+  let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: at(2026, 11, 1), end: at(2026, 11, 15), calendar))
+  let spans = HealthDays.spans(asleep)
+  check(
+    "spans per night", spans.count == 2 && spans[0] == (at(2026, 11, 7, 23), at(2026, 11, 8, 7))
+      && spans[1] == (at(2026, 11, 8, 15), at(2026, 11, 9, 7)), "\(spans)")
+}
+
+// Paging: a short page is the last; a full page is cut back to whole start
+// times, and the next page starts at the first one it dropped.
+do {
+  let t = at(2026, 11, 8, 3)
+  let short = HealthDays.page([hr(t, 1), hr(t.addingTimeInterval(60), 2)], limit: 3)
+  check("short page is last", short.next == nil && short.samples.count == 2)
+  let full = HealthDays.page(
+    [hr(t, 1), hr(t.addingTimeInterval(60), 2), hr(t.addingTimeInterval(120), 3), hr(t.addingTimeInterval(120), 4)],
+    limit: 4)
+  check("full page drops the tied tail", full.samples.map(\.value) == [1, 2], "\(full)")
+  check("next is the tied start", full.next == HealthDays.micros(t.addingTimeInterval(120)), "\(full)")
+  let untied = HealthDays.page([hr(t, 1), hr(t.addingTimeInterval(60), 2)], limit: 2)
+  check("untied full page keeps all but the last start", untied.samples.map(\.value) == [1] && untied.next == HealthDays.micros(t.addingTimeInterval(60)))
+  let stuck = HealthDays.page([hr(t, 1), hr(t, 2)], limit: 2)
+  check("one start throughout still moves on", stuck.samples.count == 2 && stuck.next == HealthDays.micros(t) + 1)
+}
+
+// Microseconds round-trip, and flatten writes start, end, value triples.
+do {
+  let t = Date(timeIntervalSince1970: 1_794_000_000.123456)
+  check("micros round-trip", HealthDays.micros(HealthDays.date(micros: HealthDays.micros(t))) == HealthDays.micros(t))
+  check(
+    "flatten", HealthDays.flatten([hr(at(2026, 11, 8), 61.5, 1)]) == [
+      Double(HealthDays.micros(at(2026, 11, 8))), Double(HealthDays.micros(at(2026, 11, 8))) + 1_000_000, 61.5,
+    ])
+}
+
 if failures > 0 { exit(1) }
 print("ok")

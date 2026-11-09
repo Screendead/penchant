@@ -54,6 +54,17 @@ class FakeHealthSource implements HealthSource {
     if (failure case final PlatformException e) throw e;
     return read ?? const HealthValues(<DailyOutcome>[]);
   }
+
+  @override
+  Future<HealthSampleRead> samples(
+    HealthSampleMetric metric,
+    DateTime start,
+    DateTime end, {
+    int limit = maxHealthSamplesPerCall,
+  }) async {
+    if (failure case final PlatformException e) throw e;
+    return const HealthSamples(<HealthSample>[]);
+  }
 }
 
 final List<Vice> insightsVices = <Vice>[
