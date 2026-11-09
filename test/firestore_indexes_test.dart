@@ -76,6 +76,18 @@ void main() {
       expect(uncoveredQueries(scan.shapes, _indexes), isEmpty);
     });
 
+    test('every index serves a query in lib/', () {
+      for (final Map<String, dynamic> index in _indexes) {
+        final bool used = scan.shapes.any((QueryShape shape) {
+          final CompositeNeed? need = compositeNeed(shape);
+          return need != null &&
+              shape.collection != null &&
+              serves(index, shape.collection!, need);
+        });
+        expect(used, isTrue, reason: 'no query uses $index');
+      }
+    });
+
     test('removing any used index fails the check', () {
       for (int i = 0; i < _indexes.length; i++) {
         final List<Map<String, dynamic>> without = <Map<String, dynamic>>[

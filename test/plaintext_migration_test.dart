@@ -252,6 +252,17 @@ void main() {
       expect(update!.keys, unorderedEquals(<String>[sealedField, 'name']));
     });
 
+    test('leaves a name too long to seal in plaintext', () async {
+      expect(
+        await migrator.update('vices', 'v1', {
+          'name': 'x' * 5000,
+          'unit': 'drink',
+          'ownerID': ownerID,
+        }),
+        isNull,
+      );
+    });
+
     test('leaves a sealed document, or one with nothing to seal', () async {
       expect(
         await migrator.update('vices', 'v1', {

@@ -112,8 +112,9 @@ class PlaintextMigrator {
       return null;
     }
     final Object? name = data['name'];
-    return <String, Object>{
-      sealedField: Blob(
+    final Blob blob;
+    try {
+      blob = Blob(
         await sealer.seal(<String, Object?>{
           for (final String field in fields)
             if (data.containsKey(field)) field: data[field],
@@ -124,7 +125,14 @@ class PlaintextMigrator {
               name is String)
             'category': guessCategory(name).name,
         }, context: sealContext(collection, docId)),
-      ),
+      );
+    } on ArgumentError {
+      // Legacy content past the largest envelope (4094 bytes of JSON) cannot
+      // be sealed; left in plaintext, it must not fail its whole batch.
+      return null;
+    }
+    return <String, Object>{
+      sealedField: blob,
       for (final String field in fields)
         if (data.containsKey(field)) field: FieldValue.delete(),
     };
