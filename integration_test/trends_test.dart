@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -128,7 +129,12 @@ void main() {
         'Shown with a 4-week average.',
       ),
     );
-    expect(_totals(tester), [0, 0, 4, 5]);
+    // The chart tweens from the daily spots to the weekly ones.
+    await pumpUntilTrue(
+      tester,
+      () => listEquals(_totals(tester), [0, 0, 4, 5]),
+      () => 'weekly totals ${_totals(tester)}',
+    );
     expect(find.text('Average over 4 weeks'), findsOneWidget);
     // Four buckets hold no longer average.
     expect(

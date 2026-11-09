@@ -249,6 +249,9 @@ Future<void> register(
 }) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
+  // A persisted user arrives asynchronously after launch, on the Mac later
+  // than a signOut sent straight away, which would find nobody to sign out.
+  await FirebaseAuth.instance.authStateChanges().first;
   await FirebaseAuth.instance.signOut();
   await tap(tester, find.byKey(Authenticate.registerTab));
   // The confirmation fades in as the tab switches.
