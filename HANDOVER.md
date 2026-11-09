@@ -166,7 +166,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **c. Insights screen** (merged, #173): connect Health, then show the engine's findings; empty Health reads as
      "no data yet". Stills in `docs/pitch/round-11/insights/`. Not run on a device: the real
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
-     Findings are now corrected for many tests at once (#175, open): Benjamini-Hochberg at q = 0.1 across every
+     Findings are now corrected for many tests at once (#175, merged): Benjamini-Hochberg at q = 0.1 across every
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
      checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
@@ -174,6 +174,14 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      more at some times than others") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged
      (0.24%, 8%). Review fix: the 3x check also runs on days gone without (patchy early logging of a daily habit),
      and the test allows for runs of use; even-use false refusals stay under 1% (`tools/insights-calibration/`).
+   - **Whole history and Copy as text** (Jack, 2026-11-09: "i've got more than a year's worth of data"; #179, open,
+     `feat/insights-whole-history`): the journal query runs from 2000 (the date picker's floor) to today, keyed on
+     the day; Health is read from September 2014 (HealthKit's launch) in calendar-year calls, 13 today; the page says
+     "From <first entry> to today" (the earliest entry of a habit the page shows), and "Copy as text" puts the
+     findings and refusals on the clipboard on a tap. The journal is read once per open with `get()`, not listened
+     to, and the Health loop stops when the page is left. Not run on a device: the 13 HealthKit calls' time on a
+     phone with years of data, and the one-time read's cost over a multi-year journal (every document once per
+     open), are unmeasured.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
@@ -197,6 +205,16 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        finish against an early one).
      - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
        each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
+       The sample read is #178 (`feat/health-samples`): `HealthSource.samples` and `healthSamplePages` page heart
+       rate, HRV and respiratory rate by start time, 20,000 a call; `HealthMetric.sleepingHeartRate` is the night's
+       mean heart rate inside its asleep intervals, keyed like the sleep metrics. The engine does not use either yet:
+       `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`, and
+       `healthStateProvider` leaves it out of its read until then (its query holds up the whole read and its cost
+       over a year of nights is unmeasured: measure on a device when adding it back). A person who connected Health
+       before this build is not asked for heart rate again: a not-determined heart rate read costs
+       `sleepingHeartRate` alone (no row), but `samples` throws `not-determined` for them, so j's provider must show
+       the Health sheet again on it. Neither not-determined path is checked on a device. Page bounds are exact in
+       whole microseconds (`HealthDays.firstDate`), so ties at a page boundary are read once.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.

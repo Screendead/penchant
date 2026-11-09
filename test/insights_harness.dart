@@ -17,6 +17,11 @@ import 'fakes.dart';
 
 final DateTime insightsToday = DateTime(2026, 11, 8);
 
+/// The channel calls one Health read of the Insights range makes.
+final int insightsHealthCalls = insightsHealthChunks(
+  insightsRange(insightsToday),
+).length;
+
 class FixedToday extends Today {
   FixedToday(this._day);
 
@@ -34,6 +39,7 @@ class FakeHealthSource implements HealthSource {
   final PlatformException? failure;
   int authorizationRequests = 0;
   int reads = 0;
+  Set<HealthMetric>? lastMetrics;
 
   @override
   Future<bool> isAvailable() async => available;
@@ -51,8 +57,28 @@ class FakeHealthSource implements HealthSource {
     DateTime end,
   ) async {
     reads++;
+    lastMetrics = metrics;
     if (failure case final PlatformException e) throw e;
-    return read ?? const HealthValues(<DailyOutcome>[]);
+    return switch (read) {
+      HealthValues(:final List<DailyOutcome> values) =>
+        HealthValues(<DailyOutcome>[
+          for (final DailyOutcome v in values)
+            if (!v.date.isBefore(start) && v.date.isBefore(end)) v,
+        ]),
+      final HealthRead other => other,
+      null => const HealthValues(<DailyOutcome>[]),
+    };
+  }
+
+  @override
+  Future<HealthSampleRead> samples(
+    HealthSampleMetric metric,
+    DateTime start,
+    DateTime end, {
+    int limit = maxHealthSamplesPerCall,
+  }) async {
+    if (failure case final PlatformException e) throw e;
+    return const HealthSamples(<HealthSample>[]);
   }
 }
 

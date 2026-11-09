@@ -15,10 +15,17 @@ pull request titles (`gh pr list --state merged`).
 - Insights checks every habit against every Health measure at once, so it now allows for that: a difference that
   could be a fluke among so many checks is listed as "Could be chance: one of many comparisons" rather than shown as a
   finding (#175).
+- Insights reads your whole journal, not just the last year, with Apple Health over the same span, and says where it
+  starts ("From 3 March 2024 to today"). "Copy as text" puts the findings and the reasons for the rest on the
+  clipboard, for a note or a message. Penchant sends none of it anywhere; the text goes where you paste it, and with
+  Handoff on, the clipboard also reaches your other Apple devices (#179).
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
   backoff for about an hour. Opening Penchant meanwhile brings up the app as usual.
+- Groundwork for finer-grained insights on iPhone: Penchant can read heart rate, heart rate variability and breathing
+  rate readings with their times from Apple Health, not only daily totals, and works out your heart rate while
+  asleep each night. Insights now also asks for access to heart rate. Read-only and kept on the device (#178).
 - Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
   step and energy totals from Apple Health, read-only and kept on the device. Insights asks for access.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
