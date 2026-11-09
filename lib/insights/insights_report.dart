@@ -731,6 +731,7 @@ String _amongUseRefusal(
     'nearly the same each day, so there’s no difference to compare',
   RefusalReason.followsAmount =>
     'later on days with more, so it can’t be told apart from the amount',
+  // A HabitFinding.sameBedtime alone refuses so, and shows as a card line.
   RefusalReason.followsBedtime =>
     'moves with when you fall asleep, so it can’t be told apart from '
         'your bedtime',
@@ -781,6 +782,7 @@ String _useRefusal(
     'Later on days with more, so it can’t be told apart from the amount',
   RefusalReason.oneDay =>
     'Rests on one unusual day, so it may not hold on the others',
+  // Never reached, as in _amongUseRefusal.
   RefusalReason.followsBedtime =>
     'Moves with when you fall asleep, so it can’t be told apart from your '
         'bedtime',

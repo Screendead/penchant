@@ -729,6 +729,53 @@ void main() {
     );
   });
 
+  test('copied text gives the bedtime line under its sentence', () {
+    final HabitFinding time = HabitFinding(
+      habitId: 'coffee',
+      metricId: 'sleepAsleep',
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 120,
+      raw: null,
+      kind: InsightKind.lastUse,
+      step: 60,
+      effect: -11,
+      interval: stats.Interval(-15, -7),
+      standardized: -0.5,
+      pValue: 0.001,
+      sameBedtime: HabitRefusal(
+        habitId: 'coffee',
+        metricId: 'sleepAsleep',
+        lagDays: 1,
+        usableDays: 110,
+        exposedDays: 110,
+        raw: null,
+        kind: InsightKind.lastUse,
+        step: 60,
+        reason: RefusalReason.withinNoise,
+        effect: -1,
+      ),
+    );
+    final List<String> lines = insightsText(
+      cards: <InsightCard>[
+        InsightCard(family: MetricFamily.sleep, headline: time),
+      ],
+      refused: const <HabitRefusal>[],
+      firstDay: null,
+      nameOf: (String _) => 'Coffee',
+      locale: 'en',
+    ).split('\n');
+    final int sentence = lines.indexOf(
+      'On days your last use of Coffee is an hour later, your time asleep '
+      'that night averages 11 min less.',
+    );
+    expect(sentence, greaterThan(0));
+    expect(
+      lines[sentence + 1],
+      '11 min less per hour later, none of it clear at the same bedtime',
+    );
+  });
+
   test('the route opens Insights', () {
     expect(routePage(InsightsPage.route), isA<InsightsPage>());
   });
