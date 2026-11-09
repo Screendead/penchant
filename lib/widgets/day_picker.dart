@@ -242,6 +242,8 @@ class CalendarSheet extends ConsumerStatefulWidget {
 
   static const String dialFootnote =
       'A dot for each habit logged that day. Tap a day to open its dial.';
+  static const String logFootnote =
+      'A dot for each habit logged that day. Tap a day to log on it.';
   static const String timeFootnote =
       'A dot for each habit logged that day. Tap a day to move the entry to it.';
 

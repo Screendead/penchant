@@ -264,7 +264,7 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('Today'));
       await tester.pumpAndSettle();
-      expect(find.text(CalendarSheet.timeFootnote), findsOneWidget);
+      expect(find.text(CalendarSheet.logFootnote), findsOneWidget);
       await tester.tap(
         find.descendant(
           of: find.byType(CalendarSheet),

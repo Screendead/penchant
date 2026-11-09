@@ -213,12 +213,12 @@ class _TimeDialState extends State<TimeDial> {
           },
           child: Listener(
             onPointerDown: enabled
-                ? (PointerDownEvent e) {
-                    // So the arrow keys go on from where a click left it.
-                    _focus.requestFocus();
-                    _fromLocal(e.localPosition);
-                  }
+                ? (PointerDownEvent e) => _fromLocal(e.localPosition)
                 : null,
+            // So the arrow keys go on from where a click left it. Not on
+            // down: taking focus from the amount closes the keyboard, and the
+            // sheet would move under the finger mid-drag.
+            onPointerUp: enabled ? (_) => _focus.requestFocus() : null,
             onPointerMove: enabled
                 ? (PointerMoveEvent e) => _fromLocal(e.localPosition)
                 : null,
@@ -471,7 +471,9 @@ class EntryTimeField extends ConsumerWidget {
             if (!v.archived) v,
         ],
         marks: habitMarks(habits),
-        footnote: CalendarSheet.timeFootnote,
+        footnote: editing == null
+            ? CalendarSheet.logFootnote
+            : CalendarSheet.timeFootnote,
       ),
     );
     if (picked == null || picked == day) {
