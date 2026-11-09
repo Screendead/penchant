@@ -28,3 +28,8 @@ The amount sheet: `flutter test test/fidelity_amount_sheet_render_test.dart --da
 mock-up with `"only=3&theme=<theme>&state=amount"` saved as `<root>/mock/mock-amount-sheet-new-<theme>.png`, then
 `pair.py`. The pairs are `fidelity/amount-sheet-new-*.png`; `fidelity/amount-sheet-edit-*.png` is the editor alone,
 since the mock-up shows editing only through the same sheet.
+
+The time dial (the amount sheet and editor since the mini dial replaced the date field): the same render test, which
+now loads the mock-up's record day for the dial's faded entries; the pairs are `fidelity/time-dial/new-*.png` and the
+editor alone is `fidelity/time-dial/edit-*.png`. The mock-up half was cut from `fidelity/amount-sheet-new-*.png`
+(60, 110 to 1230, 2642), its shot unchanged.

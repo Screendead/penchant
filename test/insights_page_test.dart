@@ -224,8 +224,8 @@ void main() {
     expect(find.text('Coffee · sleep'), findsOneWidget);
     expect(
       find.text(
-        'A last Coffee an hour later goes with your deep sleep that night '
-        'averaging 12 min less.',
+        'On days your last use of Coffee is an hour later, your deep sleep '
+        'that night averages 12 min less.',
       ),
       findsOneWidget,
     );
@@ -241,6 +241,79 @@ void main() {
     await _openCosts(tester);
     expect(find.text('Connected'), findsOneWidget);
     expect(find.text(InsightsPage.manageLabel), findsOneWidget);
+  });
+
+  testWidgets('a time of last use on sleep shows its whole effect, then the '
+      'part at the same bedtime, then what that size has been shown to do', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    HabitFinding finding(
+      InsightKind kind,
+      double step,
+      double effect, {
+      HabitInsight? sameBedtime,
+    }) => HabitFinding(
+      habitId: 'coffee',
+      metricId: 'sleepREM',
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 120,
+      raw: null,
+      kind: kind,
+      step: step,
+      effect: effect,
+      interval: stats.Interval(effect * 1.5, effect / 2),
+      standardized: -0.5,
+      pValue: 0.001,
+      sameBedtime: sameBedtime,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee', unit: Unit.drink),
+        ]),
+        runner: (_) async => InsightsReport(
+          findings: <HabitFinding>[
+            finding(
+              InsightKind.dose,
+              1,
+              -6,
+              sameBedtime: finding(InsightKind.dose, 1, -2),
+            ),
+            finding(
+              InsightKind.lastUse,
+              60,
+              -12,
+              sameBedtime: finding(InsightKind.lastUse, 60, -4),
+            ),
+          ],
+          refused: const <HabitRefusal>[],
+        ),
+      ),
+    );
+
+    expect(
+      find.text(
+        'On days your last use of Coffee is an hour later, your REM sleep '
+        'that night averages 12 min less.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('12 min less per hour later, 4 min of it at the same bedtime'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'More per extra drink: REM sleep 6 min less, 2 min of it at the '
+        'same bedtime',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(metricEvidence('sleepREM')!), findsOneWidget);
   });
 
   testWidgets('the two largest cards show, the rest behind More on what it '
@@ -293,8 +366,13 @@ void main() {
     expect(find.text('Coffee · sleep'), findsOneWidget);
     expect(find.text('Coffee · heart'), findsOneWidget);
     expect(find.text('Coffee · breathing'), findsNothing);
+    // Coffee's heart card leads with resting heart rate: one line for what
+    // 5 bpm has been shown to do.
+    expect(find.text(metricEvidence('restingHeartRate')!), findsOneWidget);
     expect(find.text(InsightsPage.more(8)), findsOneWidget);
     await _openCosts(tester);
+    // Both activity cards lead with steps.
+    expect(find.text(metricEvidence('stepCount')!), findsNWidgets(2));
     for (final String habit in <String>['Coffee', 'Tea']) {
       for (final String family in <String>[
         'sleep',
@@ -687,6 +765,53 @@ void main() {
       '${InsightsPage.costsHeading}\n'
       '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n\n'
       '${InsightsPage.foot}\n',
+    );
+  });
+
+  test('copied text gives the bedtime line under its sentence', () {
+    final HabitFinding time = HabitFinding(
+      habitId: 'coffee',
+      metricId: 'sleepAsleep',
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 120,
+      raw: null,
+      kind: InsightKind.lastUse,
+      step: 60,
+      effect: -11,
+      interval: stats.Interval(-15, -7),
+      standardized: -0.5,
+      pValue: 0.001,
+      sameBedtime: HabitRefusal(
+        habitId: 'coffee',
+        metricId: 'sleepAsleep',
+        lagDays: 1,
+        usableDays: 110,
+        exposedDays: 110,
+        raw: null,
+        kind: InsightKind.lastUse,
+        step: 60,
+        reason: RefusalReason.withinNoise,
+        effect: -1,
+      ),
+    );
+    final List<String> lines = insightsText(
+      cards: <InsightCard>[
+        InsightCard(family: MetricFamily.sleep, headline: time),
+      ],
+      refused: const <HabitRefusal>[],
+      firstDay: null,
+      nameOf: (String _) => 'Coffee',
+      locale: 'en',
+    ).split('\n');
+    final int sentence = lines.indexOf(
+      'On days your last use of Coffee is an hour later, your time asleep '
+      'that night averages 11 min less.',
+    );
+    expect(sentence, greaterThan(0));
+    expect(
+      lines[sentence + 1],
+      '11 min less per hour later, none of it clear at the same bedtime',
     );
   });
 

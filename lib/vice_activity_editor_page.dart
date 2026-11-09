@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/trigger_usage.dart';
@@ -15,9 +14,9 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/amount_fields.dart';
+import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -39,17 +38,15 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
 
 class _ViceActivityEditorPageState
     extends ConsumerState<ViceActivityEditorPage> {
-  static DateFormat get dateFormat => ActivityDateField.format;
-
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController dateController = TextEditingController();
+  final EntryTimeController timeController = EntryTimeController();
   final TextEditingController quantityController = TextEditingController();
   bool loading = false;
   String? error;
   // The stored values as the fields last showed them. A field still showing
   // its stored value follows the activity as it changes; once the user edits
   // it, it keeps their value.
-  String storedDateText = '';
+  DateTime? storedAt;
   String storedQuantityText = '';
   ViceActivity? shown;
   // Null until the user changes the triggers; until then they follow the
@@ -92,21 +89,21 @@ class _ViceActivityEditorPageState
   }
 
   void _follow(ViceActivity activity) {
-    final String dateText = dateFormat.format(activity.createdAt.toDate());
+    final DateTime at = activity.createdAt.toDate();
     final String quantityText = formatAmount(activity.measure);
-    if (dateController.text == storedDateText) {
-      dateController.text = dateText;
+    if (timeController.at == storedAt) {
+      timeController.at = at;
     }
     if (quantityController.text == storedQuantityText) {
       quantityController.text = quantityText;
     }
-    storedDateText = dateText;
+    storedAt = at;
     storedQuantityText = quantityText;
   }
 
   @override
   void dispose() {
-    dateController.dispose();
+    timeController.dispose();
     quantityController.dispose();
     super.dispose();
   }
@@ -138,8 +135,8 @@ class _ViceActivityEditorPageState
 
     // A field the user left alone may show a parser default for a legacy value
     // the rules would still accept, so only edited fields are written.
-    final DateTime? createdAt = dateController.text != storedDateText
-        ? dateFormat.parse(dateController.text)
+    final DateTime? createdAt = timeController.at != storedAt
+        ? timeController.value
         : null;
     final StoredMeasure? measure = quantityController.text != storedQuantityText
         ? storedMeasure(
@@ -318,9 +315,8 @@ class _ViceActivityEditorPageState
                     AmountFields(
                       quantityController: quantityController,
                       unit: vice.unit,
-                      dateController: dateController,
-                      startLive: false,
-                      manualSeed: () => activity.createdAt.toDate(),
+                      timeController: timeController,
+                      editing: activity.id,
                       triggers: editedTriggers ?? activity.triggers,
                       onTriggersChanged: (List<String> picked) =>
                           setState(() => editedTriggers = picked),

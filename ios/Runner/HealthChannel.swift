@@ -242,8 +242,9 @@ enum HealthChannel {
     }
 
     let wantedSleep = HealthDays.sleepMetrics.filter { metrics.contains($0.id) }
+    let wantedTiming = HealthDays.sleepTimingMetrics.intersection(metrics)
     let wantsSleepingHeartRate = metrics.contains(sleepingHeartRate)
-    if !wantedSleep.isEmpty || wantsSleepingHeartRate {
+    if !wantedSleep.isEmpty || !wantedTiming.isEmpty || wantsSleepingHeartRate {
       group.enter()
       let (from, to) = HealthDays.sleepFetchWindow(start: start, end: end, calendar)
       let query = HKSampleQuery(
@@ -252,7 +253,9 @@ enum HealthChannel {
         sortDescriptors: nil
       ) { _, samples, error in
         let sleep = sleepSamples(samples)
-        let sleepRows = HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar)
+        let sleepRows =
+          HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar)
+          + HealthDays.sleepTimingRows(sleep, metrics: wantedTiming, start: start, end: end, calendar)
         let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: start, end: end, calendar))
         guard wantsSleepingHeartRate, error == nil, !asleep.isEmpty else {
           finish(sleepRows, error)

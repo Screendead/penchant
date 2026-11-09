@@ -65,7 +65,7 @@ void main() {
     test('judges a use effect as it is', () {
       expect(practicalSize(finding('sleepREM', -12)), closeTo(1.2, 1e-9));
       expect(practicalSize(finding('sleepREM', -8)), lessThan(1));
-      expect(practicalSize(finding('restingHeartRate', 1.5)), 1.5);
+      expect(practicalSize(finding('restingHeartRate', 7.5)), 1.5);
     });
 
     test('judges a per-hour slope across the usual spread of last uses', () {
@@ -94,13 +94,13 @@ void main() {
     test('judges a dose across the usual spread of day totals', () {
       expect(
         practicalSize(
-          finding('stepCount', -400, kind: InsightKind.dose, spread: 3),
+          finding('stepCount', -200, kind: InsightKind.dose, spread: 3),
         ),
         closeTo(1.2, 1e-9),
       );
       expect(
         practicalSize(
-          finding('stepCount', -400, kind: InsightKind.dose, spread: 2),
+          finding('stepCount', -200, kind: InsightKind.dose, spread: 2),
         ),
         lessThan(1),
       );
@@ -185,9 +185,229 @@ void main() {
         ),
         (id) => id,
       ),
-      'Time of last use: too small to matter, under 1,000 a day of step '
+      'Time of last use: too small to matter, under 500 a day of step '
       'count across your usual range',
     );
+  });
+
+  group('floors per person', () {
+    final DateTime start = DateTime(2026, 1, 1);
+    OutcomeSeries series(String metricId, List<double?> values) =>
+        OutcomeSeries.fromOutcomes(<DailyOutcome>[
+          for (int i = 0; i < values.length; i++)
+            if (values[i] case final double v)
+              DailyOutcome(
+                date: addDays(start, i),
+                metricId: metricId,
+                value: v,
+              ),
+        ]);
+    OutcomeSeries merged(List<OutcomeSeries> parts) =>
+        OutcomeSeries.fromOutcomes(<DailyOutcome>[
+          for (final OutcomeSeries part in parts)
+            for (final String id in part.metricIds)
+              for (final MapEntry<DateTime, double> day
+                  in part.days(id).entries)
+                DailyOutcome(date: day.key, metricId: id, value: day.value),
+        ]);
+
+    test('REM’s is 5% of the usual night asleep, 10 min with under 14 '
+        'nights', () {
+      final Map<String, double> floors = resolveFloors(
+        series('sleepAsleep', <double>[for (int i = 0; i < 30; i++) 440]),
+      );
+      expect(floors['sleepREM'], closeTo(22, 1e-9));
+      expect(resolveFloors(series('sleepCore', <double>[200]))['sleepREM'], 10);
+      expect(
+        resolveFloors(
+          series('sleepAsleep', <double>[for (int i = 0; i < 13; i++) 440]),
+        )['sleepREM'],
+        10,
+      );
+    });
+
+    test(
+      'a floor inside half the night-to-night variation is raised to it',
+      () {
+        // Core sleep alternating 180 and 220: each change is 40, so the typical
+        // error is 40 / √2 and half of it about 14 min, over the 10 min floor.
+        final List<double> core = <double>[
+          for (int i = 0; i < 30; i++) i.isEven ? 180 : 220,
+        ];
+        final Map<String, double> floors = resolveFloors(
+          series('sleepCore', core),
+        );
+        final double error = typicalError(
+          series('sleepCore', core).days('sleepCore'),
+        )!;
+        expect(error, closeTo(40 / sqrt2, 1));
+        expect(floors['sleepCore'], closeTo(noiseShare * error, 1e-9));
+        expect(floors['sleepCore'], greaterThan(10));
+        // Time asleep with the same scatter keeps its larger 21 min floor.
+        expect(resolveFloors(series('sleepAsleep', core))['sleepAsleep'], 21);
+      },
+    );
+
+    test('the variation needs 14 pairs of next-door days', () {
+      final List<double> scattered = <double>[
+        for (int i = 0; i < 14; i++) i.isEven ? 100 : 200,
+      ];
+      // 14 days are 13 pairs.
+      expect(
+        typicalError(series('sleepCore', scattered).days('sleepCore')),
+        isNull,
+      );
+      expect(resolveFloors(series('sleepCore', scattered))['sleepCore'], 10);
+      // Every other night missing: no next-door pairs at all.
+      expect(
+        typicalError(
+          series('sleepCore', <double?>[
+            for (int i = 0; i < 60; i++) i.isEven ? 100.0 + i : null,
+          ]).days('sleepCore'),
+        ),
+        isNull,
+      );
+    });
+
+    test('HRV’s is half its own variation, 3 ms without enough nights', () {
+      final List<double> hrv = <double>[
+        for (int i = 0; i < 30; i++) i.isEven ? 40 : 42,
+      ];
+      final Map<String, double> floors = resolveFloors(
+        merged(<OutcomeSeries>[
+          series('heartRateVariabilitySDNN', hrv),
+          series('restingHeartRate', <double>[for (int i = 0; i < 30; i++) 60]),
+        ]),
+      );
+      // Under the 3 ms fallback, since the person's own swing is the floor.
+      expect(
+        floors['heartRateVariabilitySDNN'],
+        closeTo(0.5 * 2 / sqrt2, 0.05),
+      );
+      expect(floors['restingHeartRate'], 5);
+      expect(
+        resolveFloors(
+          series('heartRateVariabilitySDNN', <double>[40, 42]),
+        )['heartRateVariabilitySDNN'],
+        3,
+      );
+    });
+
+    test('a refusal shows a fraction of a unit rather than "under 0"', () {
+      // HRV alternating 40 and 41: half the typical error is 0.35 ms, under
+      // the whole millisecond HRV copy normally shows.
+      final Map<String, double> floors = resolveFloors(
+        series('heartRateVariabilitySDNN', <double>[
+          for (int i = 0; i < 30; i++) i.isEven ? 40 : 41,
+        ]),
+      );
+      expect(floors['heartRateVariabilitySDNN'], closeTo(0.36, 0.01));
+      HabitRefusal refusal(InsightKind kind) => HabitRefusal(
+        habitId: 'Tea',
+        metricId: 'heartRateVariabilitySDNN',
+        lagDays: 1,
+        usableDays: 90,
+        exposedDays: 40,
+        raw: null,
+        kind: kind,
+        reason: RefusalReason.tooSmall,
+      );
+      expect(
+        refusalReason(refusal(InsightKind.use), (id) => id, floors: floors),
+        'Too small to matter: under 0.4 ms of heart rate variability',
+      );
+      // Hours-after HRV is judged against the same per-person floor.
+      expect(
+        refusalReason(
+          refusal(InsightKind.hoursAfter),
+          (id) => id,
+          floors: floors,
+        ),
+        contains('under 0.4 ms of heart rate variability'),
+      );
+    });
+
+    test('a rule that resolves to nothing keeps the table’s floor', () {
+      // A flat series has no variation; nights of no sleep have no share.
+      final Map<String, double> floors = resolveFloors(
+        merged(<OutcomeSeries>[
+          series('heartRateVariabilitySDNN', <double>[
+            for (int i = 0; i < 30; i++) 45,
+          ]),
+          series('sleepAsleep', <double>[for (int i = 0; i < 30; i++) 0]),
+        ]),
+      );
+      expect(floors['heartRateVariabilitySDNN'], 3);
+      expect(floors['sleepREM'], 10);
+      expect(floors['sleepAsleep'], 21);
+      expect(
+        practicalSize(finding('heartRateVariabilitySDNN', -1), floors: floors),
+        lessThan(1),
+      );
+    });
+
+    test('the report carries them, and a refusal names the person’s floor', () {
+      final InsightsReport report = computeInsights(
+        InsightsInput(
+          uses: const <HabitUse>[],
+          outcomes: <DailyOutcome>[
+            for (int i = 0; i < 30; i++)
+              DailyOutcome(
+                date: addDays(start, i),
+                metricId: 'sleepAsleep',
+                value: 428,
+              ),
+          ],
+          from: start,
+          through: addDays(start, 30),
+        ),
+      );
+      expect(report.floors['sleepREM'], closeTo(21.4, 1e-9));
+      expect(
+        refusalReason(
+          HabitRefusal(
+            habitId: 'Tea',
+            metricId: 'sleepREM',
+            lagDays: 1,
+            usableDays: 90,
+            exposedDays: 40,
+            raw: null,
+            kind: InsightKind.use,
+            reason: RefusalReason.tooSmall,
+          ),
+          (id) => id,
+          floors: report.floors,
+        ),
+        // 21.4 rounded up, so a refused 21.2 min finding is still "under".
+        'Too small to matter: under 22 min a night of REM sleep',
+      );
+      // Judged against the person's floor, not the 10 min fallback.
+      expect(
+        practicalSize(finding('sleepREM', -15), floors: report.floors),
+        lessThan(1),
+      );
+      expect(practicalSize(finding('sleepREM', -15)), greaterThan(1));
+    });
+  });
+
+  test('a card says what its floor’s size has been shown to do, with the '
+      'source, but not for a kept floor or an hours-after finding', () {
+    expect(
+      findingEvidence(finding('stepCount', 900)),
+      contains('(Banach 2023)'),
+    );
+    expect(findingEvidence(finding('sleepAsleep', -30)), contains('21 min'));
+    expect(findingEvidence(finding('sleepCore', -30)), isNull);
+    expect(
+      findingEvidence(
+        finding('heartRateVariabilitySDNN', -8, kind: InsightKind.hoursAfter),
+      ),
+      isNull,
+    );
+    for (final String id in metricFloors.keys) {
+      final String? line = metricEvidence(id);
+      if (line != null) expect(line, matches(RegExp(r'\(\D+ \d{4}\)\.$')));
+    }
   });
 
   group('cards', () {
@@ -196,22 +416,22 @@ void main() {
       final List<InsightCard> cards = insightCards(<HabitFinding>[
         finding('sleepREM', -14),
         finding('sleepCore', -12),
-        finding('sleepAsleep', -25),
+        finding('sleepAsleep', -50),
         finding('sleepREM', -4, kind: InsightKind.dose, spread: 2.75),
         finding(
           'sleepAsleep',
           -11,
           kind: InsightKind.lastUse,
           step: 60,
-          spread: 120,
+          spread: 240,
         ),
-        finding('restingHeartRate', 2),
+        finding('restingHeartRate', 9),
         finding('sleepDeep', -15, habitId: 'Tea'),
       ]);
       expect(cards.map((c) => (c.habitId, c.family)), <(String, MetricFamily)>[
-        // 25 min over a 10 min floor.
+        // 50 min over a 21 min floor.
         ('Wine', MetricFamily.sleep),
-        // 2 bpm over 1.
+        // 9 bpm over 5.
         ('Wine', MetricFamily.heart),
         ('Tea', MetricFamily.sleep),
       ]);

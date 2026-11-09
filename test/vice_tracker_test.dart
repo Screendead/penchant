@@ -408,7 +408,7 @@ void main() {
 
       expect(find.byType(CalendarSheet), findsOneWidget);
       expect(find.text(formatMonth(today)), findsOneWidget);
-      expect(find.text(CalendarSheet.footnote), findsOneWidget);
+      expect(find.text(CalendarSheet.dialFootnote), findsOneWidget);
       expect(_enabled(tester, 'Next month'), isFalse);
 
       final SemanticsHandle semantics = tester.ensureSemantics();

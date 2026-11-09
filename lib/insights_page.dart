@@ -422,7 +422,11 @@ class InsightsCostsPage extends ConsumerWidget {
           for (final HabitRefusal r in costs.refused)
             CardRow(
               label: costs.nameOf(r.habitId),
-              subtitle: refusalReason(r, costs.nameOf),
+              subtitle: refusalReason(
+                r,
+                costs.nameOf,
+                floors: costs.report.floors,
+              ),
             ),
         ],
       ),
@@ -441,7 +445,7 @@ class _Costs {
     cards = insightCards(<HabitFinding>[
       for (final HabitFinding f in report.findings)
         if (_names.containsKey(f.habitId)) f,
-    ]);
+    ], floors: report.floors);
     refused = <HabitRefusal>[
       for (final HabitRefusal r in report.refused)
         if (_names.containsKey(r.habitId)) r,
@@ -507,6 +511,7 @@ class _Costs {
     return insightsText(
       cards: cards,
       refused: refused,
+      floors: report.floors,
       firstDay: firstDay,
       nameOf: nameOf,
       unitOf: unitOf,
@@ -523,6 +528,7 @@ class _Costs {
 String insightsText({
   required List<InsightCard> cards,
   required List<HabitRefusal> refused,
+  Map<String, double> floors = const <String, double>{},
   required DateTime? firstDay,
   required String Function(String habitId) nameOf,
   Unit Function(String habitId) unitOf = _anyUnit,
@@ -545,11 +551,16 @@ String insightsText({
     final HabitFinding f = card.headline;
     final String habit = nameOf(f.habitId);
     final Unit unit = unitOf(f.habitId);
+    final String? bedtime = bedtimeLine(f, locale, unit: unit);
     out
       ..write('\n$habit · ${card.family.label}\n')
       ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
+      ..write(bedtime == null ? '' : '$bedtime\n')
       ..write('${findingRange(f, locale)}\n')
       ..write('${findingBasis(f, habit)}\n');
+    if (findingEvidence(f) case final String evidence) {
+      out.write('$evidence\n');
+    }
     for (final HabitFinding other in card.others) {
       out.write('${findingLine(other, locale, unit: unit)}\n');
     }
@@ -557,7 +568,9 @@ String insightsText({
   if (refused.isNotEmpty) {
     out.write('\n${InsightsPage.refusedHeading}\n');
     for (final HabitRefusal r in refused) {
-      out.write('${nameOf(r.habitId)}: ${refusalReason(r, nameOf)}\n');
+      out.write(
+        '${nameOf(r.habitId)}: ${refusalReason(r, nameOf, floors: floors)}\n',
+      );
     }
   }
   out.write('\n${InsightsPage.foot}\n');
@@ -731,6 +744,7 @@ class _FindingCard extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final HabitFinding finding = card.headline;
     final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    final String? bedtime = bedtimeLine(finding, locale, unit: unit);
     return DialCard(
       top: top,
       children: <Widget>[
@@ -756,6 +770,13 @@ class _FindingCard extends StatelessWidget {
                 findingSentence(finding, habit, locale, unit: unit),
                 style: DialTypeScale.bodyL.copyWith(color: scheme.onSurface),
               ),
+              if (bedtime != null) ...<Widget>[
+                const SizedBox(height: DialSpace.xs),
+                Text(
+                  bedtime,
+                  style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
+                ),
+              ],
               const SizedBox(height: DialSpace.s),
               ExcludeSemantics(
                 child: SizedBox(
@@ -775,6 +796,8 @@ class _FindingCard extends StatelessWidget {
               const SizedBox(height: DialSpace.xs),
               Text(findingRange(finding, locale), style: small),
               Text(findingBasis(finding, habit), style: small),
+              if (findingEvidence(finding) case final String evidence)
+                Text(evidence, style: small),
               if (card.others.isNotEmpty) const SizedBox(height: DialSpace.s),
               for (final HabitFinding other in card.others)
                 Text(

@@ -25,6 +25,14 @@ double quantile(List<double> values, double q) {
 double interquartileRange(List<double> values) =>
     values.length < 2 ? 0 : quantile(values, 0.75) - quantile(values, 0.25);
 
+double median(List<double> values) {
+  final List<double> sorted = values.toList()..sort();
+  final int mid = sorted.length ~/ 2;
+  return sorted.length.isOdd
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 class Interval {
   const Interval(this.low, this.high);
 

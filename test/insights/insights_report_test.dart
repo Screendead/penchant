@@ -239,7 +239,7 @@ void main() {
     });
 
     test('still separates a current habit used on its days', () {
-      // habit1 (archived) moves the outcome by -30; habit2 is used on most of
+      // habit1 (archived) moves the outcome by -60; habit2 is used on most of
       // habit1's days and moves nothing.
       final Random random = Random(3);
       final List<HabitUse> uses = <HabitUse>[];
@@ -257,7 +257,7 @@ void main() {
           DailyOutcome(
             date: addDays(day, 1),
             metricId: metricIds.first,
-            value: 100 + (first ? -30 : 0) + 10 * gaussian(random),
+            value: 100 + (first ? -60 : 0) + 10 * gaussian(random),
           ),
         );
       }

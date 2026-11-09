@@ -32,8 +32,8 @@ import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/vice_tracker.dart';
-import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/undo_bar.dart';
 
 import 'fake_account.dart';
@@ -65,6 +65,9 @@ String _fieldText(WidgetTester tester, String label) => tester
     .widget<TextFormField>(find.widgetWithText(TextFormField, label))
     .controller!
     .text;
+
+EntryTimeController _time(WidgetTester tester) =>
+    tester.widget<EntryTimeField>(find.byType(EntryTimeField)).controller;
 
 Future<void> _pump(
   WidgetTester tester,
@@ -428,10 +431,7 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(_fieldText(tester, 'Quantity'), '3');
-      expect(
-        _fieldText(tester, ActivityDateField.label),
-        ActivityDateField.format.format(moved),
-      );
+      expect(_time(tester).at, moved);
 
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Quantity'),
@@ -442,10 +442,7 @@ void main() {
       await tester.pump();
 
       expect(_fieldText(tester, 'Quantity'), '7');
-      expect(
-        _fieldText(tester, ActivityDateField.label),
-        ActivityDateField.format.format(DateTime(2026, 11, 2, 11)),
-      );
+      expect(_time(tester).at, DateTime(2026, 11, 2, 11));
     });
 
     for (final bool rollbackFirst in <bool>[true, false]) {
@@ -503,44 +500,44 @@ void main() {
       });
     }
 
-    testWidgets('leaves the date alone until asked for the current time, and '
-        'returns to the stored one', (WidgetTester tester) async {
-      await pumpEditor(tester);
-      final String storedText = ActivityDateField.format.format(
-        stored.createdAt.toDate(),
-      );
-      await tester.pump(const Duration(seconds: 3));
-      expect(_fieldText(tester, ActivityDateField.label), storedText);
+    testWidgets('keeps the stored time as the clock moves, and Now sets the '
+        'current one', (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 11, 2, 12, 7, 30);
+      await withClock(Clock.fixed(now), () async {
+        await pumpEditor(tester);
+        await tester.pump(const Duration(seconds: 3));
+        expect(_time(tester).at, stored.createdAt.toDate());
+        expect(find.text('2 h 37 min ago'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Use current date and time'));
-      await tester.pump();
-      expect(_fieldText(tester, ActivityDateField.label), isNot(storedText));
-
-      await tester.tap(find.byTooltip('Manually enter date and time'));
-      await tester.pump();
-      expect(_fieldText(tester, ActivityDateField.label), storedText);
+        await tester.tap(find.text(EntryTimeField.nowLabel));
+        await tester.pump();
+        expect(_time(tester).followsClock, isTrue);
+        expect(_time(tester).value, now);
+      });
     });
   });
 
-  testWidgets('the record dialog keeps its clock on the current time until '
-      'unlocked', (WidgetTester tester) async {
-    await _pump(tester, [
-      unarchivedViceListProvider.overrideWithValue(AsyncData([coffee])),
-    ], const Scaffold(body: RecordNewActivityDialog()));
+  testWidgets('the record sheet follows the clock until the dial is moved', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 11, 2, 12, 7, 30);
+    await withClock(Clock.fixed(now), () async {
+      await _pump(tester, [
+        unarchivedViceListProvider.overrideWithValue(AsyncData([coffee])),
+      ], const Scaffold(body: RecordNewActivityDialog()));
 
-    DateTime shown() => ActivityDateField.format.parse(
-      _fieldText(tester, ActivityDateField.label),
-    );
-    expect(clock.now().difference(shown()).inSeconds, lessThan(2));
+      expect(_time(tester).followsClock, isTrue);
+      expect(
+        find.text('${EntryTimeField.nowLabel} · ${EntryTimeField.dragHint}'),
+        findsOneWidget,
+      );
 
-    final DateTime before = shown();
-    await tester.pump(const Duration(seconds: 3));
-    expect(shown().difference(before).inSeconds, 3);
-
-    await tester.tap(find.byTooltip('Manually enter date and time'));
-    await tester.pump();
-    final String frozen = _fieldText(tester, ActivityDateField.label);
-    await tester.pump(const Duration(seconds: 3));
-    expect(_fieldText(tester, ActivityDateField.label), frozen);
+      // The 06 numeral sits at the dial's right.
+      final Rect dial = tester.getRect(find.byType(TimeDial));
+      await tester.tapAt(dial.centerRight - const Offset(30, 0));
+      await tester.pump();
+      expect(_time(tester).at, DateTime(2026, 11, 2, 6));
+      expect(find.text('6 h 7 min ago'), findsOneWidget);
+    });
   });
 }

@@ -19,11 +19,12 @@ pull request titles (`gh pr list --state merged`).
   starts ("From 3 March 2024 to today"). "Copy as text" puts the findings and the reasons for the rest on the
   clipboard, for a note or a message. Penchant sends none of it anywhere; the text goes where you paste it, and with
   Handoff on, the clipboard also reaches your other Apple devices (#179).
-- Insights now finds things about a habit you keep up every day: how the amount goes with what follows ("Each extra
-  drink of Coffee goes with your deep sleep that night averaging 6 min less") and how the time of your last one does
-  ("A last Coffee an hour later goes with ..."), among the days you had it. An entry before 05:00 counts toward the
-  day before, for both. A habit whose amount or time barely changes says so instead, as does a last use that only
-  comes later because you had more, and a result that rests on one unusual day is not shown (#185).
+- Insights now finds things about a habit you keep up every day: how the amount goes with what follows ("On days
+  with one more drink logged for Coffee, your deep sleep that night averages 6 min less") and how the time of your
+  last one does ("On days your last use of Coffee is an hour later, ..."), among the days you had it. An entry before
+  05:00 counts toward the day before, for both. A habit whose amount or time barely changes says so instead, as does
+  a last use that only comes later because you had more, and a result that rests on one unusual day is not shown
+  (#185).
 - Insights looks at the hours after each use, not just the next day: "One to two hours after Coffee, your heart rate,
   set against the hour before, averages 6 bpm higher than at the same time after waking without it". Each use is
   compared with nearby days at the same time after waking, using your sleep from Apple Health, so the climb after
@@ -97,6 +98,13 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Insights splits off what bedtime does on the minutes of sleep. An amount or a time of last use still leads with
+  the whole difference, and a line under it says how much of that is left when you fall asleep at the same time
+  (read from Apple Health): "11 min less per hour later, 4 min of it at the same bedtime", or "none of it clear at
+  the same bedtime" when a late habit only means a later night, or "too few nights with a bedtime to tell the part at
+  the same bedtime". A night whose bedtime reads more than six hours from your usual one is left out of that line. A
+  result that hangs on one unusual day now says "rests on one unusual day" rather than "within the noise", and the
+  sentences read for any habit name ("On days your last use of Gummies is an hour later, ...") (#190).
 - Insights says nothing about an archived habit: no finding and no "Not enough to say" row, on the page or in Copy as
   text. Its entries still count, so a habit you had on the same days is not credited with what it did (#189).
 - Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,

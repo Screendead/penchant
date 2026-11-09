@@ -24,8 +24,11 @@ import 'package:tracker/onboarding/presets.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/day_picker.dart';
+import 'package:tracker/data/day.dart';
+import 'package:tracker/data/dial_layout.dart';
+import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
@@ -376,10 +379,57 @@ extension on Finder {
       find.descendant(of: this, matching: find.text(text));
 }
 
+// Sets the open amount sheet's or editor's time to [at], on the 5-minute
+// grid, as a user would: the day from the calendar under the time dial, then
+// a tap on the dial at the minute's angle.
+Future<void> setEntryTime(WidgetTester tester, DateTime at) async {
+  assert(at.second == 0 && at.minute % TimeDial.step == 0);
+  final Finder field = find.byType(EntryTimeField);
+  EntryTimeController controller() =>
+      tester.widget<EntryTimeField>(field).controller;
+  final DateTime day = startOfDay(at);
+  if (startOfDay(controller().value) != day) {
+    final Finder dayButton = find
+        .descendant(of: field, matching: find.byType(TextButton))
+        .first;
+    await scrollIntoView(tester, dayButton);
+    await tap(tester, dayButton);
+    final Finder sheet = find.byType(CalendarSheet);
+    await pumpUntilRouteSettled(tester, sheet);
+    while (find
+        .descendant(of: sheet, matching: find.text(formatMonth(day)))
+        .evaluate()
+        .isEmpty) {
+      final DateTime shown = startOfDay(controller().value);
+      await tap(
+        tester,
+        find.byTooltip(day.isBefore(shown) ? 'Previous month' : 'Next month'),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    await tap(
+      tester,
+      find.descendant(of: sheet, matching: find.text(formatCount(day.day))),
+    );
+    await pumpUntil(tester, sheet, present: false);
+  }
+  final Finder dial = find.byType(TimeDial);
+  await scrollIntoView(tester, dial);
+  final Rect rect = tester.getRect(dial);
+  await tester.tapAt(
+    rect.center +
+        dialPoint(dialAngle(at.hour * 60.0 + at.minute), rect.width * 0.35),
+  );
+  await pumpUntilTrue(
+    tester,
+    () => controller().at == at,
+    () => 'the time dial to show $at, not ${controller().value}',
+  );
+}
+
 // Records through Today's Log fan: a hold on the habit's wedge opens the
 // amount sheet with it chosen, or More does when the fan has no room for it.
-// With [at], unlocks the date field and types the time, as a user correcting
-// the clock would.
+// With [at], picks its day and time on the sheet's time dial (setEntryTime).
 Future<void> recordActivity(
   WidgetTester tester,
   String viceName,
@@ -426,12 +476,7 @@ Future<void> recordActivity(
     await tap(tester, find.text(viceName).last);
   }
   if (at != null) {
-    await tap(tester, find.byTooltip('Manually enter date and time'));
-    await enterText(
-      tester,
-      'Date and Time',
-      ActivityDateField.format.format(at),
-    );
+    await setEntryTime(tester, at);
   }
   final String typed = formatAmount(quantity);
   await enterQuantity(tester, typed);
