@@ -29,12 +29,18 @@ class NightCompare {
   final double low;
   final double high;
 
-  /// Above or below the usual range, by at least half of [step] from the
-  /// usual, so a difference shown in whole [step]s is never "0 above".
-  NightSide side(double step) {
-    if ((value - usual).abs() < step / 2) return NightSide.usual;
-    if (value > high) return NightSide.above;
-    if (value < low) return NightSide.below;
+  /// The value, the usual and their difference as whole numbers, so a row
+  /// reading "57 bpm · usual 54 · 3 above" adds up.
+  int get shownValue => value.round();
+  int get shownUsual => usual.round();
+  int get shownBy => (shownValue - shownUsual).abs();
+
+  /// Above or below the usual range, on the whole numbers shown, so a night
+  /// is never "0 above" and a value shown at the range's edge is inside it.
+  NightSide get side {
+    if (shownBy == 0) return NightSide.usual;
+    if (shownValue > high.round()) return NightSide.above;
+    if (shownValue < low.round()) return NightSide.below;
     return NightSide.usual;
   }
 }

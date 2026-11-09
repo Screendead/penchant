@@ -17,14 +17,13 @@ class LastNightLine extends ConsumerWidget {
   static const String lead = 'Last night';
 
   /// "sleeping heart rate 3 bpm above your usual".
-  static String body(NightCompare heart) {
-    final int by = (heart.value - heart.usual).abs().round();
-    return switch (heart.side(1)) {
-      NightSide.above => 'sleeping heart rate $by bpm above your usual',
-      NightSide.below => 'sleeping heart rate $by bpm below your usual',
-      NightSide.usual => 'sleeping heart rate in your usual range',
-    };
-  }
+  static String body(NightCompare heart) => switch (heart.side) {
+    NightSide.above =>
+      'sleeping heart rate ${heart.shownBy} bpm above your usual',
+    NightSide.below =>
+      'sleeping heart rate ${heart.shownBy} bpm below your usual',
+    NightSide.usual => 'sleeping heart rate in your usual range',
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -199,8 +199,11 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             value,
             vices,
           ),
-          _ => const <Widget>[
-            _MessageCard(InsightsPage.loadingLabel, busy: true),
+          // Today's line opens here, so last night waits for no engine.
+          _ => <Widget>[
+            if (vices != null)
+              _LastNightSection(vices: vices, marks: habitMarks(vices)),
+            const _MessageCard(InsightsPage.loadingLabel, busy: true),
           ],
         },
         const CardFoot(InsightsPage.foot),
@@ -271,6 +274,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
     if (result is InsightsFailed) {
       return <Widget>[
+        _LastNightSection(vices: vices, marks: habitMarks(vices)),
         _MessageCard(
           'Insights couldn’t be worked out',
           body: 'Try again in a moment.',
@@ -322,11 +326,35 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           CardRow(
             label: InsightsPage.copyLabel,
             subtitle: 'To the clipboard, for a note or a message',
-            onTap: () => _copy(costs.text()),
+            onTap: () => _copy(costs.text(_lastNightLines(costs.marks, vices))),
           ),
         ],
       ),
     ];
+  }
+
+  // The last-night section as the page shows it now, for the copied text.
+  List<String> _lastNightLines(Map<String, HabitMark> marks, List<Vice> vices) {
+    final LastNight? night = ref.read(lastNightProvider).value;
+    if (night == null) return const <String>[];
+    final DateTime today = ref.read(todayProvider);
+    final List<ViceActivity>? journal = ref
+        .read(viceActivityRangeProvider(insightsRange(today)))
+        .value;
+    return lastNightText(
+      night,
+      journal == null
+          ? null
+          : yesterdayLines(
+              journal,
+              vices,
+              marks,
+              today,
+              alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(
+                context,
+              ),
+            ),
+    );
   }
 
   // Health findings reach the clipboard only from this tap; nothing else may
@@ -443,9 +471,9 @@ class _Costs {
     top: top,
   );
 
-  // Every habit still short of the days a comparison needs: how far the
-  // furthest along has come.
-  Widget emptyBox() {
+  // With no card: every habit still short of the days a comparison needs
+  // says how far the furthest along has come; otherwise nothing is clear.
+  ({String title, String body, double? progress}) emptyCopy() {
     const InsightGates gates = InsightGates();
     final bool early =
         refused.isNotEmpty &&
@@ -455,30 +483,43 @@ class _Costs {
               r.usableDays < gates.minDays,
         );
     if (!early) {
-      return const NotYetBox(
-        InsightsPage.nothingClear,
+      return (
+        title: InsightsPage.nothingClear,
         body: InsightsPage.nothingClearBody,
+        progress: null,
       );
     }
     final int have = refused.map((HabitRefusal r) => r.usableDays).reduce(max);
-    return NotYetBox(
-      InsightsPage.earlyTitle,
+    return (
+      title: InsightsPage.earlyTitle,
       body: InsightsPage.earlyBody(have, gates.minDays),
       progress: have / gates.minDays,
     );
   }
 
-  String text() => insightsText(
-    cards: cards,
-    refused: refused,
-    firstDay: firstDay,
-    nameOf: nameOf,
-    unitOf: unitOf,
-    locale: formatLocale,
-  );
+  Widget emptyBox() {
+    final ({String title, String body, double? progress}) copy = emptyCopy();
+    return NotYetBox(copy.title, body: copy.body, progress: copy.progress);
+  }
+
+  String text(List<String> lastNight) {
+    final ({String title, String body, double? progress}) empty = emptyCopy();
+    return insightsText(
+      cards: cards,
+      refused: refused,
+      firstDay: firstDay,
+      nameOf: nameOf,
+      unitOf: unitOf,
+      locale: formatLocale,
+      lastNight: lastNight,
+      emptyTitle: empty.title,
+      emptyBody: empty.body,
+    );
+  }
 }
 
-/// The findings and refusals as the page shows them, in plain text.
+/// The page as it shows it, in plain text: last night's rows ([lastNight],
+/// from [lastNightText]), then the findings and refusals.
 String insightsText({
   required List<InsightCard> cards,
   required List<HabitRefusal> refused,
@@ -486,15 +527,20 @@ String insightsText({
   required String Function(String habitId) nameOf,
   Unit Function(String habitId) unitOf = _anyUnit,
   required String locale,
+  List<String> lastNight = const <String>[],
+  String emptyTitle = InsightsPage.nothingClear,
+  String emptyBody = InsightsPage.nothingClearBody,
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
   if (firstDay != null) out.write('\n${InsightsPage.span(firstDay)}');
-  out.write('\n\n${InsightsPage.costsHeading}\n');
-  if (cards.isEmpty) {
-    out.write(
-      '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n',
-    );
+  if (lastNight.isNotEmpty) {
+    out.write('\n\n${InsightsPage.lastNightHeading}');
+    for (final String line in lastNight) {
+      out.write('\n$line');
+    }
   }
+  out.write('\n\n${InsightsPage.costsHeading}\n');
+  if (cards.isEmpty) out.write('$emptyTitle: $emptyBody\n');
   for (final InsightCard card in cards) {
     final HabitFinding f = card.headline;
     final String habit = nameOf(f.habitId);
@@ -821,34 +867,23 @@ class _LastNightSection extends ConsumerWidget {
     final LastNight? night = ref.watch(lastNightProvider).value;
     if (night == null) return const SizedBox.shrink();
     final DateTime today = ref.watch(todayProvider);
-    // The page's own journal read, so this costs no query of its own.
-    final List<ViceActivity> journal =
-        ref.watch(viceActivityRangeProvider(insightsRange(today))).value ??
-        const <ViceActivity>[];
-    final bool h24 = MediaQuery.alwaysUse24HourFormatOf(context);
+    // The page's own journal read, so this costs no query of its own; no
+    // "nothing logged" before it answers.
+    final List<ViceActivity>? journal = ref
+        .watch(viceActivityRangeProvider(insightsRange(today)))
+        .value;
     final List<Widget> rows = <Widget>[
-      if (night.sleepingHeartRate case final NightCompare c)
-        _NightRow(
-          label: 'Sleeping heart rate',
-          value: <(String, String)>[('${c.value.round()}', 'bpm')],
-          note: lastNightHeartNote(c),
-        ),
-      if (night.heartRateVariability case final NightCompare c)
-        _NightRow(
-          label: 'HRV',
-          value: <(String, String)>[('${c.value.round()}', 'ms')],
-          note: lastNightHrvNote(c),
-        ),
-      if (night.asleep case final NightCompare c)
-        _NightRow(
-          label: 'Sleep',
-          value: <(String, String)>[
-            ('${c.value.round() ~/ 60}', 'h'),
-            ('${c.value.round() % 60}', 'm'),
-          ],
-          note: lastNightSleepNote(c),
-        ),
-      ..._yesterday(journal, today, h24),
+      for (final NightRow row in nightRows(night))
+        _NightRow(label: row.label, value: row.value, note: row.note),
+      if (journal != null)
+        for (final YesterdayLine line in yesterdayLines(
+          journal,
+          vices,
+          marks,
+          today,
+          alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+        ))
+          _YesterdayRow(mark: line.mark, text: line.text),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -858,76 +893,129 @@ class _LastNightSection extends ConsumerWidget {
       ],
     );
   }
+}
 
-  // The day before, as the engine keys it: a use before 05:00 counts to the
-  // evening before, so last night's drinks after midnight are yesterday's.
-  List<Widget> _yesterday(
-    List<ViceActivity> journal,
-    DateTime today,
-    bool alwaysUse24HourFormat,
-  ) {
-    final DateTime from = addDays(
-      today,
-      -1,
-    ).add(const Duration(hours: lateUseCutoffHour));
-    final DateTime to = today.add(const Duration(hours: lateUseCutoffHour));
-    final Map<String, ({num total, DateTime last})> used =
-        <String, ({num total, DateTime last})>{};
-    for (final ViceActivity a in journal) {
-      final DateTime at = a.createdAt.toDate();
-      if (at.isBefore(from) || !at.isBefore(to)) continue;
-      final ({num total, DateTime last})? had = used[a.viceID];
-      used[a.viceID] = (
-        total: (had?.total ?? 0) + a.measure,
-        last: had == null || at.isAfter(had.last) ? at : had.last,
-      );
-    }
-    final List<Vice> shown = <Vice>[
-      for (final Vice v in vices)
-        if (!v.archived && used.containsKey(v.id)) v,
-    ]..sort((a, b) => marks[a.id]!.creationIndex - marks[b.id]!.creationIndex);
-    if (shown.isEmpty) {
-      return const <Widget>[_YesterdayRow(text: 'Nothing logged yesterday')];
-    }
-    return <Widget>[
-      for (final Vice v in shown)
-        _YesterdayRow(
-          mark: marks[v.id],
-          text:
-              'Yesterday: ${v.name} ${v.unit.label(used[v.id]!.total)}, '
-              'last at ${formatTime(used[v.id]!.last, alwaysUse24HourFormat: alwaysUse24HourFormat)}',
-        ),
+/// One measure's row: its label, each number with its unit ("6 h 50 m" is
+/// two) and the note against the usual.
+typedef NightRow = ({String label, List<(String, String)> value, String note});
+
+/// The rows of the last-night check, in the order shown.
+List<NightRow> nightRows(LastNight night) => <NightRow>[
+  if (night.sleepingHeartRate case final NightCompare c)
+    (
+      label: 'Sleeping heart rate',
+      value: <(String, String)>[('${c.shownValue}', 'bpm')],
+      note: lastNightHeartNote(c),
+    ),
+  if (night.heartRateVariability case final NightCompare c)
+    (
+      label: 'HRV',
+      value: <(String, String)>[('${c.shownValue}', 'ms')],
+      note: lastNightHrvNote(c),
+    ),
+  if (night.asleep case final NightCompare c)
+    (
+      label: 'Sleep',
+      value: <(String, String)>[
+        ('${c.shownValue ~/ 60}', 'h'),
+        ('${c.shownValue % 60}', 'm'),
+      ],
+      note: lastNightSleepNote(c),
+    ),
+];
+
+/// "Yesterday: Wine 3 drinks, last at 22:05", with the habit's mark; or the
+/// one line saying nothing was logged.
+typedef YesterdayLine = ({HabitMark? mark, String text});
+
+/// What was logged the day before, as the engine keys it: a use before
+/// 05:00 counts to the evening before, so last night's drinks after midnight
+/// are yesterday's. Habits in creation order; archived ones left out.
+List<YesterdayLine> yesterdayLines(
+  List<ViceActivity> journal,
+  List<Vice> vices,
+  Map<String, HabitMark> marks,
+  DateTime today, {
+  required bool alwaysUse24HourFormat,
+}) {
+  final DateTime from = addDays(
+    today,
+    -1,
+  ).add(const Duration(hours: lateUseCutoffHour));
+  final DateTime to = today.add(const Duration(hours: lateUseCutoffHour));
+  final Map<String, ({num total, DateTime last})> used =
+      <String, ({num total, DateTime last})>{};
+  for (final ViceActivity a in journal) {
+    final DateTime at = a.createdAt.toDate();
+    if (at.isBefore(from) || !at.isBefore(to)) continue;
+    final ({num total, DateTime last})? had = used[a.viceID];
+    used[a.viceID] = (
+      total: (had?.total ?? 0) + a.measure,
+      last: had == null || at.isAfter(had.last) ? at : had.last,
+    );
+  }
+  final List<Vice> shown = <Vice>[
+    for (final Vice v in vices)
+      if (!v.archived && used.containsKey(v.id)) v,
+  ]..sort((a, b) => marks[a.id]!.creationIndex - marks[b.id]!.creationIndex);
+  if (shown.isEmpty) {
+    return const <YesterdayLine>[
+      (mark: null, text: 'Nothing logged yesterday'),
     ];
   }
+  return <YesterdayLine>[
+    for (final Vice v in shown)
+      (
+        mark: marks[v.id],
+        text:
+            'Yesterday: ${v.name} ${v.unit.label(used[v.id]!.total)}, '
+            'last at ${formatTime(used[v.id]!.last, alwaysUse24HourFormat: alwaysUse24HourFormat)}',
+      ),
+  ];
 }
+
+/// The check as text, one row a line: "Sleeping heart rate: 57 bpm, usual
+/// 54 · 3 above". [yesterday] is null while the journal has not answered.
+List<String> lastNightText(
+  LastNight night,
+  List<YesterdayLine>? yesterday,
+) => <String>[
+  for (final NightRow row in nightRows(night))
+    '${row.label}: '
+        '${row.value.map(((String, String) v) => '${v.$1} ${v.$2}').join(' ')}'
+        ', ${row.note}',
+  if (yesterday != null)
+    for (final YesterdayLine line in yesterday) line.text,
+];
 
 /// "usual 54 · 3 above", "usual 54 · in your usual range".
-String lastNightHeartNote(NightCompare c) {
-  final int by = (c.value - c.usual).abs().round();
-  return 'usual ${c.usual.round()} · ${switch (c.side(1)) {
-    NightSide.above => '$by above',
-    NightSide.below => '$by below',
-    NightSide.usual => 'in your usual range',
-  }}';
-}
-
-/// "usual range 45–51 · below".
-String lastNightHrvNote(NightCompare c) =>
-    'usual range ${c.low.round()}–${c.high.round()} · ${switch (c.side(1)) {
-      NightSide.above => 'above',
-      NightSide.below => 'below',
-      NightSide.usual => 'within it',
+String lastNightHeartNote(NightCompare c) =>
+    'usual ${c.shownUsual} · ${switch (c.side) {
+      NightSide.above => '${c.shownBy} above',
+      NightSide.below => '${c.shownBy} below',
+      NightSide.usual => 'in your usual range',
     }}';
 
-/// "usual 7 h 15 m · 25 min under".
-String lastNightSleepNote(NightCompare c) {
-  final int by = (c.value - c.usual).abs().round();
-  return 'usual ${formatSleep(c.usual)} · ${switch (c.side(1)) {
-    NightSide.above => '$by min over',
-    NightSide.below => '$by min under',
-    NightSide.usual => 'in your usual range',
+/// "usual range 45–51 · below"; a range whose ends round to one number is
+/// "usual 48".
+String lastNightHrvNote(NightCompare c) {
+  final int low = c.low.round();
+  final int high = c.high.round();
+  final String usual = low == high ? 'usual $low' : 'usual range $low–$high';
+  return '$usual · ${switch (c.side) {
+    NightSide.above => 'above',
+    NightSide.below => 'below',
+    NightSide.usual => low == high ? 'in your usual range' : 'within it',
   }}';
 }
+
+/// "usual 7 h 15 m · 25 min under".
+String lastNightSleepNote(NightCompare c) =>
+    'usual ${formatSleep(c.usual)} · ${switch (c.side) {
+      NightSide.above => '${c.shownBy} min over',
+      NightSide.below => '${c.shownBy} min under',
+      NightSide.usual => 'in your usual range',
+    }}';
 
 /// Minutes as "6 h 50 m".
 String formatSleep(double minutes) {

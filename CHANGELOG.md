@@ -91,8 +91,9 @@ pull request titles (`gh pr list --state merged`).
   rest and the habits with nothing clear yet), How cutting down is going, and What sets it off. The last two say
   what they will show until Penchant can work them out. At the top, last night against your usual: sleeping heart
   rate, HRV while in bed and time asleep against your past four weeks, with what you logged the day before. Each
-  morning until noon, Today shows last night's sleeping heart rate in one line under the dial; a tap opens Insights.
-  Health data stays on your iPhone.
+  morning until noon, Today shows last night's sleeping heart rate in one line under the dial; a tap opens Insights,
+  where the check shows while the rest is still being worked out. Copy as text includes it. Health data stays on
+  your iPhone.
 
 ### Fixed
 
