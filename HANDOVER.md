@@ -171,6 +171,10 @@ scratchpad is shared, and a generic `pr-body.md` once put one PR's description o
    and says "open Penchant to sync" for a `blocked` one. The in-process popover (#157, #163) is gone, and with it the
    private `enableMultiView` call, which also sent VoiceOver to the wrong view (`FlutterEngine.mm`,
    `update_semantics_callback2`).
+   On iOS the log intents are `LiveActivityIntent`s (PR #166), so iOS runs a widget, control, Siri or Shortcuts log in
+   Penchant's process, launched in the background if need be; it flushes once the Undo hold passes, under a
+   background task, with `BGAppRefreshTask` kept as the fallback. Jack's "do it properly" (2026-11-08) settled
+   `r11-ios-widget-sync` as B. Both platforms installed as build 964; neither path proven on a device yet.
 
 7. **Insights, built free** (Jack, 2026-11-08: "build it free for me, we can paywall later"). The Pro features
    ship unlocked; the paywall and StoreKit wait until he decides to sell. Apple Health works on the free team: a
@@ -525,12 +529,7 @@ Later the same day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-- **`r11-ios-widget-sync`** (raised 2026-11-08, PR #167 review): iPhone widget and Shortcut logs reach Firestore only
-  when the app runs or iOS grants a `BGAppRefreshTask`, which it schedules at its own discretion (often hours later)
-  and never for an app the user force-quit. Options: (A) keep the background refresh as is; (B) run the widget's log
-  intent in the app's process so it writes at once, for example as a `LiveActivityIntent`, which Apple documents as
-  running in the app's process (unverified for widget buttons here: it needs a spike on a device first). Claude
-  recommends B, after the spike shows a widget tap writing within seconds with the app suspended or not running.
+None.
 
 U1 to U8 in the overnight list (under the queue) were decided in round 10 (Jack's calls, round 10, above).
 
