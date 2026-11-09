@@ -77,12 +77,14 @@ class InsightsInput {
     required this.outcomes,
     required this.from,
     required this.through,
+    this.archived = const <String>{},
   });
 
   factory InsightsInput.from({
     required Iterable<ViceActivity> activities,
     required Iterable<hs.DailyOutcome> health,
     required DateTime today,
+    Set<String> archived = const <String>{},
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -100,6 +102,7 @@ class InsightsInput {
       ],
       from: range.start,
       through: addDays(range.end, -1),
+      archived: archived,
     );
   }
 
@@ -107,6 +110,10 @@ class InsightsInput {
   final List<DailyOutcome> outcomes;
   final DateTime from;
   final DateTime through;
+
+  /// Habits the report says nothing about. Their uses stay in [uses], so they
+  /// are still held constant when judging the others.
+  final Set<String> archived;
 }
 
 class InsightsReport {
@@ -151,20 +158,22 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<HabitFinding> findings = <HabitFinding>[];
   final Map<String, List<HabitRefusal>> refusals =
       <String, List<HabitRefusal>>{};
-  // The family for false-discovery control is the whole page: every habit
-  // against every outcome, by use, amount and time, not one at a time.
+  // The family for false-discovery control is the whole page: every habit it
+  // shows against every outcome, by use, amount and time, not one at a time.
+  // An archived habit's comparisons are never shown, so they are not counted.
   for (final HabitInsight insight in controlFalseDiscoveries(<HabitInsight>[
     for (final String metricId in outcomes.metricIds)
       if (metricCopy(metricId) != null)
         for (final _Comparison comparison in _comparisons)
-          ...comparison(
+          for (final HabitInsight result in comparison(
             habits: habits,
             outcomes: outcomes,
             metricId: metricId,
             lagDays: insightsLagDays,
             from: input.from,
             through: input.through,
-          ),
+          ))
+            if (!input.archived.contains(result.habitId)) result,
   ])) {
     switch (insight) {
       case HabitFinding():

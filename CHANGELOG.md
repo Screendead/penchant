@@ -85,7 +85,9 @@ pull request titles (`gh pr list --state merged`).
   amount or a time of last use is compared at the same bedtime (when you fell asleep, read from Apple Health), and
   one that can't be told apart from your bedtime says so. A result that hangs on one unusual day now says "rests on
   one unusual day" rather than "within the noise", and the sentences read for any habit name ("On days your last use
-  of Gummies is an hour later, ...").
+  of Gummies is an hour later, ...") (#190).
+- Insights says nothing about an archived habit: no finding and no "Not enough to say" row, on the page or in Copy as
+  text. Its entries still count, so a habit you had on the same days is not credited with what it did (#189).
 - Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,
   the Health card says "Allow new Health data", and a tap shows the Health sheet for the new types only. The card also
   says where to change Health access later (Settings > Privacy & Security > Health > Penchant).
