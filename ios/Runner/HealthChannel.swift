@@ -69,6 +69,8 @@ enum HealthChannel {
   static let maxSamplesPerCall = 20_000
   private static let sleepingHeartRate = "sleepingHeartRate"
 
+  // healthReadTypesVersion in lib/providers/insights_provider.dart counts
+  // changes to this set; raise it with each one.
   private static var readTypes: Set<HKObjectType> {
     var types: Set<HKObjectType> = [HKCategoryType(.sleepAnalysis), HKQuantityType(.heartRate)]
     for metric in quantityMetrics {
@@ -96,6 +98,22 @@ enum HealthChannel {
               result(FlutterError(code: "authorization-failed", message: error.localizedDescription, details: nil))
             } else {
               result(success)
+            }
+          }
+        }
+      case "requestStatus":
+        // .shouldRequest once readTypes holds a type the person was never
+        // asked about; the sheet then shows only those types.
+        store.getRequestStatusForAuthorization(toShare: [], read: readTypes) { status, error in
+          DispatchQueue.main.async {
+            if let error {
+              result(FlutterError(code: "status-failed", message: error.localizedDescription, details: nil))
+              return
+            }
+            switch status {
+            case .shouldRequest: result("shouldRequest")
+            case .unnecessary: result("unnecessary")
+            default: result("unknown")
             }
           }
         }

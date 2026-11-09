@@ -161,8 +161,17 @@ final class HealthValues extends HealthRead {
 const healthDatabaseInaccessible = 'database-inaccessible';
 const healthNotDetermined = 'not-determined';
 
+/// HealthKit's answer to whether [HealthSource.requestAuthorization] would show
+/// the sheet: it shows only the types the person was never asked about.
+enum HealthRequestStatus { shouldRequest, unnecessary, unknown }
+
 abstract interface class HealthSource {
   Future<bool> isAvailable();
+
+  /// Whether the read types hold one the person was never asked about. Says
+  /// nothing about what was allowed. [HealthRequestStatus.unknown] when Health
+  /// is unavailable or HealthKit cannot tell.
+  Future<HealthRequestStatus> requestStatus();
 
   /// Shows the system's Health sheet for every [HealthMetric]. True once it
   /// completed, which says nothing about what was allowed; false when Health
@@ -259,6 +268,25 @@ class ChannelHealthSource implements HealthSource {
     } on MissingPluginException {
       return false;
     }
+  }
+
+  @override
+  Future<HealthRequestStatus> requestStatus() async {
+    if (!_supported) return HealthRequestStatus.unknown;
+    final String? status;
+    try {
+      status = await _channel.invokeMethod<String>('requestStatus');
+    } on PlatformException catch (e) {
+      if (e.code == 'unavailable') return HealthRequestStatus.unknown;
+      rethrow;
+    } on MissingPluginException {
+      return HealthRequestStatus.unknown;
+    }
+    return switch (status) {
+      'shouldRequest' => HealthRequestStatus.shouldRequest,
+      'unnecessary' => HealthRequestStatus.unnecessary,
+      _ => HealthRequestStatus.unknown,
+    };
   }
 
   @override
