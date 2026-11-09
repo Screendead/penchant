@@ -1098,7 +1098,13 @@ class _HabitChip extends StatelessWidget {
         children: <Widget>[
           HabitPip(mark: mark),
           const SizedBox(width: 7),
-          Text(vice.name),
+          Flexible(
+            child: Text(
+              vice.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           if (vice.archived)
             Text(
               ' · archived',

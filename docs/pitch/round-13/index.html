@@ -1,0 +1,193 @@
+<title>Penchant Round 13</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of call cards; each card = question, option chips (tap to pick), detail, built evidence. */
+:root{
+  --paper:#f6f5f2; --card:#ffffff; --ink:#1b1c1f; --muted:#5d606a; --rule:#dcdbd6;
+  --pick:#1b1c1f; --pickInk:#f6f5f2; --rec:#2f6b4f; --warn:#8a5a12;
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 0}
+p{margin:0}
+.lede{color:var(--muted)}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.call{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:12px;min-width:0}
+.tag{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.opts{display:grid;gap:8px}
+.opt{all:unset;box-sizing:border-box;display:grid;gap:2px;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.opt b{font-weight:600}
+.opt .why{color:var(--muted);font-size:14px}
+.opt .rec{color:var(--rec);font-size:12px;font-family:var(--mono)}
+.opt[aria-pressed="true"]{background:var(--pick);color:var(--pickInk);border-color:var(--pick)}
+.opt[aria-pressed="true"] .why,.opt[aria-pressed="true"] .rec{color:var(--pickInk)}
+.recline{border-left:3px solid var(--rec);padding-left:10px}
+.shots{display:flex;gap:10px;overflow-x:auto}
+.shots figure{margin:0;flex:0 0 auto;width:220px;display:grid;gap:4px}
+.shots .frame{height:380px;overflow-y:auto;border:1px solid var(--rule);border-radius:10px}
+.shots img{display:block;width:100%}
+.shots figcaption{font-size:12px;color:var(--muted)}
+ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.saved{font-family:var(--mono);font-size:12px;color:var(--rec);min-height:1em}
+@media (prefers-reduced-motion:no-preference){.opt{transition:background .12s,color .12s}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Round 13: ten calls</h1>
+    <p class="lede">From the 2026-11-09 run. Each option is built or is a one-constant change on master. Tap an option to pick it; your picks save here and I read them back.</p>
+    <p class="status" id="status">Loading saved picks…</p>
+  </header>
+
+  <section class="call" style="gap:8px">
+    <h2>What finished</h2>
+    <ul>
+      <li>Sleep cards lead with the total effect, then the part left at the same bedtime (#190).</li>
+      <li>The mini time dial in the amount sheet and editor; an edited bead travels to its new time (#199).</li>
+      <li>Sealing migrator keeps going past an oversized old document; an unused index is gone (#196).</li>
+      <li>The macOS e2e suite runs in CI after each merge (#151). It proves screens and flows, not keychain sign-in.</li>
+      <li>Insights as three questions with the last-night check (#198) and floors from the literature (#197): merging now.</li>
+    </ul>
+  </section>
+
+  <div id="calls"></div>
+
+  <section class="call" style="gap:8px">
+    <h2>For you to do</h2>
+    <ul>
+      <li><b>Delete 18 archived branches.</b> Their <span class="tag">archive/*</span> tags are pushed and checked; the permission check refused my delete. Say "delete them" and I will, or run it yourself.</li>
+      <li><b>Install master on iPhone and Mac?</b> #196 changes the encryption migrator, so I ask first.</li>
+      <li><b>Orphan cleanup logs</b> (B1): read <span class="tag">dailyOrphanCleanup</span>'s dry-run logs, then I pitch the flip.</li>
+      <li><b>Optional:</b> paste the output of <span class="tag">firebase firestore:indexes --project screendead-vice-tracker</span> so I can reconcile the live indexes.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const CALLS = [
+ {id:'hr-floor', area:'Insights · floors (#197)', q:'Smallest resting and sleeping heart rate change a card may report',
+  opts:[
+   ['a','5 bpm','Each 5 bpm rise goes with 12% higher mortality (ARIC, Vazir 2018). Hides 2 to 4 bpm cards, such as a next-day rise after alcohol.',true],
+   ['b','3 bpm','The typical day-to-day swing in 92,457 wearable users (Quer 2020). Shows more cards; not tied to an outcome.'],
+   ['c','1 bpm','The old guess. Most cards, most of them too small to matter.']],
+  rec:'5 bpm: the only one tied to a measured effect. One constant to change.'},
+ {id:'noise-rule', area:'Insights · floors (#197)', q:'How a floor stays out of your own night-to-night noise',
+  opts:[
+   ['a','At least half your typical day-to-day change','The usual smallest-worthwhile-change rule. Built.',true],
+   ['b','At least your whole typical change','Refuses most sleep findings, though an average over many nights is rightly smaller than one night\'s scatter.'],
+   ['c','Checked in the write-up only','Nothing at runtime.']],
+  rec:'Half. For steps and energy your own scatter, not the literature, ends up setting the floor; the card line says so.'},
+ {id:'energy-floor', area:'Insights · floors (#197)', q:'Active energy floor',
+  opts:[
+   ['a','85 kcal','Inferred from a 15 to 20 kJ/kg/day step at 70 kg; the app reads no body weight. Built.',true],
+   ['b','50 kcal','The old guess.'],
+   ['c','100 kcal','A round inferred step.']],
+  rec:'85 with the inference stated; the noise rule usually decides this one anyway.'},
+ {id:'usual-range', area:'Last night (#198)', q:'What counts as "your usual" for last night\'s check',
+  opts:[
+   ['a','Middle half of the last 28 nights','Built. About half of all nights read above or below, on noise alone.'],
+   ['b','10th to 90th percentile','About one night in five reads above or below.',true],
+   ['c','Outliers only (Tukey fences)','On 28 nights it would almost never fire.']],
+  rec:'10th to 90th: "above your usual" then means something but still shows a few times a month. One function.'},
+ {id:'today-line', area:'Last night (#198)', q:'Today\'s last-night line wraps to two lines on a 390 pt phone',
+  opts:[
+   ['a','Accept the wrap','Built: "Last night · sleeping heart rate 3 bpm above your usual".'],
+   ['b','Shorter copy','"Last night · heart rate 3 bpm above usual", one line.',true],
+   ['c','Smaller type (13 pt)','Same words, one line, harder to read.']],
+  rec:'Shorter copy: the chevron and the Insights page carry the context.',
+  shots:[['img/today-last-night-light.png','Built: the wrap, under the dial']]},
+ {id:'empty-sections', area:'Insights page (#198)', q:'The two question sections with no engine yet',
+  opts:[
+   ['a','Show them with "Nothing to show yet"','Each box says what will go there. Built.',true],
+   ['b','Hide them until their engines land','The page shows one question for now.']],
+  rec:'Show: the page has its decided shape from day one, and each section says what it waits for.',
+  shots:[['img/insights-questions-light.png','A: shown'],['img/call-not-yet-B-hidden-light.png','B: hidden']]},
+ {id:'time-dial-day', area:'Time dial (#199, merged)', q:'Changing the day under the time dial',
+  opts:[
+   ['a','As mocked: time within the day only','Removes backdating a new entry to another day and moving an entry between days.'],
+   ['b','The day word opens the calendar','"Today" or "Yesterday, Wed 4 Nov" is a button; keeps both features. Built and merged.',true]],
+  rec:'B: keeps working features; going to A later deletes one button.',
+  shots:[['img/time-dial-new-light.png','Built: new entry, beside the mock-up']]},
+ {id:'bedtime-family', area:'Sleep cards (#190, merged)', q:'Should the same-bedtime part count in the false-discovery correction?',
+  opts:[
+   ['a','No: it describes a finding already made','Built. No power lost on the totals; the part never claims a finding of its own.',true],
+   ['b','Yes: hold it to the same bar','Fewer false parts, at some cost to every total on noise.']],
+  rec:'No.'},
+ {id:'plaintext-creates', area:'Security (register)', q:'Should the rules refuse new unsealed habits and entries?',
+  opts:[
+   ['a','Accept both now; refuse once you have a key record, later','Offline first launch without a key still works.',true],
+   ['b','Refuse after a version floor you name','Every build below it stops writing.'],
+   ['c','Refuse now','Breaks offline-without-key writes and older builds.']],
+  rec:'Accept now, then refuse for users whose key record exists (one rules get).'},
+ {id:'orphan-entries', area:'Data (register)', q:'Entries whose habit was deleted show nowhere',
+  opts:[
+   ['a','Leave them','Export still carries them; Delete account removes them.'],
+   ['b','A "Deleted habit" row in Manage Data','You can see, export or delete them. Small and reversible.',true],
+   ['c','A server job deletes them','Removes your data without asking.']],
+  rec:'B: your data stays yours and visible. Not built yet.'},
+ {id:'api-key', area:'Security (console)', q:'Restrict the Firebase client key in the Google Cloud console',
+  opts:[
+   ['a','iOS bundle restriction plus Firebase APIs only','You set it in the console; stops casual reuse of the key.',true],
+   ['b','Leave it unrestricted','Firestore rules stay the only guard.']],
+  rec:'Restrict: five minutes in the console, no app change.'},
+];
+
+const picks = {};
+const host = document.getElementById('calls');
+host.style.display='grid'; host.style.gap='18px';
+function render(){
+  host.replaceChildren(...CALLS.map(c=>{
+    const s=document.createElement('section'); s.className='call';
+    const t=document.createElement('span'); t.className='tag'; t.textContent=c.area;
+    const h=document.createElement('h2'); h.textContent=c.q;
+    const o=document.createElement('div'); o.className='opts'; o.setAttribute('role','group'); o.setAttribute('aria-label',c.q);
+    c.opts.forEach(([k,label,why,isRec])=>{
+      const b=document.createElement('button'); b.className='opt'; b.id=`${c.id}-${k}`;
+      b.setAttribute('aria-pressed', picks[c.id]===k?'true':'false');
+      const l=document.createElement('b'); l.textContent=`${k.toUpperCase()}. ${label}`;
+      const w=document.createElement('span'); w.className='why'; w.textContent=why;
+      b.append(l,w);
+      if(isRec){const r=document.createElement('span'); r.className='rec'; r.textContent='Recommended'; b.append(r);}
+      b.onclick=()=>pick(c.id,k);
+      o.append(b);
+    });
+    const r=document.createElement('p'); r.className='recline'; r.textContent=c.rec;
+    s.append(t,h,o,r);
+    if(c.shots){const sh=document.createElement('div'); sh.className='shots';
+      c.shots.forEach(([src,cap])=>{const f=document.createElement('figure');
+        const fr=document.createElement('div'); fr.className='frame'; const i=document.createElement('img'); i.src=src; i.alt=cap; i.loading='lazy'; fr.append(i);
+        const fc=document.createElement('figcaption'); fc.textContent=cap; f.append(fr,fc); sh.append(f);});
+      s.append(sh);}
+    const sv=document.createElement('p'); sv.className='saved'; sv.id=`saved-${c.id}`; sv.textContent=picks[c.id]?'Saved':'';
+    s.append(sv);
+    return s;
+  }));
+  const n=Object.keys(picks).length;
+  document.getElementById('status').textContent = db ? `${n} of ${CALLS.length} picked` : (dbTried ? 'Picks cannot save in this view' : 'Loading saved picks…');
+}
+let db=null, dbTried=false;
+async function pick(id,k){
+  picks[id]=k; render();
+  if(!db) return;
+  try{ await db.doc(`picks/${id}`).set({option:k, at:new Date().toISOString()}); }
+  catch(e){ const el=document.getElementById(`saved-${id}`); if(el) el.textContent='Not saved: '+(e&&e.message||'error'); }
+}
+render();
+(async()=>{
+  const timer=setTimeout(()=>{dbTried=true; render();},10000);
+  try{
+    db = window.claude ? await window.claude.use('db') : null;
+    if(db){ const snap=await db.collection('picks').get();
+      (snap.docs||snap).forEach(d=>{const v=d.data?d.data():d; const id=d.id; if(v&&v.option) picks[id]=v.option;}); }
+  }catch(e){ db=null; }
+  clearTimeout(timer); dbTried=true; render();
+})();
+</script>

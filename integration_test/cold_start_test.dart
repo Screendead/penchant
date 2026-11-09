@@ -10,9 +10,14 @@ import 'package:tracker/main.dart';
 import 'support.dart';
 
 // A new ProviderScope key throws away the old container, so userProvider
-// starts from loading again, as on a launch with a persisted session.
-Future<void> _relaunch(WidgetTester tester) =>
-    tester.pumpWidget(ProviderScope(key: UniqueKey(), child: const MyApp()));
+// starts from loading again, as on a launch with a persisted session. The old
+// tree goes first: on macOS two live menu bars assert.
+Future<void> _relaunch(WidgetTester tester) async {
+  await tester.pumpWidget(const SizedBox());
+  await tester.pumpWidget(
+    ProviderScope(key: UniqueKey(), child: const MyApp()),
+  );
+}
 
 void main() {
   ensureE2EBinding();
