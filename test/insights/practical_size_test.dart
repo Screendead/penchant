@@ -143,7 +143,6 @@ void main() {
       ),
     );
     expect(report.findings, isEmpty);
-    expect(report.cards, isEmpty);
     final HabitRefusal refused = report.refused.single;
     expect(refused.reason, RefusalReason.tooSmall);
     expect(refused.effect, closeTo(-4, 0.5));

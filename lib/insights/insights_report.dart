@@ -149,7 +149,6 @@ class InsightsReport {
   const InsightsReport({
     required this.findings,
     required this.refused,
-    this.cards = const <InsightCard>[],
     this.hoursAfterChecks = 0,
   });
 
@@ -159,9 +158,6 @@ class InsightsReport {
   /// Strongest first, by [HabitFinding.standardized]'s size; only those at or
   /// over their outcome's [metricFloor].
   final List<HabitFinding> findings;
-
-  /// [findings] grouped by [insightCards].
-  final List<InsightCard> cards;
 
   /// One refusal for each habit with no finding of any kind on any outcome,
   /// the one that says most: too small to matter, then entangled, then possibly chance, then logged
@@ -249,7 +245,6 @@ InsightsReport computeInsights(InsightsInput input) {
   return InsightsReport(
     hoursAfterChecks: hours.length,
     findings: findings,
-    cards: insightCards(findings),
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),
     ],
@@ -276,11 +271,11 @@ HabitRefusal _tooSmall(HabitFinding f) => HabitRefusal(
 
 /// The family a card groups its outcomes under.
 enum MetricFamily {
-  sleep('Sleep'),
-  heart('Heart'),
-  breathing('Breathing'),
-  temperature('Temperature'),
-  activity('Activity');
+  sleep('sleep'),
+  heart('heart'),
+  breathing('breathing'),
+  temperature('temperature'),
+  activity('activity');
 
   const MetricFamily(this.label);
 
