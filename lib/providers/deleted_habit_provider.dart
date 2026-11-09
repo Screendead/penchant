@@ -89,7 +89,12 @@ Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _readOwned(
 /// rules began requiring an owned one is there unless it has been deleted.
 final deletedHabitActivitiesForUserProvider = FutureProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, String viceIDs})>(
-      retry: firestoreRetry,
+      // Both reads are the server's, so offline each fails at once with
+      // unavailable; the page's Retry asks again rather than a spinner.
+      retry: (int count, Object error) =>
+          error is FirebaseException && error.code == 'unavailable'
+          ? null
+          : firestoreRetry(count, error),
       (ref, key) async {
         final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         final List<QueryDocumentSnapshot<Map<String, dynamic>>> activities =
