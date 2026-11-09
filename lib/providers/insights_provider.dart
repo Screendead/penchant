@@ -4,11 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 
 // Health values stay on the device: ReportProviderErrors sends every provider
 // failure to Crashlytics, so nothing below that reads or derives from Health
@@ -207,12 +209,17 @@ final class InsightsFailed extends InsightsResult {
 }
 
 // Keyed on the very lists the watched providers hold, so a rebuild that
-// changes neither reuses the result.
+// changes neither reuses the result. The archived habits are a string, since a
+// Set is equal only to itself, so renaming a habit doesn't run the engine again.
 typedef _EngineKey = ({
   List<ViceActivity> activities,
   List<DailyOutcome> health,
   DateTime today,
+  String archived,
 });
+
+// A Firestore document ID never holds a '/', so it parts the IDs.
+const String _archivedSeparator = '/';
 
 final _engineProvider = FutureProvider.autoDispose
     .family<InsightsResult, _EngineKey>((ref, key) async {
@@ -223,6 +230,10 @@ final _engineProvider = FutureProvider.autoDispose
               activities: key.activities,
               health: key.health,
               today: key.today,
+              archived: <String>{
+                if (key.archived.isNotEmpty)
+                  ...key.archived.split(_archivedSeparator),
+              },
             ),
           ),
           firstDays: insightsFirstDays(key.activities),
@@ -256,9 +267,21 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
       return AsyncError<InsightsView>(error, stackTrace);
     }
     final List<ViceActivity>? journal = activities.value;
-    if (journal == null) return const AsyncLoading<InsightsView>();
+    // The page says when the habits fail to load.
+    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    if (journal == null || vices == null) {
+      return const AsyncLoading<InsightsView>();
+    }
     final AsyncValue<InsightsResult> result = ref.watch(
-      _engineProvider((activities: journal, health: values, today: today)),
+      _engineProvider((
+        activities: journal,
+        health: values,
+        today: today,
+        archived: ([
+          for (final Vice v in vices)
+            if (v.archived) v.id,
+        ]..sort()).join(_archivedSeparator),
+      )),
     );
     return switch (result.value) {
       final InsightsResult r => AsyncData<InsightsView>((

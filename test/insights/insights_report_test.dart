@@ -174,6 +174,110 @@ void main() {
     fail('no chance refusal without a sibling finding in $seeds seeds');
   });
 
+  group('an archived habit', () {
+    test('has no finding and no refusal, though its effect is real', () {
+      final InsightsInput input = noiseInput(0, effect: -30);
+      expect(
+        computeInsights(input).findings.map((f) => f.habitId),
+        contains('habit1'),
+      );
+      final InsightsReport report = computeInsights(
+        InsightsInput(
+          uses: input.uses,
+          outcomes: input.outcomes,
+          from: input.from,
+          through: input.through,
+          archived: const <String>{'habit1'},
+        ),
+      );
+      expect(report.findings.map((f) => f.habitId), isNot(contains('habit1')));
+      expect(report.refused.map((r) => r.habitId), isNot(contains('habit1')));
+      expect(report.refused.map((r) => r.habitId), contains('habit2'));
+    });
+
+    test('is left out of the false-discovery family', () {
+      const Set<String> archived = <String>{
+        'habit2',
+        'habit3',
+        'habit4',
+        'habit5',
+      };
+      for (int seed = 0; seed < 200; seed++) {
+        final InsightsInput input = noiseInput(seed, effect: -12);
+        final List<HabitInsight> raw = everyComparison(input);
+        final Set<(String, String)> shown = pairs(
+          controlFalseDiscoveries(<HabitInsight>[
+            for (final HabitInsight r in raw)
+              if (!archived.contains(r.habitId)) r,
+          ]).whereType<HabitFinding>(),
+        );
+        final InsightsReport report = computeInsights(
+          InsightsInput(
+            uses: input.uses,
+            outcomes: input.outcomes,
+            from: input.from,
+            through: input.through,
+            archived: archived,
+          ),
+        );
+        expect(pairs(report.findings), shown);
+        // Kept only once the archived habits' comparisons are out of the
+        // family: proof they were not counted.
+        final Set<(String, String)> withAll = pairs(
+          controlFalseDiscoveries(raw).whereType<HabitFinding>(),
+        );
+        if (shown.difference(withAll).isNotEmpty) return;
+      }
+      fail('no finding kept only by the smaller family in 200 seeds');
+    });
+
+    test('still separates a current habit used on its days', () {
+      // habit1 (archived) moves the outcome by -30; habit2 is used on most of
+      // habit1's days and moves nothing.
+      final Random random = Random(3);
+      final List<HabitUse> uses = <HabitUse>[];
+      final List<DailyOutcome> outcomes = <DailyOutcome>[];
+      for (int i = 0; i < days; i++) {
+        final DateTime day = addDays(start, i);
+        final DateTime at = day.add(const Duration(hours: 9));
+        final bool first = random.nextBool();
+        final bool second = first
+            ? random.nextDouble() < 0.75
+            : random.nextDouble() < 0.25;
+        if (first) uses.add(HabitUse(habitId: 'habit1', at: at, amount: 1));
+        if (second) uses.add(HabitUse(habitId: 'habit2', at: at, amount: 1));
+        outcomes.add(
+          DailyOutcome(
+            date: addDays(day, 1),
+            metricId: metricIds.first,
+            value: 100 + (first ? -30 : 0) + 10 * gaussian(random),
+          ),
+        );
+      }
+      InsightsReport report(List<HabitUse> uses) => computeInsights(
+        InsightsInput(
+          uses: uses,
+          outcomes: outcomes,
+          from: start,
+          through: addDays(start, days),
+          archived: const <String>{'habit1'},
+        ),
+      );
+
+      // Without habit1's uses, habit2 takes its effect.
+      expect(
+        report(<HabitUse>[
+          for (final HabitUse u in uses)
+            if (u.habitId != 'habit1') u,
+        ]).findings.map((f) => f.habitId),
+        contains('habit2'),
+      );
+      final InsightsReport kept = report(uses);
+      expect(kept.findings, isEmpty);
+      expect(kept.refused.single.habitId, 'habit2');
+    });
+  });
+
   group('a refusal for too few days says which side is short', () {
     HabitRefusal tooFew(int usable, int exposed) => HabitRefusal(
       habitId: 'Coffee',

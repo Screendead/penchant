@@ -195,6 +195,75 @@ void main() {
     );
   });
 
+  testWidgets('an archived habit gets no card, no row and no copied line', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    final List<String?> copied = <String?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text'] as String?,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee', archived: true),
+          ...insightsVices.where((Vice v) => v.id != 'coffee'),
+        ]),
+      ),
+    );
+
+    expect(find.text(InsightsPage.nothingClear), findsOneWidget);
+    expect(find.textContaining('Coffee'), findsNothing);
+    expect(find.text('Tea'), findsOneWidget);
+    expect(find.text('Water'), findsOneWidget);
+
+    await tester.tap(find.text(InsightsPage.copyLabel));
+    await tester.pump();
+    expect(copied.single, isNot(contains('Coffee')));
+    expect(copied.single, contains('Tea: '));
+  });
+
+  testWidgets('a habit used on the days of an archived one is still told '
+      'apart from it', (WidgetTester tester) async {
+    _connected();
+    final journal = insightsJournal(teaWithCoffee: true);
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(journal.health)),
+        activities: AsyncData<List<ViceActivity>>(journal.activities),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee', archived: true),
+          ...insightsVices.where((Vice v) => v.id != 'coffee'),
+        ]),
+      ),
+    );
+
+    expect(find.text(InsightsPage.nothingClear), findsOneWidget);
+    expect(find.textContaining('after Tea'), findsNothing);
+    expect(
+      find.text('Used together with Coffee, so the two can’t be told apart'),
+      findsOneWidget,
+    );
+    expect(find.text('Coffee'), findsNothing);
+  });
+
   testWidgets('Health is asked for only when Connect is tapped, then read', (
     WidgetTester tester,
   ) async {
