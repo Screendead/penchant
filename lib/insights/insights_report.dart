@@ -506,11 +506,7 @@ String _amount(double value, MetricCopy copy, int decimals, String locale) {
 int _digits(HabitFinding finding, MetricCopy copy) {
   int digits = copy.decimals;
   final double nearest =
-      [
-        finding.interval.low.abs(),
-        finding.interval.high.abs(),
-      ].reduce((a, b) => a < b ? a : b) *
-      copy.scale;
+      min(finding.interval.low.abs(), finding.interval.high.abs()) * copy.scale;
   while (digits < 3 && nearest < 0.5 * pow(10, -digits)) {
     digits++;
   }
@@ -523,7 +519,8 @@ int _digits(HabitFinding finding, MetricCopy copy) {
 /// Coffee is an hour later, ...". [unit] is the habit's, for an amount. The
 /// habit's name only ever follows "after", "for" or "of", and no verb agrees
 /// with it, so a plural or uncountable name (Gummies, Water) reads as well.
-/// An amount or a time compared at the same bedtime says so.
+/// The effect is the whole of it; [bedtimeLine] gives the part left at the
+/// same bedtime.
 String findingSentence(
   HabitFinding finding,
   String habit,
@@ -539,18 +536,16 @@ String findingSentence(
   );
   final String direction = copy.direction(finding.effect);
   final String then = copy.night ? 'that night' : 'the next day';
-  final String bedtime = finding.atSameBedtime ? ', at the same bedtime' : '';
   return switch (finding.kind) {
     InsightKind.use =>
       'On ${copy.night ? 'nights' : 'days'} after $habit, your ${copy.name} '
           'averages $amount $direction.',
     InsightKind.dose =>
       'On days with ${_stepWords(finding.step, unit, locale, more: true)} logged for '
-          '$habit, your ${copy.name} $then averages $amount $direction'
-          '$bedtime.',
+          '$habit, your ${copy.name} $then averages $amount $direction.',
     InsightKind.lastUse =>
       'On days your last use of $habit is an hour later, your ${copy.name} '
-          '$then averages $amount $direction$bedtime.',
+          '$then averages $amount $direction.',
     InsightKind.hoursAfter =>
       '${_windowWords(finding.window!)} $habit, your ${copy.name}, set '
           'against the hour before, averages $amount $direction than at the '
@@ -559,7 +554,9 @@ String findingSentence(
 }
 
 /// A card's line under its headline: "More per extra drink: REM sleep 4 min
-/// less", "Later last use: time asleep 11 min less per hour".
+/// less", "Later last use: time asleep 11 min less per hour", and on the
+/// minutes of sleep, the part left at the same bedtime after it (see
+/// [bedtimeLine]).
 String findingLine(
   HabitFinding finding,
   String locale, {
@@ -569,13 +566,55 @@ String findingLine(
   final String change =
       '${copy.name} ${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
       '${copy.direction(finding.effect)}';
-  return switch (finding.kind) {
+  final String line = switch (finding.kind) {
     InsightKind.use => 'On ${copy.night ? 'nights' : 'days'} after it: $change',
     InsightKind.dose =>
       'More per extra ${_stepWords(finding.step, unit, locale)}: $change',
     InsightKind.lastUse => 'Later last use: $change per hour',
     InsightKind.hoursAfter => '${_windowWords(finding.window!)} it: $change',
   };
+  final String? part = _bedtimePart(finding, copy, locale);
+  return part == null ? line : '$line, $part';
+}
+
+/// Under an amount's or a time's headline on the minutes of sleep, the whole
+/// effect and then the part of it left at the same bedtime: "11 min less per
+/// hour later, 4 min of it at the same bedtime". Null when there is no such
+/// part ([HabitFinding.sameBedtime]).
+String? bedtimeLine(
+  HabitFinding finding,
+  String locale, {
+  Unit unit = Unit.fallback,
+}) {
+  final MetricCopy copy = metricCopy(finding.metricId)!;
+  final String? part = _bedtimePart(finding, copy, locale);
+  if (part == null) return null;
+  final String per = switch (finding.kind) {
+    InsightKind.lastUse => 'per hour later',
+    _ => 'per extra ${_stepWords(finding.step, unit, locale)}',
+  };
+  return '${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
+      '${copy.direction(finding.effect)} $per, $part';
+}
+
+// "4 min of it at the same bedtime" when the part is clear, on the same side
+// and no larger; "2 min more at the same bedtime" when it is clear otherwise.
+String? _bedtimePart(HabitFinding finding, MetricCopy copy, String locale) {
+  switch (finding.sameBedtime) {
+    case final HabitFinding part:
+      final bool within =
+          part.effect.sign == finding.effect.sign &&
+          part.effect.abs() <= finding.effect.abs();
+      return '${_amount(part.effect, copy, _digits(part, copy), locale)} '
+          '${within ? 'of it' : copy.direction(part.effect)} at the same '
+          'bedtime';
+    case HabitRefusal(reason: RefusalReason.followsBedtime):
+      return 'which can’t be told apart from your bedtime';
+    case HabitRefusal(effect: _?):
+      return 'none of it clear at the same bedtime';
+    case HabitRefusal() || null:
+      return null;
+  }
 }
 
 String _windowWords(HourWindow w) => switch ((w.start, w.end)) {
@@ -703,8 +742,6 @@ String _amongUseRefusal(
           'apart',
     null => 'moves with other habits’ days, so they can’t be told apart',
   },
-  RefusalReason.withinNoise when refusal.atSameBedtime =>
-    'within the noise at the same bedtime, no clear difference',
   RefusalReason.withinNoise => 'within the noise, no clear difference',
   RefusalReason.oneDay =>
     'rests on one unusual day, so it may not hold on the others',

@@ -2,10 +2,12 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/health_source.dart' show HealthMetric;
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/insights/what_follows.dart';
 
 final DateTime start = DateTime(2026, 1, 5);
@@ -111,38 +113,46 @@ void main() {
     expect(metricCopy(HealthMetric.sleepEnd.id), isNull);
   });
 
-  test('a later last use that only means a later bedtime is not credited '
-      'with the sleep it cuts', () {
+  // The part left at the same bedtime, beside the whole effect.
+  HabitInsight? part(HabitInsight total) => (total as HabitFinding).sameBedtime;
+
+  test('a later last use that only means a later bedtime shows its whole '
+      'effect, and none of it at the same bedtime', () {
     int last(Random r) => evening(r);
     int bedAfter(Random r, int l, int _) => l + 30;
-    // Without the onset, the old reading: 0.55 of an hour less core sleep.
+    // 0.55 of the half hour less in bed for each hour later.
+    final HabitInsight exact = timing(evenings(0, last: last, bed: bedAfter));
+    expect((exact as HabitFinding).effect, closeTo(-33, 1));
+    expect((part(exact) as HabitRefusal).reason, RefusalReason.followsBedtime);
+    expect(
+      bedtimeLine(exact, 'en'),
+      '33 min less per hour later, which can’t be told apart from your '
+      'bedtime',
+    );
+
+    // Without the onset there is no part to give.
     final HabitInsight without = timing(
       evenings(0, last: last, bed: bedAfter, onset: false),
     );
-    expect((without as HabitFinding).effect, closeTo(-33, 1));
-
-    final HabitInsight exact = timing(evenings(0, last: last, bed: bedAfter));
-    expect((exact as HabitRefusal).reason, RefusalReason.followsBedtime);
-    expect(
-      refusalReason(exact, (id) => id),
-      'Time of last use: moves with when you fall asleep, so it can’t be '
-      'told apart from your bedtime',
-    );
+    expect((without as HabitFinding).effect, exact.effect);
+    expect(without.sameBedtime, isNull);
+    expect(bedtimeLine(without, 'en'), isNull);
 
     // Bed half an hour later for each hour later, give or take 45 minutes:
-    // the two can be told apart, and holding bedtime fixed leaves nothing.
-    int found = 0, foundWithout = 0;
+    // the two can be told apart, and at the same bedtime nothing is left.
+    int found = 0, held = 0;
     for (int seed = 0; seed < 40; seed++) {
-      HabitInsight r(bool onset) =>
-          timing(evenings(seed, last: last, bed: halfway, onset: onset));
-      if (r(true) is HabitFinding) found++;
-      if (r(false) is HabitFinding) foundWithout++;
+      final HabitInsight r = timing(evenings(seed, last: last, bed: halfway));
+      if (r is! HabitFinding) continue;
+      found++;
+      if (r.sameBedtime is HabitFinding) held++;
     }
-    expect(foundWithout, greaterThanOrEqualTo(36));
-    expect(found, lessThanOrEqualTo(4));
+    expect(found, greaterThanOrEqualTo(36));
+    expect(held, lessThanOrEqualTo(4));
   });
 
-  test('a later last use with bedtime unmoved is still found', () {
+  test('a later last use with bedtime unmoved is found whole and at the '
+      'same bedtime alike', () {
     int found = 0;
     for (int seed = 0; seed < 20; seed++) {
       final HabitInsight r = timing(
@@ -153,44 +163,69 @@ void main() {
           direct: -10,
         ),
       );
-      if (r is HabitFinding) {
+      if (r is HabitFinding && r.sameBedtime is HabitFinding) {
         found++;
         expect(r.effect, closeTo(-10, 4));
+        expect((r.sameBedtime! as HabitFinding).effect, closeTo(-10, 4));
       }
     }
     expect(found, greaterThanOrEqualTo(18));
   });
 
-  test('a direct effect is found beside the bedtime it also moves', () {
+  test('a direct effect beside the bedtime it also moves: the whole, then '
+      'the part at the same bedtime', () {
     final HabitInsight r = timing(
       evenings(0, last: evening, bed: halfway, direct: -10),
     );
-    expect((r as HabitFinding).effect, closeTo(-10, 4));
+    // -10 direct, plus 0.55 of the half hour later to bed per hour.
+    expect((r as HabitFinding).effect, closeTo(-26.5, 4));
+    final HabitFinding held = part(r)! as HabitFinding;
+    expect(held.effect, closeTo(-10, 4));
+    expect(held.step, r.step);
+    expect(
+      bedtimeLine(r, 'en'),
+      matches(
+        RegExp(
+          r'^\d+ min less per hour later, \d+ min of it at the '
+          r'same bedtime$',
+        ),
+      ),
+    );
+    expect(
+      findingSentence(r, 'Coffee', 'en'),
+      allOf(
+        startsWith(
+          'On days your last use of Coffee is an hour later, your core sleep '
+          'that night averages ',
+        ),
+        isNot(contains('bedtime')),
+      ),
+    );
   });
 
-  test('an amount that only means a later bedtime is not credited either', () {
-    int found = 0, foundWithout = 0;
+  test('an amount that only means a later bedtime shows whole, and none of '
+      'it at the same bedtime', () {
+    int found = 0, held = 0;
     for (int seed = 0; seed < 40; seed++) {
-      ({DailyHabitSeries habits, OutcomeSeries outcomes}) data(bool onset) =>
-          evenings(
-            seed,
-            last: (_) => 20 * 60,
-            amount: (random) => 1 + random.nextInt(4),
-            // Twenty minutes later to bed for each one, give or take ten.
-            bed: (random, _, amount) =>
-                22 * 60 + 20 * amount + random.nextInt(21) - 10,
-            onset: onset,
-          );
-      HabitInsight dose(bool onset) => doseFollows(
-        habits: data(onset).habits,
-        outcomes: data(onset).outcomes,
+      final ({DailyHabitSeries habits, OutcomeSeries outcomes}) data = evenings(
+        seed,
+        last: (_) => 20 * 60,
+        amount: (random) => 1 + random.nextInt(4),
+        // Twenty minutes later to bed for each one, give or take ten.
+        bed: (random, _, amount) =>
+            22 * 60 + 20 * amount + random.nextInt(21) - 10,
+      );
+      final HabitInsight r = doseFollows(
+        habits: data.habits,
+        outcomes: data.outcomes,
         metricId: core,
       ).single;
-      if (dose(true) is HabitFinding) found++;
-      if (dose(false) is HabitFinding) foundWithout++;
+      if (r is! HabitFinding) continue;
+      found++;
+      if (r.sameBedtime is HabitFinding) held++;
     }
-    expect(foundWithout, greaterThanOrEqualTo(36));
-    expect(found, lessThanOrEqualTo(4));
+    expect(found, greaterThanOrEqualTo(36));
+    expect(held, lessThanOrEqualTo(4));
   });
 
   // One more drink, twenty minutes later to bed, give or take half an hour.
@@ -211,56 +246,179 @@ void main() {
         metricId: core,
       ).single;
 
-  test('a misread onset is left out rather than held fixed', () {
+  test('a misread onset is left out of the part at the same bedtime, not the '
+      'whole', () {
     // A sleep past noon read from the wrong night (a day early), and an
     // afternoon nap taken for the night, each on 4 of the 200 nights. Held
-    // fixed, either would leave bedtime barely held and the amount credited
+    // fixed, either would leave bedtime barely held and the part credited
     // with what bedtime does.
     double misread(int i) => switch (i % 50) {
       0 => -1440,
       25 => -480,
       _ => 0,
     };
-    expect(dose(drinks(0, misread: misread)).usableDays, 192);
-    int found = 0;
+    final HabitInsight r = dose(drinks(0, misread: misread));
+    expect(r.usableDays, 200);
+    expect(part(r)!.usableDays, 192);
+    int held = 0;
     for (int seed = 0; seed < 40; seed++) {
-      if (dose(drinks(seed, misread: misread)) is HabitFinding) found++;
+      final HabitInsight total = dose(drinks(seed, misread: misread));
+      if (total is HabitFinding && total.sameBedtime is HabitFinding) held++;
     }
-    expect(found, lessThanOrEqualTo(4));
+    expect(held, lessThanOrEqualTo(4));
   });
 
-  test('a result at the same bedtime says so', () {
-    final HabitInsight time = timing(
-      evenings(0, last: evening, bed: halfway, direct: -10),
-    );
-    expect(time.atSameBedtime, isTrue);
-    expect(
-      findingSentence(time as HabitFinding, 'Coffee', 'en'),
-      allOf(
-        startsWith(
-          'On days your last use of Coffee is an hour later, your '
-          'core sleep that night averages ',
+  test('the part at the same bedtime is per the whole effect’s step', () {
+    // One use a day of 1 to 30 minutes, bed a minute later for each; the
+    // longest days' onsets are misread, so those left would pick a smaller
+    // step of their own.
+    final Random random = Random(3);
+    final List<HabitUse> uses = <HabitUse>[];
+    final List<DailyOutcome> outcomes = <DailyOutcome>[];
+    for (int i = 0; i < 200; i++) {
+      final DateTime day = addDays(start, i);
+      final int minutes = 1 + random.nextInt(30);
+      uses.add(
+        HabitUse(
+          habitId: 'Run',
+          at: day.add(const Duration(hours: 18)),
+          amount: minutes.toDouble(),
         ),
-        endsWith(' less, at the same bedtime.'),
-      ),
-    );
-    final HabitInsight unheld = timing(
-      evenings(0, last: evening, bed: halfway, direct: -10, onset: false),
-    );
-    expect(unheld.atSameBedtime, isFalse);
-    expect(
-      findingSentence(unheld as HabitFinding, 'Coffee', 'en'),
-      isNot(contains('bedtime')),
-    );
+      );
+      final int bed = 23 * 60 + minutes;
+      final DateTime night = addDays(day, 1);
+      outcomes
+        ..add(
+          DailyOutcome(
+            date: night,
+            metricId: core,
+            value: 0.55 * ((24 + 7) * 60.0 - bed) + 10 * gaussian(random),
+          ),
+        )
+        ..add(
+          DailyOutcome(
+            date: night,
+            metricId: sleepOnsetId,
+            value: bed - 720.0 - (minutes > 15 ? 1440 : 0),
+          ),
+        );
+    }
+    final HabitInsight r = doseFollows(
+      habits: DailyHabitSeries.fromUses(uses),
+      outcomes: OutcomeSeries.fromOutcomes(outcomes),
+      metricId: core,
+    ).single;
+    expect((r as HabitFinding).step, 5);
+    expect(part(r)!.step, 5);
+  });
 
-    final HabitRefusal noise =
-        <HabitInsight>[for (int seed = 0; seed < 10; seed++) dose(drinks(seed))]
-            .whereType<HabitRefusal>()
-            .firstWhere((r) => r.reason == RefusalReason.withinNoise);
-    expect(
-      refusalReason(noise, (id) => id),
-      'Amount: within the noise at the same bedtime, no clear difference',
+  test('the card line names the whole effect, then the part at the same '
+      'bedtime', () {
+    HabitFinding whole(InsightKind kind, double step, HabitInsight? held) =>
+        HabitFinding(
+          habitId: 'coffee',
+          metricId: 'sleepAsleep',
+          lagDays: 1,
+          usableDays: 120,
+          exposedDays: 120,
+          raw: null,
+          kind: kind,
+          step: step,
+          effect: -11,
+          interval: stats.Interval(-15, -7),
+          standardized: -0.5,
+          pValue: 0.001,
+          spread: 60,
+          sameBedtime: held,
+        );
+    HabitFinding found(double effect) => HabitFinding(
+      habitId: 'coffee',
+      metricId: 'sleepAsleep',
+      lagDays: 1,
+      usableDays: 110,
+      exposedDays: 110,
+      raw: null,
+      kind: InsightKind.lastUse,
+      step: 60,
+      effect: effect,
+      interval: stats.Interval(effect - 2, effect + 2),
+      standardized: -0.2,
+      pValue: 0.01,
     );
+    HabitRefusal refused(RefusalReason reason, {double? effect}) =>
+        HabitRefusal(
+          habitId: 'coffee',
+          metricId: 'sleepAsleep',
+          lagDays: 1,
+          usableDays: 110,
+          exposedDays: 110,
+          raw: null,
+          kind: InsightKind.lastUse,
+          step: 60,
+          reason: reason,
+          effect: effect,
+        );
+
+    final HabitFinding time = whole(InsightKind.lastUse, 60, found(-4));
+    expect(
+      findingSentence(time, 'Coffee', 'en'),
+      'On days your last use of Coffee is an hour later, your time asleep '
+      'that night averages 11 min less.',
+    );
+    expect(
+      bedtimeLine(time, 'en'),
+      '11 min less per hour later, 4 min of it at the same bedtime',
+    );
+    expect(
+      findingLine(time, 'en'),
+      'Later last use: time asleep 11 min less per hour, 4 min of it at the '
+      'same bedtime',
+    );
+    expect(
+      bedtimeLine(whole(InsightKind.lastUse, 60, found(-14)), 'en'),
+      '11 min less per hour later, 14 min less at the same bedtime',
+    );
+    expect(
+      bedtimeLine(whole(InsightKind.lastUse, 60, found(3)), 'en'),
+      '11 min less per hour later, 3 min more at the same bedtime',
+    );
+    for (final RefusalReason reason in <RefusalReason>[
+      RefusalReason.withinNoise,
+      RefusalReason.oneDay,
+    ]) {
+      expect(
+        bedtimeLine(
+          whole(InsightKind.lastUse, 60, refused(reason, effect: -1)),
+          'en',
+        ),
+        '11 min less per hour later, none of it clear at the same bedtime',
+      );
+    }
+    expect(
+      bedtimeLine(
+        whole(InsightKind.dose, 1, refused(RefusalReason.followsBedtime)),
+        'en',
+        unit: Unit.drink,
+      ),
+      '11 min less per extra drink, which can’t be told apart from your '
+      'bedtime',
+    );
+    expect(
+      bedtimeLine(
+        whole(InsightKind.dose, 10, found(-4)),
+        'en',
+        unit: Unit.minute,
+      ),
+      '11 min less per extra 10 minutes, 4 min of it at the same bedtime',
+    );
+    expect(
+      bedtimeLine(
+        whole(InsightKind.lastUse, 60, refused(RefusalReason.tooFewDays)),
+        'en',
+      ),
+      isNull,
+    );
+    expect(bedtimeLine(whole(InsightKind.lastUse, 60, null), 'en'), isNull);
   });
 
   test('outcomes other than minutes of sleep keep their model', () {
@@ -271,6 +429,7 @@ void main() {
       );
       final HabitInsight a = r(true), b = r(false);
       expect(a.runtimeType, b.runtimeType);
+      if (a is HabitFinding) expect(a.sameBedtime, isNull);
       if (a is HabitRefusal && b is HabitRefusal) {
         expect(a.reason, b.reason);
         expect(a.effect, b.effect);

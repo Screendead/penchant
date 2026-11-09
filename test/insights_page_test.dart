@@ -217,6 +217,76 @@ void main() {
     expect(find.text(InsightsPage.refusedHeading), findsNothing);
   });
 
+  testWidgets('a time of last use on sleep shows its whole effect, then the '
+      'part at the same bedtime', (WidgetTester tester) async {
+    _connected();
+    HabitFinding finding(
+      InsightKind kind,
+      double step,
+      double effect, {
+      HabitInsight? sameBedtime,
+    }) => HabitFinding(
+      habitId: 'coffee',
+      metricId: 'sleepDeep',
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 120,
+      raw: null,
+      kind: kind,
+      step: step,
+      effect: effect,
+      interval: stats.Interval(effect * 1.5, effect / 2),
+      standardized: -0.5,
+      pValue: 0.001,
+      sameBedtime: sameBedtime,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee', unit: Unit.drink),
+        ]),
+        runner: (_) async => InsightsReport(
+          findings: <HabitFinding>[
+            finding(
+              InsightKind.dose,
+              1,
+              -6,
+              sameBedtime: finding(InsightKind.dose, 1, -2),
+            ),
+            finding(
+              InsightKind.lastUse,
+              60,
+              -12,
+              sameBedtime: finding(InsightKind.lastUse, 60, -4),
+            ),
+          ],
+          refused: const <HabitRefusal>[],
+        ),
+      ),
+    );
+
+    expect(
+      find.text(
+        'On days your last use of Coffee is an hour later, your deep sleep '
+        'that night averages 12 min less.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('12 min less per hour later, 4 min of it at the same bedtime'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'More per extra drink: deep sleep 6 min less, 2 min of it at the '
+        'same bedtime',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('the six largest cards show, the rest behind Show N more', (
     WidgetTester tester,
   ) async {
