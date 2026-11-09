@@ -48,7 +48,12 @@ void main() {
     );
     await register(tester, 'e2e-sealed@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
-    await recordActivity(tester, 'Coffee', 2);
+    await recordActivity(
+      tester,
+      'Coffee',
+      2,
+      triggerTaps: const <String>['Work', 'Meeting'],
+    );
     await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',
       'Tea (0 drinks)',
@@ -80,7 +85,9 @@ void main() {
         (activities.single.data()[sealedField] as Blob).bytes,
         context: sealContext('activities', activities.single.id),
       ),
-      <String, Object?>{'triggers': <Object?>[]},
+      <String, Object?>{
+        'triggers': <Object?>['work/meeting'],
+      },
     );
     expect(
       activities.single.data()['viceID'],

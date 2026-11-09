@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
@@ -52,38 +53,6 @@ void main() {
     await clearEmulators();
   });
 
-  testWidgets('archiving a vice takes it off Today and unarchiving brings it '
-      'back', (WidgetTester tester) async {
-    await tester.pumpWidget(e2eApp());
-    await register(tester, 'e2e-archive@example.com');
-    await addVicesThroughManageData(tester, const <String>[
-      'Coffee',
-      'Tea',
-      'Water',
-      'Juice',
-    ]);
-    expect((await _storedVice('Juice'))['archived'], isFalse);
-
-    const Set<String> withJuice = <String>{
-      'Coffee (2 drinks)',
-      'Tea (0 drinks)',
-      'Water (0 drinks)',
-      'Juice (0 drinks)',
-    };
-    await recordActivity(tester, 'Coffee', 2);
-    await expectTallies(tester, withJuice);
-
-    await _setArchived(tester, 'Juice', archived: true);
-    await expectTallies(tester, const <String>{
-      'Coffee (2 drinks)',
-      'Tea (0 drinks)',
-      'Water (0 drinks)',
-    });
-
-    await _setArchived(tester, 'Juice', archived: false);
-    await expectTallies(tester, withJuice);
-  });
-
   testWidgets('a vice stored without the archived field shows on Today, '
       'takes a recording, and can be archived', (WidgetTester tester) async {
     await tester.pumpWidget(e2eApp());
@@ -128,38 +97,10 @@ void main() {
     });
   });
 
-  testWidgets('the editor saves a changed quantity', (
+  testWidgets('a decimal quantity is stored as its amount, totals count it '
+      'exactly, and the editor changes it and its time', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(e2eApp());
-    await register(tester, 'e2e-edit@example.com');
-    await addVicesThroughManageData(tester);
-    await recordActivity(tester, 'Coffee', 2);
-
-    await openFromMenu(tester, Homepage.habitsItem);
-    await pumpUntil(tester, habitsCount('1 entry'));
-    await tap(tester, find.text('Coffee'));
-    await pumpUntil(tester, historyTitle('Coffee'));
-    await tap(tester, historyEntry(2));
-    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
-    await enterText(tester, 'Quantity', '5');
-    await tap(tester, find.widgetWithText(TextButton, 'Save'));
-    await pumpUntil(
-      tester,
-      find.byType(ViceActivityEditorPage),
-      present: false,
-    );
-    await pumpUntil(tester, historyEntry(5));
-
-    await _waitForEmulator();
-    final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
-        await storedActivities('Coffee');
-    expect(stored, hasLength(1));
-    expect(stored.single.data()['quantity'], 5);
-  });
-
-  testWidgets('a decimal quantity is stored as its amount, totals count it '
-      'exactly, and the editor changes it', (WidgetTester tester) async {
     await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-amount@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
@@ -202,6 +143,11 @@ void main() {
       formatAmount(1.5),
     );
     await enterText(tester, 'Quantity', formatAmount(2.25));
+    final DateTime moved = addDays(
+      startOfDay(DateTime.now()),
+      -1,
+    ).add(const Duration(hours: 9));
+    await setEntryTime(tester, moved);
     await tap(tester, find.widgetWithText(TextButton, 'Save'));
     await pumpUntil(
       tester,
@@ -216,5 +162,6 @@ void main() {
         .singleWhere((Map<String, dynamic> a) => a.containsKey('amount'));
     expect(edited['amount'], 2.25);
     expect(edited['quantity'], 3);
+    expect((edited['createdAt'] as Timestamp).toDate(), moved);
   });
 }

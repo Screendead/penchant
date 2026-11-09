@@ -131,8 +131,8 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
   Linux, then runs `tools/e2e.sh` over `integration_test/all_test.dart` on an iPhone simulator of a `macos-26` runner
   (one build for all files; one build per file took 74), caching Swift packages and Xcode's DerivedData, and uploads
   the log on failure. With `cancel-in-progress` in one concurrency group, a newer merge cancels the older run, waiting
-  or running, so a burst of merges tests only its last commit. A second `macos` job runs `E2E_DEVICE=macos tools/e2e.sh`
-  unsigned: the runner has no Mac development profile, so Firebase Auth's data-protection keychain fails every sign-in
+  or running, so a burst of merges tests only its last commit. A second `macos` job runs
+  `E2E_DEVICE=macos tools/e2e.sh integration_test` unsigned: the runner has no Mac development profile, so Firebase Auth's data-protection keychain fails every sign-in
   with `keychain-error` (run 42227475574). The job deletes the `kSecUseDataProtectionKeychain` lines from its resolved
   firebase-ios-sdk and forces `flutter_secure_storage_darwin` to the file keychain, so a green run proves the screens and
   flows, not sign-in or keychain storage in the signed app; those need a signed local run.
@@ -194,7 +194,8 @@ write, each to one document. Its methods (`addVice`, `updateVice`, `setViceArchi
 `recordActivity`, `updateActivity`, `deleteActivity`) return a `SentWrite`: the SDK's future unchanged, the document,
 and for an update the fields set. Timeouts, error messages and Undo stay in the widgets, which pass the write to
 `ref.read(rejectedWritesProvider.notifier).settle(write, '<what, named at write time>')`. That runs `settleWrite`
-(`lib/writes/settle_write.dart`): an acknowledgement within 10 s is success, a timeout is queued (the UI says it will
+(`lib/writes/settle_write.dart`): an acknowledgement within `writeTimeout` (10 s; `e2e.yml` builds with
+`--dart-define=WRITE_TIMEOUT_MS=3000`) is success, a timeout is queued (the UI says it will
 sync, `record-timeout`), and only a `FirebaseException` fails. It keeps listening: a later refusal goes to
 `RejectedWrites` (`lib/writes/rejected_writes.dart`, the signed-in user's refused changes, cleared on uid change),
 which `MaterialApp.builder` (`lib/widgets/rejected_writes_banner.dart`) shows above every screen until dismissed. The
@@ -345,7 +346,7 @@ gate, nothing creatable; each recheck (every 5 s and on resume) reads the keycha
 `deleteAccount` deletes the record. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
-`startApp`, and `key_service_test.dart`, seal with the real key. `storedContent` and `storedViceID` open sealed
+`startApp` (`smoke_test.dart`) seal with the real key. `storedContent` and `storedViceID` open sealed
 documents with either key.
 
 **Days.** An entry counts on the local day, in the viewer's current zone, of its `createdAt` instant. Day windows and
@@ -416,8 +417,8 @@ step Today's day (`_stepDay`, from state, so presses within one frame each count
 whole split view, or around Today alone under the sheet; the chart's own `Focus` takes them first. The Mac window
 opens at 1200×780 (`r8-mac-window` B) to show the split view, minimum 390×600, frame saved as `MainWindow`
 (`macos/Runner/MainFlutterWindow.swift`). Widget tests run at 800×600 (phone layout); `test/split_view_test.dart`
-resizes the view to reach the split, and `integration_test/split_view_test.dart` lays out at 900, 1200 and 1600 pt.
-The rest of the e2e suite follows whichever layout it gets (`splitLayout`, `integration_test/support.dart`).
+resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
+(`splitLayout`, `integration_test/support.dart`).
 
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection across rebuilds. Both read
 the current day from `todayProvider`; Today follows it unless the user picked another day, and a log (always now)
