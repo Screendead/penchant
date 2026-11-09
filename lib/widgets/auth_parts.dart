@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/widgets/native_auth_field.dart';
 
 // The pieces of the sign-in screen: pill fields with a leading glyph, the
 // error pill, the password checklist and the full-width primary button.
@@ -26,6 +27,7 @@ class AuthField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.validator,
+    this.nativeKind,
   });
 
   final TextEditingController controller;
@@ -39,6 +41,10 @@ class AuthField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final FormFieldValidator<String>? validator;
 
+  /// Where native fields are in use (macOS), the field this one becomes;
+  /// null keeps it a Flutter field.
+  final NativeAuthFieldKind? nativeKind;
+
   @override
   State<AuthField> createState() => _AuthFieldState();
 }
@@ -49,35 +55,30 @@ class _AuthFieldState extends State<AuthField> {
   @override
   Widget build(BuildContext context) {
     final Color muted = DialColors.of(context).muted;
-    return TextFormField(
-      controller: widget.controller,
-      obscureText: widget.obscurable && _obscured,
-      keyboardType: widget.keyboardType,
-      autocorrect: false,
-      enableSuggestions: !widget.obscurable,
-      autofillHints: widget.autofillHints,
-      textInputAction: widget.textInputAction,
-      style: _fieldText.copyWith(
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
-      onChanged: widget.onChanged,
-      onFieldSubmitted: widget.onSubmitted,
-      validator: widget.validator,
-      decoration: InputDecoration(
-        hintText: widget.hint,
-        contentPadding: const EdgeInsets.symmetric(vertical: 17),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 18, right: 10),
-          // The decorator stretches its prefix to the field's height.
-          child: Center(
-            widthFactor: 1,
-            child: StrokeIcon(widget.glyph, size: 19, color: muted),
-          ),
+    final bool obscured = widget.obscurable && _obscured;
+    final TextStyle style = _fieldText.copyWith(
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+    final bool native = widget.nativeKind != null && useNativeAuthFields;
+    final InputDecoration decoration = InputDecoration(
+      hintText: widget.hint,
+      contentPadding: const EdgeInsets.symmetric(vertical: 17),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.only(left: 18, right: 10),
+        // The decorator stretches its prefix to the field's height.
+        child: Center(
+          widthFactor: 1,
+          child: StrokeIcon(widget.glyph, size: 19, color: muted),
         ),
-        prefixIconConstraints: const BoxConstraints(minHeight: 52),
-        suffixIcon: widget.obscurable
-            ? Padding(
-                padding: const EdgeInsets.only(right: 4),
+      ),
+      prefixIconConstraints: const BoxConstraints(minHeight: 52),
+      suffixIcon: widget.obscurable
+          ? Padding(
+              padding: const EdgeInsets.only(right: 4),
+              // Tab from a native field goes field to field, Email to
+              // Password to Confirm, as AppKit's own key loop would.
+              child: ExcludeFocus(
+                excluding: native,
                 child: IconButton(
                   tooltip: _obscured ? 'Show password' : 'Hide password',
                   icon: StrokeIcon(
@@ -87,9 +88,38 @@ class _AuthFieldState extends State<AuthField> {
                   ),
                   onPressed: () => setState(() => _obscured = !_obscured),
                 ),
-              )
-            : null,
-      ),
+              ),
+            )
+          : null,
+    );
+    if (native) {
+      return NativeAuthField(
+        controller: widget.controller,
+        kind: widget.nativeKind!,
+        hint: widget.hint,
+        // The native field draws its own placeholder.
+        decoration: decoration.copyWith(hintText: ''),
+        textStyle: style,
+        obscured: obscured,
+        textInputAction: widget.textInputAction,
+        onChanged: widget.onChanged,
+        onSubmitted: widget.onSubmitted,
+        validator: widget.validator,
+      );
+    }
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: obscured,
+      keyboardType: widget.keyboardType,
+      autocorrect: false,
+      enableSuggestions: !widget.obscurable,
+      autofillHints: widget.autofillHints,
+      textInputAction: widget.textInputAction,
+      style: style,
+      onChanged: widget.onChanged,
+      onFieldSubmitted: widget.onSubmitted,
+      validator: widget.validator,
+      decoration: decoration,
     );
   }
 }

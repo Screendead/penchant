@@ -9,15 +9,121 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- Insights, from the Penchant menu: connect Apple Health on iPhone, then see what follows each habit over the last
+  year ("On nights after Coffee, your deep sleep averages 18 min less", with its range), and which habits have too
+  little to say and why. Worked out on the device; Health data never leaves it (#173).
+- Insights checks every habit against every Health measure at once, so it now allows for that: a difference that
+  could be a fluke among so many checks is listed as "Could be chance: one of many comparisons" rather than shown as a
+  finding (#175).
+- Insights reads your whole journal, not just the last year, with Apple Health over the same span, and says where it
+  starts ("From 3 March 2024 to today"). "Copy as text" puts the findings and the reasons for the rest on the
+  clipboard, for a note or a message. Penchant sends none of it anywhere; the text goes where you paste it, and with
+  Handoff on, the clipboard also reaches your other Apple devices (#179).
+- Insights now finds things about a habit you keep up every day: how the amount goes with what follows ("Each extra
+  drink of Coffee goes with your deep sleep that night averaging 6 min less") and how the time of your last one does
+  ("A last Coffee an hour later goes with ..."), among the days you had it. An entry before 05:00 counts toward the
+  day before, for both. A habit whose amount or time barely changes says so instead, as does a last use that only
+  comes later because you had more, and a result that rests on one unusual day is not shown (#185).
+- Insights looks at the hours after each use, not just the next day: "One to two hours after Coffee, your heart rate,
+  set against the hour before, averages 6 bpm higher than at the same time after waking without it". Each use is
+  compared with nearby days at the same time after waking, using your sleep from Apple Health, so the climb after
+  getting up and a walk don't count; a use within an hour of waking or near bed is left out and the page says so. It
+  reads heart rate from Apple Health around your last 120 uses of each habit in the past year, and shows the daily
+  findings while it reads. Worked out on the device; Health data never leaves it (#187).
+- Insights shows fewer, clearer cards: a difference too small to matter (under 10 min of sleep a night, say) is
+  listed under "Not enough to say" instead, each habit gets one card for its sleep, one for its heart and so on, with
+  its other findings there as short lines, and the six largest show first, the rest behind "Show more" (#192).
+- On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
+  out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
+  Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
+  backoff for about an hour. Opening Penchant meanwhile brings up the app as usual.
+- Groundwork for finer-grained insights on iPhone: Penchant can read heart rate, heart rate variability and breathing
+  rate readings with their times from Apple Health, not only daily totals, and works out your heart rate while
+  asleep each night. Insights now also asks for access to heart rate. Read-only and kept on the device (#178).
+- Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
+  step and energy totals from Apple Health, read-only and kept on the device. Insights asks for access.
+- On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
+  lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. A log made while the
+  app is closed is marked "Saved — syncs shortly", or "Saved — open Penchant to sync" when only the app can save it
+  (its journal key needs recovery, or the server refused it). The menu's Quit hides the item until the next login or
+  launch, and logs from the widgets go on saving meanwhile. Closing the window no longer quits the app; click the Dock
+  icon or Open Penchant to bring it back.
+- A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
+  last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
+  you sign out.
+- A "Log" widget in small, medium and large: tap a habit to log one, and tap Undo in the same place within 5 seconds
+  to take it back. It shows your 1, 3 or 8 most logged habits of the last 30 days, or the ones you pick in its
+  settings. A tap is kept on the device and saved to your journal in the background when iOS allows, or the next
+  time you open Penchant; on the Mac, while Penchant is open.
+- "Log one" for Control Centre, the Lock Screen and the Action button (iOS 18), and for Siri and Shortcuts ("Log
+  Coffee in Penchant").
+- The Last week and Log widgets on the Mac, in Notification Centre and on the desktop.
+- Settings has a Reduce motion row: Follow system, Reduce or Full, saved on each device. Reduce swaps travel and sweeps
+  for short fades; Full keeps the dial, log fan, tallies, Undo timer, status pills, the Trends chart's range morph and
+  page changes moving even when the system asks for less (sheets, dialogs and small fades still follow the system).
+- Settings › Reminder sends one quiet notification a day at a time you choose; it is off until you turn it on, and
+  only then asks to send notifications. Press and hold it to log something, or tap Clean day to close it.
+- On a day of more than 48 entries, Today's dial draws each busy hour as one arc labelled with its count, coloured by
+  habit, instead of a heap of beads. Tap it to open the entry nearest that time; with VoiceOver it opens the hour's
+  latest entry, and its actions list every entry.
 - End-to-end encryption is on. The first launch makes your journal key, keeps it in iCloud Keychain, and seals your
   habits' names, units and categories, and any entry triggers, in the background; dates and amounts stay readable
   to the server. Save the recovery key (Settings › Account, or the card Today shows a week in): a device without
   the key asks for it before opening your journal.
 - Settings › Appearance lets you choose Light or Dark, or keep matching your phone; each device remembers its own
   choice. Export my data is now one tap from Settings, as well as under Account.
+- On the Mac, the sign-in Email and Password fields offer AutoFill from Passwords, as on iPhone.
+- A large or fullscreen Mac window uses its room: the dial grows with the window's height (up to 480 pt), Today's
+  column widens, and the Trends chart takes the height the rest of the pane leaves. Trends' habit chips wrap onto
+  more rows, Synced sits beside the Trends title, and the Log button sits under your last habit.
+- The Mac window opens at 1200 x 780, wide enough for Trends to sit beside Today, and reopens at the size and place
+  you left it. It narrows to 390 pt, where the phone layout returns.
+- Pages open with a soft fade-through instead of sliding in. A drag on the dial too short to change the day eases
+  it back instead of snapping. With Reduce Motion on, pages and a day change fade instead (the old day's entries
+  fade out before the new day's fade in).
+- The offline and "not saved" notices are rounded pills that drop in from the top on a spring and lift away when
+  they clear, instead of bars that appear and vanish at once. With Reduce Motion on they fade.
+- In Trends, switching between 7 days, 30 days, 90 days and a year keeps the chart up while the new range loads, then
+  morphs its line into the new range, instead of putting a spinner in its place.
+- A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
+  three hours that hold the most.
 
 ### Fixed
 
+- Insights says nothing about an archived habit: no finding and no "Not enough to say" row, on the page or in Copy as
+  text. Its entries still count, so a habit you had on the same days is not credited with what it did (#189).
+- Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,
+  the Health card says "Allow new Health data", and a tap shows the Health sheet for the new types only. The card also
+  says where to change Health access later (Settings > Privacy & Security > Health > Penchant).
+- Insights no longer credits a habit with a change that happened while you had stopped logging it, or before you
+  logged it every day: a habit logged far more, or far less, in one half of its time than the other is listed as
+  "Used far more at some times than others", and a slow drift or a sudden change in a Health measure is allowed for
+  before any habit is compared. A habit used every day now says it has too few days without it, rather than asking
+  you to wait (#181).
+- Once a second month holds about ten days of a habit's entries, Insights compares it with itself month by month, so
+  cutting it down, or logging it less often, from one month to the next no longer hides what follows it or reads as its
+  effect. A change in use and a change in the outcome inside the same month can still read as an effect, and a shorter
+  span is judged as before. A habit whose use varies in only one month of several is listed as "Used far more at some
+  times than others" (#183).
+- Sleep from Apple Health no longer counts the time you lay awake as asleep when another sleep app also records
+  the night: each sleep's time asleep, stages and awake time now come from one source, Apple Watch when it recorded
+  most of that sleep, and so does your heart rate while asleep. A night the Watch caught only part of, or a nap only
+  the Watch caught, takes the rest from the app that recorded it (#182).
+- Sleep from Apple Health no longer adds another app's evening or daytime sleep to a night Apple Watch recorded:
+  a sleep only the other app saw, before the night's main sleep that the Watch recorded, is left out. What the app
+  recorded after the Watch stopped, a night the app alone recorded, and a night's naps when its main sleep is the
+  app's still count (#186).
+- On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
+  your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
+  background to save it. If that is cut short, the tap still waits on the device and saves later, as before.
+- Opening or closing a page in dark mode no longer flashes white halfway through the transition.
+- A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
+
+- With large text, the offline and refused-change banners no longer push Today off the screen: each stops at a third
+  of the screen and scrolls, and the sync status beside the menu stops growing at twice its size.
+- A device that opens on "Unlock your journal" because iCloud Keychain has not yet brought the key from your
+  other device now checks again every few seconds and when you return to the app, and opens the journal by itself
+  once the key arrives.
 - The recovery key box on the unlock screen is one line high where the key fits, instead of leaving an empty
   second line under it.
 - Switching between Sign in and Create account is smooth: Email and Password stay put and keep what you typed,
@@ -86,6 +192,11 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- The Log widget is redrawn to match the Dial widgets: your top habit is a dial with a + button, and the others are
+  pills with today's count and a + button, each lit with a soft glow of its colour.
+- Holding a habit in the Log fan opens an amount sheet instead of the record dialog: the habit's name at the top, a
+  large amount with − and + to step it (or type a decimal), and one button that says what it will log and when.
+  Editing an entry uses the same amount stepper.
 - An entry can carry up to ten triggers, picked from the starter tree (Social, Feeling, Work, Body, Routine, Place,
   Craving) or typed in; exports include them as a "triggers" column.
 - On a clear day the dial's every-3-hours spokes fade with the others, as in the design, so the clear dial is
@@ -174,6 +285,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Internal
 
+- Groundwork for Insights, nothing to see yet: an on-device engine that compares a measure (such as sleep) after
+  days with each habit against days without, judges each habit only between its first and last use, credits each
+  habit only for its own share when habits share days, and says nothing below 21 days or when the difference could be
+  noise.
 - The decisions page asks round 9: where Archive lives, whether Appearance is a picker, and where Export sits, each
   with the mock-up beside the built screen.
 - Test builds against the Firebase emulators no longer turn on App Check, which the emulators never check; the

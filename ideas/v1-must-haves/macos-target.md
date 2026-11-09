@@ -66,4 +66,4 @@ once for two devices.
 - `macos-platform-is-undocumented` (fixed in PR #34: CLAUDE.md documents the platforms)
 - name and bundle ID (done 2026-11-05)
 
-**Needs Jack:** yes — Mac in 1.0 or 1.0.x, and confirm Health results never sync to the Mac.
+**Needs Jack:** no. The Mac ships with iOS 1.0 if its e2e is green (`r2-mac`, Jack, 2026-11-06).

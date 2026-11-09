@@ -1,0 +1,177 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/e2ee_enabled.dart';
+import 'package:tracker/data/queued_log.dart';
+import 'package:tracker/data/sealed.dart';
+import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widget_bridge/widget_bridge.dart';
+import 'package:tracker/writes/log_one.dart';
+import 'package:tracker/writes/rejected_writes.dart';
+import 'package:tracker/writes/tracker_writes.dart';
+
+const String widgetLogWhat = 'a log from a widget or Shortcut';
+
+/// What a flush left queued: when a held-back log comes due, and whether a
+/// log stayed because the server refused it or had not acknowledged it.
+typedef FlushLeft = ({DateTime? next, bool refused, bool unacknowledged});
+
+/// Writes [uid]'s ready logs through [writes], then takes them off the queue.
+/// Each is removed once [RejectedWrites.settle] has journalled it and the
+/// server answered or the write timed out into the SDK's own queue, so a
+/// launch that ends first leaves it to the next flush, which writes the same
+/// document again.
+///
+/// With [inBackground] (a headless engine whose process ends soon after) a log
+/// the server refuses stays for the app's next flush to show in its banner,
+/// since a background engine has no banner. So does a log the server has not
+/// acknowledged, for the next flush to write again: the SDK's queue of an
+/// exited process sends it only when Penchant next starts. A delete leaves
+/// anyway, because the SDK's queued copy reaches the server first and the
+/// rules refuse a repeat delete.
+Future<FlushLeft> flushQueuedLogs({
+  required WidgetBridge bridge,
+  required TrackerWrites writes,
+  required RejectedWrites rejected,
+  required String uid,
+  required DateTime now,
+  bool inBackground = false,
+}) async {
+  final ({List<QueuedLog> ready, List<QueuedLog> cancelled, DateTime? next})
+  batch = readyLogs(await bridge.pendingLogs(), uid: uid, now: now);
+  final List<QueuedLog> done = <QueuedLog>[...batch.cancelled];
+  bool refused = false;
+  bool unacknowledged = false;
+  await Future.wait(<Future<void>>[
+    for (final QueuedLog log in batch.ready)
+      _write(log, writes, rejected, inBackground: inBackground).then((
+        _Written written,
+      ) {
+        switch (written) {
+          case _Written.done:
+            done.add(log);
+          case _Written.refused:
+            refused = true;
+          case _Written.unacknowledged:
+            unacknowledged = true;
+        }
+      }),
+  ]);
+  if (done.isNotEmpty) {
+    await bridge.removeLogs(done);
+  }
+  return (next: batch.next, refused: refused, unacknowledged: unacknowledged);
+}
+
+// done: the log can leave the queue.
+enum _Written { done, refused, unacknowledged }
+
+Future<_Written> _write(
+  QueuedLog log,
+  TrackerWrites writes,
+  RejectedWrites rejected, {
+  required bool inBackground,
+}) async {
+  final SentWrite write = switch (log.op) {
+    QueuedLogOp.log => writes.recordActivity(
+      log.id,
+      ownerID: log.uid,
+      viceID: log.viceID,
+      quantity: defaultQuantity,
+      createdAt: log.createdAt,
+    ),
+    QueuedLogOp.delete => writes.deleteActivity(log.id),
+  };
+  final bool creates = log.op == QueuedLogOp.log;
+  final String what = creates
+      ? 'Not saved: $widgetLogWhat'
+      : 'Not undone: $widgetLogWhat';
+  try {
+    final bool acknowledged = await rejected.settle(write, what);
+    return acknowledged || !inBackground || !creates
+        ? _Written.done
+        : _Written.unacknowledged;
+  } on FirebaseException catch (e, stack) {
+    // Refused (a habit deleted since the tap, say): writing it again would
+    // be refused again, so it goes to the banner and leaves the queue.
+    reportError(e, stack, context: 'while writing $widgetLogWhat');
+    if (inBackground) {
+      return _Written.refused;
+    }
+    rejected.reporter(
+      what,
+      creates: creates ? log.id : null,
+      changes: creates ? null : log.id,
+    )(e);
+    return _Written.done;
+  }
+}
+
+/// Writes the widgets' queued logs while someone is signed in with the journal
+/// key loaded: at once, on every resume, when a held-back log comes due, and
+/// when native asks (a log queued while the app runs, or a background
+/// refresh). Nothing polls: native hears each enqueue from the extension.
+final widgetLogFlushProvider = Provider<void>((ref) {
+  if (!widgetsSupported) {
+    return;
+  }
+  final String? uid = ref.watch(
+    userProvider.select((AsyncValue<User?> u) => u.value?.uid),
+  );
+  if (uid == null) {
+    return;
+  }
+  // Until the key loads (or while it is missing or locked) TrackerWrites has
+  // no sealer and would store the log without its sealed field. The queue
+  // keeps it, and the sealer arriving rebuilds this provider.
+  if (ref.watch(e2eeEnabledProvider) && ref.watch(sealerProvider) == null) {
+    return;
+  }
+  final WidgetBridge bridge = ref.watch(widgetBridgeProvider);
+  final TrackerWrites writes = ref.watch(trackerWritesProvider);
+  final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
+
+  bool disposed = false;
+  Future<void>? inFlight;
+  Timer? due;
+  late final Future<void> Function() flush;
+  Future<void> run() async {
+    try {
+      final DateTime? next = (await flushQueuedLogs(
+        bridge: bridge,
+        writes: writes,
+        rejected: rejected,
+        uid: uid,
+        now: DateTime.now(),
+      )).next;
+      due?.cancel();
+      if (next != null && !disposed) {
+        due = Timer(next.difference(DateTime.now()), flush);
+      }
+    } on Object catch (e, stack) {
+      reportError(e, stack, context: 'while flushing $widgetLogWhat');
+    }
+  }
+
+  // A request during a flush waits for that one rather than starting another.
+  flush = () {
+    if (disposed) {
+      return Future<void>.value();
+    }
+    return inFlight ??= run().whenComplete(() => inFlight = null);
+  };
+
+  final AppLifecycleListener lifecycle = AppLifecycleListener(onResume: flush);
+  bridge.onFlushRequest(flush);
+  ref.onDispose(() {
+    disposed = true;
+    due?.cancel();
+    bridge.onFlushRequest(null);
+    lifecycle.dispose();
+  });
+  unawaited(flush());
+});

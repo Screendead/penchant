@@ -5,7 +5,7 @@
 ## What
 
 The icon is done: Jack picked candidate 38 (the Today radar's coloured segments with its spokes, on a light
-background) on 2026-11-05 from the `mockup/icon-sheet` sheet, and it ships from `assets/icon.svg` and
+background) on 2026-11-05 from the `mockup/icon-sheet` sheet (tag `archive/mockup/icon-sheet`), and it ships from `assets/icon.svg` and
 `assets/icon-macos.svg`. What is left: capture store screenshots automatically with an `integration_test` run on iOS Simulators and on macOS, against the emulators (`--project
 demo-*`), seeded with a realistic demo journal (several vices, triggers, a few weeks of entries, and insight cards),
 at each required device size.

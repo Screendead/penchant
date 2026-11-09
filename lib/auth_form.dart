@@ -10,6 +10,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/widgets/auth_parts.dart';
+import 'package:tracker/widgets/native_auth_field.dart';
 
 // Signing in and creating an account share one form, as in the mock-up, so
 // the Email and Password fields hold still (and keep what was typed) while
@@ -138,6 +139,16 @@ class _AuthFormState extends ConsumerState<AuthForm> {
     messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // On macOS the native Email and Password fields share one view, so AppKit
+  // sees them as one login.
+  Widget _credentials(List<Widget> fields) {
+    final Widget column = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: fields,
+    );
+    return useNativeAuthFields ? NativeAuthFieldsHost(child: column) : column;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool register = widget.register;
@@ -147,40 +158,46 @@ class _AuthFormState extends ConsumerState<AuthForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AuthField(
-              controller: emailController,
-              hint: 'Email',
-              glyph: DialGlyph.mail,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const <String>[
-                AutofillHints.username,
-                AutofillHints.email,
-              ],
-              textInputAction: TextInputAction.next,
-              onChanged: (String value) {
-                setState(() {
-                  emailIsValid = value.isEmpty
-                      ? null
-                      : emailPattern.hasMatch(value.trim());
-                });
-              },
-              validator: (String? value) => emailError(value?.trim()),
-            ),
-            const SizedBox(height: 10),
-            AuthField(
-              controller: passwordController,
-              hint: 'Password',
-              glyph: DialGlyph.lock,
-              obscurable: true,
-              autofillHints: register
-                  ? const <String>[AutofillHints.newPassword]
-                  : const <String>[AutofillHints.password],
-              textInputAction: register
-                  ? TextInputAction.next
-                  : TextInputAction.done,
-              onChanged: (_) => _recheck(),
-              onSubmitted: register ? null : (_) => _submitIfValid(),
-            ),
+            _credentials(<Widget>[
+              AuthField(
+                controller: emailController,
+                hint: 'Email',
+                glyph: DialGlyph.mail,
+                nativeKind: NativeAuthFieldKind.email,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const <String>[
+                  AutofillHints.username,
+                  AutofillHints.email,
+                ],
+                textInputAction: TextInputAction.next,
+                onChanged: (String value) {
+                  setState(() {
+                    emailIsValid = value.isEmpty
+                        ? null
+                        : emailPattern.hasMatch(value.trim());
+                  });
+                },
+                validator: (String? value) => emailError(value?.trim()),
+              ),
+              const SizedBox(height: 10),
+              AuthField(
+                controller: passwordController,
+                hint: 'Password',
+                glyph: DialGlyph.lock,
+                obscurable: true,
+                nativeKind: register
+                    ? NativeAuthFieldKind.newPassword
+                    : NativeAuthFieldKind.password,
+                autofillHints: register
+                    ? const <String>[AutofillHints.newPassword]
+                    : const <String>[AutofillHints.password],
+                textInputAction: register
+                    ? TextInputAction.next
+                    : TextInputAction.done,
+                onChanged: (_) => _recheck(),
+                onSubmitted: register ? null : (_) => _submitIfValid(),
+              ),
+            ]),
             AuthReveal(
               shown: register,
               child: Column(

@@ -9,6 +9,7 @@ enum DialGlyph {
   right(<String>['M9 18l6-6-6-6']),
   down(<String>['M6 9l6 6 6-6']),
   plus(<String>['M12 5v14M5 12h14']),
+  minus(<String>['M5 12h14']),
   close(<String>['M6 6l12 12M18 6L6 18']),
   mail(<String>[
     'M6 5L18 5A3 3 0 0 1 21 8L21 16A3 3 0 0 1 18 19L6 19A3 3 0 0 1 3 16L3 8A3 3 '
@@ -69,6 +70,7 @@ enum DialGlyph {
         '0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 '
         '1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z',
   ]),
+  insights(<String>['M4 19h16', 'M5 15l4-4 3 3 7-7']),
   pencil(<String>['M4 20h4L19 9l-4-4L4 16z', 'M13.5 6.5l4 4']),
   archive(<String>['M3 5h18v4H3z', 'M5 9v10h14V9', 'M10 13h4']),
   unarchive(<String>[

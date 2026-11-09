@@ -5,6 +5,7 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights_page.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
@@ -20,6 +21,7 @@ class Homepage extends ConsumerStatefulWidget {
   static const String menuLabel = 'Penchant menu';
   static const Key menuKey = ValueKey<String>('penchant-menu');
   static const String habitsItem = 'Habits';
+  static const String insightsItem = 'Insights';
   static const String settingsItem = 'Settings';
 
   @override
@@ -84,28 +86,39 @@ class _HomepageState extends ConsumerState<Homepage> {
   }
 }
 
-class TodayHeader extends StatelessWidget {
+class TodayHeader extends ConsumerWidget {
   const TodayHeader({super.key});
 
+  // In the split view the pill sits on Trends' title row, which is absent
+  // when the vice list is empty or failed. While it loads the pill shows
+  // nowhere, so it doesn't jump from here to the pane at launch.
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
-    child: const Padding(
-      padding: EdgeInsets.only(left: 14, right: 16),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: _AppMenu(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<Vice>> vices = ref.watch(viceListProvider);
+    final bool noPane =
+        vices.hasError || (vices.hasValue && vices.requireValue.isEmpty);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 14, right: 16),
+        child: Row(
+          children: <Widget>[
+            const Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _AppMenu(),
+              ),
             ),
-          ),
-          SizedBox(width: DialSpace.xs),
-          SyncPill(),
-        ],
+            if (MediaQuery.sizeOf(context).width < ViceTracker.splitWidth ||
+                noPane) ...[
+              const SizedBox(width: DialSpace.xs),
+              const SyncPill(),
+            ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _AppMenu extends StatelessWidget {
@@ -165,6 +178,13 @@ class _AppMenu extends StatelessWidget {
                 onPressed: () =>
                     Navigator.of(context).pushNamed('/manage-data'),
                 child: const Text(Homepage.habitsItem),
+              ),
+              MenuItemButton(
+                style: itemStyle,
+                leadingIcon: const StrokeIcon(DialGlyph.insights, size: 20),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed(InsightsPage.route),
+                child: const Text(Homepage.insightsItem),
               ),
               MenuItemButton(
                 style: itemStyle,
@@ -355,6 +375,11 @@ class _SyncPillState extends ConsumerState<SyncPill> {
                     const SizedBox(width: 6),
                     Text(
                       label,
+                      // Larger, the pill leaves the menu beside it too
+                      // narrow for its mark and chevron on a phone.
+                      textScaler: MediaQuery.textScalerOf(
+                        context,
+                      ).clamp(maxScaleFactor: 2),
                       style: DialTypeScale.bodyS.copyWith(
                         fontSize: 12,
                         height: 1,

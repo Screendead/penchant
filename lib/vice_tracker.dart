@@ -19,6 +19,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
@@ -56,9 +57,13 @@ class ViceTracker extends ConsumerStatefulWidget {
   static double _splitLogInset(BuildContext context) =>
       max(DialSpace.m, MediaQuery.paddingOf(context).bottom);
 
-  // Today's column in the split view.
+  // Today's column in the split view: 504 at the 1200 pt default window.
   static double splitColumnWidth(double width) =>
-      (width * 0.42).clamp(400.0, 560.0);
+      (width * 0.42).clamp(400.0, splitColumnMax);
+  static const double splitColumnMax = 720;
+
+  // The split view's dial grows with the window's height to this.
+  static const double splitDialMax = 480;
 
   @override
   ConsumerState<ViceTracker> createState() => _ViceTrackerState();
@@ -81,10 +86,15 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   @override
   void initState() {
     super.initState();
-    _logTarget.log = _logNow;
+    _logTarget.add(_logNow);
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
+    ref.listenManual<bool>(
+      pendingNudgeLogProvider,
+      (bool? _, bool pending) => _openNudgeLog(pending),
+      fireImmediately: true,
+    );
     ref.listenManual<int?>(
       guestDaysLeftProvider,
       (int? _, int? days) => _warnGuest(days),
@@ -112,9 +122,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
   @override
   void dispose() {
-    if (_logTarget.log == _logNow) {
-      _logTarget.log = null;
-    }
+    _logTarget.remove(_logNow);
     _position.dispose();
     _sheet.dispose();
     super.dispose();
@@ -158,13 +166,27 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void _logNow(Vice vice) => _log(vice, null);
 
   void _record(Vice? vice) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => RecordNewActivityDialog(
-        initialViceID: vice?.id,
-        bottomClearance: ViceTracker.logClearance(context, split: _split),
-      ),
+    RecordNewActivityDialog.show(
+      context,
+      initialViceID: vice?.id,
+      bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
+  }
+
+  // The notification's "Log something": back to Today, then the Log, as if
+  // the Log button were held. After the frame, as it may fire from initState.
+  void _openNudgeLog(bool pending) {
+    if (!pending) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(pendingNudgeLogProvider)) {
+        return;
+      }
+      ref.read(pendingNudgeLogProvider.notifier).clear();
+      Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+      _record(null);
+    });
   }
 
   void _openEntry(DialEntry entry) {
@@ -213,30 +235,14 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     HabitMark markOf(Vice vice) => marks[vice.id] ?? const HabitMark(0);
     final List<Vice>? vices = listed == null ? null : tallyOrder(listed, marks);
     final List<ViceActivity>? activities = activitiesValue.value;
-    final Map<String, Vice> byID = <String, Vice>{
-      for (final Vice vice in vices ?? const <Vice>[]) vice.id: vice,
-    };
     // Archived habits' entries stay off Today, as do those of a habit gone.
     final List<DialEntry>? entries = vices == null || activities == null
         ? null
-        : <DialEntry>[
-            for (final ViceActivity a in activities)
-              if (byID[a.viceID] case final Vice vice)
-                DialEntry(
-                  id: a.id,
-                  vice: vice,
-                  mark: markOf(vice),
-                  quantity: a.measure,
-                  at: a.createdAt.toDate(),
-                  pending: a.pending,
-                ),
-          ];
-    final Map<String, num> totals = <String, num>{
-      for (final Vice vice in vices ?? const <Vice>[]) vice.id: 0,
-    };
-    for (final DialEntry e in entries ?? const <DialEntry>[]) {
-      totals[e.vice.id] = totals[e.vice.id]! + e.quantity;
-    }
+        : dialEntries(vices, activities, markOf);
+    final Map<String, num> totals = dayTotals(
+      vices ?? const <Vice>[],
+      entries ?? const <DialEntry>[],
+    );
     final bool offline = ref.watch(offlineProvider).value ?? false;
     final int? guestDaysLeft = ref.watch(guestDaysLeftProvider);
     final Widget? guestBanner =
@@ -270,9 +276,17 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             : constraints.maxWidth;
         // A phone on its side keeps the notch's side of Today clear.
         final double notch = split ? MediaQuery.paddingOf(context).left : 0;
-        final double width = min(column - notch, 600.0);
+        final double width = min(
+          column - notch,
+          split ? ViceTracker.splitColumnMax : 600.0,
+        );
         final double side = min(
-          DialSize.dialDiameter,
+          split
+              ? (constraints.maxHeight * 0.44).clamp(
+                  DialSize.dialDiameter,
+                  ViceTracker.splitDialMax,
+                )
+              : DialSize.dialDiameter,
           width - 2 * DialSpace.gutter,
         );
 
@@ -280,6 +294,34 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
         final double peek = TrendsSheet.peekHeight(context);
         final double minSize = min(0.5, peek / height);
         final double logInset = ViceTracker._splitLogInset(context);
+        final Widget? logButton = vices == null || vices.isEmpty
+            ? null
+            : LogButton(
+                habits: <FanHabit>[
+                  for (final Vice vice in vices)
+                    (vice: vice, mark: markOf(vice)),
+                ],
+                onLog: _log,
+                onRecord: _record,
+              );
+
+        // In the split view the Log button sits under the last tally, and at
+        // the column's foot once the tallies run past it.
+        Widget dockLog(Widget list) => !split || logButton == null
+            ? list
+            : Column(
+                children: <Widget>[
+                  Flexible(child: list),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: DialSpace.l,
+                      bottom: logInset,
+                    ),
+                    child: logButton,
+                  ),
+                ],
+              );
+
         final Widget page = noHabits
             ? Padding(
                 padding: const EdgeInsets.all(DialSpace.m),
@@ -295,77 +337,86 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             : Center(
                 child: SizedBox(
                   width: width,
-                  child: ListView(
-                    // The mock-up's spacing: 6 above the day row and the
-                    // dial, 10 above the tallies.
-                    padding: EdgeInsets.fromLTRB(
-                      DialSpace.m,
-                      6,
-                      DialSpace.m,
-                      split
-                          ? logInset + DialSize.logButton + DialSpace.m
-                          : DialSize.logButton / 2 + 6 + DialSpace.m,
-                    ),
-                    children: <Widget>[
-                      ?guestBanner,
-                      const RecoveryKeyCard(),
-                      // The arrows' 40 pt circles sit 20 from the edges, their
-                      // 44 pt targets 18.
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: DayPicker(
-                          day: day,
-                          today: today,
-                          onSelect: _selectDay,
-                          habits: vices ?? const <Vice>[],
-                          marks: marks,
-                        ),
+                  child: dockLog(
+                    ListView(
+                      // Under a docked Log button the list ends at its height.
+                      shrinkWrap: split && logButton != null,
+                      // The mock-up's spacing: 6 above the day row and the
+                      // dial, 10 above the tallies.
+                      padding: EdgeInsets.fromLTRB(
+                        DialSpace.m,
+                        6,
+                        DialSpace.m,
+                        split ? 0 : DialSize.logButton / 2 + 6 + DialSpace.m,
                       ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: SizedBox.square(
-                          dimension: side,
-                          child: DayDial(
+                      children: <Widget>[
+                        ?guestBanner,
+                        const RecoveryKeyCard(),
+                        // The arrows' 40 pt circles sit 20 from the edges, their
+                        // 44 pt targets 18.
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: DayPicker(
                             day: day,
                             today: today,
-                            entries: entries,
-                            semanticsLabel: summary,
-                            offline: offline,
-                            storedTypicals: storedTypicals,
-                            onBeadTap: _openEntry,
-                            onSwipe: (int days) =>
-                                _selectDay(addDays(day, days)),
+                            onSelect: _selectDay,
+                            habits: vices ?? const <Vice>[],
+                            marks: marks,
                           ),
                         ),
-                      ),
-                      if (offline && entries != null && entries.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: DialSpace.xs),
-                          child: Text(
-                            ClearDay.offlineBody,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: colors.clearInk),
+                        const SizedBox(height: 6),
+                        // The dial's geometry is drawn for its 320 pt size, so
+                        // a larger dial is that one scaled.
+                        Center(
+                          child: SizedBox.square(
+                            dimension: side,
+                            child: FittedBox(
+                              child: SizedBox.square(
+                                dimension: min(side, DialSize.dialDiameter),
+                                child: DayDial(
+                                  day: day,
+                                  today: today,
+                                  entries: entries,
+                                  semanticsLabel: summary,
+                                  offline: offline,
+                                  storedTypicals: storedTypicals,
+                                  onBeadTap: _openEntry,
+                                  onSwipe: (int days) =>
+                                      _selectDay(addDays(day, days)),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      PendingDayNote(selectedDate: day),
-                      const SizedBox(height: 10),
-                      if (vices == null)
-                        const Padding(
-                          padding: EdgeInsets.all(DialSpace.m),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else
-                        for (final Vice vice in vices)
-                          TallyRow(
-                            key: ValueKey<String>('tally-${vice.id}'),
-                            vice: vice,
-                            mark: markOf(vice),
-                            total: entries == null ? null : totals[vice.id],
-                            day: day,
-                            onLog: (Offset from) => _log(vice, from),
+                        if (offline && entries != null && entries.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: DialSpace.xs),
+                            child: Text(
+                              ClearDay.offlineBody,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: colors.clearInk),
+                            ),
                           ),
-                    ],
+                        PendingDayNote(selectedDate: day),
+                        const SizedBox(height: 10),
+                        if (vices == null)
+                          const Padding(
+                            padding: EdgeInsets.all(DialSpace.m),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else
+                          for (final Vice vice in vices)
+                            TallyRow(
+                              key: ValueKey<String>('tally-${vice.id}'),
+                              vice: vice,
+                              mark: markOf(vice),
+                              total: entries == null ? null : totals[vice.id],
+                              day: day,
+                              onLog: (Offset from) => _log(vice, from),
+                            ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -395,17 +446,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             child: child,
           ),
         );
-        final Widget? logButton = vices == null || vices.isEmpty
-            ? null
-            : LogButton(
-                habits: <FanHabit>[
-                  for (final Vice vice in vices)
-                    (vice: vice, mark: markOf(vice)),
-                ],
-                onLog: _log,
-                onRecord: _record,
-              );
-
         if (split) {
           return dayKeys(
             Row(
@@ -414,18 +454,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 Container(
                   width: column,
                   padding: EdgeInsets.only(left: notch),
-                  child: Stack(
-                    children: <Widget>[
-                      Positioned.fill(child: page),
-                      if (logButton != null)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: logInset,
-                          child: Center(child: logButton),
-                        ),
-                    ],
-                  ),
+                  child: page,
                 ),
                 Expanded(
                   child: allVices == null || allVices.isEmpty

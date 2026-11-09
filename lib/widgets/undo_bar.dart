@@ -38,7 +38,8 @@ void showUndoBar(
             Expanded(child: Text.rich(message)),
             if (onUndo != null) ...<Widget>[
               const SizedBox(width: 10),
-              _UndoButton(
+              UndoCountdownButton(
+                window: undoDuration,
                 onPressed: () {
                   messenger.hideCurrentSnackBar();
                   onUndo();
@@ -52,20 +53,30 @@ void showUndoBar(
   );
 }
 
-class _UndoButton extends StatefulWidget {
-  const _UndoButton({required this.onPressed});
+/// Undo, with a ring that empties over [window]. [ink] defaults to the
+/// snack bar's action colour.
+class UndoCountdownButton extends StatefulWidget {
+  const UndoCountdownButton({
+    super.key,
+    required this.window,
+    required this.onPressed,
+    this.ink,
+  });
 
+  final Duration window;
   final VoidCallback onPressed;
+  final Color? ink;
 
   @override
-  State<_UndoButton> createState() => _UndoButtonState();
+  State<UndoCountdownButton> createState() => _UndoCountdownButtonState();
 }
 
-class _UndoButtonState extends State<_UndoButton>
+class _UndoCountdownButtonState extends State<UndoCountdownButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _countdown = AnimationController(
     vsync: this,
-    duration: undoDuration,
+    animationBehavior: AnimationBehavior.preserve,
+    duration: widget.window,
   )..forward();
 
   @override
@@ -78,7 +89,9 @@ class _UndoButtonState extends State<_UndoButton>
   Widget build(BuildContext context) {
     final SnackBarThemeData bar = Theme.of(context).snackBarTheme;
     final Color ink =
-        bar.actionTextColor ?? Theme.of(context).colorScheme.onInverseSurface;
+        widget.ink ??
+        bar.actionTextColor ??
+        Theme.of(context).colorScheme.onInverseSurface;
 
     return Material(
       type: MaterialType.transparency,

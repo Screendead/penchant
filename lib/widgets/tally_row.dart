@@ -20,6 +20,7 @@ class TallyRow extends StatefulWidget {
     required this.total,
     required this.day,
     required this.onLog,
+    this.trailing,
   });
 
   final Vice vice;
@@ -29,6 +30,8 @@ class TallyRow extends StatefulWidget {
   final DateTime day;
   // [from] is the + button's centre, in global coordinates. Null shows no +.
   final void Function(Offset from)? onLog;
+  // Shown in place of the + while set.
+  final Widget? trailing;
 
   static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.unit.label(total)}';
@@ -43,6 +46,7 @@ class _TallyRowState extends State<TallyRow>
 
   late final AnimationController _flash = AnimationController(
     vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
     duration: _flashLength,
     value: 0,
   );
@@ -190,7 +194,9 @@ class _TallyRowState extends State<TallyRow>
                   ),
                 ),
                 const SizedBox(width: 4),
-                if (widget.onLog case final void Function(Offset) onLog)
+                if (widget.trailing case final Widget trailing)
+                  trailing
+                else if (widget.onLog case final void Function(Offset) onLog)
                   _PlusButton(label: logOneLabel(widget.vice), onPressed: onLog)
                 else
                   const SizedBox(width: DialSize.minTapTarget),
