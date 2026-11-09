@@ -5,7 +5,9 @@ import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/stats.dart';
 
 /// When a result is reported rather than refused. The defaults are the idea
-/// file's (`ideas/insights/insights-engine.md`), not tuned on data.
+/// file's (`ideas/insights/insights-engine.md`), not tuned on data, except
+/// the two for uneven use, set so that evenly used synthetic habits are
+/// refused at most about 1% of the time.
 class InsightGates {
   const InsightGates({
     this.minDays = 21,
