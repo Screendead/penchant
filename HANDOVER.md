@@ -170,7 +170,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
      checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
-     Spans with faded logging (PR_NUMBER, open): a trend and a second-half level in the model, and a refusal ("Logged
+     Spans with faded logging (#181, open): a trend and a second-half level in the model, and a refusal ("Logged
      unevenly over time") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged (0.24%, 8%).
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
