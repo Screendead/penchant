@@ -196,12 +196,12 @@ void main() {
 
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
-    expect(health.reads, reads + 1);
+    expect(health.reads, reads + insightsHealthCalls);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
-    expect(health.reads, reads + 2);
+    expect(health.reads, reads + 2 * insightsHealthCalls);
   });
 
   testWidgets('the journal is not read until Health has values', (
@@ -310,6 +310,92 @@ void main() {
 
     expect(find.text('Your journal couldn’t be loaded.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('the page says where the journal starts, and copies its '
+      'findings and refusals as text', (WidgetTester tester) async {
+    _connected();
+    final List<String?> copied = <String?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text'] as String?,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+      ),
+    );
+
+    final DateTime first = insightsFirstDay(insightsJournal().activities)!;
+    expect(find.text(InsightsPage.span(first)), findsOneWidget);
+
+    await tester.tap(find.text(InsightsPage.copyLabel));
+    await tester.pump();
+
+    expect(find.text(InsightsPage.copied), findsOneWidget);
+    expect(copied, hasLength(1));
+    final String text = copied.single!;
+    final List<String> lines = text.split('\n');
+    expect(lines.take(4), <String>[
+      InsightsPage.title,
+      InsightsPage.span(first),
+      '',
+      InsightsPage.foundHeading,
+    ]);
+    expect(lines, contains('Coffee · deep sleep'));
+    expect(
+      lines,
+      contains(
+        matches(
+          RegExp(
+            r'^On nights after Coffee, your deep sleep averages 1\d min '
+            r'less\.$',
+          ),
+        ),
+      ),
+    );
+    expect(lines, contains(matches(RegExp(r'^Range: \d+ to \d+ min less$'))));
+    expect(
+      lines,
+      contains(matches(RegExp(r'^From \d+ days, \d+ of them with Coffee$'))),
+    );
+    final int refused = lines.indexOf(InsightsPage.refusedHeading);
+    expect(refused, greaterThan(lines.indexOf('Coffee · deep sleep')));
+    expect(lines.sublist(refused + 1, refused + 3), <Object>[
+      'Tea: Within the noise: no clear difference',
+      matches(RegExp(r'^Water: Too few days yet: \d+ of \d+$')),
+    ]);
+    expect(text.trimRight().endsWith(InsightsPage.foot), isTrue);
+  });
+
+  test('copied text with nothing found and an empty journal says so', () {
+    expect(
+      insightsText(
+        findings: const <HabitFinding>[],
+        refused: const <HabitRefusal>[],
+        firstDay: null,
+        nameOf: (String id) => id,
+        locale: 'en',
+      ),
+      '${InsightsPage.title}\n\n'
+      '${InsightsPage.foundHeading}\n'
+      '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n\n'
+      '${InsightsPage.foot}\n',
+    );
   });
 
   test('the route opens Insights', () {

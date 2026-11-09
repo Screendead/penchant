@@ -8,10 +8,46 @@ import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/what_follows.dart';
 
-/// The days Insights reads: the 365 ending with [today].
-({DateTime start, DateTime end}) insightsRange(DateTime today) {
-  final DateTime end = addDays(startOfDay(today), 1);
-  return (start: addDays(end, -365), end: end);
+/// The earliest day an entry can be dated (the date picker's floor), so the
+/// journal query misses none.
+final DateTime insightsJournalStart = DateTime(2000);
+
+/// HealthKit shipped with iOS 8 in September 2014; reading from there spares a
+/// call for each empty year before it.
+final DateTime insightsHealthStart = DateTime(2014, 9);
+
+/// The days Insights reads: every day up to and including [today]. Keyed on
+/// the day alone, so a provider keyed on it stays put until the day changes.
+({DateTime start, DateTime end}) insightsRange(DateTime today) =>
+    (start: insightsJournalStart, end: addDays(startOfDay(today), 1));
+
+/// The Health read for [range], a calendar year per call at most, oldest
+/// first.
+List<({DateTime start, DateTime end})> insightsHealthChunks(
+  ({DateTime start, DateTime end}) range,
+) {
+  final List<({DateTime start, DateTime end})> chunks =
+      <({DateTime start, DateTime end})>[];
+  DateTime start = range.start.isBefore(insightsHealthStart)
+      ? insightsHealthStart
+      : startOfDay(range.start);
+  while (start.isBefore(range.end)) {
+    final DateTime next = DateTime(start.year + 1);
+    final DateTime end = next.isBefore(range.end) ? next : range.end;
+    chunks.add((start: start, end: end));
+    start = end;
+  }
+  return chunks;
+}
+
+/// The local day of the journal's first entry; null with none.
+DateTime? insightsFirstDay(Iterable<ViceActivity> activities) {
+  DateTime? first;
+  for (final ViceActivity a in activities) {
+    final DateTime at = a.createdAt.toDate();
+    if (first == null || at.isBefore(first)) first = at;
+  }
+  return first == null ? null : startOfDay(first);
 }
 
 /// What the engine runs on. Sendable to another isolate.

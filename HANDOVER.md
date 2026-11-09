@@ -166,10 +166,16 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **c. Insights screen** (merged, #173): connect Health, then show the engine's findings; empty Health reads as
      "no data yet". Stills in `docs/pitch/round-11/insights/`. Not run on a device: the real
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
-     Findings are now corrected for many tests at once (#175, open): Benjamini-Hochberg at q = 0.1 across every
+     Findings are now corrected for many tests at once (#175, merged): Benjamini-Hochberg at q = 0.1 across every
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
      checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
+   - **Whole history and Copy as text** (Jack, 2026-11-09: "i've got more than a year's worth of data"; PR open,
+     `feat/insights-whole-history`): the journal query runs from 2000 (the date picker's floor) to today, keyed on
+     the day; Health is read from September 2014 (HealthKit's launch) in calendar-year calls, 13 today; the page says
+     "From <first entry> to today", and "Copy as text" puts the findings and refusals on the clipboard on a tap. Not
+     run on a device: the 13 HealthKit calls' time on a phone with years of data, and the live listener's cost over a
+     multi-year journal (every document read once per open), are unmeasured.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether

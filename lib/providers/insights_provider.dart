@@ -99,14 +99,22 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   try {
     if (!await source.isAvailable()) return const HealthUnsupported();
     if (!connected) return const HealthNotConnected();
-    return switch (await source.dailyValues(
-      HealthMetric.values.toSet(),
-      range.start,
-      range.end,
+    final List<DailyOutcome> values = <DailyOutcome>[];
+    for (final ({DateTime start, DateTime end}) chunk in insightsHealthChunks(
+      range,
     )) {
-      HealthUnavailable() => const HealthUnsupported(),
-      HealthValues(:final List<DailyOutcome> values) => HealthReady(values),
-    };
+      switch (await source.dailyValues(
+        HealthMetric.values.toSet(),
+        chunk.start,
+        chunk.end,
+      )) {
+        case HealthUnavailable():
+          return const HealthUnsupported();
+        case HealthValues(values: final List<DailyOutcome> chunkValues):
+          values.addAll(chunkValues);
+      }
+    }
+    return HealthReady(values);
   } on PlatformException catch (e) {
     return switch (e.code) {
       healthDatabaseInaccessible => const HealthLocked(),
@@ -135,9 +143,12 @@ sealed class InsightsResult {
 }
 
 final class InsightsComputed extends InsightsResult {
-  const InsightsComputed(this.report);
+  const InsightsComputed(this.report, {this.firstDay});
 
   final InsightsReport report;
+
+  /// The day of the journal's first entry; null when it has none.
+  final DateTime? firstDay;
 }
 
 final class InsightsFailed extends InsightsResult {
@@ -163,6 +174,7 @@ final _engineProvider = FutureProvider.autoDispose
               today: key.today,
             ),
           ),
+          firstDay: insightsFirstDay(key.activities),
         );
       } catch (_) {
         return const InsightsFailed();
@@ -177,8 +189,8 @@ typedef InsightsView = ({HealthState health, InsightsResult? result});
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   final HealthState? state = ref.watch(healthStateProvider).value;
   if (state == null) return const AsyncLoading<InsightsView>();
-  // The year of the journal is a live query billed per document, so it is
-  // opened only when there is Health data to compare it with.
+  // The whole journal is a live query billed per document, so it is opened
+  // only when there is Health data to compare it with.
   if (state case HealthReady(
     :final List<DailyOutcome> values,
   ) when values.isNotEmpty) {
