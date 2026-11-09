@@ -114,6 +114,11 @@ enum RefusalReason {
   /// The adjusted interval includes zero.
   withinNoise,
 
+  /// For [InsightKind.dose] or [InsightKind.lastUse]: the adjusted interval
+  /// excludes zero, but the fit without the day that pulls the effect
+  /// furthest from zero does not.
+  oneDay,
+
   /// For [InsightKind.dose]: the day totals barely vary.
   steadyAmount,
 
@@ -455,9 +460,9 @@ HabitInsight _whatFollowsOne(
 /// power of ten within one standard deviation of them, never under one when
 /// every total is a whole number.
 ///
-/// A result that one day decides is refused as [RefusalReason.withinNoise]:
-/// the fit without the day that pulls the effect furthest from zero must
-/// still exclude zero.
+/// A result that one day decides is refused as [RefusalReason.oneDay]: the
+/// fit without the day that pulls the effect furthest from zero must still
+/// exclude zero.
 ///
 /// Refused as [RefusalReason.steadyAmount] when the totals barely vary (see
 /// [InsightGates.minAmountSpread]), and as [RefusalReason.uneven] when
@@ -795,13 +800,20 @@ HabitInsight _attribute(
       pValue: pValue,
     );
   }
-  // A use comparison has a week of days on each side; an amount or a time
-  // can hang on one extreme day.
-  if (interval.crossesZero ||
-      judged.kind != InsightKind.use &&
-          _withoutMostTelling(rows, y, fit, column, gates.level)) {
+  if (interval.crossesZero) {
     return judged.refuse(
       RefusalReason.withinNoise,
+      effect: effect,
+      interval: interval,
+      pValue: pValue,
+    );
+  }
+  // A use comparison has a week of days on each side; an amount or a time
+  // can hang on one extreme day.
+  if (judged.kind != InsightKind.use &&
+      _withoutMostTelling(rows, y, fit, column, gates.level)) {
+    return judged.refuse(
+      RefusalReason.oneDay,
       effect: effect,
       interval: interval,
       pValue: pValue,

@@ -273,7 +273,7 @@ void main() {
     expect(dose.effect, inInclusiveRange(-30, -10));
     expect(
       findingSentence(dose, 'Coffee', 'en', unit: Unit.drink),
-      startsWith('Each extra drink of Coffee goes with'),
+      startsWith('On days with one more drink logged for Coffee, your'),
     );
   });
 
@@ -485,8 +485,8 @@ void main() {
       final HabitFinding f = finding(InsightKind.dose, 1);
       expect(
         findingSentence(f, 'Coffee', 'en', unit: Unit.drink),
-        'Each extra drink of Coffee goes with your deep sleep that night '
-        'averaging 6 min less.',
+        'On days with one more drink logged for Coffee, your deep sleep that '
+        'night averages 6 min less.',
       );
       expect(findingRange(f, 'en'), 'Range: 3 to 9 min less');
       expect(findingBasis(f, 'Coffee'), 'From 120 days with Coffee');
@@ -500,8 +500,8 @@ void main() {
           'en',
           unit: Unit.minute,
         ),
-        'Each extra 10 minutes of Run goes with your deep sleep that night '
-        'averaging 6 min less.',
+        'On days with 10 more minutes logged for Run, your deep sleep that '
+        'night averages 6 min less.',
       );
       expect(
         findingSentence(
@@ -510,17 +510,80 @@ void main() {
           'en',
           unit: Unit.time,
         ),
-        startsWith('Each extra use of Tea goes with'),
+        startsWith('On days with one more use logged for Tea, your'),
       );
     });
 
     test('a time of last use reads per hour later', () {
       expect(
         findingSentence(finding(InsightKind.lastUse, 60), 'Coffee', 'en'),
-        'A last Coffee an hour later goes with your deep sleep that night '
-        'averaging 6 min less.',
+        'On days your last use of Coffee is an hour later, your deep sleep '
+        'that night averages 6 min less.',
       );
     });
+
+    // No word agrees with the name, so a plural or uncountable one reads as
+    // well as a singular one.
+    for (final (String habit, Unit unit) in <(String, Unit)>[
+      ('Coffee', Unit.drink),
+      ('Gummies', Unit.item),
+      ('Nuts', Unit.item),
+      ('Water', Unit.drink),
+    ]) {
+      test('$habit reads in every sentence', () {
+        String sentence(InsightKind kind, double step) =>
+            findingSentence(finding(kind, step), habit, 'en', unit: unit);
+        expect(
+          sentence(InsightKind.use, 1),
+          'On nights after $habit, your deep sleep averages 6 min less.',
+        );
+        expect(
+          sentence(InsightKind.dose, 1),
+          'On days with one more ${unit.singular} logged for $habit, your '
+          'deep sleep that night averages 6 min less.',
+        );
+        expect(
+          sentence(InsightKind.dose, 5),
+          'On days with 5 more ${unit.plural} logged for $habit, your deep '
+          'sleep that night averages 6 min less.',
+        );
+        expect(
+          sentence(InsightKind.lastUse, 60),
+          'On days your last use of $habit is an hour later, your deep sleep '
+          'that night averages 6 min less.',
+        );
+      });
+    }
+  });
+
+  test('an amount whose effect rests on one day says so, not that it is '
+      'within the noise', () {
+    final Random random = Random(1);
+    final List<HabitUse> uses = <HabitUse>[];
+    final List<DailyOutcome> outcomes = <DailyOutcome>[];
+    for (int i = 0; i < 31; i++) {
+      final DateTime day = addDays(start, i);
+      final int amount = i == 15 ? 10 : 1 + random.nextInt(3);
+      uses.addAll(dayOfUse('Gummies', day, amount, 20 * 60));
+      outcomes.add(
+        DailyOutcome(
+          date: addDays(day, 1),
+          metricId: deep,
+          value: 60 + (i == 15 ? 50 : 10 * gaussian(random)),
+        ),
+      );
+    }
+    final HabitInsight dose = doseFollows(
+      habits: DailyHabitSeries.fromUses(uses),
+      outcomes: OutcomeSeries.fromOutcomes(outcomes),
+      metricId: deep,
+    ).single;
+    expect((dose as HabitRefusal).reason, RefusalReason.oneDay);
+    expect(dose.pValue, lessThan(0.01));
+    expect(
+      refusalReason(dose, (id) => id),
+      'Amount: rests on one unusual day, so it may not hold on the others',
+    );
   });
 }
 

@@ -116,7 +116,7 @@ class InsightsReport {
 
   /// One refusal for each habit with no finding of any kind on any outcome,
   /// the one that says most: entangled, then possibly chance, then logged
-  /// unevenly, then within the noise, then a steady amount or time or a time
+  /// unevenly, then resting on one day, then within the noise, then a steady amount or time or a time
   /// that follows the amount, then too few days; on a tie, the days-with-and-without comparison's, then the one
   /// from the most days.
   final List<HabitRefusal> refused;
@@ -191,11 +191,12 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
     RefusalReason.entangled => 0,
     RefusalReason.chance => 1,
     RefusalReason.uneven => 2,
-    RefusalReason.withinNoise => 3,
+    RefusalReason.oneDay => 3,
+    RefusalReason.withinNoise => 4,
     RefusalReason.steadyAmount ||
     RefusalReason.steadyTiming ||
-    RefusalReason.followsAmount => 4,
-    RefusalReason.tooFewDays => 5,
+    RefusalReason.followsAmount => 5,
+    RefusalReason.tooFewDays => 6,
   };
   return refusals.reduce((a, b) {
     final int byReason = rank(a.reason).compareTo(rank(b.reason));
@@ -311,9 +312,11 @@ int _digits(HabitFinding finding, MetricCopy copy) {
 }
 
 /// "On nights after Coffee, your deep sleep averages 18 min less."; for an
-/// amount, "Each extra drink of Coffee goes with your deep sleep that night
-/// averaging 6 min less."; for a time, "A last Coffee an hour later goes
-/// with ...". [unit] is the habit's, for an amount.
+/// amount, "On days with one more drink logged for Coffee, your deep sleep
+/// that night averages 6 min less."; for a time, "On days your last use of
+/// Coffee is an hour later, ...". [unit] is the habit's, for an amount. The
+/// habit's name only ever follows "after", "for" or "of", and no verb agrees
+/// with it, so a plural or uncountable name (Gummies, Water) reads as well.
 String findingSentence(
   HabitFinding finding,
   String habit,
@@ -334,21 +337,21 @@ String findingSentence(
       'On ${copy.night ? 'nights' : 'days'} after $habit, your ${copy.name} '
           'averages $amount $direction.',
     InsightKind.dose =>
-      'Each extra ${_stepWords(finding.step, unit, locale)} of $habit goes '
-          'with your ${copy.name} $then averaging $amount $direction.',
+      'On days with ${_stepWords(finding.step, unit, locale)} logged for '
+          '$habit, your ${copy.name} $then averages $amount $direction.',
     InsightKind.lastUse =>
-      'A last $habit an hour later goes with your ${copy.name} $then '
-          'averaging $amount $direction.',
+      'On days your last use of $habit is an hour later, your ${copy.name} '
+          '$then averages $amount $direction.',
   };
 }
 
-// "drink", "10 minutes"; a count of times reads as uses.
+// "one more drink", "10 more minutes"; a count of times reads as uses.
 String _stepWords(double step, Unit unit, String locale) {
   final String one = unit == Unit.time ? 'use' : unit.singular;
   final String other = unit == Unit.time ? 'uses' : unit.plural;
-  if (step == 1) return one;
+  if (step == 1) return 'one more $one';
   final String number = NumberFormat.decimalPattern(locale).format(step);
-  return '$number ${pluralWord(step, one: one, other: other)}';
+  return '$number more ${pluralWord(step, one: one, other: other)}';
 }
 
 /// "Range: 7 to 29 min less"; both ends share a sign, so one word serves.
@@ -416,6 +419,8 @@ String _amongUseRefusal(
     null => 'moves with other habits’ days, so they can’t be told apart',
   },
   RefusalReason.withinNoise => 'within the noise, no clear difference',
+  RefusalReason.oneDay =>
+    'rests on one unusual day, so it may not hold on the others',
   RefusalReason.chance => 'could be chance, one of many comparisons',
 };
 
@@ -447,4 +452,6 @@ String _useRefusal(
     'Nearly the same each day, so there’s no difference to compare',
   RefusalReason.followsAmount =>
     'Later on days with more, so it can’t be told apart from the amount',
+  RefusalReason.oneDay =>
+    'Rests on one unusual day, so it may not hold on the others',
 };

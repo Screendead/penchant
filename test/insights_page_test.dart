@@ -155,15 +155,15 @@ void main() {
 
     expect(
       find.text(
-        'Each extra drink of Coffee goes with your deep sleep that night '
-        'averaging 6 min less.',
+        'On days with one more drink logged for Coffee, your deep sleep that '
+        'night averages 6 min less.',
       ),
       findsOneWidget,
     );
     expect(
       find.text(
-        'A last Coffee an hour later goes with your deep sleep that night '
-        'averaging 6 min less.',
+        'On days your last use of Coffee is an hour later, your deep sleep '
+        'that night averages 6 min less.',
       ),
       findsOneWidget,
     );
