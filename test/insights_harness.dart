@@ -32,12 +32,21 @@ class FixedToday extends Today {
 }
 
 class FakeHealthSource implements HealthSource {
-  FakeHealthSource({this.available = true, this.read, this.failure});
+  FakeHealthSource({
+    this.available = true,
+    this.read,
+    this.failure,
+    this.status = HealthRequestStatus.unnecessary,
+  });
 
   final bool available;
   final HealthRead? read;
   final PlatformException? failure;
+
+  /// Becomes [HealthRequestStatus.unnecessary] once the sheet is shown.
+  HealthRequestStatus status;
   int authorizationRequests = 0;
+  int statusChecks = 0;
   int reads = 0;
   Set<HealthMetric>? lastMetrics;
 
@@ -45,8 +54,15 @@ class FakeHealthSource implements HealthSource {
   Future<bool> isAvailable() async => available;
 
   @override
+  Future<HealthRequestStatus> requestStatus() async {
+    statusChecks++;
+    return status;
+  }
+
+  @override
   Future<bool> requestAuthorization() async {
     authorizationRequests++;
+    if (available) status = HealthRequestStatus.unnecessary;
     return available;
   }
 

@@ -31,6 +31,44 @@ final healthConnectedProvider = FutureProvider<bool>((ref) async {
 
 const String healthConnectedKey = 'healthConnected';
 
+/// Which set of read types the sheet last showed, so a later set can be asked
+/// for. Raise with each change to readTypes in ios/Runner/HealthChannel.swift:
+/// 2 added heart rate. Absent for anyone who connected before it was kept.
+const int healthReadTypesVersion = 2;
+
+const String healthAskedVersionKey = 'healthAskedVersion';
+
+/// Whether Health was connected before the app read a type it reads now, so
+/// the sheet would ask for the new ones. Never shows the sheet itself.
+/// HealthKit answers first; the version this device last asked for decides
+/// when HealthKit cannot tell.
+final healthAskAgainProvider = FutureProvider.autoDispose<bool>((ref) async {
+  if (defaultTargetPlatform == TargetPlatform.macOS) return false;
+  final HealthSource source = ref.watch(healthSourceProvider);
+  if (!await ref.watch(healthConnectedProvider.future)) return false;
+  HealthRequestStatus status;
+  try {
+    status = await source.requestStatus();
+  } catch (_) {
+    status = HealthRequestStatus.unknown;
+  }
+  switch (status) {
+    case HealthRequestStatus.shouldRequest:
+      return true;
+    case HealthRequestStatus.unnecessary:
+      return false;
+    case HealthRequestStatus.unknown:
+      try {
+        if (!await source.isAvailable()) return false;
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        return (prefs.getInt(healthAskedVersionKey) ?? 1) <
+            healthReadTypesVersion;
+      } catch (_) {
+        return false;
+      }
+  }
+});
+
 /// Shows the Health sheet. False when it could not be shown. Takes the
 /// container rather than a page's ref, which may be disposed by the time the
 /// sheet closes (a sign-out pops every page).
@@ -45,6 +83,7 @@ Future<bool> connectHealth(ProviderContainer container) async {
   try {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool(healthConnectedKey, true);
+    await prefs.setInt(healthAskedVersionKey, healthReadTypesVersion);
   } catch (_) {
     // Asked again next launch.
   }

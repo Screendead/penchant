@@ -76,6 +76,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,
+  the Health card says "Allow new Health data", and a tap shows the Health sheet for the new types only. The card also
+  says where to change Health access later (Settings > Health > Data Access & Devices > Penchant).
 - Insights no longer credits a habit with a change that happened while you had stopped logging it, or before you
   logged it every day: a habit logged far more, or far less, in one half of its time than the other is listed as
   "Used far more at some times than others", and a slow drift or a sudden change in a Health measure is allowed for
