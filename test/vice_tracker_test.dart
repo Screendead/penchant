@@ -255,7 +255,7 @@ void main() {
       await tester.pump();
       expect(find.byType(LastNightLine), findsOneWidget);
       expect(
-        find.textContaining('3 bpm above your usual', findRichText: true),
+        find.textContaining('3 bpm above usual', findRichText: true),
         findsOneWidget,
       );
 
