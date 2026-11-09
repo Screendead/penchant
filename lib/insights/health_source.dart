@@ -91,7 +91,10 @@ enum HealthSampleMetric {
   heartRateVariabilitySDNN('heartRateVariabilitySDNN'),
 
   /// Breaths per minute.
-  respiratoryRate('respiratoryRate');
+  respiratoryRate('respiratoryRate'),
+
+  /// A count over each sample's interval.
+  stepCount('stepCount');
 
   const HealthSampleMetric(this.id);
 

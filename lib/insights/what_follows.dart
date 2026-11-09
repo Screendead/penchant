@@ -71,7 +71,14 @@ enum InsightKind {
   /// Among days with the habit, the clock time of its last use, a use before
   /// [lateUseCutoffHour] counting as the evening before.
   lastUse,
+
+  /// A Health sample measure in [HabitInsight.window] after each use, against
+  /// the hour before it, beyond the same change at that time on other days.
+  hoursAfter,
 }
+
+/// Minutes after a use, from [start] up to [end].
+typedef HourWindow = ({int start, int end});
 
 /// The outcome after days a habit was used against after days it was not,
 /// with no other habit taken into account.
@@ -142,6 +149,7 @@ sealed class HabitInsight {
     required this.raw,
     this.kind = InsightKind.use,
     this.step = 1,
+    this.window,
   });
 
   final String habitId;
@@ -162,6 +170,9 @@ sealed class HabitInsight {
   /// per: 1 for [InsightKind.use], an amount in the habit's unit for
   /// [InsightKind.dose], minutes for [InsightKind.lastUse].
   final double step;
+
+  /// Set for [InsightKind.hoursAfter] alone.
+  final HourWindow? window;
 }
 
 class HabitFinding extends HabitInsight {
@@ -174,6 +185,7 @@ class HabitFinding extends HabitInsight {
     required super.raw,
     super.kind,
     super.step,
+    super.window,
     required this.effect,
     required this.interval,
     required this.standardized,
@@ -206,6 +218,7 @@ class HabitRefusal extends HabitInsight {
     required super.raw,
     super.kind,
     super.step,
+    super.window,
     required this.reason,
     this.entangledWith,
     this.effect,
@@ -862,6 +875,7 @@ List<HabitInsight> controlFalseDiscoveries(
           raw: f.raw,
           kind: f.kind,
           step: f.step,
+          window: f.window,
           reason: RefusalReason.chance,
           effect: f.effect,
           interval: f.interval,

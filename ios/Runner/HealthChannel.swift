@@ -62,6 +62,7 @@ enum HealthChannel {
     case "heartRate": return (HKQuantityType(.heartRate), HKUnit.count().unitDivided(by: .minute()))
     case "heartRateVariabilitySDNN": return (HKQuantityType(.heartRateVariabilitySDNN), .secondUnit(with: .milli))
     case "respiratoryRate": return (HKQuantityType(.respiratoryRate), HKUnit.count().unitDivided(by: .minute()))
+    case "stepCount": return (HKQuantityType(.stepCount), .count())
     default: return nil
     }
   }

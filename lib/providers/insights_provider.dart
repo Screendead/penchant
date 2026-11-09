@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -124,12 +126,7 @@ final class HealthReady extends HealthState {
   final List<DailyOutcome> values;
 }
 
-// sleepingHeartRate waits for the engine to have words for it: its query
-// holds up the whole read and its cost on a year of nights is unmeasured.
-final Set<HealthMetric> _engineMetrics = {
-  for (final m in HealthMetric.values)
-    if (m != HealthMetric.sleepingHeartRate) m,
-};
+final Set<HealthMetric> _engineMetrics = HealthMetric.values.toSet();
 
 final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   ref,
@@ -174,6 +171,52 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   }
 });
 
+typedef _SamplesKey = ({List<ViceActivity> activities, DateTime today});
+
+/// The Health samples around the journal's uses that [hoursAfter] needs, by
+/// [HealthSampleMetric.id]: one span a day per measure, in pages. Empty when
+/// any read fails, which leaves the hours-after comparisons out rather than
+/// the page: someone who connected Health before heart rate was read gets
+/// `not-determined` here, and the Health card already offers the sheet again.
+final _samplesProvider = FutureProvider.autoDispose
+    .family<Map<String, List<HealthSample>>, _SamplesKey>((ref, key) async {
+      const Map<String, List<HealthSample>> none =
+          <String, List<HealthSample>>{};
+      try {
+        final HoursAfterPlan plan = insightsHoursAfterPlan(
+          habitUsesFrom(key.activities).toList(),
+          key.today,
+        );
+        if (plan.reads.isEmpty) return none;
+        final HealthSource source = ref.read(healthSourceProvider);
+        final Map<String, List<HealthSample>> out =
+            <String, List<HealthSample>>{};
+        for (final HealthSampleMetric metric in insightsSampleMetrics) {
+          final List<HealthSample> got = <HealthSample>[];
+          for (final ({DateTime start, DateTime end}) span in plan.reads) {
+            await for (final HealthSampleRead page in healthSamplePages(
+              source,
+              metric,
+              span.start,
+              span.end,
+            )) {
+              if (!ref.mounted) return none;
+              switch (page) {
+                case HealthUnavailable():
+                  return none;
+                case HealthSamples(:final List<HealthSample> samples):
+                  got.addAll(samples);
+              }
+            }
+          }
+          out[metric.id] = got;
+        }
+        return out;
+      } catch (_) {
+        return none;
+      }
+    });
+
 typedef InsightsRunner = Future<InsightsReport> Function(InsightsInput input);
 
 /// Where the engine runs: another isolate, since its cost grows with the
@@ -211,6 +254,7 @@ final class InsightsFailed extends InsightsResult {
 typedef _EngineKey = ({
   List<ViceActivity> activities,
   List<DailyOutcome> health,
+  Map<String, List<HealthSample>> samples,
   DateTime today,
 });
 
@@ -223,6 +267,7 @@ final _engineProvider = FutureProvider.autoDispose
               activities: key.activities,
               health: key.health,
               today: key.today,
+              samples: key.samples,
             ),
           ),
           firstDays: insightsFirstDays(key.activities),
@@ -257,8 +302,17 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     }
     final List<ViceActivity>? journal = activities.value;
     if (journal == null) return const AsyncLoading<InsightsView>();
+    final Map<String, List<HealthSample>>? samples = ref
+        .watch(_samplesProvider((activities: journal, today: today)))
+        .value;
+    if (samples == null) return const AsyncLoading<InsightsView>();
     final AsyncValue<InsightsResult> result = ref.watch(
-      _engineProvider((activities: journal, health: values, today: today)),
+      _engineProvider((
+        activities: journal,
+        health: values,
+        samples: samples,
+        today: today,
+      )),
     );
     return switch (result.value) {
       final InsightsResult r => AsyncData<InsightsView>((

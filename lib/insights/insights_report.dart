@@ -8,6 +8,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
+import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 /// The earliest day an entry can be dated (the date picker's floor), so the
@@ -77,12 +78,15 @@ class InsightsInput {
     required this.outcomes,
     required this.from,
     required this.through,
+    this.samples = const <String, List<hs.HealthSample>>{},
   });
 
   factory InsightsInput.from({
     required Iterable<ViceActivity> activities,
     required Iterable<hs.DailyOutcome> health,
     required DateTime today,
+    Map<String, List<hs.HealthSample>> samples =
+        const <String, List<hs.HealthSample>>{},
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -99,6 +103,7 @@ class InsightsInput {
       ],
       from: range.start,
       through: addDays(range.end, -1),
+      samples: samples,
     );
   }
 
@@ -106,7 +111,24 @@ class InsightsInput {
   final List<DailyOutcome> outcomes;
   final DateTime from;
   final DateTime through;
+
+  /// What [insightsHoursAfterPlan] asked for, by [hs.HealthSampleMetric.id],
+  /// each sorted by start.
+  final Map<String, List<hs.HealthSample>> samples;
 }
+
+/// The moments around uses whose samples Insights reads, up to the start of
+/// [today], so that every window read has ended.
+HoursAfterPlan insightsHoursAfterPlan(List<HabitUse> uses, DateTime today) =>
+    planHoursAfter(uses, startOfDay(today));
+
+/// The sample measures read for [insightsHoursAfterPlan]: the judged ones
+/// and steps.
+const List<hs.HealthSampleMetric> insightsSampleMetrics =
+    <hs.HealthSampleMetric>[
+      ...hoursAfterMetrics,
+      hs.HealthSampleMetric.stepCount,
+    ];
 
 class InsightsReport {
   const InsightsReport({required this.findings, required this.refused});
@@ -145,6 +167,13 @@ const List<_Comparison> _comparisons = <_Comparison>[
 
 InsightsReport computeInsights(InsightsInput input) {
   final DailyHabitSeries habits = DailyHabitSeries.fromUses(input.uses);
+  final List<HabitInsight> hours = input.samples.isEmpty
+      ? const <HabitInsight>[]
+      : hoursAfter(
+          plan: insightsHoursAfterPlan(input.uses, addDays(input.through, 1)),
+          uses: input.uses,
+          samples: input.samples,
+        );
   final OutcomeSeries outcomes = OutcomeSeries.fromOutcomes(input.outcomes);
   final List<HabitFinding> findings = <HabitFinding>[];
   final Map<String, List<HabitRefusal>> refusals =
@@ -163,6 +192,7 @@ InsightsReport computeInsights(InsightsInput input) {
             from: input.from,
             through: input.through,
           ),
+    ...hours,
   ])) {
     switch (insight) {
       case HabitFinding():
@@ -274,6 +304,14 @@ MetricCopy? metricCopy(String metricId) => switch (metricId) {
     decimals: 2,
   ),
   'stepCount' => const MetricCopy('step count', night: false),
+  'sleepingHeartRate' => const MetricCopy(
+    'heart rate while asleep',
+    night: true,
+    unit: 'bpm',
+    decimals: 1,
+  ),
+  // A sample measure, for InsightKind.hoursAfter alone.
+  'heartRate' => const MetricCopy('heart rate', night: false, unit: 'bpm'),
   'activeEnergyBurned' => const MetricCopy(
     'active energy',
     night: false,
@@ -339,8 +377,19 @@ String findingSentence(
     InsightKind.lastUse =>
       'A last $habit an hour later goes with your ${copy.name} $then '
           'averaging $amount $direction.',
+    InsightKind.hoursAfter =>
+      '${_windowWords(finding.window!)} $habit, your ${copy.name} is '
+          '$amount $direction than before it.',
   };
 }
+
+String _windowWords(HourWindow w) => switch ((w.start, w.end)) {
+  (0, 30) => 'In the half hour after',
+  (30, 60) => 'Half an hour to an hour after',
+  (60, 120) => 'One to two hours after',
+  (120, 240) => 'Two to four hours after',
+  _ => '${w.start} to ${w.end} minutes after',
+};
 
 // "drink", "10 minutes"; a count of times reads as uses.
 String _stepWords(double step, Unit unit, String locale) {
@@ -372,6 +421,10 @@ String findingRange(HabitFinding finding, String locale) {
 /// "From 64 days, 22 of them with Coffee"; "From 64 days with Coffee" for an
 /// amount or a time, which compare days of use alone.
 String findingBasis(HabitFinding finding, String habit) {
+  if (finding.kind == InsightKind.hoursAfter) {
+    return 'From ${finding.exposedDays} days with $habit, against the same '
+        'hours on ${finding.usableDays - finding.exposedDays} other days';
+  }
   if (finding.kind != InsightKind.use) {
     return 'From ${finding.usableDays} days with $habit';
   }
@@ -392,7 +445,23 @@ String refusalReason(
   InsightKind.dose => 'Amount: ${_amongUseRefusal(refusal, nameOf, gates)}',
   InsightKind.lastUse =>
     'Time of last use: ${_amongUseRefusal(refusal, nameOf, gates)}',
+  InsightKind.hoursAfter => 'Hours after it: ${_hoursAfterRefusal(refusal)}',
 };
+
+String _hoursAfterRefusal(HabitRefusal refusal) {
+  const HoursAfterGates gates = HoursAfterGates();
+  final String readings = '${metricCopy(refusal.metricId)?.name} readings';
+  return switch (refusal.reason) {
+    RefusalReason.tooFewDays when refusal.exposedDays < gates.minEventDays =>
+      'too few uses with $readings around them yet: ${refusal.exposedDays} '
+          'days of ${gates.minEventDays}',
+    RefusalReason.tooFewDays =>
+      'used at about the same time each day, so there are too few other '
+          'days at that time to compare',
+    RefusalReason.chance => 'could be chance, one of many comparisons',
+    _ => 'within the noise, no clear difference',
+  };
+}
 
 String _amongUseRefusal(
   HabitRefusal refusal,

@@ -7,7 +7,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'insights_harness.dart';
 
 void main() {
-  test('Insights reads every metric but sleeping heart rate', () async {
+  test('Insights reads every metric, sleeping heart rate too', () async {
     final FakeHealthSource health = FakeHealthSource();
     final ProviderContainer container = ProviderContainer(
       overrides: [
@@ -27,9 +27,6 @@ void main() {
       await container.read(healthStateProvider.future),
       isA<HealthReady>(),
     );
-    expect(health.lastMetrics, {
-      for (final m in HealthMetric.values)
-        if (m != HealthMetric.sleepingHeartRate) m,
-    });
+    expect(health.lastMetrics, HealthMetric.values.toSet());
   });
 }
