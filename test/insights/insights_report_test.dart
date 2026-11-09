@@ -202,7 +202,7 @@ void main() {
     });
   });
 
-  test('a habit whose use varies within too few months says so', () {
+  test('a habit used unevenly over time says so', () {
     expect(
       refusalReason(
         const HabitRefusal(
@@ -216,7 +216,7 @@ void main() {
         ),
         (id) => id,
       ),
-      'Not enough months with both days with and without it',
+      'Used far more at some times than others, so it can’t be told apart from other changes',
     );
   });
 }

@@ -13,7 +13,7 @@ import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 const String metric = 'outcome';
-final DateTime start = DateTime(2026, 1, 5);
+final DateTime january5 = DateTime(2026, 1, 5);
 
 double gaussian(Random r) =>
     sqrt(-2 * log(1 - r.nextDouble())) * cos(2 * pi * r.nextDouble());
@@ -23,6 +23,7 @@ HabitInsight judge(
   double Function(int day, bool used) value,
   int lastDay,
   Random random,
+  DateTime start,
 ) {
   final List<HabitUse> uses = <HabitUse>[
     for (final int d in useDays)
@@ -51,8 +52,9 @@ void scenario(
   String name,
   int seeds,
   Set<int>? Function(Random random) useDays,
-  double Function(int day, bool used) value,
-) {
+  double Function(int day, bool used) value, {
+  DateTime? start,
+}) {
   final Map<String, int> counts = <String, int>{};
   int n = 0;
   for (int seed = 0; seed < seeds; seed++) {
@@ -60,7 +62,13 @@ void scenario(
     final Set<int>? days = useDays(random);
     if (days == null) continue;
     n++;
-    final HabitInsight r = judge(days, value, days.reduce(max), random);
+    final HabitInsight r = judge(
+      days,
+      value,
+      days.reduce(max),
+      random,
+      start ?? january5,
+    );
     final String key = switch (r) {
       HabitFinding() => 'finding',
       HabitRefusal(:final RefusalReason reason) => reason.name,
@@ -136,6 +144,50 @@ void main() {
         200,
         (r) => bernoulli(r, 119, (i) => i < 60 ? 0.6 : 0.3),
         (i, _) => i < at ? 0 : -2,
+      );
+    }
+  });
+
+  // Spans of one period (a month plus fewer than 10 usable days), which have
+  // no period levels and fall back to the halves guard and level.
+  test('false findings in a span of one period', () {
+    final DateTime january1 = DateTime(2026, 1, 1);
+    scenario(
+      'one period, Jan 1 + 38 days: 12 of first 15 days, then days 25, 38; '
+      'step 10 at day 15',
+      100,
+      (_) => <int>{
+        for (int i = 0; i < 15; i++)
+          if (i % 5 != 4) i,
+        25,
+        38,
+      },
+      (i, _) => i < 15 ? 10 : 0,
+      start: january1,
+    );
+    for (final double step in <double>[2, 10]) {
+      scenario(
+        'one period, Jan 1 + 38 days: 80% then 10% from day 15; step $step '
+        'at day 15',
+        200,
+        (r) => bernoulli(r, 38, (i) => i < 15 ? 0.8 : 0.1),
+        (i, _) => i < 15 ? step : 0,
+        start: january1,
+      );
+      scenario(
+        'one period, Jan 1 + 38 days: 30% then 90% from day 15; step $step '
+        'at day 15',
+        200,
+        (r) => bernoulli(r, 38, (i) => i < 15 ? 0.3 : 0.9),
+        (i, _) => i < 15 ? step : 0,
+        start: january1,
+      );
+      scenario(
+        'one period, Jan 5 + 29 days: 80% then 10% from day 12; step $step '
+        'at day 12',
+        200,
+        (r) => bernoulli(r, 29, (i) => i < 12 ? 0.8 : 0.1),
+        (i, _) => i < 12 ? step : 0,
       );
     }
   });

@@ -392,6 +392,67 @@ void main() {
     expect((water as HabitRefusal).reason, RefusalReason.withinNoise);
   });
 
+  test('in a span of one period, logging that faded before a step in the '
+      'outcome is refused', () {
+    // January 1 to February 8: February's 8 days join January, so there is
+    // no month to compare within. Coffee on 12 of the first 15 days, then
+    // only days 25 and 38, and no effect; the outcome is 10 before day 15
+    // and 0 after. With a trend alone the step reads as Coffee's on 100 of
+    // 100 seeds; the halves guard refuses it.
+    final DateTime january = DateTime(2026, 1, 1);
+    final Random random = Random(10);
+    final List<HabitUse> uses = <HabitUse>[
+      for (final int i in <int>[
+        for (int i = 0; i < 15; i++)
+          if (i % 5 != 4) i,
+        25,
+        38,
+      ])
+        HabitUse(
+          habitId: 'Coffee',
+          at: addDays(january, i).add(const Duration(hours: 9)),
+          amount: 1,
+        ),
+    ];
+    final List<DailyOutcome> outcomes = <DailyOutcome>[
+      for (int i = 0; i <= 38; i++)
+        DailyOutcome(
+          date: addDays(january, i + 1),
+          metricId: sleep,
+          value: (i < 15 ? 10 : 0) + gaussian(random),
+        ),
+    ];
+    final HabitInsight coffee = whatFollows(
+      habits: DailyHabitSeries.fromUses(uses),
+      outcomes: OutcomeSeries.fromOutcomes(outcomes),
+      metricId: sleep,
+    ).single;
+
+    expect(coffee.usableDays, 39);
+    expect(coffee, isA<HabitRefusal>());
+    expect((coffee as HabitRefusal).reason, RefusalReason.uneven);
+  });
+
+  test('in a span of one period, an evenly used habit is still judged', () {
+    final data = journal(
+      seed: 1,
+      days: 30,
+      usedOn: independent,
+      effectOf: (used) => used.contains('Coffee') ? -30 : 0,
+    );
+    final HabitInsight coffee = forHabit(
+      whatFollows(
+        habits: data.habits,
+        outcomes: data.outcomes,
+        metricId: sleep,
+      ),
+      'Coffee',
+    );
+
+    expect(coffee, isA<HabitFinding>());
+    expect((coffee as HabitFinding).effect, lessThan(0));
+  });
+
   test('a habit whose use varies within only one month is refused', () {
     // Coffee on and off in January, unlogged in February and March, then
     // every day from April: only January compares days with and without it.

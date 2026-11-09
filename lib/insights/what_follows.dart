@@ -6,8 +6,10 @@ import 'package:tracker/insights/stats.dart';
 
 /// When a result is reported rather than refused. The defaults are the idea
 /// file's (`ideas/insights/insights-engine.md`), not tuned on data, except
-/// the two for periods, checked against synthetic habits in
-/// `tools/insights-calibration/`.
+/// the four for balance, checked against synthetic habits in
+/// `tools/insights-calibration/`: evenly used ones, whether used on
+/// independent days or in runs of days, are refused at most about 1% of the
+/// time.
 class InsightGates {
   const InsightGates({
     this.minDays = 21,
@@ -16,6 +18,8 @@ class InsightGates {
     this.maxVarianceInflation = 5,
     this.minPeriodDays = 10,
     this.minMixedPeriods = 2,
+    this.maxUseRateRatio = 3,
+    this.unevenSignificance = 0.01,
     this.level = 0.95,
     this.falseDiscoveryRate = 0.1,
   });
@@ -31,6 +35,12 @@ class InsightGates {
   /// When a span holds more than one period, how many of them need days
   /// both with the habit and without it.
   final int minMixedPeriods;
+
+  /// When a span is one period: how many times more often a habit may be
+  /// used, or gone without, in one half of its span than in the other, unless
+  /// the difference is within [unevenSignificance] of chance.
+  final double maxUseRateRatio;
+  final double unevenSignificance;
   final double level;
 
   /// Benjamini-Hochberg's q across every comparison in one report.
@@ -64,9 +74,10 @@ enum RefusalReason {
   /// [HabitInsight.exposedDays] says which.
   tooFewDays,
 
-  /// Too few periods with days both with and without the habit, or its use so
-  /// much in step with the time terms that the model cannot tell it from a
-  /// drift or a change in the outcome over the same months.
+  /// Used far more in one half of a one-period span than in the other, in
+  /// too few periods both with and without it, or so much in step with the
+  /// time terms that the model cannot tell it from a drift or a change in the
+  /// outcome over the same months.
   uneven,
 
   /// Used on so many of the same days as [HabitRefusal.entangledWith] that the
@@ -173,18 +184,25 @@ class HabitRefusal extends HabitInsight {
 /// that only rides along with another, or with a drift or a step in the
 /// outcome, gets no credit. A period is a calendar month, merged into its
 /// neighbour while it holds fewer than [InsightGates.minPeriodDays] usable
-/// days; a span of one period has no period levels. With them, the habit's
-/// coefficient comes from days with and without it within the same period,
-/// so a change in use between months, a cut-down or faded logging, is not
-/// read as an effect. A change in use and in the outcome within one month
-/// still can be.
+/// days; a span of one period gets a level for its second half instead. With
+/// period levels, the habit's coefficient comes from days with and without it
+/// within the same period, so a change in use between months, a cut-down or
+/// faded logging, is not read as an effect. A change in use and in the
+/// outcome within one month still can be.
 /// Another habit counts as not used on the days outside its own span: that can
 /// make its coefficient a proxy for time, but its coefficient is never the one
 /// reported here.
 ///
 /// Balance: a span of several periods in which fewer than
-/// [InsightGates.minMixedPeriods] hold days both with and without the habit
-/// is refused, since its coefficient would rest on a single month.
+/// [InsightGates.minMixedPeriods] hold days both with and without the habit is
+/// refused, since its coefficient would rest on a single month. A span of one
+/// period (a month and fewer than [InsightGates.minPeriodDays] usable days
+/// beside it) has no month to compare within, so a habit used, or gone without,
+/// [InsightGates.maxUseRateRatio] times more often in one half of it than the
+/// other is refused: once logging fades, the days between stray entries read as
+/// days without it, and a change in the outcome over them would be pinned on
+/// it. That guard sees only when the habit was logged, so it also refuses a
+/// real, steep change in use.
 ///
 /// Each result is judged alone, at [InsightGates.level]; across many habits
 /// and outcomes some will clear it by chance, so a report runs every result
@@ -285,7 +303,11 @@ HabitInsight _whatFollowsOne(
 
   final List<int> period = _periods(days, gates.minPeriodDays);
   final int periods = period.last + 1;
-  if (periods > 1 && _mixedPeriods(x, period) < gates.minMixedPeriods) {
+  // Halves by usable days, so each holds at least half of minDays.
+  final int half = days.length ~/ 2;
+  if (periods == 1
+      ? _unevenHalves(x, half, gates)
+      : _mixedPeriods(x, period) < gates.minMixedPeriods) {
     return refuse(RefusalReason.uneven);
   }
   final int span = daysBetween(days.first, days.last);
@@ -293,7 +315,10 @@ HabitInsight _whatFollowsOne(
     for (int r = 0; r < days.length; r++)
       <double>[
         daysBetween(days.first, days[r]) / span - 0.5,
-        for (int k = 1; k < periods; k++) period[r] == k ? 1 : 0,
+        if (periods == 1)
+          r < half ? 0 : 1
+        else
+          for (int k = 1; k < periods; k++) period[r] == k ? 1 : 0,
       ],
   ];
   final int timeColumns = time.first.length;
@@ -493,6 +518,48 @@ int _mixedPeriods(List<double> x, List<int> period) {
     if (on[k] > 0 && on[k] < all[k]) mixed++;
   }
   return mixed;
+}
+
+// The ratio alone would refuse a rare habit's chance clumping in a short
+// span; the test alone would refuse a mild drift in a long one, which the time
+// terms absorb. The ratio is checked on the days without the habit too: early
+// days left unlogged by a daily habit read as days without it, the mirror of
+// logging that fades. Days of use come in runs (a bad week, a trip), which
+// makes the halves' rates differ more than independent days would, so the
+// standard error is widened by the runs' lag-1 autocorrelation within each
+// half.
+bool _unevenHalves(List<double> x, int half, InsightGates gates) {
+  final List<double> a = x.sublist(0, half), b = x.sublist(half);
+  final double ra = mean(a), rb = mean(b);
+  bool lopsided(double p, double q) =>
+      max(p, q) > gates.maxUseRateRatio * min(p, q);
+  if (!lopsided(ra, rb) && !lopsided(1 - ra, 1 - rb)) return false;
+  final double pooled =
+      ((a.length - 1) * sampleVariance(a) +
+          (b.length - 1) * sampleVariance(b)) /
+      (x.length - 2);
+  final double rho = _withinHalvesAutocorrelation(a, b);
+  final double se = sqrt(
+    pooled * (1 / a.length + 1 / b.length) * (1 + rho) / (1 - rho),
+  );
+  final double p = se == 0
+      ? 0
+      : studentTTwoSided((ra - rb) / se, (x.length - 2).toDouble());
+  return p < gates.unevenSignificance;
+}
+
+// Clamped to [0, 0.9]: a negative value would narrow the interval, and one
+// near 1 leaves no evidence at all.
+double _withinHalvesAutocorrelation(List<double> a, List<double> b) {
+  double lagged = 0, squares = 0;
+  for (final List<double> part in <List<double>>[a, b]) {
+    final double m = mean(part);
+    for (int i = 0; i < part.length; i++) {
+      squares += (part[i] - m) * (part[i] - m);
+      if (i > 0) lagged += (part[i] - m) * (part[i - 1] - m);
+    }
+  }
+  return squares == 0 ? 0 : (lagged / squares).clamp(0.0, 0.9);
 }
 
 Comparison? _welch(List<double> exposure, List<double> y, double level) {

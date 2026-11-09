@@ -113,7 +113,7 @@ class InsightsReport {
   final List<HabitFinding> findings;
 
   /// One refusal for each habit with no finding on any outcome, the one that
-  /// says most: entangled, then possibly chance, then too few mixed months, then
+  /// says most: entangled, then possibly chance, then logged unevenly, then
   /// within the noise, then too few days.
   final List<HabitRefusal> refused;
 }
@@ -339,7 +339,7 @@ String refusalReason(
     'Too few days with it yet: ${refusal.exposedDays} of '
         '${gates.minExposedDays}',
   RefusalReason.uneven =>
-    'Not enough months with both days with and without it',
+    'Used far more at some times than others, so it can’t be told apart from other changes',
   RefusalReason.entangled => switch (refusal.entangledWith) {
     final String other =>
       'Used together with ${nameOf(other)}, so the two can’t be told apart',

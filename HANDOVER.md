@@ -549,14 +549,20 @@ round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, 
   step on day 40, falls from 100/100 to 0/100). B: raise it to 4x (fewer cut-downs refused, more faded logging
   credited; not measured). C: keep 3x and later fit the cut-down itself (a level per month in the model) so the guard
   can loosen. C measured in #183 (stacked on #181, synthetic, same bench): a level per calendar month (one under 10
-  usable days merged into its neighbour) plus the trend, and the halves guard replaced by one refusal, fewer than 2
-  months with days both with and without the habit ("Not enough months with both days with and without it"). Cut-downs
-  with the -1 sd effect found: 80% to 25% 198/200, 70% to 30% 200, taper 200 (none refused). Faded logging and its
-  mirror: 0/100 findings each (judged, within the noise). Even use: worst refusal 2/1000 (0.85 over 60 days); episodic
-  0/982, episodic skips 11/1000; power 100/200 (#181 105). Pure noise: 871/18000 raw, 41 after q = 0.1, 35/400 reports.
-  Cost: a change in use and a step in the outcome inside the same month still read as an effect, worse than A: 70% to
-  97% from day 40 with a 2 sd step at day 40, 34/200 false findings (#181 13), 10 sd 106 (#181 40); 30% to 3%, 20 (#181
-  15) and 80 (#181 60). Recommended, not decided: A now, C as its own PR.
+  usable days merged into its neighbour) plus the trend, and from two periods on the halves guard replaced by one
+  refusal, fewer than 2 months with days both with and without the habit (same "uneven" copy). A span of one period
+  (a month plus under 10 usable days, up to about 7 weeks: every new journal's weeks 3 to 7) has no month to compare
+  within, so it keeps #181's halves guard and second-half level unchanged; without them, faded logging before a step
+  there read as an effect on 100/100 seeds (#183 review). Cut-downs with the -1 sd effect found: 80% to 25% 198/200,
+  70% to 30% 200, taper 200 (none refused). Faded logging and its mirror: 0/100 findings each (judged, within the
+  noise). One period (Jan 1 to Feb 8, or Jan 5 to Feb 3; master / #181 / #183, of 200): 80% to 10% at day 15 with a
+  2 sd step, 172 / 10 / 10 false findings; 10 sd, 200 / 41 / 41; 30% to 90%, 148 / 13 / 13 and 194 / 43 / 43; 30 days,
+  80% to 10% at day 12, 157 / 20 / 20 and 197 / 57 / 57; faded logging, 100 / 0 / 0 of 100. Even use: worst refusal
+  5/1000 (0.5 over 30 days, as #181); episodic 0/982, episodic skips 11/1000; power 100/200 (#181 105). Pure noise:
+  871/18000 raw, 41 after q = 0.1, 35/400 reports. Cost: a change in use and a step in the outcome inside the same
+  month still read as an effect, worse than A: 70% to 97% from day 40 with a 2 sd step at day 40, 34/200 false
+  findings (#181 13), 10 sd 106 (#181 40); 30% to 3%, 20 (#181 15) and 80 (#181 60); and a span of one period refuses a
+  steep cut-down as A does. Recommended, not decided: A now, C as its own PR.
 - **The client API key's restrictions** (UNDECIDED; not yet set): they live in the production project's Google Cloud
   console, which Claude does not touch. Recommended, not decided: an iOS application restriction to
   `com.screendead.penchant` and an API restriction to the Firebase APIs the app calls. Reasoning in `CLAUDE.md`
