@@ -218,7 +218,9 @@ void main() {
   });
 
   testWidgets('a time of last use on sleep shows its whole effect, then the '
-      'part at the same bedtime', (WidgetTester tester) async {
+      'part at the same bedtime, then what that size has been shown to do', (
+    WidgetTester tester,
+  ) async {
     _connected();
     HabitFinding finding(
       InsightKind kind,
@@ -227,7 +229,7 @@ void main() {
       HabitInsight? sameBedtime,
     }) => HabitFinding(
       habitId: 'coffee',
-      metricId: 'sleepDeep',
+      metricId: 'sleepREM',
       lagDays: 1,
       usableDays: 120,
       exposedDays: 120,
@@ -269,7 +271,7 @@ void main() {
 
     expect(
       find.text(
-        'On days your last use of Coffee is an hour later, your deep sleep '
+        'On days your last use of Coffee is an hour later, your REM sleep '
         'that night averages 12 min less.',
       ),
       findsOneWidget,
@@ -280,11 +282,12 @@ void main() {
     );
     expect(
       find.text(
-        'More per extra drink: deep sleep 6 min less, 2 min of it at the '
+        'More per extra drink: REM sleep 6 min less, 2 min of it at the '
         'same bedtime',
       ),
       findsOneWidget,
     );
+    expect(find.text(metricEvidence('sleepREM')!), findsOneWidget);
   });
 
   testWidgets('the six largest cards show, the rest behind Show N more', (
@@ -337,6 +340,9 @@ void main() {
 
     expect(find.text('Coffee · activity'), findsOneWidget);
     expect(find.text('Tea · sleep'), findsOneWidget);
+    // The activity card's headline is steps: one line for what 500 steps a
+    // day have been shown to do.
+    expect(find.text(metricEvidence('stepCount')!), findsOneWidget);
     expect(find.text('Tea · heart'), findsNothing);
     await tester.tap(find.text(InsightsPage.showMore(4)));
     await tester.pumpAndSettle();
