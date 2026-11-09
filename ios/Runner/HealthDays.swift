@@ -7,6 +7,10 @@ enum HealthDays {
     let start: Date
     let end: Date
     let value: Int
+    // The writing source's bundle identifier. Apple's devices write as
+    // com.apple.health.<device UUID>, so a Watch and its iPhone differ.
+    var source = ""
+    var watch = false
   }
 
   struct QuantitySample {
@@ -19,6 +23,7 @@ enum HealthDays {
   // inBed 0, asleepUnspecified (iOS 15's asleep) 1, awake 2, asleepCore 3,
   // asleepDeep 4, asleepREM 5. The named cases for 3 to 5 need iOS 16.
   static let asleepValues: Set<Int> = [1, 3, 4, 5]
+  static let stageValues: Set<Int> = [3, 4, 5]
   static let sleepMetrics: [(id: String, values: Set<Int>)] = [
     ("sleepInBed", [0]),
     ("sleepAsleep", asleepValues),
@@ -95,7 +100,8 @@ enum HealthDays {
 
   // Each whole sleep goes to the night of its last end, so one that crosses
   // noon is not split. Keys are "yyyy-MM-dd"; nights outside [start, end) and
-  // nights with no samples have no entry.
+  // nights with no samples have no entry. Sleeps are found across every
+  // source, then each night keeps one source's samples (oneSource).
   static func nights(_ samples: [SleepSample], start: Date, end: Date, _ calendar: Calendar) -> [String: [SleepSample]] {
     var byNight: [String: [SleepSample]] = [:]
     for session in sessions(samples) {
@@ -104,7 +110,36 @@ enum HealthDays {
       guard night >= start, night < end else { continue }
       byNight[key(night, calendar), default: []].append(contentsOf: session)
     }
-    return byNight
+    return byNight.mapValues(oneSource)
+  }
+
+  // Sources disagree: another app's one asleep span over the whole night
+  // would cover the Watch's awake periods if the two were merged. So a
+  // night's asleep, stages and awake come from one source: one that writes
+  // stages, the most staged time first, else the most asleep time; a Watch,
+  // then the bundle identifier, break ties. In bed comes from that source
+  // when it has any, else from the source with the most, since a Watch's
+  // stages and the iPhone's bedtime schedule are separate sources.
+  static func oneSource(_ samples: [SleepSample]) -> [SleepSample] {
+    let bySource = Dictionary(grouping: samples, by: \.source)
+    func minutes(_ samples: [SleepSample], _ values: Set<Int>) -> Double {
+      mergedMinutes(samples.filter { values.contains($0.value) }.map { ($0.start, $0.end) })
+    }
+    let ranked = bySource.map { source, samples in
+      let inBed = minutes(samples, [0])
+      let watch = samples.contains { $0.watch } ? 1 : 0
+      return (
+        source: source, samples: samples, inBed: inBed,
+        rank: (minutes(samples, stageValues), minutes(samples, asleepValues), watch, inBed)
+      )
+    }
+    guard let chosen = ranked.max(by: { $0.rank != $1.rank ? $0.rank < $1.rank : $0.source > $1.source }) else {
+      return []
+    }
+    guard chosen.inBed == 0,
+      let bed = ranked.max(by: { $0.inBed != $1.inBed ? $0.inBed < $1.inBed : $0.source > $1.source }), bed.inBed > 0
+    else { return chosen.samples }
+    return chosen.samples + bed.samples.filter { $0.value == 0 }
   }
 
   // Each row is ["date": "yyyy-MM-dd", "metric": id, "value": minutes]. A
@@ -126,7 +161,7 @@ enum HealthDays {
     return rows
   }
 
-  // Overlapping intervals, as a Watch's and a phone's are, become one.
+  // Overlapping intervals, as one source's stages and awake can be, become one.
   static func merged(_ intervals: [(Date, Date)]) -> [(Date, Date)] {
     var result: [(Date, Date)] = []
     for interval in intervals.sorted(by: { $0.0 < $1.0 }) {
@@ -143,7 +178,7 @@ enum HealthDays {
     merged(intervals).reduce(0) { $0 + $1.1.timeIntervalSince($1.0) } / 60
   }
 
-  // Each night's asleep time (no in bed, no awake), merged across sources.
+  // Each night's asleep time (no in bed, no awake), from the night's one source.
   static func asleepIntervals(_ byNight: [String: [SleepSample]]) -> [String: [(Date, Date)]] {
     var result: [String: [(Date, Date)]] = [:]
     for (night, samples) in byNight {

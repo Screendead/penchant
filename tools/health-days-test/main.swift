@@ -92,7 +92,7 @@ do {
   check("nap goes to the next night", rows["2026-11-09 sleepAsleep"] == 40, "\(rows)")
 }
 
-// A Watch's and a phone's overlapping in-bed samples count once.
+// One source's overlapping in-bed samples count once.
 do {
   let rows = values(
     HealthDays.sleepRows(
@@ -118,6 +118,96 @@ do {
   check("crosses into the range, asleep part too", rows["2026-11-08 sleepAsleep"] == 480, "\(rows)")
   check("end is exclusive", rows["2026-11-14 sleepAsleep"] == nil, "\(rows)")
   check("no data is no rows", HealthDays.sleepRows([], metrics: allSleep, start: at(2026, 11, 8), end: at(2026, 11, 14), calendar).isEmpty)
+}
+
+// Sources are not merged for sleep. The Watch's core 23:00-03:00, awake
+// 03:00-04:00, core 04:00-07:00 beside another app's asleep 23:00-07:00 is
+// the Watch's night alone, not 480 asleep with 60 awake.
+func from(_ source: String, watch: Bool = false, _ samples: [HealthDays.SleepSample]) -> [HealthDays.SleepSample] {
+  samples.map { HealthDays.SleepSample(start: $0.start, end: $0.end, value: $0.value, source: source, watch: watch) }
+}
+let watchNight = from(
+  "com.apple.health.watch", watch: true,
+  [
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 3), 3),
+    sample(at(2026, 11, 8, 3), at(2026, 11, 8, 4), 2),
+    sample(at(2026, 11, 8, 4), at(2026, 11, 8, 7), 3),
+  ])
+let otherAppNight = from("com.example.sleepapp", [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 1)])
+func sleepValues(_ samples: [HealthDays.SleepSample]) -> [String: Double] {
+  values(HealthDays.sleepRows(samples, metrics: allSleep, start: at(2026, 11, 1), end: at(2026, 11, 15), calendar))
+}
+do {
+  let alone = sleepValues(watchNight)
+  check("watch alone asleep", alone["2026-11-08 sleepAsleep"] == 420, "\(alone)")
+  for order in [watchNight + otherAppNight, otherAppNight + watchNight] {
+    let rows = sleepValues(order)
+    check("other app does not cover awake, asleep", rows["2026-11-08 sleepAsleep"] == 420, "\(rows)")
+    check("other app does not cover awake, awake", rows["2026-11-08 sleepAwake"] == 60, "\(rows)")
+    check("other app does not cover awake, core", rows["2026-11-08 sleepCore"] == 420, "\(rows)")
+  }
+}
+
+// A night from another app alone still counts.
+do {
+  let rows = sleepValues(otherAppNight)
+  check("other app alone", rows["2026-11-08 sleepAsleep"] == 480 && rows["2026-11-08 sleepAwake"] == nil, "\(rows)")
+}
+
+// Two sources writing stages: the night is one of them whole, the one with
+// more staged time; on equal staged time, the Watch.
+do {
+  let ring = from(
+    "com.example.ring",
+    [
+      sample(at(2026, 11, 7, 22), at(2026, 11, 8, 2), 4),
+      sample(at(2026, 11, 8, 2), at(2026, 11, 8, 6), 5),
+    ])
+  let rows = sleepValues(watchNight + ring)
+  check("more staged time wins", rows["2026-11-08 sleepAsleep"] == 480 && rows["2026-11-08 sleepCore"] == nil, "\(rows)")
+  check("more staged time wins whole", rows["2026-11-08 sleepDeep"] == 240 && rows["2026-11-08 sleepAwake"] == nil, "\(rows)")
+  let tie = from(
+    "com.example.ring",
+    [
+      sample(at(2026, 11, 7, 23), at(2026, 11, 8, 3), 4),
+      sample(at(2026, 11, 8, 4), at(2026, 11, 8, 7), 5),
+    ])
+  for order in [watchNight + tie, tie + watchNight] {
+    let rows = sleepValues(order)
+    check("equal staged time, the Watch", rows["2026-11-08 sleepCore"] == 420 && rows["2026-11-08 sleepDeep"] == nil, "\(rows)")
+  }
+  let other = from("com.example.other", tie)
+  let a = sleepValues(tie + other), b = sleepValues(other + tie)
+  check("equal and no Watch, the same pick either way", a == b && a["2026-11-08 sleepDeep"] == 240, "\(a) \(b)")
+}
+
+// Stages beat a longer unstaged asleep span.
+do {
+  let long = from("com.example.sleepapp", [sample(at(2026, 11, 7, 21), at(2026, 11, 8, 9), 1)])
+  let rows = sleepValues(watchNight + long)
+  check("stages beat a longer span", rows["2026-11-08 sleepAsleep"] == 420, "\(rows)")
+}
+
+// In bed comes from the chosen source when it writes any, else from the
+// source with the most, so the iPhone's schedule still fills in the Watch's night.
+do {
+  let phone = from("com.apple.health.phone", [sample(at(2026, 11, 7, 22, 30), at(2026, 11, 8, 7, 30), 0)])
+  let rows = sleepValues(watchNight + phone + otherAppNight)
+  check("in bed from another source", rows["2026-11-08 sleepInBed"] == 540, "\(rows)")
+  check("in bed source does not add asleep", rows["2026-11-08 sleepAsleep"] == 420, "\(rows)")
+  let ownBed = watchNight + from("com.apple.health.watch", watch: true, [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 0)])
+  let own = sleepValues(ownBed + phone)
+  check("in bed from the chosen source first", own["2026-11-08 sleepInBed"] == 480, "\(own)")
+}
+
+// Sources mixed across midnight and noon still key the night as before:
+// another app's late nap is its own session, the next night.
+do {
+  let nap = from("com.example.sleepapp", [sample(at(2026, 11, 8, 15), at(2026, 11, 8, 15, 40), 1)])
+  let rows = sleepValues(watchNight + otherAppNight + nap)
+  check("mixed sources, night", rows["2026-11-08 sleepAsleep"] == 420, "\(rows)")
+  check("mixed sources, nap", rows["2026-11-09 sleepAsleep"] == 40, "\(rows)")
+  check("mixed sources, two nights", Set(rows.keys.map { String($0.prefix(10)) }) == ["2026-11-08", "2026-11-09"], "\(rows)")
 }
 
 // The fetch window reaches a day past each bound's noon.
@@ -178,12 +268,19 @@ do {
   check("sleeping heart rate one night", rows.count == 1, "\(rows)")
 }
 
-// A Watch's and a phone's overlapping asleep samples count a heart rate sample once.
+// One source's overlapping asleep samples count a heart rate sample once.
 do {
   let rows = sleepingHeartRate(
     [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 5), 1), sample(at(2026, 11, 8, 0), at(2026, 11, 8, 6), 3)],
     [hr(at(2026, 11, 8, 1), 50), hr(at(2026, 11, 8, 5, 30), 60)])
   check("overlapping sources count once", rows["2026-11-08 sleepingHeartRate"] == 55, "\(rows)")
+}
+
+// Sleeping heart rate uses the same source as the sleep rows: a sample in
+// the Watch's awake hour is out, though another app's span covers it.
+do {
+  let rows = sleepingHeartRate(watchNight + otherAppNight, [hr(at(2026, 11, 8, 1), 50), hr(at(2026, 11, 8, 3, 30), 90), hr(at(2026, 11, 8, 5), 54)])
+  check("sleeping heart rate skips the Watch's awake", rows["2026-11-08 sleepingHeartRate"] == 52, "\(rows)")
 }
 
 // A sample with a duration counts by its midpoint.
