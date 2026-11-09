@@ -1,6 +1,7 @@
-// Monte Carlo rates for the uneven-use guard in lib/insights/what_follows.dart,
-// on synthetic data only. Slow, so it lives outside test/:
-//   flutter test tools/insights-calibration/uneven_guard_test.dart
+// Monte Carlo rates for the period terms and the mixed-months guard in
+// lib/insights/what_follows.dart, on synthetic data only. Slow, so it lives
+// outside test/:
+//   flutter test tools/insights-calibration/period_terms_test.dart
 // Each line prints the outcome counts of one scenario: findings, and each
 // refusal reason.
 import 'dart:io';
@@ -89,58 +90,55 @@ void main() {
   double none(int day, bool used) => 0;
   double effect(int day, bool used) => used ? -1 : 0;
 
-  test(
-    'false findings: use rate changes, outcome steps off the halfway day',
-    () {
+  test('false findings: use rate changes, outcome steps inside a month', () {
+    scenario(
+      'fading: 20 of first 30 days, then days 60, 90, 120; step 10 at '
+      'day 40',
+      100,
+      (_) => <int>{
+        for (int i = 0; i < 30; i++)
+          if (i % 3 != 2) i,
+        60,
+        90,
+        120,
+      },
+      (i, _) => i <= 40 ? 10 : 0,
+    );
+    scenario(
+      'mirror: skipped on 20 of first 30 days and days 60, 90, 120; '
+      'step 10 at day 40',
+      100,
+      (_) => <int>{
+        0,
+        121,
+        for (int i = 1; i <= 121; i++)
+          if (!((i < 30 && i % 3 != 2) || i == 60 || i == 90 || i == 120)) i,
+      },
+      (i, _) => i <= 40 ? 10 : 0,
+    );
+    for (final double step in <double>[2, 10]) {
       scenario(
-        'fading: 20 of first 30 days, then days 60, 90, 120; step 10 at '
-        'day 40',
-        100,
-        (_) => <int>{
-          for (int i = 0; i < 30; i++)
-            if (i % 3 != 2) i,
-          60,
-          90,
-          120,
-        },
-        (i, _) => i <= 40 ? 10 : 0,
+        'mirror: 70% then 97% from day 40; step $step at day 40',
+        200,
+        (r) => bernoulli(r, 120, (i) => i < 40 ? 0.7 : 0.97),
+        (i, _) => i <= 40 ? step : 0,
       );
       scenario(
-        'mirror: skipped on 20 of first 30 days and days 60, 90, 120; '
-        'step 10 at day 40',
-        100,
-        (_) => <int>{
-          0,
-          121,
-          for (int i = 1; i <= 121; i++)
-            if (!((i < 30 && i % 3 != 2) || i == 60 || i == 90 || i == 120)) i,
-        },
-        (i, _) => i <= 40 ? 10 : 0,
+        'forward: 30% then 3% from day 40; step $step at day 40',
+        200,
+        (r) => bernoulli(r, 120, (i) => i < 40 ? 0.3 : 0.03),
+        (i, _) => i <= 40 ? step : 0,
       );
-      for (final double step in <double>[2, 10]) {
-        scenario(
-          'mirror: 70% then 97% from day 40; step $step at day 40',
-          200,
-          (r) => bernoulli(r, 120, (i) => i < 40 ? 0.7 : 0.97),
-          (i, _) => i <= 40 ? step : 0,
-        );
-        scenario(
-          'forward: 30% then 3% from day 40; step $step at day 40',
-          200,
-          (r) => bernoulli(r, 120, (i) => i < 40 ? 0.3 : 0.03),
-          (i, _) => i <= 40 ? step : 0,
-        );
-      }
-      for (final int at in <int>[40, 80]) {
-        scenario(
-          '60% then 30%; step 2 at day $at',
-          200,
-          (r) => bernoulli(r, 119, (i) => i < 60 ? 0.6 : 0.3),
-          (i, _) => i < at ? 0 : -2,
-        );
-      }
-    },
-  );
+    }
+    for (final int at in <int>[40, 80]) {
+      scenario(
+        '60% then 30%; step 2 at day $at',
+        200,
+        (r) => bernoulli(r, 119, (i) => i < 60 ? 0.6 : 0.3),
+        (i, _) => i < at ? 0 : -2,
+      );
+    }
+  });
 
   test('cut-downs with a real effect of -1 sd on days of use', () {
     scenario(

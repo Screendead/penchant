@@ -81,6 +81,9 @@ pull request titles (`gh pr list --state merged`).
   "Used far more at some times than others", and a slow drift or a sudden change in a Health measure is allowed for
   before any habit is compared. A habit used every day now says it has too few days without it, rather than asking
   you to wait (#181).
+- Insights compares each habit with itself month by month, so cutting a habit down, or logging it less often over
+  time, no longer hides what follows it or reads as its effect. A habit whose use varies in only one month of several
+  is listed as "Not enough months with both days with and without it" (#PRNUM).
 - On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
   your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
   background to save it. If that is cut short, the tap still waits on the device and saves later, as before.

@@ -315,12 +315,13 @@ void main() {
     expect(coffee.reason, RefusalReason.tooFewDays);
   });
 
-  test('a habit whose logging faded to a few stray entries is refused', () {
+  test('a habit whose logging faded to a few stray entries is not credited '
+      'with a step in the outcome', () {
     // Coffee on 20 of the first 30 days, then only days 60, 90 and 120, and
-    // no effect; the outcome is 10 through day 40 and 0 after. Without the
-    // guard the months between the stray entries read as days without it and
-    // the step reads as Coffee's: +6.65 [4.84, 8.47] before the time terms,
-    // +2.43 [1.01, 3.86] with them.
+    // no effect; the outcome is 10 through day 40 and 0 after. The months
+    // between the stray entries read as days without it, so without the
+    // period levels the step reads as Coffee's: +6.65 [4.84, 8.47] with no
+    // time terms, +2.43 [1.01, 3.86] with a trend and a second-half level.
     final Random random = Random(10);
     final List<HabitUse> uses = <HabitUse>[
       for (int i = 0; i < 30; i++)
@@ -353,14 +354,15 @@ void main() {
 
     expect(coffee.usableDays, 121);
     expect(coffee, isA<HabitRefusal>());
-    expect((coffee as HabitRefusal).reason, RefusalReason.uneven);
+    expect((coffee as HabitRefusal).reason, RefusalReason.withinNoise);
   });
 
-  test('a daily habit whose logging started patchy is refused', () {
+  test('a daily habit whose logging started patchy is not credited with a '
+      'step in the outcome', () {
     // The mirror of faded logging: Water every day except 20 of the first 30
     // days and days 60, 90 and 120, and no effect; the outcome is 10 through
-    // day 40 and 0 after. Without the check on days gone without, the early
-    // unlogged days read as days without it and the step reads as Water's, a
+    // day 40 and 0 after. The early unlogged days read as days without it, so
+    // with only a trend and a second-half level the step reads as Water's, a
     // false finding on 100 of 100 seeds (`tools/insights-calibration/`).
     final Random random = Random(10);
     final List<HabitUse> uses = <HabitUse>[
@@ -387,14 +389,60 @@ void main() {
     ).single;
 
     expect(water, isA<HabitRefusal>());
-    expect((water as HabitRefusal).reason, RefusalReason.uneven);
+    expect((water as HabitRefusal).reason, RefusalReason.withinNoise);
   });
 
-  test('a habit used a little more often in one half is still judged, and a '
-      'step in the outcome is not pinned on it', () {
-    // Coffee on 60% of the first half's days and 30% of the second's, below
-    // the guard's ratio; the outcome drops 2 sd on day 40 or day 80, off the
-    // halfway day where the model's second-half level would absorb it whole.
+  test('a habit whose use varies within only one month is refused', () {
+    // Coffee on and off in January, unlogged in February and March, then
+    // every day from April: only January compares days with and without it.
+    final data = journal(
+      seed: 3,
+      usedOn: (random, day) => <String>{
+        if ((day < 27 && random.nextBool()) || day >= 86) 'Coffee',
+      },
+    );
+    final HabitInsight coffee = whatFollows(
+      habits: data.habits,
+      outcomes: data.outcomes,
+      metricId: sleep,
+    ).single;
+
+    expect(coffee, isA<HabitRefusal>());
+    expect((coffee as HabitRefusal).reason, RefusalReason.uneven);
+  });
+
+  test('a steep cut-down with a real effect is found', () {
+    // Coffee on 80% of days for two months, then 25%, and 1 sd less sleep
+    // after each day of it: the period levels absorb the change in use, and
+    // the comparison within each month still sees the effect.
+    int found = 0;
+    for (int seed = 0; seed < 20; seed++) {
+      final data = journal(
+        seed: seed,
+        usedOn: (random, day) => <String>{
+          if (day == 0 ||
+              day == 119 ||
+              random.nextDouble() < (day < 60 ? 0.8 : 0.25))
+            'Coffee',
+        },
+        effectOf: (used) => used.contains('Coffee') ? -20 : 0,
+      );
+      final HabitInsight coffee = whatFollows(
+        habits: data.habits,
+        outcomes: data.outcomes,
+        metricId: sleep,
+      ).single;
+      if (coffee is HabitFinding && coffee.effect < 0) found++;
+    }
+
+    expect(found, greaterThanOrEqualTo(18));
+  });
+
+  test('a habit used more often in one half is still judged, and a step in '
+      'the outcome is not pinned on it', () {
+    // Coffee on 60% of the first half's days and 30% of the second's; the
+    // outcome drops 2 sd on day 40 or day 80, inside a month rather than on a
+    // month's edge, where a period level would absorb it whole.
     for (final int stepDay in <int>[40, 80]) {
       int reported = 0, uneven = 0;
       for (int seed = 0; seed < 50; seed++) {

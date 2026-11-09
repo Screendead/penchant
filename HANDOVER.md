@@ -547,8 +547,16 @@ round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, 
   90% to 10% 26; an evenly used habit's power is unchanged (105 found, as on master). A: keep 3x (a cut-down that
   steep reads "Used far more at some times than others"; the false finding it stops, e.g. patchy early logging and a
   step on day 40, falls from 100/100 to 0/100). B: raise it to 4x (fewer cut-downs refused, more faded logging
-  credited; not measured). C: keep 3x and later fit the cut-down itself (a level per month in the model) so the
-  guard can loosen. Recommended, not decided: A now, C as its own PR.
+  credited; not measured). C: keep 3x and later fit the cut-down itself (a level per month in the model) so the guard
+  can loosen. C measured in #PRNUM (stacked on #181, synthetic, same bench): a level per calendar month (one under 10
+  usable days merged into its neighbour) plus the trend, and the halves guard replaced by one refusal, fewer than 2
+  months with days both with and without the habit ("Not enough months with both days with and without it"). Cut-downs
+  with the -1 sd effect found: 80% to 25% 198/200, 70% to 30% 200, taper 200 (none refused). Faded logging and its
+  mirror: 0/100 findings each (judged, within the noise). Even use: worst refusal 2/1000 (0.85 over 60 days); episodic
+  0/982, episodic skips 11/1000; power 100/200 (#181 105). Pure noise: 871/18000 raw, 41 after q = 0.1, 35/400 reports.
+  Cost: a change in use and a step in the outcome inside the same month still read as an effect, worse than A: 70% to
+  97% from day 40 with a 2 sd step at day 40, 34/200 false findings (#181 13), 10 sd 106 (#181 40); 30% to 3%, 20 (#181
+  15) and 80 (#181 60). Recommended, not decided: A now, C as its own PR.
 - **The client API key's restrictions** (UNDECIDED; not yet set): they live in the production project's Google Cloud
   console, which Claude does not touch. Recommended, not decided: an iOS application restriction to
   `com.screendead.penchant` and an API restriction to the Firebase APIs the app calls. Reasoning in `CLAUDE.md`
