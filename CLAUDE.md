@@ -305,23 +305,24 @@ An activity seals only `triggers`; `quantity`, `amount`, `createdAt`, `viceID`, 
 field joins both `contentFields` (`lib/data/sealed.dart`) and the rules' `sealedAlone` and `changedContent` calls.
 Rules refuse a create without `sealed` or with content beside it (Jack, 2026-11-09, `plaintext-creates` C), bound
 `sealed` to 30 to 4125 bytes, refuse removing it, still let legacy plaintext documents be read and edited, and let an
-update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They cannot read sealed content, so there `lib/data/limits.dart` is the only guard.
+update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They
+cannot read sealed content, so there `lib/data/limits.dart` is the only guard.
 
 `lib/data/sealed.dart` holds `FieldSealer` (sole implementation `lib/crypto/journal_field_sealer.dart`),
 `sealerProvider` (null while no key exists: `TrackerWrites.canCreate` is false and `addVice`/`recordActivity` throw, so
 every create path checks it first, says the journal key has not loaded and keeps the input; onboarding's Continue
 waits; widget logs stay queued; updates stay plaintext. `e2eeEnabled` in `lib/crypto/e2ee_enabled.dart` is true, and
-turning it off would strand every sealed journal and leave nothing creatable) and `SealedOpener`, run by each query provider over its
-snapshots (`asyncMap`) and by the export. It never throws: a document that will not open parses as `locked`, with a
-placeholder name and default content, reported once per listener. With a sealer, `TrackerWrites` reseals all content
-on a vice update (`updateVice` takes the `Vice`, refuses a locked one), seals every new activity, even without
-triggers, and reseals an activity update only when triggers change (the editor never sends a locked entry's triggers).
-A locked vice counts as `categoryStored`; `fillViceCategory` skips sealed vices. `SentWrite.fields` holds only
-plaintext fields, since the envelope does not exist yet when the write is handed back. Tests override `sealerProvider`
-with `test/fake_sealer.dart` (real envelope, fixed key). First-launch sealing (`lib/crypto/plaintext_migrator.dart`)
-uses the same conversion: once `sealerProvider` has a key and `offlineProvider` says online, once per uid and app
-version, it pages each collection with content fields from the server and seals each document lacking `sealed`, so the
-next run finishes a cut-short one.
+turning it off would strand every sealed journal and leave nothing creatable) and `SealedOpener`, run by each query
+provider over its snapshots (`asyncMap`) and by the export. It never throws: a document that will not open parses as
+`locked`, with a placeholder name and default content, reported once per listener. With a sealer, `TrackerWrites`
+reseals all content on a vice update (`updateVice` takes the `Vice`, refuses a locked one), seals every new activity,
+even without triggers, and reseals an activity update only when triggers change (the editor never sends a locked
+entry's triggers). A locked vice counts as `categoryStored`; `fillViceCategory` skips sealed vices. `SentWrite.fields`
+holds only plaintext fields, since the envelope does not exist yet when the write is handed back. Tests override
+`sealerProvider` with `test/fake_sealer.dart` (real envelope, fixed key). First-launch sealing
+(`lib/crypto/plaintext_migrator.dart`) uses the same conversion: once `sealerProvider` has a key and `offlineProvider`
+says online, once per uid and app version, it pages each collection with content fields from the server and seals each
+document lacking `sealed`, so the next run finishes a cut-short one.
 
 The key service (`lib/crypto/key_service.dart`; `keyServiceOverrides` in `lib/crypto/key_wiring.dart` wires it, and
 `startApp` passes them to its `ProviderScope`) supplies `sealerProvider` and the three recovery-key providers, each

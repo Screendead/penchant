@@ -76,7 +76,15 @@ Future<void> deleteWithUndo(
         : () {
             undone = true;
             onRestored?.call();
-            _restore(messenger, writes, rejected, user.uid, activity, entry);
+            // Read again: the journal key may have loaded since the delete,
+            // and [ref]'s widget may be gone by now.
+            final TrackerWrites current = messenger.mounted
+                ? ProviderScope.containerOf(
+                    messenger.context,
+                    listen: false,
+                  ).read(trackerWritesProvider)
+                : writes;
+            _restore(messenger, current, rejected, user.uid, activity, entry);
           },
   );
 

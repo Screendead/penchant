@@ -154,6 +154,12 @@ describe('vices', () => {
       await assertSucceeds(setDoc(doc(collection(asAlice(), 'vices')), newVice()));
     });
 
+    it('allows an envelope at either padding bound (64 and 4096 bytes of plaintext)', async () => {
+      for (const sealed of [bytesOf(29 + 64), bytesOf(29 + 4096)]) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'vices'), newVice({ sealed })));
+      }
+    });
+
     it('denies a plaintext vice, however valid its content', async () => {
       const plaintext = [
         vice(),
@@ -379,6 +385,12 @@ describe('activities', () => {
 
     it('allows the same shape written with doc().set()', async () => {
       await assertSucceeds(setDoc(doc(collection(asAlice(), 'activities')), newActivity()));
+    });
+
+    it('allows an envelope at either padding bound (64 and 4096 bytes of plaintext)', async () => {
+      for (const sealed of [bytesOf(29 + 64), bytesOf(29 + 4096)]) {
+        await assertSucceeds(addDoc(collection(asAlice(), 'activities'), newActivity({ sealed })));
+      }
     });
 
     it('allows a quantity of 1', async () => {

@@ -57,6 +57,9 @@ class FakeKeyDirectory implements KeyDirectory {
   bool offline = false;
   bool denied = false;
 
+  /// The connection drops between the read and the publishing transaction.
+  bool createUnavailable = false;
+
   /// Lands just before this device's create, as from another device.
   KeyRecord? racing;
 
@@ -73,6 +76,9 @@ class FakeKeyDirectory implements KeyDirectory {
 
   @override
   Future<KeyRecord> createIfAbsent(String uid, KeyRecord record) async {
+    if (createUnavailable) {
+      throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+    }
     final KeyRecord? other = racing;
     if (other != null) {
       records[uid] = other;
@@ -371,6 +377,37 @@ void main() {
       expect(await states.moveNext(), isFalse);
       expect(recheck.hasListener, isFalse);
     });
+
+    test(
+      'and keeps the key whose publish failed, publishing it on the next launch',
+      () async {
+        // The read answers but the transaction after it finds no connection:
+        // KeyUnknown rather than an error, so the rechecks go on.
+        directory.offline = false;
+        directory.createUnavailable = true;
+        final StreamIterator<JournalKeyState> states = await unknown();
+        final JournalKey made = store.keys[uid]!.journalKey;
+        expect(directory.records, isEmpty);
+
+        // The key saved meanwhile is used unchecked, as a key found here is.
+        recheck.add(null);
+        expect(await states.moveNext(), isTrue);
+        final KeyReady unchecked = states.current as KeyReady;
+        expect(unchecked.stored.journalKey.sameAs(made), isTrue);
+        expect(unchecked.record, isNull);
+        expect(await states.moveNext(), isFalse);
+
+        directory.createUnavailable = false;
+        final List<JournalKeyState> relaunch = await service
+            .resolve(uid)
+            .toList();
+        expect(relaunch, hasLength(2));
+        final KeyReady published = relaunch.last as KeyReady;
+        expect(published.stored.journalKey.sameAs(made), isTrue);
+        expect(published.record!.keyID, keyIDOf(made));
+        expect(directory.records[uid]!.keyID, keyIDOf(made));
+      },
+    );
 
     test('and uses a key that syncs in while still offline', () async {
       final StreamIterator<JournalKeyState> states = await unknown();

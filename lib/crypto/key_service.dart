@@ -205,18 +205,21 @@ class KeyService {
 
   // What the server says about [stored], or null when it did not answer.
   Future<JournalKeyState?> _ask(String uid, StoredKey? stored) async {
-    final KeyRecord? record;
     try {
-      record = await directory.fetch(uid).timeout(serverWait);
+      final KeyRecord? record = await directory.fetch(uid).timeout(serverWait);
+      return record != null
+          ? _against(stored, record)
+          : await _publish(uid, stored);
     } on TimeoutException {
       return null;
     } on FirebaseException catch (e) {
       // Denied: the user signed out while the read was on its way, and this
-      // provider is being thrown away.
+      // provider is being thrown away. Unavailable: offline, or the connection
+      // dropped between the read and the publishing transaction; a key saved
+      // meanwhile is published on a later ask.
       if (e.code != 'unavailable' && e.code != 'permission-denied') rethrow;
       return null;
     }
-    return record != null ? _against(stored, record) : _publish(uid, stored);
   }
 
   // After KeyUnknown, each recheck reads the keychain and asks the server
