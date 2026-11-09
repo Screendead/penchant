@@ -39,6 +39,7 @@ class FakeHealthSource implements HealthSource {
   final PlatformException? failure;
   int authorizationRequests = 0;
   int reads = 0;
+  Set<HealthMetric>? lastMetrics;
 
   @override
   Future<bool> isAvailable() async => available;
@@ -56,6 +57,7 @@ class FakeHealthSource implements HealthSource {
     DateTime end,
   ) async {
     reads++;
+    lastMetrics = metrics;
     if (failure case final PlatformException e) throw e;
     return switch (read) {
       HealthValues(:final List<DailyOutcome> values) =>
@@ -66,6 +68,17 @@ class FakeHealthSource implements HealthSource {
       final HealthRead other => other,
       null => const HealthValues(<DailyOutcome>[]),
     };
+  }
+
+  @override
+  Future<HealthSampleRead> samples(
+    HealthSampleMetric metric,
+    DateTime start,
+    DateTime end, {
+    int limit = maxHealthSamplesPerCall,
+  }) async {
+    if (failure case final PlatformException e) throw e;
+    return const HealthSamples(<HealthSample>[]);
   }
 }
 

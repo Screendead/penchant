@@ -180,6 +180,20 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      open), are unmeasured.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
+   - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
+     many-comparisons correction #175 (Benjamini-Hochberg, q = 0.1). Open or in flight, in merge order:
+     1. **#178** `feat/health-samples`: timestamped samples, paged; nightly sleeping heart rate. Review, merge, install.
+     2. **#179** `feat/insights-whole-history`: whole journal history, Health in yearly calls, Copy as text.
+     3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "logged unevenly over
+        time" refusal, so a habit whose logging fades is not credited with a step change in an outcome; and a
+        too-few-days refusal that says which side is short.
+     4. **Sleep double count, after #178:** `HealthDays.sleepRows` unions every source's asleep periods, so another
+        app's single asleep span over a night covers the Watch's awake periods (synthetic: Watch core 23:00-03:00,
+        awake 03:00-04:00, core 04:00-07:00 gives asleep 420; add another source's asleep 23:00-07:00 and it gives
+        480 with awake 60). Fix: per night, take stages from the source that writes them, or subtract awake.
+     5. **i. Dose and timing** next (after 3; same engine files). Jack, 2026-11-09: a habit used every day must still
+        yield insights: amount per day, time of first and last use, the hours around each use (j), co-occurrence
+        with other habits (l), and the before and after of a streak's start (m).
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
@@ -187,6 +201,16 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        finish against an early one).
      - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
        each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
+       The sample read is #178 (`feat/health-samples`): `HealthSource.samples` and `healthSamplePages` page heart
+       rate, HRV and respiratory rate by start time, 20,000 a call; `HealthMetric.sleepingHeartRate` is the night's
+       mean heart rate inside its asleep intervals, keyed like the sleep metrics. The engine does not use either yet:
+       `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`, and
+       `healthStateProvider` leaves it out of its read until then (its query holds up the whole read and its cost
+       over a year of nights is unmeasured: measure on a device when adding it back). A person who connected Health
+       before this build is not asked for heart rate again: a not-determined heart rate read costs
+       `sleepingHeartRate` alone (no row), but `samples` throws `not-determined` for them, so j's provider must show
+       the Health sheet again on it. Neither not-determined path is checked on a device. Page bounds are exact in
+       whole microseconds (`HealthDays.firstDate`), so ties at a page boundary are read once.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.
