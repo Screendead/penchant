@@ -30,6 +30,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/dial_layout.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/native_auth_field.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
@@ -70,6 +71,8 @@ void ensureE2EBinding() {
     return;
   }
   _bindingReady = true;
+  // flutter_test cannot type into the AppKit fields the Mac build uses for sign-in.
+  debugUseNativeAuthFields = false;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
     _FramesWhileHidden(),
   );
@@ -249,6 +252,9 @@ Future<void> register(
 }) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
+  // A persisted user arrives asynchronously after launch, on the Mac later
+  // than a signOut sent straight away, which would find nobody to sign out.
+  await FirebaseAuth.instance.authStateChanges().first;
   await FirebaseAuth.instance.signOut();
   await tap(tester, find.byKey(Authenticate.registerTab));
   // The confirmation fades in as the tab switches.

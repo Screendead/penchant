@@ -131,8 +131,11 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
   Linux, then runs `tools/e2e.sh` over `integration_test/all_test.dart` on an iPhone simulator of a `macos-26` runner
   (one build for all files; one build per file took 74), caching Swift packages and Xcode's DerivedData, and uploads
   the log on failure. With `cancel-in-progress` in one concurrency group, a newer merge cancels the older run, waiting
-  or running, so a burst of merges tests only its last commit. No macOS e2e job: the runner has no Mac development
-  profile (that needs signing secrets), and unsigned, every sign-in fails with `keychain-error` (run 42227475574).
+  or running, so a burst of merges tests only its last commit. A second `macos` job runs `E2E_DEVICE=macos tools/e2e.sh`
+  unsigned: the runner has no Mac development profile, so Firebase Auth's data-protection keychain fails every sign-in
+  with `keychain-error` (run 42227475574). The job deletes the `kSecUseDataProtectionKeychain` lines from its resolved
+  firebase-ios-sdk and forces `flutter_secure_storage_darwin` to the file keychain, so a green run proves the screens and
+  flows, not sign-in or keychain storage in the signed app; those need a signed local run.
 - `deploy-firestore.yml`, on a push to `master` touching the rules, indexes, `firebase.json`, the rules suite or these
   workflows, re-runs both and only if they pass deploys `firestore.rules` and `firestore.indexes.json` to production
   with the firebase-tools pinned in `tests/firestore-rules/package-lock.json`. Gated on repository variable
