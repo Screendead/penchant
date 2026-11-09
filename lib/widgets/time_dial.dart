@@ -126,7 +126,14 @@ class TimeDial extends StatefulWidget {
 }
 
 class _TimeDialState extends State<TimeDial> {
+  final FocusNode _focus = FocusNode(debugLabel: 'TimeDial');
   bool _focused = false;
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
 
   void _set(int minute) {
     final int clamped = minute.clamp(0, widget.latest);
@@ -189,6 +196,7 @@ class _TimeDialState extends State<TimeDial> {
       enabled: enabled,
       excludeSemantics: true,
       child: Focus(
+        focusNode: _focus,
         canRequestFocus: enabled,
         onKeyEvent: _onKey,
         onFocusChange: (bool focused) => setState(() => _focused = focused),
@@ -205,7 +213,11 @@ class _TimeDialState extends State<TimeDial> {
           },
           child: Listener(
             onPointerDown: enabled
-                ? (PointerDownEvent e) => _fromLocal(e.localPosition)
+                ? (PointerDownEvent e) {
+                    // So the arrow keys go on from where a click left it.
+                    _focus.requestFocus();
+                    _fromLocal(e.localPosition);
+                  }
                 : null,
             onPointerMove: enabled
                 ? (PointerMoveEvent e) => _fromLocal(e.localPosition)
@@ -238,7 +250,12 @@ class _TimeDialState extends State<TimeDial> {
                     color: scheme.onSurface,
                   ),
                   textScaler: textScaler,
-                  focused: _focused,
+                  // The ring marks keyboard focus; a touch focuses the dial too,
+                  // but draws none.
+                  focused:
+                      _focused &&
+                      FocusManager.instance.highlightMode ==
+                          FocusHighlightMode.traditional,
                 ),
               ),
             ),
