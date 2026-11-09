@@ -328,6 +328,27 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
 
+### Third run (`/finish-and-pitch`, 2026-11-09)
+
+Usage: the all-models weekly limit stood at 98% with no overage, so every agent runs on Fable (its own budget) and
+the run lands small items first. Stale in the lists below, checked 2026-11-09: D4 (#141), U1 (#155), U6 (#156), D16
+(#153) and D2's pills, page fades and range morph (#147, #149, #150) are merged.
+
+**DECIDED, this run:**
+
+- **T1.** #190 reworked to the bedtime call (total as headline, same-bedtime part on a line), on #192's cards; merge.
+- **T2.** Item 7's 1A + 2C (round 12): Insights as three question sections; last-night check at its top, Today's
+  sleeping heart rate opening it.
+- **T3.** Item 7's literature floors: sourced research, then the engine and copy PR.
+- **T4.** D6, #151: prove the macOS e2e job on its branch (`workflow_dispatch`) before merging.
+- **T5.** `r10-pitch-branches` C: tag `archive/<branch>` and delete the pitch branches (no `archive/*` tag exists);
+  D15: close #128 if P2 no longer needs it.
+- **T6.** D1's follow-up: the mini time dial replacing `ActivityDateField`, as mocked; then D2's edited bead travel.
+- **T7.** Item 5: the next medium register class, one PR.
+
+**Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6.
+**UNDECIDED:** the API key restrictions (unchanged); new calls raised by T2 or T3 go on this run's pitch page.
+
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 
 Open work on 2026-11-08: `origin/master` at 82f69f0, open PRs, remote branches, CI on `master`, register, backlog.
