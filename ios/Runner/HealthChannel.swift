@@ -235,7 +235,15 @@ enum HealthChannel {
           return
         }
         nightHeartRate(asleep: asleep) { heartRows, heartError in
-          finish(sleepRows + heartRows, heartError)
+          // Someone who connected Health before heart rate joined readTypes
+          // has not been asked for it. HealthKit is taken to fail that read as
+          // not determined (unchecked on a device); it costs sleepingHeartRate
+          // alone, not the sleep rows and every other metric with it.
+          if (heartError as? HKError)?.code == .errorAuthorizationNotDetermined {
+            finish(sleepRows, nil)
+          } else {
+            finish(sleepRows + heartRows, heartError)
+          }
         }
       }
       store.execute(query)
@@ -280,10 +288,11 @@ enum HealthChannel {
     type: (type: HKQuantityType, unit: HKUnit), from: Int64, to: Int64, limit: Int,
     completion: @escaping (Result<[String: Any], Error>) -> Void
   ) {
+    let bounds = HealthDays.queryBounds(from: from, to: to)
     let predicate = NSPredicate(
       format: "%K >= %@ AND %K < %@",
-      HKPredicateKeyPathStartDate, HealthDays.date(micros: from) as NSDate,
-      HKPredicateKeyPathStartDate, HealthDays.date(micros: to) as NSDate)
+      HKPredicateKeyPathStartDate, bounds.lower as NSDate,
+      HKPredicateKeyPathStartDate, bounds.upper as NSDate)
     let query = HKSampleQuery(
       sampleType: type.type, predicate: predicate, limit: limit,
       sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
@@ -295,7 +304,10 @@ enum HealthChannel {
       let read = ((samples as? [HKQuantitySample]) ?? []).map {
         HealthDays.QuantitySample(start: $0.startDate, end: $0.endDate, value: $0.quantity.doubleValue(for: type.unit))
       }
-      let page = HealthDays.page(read, limit: limit)
+      guard let page = HealthDays.page(read, from: from, to: to, limit: limit) else {
+        completion(.failure(HKError(.errorInvalidArgument)))
+        return
+      }
       let flat = HealthDays.flatten(page.samples)
       let data = flat.withUnsafeBufferPointer { Data(buffer: $0) }
       completion(

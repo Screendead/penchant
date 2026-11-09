@@ -73,7 +73,8 @@ enum HealthMetric {
   /// The plain mean of the heart rate samples inside the night's asleep time
   /// (core, deep, REM or unspecified; not in bed or awake), keyed to the night
   /// like the sleep metrics, in beats per minute. A sample is inside when its
-  /// midpoint is. A night with no asleep time or no sample in it has no value.
+  /// midpoint is. A night with no asleep time or no sample in it has no value,
+  /// as has every night for someone never asked for heart rate.
   sleepingHeartRate('sleepingHeartRate');
 
   const HealthMetric(this.id);
@@ -201,7 +202,8 @@ const int maxHealthSamplesPerCall = 20000;
 /// Every page of [metric] from [start] to [end], oldest first, each read once
 /// the previous one is handled. A single [HealthUnavailable] when Health is
 /// unavailable. Throws a [StateError] rather than loop if a page's next start
-/// does not move forward.
+/// does not move forward; a provider that reads this must catch it, as it
+/// must every failure here, so that it never reaches a crash report.
 Stream<HealthSampleRead> healthSamplePages(
   HealthSource source,
   HealthSampleMetric metric,
@@ -225,7 +227,7 @@ Stream<HealthSampleRead> healthSamplePages(
         return;
       case HealthSamples(next: final DateTime next):
         if (!next.isAfter(from)) {
-          throw StateError('Health sample page did not move past $from');
+          throw StateError('Health sample page did not move forward');
         }
         from = next;
     }

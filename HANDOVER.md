@@ -182,9 +182,13 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        The sample read is #178 (`feat/health-samples`): `HealthSource.samples` and `healthSamplePages` page heart
        rate, HRV and respiratory rate by start time, 20,000 a call; `HealthMetric.sleepingHeartRate` is the night's
        mean heart rate inside its asleep intervals, keyed like the sleep metrics. The engine does not use either yet:
-       `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`. A
-       person who connected Health before this build is not asked for heart rate again, so it reads as no data for
-       them until the sheet is shown once more.
+       `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`, and
+       `healthStateProvider` leaves it out of its read until then (its query holds up the whole read and its cost
+       over a year of nights is unmeasured: measure on a device when adding it back). A person who connected Health
+       before this build is not asked for heart rate again: a not-determined heart rate read costs
+       `sleepingHeartRate` alone (no row), but `samples` throws `not-determined` for them, so j's provider must show
+       the Health sheet again on it. Neither not-determined path is checked on a device. Page bounds are exact in
+       whole microseconds (`HealthDays.firstDate`), so ties at a page boundary are read once.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.

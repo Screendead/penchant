@@ -228,28 +228,97 @@ do {
 // times, and the next page starts at the first one it dropped.
 do {
   let t = at(2026, 11, 8, 3)
-  let short = HealthDays.page([hr(t, 1), hr(t.addingTimeInterval(60), 2)], limit: 3)
+  let from = HealthDays.micros(t), to = HealthDays.micros(t.addingTimeInterval(3600))
+  func page(_ read: [HealthDays.QuantitySample], limit: Int) -> (samples: [HealthDays.QuantitySample], next: Int64?) {
+    HealthDays.page(read, from: from, to: to, limit: limit)!
+  }
+  let short = page([hr(t, 1), hr(t.addingTimeInterval(60), 2)], limit: 3)
   check("short page is last", short.next == nil && short.samples.count == 2)
-  let full = HealthDays.page(
+  let full = page(
     [hr(t, 1), hr(t.addingTimeInterval(60), 2), hr(t.addingTimeInterval(120), 3), hr(t.addingTimeInterval(120), 4)],
     limit: 4)
   check("full page drops the tied tail", full.samples.map(\.value) == [1, 2], "\(full)")
   check("next is the tied start", full.next == HealthDays.micros(t.addingTimeInterval(120)), "\(full)")
-  let untied = HealthDays.page([hr(t, 1), hr(t.addingTimeInterval(60), 2)], limit: 2)
-  check("untied full page keeps all but the last start", untied.samples.map(\.value) == [1] && untied.next == HealthDays.micros(t.addingTimeInterval(60)))
-  let stuck = HealthDays.page([hr(t, 1), hr(t, 2)], limit: 2)
+  let untied = page([hr(t, 1), hr(t.addingTimeInterval(60), 2)], limit: 2)
+  check(
+    "untied full page keeps all but the last start",
+    untied.samples.map(\.value) == [1] && untied.next == HealthDays.micros(t.addingTimeInterval(60)))
+  let stuck = page([hr(t, 1), hr(t, 2)], limit: 2)
   check("one start throughout still moves on", stuck.samples.count == 2 && stuck.next == HealthDays.micros(t) + 1)
+  let outside = HealthDays.page(
+    [hr(t.addingTimeInterval(-1), 1), hr(t, 2), hr(t.addingTimeInterval(3600), 3)], from: from, to: to, limit: 4)!
+  check("outside the bounds is dropped", outside.samples.map(\.value) == [2] && outside.next == nil, "\(outside)")
+  check(
+    "a full answer with nothing inside fails",
+    HealthDays.page([hr(t.addingTimeInterval(-1), 1)], from: from, to: to, limit: 1) == nil)
 }
 
-// Microseconds round-trip, and flatten writes start, end, value triples.
-do {
-  let t = Date(timeIntervalSince1970: 1_794_000_000.123456)
-  check("micros round-trip", HealthDays.micros(HealthDays.date(micros: HealthDays.micros(t))) == HealthDays.micros(t))
-  check(
-    "flatten", HealthDays.flatten([hr(at(2026, 11, 8), 61.5, 1)]) == [
-      Double(HealthDays.micros(at(2026, 11, 8))), Double(HealthDays.micros(at(2026, 11, 8))) + 1_000_000, 61.5,
-    ])
+// firstDate(micros: m) is the earliest date that micros maps to m or later,
+// for sub-second, whole-millisecond and whole-second dates. A Date holds
+// seconds since 2001, as HealthKit's are built.
+let base = at(2026, 1, 1).timeIntervalSinceReferenceDate
+func randomDates(_ n: Int, step: Double) -> [Date] {
+  (0..<n).map { _ in
+    let raw = base + Double.random(in: 0..<(366 * 86_400))
+    return Date(timeIntervalSinceReferenceDate: step == 0 ? raw : (raw / step).rounded(.down) * step)
+  }
 }
+let subSecond = randomDates(20_000, step: 0), wholeMilli = randomDates(20_000, step: 0.001)
+do {
+  var bad = 0, wobbly = 0
+  for t in subSecond + wholeMilli + randomDates(2_000, step: 1) {
+    let m = HealthDays.micros(t)
+    if HealthDays.date(micros: m) > t { wobbly += 1 }
+    let first = HealthDays.firstDate(micros: m)
+    let below = Date(timeIntervalSinceReferenceDate: first.timeIntervalSinceReferenceDate.nextDown)
+    if !(first <= t && HealthDays.micros(first) >= m && HealthDays.micros(below) < m) { bad += 1 }
+  }
+  check("firstDate is the earliest date of its microsecond", bad == 0, "\(bad) wrong")
+  check("the dates include ones date(micros:) puts later", wobbly > 0)
+}
+
+// Whole paging runs, each page answered as HealthKit would answer its
+// predicate: every sample is read once, ties at page boundaries included.
+func pageThrough(_ all: [HealthDays.QuantitySample], from: Int64, to: Int64, limit: Int) -> [Double]? {
+  var read: [Double] = []
+  var next: Int64? = from
+  var calls = 0
+  while let cursor = next, cursor < to {
+    calls += 1
+    if calls > all.count + 10 { return nil }
+    let bounds = HealthDays.queryBounds(from: cursor, to: to)
+    let answer = Array(all.filter { $0.start >= bounds.lower && $0.start < bounds.upper }.prefix(limit))
+    guard let page = HealthDays.page(answer, from: cursor, to: to, limit: limit) else { return nil }
+    read += page.samples.map(\.value)
+    next = page.next
+  }
+  return read
+}
+for (dates, label) in [(subSecond, "sub-second"), (wholeMilli, "whole-millisecond")] {
+  // Starts that date(micros:) moves later, each tied with a second source's
+  // sample, so pages keep ending on them.
+  let tricky = dates.filter { HealthDays.date(micros: HealthDays.micros($0)) > $0 }.prefix(300).sorted()
+  var all: [HealthDays.QuantitySample] = []
+  for (i, t) in tricky.enumerated() {
+    all.append(HealthDays.QuantitySample(start: t, end: t, value: Double(2 * i)))
+    all.append(HealthDays.QuantitySample(start: t, end: t, value: Double(2 * i + 1)))
+  }
+  let from = HealthDays.micros(tricky.first!), to = HealthDays.micros(tricky.last!) + 1
+  for limit in [3, 4, 7] {
+    let read = pageThrough(all, from: from, to: to, limit: limit)
+    check("\(label) pages of \(limit) read every sample once", read?.sorted() == all.map(\.value), "\(read?.count ?? -1)")
+  }
+  // Windows that end on a tricky start: the sample there is in the next window.
+  let mid = HealthDays.micros(tricky[tricky.count / 2])
+  let halves = (pageThrough(all, from: from, to: mid, limit: 5) ?? []) + (pageThrough(all, from: mid, to: to, limit: 5) ?? [])
+  check("\(label) adjacent windows split each sample once", halves.sorted() == all.map(\.value), "\(halves.count)")
+}
+
+// flatten writes start, end, value triples.
+check(
+  "flatten", HealthDays.flatten([hr(at(2026, 11, 8), 61.5, 1)]) == [
+    Double(HealthDays.micros(at(2026, 11, 8))), Double(HealthDays.micros(at(2026, 11, 8))) + 1_000_000, 61.5,
+  ])
 
 if failures > 0 { exit(1) }
 print("ok")

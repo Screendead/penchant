@@ -203,13 +203,39 @@ enum HealthDays {
     Date(timeIntervalSince1970: Double(micros) / 1_000_000)
   }
 
-  // samples are sorted by start and hold at most limit. A full page is cut
-  // back to whole start times and next is the first start it dropped, so the
-  // next page, which reads starts from next, has each tied sample once. A full
-  // page that is one start time throughout is kept whole and next moves a
-  // microsecond on, skipping any further samples at that start.
-  static func page(_ samples: [QuantitySample], limit: Int) -> (samples: [QuantitySample], next: Int64?) {
-    guard samples.count >= limit, let last = samples.last else { return (samples, nil) }
+  // The earliest date whose micros is at least m. date(micros: m) is not it:
+  // for about one sub-second date in ten it lands later than a date that
+  // micros maps to m, and a predicate from it would miss that sample. micros
+  // never falls as the date moves later, so startDate >= firstDate(micros: m)
+  // holds exactly when micros(startDate) >= m.
+  static func firstDate(micros m: Int64) -> Date {
+    var t = date(micros: m).timeIntervalSinceReferenceDate
+    while micros(Date(timeIntervalSinceReferenceDate: t)) < m { t = t.nextUp }
+    while micros(Date(timeIntervalSinceReferenceDate: t.nextDown)) >= m { t = t.nextDown }
+    return Date(timeIntervalSinceReferenceDate: t)
+  }
+
+  // A page's query: start in [lower, upper), the same set as from <=
+  // micros(start) < to.
+  static func queryBounds(from: Int64, to: Int64) -> (lower: Date, upper: Date) {
+    (firstDate(micros: from), firstDate(micros: to))
+  }
+
+  // read is what HealthKit answered for queryBounds(from, to) with limit,
+  // sorted by start; it was full when it holds limit. Anything outside [from,
+  // to) in micros is dropped. A full page is cut back to whole start times
+  // and next is the first start it dropped, so the next page, which reads
+  // starts from next, has each tied sample once. A full page that is one
+  // start time throughout is kept whole and next moves a microsecond on,
+  // skipping any further samples at that start. nil when a full answer held
+  // nothing inside the bounds, which queryBounds rules out, so the caller
+  // fails the read rather than end the paging early.
+  static func page(_ read: [QuantitySample], from: Int64, to: Int64, limit: Int)
+    -> (samples: [QuantitySample], next: Int64?)?
+  {
+    let samples = read.filter { micros($0.start) >= from && micros($0.start) < to }
+    guard read.count >= limit else { return (samples, nil) }
+    guard let last = samples.last else { return nil }
     let lastStart = micros(last.start)
     let whole = samples.prefix { micros($0.start) < lastStart }
     if whole.isEmpty { return (samples, lastStart + 1) }
