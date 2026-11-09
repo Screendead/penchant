@@ -313,6 +313,9 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        pinned on a habit that began at the same time.
    - **Direction (Jack, 2026-11-09, "sounds good" to Claude's recommendation):** Insights becomes question-led, not a
      list of "days after X, Y differs" cards. Archived habits show no cards (they stay in the model as covariates).
+     **Bedtime on sleep cards, decided (Jack, 2026-11-09): option 2.** Amount and time cards on sleep-minute metrics
+     show the total effect as the headline, then a line with the part left at the same bedtime (for example "11 min
+     less per hour later, 4 min of it at the same bedtime"). Rework #190 to show both, on top of #192's card lines.
      Build order after the steps in flight (j, the bedtime fix): **n. where's the line** (a dose threshold instead of
      one straight line, and a time cut-off), **o. recovery time** (nights until a measure returns to baseline after a
      heavy day), **p. payoff from cutting down** (measures since a habit fell, against the old baseline), **q.
