@@ -1,4 +1,5 @@
 import 'package:animations/animations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -104,6 +105,55 @@ void main() {
         )
         .dx;
 
+    // What a viewer sees of a page: where it sits, how opaque and how scaled.
+    (double, double, double)? seen(WidgetTester tester, String text) {
+      final Finder found = find.text(text);
+      if (found.evaluate().isEmpty) {
+        return null;
+      }
+      double opacity = 1;
+      for (final FadeTransition fade in tester.widgetList<FadeTransition>(
+        find.ancestor(of: found, matching: find.byType(FadeTransition)),
+      )) {
+        opacity *= fade.opacity.value;
+      }
+      double scale = 1;
+      for (final ScaleTransition zoom in tester.widgetList<ScaleTransition>(
+        find.ancestor(of: found, matching: find.byType(ScaleTransition)),
+      )) {
+        scale *= zoom.scale.value;
+      }
+      double round(double value) => (value * 1000).roundToDouble() / 1000;
+      return (round(left(tester, text)), round(opacity), round(scale));
+    }
+
+    Future<void> swipeAndRelease(WidgetTester tester, double by) async {
+      final TestGesture gesture = await tester.startGesture(
+        const Offset(5, 300),
+      );
+      await gesture.moveBy(const Offset(20, 0));
+      await gesture.moveBy(Offset(by, 0));
+      await tester.pump(const Duration(seconds: 1));
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    Future<List<Object?>> frames(
+      WidgetTester tester,
+      List<String> pages,
+    ) async {
+      final List<Object?> seenFrames = <Object?>[];
+      await tester.pump();
+      for (int frame = 0; frame < 6; frame++) {
+        seenFrames.add(<Object?>[
+          for (final String text in pages) seen(tester, text),
+        ]);
+        await tester.pump(const Duration(milliseconds: 55));
+      }
+      await tester.pumpAndSettle();
+      return seenFrames;
+    }
+
     testWidgets('a drag from the left edge pops a page, following the finger', (
       WidgetTester tester,
     ) async {
@@ -115,7 +165,10 @@ void main() {
       await gesture.moveBy(const Offset(200, 0));
       await tester.pump();
       expect(left(tester, 'Habits'), closeTo(220, 1));
-      expect(find.text('Today'), findsOneWidget);
+      // The page below shows whole, a third of the way back in.
+      final (double, double, double) today = seen(tester, 'Today')!;
+      expect(today.$1, closeTo(-(1 - 220 / 800) * 800 / 3, 1));
+      expect((today.$2, today.$3), (1, 1));
       await gesture.moveBy(const Offset(300, 0));
       await gesture.up();
       await tester.pumpAndSettle();
@@ -237,10 +290,145 @@ void main() {
       final NavigatorState navigator = await pushed(tester, page('Habits'));
       navigator.pop();
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byType(FadeThroughTransition), findsWidgets);
-      expect(left(tester, 'Habits'), 0);
+      await tester.pump(const Duration(milliseconds: 60));
+      final (double, double, double) habits = seen(tester, 'Habits')!;
+      expect(habits.$1, 0);
+      expect(habits.$2, inExclusiveRange(0, 1));
+      expect(seen(tester, 'Today')!.$1, isNot(lessThan(0)));
       await tester.pumpAndSettle();
+    }, variant: iOS);
+
+    // After a drag the transitions switch back to their fixed animations;
+    // whatever moves next must move exactly as if no drag had happened.
+    for (final bool reduced in <bool>[false, true]) {
+      final String motion = reduced ? ', under reduce motion' : '';
+
+      testWidgets('after a cancelled drag the back button fades as before'
+          '$motion', (WidgetTester tester) async {
+        NavigatorState navigator = await pushed(
+          tester,
+          page('Habits'),
+          reduced: reduced,
+        );
+        navigator.pop();
+        final List<Object?> fresh = await frames(tester, <String>[
+          'Habits',
+          'Today',
+        ]);
+
+        navigator = await pushed(tester, page('Habits'), reduced: reduced);
+        await swipeAndRelease(tester, 100);
+        expect(seen(tester, 'Habits'), (0, 1, 1));
+        expect(find.text('Today'), findsNothing);
+        navigator.pop();
+        expect(await frames(tester, <String>['Habits', 'Today']), fresh);
+      }, variant: iOS);
+
+      testWidgets('after a cancelled drag a push fades as before$motion', (
+        WidgetTester tester,
+      ) async {
+        NavigatorState navigator = await pushed(
+          tester,
+          page('Habits'),
+          reduced: reduced,
+        );
+        navigator.push(page('Entries'));
+        final List<Object?> fresh = await frames(tester, <String>[
+          'Entries',
+          'Habits',
+        ]);
+
+        navigator = await pushed(tester, page('Habits'), reduced: reduced);
+        await swipeAndRelease(tester, 100);
+        navigator.push(page('Entries'));
+        expect(await frames(tester, <String>['Entries', 'Habits']), fresh);
+      }, variant: iOS);
+
+      testWidgets('after a drag pops a page, the next push fades as before'
+          '$motion', (WidgetTester tester) async {
+        NavigatorState navigator = await _pump(tester, reduced: reduced);
+        navigator.push(page('Habits'));
+        final List<Object?> fresh = await frames(tester, <String>[
+          'Habits',
+          'Today',
+        ]);
+
+        navigator = await pushed(tester, page('Habits'), reduced: reduced);
+        await swipeAndRelease(tester, 600);
+        expect(find.text('Habits'), findsNothing);
+        expect(seen(tester, 'Today'), (0, 1, 1));
+        navigator.push(page('Habits'));
+        expect(await frames(tester, <String>['Habits', 'Today']), fresh);
+      }, variant: iOS);
+    }
+
+    testWidgets('a page keeps its state through a drag', (
+      WidgetTester tester,
+    ) async {
+      await pushed(
+        tester,
+        DialPageRoute<void>(
+          builder: (_) => const Scaffold(
+            body: Center(child: SizedBox(width: 200, child: TextField())),
+          ),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'typed');
+      final State before = tester.state(find.byType(EditableText));
+      final TestGesture gesture = await tester.startGesture(
+        const Offset(5, 300),
+      );
+      await gesture.moveBy(const Offset(20, 0));
+      await gesture.moveBy(const Offset(100, 0));
+      await tester.pump();
+      expect(tester.state(find.byType(EditableText)), same(before));
+      await tester.pump(const Duration(seconds: 1));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(EditableText)), same(before));
+      expect(find.text('typed'), findsOneWidget);
+    }, variant: iOS);
+
+    testWidgets('a pop in code mid drag pops one page', (
+      WidgetTester tester,
+    ) async {
+      final NavigatorState navigator = await pushed(tester, page('Habits'));
+      navigator.push(page('Entries'));
+      await tester.pumpAndSettle();
+      final TestGesture gesture = await tester.startGesture(
+        const Offset(5, 300),
+      );
+      await gesture.moveBy(const Offset(20, 0));
+      await gesture.moveBy(const Offset(50, 0));
+      await tester.pump();
+      navigator.pop();
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Entries'), findsNothing);
+      expect(seen(tester, 'Habits'), (0, 1, 1));
+    }, variant: iOS);
+
+    testWidgets('a licence swipes back to the list, not out of the licences', (
+      WidgetTester tester,
+    ) async {
+      LicenseRegistry.reset();
+      addTearDown(LicenseRegistry.reset);
+      LicenseRegistry.addLicense(
+        () => Stream<LicenseEntry>.value(
+          const LicenseEntryWithLineBreaks(<String>['a_package'], 'Terms'),
+        ),
+      );
+      final NavigatorState navigator = await _pump(tester, reduced: false);
+      showLicensePage(context: navigator.context);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('a_package'));
+      await tester.pumpAndSettle();
+      expect(find.text('Terms'), findsOneWidget);
+      await tester.dragFrom(const Offset(5, 300), const Offset(600, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Terms'), findsNothing);
+      expect(find.text('a_package'), findsOneWidget);
     }, variant: iOS);
 
     test('only the forms open as fullscreen dialogs', () {
