@@ -614,6 +614,37 @@ do {
   check("only the times asked for", onsetOnly.keys.sorted() == ["2026-11-08 sleepOnset"], "\(onsetOnly)")
 }
 do {
+  // A sleep that ends after noon counts for the next night, but its onset is
+  // still read from the noon before it began: 03:00 is 900, whether waking
+  // at 11:30 or 12:30.
+  let before = timing([sample(at(2026, 11, 8, 3), at(2026, 11, 8, 11, 30), 1)])
+  check("onset, waking before noon", before["2026-11-08 sleepOnset"] == 900, "\(before)")
+  let after = timing([sample(at(2026, 11, 8, 3), at(2026, 11, 8, 12, 30), 1)])
+  check("onset, waking after noon", after["2026-11-09 sleepOnset"] == 900, "\(after)")
+  check("end, waking after noon", after["2026-11-09 sleepEnd"] == 1470, "\(after)")
+  // In bed alone (no Watch): the night, not an earlier in-bed nap of equal
+  // asleep time, is the main sleep.
+  let bed = timing([
+    sample(at(2026, 11, 7, 15), at(2026, 11, 7, 15, 40), 0),
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 0),
+  ])
+  check("in-bed nap is not the onset", bed["2026-11-08 sleepOnset"] == 660, "\(bed)")
+  check("in-bed nap is not the end", bed["2026-11-08 sleepEnd"] == 1140, "\(bed)")
+  // A night broken by 45 unrecorded minutes began with its first part, and
+  // ended with its last even when that part is the shorter.
+  let broken = timing([
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 1), 1),
+    sample(at(2026, 11, 8, 1, 45), at(2026, 11, 8, 7), 1),
+  ])
+  check("broken night, onset", broken["2026-11-08 sleepOnset"] == 660, "\(broken)")
+  check("broken night, end", broken["2026-11-08 sleepEnd"] == 1140, "\(broken)")
+  let tail = timing([
+    sample(at(2026, 11, 7, 23), at(2026, 11, 8, 5), 1),
+    sample(at(2026, 11, 8, 5, 45), at(2026, 11, 8, 7), 1),
+  ])
+  check("broken night, short last part", tail["2026-11-08 sleepEnd"] == 1140, "\(tail)")
+}
+do {
   // Clock time across the 2026 UK changes: 23:00 is 660 and 07:00 is 1140.
   for (month, night, label) in [(10, 25, "autumn"), (3, 29, "spring")] {
     let rows = timing([sample(at(2026, month, night - 1, 23), at(2026, month, night, 7), 1)])

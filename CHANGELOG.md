@@ -82,8 +82,9 @@ pull request titles (`gh pr list --state merged`).
 ### Fixed
 
 - Insights no longer blames a late habit for the sleep you lose by going to bed later: for the minutes of sleep, an
-  amount or a time of last use is compared at the same bedtime (when you fell asleep, read from Apple Health), and
-  one that can't be told apart from your bedtime says so. A result that hangs on one unusual day now says "rests on
+  amount or a time of last use is compared at the same bedtime (when you fell asleep, read from Apple Health), the
+  sentence says "at the same bedtime", and one that can't be told apart from your bedtime says so. A night whose
+  bedtime reads more than six hours from your usual one is left out of that comparison. A result that hangs on one unusual day now says "rests on
   one unusual day" rather than "within the noise", and the sentences read for any habit name ("On days your last use
   of Gummies is an hour later, ...") (#190).
 - Insights says nothing about an archived habit: no finding and no "Not enough to say" row, on the page or in Copy as

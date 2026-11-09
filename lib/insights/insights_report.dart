@@ -329,6 +329,7 @@ int _digits(HabitFinding finding, MetricCopy copy) {
 /// Coffee is an hour later, ...". [unit] is the habit's, for an amount. The
 /// habit's name only ever follows "after", "for" or "of", and no verb agrees
 /// with it, so a plural or uncountable name (Gummies, Water) reads as well.
+/// An amount or a time compared at the same bedtime says so.
 String findingSentence(
   HabitFinding finding,
   String habit,
@@ -344,16 +345,18 @@ String findingSentence(
   );
   final String direction = copy.direction(finding.effect);
   final String then = copy.night ? 'that night' : 'the next day';
+  final String bedtime = finding.atSameBedtime ? ', at the same bedtime' : '';
   return switch (finding.kind) {
     InsightKind.use =>
       'On ${copy.night ? 'nights' : 'days'} after $habit, your ${copy.name} '
           'averages $amount $direction.',
     InsightKind.dose =>
       'On days with ${_stepWords(finding.step, unit, locale)} logged for '
-          '$habit, your ${copy.name} $then averages $amount $direction.',
+          '$habit, your ${copy.name} $then averages $amount $direction'
+          '$bedtime.',
     InsightKind.lastUse =>
       'On days your last use of $habit is an hour later, your ${copy.name} '
-          '$then averages $amount $direction.',
+          '$then averages $amount $direction$bedtime.',
   };
 }
 
@@ -433,6 +436,8 @@ String _amongUseRefusal(
           'apart',
     null => 'moves with other habits’ days, so they can’t be told apart',
   },
+  RefusalReason.withinNoise when refusal.atSameBedtime =>
+    'within the noise at the same bedtime, no clear difference',
   RefusalReason.withinNoise => 'within the noise, no clear difference',
   RefusalReason.oneDay =>
     'rests on one unusual day, so it may not hold on the others',

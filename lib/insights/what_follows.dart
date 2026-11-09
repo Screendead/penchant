@@ -152,6 +152,7 @@ sealed class HabitInsight {
     required this.raw,
     this.kind = InsightKind.use,
     this.step = 1,
+    this.atSameBedtime = false,
   });
 
   final String habitId;
@@ -172,6 +173,11 @@ sealed class HabitInsight {
   /// per: 1 for [InsightKind.use], an amount in the habit's unit for
   /// [InsightKind.dose], minutes for [InsightKind.lastUse].
   final double step;
+
+  /// A dose or a time of use on the minutes of sleep compared at the same
+  /// bedtime ([sleepOnsetId] held fixed), so an effect that works by moving
+  /// bedtime is not in it.
+  final bool atSameBedtime;
 }
 
 class HabitFinding extends HabitInsight {
@@ -184,6 +190,7 @@ class HabitFinding extends HabitInsight {
     required super.raw,
     super.kind,
     super.step,
+    super.atSameBedtime,
     required this.effect,
     required this.interval,
     required this.standardized,
@@ -216,6 +223,7 @@ class HabitRefusal extends HabitInsight {
     required super.raw,
     super.kind,
     super.step,
+    super.atSameBedtime,
     required this.reason,
     this.entangledWith,
     this.effect,
@@ -343,6 +351,7 @@ class _Judged {
   final int exposed;
   final Comparison? raw;
   double step;
+  bool atSameBedtime = false;
 
   HabitRefusal refuse(
     RefusalReason reason, {
@@ -359,6 +368,7 @@ class _Judged {
     raw: raw,
     kind: kind,
     step: step,
+    atSameBedtime: atSameBedtime,
     reason: reason,
     entangledWith: entangledWith,
     effect: effect,
@@ -457,6 +467,10 @@ HabitInsight _whatFollowsOne(
 /// a night's main sleep began (`HealthMetric.sleepOnset`).
 const String sleepOnsetId = 'sleepOnset';
 
+/// How far from the median onset of a comparison's days a night's
+/// [sleepOnsetId] may be before that day is left out.
+const int maxOnsetFromMedianMinutes = 6 * 60;
+
 /// The sleep outcomes that are minutes of a night (`HealthMetric`'s sleep
 /// minutes), for which [doseFollows] and [lastUseFollows] hold [sleepOnsetId]
 /// fixed. With a set wake time, every minute later to bed is a minute less in
@@ -489,8 +503,10 @@ const Set<String> sleepMinutesIds = <String>{
 ///
 /// For the minutes of sleep ([sleepMinutesIds]), the time sleep began that
 /// night ([sleepOnsetId]) is in the model when it varies, and the days
-/// without one are left out, so the effect is the habit's at the same
-/// bedtime: an effect that works by moving bedtime is not counted. When
+/// without one, with one outside 0 to 1440, or with one more than
+/// [maxOnsetFromMedianMinutes] from their median are left out, so the effect
+/// is the habit's at the same bedtime ([HabitInsight.atSameBedtime]): an
+/// effect that works by moving bedtime is not counted. When
 /// [outcomes] hold no [sleepOnsetId] at all, nothing is held fixed. Refused
 /// as [RefusalReason.followsBedtime] when the amount moves so closely with
 /// bedtime that the two cannot be told apart.
@@ -601,13 +617,33 @@ HabitInsight _amongDaysOfUse(
     if (value == null) continue;
     if (bedtime) {
       final double? began = outcomes.value(sleepOnsetId, addDays(day, lagDays));
-      if (began == null) continue;
+      // Outside a noon-to-noon night it is a misread, and one such value
+      // would carry the fit (onset is read at the last noon before sleep).
+      if (began == null || began < 0 || began > 24 * 60) continue;
       onset.add(began);
     }
     days.add(day);
     y.add(value);
     amount.add(habits.lateDayTotal(id, day));
     x.add(timing ? habits.lastUseMinutes(id, day)!.toDouble() : amount.last);
+  }
+  // An onset this far from the usual one is a nap or a misread more often
+  // than a bedtime, and one such value would carry the fit.
+  if (onset.isNotEmpty) {
+    final List<double> sorted = onset.toList()..sort();
+    final double usual = sorted[sorted.length ~/ 2];
+    for (int r = onset.length - 1; r >= 0; r--) {
+      if ((onset[r] - usual).abs() <= maxOnsetFromMedianMinutes) continue;
+      for (final List<Object> column in <List<Object>>[
+        days,
+        y,
+        x,
+        amount,
+        onset,
+      ]) {
+        column.removeAt(r);
+      }
+    }
   }
   final _Judged judged = _Judged(
     id: id,
@@ -620,7 +656,7 @@ HabitInsight _amongDaysOfUse(
     exposed: days.length,
     raw: null,
     step: timing ? 60 : 1,
-  );
+  )..atSameBedtime = bedtime;
   if (days.length < gates.minDays) {
     return judged.refuse(RefusalReason.tooFewDays);
   }
@@ -886,6 +922,7 @@ HabitInsight _attribute(
     raw: judged.raw,
     kind: judged.kind,
     step: step,
+    atSameBedtime: judged.atSameBedtime,
     effect: effect,
     interval: interval,
     standardized: sd == 0 ? 0 : perDeviation / sd,
@@ -928,6 +965,7 @@ List<HabitInsight> controlFalseDiscoveries(
           raw: f.raw,
           kind: f.kind,
           step: f.step,
+          atSameBedtime: f.atSameBedtime,
           reason: RefusalReason.chance,
           effect: f.effect,
           interval: f.interval,

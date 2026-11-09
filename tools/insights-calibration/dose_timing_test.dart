@@ -325,6 +325,9 @@ void main() {
   // per hour later or per unit, plus noise of sd 10 min; Coffee every evening,
   // its last use between 19:00 and 24:00. Each scenario runs with the night's
   // sleep onset in the outcomes, and without it (as before it was exported).
+  // [misread] of nights (only those of 4 a day when [heavyOnly], at 4 times
+  // the rate) report onset [misreadAt] minutes off: -1440 is a sleep past
+  // noon read from the wrong night, -480 an afternoon nap taken for the night.
   test('bedtime', () {
     void bedtime(
       String name,
@@ -332,6 +335,9 @@ void main() {
       required int Function(Random r, int last, int amount) bed,
       bool varyAmount = false,
       double direct = 0,
+      double misread = 0,
+      bool heavyOnly = false,
+      double misreadAt = -1440,
     }) {
       for (final bool onset in <bool>[true, false]) {
         final Map<String, int> counts = <String, int>{};
@@ -359,12 +365,16 @@ void main() {
                     10 * gaussian(random),
               ),
             );
+            final double rate = heavyOnly
+                ? (a == 4 ? 4 * misread : 0)
+                : misread;
+            final bool off = random.nextDouble() < rate;
             if (onset) {
               outcomes.add(
                 DailyOutcome(
                   date: addDays(day, 1),
                   metricId: sleepOnsetId,
-                  value: b - 720.0,
+                  value: b - 720.0 + (off ? misreadAt : 0),
                 ),
               );
             }
@@ -426,6 +436,30 @@ void main() {
       bed: (r, _, a) => 22 * 60 + 20 * a + r.nextInt(21) - 10,
       varyAmount: true,
     );
+    int perUnit(Random r, int _, int a) =>
+        22 * 60 + 20 * a + r.nextInt(61) - 30;
+    bedtime(
+      'dose: bed 20 min later per unit +-30, no effect',
+      doseFollows,
+      bed: perUnit,
+      varyAmount: true,
+    );
+    for (final double misread in <double>[0.02, 0.05]) {
+      for (final bool heavyOnly in <bool>[false, true]) {
+        for (final double at in <double>[-1440, -480]) {
+          bedtime(
+            'dose: as above, ${(100 * misread).round()}% of '
+            '${heavyOnly ? 'heavy' : 'all'} nights onset ${at.round()} min off',
+            doseFollows,
+            bed: perUnit,
+            varyAmount: true,
+            misread: misread,
+            heavyOnly: heavyOnly,
+            misreadAt: at,
+          );
+        }
+      }
+    }
     bedtime(
       'dose: bed 23:00-24:00, -5 min per unit',
       doseFollows,

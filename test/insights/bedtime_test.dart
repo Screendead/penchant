@@ -18,7 +18,8 @@ double gaussian(Random random) =>
 // [days] evenings of Coffee, its one use at [last] (minutes after midnight),
 // bed at [bed] given that time, waking at 07:00; core sleep is 0.55 of the
 // minutes in bed plus [direct] per hour later of the use, plus noise of sd 10.
-// [onset] puts the night's sleep onset in the outcomes.
+// [onset] puts the night's sleep onset in the outcomes, [misread] minutes
+// off on day i.
 ({DailyHabitSeries habits, OutcomeSeries outcomes}) evenings(
   int seed, {
   int days = 200,
@@ -27,6 +28,7 @@ double gaussian(Random random) =>
   double direct = 0,
   bool onset = true,
   int Function(Random random)? amount,
+  double Function(int i)? misread,
 }) {
   final Random random = Random(seed);
   final List<HabitUse> uses = <HabitUse>[];
@@ -60,7 +62,11 @@ double gaussian(Random random) =>
       );
     if (onset) {
       outcomes.add(
-        DailyOutcome(date: night, metricId: sleepOnsetId, value: b - 720.0),
+        DailyOutcome(
+          date: night,
+          metricId: sleepOnsetId,
+          value: b - 720.0 + (misread?.call(i) ?? 0),
+        ),
       );
     }
   }
@@ -185,6 +191,76 @@ void main() {
     }
     expect(foundWithout, greaterThanOrEqualTo(36));
     expect(found, lessThanOrEqualTo(4));
+  });
+
+  // One more drink, twenty minutes later to bed, give or take half an hour.
+  ({DailyHabitSeries habits, OutcomeSeries outcomes}) drinks(
+    int seed, {
+    double Function(int i)? misread,
+  }) => evenings(
+    seed,
+    last: (_) => 20 * 60,
+    amount: (random) => 1 + random.nextInt(4),
+    bed: (random, _, amount) => 22 * 60 + 20 * amount + random.nextInt(61) - 30,
+    misread: misread,
+  );
+  HabitInsight dose(({DailyHabitSeries habits, OutcomeSeries outcomes}) d) =>
+      doseFollows(
+        habits: d.habits,
+        outcomes: d.outcomes,
+        metricId: core,
+      ).single;
+
+  test('a misread onset is left out rather than held fixed', () {
+    // A sleep past noon read from the wrong night (a day early), and an
+    // afternoon nap taken for the night, each on 4 of the 200 nights. Held
+    // fixed, either would leave bedtime barely held and the amount credited
+    // with what bedtime does.
+    double misread(int i) => switch (i % 50) {
+      0 => -1440,
+      25 => -480,
+      _ => 0,
+    };
+    expect(dose(drinks(0, misread: misread)).usableDays, 192);
+    int found = 0;
+    for (int seed = 0; seed < 40; seed++) {
+      if (dose(drinks(seed, misread: misread)) is HabitFinding) found++;
+    }
+    expect(found, lessThanOrEqualTo(4));
+  });
+
+  test('a result at the same bedtime says so', () {
+    final HabitInsight time = timing(
+      evenings(0, last: evening, bed: halfway, direct: -10),
+    );
+    expect(time.atSameBedtime, isTrue);
+    expect(
+      findingSentence(time as HabitFinding, 'Coffee', 'en'),
+      allOf(
+        startsWith(
+          'On days your last use of Coffee is an hour later, your '
+          'core sleep that night averages ',
+        ),
+        endsWith(' less, at the same bedtime.'),
+      ),
+    );
+    final HabitInsight unheld = timing(
+      evenings(0, last: evening, bed: halfway, direct: -10, onset: false),
+    );
+    expect(unheld.atSameBedtime, isFalse);
+    expect(
+      findingSentence(unheld as HabitFinding, 'Coffee', 'en'),
+      isNot(contains('bedtime')),
+    );
+
+    final HabitRefusal noise =
+        <HabitInsight>[for (int seed = 0; seed < 10; seed++) dose(drinks(seed))]
+            .whereType<HabitRefusal>()
+            .firstWhere((r) => r.reason == RefusalReason.withinNoise);
+    expect(
+      refusalReason(noise, (id) => id),
+      'Amount: within the noise at the same bedtime, no clear difference',
+    );
   });
 
   test('outcomes other than minutes of sleep keep their model', () {

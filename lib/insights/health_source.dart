@@ -48,16 +48,18 @@ enum HealthMetric {
   sleepDeep('sleepDeep'),
   sleepREM('sleepREM'),
 
-  /// When the night's main sleep (the one with the most asleep time, so not a
-  /// nap) began: its first asleep moment, or its first in bed when it has no
-  /// asleep time, from the same source as the minutes above. In clock minutes
-  /// after the noon that opens the night, so 23:00 is 660 and 01:00 is 780.
+  /// When the night's main sleep (the one with the most asleep time, or in
+  /// bed when none has any, so not a nap) began, with any part of the night
+  /// less than an hour before it: its first asleep moment, or its first in
+  /// bed when it has no asleep time, from the same source as the minutes
+  /// above. In clock minutes after the last noon before it, so 23:00 is 660,
+  /// 01:00 is 780, and a sleep that ends after noon still reads 0 to 1440.
   /// The insights engine holds it fixed for the sleep minutes; it is not an
   /// outcome of its own.
   sleepOnset('sleepOnset'),
 
-  /// When the night's main sleep ended, as [sleepOnset] measures it: its last
-  /// asleep moment, or its last in bed.
+  /// When the night's main sleep ended, as [sleepOnset] measures it and from
+  /// the same noon: its last asleep moment, or its last in bed.
   sleepEnd('sleepEnd'),
 
   /// The day's average, in milliseconds.
