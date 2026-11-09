@@ -179,7 +179,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        finish against an early one).
      - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
        each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
-       The sample read is `feat/health-samples` (PR pending): `HealthSource.samples` and `healthSamplePages` page heart
+       The sample read is #178 (`feat/health-samples`): `HealthSource.samples` and `healthSamplePages` page heart
        rate, HRV and respiratory rate by start time, 20,000 a call; `HealthMetric.sleepingHeartRate` is the night's
        mean heart rate inside its asleep intervals, keyed like the sleep metrics. The engine does not use either yet:
        `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`. A
