@@ -180,8 +180,8 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      many-comparisons correction #175 (Benjamini-Hochberg, q = 0.1). Open or in flight, in merge order:
      1. **#178** `feat/health-samples`: timestamped samples, paged; nightly sleeping heart rate. Review, merge, install.
      2. **#179** `feat/insights-whole-history`: whole journal history, Health in yearly calls, Copy as text.
-     3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "logged unevenly over
-        time" refusal, so a habit whose logging fades is not credited with a step change in an outcome; and a
+     3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "used far more at
+        some times than others" refusal, so a habit whose logging fades is not credited with a step change in an outcome; and a
         too-few-days refusal that says which side is short.
      4. **Sleep double count, after #178:** `HealthDays.sleepRows` unions every source's asleep periods, so another
         app's single asleep span over a night covers the Watch's awake periods (synthetic: Watch core 23:00-03:00,
