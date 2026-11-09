@@ -137,7 +137,8 @@ jobs:
       # keychain-error (-34018). The CI copy of the Firebase SDK asks for the file keychain instead, which an
       # unsigned app can use. Flutter builds from the packages resolved here (build/macos/SourcePackages).
       # flutter_secure_storage (the journal key) defaults to the data-protection keychain on macOS for the same reason,
-      # so its option is forced off in the pub cache, and flipped back in the last step so the cache post-step does not
+      # so its option is forced off in the pub cache (with synchronizable queries, which need the entitlement too: a
+      # delete of the synced item returns -34018), and flipped back in the last step so the cache post-step does not
       # save the edit for the iOS job.
       - name: Use the file keychain for Firebase Auth and the journal key
         run: |
@@ -152,6 +153,8 @@ jobs:
           echo "$plugin" > "$RUNNER_TEMP/secure-storage-plugin"
           sed -i '' 's/, params.usesDataProtectionKeychain {/, false {/' "$plugin"
           grep -q 'macOS 10.15, \*), false {' "$plugin"
+          sed -i '' 's/query\[kSecAttrSynchronizable\] = isSynchronizable/_ = isSynchronizable/' "$plugin"
+          grep -q '_ = isSynchronizable' "$plugin"
       - name: End to end (macOS)
         env:
           E2E_DEVICE: macos
@@ -164,6 +167,7 @@ jobs:
         run: |
           plugin=$(cat "$RUNNER_TEMP/secure-storage-plugin" 2>/dev/null) || exit 0
           sed -i '' 's/macOS 10.15, \*), false {/macOS 10.15, *), params.usesDataProtectionKeychain {/' "$plugin"
+          sed -i '' 's/_ = isSynchronizable/query[kSecAttrSynchronizable] = isSynchronizable/' "$plugin"
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

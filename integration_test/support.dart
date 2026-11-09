@@ -27,6 +27,7 @@ import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/native_auth_field.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
@@ -67,6 +68,8 @@ void ensureE2EBinding() {
     return;
   }
   _bindingReady = true;
+  // flutter_test cannot type into the AppKit fields the Mac build uses for sign-in.
+  debugUseNativeAuthFields = false;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized().addObserver(
     _FramesWhileHidden(),
   );
