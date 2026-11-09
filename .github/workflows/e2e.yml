@@ -99,6 +99,13 @@ jobs:
       - name: Cache sizes
         if: always()
         run: du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.pub-cache build/ios 2>/dev/null || true
+      # Which targets Xcode rebuilt, to check the build cache.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: xcode-build-log-ios
+          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog
+          if-no-files-found: ignore
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
