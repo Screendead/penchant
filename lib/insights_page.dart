@@ -23,10 +23,11 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String title = 'Insights';
   static const String connectLabel = 'Connect Apple Health';
   static const String askAgainLabel = 'Allow new Health data';
-  static const String askAgainBody = 'Heart rate is new. Tap to allow it.';
+  static const String askAgainBody =
+      'Penchant can read more Health data now. Tap to allow it.';
   static const String manageLabel = 'Manage Health access';
   static const String manageBody =
-      'Settings > Health > Data Access & Devices > Penchant';
+      'Settings > Privacy & Security > Health > Penchant';
   static const String loadingLabel = 'Working out your insights';
   static const String noHealthData = 'No Health data to read';
   static const String noHealthDataBody =
