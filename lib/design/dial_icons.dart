@@ -70,6 +70,7 @@ enum DialGlyph {
         '0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 '
         '1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z',
   ]),
+  insights(<String>['M4 19h16', 'M5 15l4-4 3 3 7-7']),
   pencil(<String>['M4 20h4L19 9l-4-4L4 16z', 'M13.5 6.5l4 4']),
   archive(<String>['M3 5h18v4H3z', 'M5 9v10h14V9', 'M10 13h4']),
   unarchive(<String>[
