@@ -168,8 +168,8 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
      Findings are now corrected for many tests at once (#175, merged): Benjamini-Hochberg at q = 0.1 across every
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
-     checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
-     floor and the block-bootstrap interval of gates 2 to 4 are still not built.
+     checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size and the
+     block-bootstrap interval of gates 2 and 4 are still not built; the practical-size floor is (below).
      Spans with faded logging (#181, open): a trend and a second-half level in the model, and a refusal ("Used far
      more at some times than others") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged
      (0.24%, 8%). Review fix: the 3x check also runs on days gone without (patchy early logging of a daily habit),
@@ -184,6 +184,21 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      open), are unmeasured.
    - **Ask again for new Health types** (`fix/health-reask`, #184, open): Health connected before #178 was never asked for heart rate; the card now offers "Allow new Health data" when HealthKit's `getRequestStatusForAuthorization` says `.shouldRequest` (a stored read-types version decides when it can't tell), and names where to manage access. Not run on a device.
    - **Archived habits hidden** (Jack, 2026-11-09: "Archived habits shouldn't show any cards"; `fix/insights-hide-archived`, #189, open): no card, no refusal row, out of the Benjamini-Hochberg family; their uses stay as covariates.
+   - **Fewer, larger cards** (Jack, 2026-11-09, on his real data: about 27 cards, many near-duplicates too small to
+     matter; `feat/insights-floor-and-cards`). After Benjamini-Hochberg and every existing refusal, untouched: a
+     finding under its outcome's floor (`metricFloors`, `lib/insights/insights_report.dart`) is refused as "Too small
+     to matter: under 10 min a night of core sleep", ranked first among a habit's refusals. An amount or a time is
+     judged at effect / step x the interquartile range of the habit's day totals or last-use minutes over the days
+     used; a use or hours-after effect as is. Floors, **Claude's defaults pending Jack's review**: sleep (asleep, in
+     bed, awake, core, deep, REM) 10 min; HRV 3 ms; resting and sleeping heart rate 1 bpm; hours-after heart rate
+     2 bpm; breathing 0.3 a minute; blood oxygen 1 point; wrist temperature 0.1 °C; steps 1,000; active energy 50
+     kcal. Then one card per habit and family (sleep; heart: HRV, resting, sleeping and hours-after heart rate;
+     breathing with blood oxygen; temperature; activity), led by its largest finding by effect / floor, with range
+     and days for the headline alone and the rest as short lines ("More per extra drink: REM sleep 4 min less",
+     "Later last use: time asleep 11 min less per hour"). Cards sort by headline effect / floor; six show, the rest
+     behind "Show N more". Open questions: a habit logged at one amount on most days (but 7 or more days off it)
+     has an interquartile range of 0, so every amount finding of it is refused as too small; the calibration rates
+     above were measured before the floor and are not rerun (the floor can only lower them).
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
