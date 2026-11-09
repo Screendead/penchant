@@ -290,22 +290,23 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       if (cards.isEmpty) costs.emptyBox(),
       for (int i = 0; i < cards.length - hidden; i++)
         costs.card(cards[i], top: i == 0 ? 0 : DialSpace.xs),
-      if (hidden > 0 || costs.refused.isNotEmpty)
-        DialCard(
-          top: DialSpace.xs,
-          children: <Widget>[
-            CardRow(
-              label: InsightsPage.moreCosts,
-              value: hidden > 0 ? Text(InsightsPage.more(hidden)) : null,
-              glyph: DialGlyph.right,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const InsightsCostsPage(),
-                ),
+      // Always there: the drill-in also holds the refusals, the hours-after
+      // note and, once settled, the Health card.
+      DialCard(
+        top: DialSpace.xs,
+        children: <Widget>[
+          CardRow(
+            label: InsightsPage.moreCosts,
+            value: hidden > 0 ? Text(InsightsPage.more(hidden)) : null,
+            glyph: DialGlyph.right,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const InsightsCostsPage(),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
       const CardSectionLabel(InsightsPage.cuttingDownHeading),
       const NotYetBox(
         InsightsPage.cuttingDownTitle,

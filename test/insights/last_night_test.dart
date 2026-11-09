@@ -189,11 +189,26 @@ void main() {
       expect(night.heartRateVariability!.value, 30);
       expect(night.heartRateVariability!.usual, 49);
       expect(night.heartRateVariability!.side(1), NightSide.below);
-      expect(health.reads, 1);
-      expect(health.lastMetrics, <HealthMetric>{
-        HealthMetric.sleepingHeartRate,
-        HealthMetric.sleepAsleep,
+      expect(health.reads, 2);
+      sub.close();
+    });
+
+    test('heart rate never asked for still leaves the sleep row', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        healthConnectedKey: true,
       });
+      final ProviderContainer c = container(
+        _HeartNotDetermined(
+          HealthValues(nights(HealthMetric.sleepAsleep.id, 300, 430)),
+        ),
+      );
+      final ProviderSubscription<AsyncValue<LastNight?>> sub = c.listen(
+        lastNightProvider,
+        (_, _) {},
+      );
+      final LastNight night = (await c.read(lastNightProvider.future))!;
+      expect(night.sleepingHeartRate, isNull);
+      expect(night.asleep!.side(1), NightSide.below);
       sub.close();
     });
 
@@ -233,4 +248,21 @@ void main() {
       expect(morningAt(_today.add(const Duration(hours: 23))), isFalse);
     });
   });
+}
+
+// Health as someone connected before heart rate was read sees it.
+class _HeartNotDetermined extends FakeHealthSource {
+  _HeartNotDetermined(HealthRead read) : super(read: read);
+
+  @override
+  Future<HealthRead> dailyValues(
+    Set<HealthMetric> metrics,
+    DateTime start,
+    DateTime end,
+  ) async {
+    if (metrics.contains(HealthMetric.sleepingHeartRate)) {
+      throw PlatformException(code: healthNotDetermined);
+    }
+    return super.dailyValues(metrics, start, end);
+  }
 }

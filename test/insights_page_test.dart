@@ -233,6 +233,12 @@ void main() {
     );
     expect(find.text('From 120 days with Coffee'), findsOneWidget);
     expect(find.text(InsightsPage.refusedHeading), findsNothing);
+
+    // One card and nothing refused: the drill-in still holds Health's card.
+    expect(find.text(InsightsPage.more(1)), findsNothing);
+    await _openCosts(tester);
+    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text(InsightsPage.manageLabel), findsOneWidget);
   });
 
   testWidgets('the two largest cards show, the rest behind More on what it '

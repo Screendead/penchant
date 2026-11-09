@@ -39,26 +39,35 @@ Future<LastNight?> _read(
   DateTime today,
 ) async {
   final DateTime first = addDays(today, -lastNightBaselineNights);
-  final Map<DateTime, double> heart = <DateTime, double>{};
-  final Map<DateTime, double> asleep = <DateTime, double>{};
   try {
     if (!await connected || !await source.isAvailable()) return null;
-    final HealthRead read = await source.dailyValues(
-      <HealthMetric>{HealthMetric.sleepingHeartRate, HealthMetric.sleepAsleep},
-      first,
-      addDays(today, 1),
-    );
-    if (read is! HealthValues) return null;
-    for (final DailyOutcome v in read.values) {
-      if (v.metricId == HealthMetric.sleepingHeartRate.id) {
-        heart[v.date] = v.value;
-      } else if (v.metricId == HealthMetric.sleepAsleep.id) {
-        asleep[v.date] = v.value;
-      }
-    }
   } catch (_) {
     return null;
   }
+  // One read per measure: someone who connected before heart rate was read
+  // gets not-determined for it, which must not cost them the sleep row.
+  Future<Map<DateTime, double>> nights(HealthMetric metric) async {
+    try {
+      final HealthRead read = await source.dailyValues(
+        <HealthMetric>{metric},
+        first,
+        addDays(today, 1),
+      );
+      if (read is! HealthValues) return const <DateTime, double>{};
+      return <DateTime, double>{
+        for (final DailyOutcome v in read.values)
+          if (v.metricId == metric.id) v.date: v.value,
+      };
+    } catch (_) {
+      return const <DateTime, double>{};
+    }
+  }
+
+  final Map<DateTime, double> asleep = await nights(HealthMetric.sleepAsleep);
+  if (!ref.mounted) return null;
+  final Map<DateTime, double> heart = await nights(
+    HealthMetric.sleepingHeartRate,
+  );
   if (!ref.mounted) return null;
   final LastNight night = LastNight(
     sleepingHeartRate: compareLastNight(heart, today),
