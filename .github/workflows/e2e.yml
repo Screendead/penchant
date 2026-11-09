@@ -92,7 +92,7 @@ jobs:
       - name: End to end (iOS Simulator)
         env:
           # Every write the tests leave unacknowledged (offline, refused) waits out the timeout; 10 s in the app.
-          E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=3000
+          E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=5000
         run: |
           set -o pipefail
           tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"

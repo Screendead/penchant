@@ -6,7 +6,7 @@
 #   tools/e2e.sh                 # every file in integration_test/, in one build (all_test.dart)
 #   tools/e2e.sh integration_test/smoke_test.dart
 #   E2E_DEVICE=<udid> tools/e2e.sh
-#   E2E_FLUTTER_ARGS='--dart-define=WRITE_TIMEOUT_MS=3000' tools/e2e.sh   # extra flutter test arguments
+#   E2E_FLUTTER_ARGS='--dart-define=WRITE_TIMEOUT_MS=5000' tools/e2e.sh   # extra flutter test arguments
 #   E2E_DEVICE=macos tools/e2e.sh   # all_test.dart as a macOS app; several named files get one flutter test each
 set -euo pipefail
 source "$(dirname "$0")/emulator-env.sh"

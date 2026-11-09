@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/errors/report_error.dart';
 
-const Duration writeTimeout = Duration(seconds: 10);
+// Only the e2e run sets WRITE_TIMEOUT_MS, to spend less time on each offline
+// write it waits out.
+const Duration writeTimeout = Duration(
+  milliseconds: int.fromEnvironment('WRITE_TIMEOUT_MS', defaultValue: 10000),
+);
 
 const String queuedMessage =
     'Saved on this device. It will sync when you are back online.';
