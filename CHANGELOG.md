@@ -83,7 +83,7 @@ pull request titles (`gh pr list --state merged`).
   you to wait (#181).
 - Insights compares each habit with itself month by month, so cutting a habit down, or logging it less often over
   time, no longer hides what follows it or reads as its effect. A habit whose use varies in only one month of several
-  is listed as "Not enough months with both days with and without it" (#PRNUM).
+  is listed as "Not enough months with both days with and without it" (#183).
 - On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
   your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
   background to save it. If that is cut short, the tap still waits on the device and saves later, as before.

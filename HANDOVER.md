@@ -548,7 +548,7 @@ round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, 
   steep reads "Used far more at some times than others"; the false finding it stops, e.g. patchy early logging and a
   step on day 40, falls from 100/100 to 0/100). B: raise it to 4x (fewer cut-downs refused, more faded logging
   credited; not measured). C: keep 3x and later fit the cut-down itself (a level per month in the model) so the guard
-  can loosen. C measured in #PRNUM (stacked on #181, synthetic, same bench): a level per calendar month (one under 10
+  can loosen. C measured in #183 (stacked on #181, synthetic, same bench): a level per calendar month (one under 10
   usable days merged into its neighbour) plus the trend, and the halves guard replaced by one refusal, fewer than 2
   months with days both with and without the habit ("Not enough months with both days with and without it"). Cut-downs
   with the -1 sd effect found: 80% to 25% 198/200, 70% to 30% 200, taper 200 (none refused). Faded logging and its
