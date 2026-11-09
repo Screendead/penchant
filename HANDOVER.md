@@ -334,20 +334,26 @@ Usage: the all-models weekly limit stood at 98% with no overage, so every agent 
 the run lands small items first. Stale in the lists below, checked 2026-11-09: D4 (#141), U1 (#155), U6 (#156), D16
 (#153) and D2's pills, page fades and range morph (#147, #149, #150) are merged.
 
-**DECIDED, this run:**
+**Done, this run (2026-11-09):** T1 #190 (sleep cards: total, then the same-bedtime part), T2 #198 (Insights as
+three question sections; last-night check on Today and at the top of Insights), T3 #197 (floors from the
+literature, per person, with a source line per card; research in `docs/insights/floors-literature.md`), T4 #151
+(macOS e2e in CI after merge; the job patches its copy of firebase-ios-sdk to the file keychain and forces Flutter
+auth fields, so a green run proves screens and flows, not keychain sign-in or the native fields of the signed app),
+T6 #199 (mini time dial in the amount sheet and editor; edited bead travels to its new time; the day word opens the
+calendar), T7 #196 (firebase-data-layer class: the sealing migrator leaves an oversized legacy document in plaintext,
+reported by path, instead of failing its batch; the unused vices index removed from the file, still live in
+production since deploys never `--force`). T5: 18 `archive/*` tags pushed and verified; deleting the 18 remote
+branches was refused by the permission check ("Git Destructive") and waits for Jack. #128 stays open while P2 is
+unresolved. None of #197, #198 or #199 has run on a device.
 
-- **T1.** #190 reworked to the bedtime call (total as headline, same-bedtime part on a line), on #192's cards; merge.
-- **T2.** Item 7's 1A + 2C (round 12): Insights as three question sections; last-night check at its top, Today's
-  sleeping heart rate opening it.
-- **T3.** Item 7's literature floors: sourced research, then the engine and copy PR.
-- **T4.** D6, #151: prove the macOS e2e job on its branch (`workflow_dispatch`) before merging.
-- **T5.** `r10-pitch-branches` C: tag `archive/<branch>` and delete the pitch branches (no `archive/*` tag exists);
-  D15: close #128 if P2 no longer needs it.
-- **T6.** D1's follow-up: the mini time dial replacing `ActivityDateField`, as mocked; then D2's edited bead travel.
-- **T7.** Item 5: the next medium register class, one PR.
+**Calls waiting on Jack:** round 13, https://claude.ai/artifact/WvhfWBfk8xUfzqwHXpWzMF (source
+`docs/pitch/round-13/`, picks in its `picks` collection): heart-rate floor, noise rule, active-energy floor, what
+"your usual" means for last night, Today's last-night line copy, empty question sections, the time dial's day button,
+the bedtime part in the false-discovery family, refusing plaintext creates, entries of deleted habits, the API key
+restrictions.
 
-**Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6.
-**UNDECIDED:** the API key restrictions (unchanged); new calls raised by T2 or T3 go on this run's pitch page.
+**Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6, the
+branch deletions above.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 
