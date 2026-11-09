@@ -829,21 +829,22 @@ class _LastNightSection extends ConsumerWidget {
       if (night.sleepingHeartRate case final NightCompare c)
         _NightRow(
           label: 'Sleeping heart rate',
-          value: '${c.value.round()}',
-          unit: 'bpm',
+          value: <(String, String)>[('${c.value.round()}', 'bpm')],
           note: lastNightHeartNote(c),
         ),
       if (night.heartRateVariability case final NightCompare c)
         _NightRow(
           label: 'HRV',
-          value: '${c.value.round()}',
-          unit: 'ms',
+          value: <(String, String)>[('${c.value.round()}', 'ms')],
           note: lastNightHrvNote(c),
         ),
       if (night.asleep case final NightCompare c)
         _NightRow(
           label: 'Sleep',
-          value: formatSleep(c.value),
+          value: <(String, String)>[
+            ('${c.value.round() ~/ 60}', 'h'),
+            ('${c.value.round() % 60}', 'm'),
+          ],
           note: lastNightSleepNote(c),
         ),
       ..._yesterday(journal, today, h24),
@@ -938,12 +939,12 @@ class _NightRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.note,
-    this.unit,
   });
 
   final String label;
-  final String value;
-  final String? unit;
+
+  /// Each number with its unit: "6 h 50 m" is two.
+  final List<(String, String)> value;
   final String note;
 
   @override
@@ -968,8 +969,20 @@ class _NightRow extends StatelessWidget {
                     style: DialTypeScale.body.copyWith(color: scheme.onSurface),
                   ),
                 ),
-                Text(value, style: type.monoM),
-                if (unit != null) Text(' $unit', style: small),
+                Text.rich(
+                  TextSpan(
+                    children: <InlineSpan>[
+                      for (final (int i, (String number, String unit))
+                          in value.indexed) ...<InlineSpan>[
+                        TextSpan(text: number, style: type.monoM),
+                        TextSpan(
+                          text: i == value.length - 1 ? ' $unit' : ' $unit ',
+                          style: small,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 2),

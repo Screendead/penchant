@@ -815,10 +815,10 @@ void main() {
       lessThan(tester.getTopLeft(find.text(InsightsPage.costsHeading)).dy),
     );
     expect(find.text('Sleeping heart rate'), findsOneWidget);
-    expect(find.text('57'), findsOneWidget);
+    expect(find.text('57 bpm', findRichText: true), findsOneWidget);
     expect(find.text('usual 54 · 3 above'), findsOneWidget);
     expect(find.text('usual range 45–51 · below'), findsOneWidget);
-    expect(find.text('6 h 50 m'), findsOneWidget);
+    expect(find.text('6 h 50 m', findRichText: true), findsOneWidget);
     expect(find.text('usual 7 h 15 m · 25 min under'), findsOneWidget);
     expect(
       find.textContaining('Yesterday: Wine 3 drinks, last at 1:00'),
