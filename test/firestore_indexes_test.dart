@@ -76,6 +76,9 @@ void main() {
       expect(uncoveredQueries(scan.shapes, _indexes), isEmpty);
     });
 
+    // functions/ is not scanned: its one composite query (monthlySummaries,
+    // activities by ownerID and a createdAt range, sorted desc) rides the
+    // activities (ownerID, createdAt DESC) entry lib/ also uses.
     test('every index serves a query in lib/', () {
       for (final Map<String, dynamic> index in _indexes) {
         final bool used = scan.shapes.any((QueryShape shape) {

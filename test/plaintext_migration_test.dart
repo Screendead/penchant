@@ -306,6 +306,30 @@ void main() {
       },
     );
 
+    test(
+      'one document too long to seal leaves the rest of its batch sealed',
+      () async {
+        final MemorySource source = MemorySource()
+          ..addVice('v0')
+          ..addVice('v1')
+          ..addVice('v2');
+        source.collections['vices']!['v1']!['name'] = 'x' * 5000;
+
+        expect(
+          await PlaintextMigrator(
+            source: source,
+            sealer: FakeSealer(),
+          ).run(ownerID),
+          2,
+        );
+        expect(source.batchSizes, <int>[2]);
+        expect(source.plaintextLeft, 1);
+        expect(source.collections['vices']!['v1']!['name'], 'x' * 5000);
+        expect(source.collections['vices']!['v0'], contains(sealedField));
+        expect(source.collections['vices']!['v2'], contains(sealedField));
+      },
+    );
+
     test('a second run writes nothing', () async {
       final MemorySource source = MemorySource()
         ..addVice('v0')
