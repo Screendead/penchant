@@ -68,20 +68,84 @@ enum HealthMetric {
   stepCount('stepCount'),
 
   /// The day's total, in kilocalories.
-  activeEnergyBurned('activeEnergyBurned');
+  activeEnergyBurned('activeEnergyBurned'),
+
+  /// The plain mean of the heart rate samples inside the night's asleep time
+  /// (core, deep, REM or unspecified; not in bed or awake), keyed to the night
+  /// like the sleep metrics, in beats per minute. A sample is inside when its
+  /// midpoint is. A night with no asleep time or no sample in it has no value,
+  /// as has every night for someone never asked for heart rate.
+  sleepingHeartRate('sleepingHeartRate');
 
   const HealthMetric(this.id);
 
   final String id;
 }
 
+/// What [HealthSource.samples] reads, timestamped rather than per day.
+enum HealthSampleMetric {
+  /// Beats per minute.
+  heartRate('heartRate'),
+
+  /// Milliseconds.
+  heartRateVariabilitySDNN('heartRateVariabilitySDNN'),
+
+  /// Breaths per minute.
+  respiratoryRate('respiratoryRate');
+
+  const HealthSampleMetric(this.id);
+
+  final String id;
+}
+
+/// One reading as Health stored it. Most heart rate readings are an instant,
+/// with [end] equal to [start].
+@immutable
+class HealthSample {
+  const HealthSample(this.start, this.end, this.value);
+
+  /// Local, to the microsecond.
+  final DateTime start;
+  final DateTime end;
+  final double value;
+
+  @override
+  bool operator ==(Object other) =>
+      other is HealthSample &&
+      other.start == start &&
+      other.end == end &&
+      other.value == value;
+
+  @override
+  int get hashCode => Object.hash(start, end, value);
+
+  @override
+  String toString() => 'HealthSample($start, $end, $value)';
+}
+
 sealed class HealthRead {
   const HealthRead();
 }
 
+sealed class HealthSampleRead {
+  const HealthSampleRead();
+}
+
 /// No Health on this platform or device (macOS, tests, some iPads).
-final class HealthUnavailable extends HealthRead {
+final class HealthUnavailable extends HealthRead implements HealthSampleRead {
   const HealthUnavailable();
+}
+
+/// Samples whose start is from the page's start up to [next], or to the end
+/// of the window asked for when [next] is null. Missing samples are no data.
+final class HealthSamples extends HealthSampleRead {
+  const HealthSamples(this.samples, {this.next});
+
+  /// Sorted by start.
+  final List<HealthSample> samples;
+
+  /// Where the next page starts, when this one was full.
+  final DateTime? next;
 }
 
 /// A day missing from [values] has no data, which is not a zero: HealthKit
@@ -118,6 +182,56 @@ abstract interface class HealthSource {
     DateTime start,
     DateTime end,
   );
+
+  /// One page of [metric]'s samples that start from [start] up to but not
+  /// including [end], at most [limit] of them (capped at
+  /// [maxHealthSamplesPerCall]). Page through a long window with
+  /// [healthSamplePages]. Throws as [dailyValues] does.
+  Future<HealthSampleRead> samples(
+    HealthSampleMetric metric,
+    DateTime start,
+    DateTime end, {
+    int limit = maxHealthSamplesPerCall,
+  });
+}
+
+/// HealthChannel.swift's cap on one call, so a year of minute-level heart
+/// rate is read in pages rather than held in one answer.
+const int maxHealthSamplesPerCall = 20000;
+
+/// Every page of [metric] from [start] to [end], oldest first, each read once
+/// the previous one is handled. A single [HealthUnavailable] when Health is
+/// unavailable. Throws a [StateError] rather than loop if a page's next start
+/// does not move forward; a provider that reads this must catch it, as it
+/// must every failure here, so that it never reaches a crash report.
+Stream<HealthSampleRead> healthSamplePages(
+  HealthSource source,
+  HealthSampleMetric metric,
+  DateTime start,
+  DateTime end, {
+  int limit = maxHealthSamplesPerCall,
+}) async* {
+  DateTime from = start;
+  while (from.isBefore(end)) {
+    final HealthSampleRead read = await source.samples(
+      metric,
+      from,
+      end,
+      limit: limit,
+    );
+    yield read;
+    switch (read) {
+      case HealthUnavailable():
+        return;
+      case HealthSamples(next: null):
+        return;
+      case HealthSamples(next: final DateTime next):
+        if (!next.isAfter(from)) {
+          throw StateError('Health sample page did not move forward');
+        }
+        from = next;
+    }
+  }
 }
 
 class ChannelHealthSource implements HealthSource {
@@ -183,6 +297,32 @@ class ChannelHealthSource implements HealthSource {
     }
     return HealthValues(decodeHealthRows(rows));
   }
+
+  @override
+  Future<HealthSampleRead> samples(
+    HealthSampleMetric metric,
+    DateTime start,
+    DateTime end, {
+    int limit = maxHealthSamplesPerCall,
+  }) async {
+    if (!_supported) return const HealthUnavailable();
+    if (!start.isBefore(end)) return const HealthSamples([]);
+    final Object? page;
+    try {
+      page = await _channel.invokeMethod<Object?>('samples', {
+        'metric': metric.id,
+        'start': start.microsecondsSinceEpoch,
+        'end': end.microsecondsSinceEpoch,
+        'limit': limit.clamp(1, maxHealthSamplesPerCall),
+      });
+    } on PlatformException catch (e) {
+      if (e.code == 'unavailable') return const HealthUnavailable();
+      rethrow;
+    } on MissingPluginException {
+      return const HealthUnavailable();
+    }
+    return decodeHealthSamplePage(page);
+  }
 }
 
 String healthDayKey(DateTime day) =>
@@ -217,4 +357,32 @@ List<DailyOutcome> decodeHealthRows(Object? rows) {
           if (metric.isNotEmpty && value.isFinite)
             DailyOutcome(day, metric, value.toDouble()),
   ];
+}
+
+/// Reads `{samples: [start, end, value, ...], next}`, times in microseconds
+/// since 1970. Drops any triple that is not finite or ends before it starts.
+@visibleForTesting
+HealthSamples decodeHealthSamplePage(Object? page) {
+  if (page is! Map) return const HealthSamples([]);
+  final Object? flat = page['samples'];
+  final List<HealthSample> samples = <HealthSample>[];
+  if (flat is List<double>) {
+    for (int i = 0; i + 2 < flat.length; i += 3) {
+      final double start = flat[i], end = flat[i + 1], value = flat[i + 2];
+      if (!start.isFinite || !end.isFinite || !value.isFinite) continue;
+      if (end < start) continue;
+      samples.add(
+        HealthSample(
+          DateTime.fromMicrosecondsSinceEpoch(start.toInt()),
+          DateTime.fromMicrosecondsSinceEpoch(end.toInt()),
+          value,
+        ),
+      );
+    }
+  }
+  final Object? next = page['next'];
+  return HealthSamples(
+    samples,
+    next: next is int ? DateTime.fromMicrosecondsSinceEpoch(next) : null,
+  );
 }

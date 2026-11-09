@@ -85,6 +85,13 @@ final class HealthReady extends HealthState {
   final List<DailyOutcome> values;
 }
 
+// sleepingHeartRate waits for the engine to have words for it: its query
+// holds up the whole read and its cost on a year of nights is unmeasured.
+final Set<HealthMetric> _engineMetrics = {
+  for (final m in HealthMetric.values)
+    if (m != HealthMetric.sleepingHeartRate) m,
+};
+
 final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   ref,
 ) async {
@@ -100,7 +107,7 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
     if (!await source.isAvailable()) return const HealthUnsupported();
     if (!connected) return const HealthNotConnected();
     return switch (await source.dailyValues(
-      HealthMetric.values.toSet(),
+      _engineMetrics,
       range.start,
       range.end,
     )) {

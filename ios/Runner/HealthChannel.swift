@@ -56,8 +56,21 @@ enum HealthChannel {
     "appleSleepingWristTemperature", "stepCount", "activeEnergyBurned",
   ]
 
+  // Raw samples, for the hours around an entry. Units as the daily path's.
+  private static func sampleType(_ metric: String) -> (type: HKQuantityType, unit: HKUnit)? {
+    switch metric {
+    case "heartRate": return (HKQuantityType(.heartRate), HKUnit.count().unitDivided(by: .minute()))
+    case "heartRateVariabilitySDNN": return (HKQuantityType(.heartRateVariabilitySDNN), .secondUnit(with: .milli))
+    case "respiratoryRate": return (HKQuantityType(.respiratoryRate), HKUnit.count().unitDivided(by: .minute()))
+    default: return nil
+    }
+  }
+
+  static let maxSamplesPerCall = 20_000
+  private static let sleepingHeartRate = "sleepingHeartRate"
+
   private static var readTypes: Set<HKObjectType> {
-    var types: Set<HKObjectType> = [HKCategoryType(.sleepAnalysis)]
+    var types: Set<HKObjectType> = [HKCategoryType(.sleepAnalysis), HKQuantityType(.heartRate)]
     for metric in quantityMetrics {
       if let s = statistic(metric) { types.insert(s.type) }
     }
@@ -103,6 +116,28 @@ enum HealthChannel {
           DispatchQueue.main.async {
             switch outcome {
             case .success(let rows): result(rows)
+            case .failure(let error): result(flutterError(error))
+            }
+          }
+        }
+      case "samples":
+        guard let args = call.arguments as? [String: Any],
+          let metric = args["metric"] as? String, let type = sampleType(metric),
+          let from = (args["start"] as? NSNumber)?.int64Value, let to = (args["end"] as? NSNumber)?.int64Value,
+          let limit = (args["limit"] as? NSNumber)?.intValue, limit >= 1, limit <= maxSamplesPerCall
+        else {
+          result(
+            FlutterError(code: "bad-arguments", message: "samples takes metric, start, end and limit", details: nil))
+          return
+        }
+        guard from < to else {
+          result(["samples": FlutterStandardTypedData(float64: Data()), "next": NSNull()])
+          return
+        }
+        samples(type: type, from: from, to: to, limit: limit) { outcome in
+          DispatchQueue.main.async {
+            switch outcome {
+            case .success(let page): result(page)
             case .failure(let error): result(flutterError(error))
             }
           }
@@ -181,7 +216,8 @@ enum HealthChannel {
     }
 
     let wantedSleep = HealthDays.sleepMetrics.filter { metrics.contains($0.id) }
-    if !wantedSleep.isEmpty {
+    let wantsSleepingHeartRate = metrics.contains(sleepingHeartRate)
+    if !wantedSleep.isEmpty || wantsSleepingHeartRate {
       group.enter()
       let (from, to) = HealthDays.sleepFetchWindow(start: start, end: end, calendar)
       let query = HKSampleQuery(
@@ -192,7 +228,23 @@ enum HealthChannel {
         let sleep = ((samples as? [HKCategorySample]) ?? []).map {
           HealthDays.SleepSample(start: $0.startDate, end: $0.endDate, value: $0.value)
         }
-        finish(HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar), error)
+        let sleepRows = HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar)
+        let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: start, end: end, calendar))
+        guard wantsSleepingHeartRate, error == nil, !asleep.isEmpty else {
+          finish(sleepRows, error)
+          return
+        }
+        nightHeartRate(asleep: asleep) { heartRows, heartError in
+          // Someone who connected Health before heart rate joined readTypes
+          // has not been asked for it. HealthKit is taken to fail that read as
+          // not determined (unchecked on a device); it costs sleepingHeartRate
+          // alone, not the sleep rows and every other metric with it.
+          if (heartError as? HKError)?.code == .errorAuthorizationNotDetermined {
+            finish(sleepRows, nil)
+          } else {
+            finish(sleepRows + heartRows, heartError)
+          }
+        }
       }
       store.execute(query)
     }
@@ -204,5 +256,66 @@ enum HealthChannel {
         completion(.success(rows))
       }
     }
+  }
+
+  // Reads only the heart rate inside each night's asleep span, so a year of
+  // nights is not a year of heart rate.
+  private static func nightHeartRate(
+    asleep: [String: [(Date, Date)]], completion: @escaping ([[String: Any]], Error?) -> Void
+  ) {
+    let predicate = NSCompoundPredicate(
+      orPredicateWithSubpredicates: HealthDays.spans(asleep).map {
+        HKQuery.predicateForSamples(withStart: $0.0, end: $0.1)
+      })
+    let unit = HKUnit.count().unitDivided(by: .minute())
+    let query = HKSampleQuery(
+      sampleType: HKQuantityType(.heartRate), predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil
+    ) { _, samples, error in
+      let heart = ((samples as? [HKQuantitySample]) ?? []).map {
+        HealthDays.QuantitySample(start: $0.startDate, end: $0.endDate, value: $0.quantity.doubleValue(for: unit))
+      }
+      completion(HealthDays.meanInsideRows(heart, asleep: asleep, metric: sleepingHeartRate), error)
+    }
+    store.execute(query)
+  }
+
+  // One page: up to limit samples whose start is in [from, to), sorted by
+  // start, as ["samples": [start, end, value, ...] in microseconds since 1970,
+  // "next": the start to read the next page from, or null when this is the
+  // last]. The bounds are on the start alone, unlike predicateForSamples's
+  // overlap, so a long sample begun before from is not read twice.
+  private static func samples(
+    type: (type: HKQuantityType, unit: HKUnit), from: Int64, to: Int64, limit: Int,
+    completion: @escaping (Result<[String: Any], Error>) -> Void
+  ) {
+    let bounds = HealthDays.queryBounds(from: from, to: to)
+    let predicate = NSPredicate(
+      format: "%K >= %@ AND %K < %@",
+      HKPredicateKeyPathStartDate, bounds.lower as NSDate,
+      HKPredicateKeyPathStartDate, bounds.upper as NSDate)
+    let query = HKSampleQuery(
+      sampleType: type.type, predicate: predicate, limit: limit,
+      sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+    ) { _, samples, error in
+      if let error, !isNoData(error) {
+        completion(.failure(error))
+        return
+      }
+      let read = ((samples as? [HKQuantitySample]) ?? []).map {
+        HealthDays.QuantitySample(start: $0.startDate, end: $0.endDate, value: $0.quantity.doubleValue(for: type.unit))
+      }
+      guard let page = HealthDays.page(read, from: from, to: to, limit: limit) else {
+        completion(.failure(HKError(.errorInvalidArgument)))
+        return
+      }
+      let flat = HealthDays.flatten(page.samples)
+      let data = flat.withUnsafeBufferPointer { Data(buffer: $0) }
+      completion(
+        .success([
+          "samples": FlutterStandardTypedData(float64: data),
+          "next": page.next.map { NSNumber(value: $0) } ?? NSNull(),
+        ]))
+    }
+    store.execute(query)
   }
 }
