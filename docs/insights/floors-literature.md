@@ -46,12 +46,17 @@ each day and the next, over the whole span, divided by √2. Differencing next-d
 fitness), so it is the night-to-night part alone. The floor used is the larger of the literature floor and half that
 typical error, half being the smallest worthwhile change for an individual that Javaloyes 2019 acts on (and the
 sports-science convention it follows). It needs 14 pairs of consecutive days; with fewer, the literature floor stands
-alone. Heart rate in the hours after a use has no daily series and no check.
+alone. A rule that resolves to nothing (a flat series, nights of no sleep) keeps the table's floor, since a floor of 0
+would pass every finding. Heart rate in the hours after a use has no daily series and no check; HRV in the hours
+after a use is judged against the same per-person HRV floor as its daily average, the one HRV floor there is, though
+its card carries no line (below).
 
 For scale, without any person's data: Quer 2020 (92,457 wearable users, 33 million days) found resting heart rate
 moves about 3 bpm day to day within a person, so half of it, about 1.5 bpm, is under the 5 bpm floor. The check
 is expected to bind where the floor is small against the scatter (core, deep and REM sleep, time in bed, wrist
-temperature); no person's series has been run through it yet.
+temperature), and nearly always for steps and active energy, whose day-to-day scatter within a person runs to
+thousands of steps and hundreds of kcal against floors of 500 and 85: there the person's floor, not the literature's,
+decides, while the card line still names the literature's size. No person's series has been run through it yet.
 
 Reading "inside the noise" as the whole typical error (rather than half) would refuse most sleep findings, since a
 mean over many nights is properly smaller than one night's scatter; reading it as the standard error of the
@@ -60,7 +65,9 @@ call is Jack's.
 
 ## Card lines
 
-One line per card, for the headline's outcome, in short form; none for a kept floor.
+One line per card, for the headline's outcome, in short form; none for a kept floor, and none for an hours-after
+headline, which sets minutes against the hour before rather than days or nights. A refusal names the person's
+floor rounded up at the digits shown ("under 22 min" for 21.4; "under 0.4 ms" for 0.35), so "under" stays true.
 
 - Time asleep: "21 min more sleep a night cut sugar eaten by about 10 g a day (Al Khatib 2018)."
 - Time awake: "Sleep medicine counts 20 min less awake in the night as a clinical change (AASM 2017)."
