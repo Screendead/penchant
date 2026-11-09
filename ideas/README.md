@@ -8,25 +8,24 @@ where Jack has decided, the decision with its date and call id. Each ends with t
 it depends on (often a `tech-debt/` file), and whether it needs a call from Jack. An idea marked **Needs Jack: yes**
 goes to him as a pitch before anything is built on it; one marked **no** can be built as written.
 
-The backlog burns down by deletion. When an idea ships, its file goes in the PR that ships it. When Jack rejects one,
-its file goes too, and `HANDOVER.md` ("Set aside, with reasons") records why. Each deletion also removes the idea's
-line below and fixes the counts. The evidence behind the market and platform claims is in
-[market-scan.md](market-scan.md).
+The backlog burns down by deletion. When an idea ships, its file and its line below go in the PR that ships it. When
+Jack rejects one, its file goes too, and `HANDOVER.md` ("Set aside, with reasons") records why. Each deletion fixes
+the counts. The evidence behind the market and platform claims is in [market-scan.md](market-scan.md).
 
 **Stages** (one directory each):
 
 - **Release blocker:** the app cannot be submitted, or should not reach strangers, without it.
 - **v1 must-have:** ships in 1.0, because App Review and the first users judge the app on it.
 - **Insights:** the journal's point. What cannot be backfilled (detail, triggers) is captured from 1.0; the analysis,
-  Health and Calendar arrive as Pro in 1.1, and read history from before they were switched on.
+  Health and Calendar were planned as Pro in 1.1 (now built free, below), and read history from before they were
+  switched on.
 - **Monetisation:** the one-time Pro unlock, in 1.1.
 - **Growth / later:** after 1.1.
 
 Effort runs S, M, L, XL.
 
-**22 ideas: 7 release blockers, 3 v1 must-haves, 6 insights, 3 monetisation, 3 growth/later. 1 needs a call from
-Jack** (content-free analytics). Removed in this rework: the Android release (C6), harm-reduction framing (C16), and the moderation,
-alcohol-only and quit-counter positionings (C15).
+**23 ideas: 7 release blockers, 3 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. None needs a call from
+Jack.** What this rework removed is under "Set aside, with reasons" in `HANDOVER.md`.
 
 Each list is in the recommended build order.
 
@@ -42,7 +41,7 @@ Each list is in the recommended build order.
 
 ## v1 must-haves (3)
 
-- [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S, Needs Jack
+- [Add only content-free product analytics, if any](v1-must-haves/crash-reporting-and-analytics.md). S. Decided (`r10-analytics` A: none beyond Crashlytics)
 - [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S. Guest start shipped; waits on the paid team
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6, `r2-mac`)
 
@@ -70,26 +69,23 @@ Each list is in the recommended build order.
 
 ## Where the path stands
 
-The decided calls are C6, C15–C19 and the round-2 calls in `HANDOVER.md`. Built: the Day Dial Today, the one-tap log,
-trigger tagging, the decimal amount and vice category, guest start, Crashlytics, the macOS target and end-to-end
-encryption of the journal. The encryption has open follow-ups: the sealed-only rules and the integrity and migrator
-entries in `tech-debt/firebase-data-layer/`, export compliance in the
-[release pipeline](release-blockers/ios-release-pipeline-and-testflight.md), and the Crashlytics scrubbing rule in the
-[privacy policy](release-blockers/privacy-policy-and-labels.md). Left, in Claude's order:
+The decided calls are C6, C15–C19 and the round-2 to round-10 calls in `HANDOVER.md`. Built: the Day Dial Today, the
+one-tap log, trigger tagging, the decimal amount and vice category, guest start, Crashlytics, the macOS target, the Mac
+menu bar and end-to-end encryption of the journal (its open follow-ups are in `HANDOVER.md`). Left, in Claude's order:
 
 1. **The rest of 1.0's capture:** the context fields and the detail sheet after a tap
    ([granular logging](insights/granular-logging-and-data-model.md)), then the free trend views.
-2. **Store material, once there is a paid Apple team** (Jack is not getting one for now): screenshots, the support and
+2. **Insights, built free now** (Jack, 2026-11-08: "build it free for me, we can paywall later"; `HANDOVER.md` queue
+   item 7): the on-device insights engine, Apple Health with its history, Calendar, the weekly review and trend
+   overlays ship unlocked. Pro as one StoreKit 2 purchase waits until he decides to sell.
+3. **Soon** (Jack, 2026-11-07): widgets, Control Centre controls, Siri and Shortcuts through App Intents; where they
+   stand is `HANDOVER.md` queue item 6.
+4. **Store material, once there is a paid Apple team** (none for now, `HANDOVER.md`): screenshots, the support and
    legal pages, 18+, TestFlight, Sign in with Apple, then the store. The privacy policy waits until and unless Jack
-   decides to sell.
-3. **1.1 adds Pro as one StoreKit 2 purchase:** the on-device insights engine, Apple Health with its history,
-   Calendar, the weekly review and trend overlays.
-4. **After 1.1:** self-experiments (randomised n-of-1 tests of a found association), widgets, App Intents and the Mac
-   menu bar, optional goals, and import from other journals.
+   decides to sell (`r2-privacy`).
+5. **Later:** self-experiments (randomised n-of-1 tests of a found association), optional goals, and import from other
+   journals.
 
-## Needs Jack
-
-- **Analytics:** how much content-free analytics "on your device" can carry, decided at 1.1? (Crashlytics shipped.)
-
-Decided and recorded in `HANDOVER.md`: end-to-end encryption, the daily reminder, 18+, the Mac, Pro at $24.99, StoreKit 2, TestFlight on
-production, guests, presets, triggers, Today, the icon, app lock free, no privacy policy for now.
+Decided and recorded in `HANDOVER.md`: end-to-end encryption, the daily reminder, 18+, the Mac, Pro at $24.99, StoreKit
+2, TestFlight on production, guests, presets, triggers, Today, the icon, app lock free, no privacy policy for now, no
+analytics beyond Crashlytics.
