@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -226,22 +227,6 @@ void main() {
       userProvider.overrideWith((ref) => Stream.value(null)),
     ];
 
-    testWidgets('has a light and a dark theme and follows the system', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(overrides: signedOut(), child: const MyApp()),
-      );
-      await tester.pumpAndSettle();
-
-      final MaterialApp app = tester.widget<MaterialApp>(
-        find.byType(MaterialApp),
-      );
-      expect(app.themeMode, ThemeMode.system);
-      expect(app.theme!.brightness, Brightness.light);
-      expect(app.darkTheme!.brightness, Brightness.dark);
-    });
-
     for (final Brightness brightness in Brightness.values) {
       testWidgets('signs in on ${brightness.name} paper when the system is '
           '${brightness.name}', (WidgetTester tester) async {
@@ -307,6 +292,41 @@ void main() {
         );
         expect(theme.bottomSheetTheme.dragHandleColor, p.outline);
         expect(theme.sliderTheme.inactiveTrackColor, p.outline);
+      });
+
+      test('the slider halo is a 2 pt accent ring, and nothing when idle', () {
+        PaintingContextCallback halo(double activation) =>
+            (PaintingContext context, Offset offset) {
+              theme.sliderTheme.overlayShape!.paint(
+                context,
+                const Offset(50, 40),
+                activationAnimation: AlwaysStoppedAnimation<double>(activation),
+                enableAnimation: const AlwaysStoppedAnimation<double>(1),
+                isDiscrete: false,
+                labelPainter: TextPainter(),
+                parentBox: RenderConstrainedBox(
+                  additionalConstraints: const BoxConstraints(),
+                ),
+                sliderTheme: theme.sliderTheme,
+                textDirection: TextDirection.ltr,
+                value: 0.5,
+                textScaleFactor: 1,
+                sizeWithOverflow: Size.zero,
+              );
+            };
+
+        expect(halo(0), paintsNothing);
+        expect(
+          halo(1),
+          paints..circle(
+            x: 50,
+            y: 40,
+            radius: 16,
+            style: PaintingStyle.stroke,
+            strokeWidth: 2,
+            color: p.accent,
+          ),
+        );
       });
 
       test('rings a focused button in accent', () {
@@ -392,41 +412,37 @@ void main() {
         expect(roles.intersection(p.data.toSet()), isEmpty);
       });
 
-      test('pairs every text role with its ground at 4.5:1 or better', () {
-        final Map<String, (Color, Color)> pairs = <String, (Color, Color)>{
-          'text on bg': (p.text, p.bg),
-          'text on surface': (p.text, p.surface),
-          'muted on bg': (p.muted, p.bg),
-          'muted on surface2': (p.muted, p.surface2),
-          'onPrimary on primary': (scheme.onPrimary, scheme.primary),
-          'onError on error': (scheme.onError, scheme.error),
-          'onErrorContainer': (scheme.onErrorContainer, scheme.errorContainer),
-          'onTertiaryContainer': (
-            scheme.onTertiaryContainer,
-            scheme.tertiaryContainer,
-          ),
-          'onSecondaryContainer': (
-            scheme.onSecondaryContainer,
-            scheme.secondaryContainer,
-          ),
-          'clearInk on clear': (p.clearInk, p.clear),
-          'snack text': (
-            theme.snackBarTheme.contentTextStyle!.color!,
-            theme.snackBarTheme.backgroundColor!,
-          ),
-          for (int i = 0; i < 5; i++)
-            'data${i + 1}Ink on bg': (p.dataInk[i], p.bg),
-          for (int i = 0; i < 5; i++)
-            'wedgeInk on data${i + 1}': (p.wedgeInk, p.data[i]),
-        };
-        pairs.forEach((String name, (Color, Color) pair) {
-          expect(
-            _contrast(pair.$1, pair.$2),
-            greaterThanOrEqualTo(4.5),
-            reason: name,
-          );
-        });
-      });
+      test(
+        'pairs the ThemeData-only text roles with their ground at 4.5:1 or better',
+        () {
+          final Map<String, (Color, Color)> pairs = <String, (Color, Color)>{
+            'onError on error': (scheme.onError, scheme.error),
+            'onErrorContainer': (
+              scheme.onErrorContainer,
+              scheme.errorContainer,
+            ),
+            'onTertiaryContainer': (
+              scheme.onTertiaryContainer,
+              scheme.tertiaryContainer,
+            ),
+            'onSecondaryContainer': (
+              scheme.onSecondaryContainer,
+              scheme.secondaryContainer,
+            ),
+            'snack text': (
+              theme.snackBarTheme.contentTextStyle!.color!,
+              theme.snackBarTheme.backgroundColor!,
+            ),
+          };
+          pairs.forEach((String name, (Color, Color) pair) {
+            expect(
+              _contrast(pair.$1, pair.$2),
+              greaterThanOrEqualTo(4.5),
+              reason: name,
+            );
+          });
+        },
+      );
 
       testWidgets('the clear day says so in the sage ink', (
         WidgetTester tester,

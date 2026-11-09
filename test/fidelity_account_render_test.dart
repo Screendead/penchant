@@ -16,7 +16,6 @@ import 'package:tracker/account_settings.dart';
 import 'package:tracker/appearance_settings.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/design/app_theme.dart';
-import 'package:tracker/design/tokens.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -24,33 +23,12 @@ import 'package:tracker/settings.dart';
 
 import 'fake_account.dart';
 import 'fakes.dart';
+import 'render_fonts.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
 
-Future<void> _loadFonts() async {
-  for (final (String family, String file) in <(String, String)>[
-    (DialFonts.display, 'RedHatDisplay'),
-    (DialFonts.text, 'RedHatText'),
-    (DialFonts.mono, 'RedHatMono'),
-  ]) {
-    await (FontLoader(
-      family,
-    )..addFont(rootBundle.load('assets/fonts/$file-Variable.ttf'))).load();
-  }
-  final String? flutterRoot = Platform.environment['FLUTTER_ROOT'];
-  final File icons = File(
-    '$flutterRoot/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
-  );
-  if (icons.existsSync()) {
-    final Uint8List bytes = icons.readAsBytesSync();
-    await (FontLoader(
-      'MaterialIcons',
-    )..addFont(Future<ByteData>.value(ByteData.sublistView(bytes)))).load();
-  }
-}
-
 void main() {
-  setUpAll(_loadFonts);
+  setUpAll(loadRenderFonts);
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
   for (final Brightness brightness in Brightness.values) {
     for (final String name in <String>[

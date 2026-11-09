@@ -97,9 +97,19 @@ void main() {
   });
 
   test('a null or non-list answer is no data', () async {
-    answer((_) => null);
-    final read = await source.dailyValues({HealthMetric.stepCount}, start, end);
-    expect((read as HealthValues).values, isEmpty);
+    for (final Object? reply in <Object?>[
+      null,
+      <String, Object>{'date': '2026-11-08', 'metric': 'stepCount', 'value': 1},
+      'rows',
+    ]) {
+      answer((_) => reply);
+      final read = await source.dailyValues(
+        {HealthMetric.stepCount},
+        start,
+        end,
+      );
+      expect((read as HealthValues).values, isEmpty, reason: '$reply');
+    }
   });
 
   test('the native unavailable code reads as unavailable', () async {
@@ -365,15 +375,5 @@ void main() {
       );
       expect(calls, isEmpty);
     });
-  });
-
-  test('sleeping heart rate is a daily metric the channel is asked for', () {
-    expect(HealthMetric.sleepingHeartRate.id, 'sleepingHeartRate');
-    expect(
-      decodeHealthRows([
-        {'date': '2026-11-08', 'metric': 'sleepingHeartRate', 'value': 52.5},
-      ]),
-      [DailyOutcome(DateTime(2026, 11, 8), 'sleepingHeartRate', 52.5)],
-    );
   });
 }

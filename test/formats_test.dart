@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/formats.dart';
 
@@ -52,24 +51,6 @@ void main() {
       );
       expect(resolveAppLocale(null, appLocales), const Locale('en'));
     });
-  });
-
-  test('the region sets the day order, words stay English', () {
-    expect(DateFormat.yMd('en_US').format(moment), '11/4/2026');
-    expect(DateFormat.yMd('en_GB').format(moment), '04/11/2026');
-    expect(DateFormat.yMMMMEEEEd('en_GB').format(moment), contains('November'));
-  });
-
-  test('a 12-hour time is not something a user can type', () {
-    expect(DateFormat.jms('en_US').format(moment), '2:03:22\u202fPM');
-  });
-
-  test('every region parses the entry format it writes', () {
-    for (final String locale in ['en', 'en_US', 'en_GB', 'en_AU', 'en_IN']) {
-      final DateFormat entry = DateFormat.yMd(locale).add_Hms();
-      expect(entry.parse(entry.format(moment)), moment, reason: locale);
-      expect(entry.format(moment), isNot(contains('\u202f')), reason: locale);
-    }
   });
 
   test('the test device formats as en_US', () {

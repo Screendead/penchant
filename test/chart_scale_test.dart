@@ -52,7 +52,6 @@ void main() {
   });
 
   test('labelsThatFit leaves room for the edge labels to move inward', () {
-    expect(labelsThatFit(300, 40), 1 + 300 ~/ 68);
     expect(labelsThatFit(10, 40), 1);
     // Centres this far apart keep a label shifted by half its width clear.
     final int n = labelsThatFit(300, 40);

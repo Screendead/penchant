@@ -91,7 +91,8 @@ void main() {
       }
     });
 
-    test('removing any used index fails the check', () {
+    test('no index is redundant with another: removing any used one leaves a '
+        'query uncovered', () {
       for (int i = 0; i < _indexes.length; i++) {
         final List<Map<String, dynamic>> without = <Map<String, dynamic>>[
           ..._indexes.sublist(0, i),
