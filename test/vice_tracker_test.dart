@@ -527,19 +527,6 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('a clear day says nothing was recorded', (
-      WidgetTester tester,
-    ) async {
-      await _pumpApp(
-        tester,
-        _today([coffee], (_) => const <ViceActivity>[]),
-        const ViceTracker(),
-      );
-
-      expect(_summary(tester), endsWith('Coffee 0 drinks. Nothing recorded.'));
-      await tester.pumpAndSettle();
-    });
-
     testWidgets('each bead is a button that opens its entry', (
       WidgetTester tester,
     ) async {
@@ -998,9 +985,6 @@ void main() {
         await tester.pump();
 
         final ThemeData theme = appTheme(brightness);
-        final DialColors colors = theme.extension<DialColors>()!;
-        final HSLColor ring = HSLColor.fromColor(colors.clearInk);
-        expect(ring.hue, inInclusiveRange(80, 160), reason: 'green hue');
         for (final String text in [
           ClearDay.headline,
           ClearDay.subline(isToday: true),

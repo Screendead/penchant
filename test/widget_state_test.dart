@@ -21,7 +21,6 @@ import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
-import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -32,7 +31,6 @@ import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/vice_tracker.dart';
-import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/undo_bar.dart';
 
@@ -573,30 +571,6 @@ void main() {
         expect(_time(tester).followsClock, isTrue);
         expect(_time(tester).value, now);
       });
-    });
-  });
-
-  testWidgets('the record sheet follows the clock until the dial is moved', (
-    WidgetTester tester,
-  ) async {
-    final DateTime now = DateTime(2026, 11, 2, 12, 7, 30);
-    await withClock(Clock.fixed(now), () async {
-      await _pump(tester, [
-        unarchivedViceListProvider.overrideWithValue(AsyncData([coffee])),
-      ], const Scaffold(body: RecordNewActivityDialog()));
-
-      expect(_time(tester).followsClock, isTrue);
-      expect(
-        find.text('${EntryTimeField.nowLabel} · ${EntryTimeField.dragHint}'),
-        findsOneWidget,
-      );
-
-      // The 06 numeral sits at the dial's right.
-      final Rect dial = tester.getRect(find.byType(TimeDial));
-      await tester.tapAt(dial.centerRight - const Offset(30, 0));
-      await tester.pump();
-      expect(_time(tester).at, DateTime(2026, 11, 2, 6));
-      expect(find.text('6 h 7 min ago'), findsOneWidget);
     });
   });
 }

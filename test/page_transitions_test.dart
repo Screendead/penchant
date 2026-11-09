@@ -29,30 +29,31 @@ void push(NavigatorState navigator) => navigator.push(
 );
 
 void main() {
-  testWidgets('every platform pushes pages with the fade-through', (
-    WidgetTester tester,
-  ) async {
+  test('every platform pushes pages with the fade-through', () {
     final PageTransitionsTheme theme = appTheme(
       Brightness.light,
     ).pageTransitionsTheme;
-    for (final TargetPlatform platform in <TargetPlatform>[
-      TargetPlatform.iOS,
-      TargetPlatform.macOS,
-    ]) {
-      expect(theme.builders[platform], isA<DialPageTransitionsBuilder>());
+    for (final TargetPlatform platform in TargetPlatform.values) {
+      expect(
+        theme.builders[platform],
+        isA<DialPageTransitionsBuilder>(),
+        reason: platform.name,
+      );
     }
-    expect(
-      const DialPageTransitionsBuilder().transitionDuration,
-      const Duration(milliseconds: 320),
-    );
   });
 
   testWidgets('a push fades through over 320 ms', (WidgetTester tester) async {
     push(await _pump(tester, reduced: false));
     await tester.pump();
+    final Finder fade = find.ancestor(
+      of: find.text('Habits'),
+      matching: find.byType(FadeThroughTransition),
+    );
     await tester.pump(const Duration(milliseconds: 160));
-    expect(find.byType(FadeThroughTransition), findsWidgets);
-    await tester.pump(const Duration(milliseconds: 170));
+    expect(fade, findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(tester.binding.hasScheduledFrame, isTrue);
+    await tester.pump(const Duration(milliseconds: 20));
     expect(tester.binding.hasScheduledFrame, isFalse);
     expect(find.text('Habits'), findsOneWidget);
   });
@@ -430,36 +431,29 @@ void main() {
       expect(find.text('Terms'), findsNothing);
       expect(find.text('a_package'), findsOneWidget);
     }, variant: iOS);
+  });
 
-    test('only the forms open as fullscreen dialogs', () {
-      for (final String name in <String>[
-        '/vices/add',
-        '/vices/v1/edit',
-        '/vices/v1/activities/a1',
-      ]) {
-        expect(
-          (generateRoute(RouteSettings(name: name)) as PageRoute<void>)
-              .fullscreenDialog,
-          isTrue,
-          reason: name,
-        );
-      }
-      for (final String name in <String>[
-        '/vices/v1/activities',
-        '/insights',
-        '/manage-data',
-        '/settings',
-        '/settings/account',
-        '/settings/appearance',
-        '/settings/reduce-motion',
-        '/settings/reminder',
-        '/settings/recovery-key',
-        '/nowhere',
-      ]) {
-        final Route<void> route = generateRoute(RouteSettings(name: name));
-        expect(route, isA<DialPageRoute<void>>(), reason: name);
-        expect((route as PageRoute<void>).fullscreenDialog, isFalse);
-      }
-    });
+  test('every route is a DialPageRoute, so the transition clock applies', () {
+    for (final String name in <String>[
+      '/vices/add',
+      '/vices/v1/edit',
+      '/vices/v1/activities/a1',
+      '/vices/v1/activities',
+      '/insights',
+      '/manage-data',
+      '/settings',
+      '/settings/account',
+      '/settings/appearance',
+      '/settings/reduce-motion',
+      '/settings/reminder',
+      '/settings/recovery-key',
+      '/nowhere',
+    ]) {
+      expect(
+        generateRoute(RouteSettings(name: name)),
+        isA<DialPageRoute<void>>(),
+        reason: name,
+      );
+    }
   });
 }

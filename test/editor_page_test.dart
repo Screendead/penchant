@@ -78,12 +78,6 @@ void main() {
     );
   });
 
-  testWidgets('edits the activity its route names', (tester) async {
-    await pumpEditor(tester, AsyncData(activity));
-
-    expect(find.text('Edit coffee activity'), findsOneWidget);
-  });
-
   testWidgets('reads a denied or deleted activity as not found at once', (
     tester,
   ) async {

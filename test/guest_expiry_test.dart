@@ -140,6 +140,9 @@ void main() {
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
       expect(find.byType(GuestExpirySheet), findsOneWidget);
+      await tester.drag(find.byType(GuestExpirySheet), const Offset(0, 400));
+      await tester.pumpAndSettle();
+      expect(find.byType(GuestExpirySheet), findsOneWidget);
       await tester.tap(
         find.descendant(
           of: find.byType(GuestExpirySheet),

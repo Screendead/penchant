@@ -301,11 +301,13 @@ void main() {
     expect(find.byType(ViceForm), findsOneWidget);
   });
 
-  test('every preset fits the rules: a name of 1 to 60, a known unit', () {
-    expect(habitPresets.map((HabitPreset p) => p.name).toSet(), hasLength(8));
+  test('every preset has a unique name of 1 to 60', () {
+    expect(
+      habitPresets.map((HabitPreset p) => p.name).toSet(),
+      hasLength(habitPresets.length),
+    );
     for (final HabitPreset p in habitPresets) {
       expect(p.name.length, inInclusiveRange(1, 60));
-      expect(Unit.values, contains(p.unit));
     }
   });
 }

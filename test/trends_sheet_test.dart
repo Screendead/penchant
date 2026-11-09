@@ -29,6 +29,7 @@ import 'package:tracker/widgets/pill_toggle.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'render_fonts.dart';
 import 'trends_harness.dart';
 
 final DateTime _today = startOfDay(DateTime.now());
@@ -141,6 +142,8 @@ double _opacityOf(WidgetTester tester, Finder finder) => tester
     .opacity;
 
 void main() {
+  setUpAll(loadRenderFonts);
+
   group('the sheet', () {
     testWidgets('peeks with the first habit in use and its daily average, '
         'opens on a tap, and closes again', (WidgetTester tester) async {
@@ -717,20 +720,44 @@ void main() {
   testWidgets('a failed load says so and retries', (WidgetTester tester) async {
     _usePhone(tester);
     int calls = 0;
-    await _pump(
-      tester,
-      const <ViceActivity>[],
-      graph: (ViceActivityGraphQuery query) {
-        calls++;
-        return AsyncError<List<ViceActivity>>(
-          FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
-          StackTrace.empty,
-        );
-      },
+    // Retry invalidates the per-user query, so that is what fails here.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          offlineProvider.overrideWithValue(const AsyncData(false)),
+          trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+          ...habitOverrides(<Vice>[_coffee]),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+          viceActivityGraphForUserProvider.overrideWith((ref, key) {
+            calls++;
+            return Stream<List<ViceActivity>>.error(
+              FirebaseException(
+                plugin: 'cloud_firestore',
+                code: 'permission-denied',
+              ),
+            );
+          }),
+        ],
+        child: MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: const Scaffold(body: ViceTracker()),
+          onGenerateRoute: generateRoute,
+        ),
+      ),
     );
+    await tester.pumpAndSettle();
+    await openTrends(tester);
     expect(find.textContaining('Coffee for this range'), findsOneWidget);
     expect(inTrends(find.text('Retry')), findsOneWidget);
-    expect(calls, greaterThan(0));
+    final int before = calls;
+    expect(before, greaterThan(0));
+
+    await tester.tap(inTrends(find.text('Retry')));
+    await tester.pumpAndSettle();
+    expect(calls, greaterThan(before));
   });
 
   testWidgets('a new range keeps the chart up while it loads, then morphs '
