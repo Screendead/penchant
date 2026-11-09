@@ -22,7 +22,12 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String title = 'Insights';
   static const String connectLabel = 'Connect Apple Health';
   static const String loadingLabel = 'Working out your insights';
-  static const String noHealthData = 'No Health data yet';
+  static const String noHealthData = 'No Health data to read';
+  static const String noHealthDataBody =
+      'Penchant found no sleep, heart or activity data from the last year. '
+      'If you didn’t allow it to read Health, find Health in Settings and '
+      'turn it on under Data Access & Devices > Penchant.';
+  static const String noHealthDataValue = 'No data';
   static const String nothingClear = 'Nothing clear yet';
   static const String onIPhone = 'Available on iPhone';
   static const String refusedHeading = 'Not enough to say';
@@ -34,11 +39,38 @@ class InsightsPage extends ConsumerStatefulWidget {
 
 class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connecting = false;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // Access granted in Settings shows no sheet, so coming back is the only
+    // sign that Health may now have data to give.
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        if (ref.read(healthStateProvider).value case HealthReady(
+          :final values,
+        ) when values.isEmpty) {
+          _retryHealth();
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
 
   Future<void> _connect() async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     setState(() => _connecting = true);
-    final bool shown = await connectHealth(ref);
+    final bool shown = await connectHealth(container);
     if (!mounted) return;
     setState(() => _connecting = false);
     if (!shown) {
@@ -48,15 +80,18 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
   }
 
-  void _retry() {
-    ref.invalidate(healthStateProvider);
-    ref.invalidate(viceActivityRangeForUserProvider);
-  }
+  // A new read gives new values, so the engine runs again too.
+  void _retryHealth() => ref.invalidate(healthStateProvider);
+
+  void _retryJournal() => ref.invalidate(viceActivityRangeForUserProvider);
+
+  void _retryHabits() => ref.invalidate(viceListForUserProvider);
 
   @override
   Widget build(BuildContext context) {
     final AsyncValue<InsightsView> view = ref.watch(insightsProvider);
-    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final AsyncValue<List<Vice>> habits = ref.watch(viceListProvider);
+    final List<Vice>? vices = habits.value;
     final Map<String, String> names = <String, String>{
       for (final Vice v in vices ?? const <Vice>[]) v.id: v.name,
     };
@@ -78,7 +113,15 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             InfoBox(
               message: 'Your journal couldn’t be loaded.',
               isError: true,
-              onRetry: _retry,
+              onRetry: _retryJournal,
+            ),
+          ],
+          _ when habits is AsyncError && vices == null => <Widget>[
+            const SizedBox(height: DialSpace.l),
+            InfoBox(
+              message: 'Your habits couldn’t be loaded.',
+              isError: true,
+              onRetry: _retryHabits,
             ),
           ],
           AsyncData(:final InsightsView value) when vices != null => _body(
@@ -135,7 +178,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             body:
                 'Apple Health can’t be read while your iPhone is locked. '
                 'Unlock it and try again.',
-            onRetry: _retry,
+            onRetry: _retryHealth,
           ),
         ];
       case HealthFailed():
@@ -143,7 +186,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           _MessageCard(
             'Health couldn’t be read',
             body: 'Try again in a moment.',
-            onRetry: _retry,
+            onRetry: _retryHealth,
           ),
         ];
       case HealthReady():
@@ -151,12 +194,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
     final InsightsResult? result = view.result;
     if (result == null) {
-      return const <Widget>[
+      // HealthKit answers a refused read with no samples, so this can't tell
+      // an empty Health from access that wasn't allowed.
+      return <Widget>[
         _MessageCard(
           InsightsPage.noHealthData,
-          body:
-              'Apple Health has no sleep, heart or activity data from the last '
-              'year on this iPhone. Findings appear once it does.',
+          body: InsightsPage.noHealthDataBody,
+          onRetry: _retryHealth,
         ),
       ];
     }
@@ -165,7 +209,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         _MessageCard(
           'Insights couldn’t be worked out',
           body: 'Try again in a moment.',
-          onRetry: _retry,
+          onRetry: _retryHealth,
         ),
       ];
     }
@@ -250,6 +294,11 @@ class _HealthCard extends StatelessWidget {
         value: Text('Not on this device'),
       ),
       null => const CardRow(label: 'Apple Health'),
+      HealthReady(:final values) when values.isEmpty => const CardRow(
+        label: 'Apple Health',
+        subtitle: 'Nothing shared, or access not allowed',
+        value: Text(InsightsPage.noHealthDataValue),
+      ),
       _ => const CardRow(
         label: 'Apple Health',
         subtitle: 'Read on this iPhone only',

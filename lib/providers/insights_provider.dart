@@ -31,11 +31,13 @@ final healthConnectedProvider = FutureProvider<bool>((ref) async {
 
 const String healthConnectedKey = 'healthConnected';
 
-/// Shows the Health sheet. False when it could not be shown.
-Future<bool> connectHealth(WidgetRef ref) async {
+/// Shows the Health sheet. False when it could not be shown. Takes the
+/// container rather than a page's ref, which may be disposed by the time the
+/// sheet closes (a sign-out pops every page).
+Future<bool> connectHealth(ProviderContainer container) async {
   final bool shown;
   try {
-    shown = await ref.read(healthSourceProvider).requestAuthorization();
+    shown = await container.read(healthSourceProvider).requestAuthorization();
   } on PlatformException {
     return false;
   }
@@ -46,7 +48,7 @@ Future<bool> connectHealth(WidgetRef ref) async {
   } catch (_) {
     // Asked again next launch.
   }
-  ref.invalidate(healthConnectedProvider);
+  container.invalidate(healthConnectedProvider);
   return true;
 }
 
@@ -167,31 +169,31 @@ final _engineProvider = FutureProvider.autoDispose
       }
     });
 
-/// What the Insights screen shows. Loading until the journal and Health have
-/// answered; a journal failure is an error. With no Health values the report
-/// is null: there is nothing to compare against.
+/// What the Insights screen shows. Loading until Health has answered and, when
+/// it has values, the journal too; a journal failure is an error. With no
+/// Health values the report is null: there is nothing to compare against.
 typedef InsightsView = ({HealthState health, InsightsResult? result});
 
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
-  final DateTime today = ref.watch(todayProvider);
-  final AsyncValue<List<ViceActivity>> activities = ref.watch(
-    viceActivityRangeProvider(insightsRange(today)),
-  );
-  final AsyncValue<HealthState> health = ref.watch(healthStateProvider);
-  if (activities case AsyncError(
-    :final Object error,
-    :final StackTrace stackTrace,
-  )) {
-    return AsyncError<InsightsView>(error, stackTrace);
-  }
-  final List<ViceActivity>? journal = activities.value;
-  final HealthState? state = health.value;
-  if (journal == null || state == null) {
-    return const AsyncLoading<InsightsView>();
-  }
+  final HealthState? state = ref.watch(healthStateProvider).value;
+  if (state == null) return const AsyncLoading<InsightsView>();
+  // The year of the journal is a live query billed per document, so it is
+  // opened only when there is Health data to compare it with.
   if (state case HealthReady(
     :final List<DailyOutcome> values,
   ) when values.isNotEmpty) {
+    final DateTime today = ref.watch(todayProvider);
+    final AsyncValue<List<ViceActivity>> activities = ref.watch(
+      viceActivityRangeProvider(insightsRange(today)),
+    );
+    if (activities case AsyncError(
+      :final Object error,
+      :final StackTrace stackTrace,
+    )) {
+      return AsyncError<InsightsView>(error, stackTrace);
+    }
+    final List<ViceActivity>? journal = activities.value;
+    if (journal == null) return const AsyncLoading<InsightsView>();
     final AsyncValue<InsightsResult> result = ref.watch(
       _engineProvider((activities: journal, health: values, today: today)),
     );

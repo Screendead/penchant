@@ -29,12 +29,17 @@ class InsightsInput {
     required DateTime today,
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
+    final DateTime unfinished = startOfDay(today);
     return InsightsInput(
       // A locked entry counts: its vice and quantity are plaintext.
       uses: habitUsesFrom(activities).toList(),
       outcomes: <DailyOutcome>[
         for (final hs.DailyOutcome o in health)
-          DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
+          // Today's day totals and averages cover only part of it; the night
+          // that ended today is whole.
+          if (o.date.isBefore(unfinished) ||
+              (metricCopy(o.metricId)?.night ?? false))
+            DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
       ],
       from: range.start,
       through: addDays(range.end, -1),

@@ -110,7 +110,8 @@ final List<Vice> insightsVices = <Vice>[
 List<Override> insightsOverrides({
   required HealthSource health,
   AsyncValue<List<ViceActivity>>? activities,
-  List<Vice>? vices,
+  AsyncValue<List<Vice>>? vices,
+  void Function()? onJournalOpened,
 }) => <Override>[
   todayProvider.overrideWith(() => FixedToday(insightsToday)),
   healthSourceProvider.overrideWithValue(health),
@@ -118,11 +119,11 @@ List<Override> insightsOverrides({
     (InsightsInput input) async => computeInsights(input),
   ),
   viceListProvider.overrideWithValue(
-    AsyncData<List<Vice>>(vices ?? insightsVices),
+    vices ?? AsyncData<List<Vice>>(insightsVices),
   ),
-  viceActivityRangeProvider.overrideWith(
-    (Ref ref, ActivityRange range) =>
-        activities ??
-        AsyncData<List<ViceActivity>>(insightsJournal().activities),
-  ),
+  viceActivityRangeProvider.overrideWith((Ref ref, ActivityRange range) {
+    onJournalOpened?.call();
+    return activities ??
+        AsyncData<List<ViceActivity>>(insightsJournal().activities);
+  }),
 ];

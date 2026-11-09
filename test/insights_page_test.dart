@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -144,6 +145,66 @@ void main() {
     expect(find.textContaining(RegExp(r'\b0\b')), findsNothing);
   });
 
+  testWidgets('no Health data allows for access not being granted', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    final FakeHealthSource health = FakeHealthSource(
+      read: const HealthValues(<DailyOutcome>[]),
+    );
+    await _pump(tester, insightsOverrides(health: health));
+
+    expect(find.text('Connected'), findsNothing);
+    expect(find.text(InsightsPage.noHealthDataValue), findsOneWidget);
+    expect(find.textContaining('Data Access & Devices'), findsOneWidget);
+    final int reads = health.reads;
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(health.reads, reads + 1);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(health.reads, reads + 2);
+  });
+
+  testWidgets('the journal is not read until Health has values', (
+    WidgetTester tester,
+  ) async {
+    int opened = 0;
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        onJournalOpened: () => opened++,
+      ),
+    );
+    expect(find.text(InsightsPage.connectLabel), findsOneWidget);
+    expect(opened, 0);
+
+    await tester.tap(find.text(InsightsPage.connectLabel));
+    await tester.pumpAndSettle();
+    expect(opened, greaterThan(0));
+  });
+
+  testWidgets('a habit list that fails to load shows an error with Retry', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncError<List<Vice>>(StateError('denied'), StackTrace.empty),
+      ),
+    );
+
+    expect(find.text('Your habits couldn’t be loaded.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text(InsightsPage.loadingLabel), findsNothing);
+  });
+
   testWidgets('a locked device says so and offers another try', (
     WidgetTester tester,
   ) async {
@@ -184,7 +245,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: insightsOverrides(
-          health: FakeHealthSource(),
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
           activities: const AsyncLoading<List<ViceActivity>>(),
         ),
         child: const MaterialApp(home: InsightsPage()),
@@ -202,7 +265,7 @@ void main() {
     await _pump(
       tester,
       insightsOverrides(
-        health: FakeHealthSource(),
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
         activities: AsyncError<List<ViceActivity>>(
           StateError('offline'),
           StackTrace.empty,
@@ -216,6 +279,29 @@ void main() {
 
   test('the route opens Insights', () {
     expect(routePage(InsightsPage.route), isA<InsightsPage>());
+  });
+
+  test('today\'s unfinished day metrics are left out; its night is kept', () {
+    final DateTime yesterday = DateTime(2026, 11, 7);
+    final InsightsInput input = InsightsInput.from(
+      activities: const <ViceActivity>[],
+      health: <DailyOutcome>[
+        DailyOutcome(insightsToday, HealthMetric.stepCount.id, 2000),
+        DailyOutcome(insightsToday, HealthMetric.restingHeartRate.id, 60),
+        DailyOutcome(insightsToday, HealthMetric.sleepDeep.id, 70),
+        DailyOutcome(yesterday, HealthMetric.stepCount.id, 8000),
+      ],
+      today: insightsToday.add(const Duration(hours: 9)),
+    );
+    expect(
+      <(DateTime, String)>[
+        for (final o in input.outcomes) (o.date, o.metricId),
+      ],
+      <(DateTime, String)>[
+        (insightsToday, HealthMetric.sleepDeep.id),
+        (yesterday, HealthMetric.stepCount.id),
+      ],
+    );
   });
 
   group('copy', () {
