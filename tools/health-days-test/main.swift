@@ -154,8 +154,8 @@ do {
   check("other app alone", rows["2026-11-08 sleepAsleep"] == 480 && rows["2026-11-08 sleepAwake"] == nil, "\(rows)")
 }
 
-// Two sources writing stages: the night is one of them whole, the one with
-// more staged time; on equal staged time, the Watch.
+// Two sources writing stages: the sleep is one of them whole, the Watch
+// whenever it covers the sleep, even with less staged time.
 do {
   let ring = from(
     "com.example.ring",
@@ -163,29 +163,81 @@ do {
       sample(at(2026, 11, 7, 22), at(2026, 11, 8, 2), 4),
       sample(at(2026, 11, 8, 2), at(2026, 11, 8, 6), 5),
     ])
-  let rows = sleepValues(watchNight + ring)
-  check("more staged time wins", rows["2026-11-08 sleepAsleep"] == 480 && rows["2026-11-08 sleepCore"] == nil, "\(rows)")
-  check("more staged time wins whole", rows["2026-11-08 sleepDeep"] == 240 && rows["2026-11-08 sleepAwake"] == nil, "\(rows)")
-  let tie = from(
-    "com.example.ring",
-    [
-      sample(at(2026, 11, 7, 23), at(2026, 11, 8, 3), 4),
-      sample(at(2026, 11, 8, 4), at(2026, 11, 8, 7), 5),
-    ])
-  for order in [watchNight + tie, tie + watchNight] {
+  for order in [watchNight + ring, ring + watchNight] {
     let rows = sleepValues(order)
-    check("equal staged time, the Watch", rows["2026-11-08 sleepCore"] == 420 && rows["2026-11-08 sleepDeep"] == nil, "\(rows)")
+    check("the Watch over more staged time", rows["2026-11-08 sleepAsleep"] == 420 && rows["2026-11-08 sleepCore"] == 420, "\(rows)")
+    check("the Watch over more staged time, whole", rows["2026-11-08 sleepDeep"] == nil && rows["2026-11-08 sleepREM"] == nil, "\(rows)")
   }
-  let other = from("com.example.other", tie)
-  let a = sleepValues(tie + other), b = sleepValues(other + tie)
-  check("equal and no Watch, the same pick either way", a == b && a["2026-11-08 sleepDeep"] == 240, "\(a) \(b)")
 }
 
-// Stages beat a longer unstaged asleep span.
+// Two staged sources and no Watch, with the same staged and asleep time over
+// the same span: the bundle identifier decides, so the pick is not left to
+// dictionary order.
 do {
-  let long = from("com.example.sleepapp", [sample(at(2026, 11, 7, 21), at(2026, 11, 8, 9), 1)])
-  let rows = sleepValues(watchNight + long)
-  check("stages beat a longer span", rows["2026-11-08 sleepAsleep"] == 420, "\(rows)")
+  let deep = from("com.example.b", [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 4)])
+  let rem = from("com.example.a", [sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 5)])
+  for order in [deep + rem, rem + deep] {
+    let rows = sleepValues(order)
+    check("tie, by bundle identifier", rows["2026-11-08 sleepREM"] == 480 && rows["2026-11-08 sleepDeep"] == nil, "\(rows)")
+  }
+}
+
+// Two staged sources and no Watch over two nights: each night comes from the
+// source with the most staged time over the whole read, not from whichever
+// has more that night.
+do {
+  let a = from(
+    "com.example.a",
+    [
+      sample(at(2026, 11, 7, 23), at(2026, 11, 8, 7), 4),
+      sample(at(2026, 11, 8, 23), at(2026, 11, 9, 6, 50), 4),
+    ])
+  let b = from(
+    "com.example.b",
+    [
+      sample(at(2026, 11, 7, 23), at(2026, 11, 8, 5), 5),
+      sample(at(2026, 11, 8, 23), at(2026, 11, 9, 7), 5),
+    ])
+  let rows = sleepValues(a + b)
+  check("one source across nights, first", rows["2026-11-08 sleepDeep"] == 480 && rows["2026-11-08 sleepREM"] == nil, "\(rows)")
+  check("one source across nights, second", rows["2026-11-09 sleepDeep"] == 470 && rows["2026-11-09 sleepREM"] == nil, "\(rows)")
+}
+
+// Stages lose when their source does not cover the sleep: its span must take
+// in three quarters of the asleep time every source recorded.
+do {
+  func night(_ watchEnd: Date, _ other: [HealthDays.SleepSample]) -> [String: Double] {
+    sleepValues(from("com.apple.health.watch", watch: true, [sample(at(2026, 11, 7, 23), watchEnd, 3)]) + other)
+  }
+  let died = night(at(2026, 11, 8, 1), otherAppNight)
+  check("a Watch that died at 01:00", died["2026-11-08 sleepAsleep"] == 480 && died["2026-11-08 sleepCore"] == nil, "\(died)")
+  let half = night(at(2026, 11, 8, 4), otherAppNight)
+  check("a Watch that died at 04:00", half["2026-11-08 sleepAsleep"] == 480 && half["2026-11-08 sleepCore"] == nil, "\(half)")
+  let most = night(at(2026, 11, 8, 6), otherAppNight)
+  check("a Watch that stopped at 06:00", most["2026-11-08 sleepAsleep"] == 420 && most["2026-11-08 sleepCore"] == 420, "\(most)")
+  let longer = sleepValues(watchNight + from("com.example.sleepapp", [sample(at(2026, 11, 7, 22), at(2026, 11, 8, 8), 1)]))
+  check("stages beat a longer span", longer["2026-11-08 sleepAsleep"] == 420 && longer["2026-11-08 sleepAwake"] == 60, "\(longer)")
+  let muchLonger = sleepValues(watchNight + from("com.example.sleepapp", [sample(at(2026, 11, 7, 21), at(2026, 11, 8, 9), 1)]))
+  check("a span half as long again beats stages", muchLonger["2026-11-08 sleepAsleep"] == 720 && muchLonger["2026-11-08 sleepCore"] == nil, "\(muchLonger)")
+}
+
+// The choice is per sleep: a staged nap the afternoon before and another
+// app's night that follows it are separate sleeps of the same night.
+do {
+  let nap = from("com.apple.health.watch", watch: true, [sample(at(2026, 11, 7, 14), at(2026, 11, 7, 14, 40), 3)])
+  let rows = sleepValues(nap + otherAppNight)
+  check("staged nap and another app's night", rows["2026-11-08 sleepAsleep"] == 520 && rows["2026-11-08 sleepCore"] == 40, "\(rows)")
+}
+
+// A sleep goes to the night its chosen source ends on. Another app's span to
+// 12:30, joined to the Watch's night and dropped, does not move it to the next.
+do {
+  let rows = sleepValues(
+    watchNight
+      + from("com.example.sleepapp", [sample(at(2026, 11, 8, 6, 50), at(2026, 11, 8, 12, 30), 1)])
+      + from("com.apple.health.watch", watch: true, [sample(at(2026, 11, 8, 23), at(2026, 11, 9, 7), 3)]))
+  check("dropped span does not move the night", rows["2026-11-08 sleepAsleep"] == 420, "\(rows)")
+  check("dropped span, next night alone", rows["2026-11-09 sleepAsleep"] == 480, "\(rows)")
 }
 
 // In bed comes from the chosen source when it writes any, else from the

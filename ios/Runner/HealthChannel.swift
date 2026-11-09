@@ -230,7 +230,7 @@ enum HealthChannel {
           let product = sample.sourceRevision.productType
           return HealthDays.SleepSample(
             start: sample.startDate, end: sample.endDate, value: sample.value, source: source,
-            watch: product.map { $0.hasPrefix("Watch") } ?? source.hasPrefix("com.apple.health"))
+            watch: product?.hasPrefix("Watch") == true && source.hasPrefix("com.apple.health"))
         }
         let sleepRows = HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar)
         let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: start, end: end, calendar))
