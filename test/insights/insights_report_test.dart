@@ -202,7 +202,7 @@ void main() {
     });
   });
 
-  test('a habit logged unevenly over time says so', () {
+  test('a habit used unevenly over time says so', () {
     expect(
       refusalReason(
         const HabitRefusal(
@@ -216,7 +216,7 @@ void main() {
         ),
         (id) => id,
       ),
-      'Logged unevenly over time, so it can’t be told apart from other changes',
+      'Used far more at some times than others, so it can’t be told apart from other changes',
     );
   });
 }

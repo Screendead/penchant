@@ -285,7 +285,7 @@ String refusalReason(
     'Too few days with it yet: ${refusal.exposedDays} of '
         '${gates.minExposedDays}',
   RefusalReason.uneven =>
-    'Logged unevenly over time, so it can’t be told apart from other changes',
+    'Used far more at some times than others, so it can’t be told apart from other changes',
   RefusalReason.entangled => switch (refusal.entangledWith) {
     final String other =>
       'Used together with ${nameOf(other)}, so the two can’t be told apart',

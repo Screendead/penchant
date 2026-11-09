@@ -356,46 +356,82 @@ void main() {
     expect((coffee as HabitRefusal).reason, RefusalReason.uneven);
   });
 
+  test('a daily habit whose logging started patchy is refused', () {
+    // The mirror of faded logging: Water every day except 20 of the first 30
+    // days and days 60, 90 and 120, and no effect; the outcome is 10 through
+    // day 40 and 0 after. Without the check on days gone without, the early
+    // unlogged days read as days without it and the step reads as Water's, a
+    // false finding on 100 of 100 seeds (`tools/insights-calibration/`).
+    final Random random = Random(10);
+    final List<HabitUse> uses = <HabitUse>[
+      for (int i = 0; i <= 121; i++)
+        if (!((i < 30 && i % 3 != 2) || i == 60 || i == 90 || i == 120))
+          HabitUse(
+            habitId: 'Water',
+            at: addDays(start, i).add(const Duration(hours: 9)),
+            amount: 1,
+          ),
+    ];
+    final List<DailyOutcome> outcomes = <DailyOutcome>[
+      for (int i = 0; i <= 122; i++)
+        DailyOutcome(
+          date: addDays(start, i),
+          metricId: sleep,
+          value: (i <= 41 ? 10 : 0) + gaussian(random),
+        ),
+    ];
+    final HabitInsight water = whatFollows(
+      habits: DailyHabitSeries.fromUses(uses),
+      outcomes: OutcomeSeries.fromOutcomes(outcomes),
+      metricId: sleep,
+    ).single;
+
+    expect(water, isA<HabitRefusal>());
+    expect((water as HabitRefusal).reason, RefusalReason.uneven);
+  });
+
   test('a habit used a little more often in one half is still judged, and a '
       'step in the outcome is not pinned on it', () {
     // Coffee on 60% of the first half's days and 30% of the second's, below
-    // the guard's ratio; the outcome drops 40 at the halfway day. With the
-    // half's level in the model Coffee gets none of the step.
-    int reported = 0, uneven = 0;
-    for (int seed = 0; seed < 50; seed++) {
-      final data = journal(
-        seed: seed,
-        usedOn: (random, day) => <String>{
-          if (day == 0 ||
-              day == 119 ||
-              random.nextDouble() < (day < 60 ? 0.6 : 0.3))
-            'Coffee',
-        },
-        effectOf: (_) => 0,
-      );
-      final List<DailyOutcome> stepped = <DailyOutcome>[
-        for (int i = 0; i < 120; i++)
-          DailyOutcome(
-            date: addDays(start, i + 1),
-            metricId: sleep,
-            value:
-                data.outcomes.value(sleep, addDays(start, i + 1))! -
-                (i < 60 ? 0 : 40),
-          ),
-      ];
-      final HabitInsight coffee = whatFollows(
-        habits: data.habits,
-        outcomes: OutcomeSeries.fromOutcomes(stepped),
-        metricId: sleep,
-      ).single;
-      if (coffee is HabitFinding) reported++;
-      if (coffee is HabitRefusal && coffee.reason == RefusalReason.uneven) {
-        uneven++;
+    // the guard's ratio; the outcome drops 2 sd on day 40 or day 80, off the
+    // halfway day where the model's second-half level would absorb it whole.
+    for (final int stepDay in <int>[40, 80]) {
+      int reported = 0, uneven = 0;
+      for (int seed = 0; seed < 50; seed++) {
+        final data = journal(
+          seed: seed,
+          usedOn: (random, day) => <String>{
+            if (day == 0 ||
+                day == 119 ||
+                random.nextDouble() < (day < 60 ? 0.6 : 0.3))
+              'Coffee',
+          },
+          effectOf: (_) => 0,
+        );
+        final List<DailyOutcome> stepped = <DailyOutcome>[
+          for (int i = 0; i < 120; i++)
+            DailyOutcome(
+              date: addDays(start, i + 1),
+              metricId: sleep,
+              value:
+                  data.outcomes.value(sleep, addDays(start, i + 1))! -
+                  (i < stepDay ? 0 : 40),
+            ),
+        ];
+        final HabitInsight coffee = whatFollows(
+          habits: data.habits,
+          outcomes: OutcomeSeries.fromOutcomes(stepped),
+          metricId: sleep,
+        ).single;
+        if (coffee is HabitFinding) reported++;
+        if (coffee is HabitRefusal && coffee.reason == RefusalReason.uneven) {
+          uneven++;
+        }
       }
-    }
 
-    expect(uneven, lessThan(5));
-    expect(reported / 50, lessThan(0.09));
+      expect(uneven, lessThan(5), reason: 'step on day $stepDay');
+      expect(reported / 50, lessThan(0.09), reason: 'step on day $stepDay');
+    }
   });
 
   test('a habit started or dropped mid-journal is judged on its own span', () {

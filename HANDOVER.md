@@ -170,8 +170,10 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
      checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
-     Spans with faded logging (#181, open): a trend and a second-half level in the model, and a refusal ("Logged
-     unevenly over time") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged (0.24%, 8%).
+     Spans with faded logging (#181, open): a trend and a second-half level in the model, and a refusal ("Used far
+     more at some times than others") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged
+     (0.24%, 8%). Review fix: the 3x check also runs on days gone without (patchy early logging of a daily habit),
+     and the test allows for runs of use; even-use false refusals stay under 1% (`tools/insights-calibration/`).
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
@@ -519,8 +521,16 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 None on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
-`r7-ci` are moot. One call is open off the pitch page:
+`r7-ci` are moot. Two calls are open off the pitch page:
 
+- **Insights: how steep a change in use is refused** (UNDECIDED; #181 waits on it). The uneven-use guard sees only
+  when a habit was logged, so it cannot tell faded logging from a real cut-down, and refuses both. Synthetic, 120
+  days, real effect -1 sd, 200 seeds, refused: 80% of days cut to 25% 159 (master 0), 70% to 30% 34, a taper from
+  90% to 10% 26; an evenly used habit's power is unchanged (105 found, as on master). A: keep 3x (a cut-down that
+  steep reads "Used far more at some times than others"; the false finding it stops, e.g. patchy early logging and a
+  step on day 40, falls from 100/100 to 0/100). B: raise it to 4x (fewer cut-downs refused, more faded logging
+  credited; not measured). C: keep 3x and later fit the cut-down itself (a level per month in the model) so the
+  guard can loosen. Recommended, not decided: A now, C as its own PR.
 - **The client API key's restrictions** (UNDECIDED; not yet set): they live in the production project's Google Cloud
   console, which Claude does not touch. Recommended, not decided: an iOS application restriction to
   `com.screendead.penchant` and an API restriction to the Firebase APIs the app calls. Reasoning in `CLAUDE.md`

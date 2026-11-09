@@ -6,8 +6,9 @@ import 'package:tracker/insights/stats.dart';
 
 /// When a result is reported rather than refused. The defaults are the idea
 /// file's (`ideas/insights/insights-engine.md`), not tuned on data, except
-/// the two for uneven use, set so that evenly used synthetic habits are
-/// refused at most about 1% of the time.
+/// the two for uneven use, set so that evenly used synthetic habits, whether
+/// used on independent days or in runs of days, are refused at most about 1%
+/// of the time (`tools/insights-calibration/`).
 class InsightGates {
   const InsightGates({
     this.minDays = 21,
@@ -25,8 +26,8 @@ class InsightGates {
   final int minUnexposedDays;
   final double maxVarianceInflation;
 
-  /// How many times more often a habit may be used in one half of its span
-  /// than in the other, unless the difference is within
+  /// How many times more often a habit may be used, or gone without, in one
+  /// half of its span than in the other, unless the difference is within
   /// [unevenSignificance] of chance.
   final double maxUseRateRatio;
   final double unevenSignificance;
@@ -174,10 +175,13 @@ class HabitRefusal extends HabitInsight {
 /// make its coefficient a proxy for time, but its coefficient is never the one
 /// reported here.
 ///
-/// Balance: a habit used [InsightGates.maxUseRateRatio] times more often in
-/// one half of its span than the other is refused before the fit. Once logging
-/// fades to a few stray entries, the months between them read as days without
-/// it, and any change in the outcome over those months would be pinned on it.
+/// Balance: a habit used, or gone without, [InsightGates.maxUseRateRatio]
+/// times more often in one half of its span than the other is refused before
+/// the fit. Once logging fades to a few stray entries, the months between them
+/// read as days without it; when a daily habit's logging starts patchy, the
+/// unlogged early days do. Either way a change in the outcome over those months
+/// would be pinned on it. The guard sees only when the habit was logged, so it
+/// also refuses a real, steep change in use, such as cutting a habit down.
 ///
 /// Each result is judged alone, at [InsightGates.level]; across many habits
 /// and outcomes some will clear it by chance, so a report runs every result
@@ -435,20 +439,44 @@ List<HabitInsight> controlFalseDiscoveries(
 
 // The ratio alone would refuse a rare habit's chance clumping in a short
 // span; the test alone would refuse a mild drift in a long one, which the time
-// terms absorb.
+// terms absorb. The ratio is checked on the days without the habit too: early
+// days left unlogged by a daily habit read as days without it, the mirror of
+// logging that fades. Days of use come in runs (a bad week, a trip), which
+// makes the halves' rates differ more than independent days would, so the
+// standard error is widened by the runs' lag-1 autocorrelation within each
+// half.
 bool _unevenHalves(List<double> x, int half, InsightGates gates) {
   final List<double> a = x.sublist(0, half), b = x.sublist(half);
   final double ra = mean(a), rb = mean(b);
-  if (max(ra, rb) <= gates.maxUseRateRatio * min(ra, rb)) return false;
+  bool lopsided(double p, double q) =>
+      max(p, q) > gates.maxUseRateRatio * min(p, q);
+  if (!lopsided(ra, rb) && !lopsided(1 - ra, 1 - rb)) return false;
   final double pooled =
       ((a.length - 1) * sampleVariance(a) +
           (b.length - 1) * sampleVariance(b)) /
       (x.length - 2);
-  final double se = sqrt(pooled * (1 / a.length + 1 / b.length));
+  final double rho = _withinHalvesAutocorrelation(a, b);
+  final double se = sqrt(
+    pooled * (1 / a.length + 1 / b.length) * (1 + rho) / (1 - rho),
+  );
   final double p = se == 0
       ? 0
       : studentTTwoSided((ra - rb) / se, (x.length - 2).toDouble());
   return p < gates.unevenSignificance;
+}
+
+// Clamped to [0, 0.9]: a negative value would narrow the interval, and one
+// near 1 leaves no evidence at all.
+double _withinHalvesAutocorrelation(List<double> a, List<double> b) {
+  double lagged = 0, squares = 0;
+  for (final List<double> part in <List<double>>[a, b]) {
+    final double m = mean(part);
+    for (int i = 0; i < part.length; i++) {
+      squares += (part[i] - m) * (part[i] - m);
+      if (i > 0) lagged += (part[i] - m) * (part[i - 1] - m);
+    }
+  }
+  return squares == 0 ? 0 : (lagged / squares).clamp(0.0, 0.9);
 }
 
 Comparison? _welch(List<double> exposure, List<double> y, double level) {
