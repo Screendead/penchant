@@ -10,6 +10,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
+import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
@@ -304,9 +305,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             value: hidden > 0 ? Text(InsightsPage.more(hidden)) : null,
             glyph: DialGlyph.right,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const InsightsCostsPage(),
-              ),
+              DialPageRoute<void>(builder: (_) => const InsightsCostsPage()),
             ),
           ),
         ],
