@@ -6,15 +6,18 @@ import 'package:tracker/insights/stats.dart';
 
 /// When a result is reported rather than refused. The defaults are the idea
 /// file's (`ideas/insights/insights-engine.md`), not tuned on data, except
-/// the two for uneven use, set so that evenly used synthetic habits, whether
-/// used on independent days or in runs of days, are refused at most about 1%
-/// of the time (`tools/insights-calibration/`).
+/// the four for balance, checked against synthetic habits in
+/// `tools/insights-calibration/`: evenly used ones, whether used on
+/// independent days or in runs of days, are refused at most about 1% of the
+/// time.
 class InsightGates {
   const InsightGates({
     this.minDays = 21,
     this.minExposedDays = 7,
     this.minUnexposedDays = 7,
     this.maxVarianceInflation = 5,
+    this.minPeriodDays = 10,
+    this.minMixedPeriods = 2,
     this.maxUseRateRatio = 3,
     this.unevenSignificance = 0.01,
     this.level = 0.95,
@@ -26,9 +29,16 @@ class InsightGates {
   final int minUnexposedDays;
   final double maxVarianceInflation;
 
-  /// How many times more often a habit may be used, or gone without, in one
-  /// half of its span than in the other, unless the difference is within
-  /// [unevenSignificance] of chance.
+  /// The fewest usable days a calendar month needs to be a period of its own.
+  final int minPeriodDays;
+
+  /// When a span holds more than one period, how many of them need days
+  /// both with the habit and without it.
+  final int minMixedPeriods;
+
+  /// When a span is one period: how many times more often a habit may be
+  /// used, or gone without, in one half of its span than in the other, unless
+  /// the difference is within [unevenSignificance] of chance.
   final double maxUseRateRatio;
   final double unevenSignificance;
   final double level;
@@ -64,9 +74,10 @@ enum RefusalReason {
   /// [HabitInsight.exposedDays] says which.
   tooFewDays,
 
-  /// Used far more in one half of its span than in the other, or so much in
-  /// step with the time terms that the model cannot tell it from a drift or a
-  /// change in the outcome over the same months.
+  /// Used far more in one half of a one-period span than in the other, in
+  /// too few periods both with and without it, or so much in step with the
+  /// time terms that the model cannot tell it from a drift or a change in the
+  /// outcome over the same months.
   uneven,
 
   /// Used on so many of the same days as [HabitRefusal.entangledWith] that the
@@ -166,22 +177,32 @@ class HabitRefusal extends HabitInsight {
 /// days left in that habit's span.
 ///
 /// Attribution: on those days, one least-squares model of the outcome on an
-/// intercept, a linear trend over the span, a level for its second half, and a
-/// 0/1 "used that day" indicator for the habit and for every other habit that
-/// clears the sample gates there, so the coefficient is the habit's difference
-/// with the others and the time held fixed, and a habit that only rides along
-/// with another, or with a drift or a step in the outcome, gets no credit.
+/// intercept, a linear trend over the span, a level for each period after the
+/// first, and a 0/1 "used that day" indicator for the habit and for every
+/// other habit that clears the sample gates there, so the coefficient is the
+/// habit's difference with the others and the time held fixed, and a habit
+/// that only rides along with another, or with a drift or a step in the
+/// outcome, gets no credit. A period is a calendar month, merged into its
+/// neighbour while it holds fewer than [InsightGates.minPeriodDays] usable
+/// days; a span of one period gets a level for its second half instead. With
+/// period levels, the habit's coefficient comes from days with and without it
+/// within the same period, so a change in use between months, a cut-down or
+/// faded logging, is not read as an effect. A change in use and in the
+/// outcome within one month still can be.
 /// Another habit counts as not used on the days outside its own span: that can
 /// make its coefficient a proxy for time, but its coefficient is never the one
 /// reported here.
 ///
-/// Balance: a habit used, or gone without, [InsightGates.maxUseRateRatio]
-/// times more often in one half of its span than the other is refused before
-/// the fit. Once logging fades to a few stray entries, the months between them
-/// read as days without it; when a daily habit's logging starts patchy, the
-/// unlogged early days do. Either way a change in the outcome over those months
-/// would be pinned on it. The guard sees only when the habit was logged, so it
-/// also refuses a real, steep change in use, such as cutting a habit down.
+/// Balance: a span of several periods in which fewer than
+/// [InsightGates.minMixedPeriods] hold days both with and without the habit is
+/// refused, since its coefficient would rest on a single month. A span of one
+/// period (a month and fewer than [InsightGates.minPeriodDays] usable days
+/// beside it) has no month to compare within, so a habit used, or gone without,
+/// [InsightGates.maxUseRateRatio] times more often in one half of it than the
+/// other is refused: once logging fades, the days between stray entries read as
+/// days without it, and a change in the outcome over them would be pinned on
+/// it. That guard sees only when the habit was logged, so it also refuses a
+/// real, steep change in use.
 ///
 /// Each result is judged alone, at [InsightGates.level]; across many habits
 /// and outcomes some will clear it by chance, so a report runs every result
@@ -280,13 +301,25 @@ HabitInsight _whatFollowsOne(
     return refuse(RefusalReason.tooFewDays);
   }
 
+  final List<int> period = _periods(days, gates.minPeriodDays);
+  final int periods = period.last + 1;
   // Halves by usable days, so each holds at least half of minDays.
   final int half = days.length ~/ 2;
-  if (_unevenHalves(x, half, gates)) return refuse(RefusalReason.uneven);
+  if (periods == 1
+      ? _unevenHalves(x, half, gates)
+      : _mixedPeriods(x, period) < gates.minMixedPeriods) {
+    return refuse(RefusalReason.uneven);
+  }
   final int span = daysBetween(days.first, days.last);
   final List<List<double>> time = <List<double>>[
     for (int r = 0; r < days.length; r++)
-      <double>[daysBetween(days.first, days[r]) / span - 0.5, r < half ? 0 : 1],
+      <double>[
+        daysBetween(days.first, days[r]) / span - 0.5,
+        if (periods == 1)
+          r < half ? 0 : 1
+        else
+          for (int k = 1; k < periods; k++) period[r] == k ? 1 : 0,
+      ],
   ];
   final int timeColumns = time.first.length;
 
@@ -435,6 +468,56 @@ List<HabitInsight> controlFalseDiscoveries(
         final HabitInsight other => other,
       },
   ];
+}
+
+// Which period each of [days] falls in, numbered from 0: one per calendar
+// month, a month with fewer than [minDays] usable days merged into the next,
+// and a short last one into the one before.
+List<int> _periods(List<DateTime> days, int minDays) {
+  final List<int> period = List<int>.filled(days.length, 0);
+  int current = 0, inCurrent = 0, monthStart = 0;
+  for (int r = 0; r <= days.length; r++) {
+    final bool monthEnds =
+        r == days.length ||
+        (r > 0 &&
+            (days[r].month != days[r - 1].month ||
+                days[r].year != days[r - 1].year));
+    if (monthEnds) {
+      final int monthDays = r - monthStart;
+      if (inCurrent >= minDays) {
+        current++;
+        inCurrent = 0;
+      }
+      for (int i = monthStart; i < r; i++) {
+        period[i] = current;
+      }
+      inCurrent += monthDays;
+      monthStart = r;
+    }
+  }
+  if (inCurrent < minDays && current > 0) {
+    for (int i = 0; i < days.length; i++) {
+      if (period[i] == current) period[i] = current - 1;
+    }
+  }
+  return period;
+}
+
+// Periods with days both with and without the habit, the only days its
+// coefficient learns from once the period levels are in.
+int _mixedPeriods(List<double> x, List<int> period) {
+  final int periods = period.last + 1;
+  final List<int> on = List<int>.filled(periods, 0);
+  final List<int> all = List<int>.filled(periods, 0);
+  for (int r = 0; r < x.length; r++) {
+    all[period[r]]++;
+    if (x[r] == 1) on[period[r]]++;
+  }
+  int mixed = 0;
+  for (int k = 0; k < periods; k++) {
+    if (on[k] > 0 && on[k] < all[k]) mixed++;
+  }
+  return mixed;
 }
 
 // The ratio alone would refuse a rare habit's chance clumping in a short
