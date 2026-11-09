@@ -403,7 +403,9 @@ double? typicalError(Map<DateTime, double> days) {
 
 /// Each outcome's floor for the person behind [outcomes]: [metricFloors]'
 /// rule, then raised to [noiseShare] of their night-to-night variation, so a
-/// floor never sits inside it. Outcomes [outcomes] lacks keep their own.
+/// floor never sits inside it. Outcomes [outcomes] lacks keep their own, as
+/// does one whose rule resolves to nothing (a flat series, nights of no sleep):
+/// a floor of 0 would pass every finding with an infinite size.
 Map<String, double> resolveFloors(OutcomeSeries outcomes) {
   final Map<DateTime, double> asleep = outcomes.days('sleepAsleep');
   return <String, double>{
@@ -426,7 +428,8 @@ Map<String, double> resolveFloors(OutcomeSeries outcomes) {
           FloorRule.shareOfNight => metric.value.floor,
           FloorRule.ownNoise => noise ?? metric.value.floor,
         };
-        return noise == null ? floor : max(floor, noise);
+        final double resolved = noise == null ? floor : max(floor, noise);
+        return resolved > 0 ? resolved : metric.value.floor;
       }(),
   };
 }
@@ -661,15 +664,19 @@ String _amount(double value, MetricCopy copy, int decimals, String locale) {
 
 // Enough digits that neither end of the range rounds to zero, since a finding's
 // range never includes it.
-int _digits(HabitFinding finding, MetricCopy copy) {
-  int digits = copy.decimals;
-  final double nearest =
-      [
+int _digits(HabitFinding finding, MetricCopy copy) => _digitsToShow(
+  [
         finding.interval.low.abs(),
         finding.interval.high.abs(),
       ].reduce((a, b) => a < b ? a : b) *
-      copy.scale;
-  while (digits < 3 && nearest < 0.5 * pow(10, -digits)) {
+      copy.scale,
+  copy.decimals,
+);
+
+// [decimals], or more (up to 3) while [shown] would round to zero at them.
+int _digitsToShow(double shown, int decimals) {
+  int digits = decimals;
+  while (digits < 3 && shown < 0.5 * pow(10, -digits)) {
     digits++;
   }
   return digits;
@@ -896,12 +903,18 @@ String _useRefusal(
     'Later on days with more, so it can’t be told apart from the amount',
 };
 
-// "under 21 min a night of REM sleep", "under 500 a day of step count".
+// "under 22 min a night of REM sleep", "under 500 a day of step count". A
+// person's floor (21.4 min, 0.35 ms) is rounded up at the digits shown, so
+// "under" stays true of every refused finding and never reads "under 0".
 String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
   final MetricCopy copy = metricCopy(refusal.metricId)!;
-  final String floor =
-      (NumberFormat.decimalPattern('en')..maximumFractionDigits = copy.decimals)
-          .format(metricFloor(refusal.metricId, floors) * copy.scale);
+  final double shown = metricFloor(refusal.metricId, floors) * copy.scale;
+  final int digits = _digitsToShow(shown, copy.decimals);
+  final num scale = pow(10, digits);
+  final String floor = NumberFormat.decimalPatternDigits(
+    locale: 'en',
+    decimalDigits: digits,
+  ).format((shown * scale - 1e-9).ceil() / scale);
   final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
   final String per = switch (metricFloors[refusal.metricId]?.family) {
     MetricFamily.sleep => ' a night',

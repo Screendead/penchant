@@ -293,6 +293,59 @@ void main() {
       );
     });
 
+    test('a refusal shows a fraction of a unit rather than "under 0"', () {
+      // HRV alternating 40 and 41: half the typical error is 0.35 ms, under
+      // the whole millisecond HRV copy normally shows.
+      final Map<String, double> floors = resolveFloors(
+        series('heartRateVariabilitySDNN', <double>[
+          for (int i = 0; i < 30; i++) i.isEven ? 40 : 41,
+        ]),
+      );
+      expect(floors['heartRateVariabilitySDNN'], closeTo(0.36, 0.01));
+      HabitRefusal refusal(InsightKind kind) => HabitRefusal(
+        habitId: 'Tea',
+        metricId: 'heartRateVariabilitySDNN',
+        lagDays: 1,
+        usableDays: 90,
+        exposedDays: 40,
+        raw: null,
+        kind: kind,
+        reason: RefusalReason.tooSmall,
+      );
+      expect(
+        refusalReason(refusal(InsightKind.use), (id) => id, floors: floors),
+        'Too small to matter: under 0.4 ms of heart rate variability',
+      );
+      // Hours-after HRV is judged against the same per-person floor.
+      expect(
+        refusalReason(
+          refusal(InsightKind.hoursAfter),
+          (id) => id,
+          floors: floors,
+        ),
+        contains('under 0.4 ms of heart rate variability'),
+      );
+    });
+
+    test('a rule that resolves to nothing keeps the table’s floor', () {
+      // A flat series has no variation; nights of no sleep have no share.
+      final Map<String, double> floors = resolveFloors(
+        merged(<OutcomeSeries>[
+          series('heartRateVariabilitySDNN', <double>[
+            for (int i = 0; i < 30; i++) 45,
+          ]),
+          series('sleepAsleep', <double>[for (int i = 0; i < 30; i++) 0]),
+        ]),
+      );
+      expect(floors['heartRateVariabilitySDNN'], 3);
+      expect(floors['sleepREM'], 10);
+      expect(floors['sleepAsleep'], 21);
+      expect(
+        practicalSize(finding('heartRateVariabilitySDNN', -1), floors: floors),
+        lessThan(1),
+      );
+    });
+
     test('the report carries them, and a refusal names the person’s floor', () {
       final InsightsReport report = computeInsights(
         InsightsInput(
@@ -325,7 +378,8 @@ void main() {
           (id) => id,
           floors: report.floors,
         ),
-        'Too small to matter: under 21 min a night of REM sleep',
+        // 21.4 rounded up, so a refused 21.2 min finding is still "under".
+        'Too small to matter: under 22 min a night of REM sleep',
       );
       // Judged against the person's floor, not the 10 min fallback.
       expect(
