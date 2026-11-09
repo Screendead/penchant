@@ -64,9 +64,8 @@ void main() {
     });
   });
 
-  testWidgets('Settings > Account opens Account Settings', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('Settings lists only real pages, and Account opens Account '
+      'Settings', (WidgetTester tester) async {
     final FakeUser user = FakeUser(ownerID, email: 'me@example.com');
     await tester.pumpWidget(
       ProviderScope(
@@ -82,6 +81,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Notifications'), findsNothing);
+    expect(find.text('Privacy'), findsNothing);
 
     await tester.tap(find.text('Account'));
     await tester.pumpAndSettle();
