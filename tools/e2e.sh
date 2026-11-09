@@ -6,18 +6,16 @@
 #   tools/e2e.sh                 # every file in integration_test/, in one build (all_test.dart)
 #   tools/e2e.sh integration_test/smoke_test.dart
 #   E2E_DEVICE=<udid> tools/e2e.sh
-#   E2E_DEVICE=macos tools/e2e.sh   # one flutter test per file, one emulator session
+#   E2E_DEVICE=macos tools/e2e.sh   # all_test.dart as a macOS app; several named files get one flutter test each
 set -euo pipefail
 source "$(dirname "$0")/emulator-env.sh"
 
 require_free_ports
 boot_simulator
 
-if [ "$E2E_DEVICE" = macos ]; then
-  args=""
-  if [ "$#" -gt 0 ]; then
-    printf -v args ' %q' "$@"
-  fi
+if [ "$E2E_DEVICE" = macos ] && [ "$#" -gt 1 ]; then
+  # Flutter's macOS runner cannot relaunch the app for a second file in one `flutter test`.
+  printf -v args ' %q' "$@"
   script="tools/e2e-macos-each-file.sh$args"
 else
   targets="${*:-integration_test/all_test.dart}"
