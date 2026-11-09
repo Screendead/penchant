@@ -1,4 +1,4 @@
-// Renders Today at 390x844, and the Mac's split view at 900, 1200 and 1600 pt
+// Renders Today at 390x844 (with last night's line in one scene), and the Mac's split view at 900, 1200 and 1600 pt
 // wide, in light and dark to PNGs, for a look at the real fonts and colours. Skipped unless a directory is given:
 //   flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
@@ -17,6 +17,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -30,6 +31,7 @@ import 'package:tracker/widgets/log_fan.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+import 'last_night_fakes.dart';
 
 const String _dir = String.fromEnvironment('RENDER_DIR');
 
@@ -166,6 +168,7 @@ void main() {
           ('busy', _busy),
           ('dense', _dense),
           ('sparse', _sparse),
+          ('last-night', _sparse),
           ('clear', const <(int, int, int)>[]),
           ('fan', _sparse),
           ('trends', _busy),
@@ -224,6 +227,17 @@ void main() {
                 (ref, ViceActivityGraphQuery q) =>
                     AsyncData(_history(q.viceID, q.start, q.end)),
               ),
+              if (scene == 'last-night')
+                ...lastNightLineOverrides(
+                  const LastNight(
+                    sleepingHeartRate: NightCompare(
+                      value: 57,
+                      usual: 54,
+                      low: 53,
+                      high: 55,
+                    ),
+                  ),
+                ),
             ],
             child: RepaintBoundary(
               key: frame,

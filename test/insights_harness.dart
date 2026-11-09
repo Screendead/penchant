@@ -9,7 +9,9 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/providers/insights_provider.dart';
+import 'package:tracker/providers/last_night_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -182,7 +184,11 @@ List<Override> insightsOverrides({
   AsyncValue<List<Vice>>? vices,
   void Function()? onJournalOpened,
   InsightsRunner? runner,
+  LastNight? lastNight,
 }) => <Override>[
+  // Its own reads are tested in last_night_test.dart; here they would join
+  // the counts of the engine's.
+  lastNightProvider.overrideWith((Ref ref) async => lastNight),
   todayProvider.overrideWith(() => FixedToday(insightsToday)),
   healthSourceProvider.overrideWithValue(health),
   insightsRunnerProvider.overrideWithValue(

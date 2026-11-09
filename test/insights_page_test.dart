@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +14,7 @@ import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
@@ -39,6 +42,12 @@ Future<void> _pump(WidgetTester tester, List<Override> overrides) async {
   await tester.pumpAndSettle();
 }
 
+// The drill-in holds every card, the refusals and the settled Health card.
+Future<void> _openCosts(WidgetTester tester) async {
+  await tester.tap(find.text(InsightsPage.moreCosts));
+  await tester.pumpAndSettle();
+}
+
 void _connected() => SharedPreferences.setMockInitialValues(<String, Object>{
   healthConnectedKey: true,
 });
@@ -56,8 +65,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Connected'), findsOneWidget);
-    expect(find.text(InsightsPage.foundHeading), findsOneWidget);
+    expect(find.text('Connected'), findsNothing);
+    expect(find.text(InsightsPage.costsHeading), findsOneWidget);
     expect(
       find.textContaining(
         RegExp(
@@ -77,7 +86,15 @@ void main() {
     );
     expect(find.textContaining('after Tea'), findsNothing);
     expect(find.textContaining('after Water'), findsNothing);
+    expect(find.text(InsightsPage.refusedHeading), findsNothing);
 
+    await _openCosts(tester);
+    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text(InsightsPage.manageLabel), findsOneWidget);
+    expect(
+      find.textContaining('On nights after Coffee, your deep sleep'),
+      findsOneWidget,
+    );
     expect(find.text(InsightsPage.refusedHeading), findsOneWidget);
     expect(find.text('Tea'), findsOneWidget);
     expect(find.text('Within the noise: no clear difference'), findsOneWidget);
@@ -107,6 +124,7 @@ void main() {
         ]),
       ),
     );
+    await _openCosts(tester);
 
     expect(
       find.textContaining(
@@ -159,6 +177,8 @@ void main() {
     );
 
     expect(find.text(InsightsPage.nothingClear), findsOneWidget);
+    expect(find.text(InsightsPage.more(1)), findsNothing);
+    await _openCosts(tester);
     expect(find.text('Tea'), findsOneWidget);
     expect(
       find.text('Could be chance: one of many comparisons'),
@@ -215,6 +235,12 @@ void main() {
     );
     expect(find.text('From 120 days with Coffee'), findsOneWidget);
     expect(find.text(InsightsPage.refusedHeading), findsNothing);
+
+    // One card and nothing refused: the drill-in still holds Health's card.
+    expect(find.text(InsightsPage.more(1)), findsNothing);
+    await _openCosts(tester);
+    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text(InsightsPage.manageLabel), findsOneWidget);
   });
 
   testWidgets('a time of last use on sleep shows its whole effect, then the '
@@ -290,9 +316,8 @@ void main() {
     expect(find.text(metricEvidence('sleepREM')!), findsOneWidget);
   });
 
-  testWidgets('the six largest cards show, the rest behind Show N more', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('the two largest cards show, the rest behind More on what it '
+      'costs', (WidgetTester tester) async {
     _connected();
     const List<String> metrics = <String>[
       'sleepDeep',
@@ -338,22 +363,26 @@ void main() {
       ),
     );
 
-    expect(find.text('Coffee · activity'), findsOneWidget);
-    expect(find.text('Tea · sleep'), findsOneWidget);
-    // The activity card's headline is steps: one line for what 500 steps a
-    // day have been shown to do.
-    expect(find.text(metricEvidence('stepCount')!), findsOneWidget);
-    expect(find.text('Tea · heart'), findsNothing);
-    await tester.tap(find.text(InsightsPage.showMore(4)));
-    await tester.pumpAndSettle();
-    expect(find.text(InsightsPage.showMore(4)), findsNothing);
-    for (final String card in <String>[
-      'Tea · heart',
-      'Tea · breathing',
-      'Tea · temperature',
-      'Tea · activity',
-    ]) {
-      expect(find.text(card), findsOneWidget);
+    expect(find.text('Coffee · sleep'), findsOneWidget);
+    expect(find.text('Coffee · heart'), findsOneWidget);
+    expect(find.text('Coffee · breathing'), findsNothing);
+    // Coffee's heart card leads with resting heart rate: one line for what
+    // 5 bpm has been shown to do.
+    expect(find.text(metricEvidence('restingHeartRate')!), findsOneWidget);
+    expect(find.text(InsightsPage.more(8)), findsOneWidget);
+    await _openCosts(tester);
+    // Both activity cards lead with steps.
+    expect(find.text(metricEvidence('stepCount')!), findsNWidgets(2));
+    for (final String habit in <String>['Coffee', 'Tea']) {
+      for (final String family in <String>[
+        'sleep',
+        'heart',
+        'breathing',
+        'temperature',
+        'activity',
+      ]) {
+        expect(find.text('$habit · $family'), findsOneWidget);
+      }
     }
   });
 
@@ -371,6 +400,7 @@ void main() {
     );
 
     expect(find.text(InsightsPage.nothingClear), findsOneWidget);
+    await _openCosts(tester);
     expect(
       find.text('Used together with Tea, so the two can’t be told apart'),
       findsOneWidget,
@@ -416,11 +446,13 @@ void main() {
 
     expect(find.text(InsightsPage.nothingClear), findsOneWidget);
     expect(find.textContaining('Coffee'), findsNothing);
-    expect(find.text('Tea'), findsOneWidget);
-    expect(find.text('Water'), findsOneWidget);
 
     await tester.tap(find.text(InsightsPage.copyLabel));
     await tester.pump();
+    await _openCosts(tester);
+    expect(find.textContaining('Coffee'), findsNothing);
+    expect(find.text('Tea'), findsOneWidget);
+    expect(find.text('Water'), findsOneWidget);
     expect(copied.single, isNot(contains('Coffee')));
     expect(copied.single, contains('Tea: '));
   });
@@ -443,6 +475,7 @@ void main() {
 
     expect(find.text(InsightsPage.nothingClear), findsOneWidget);
     expect(find.textContaining('after Tea'), findsNothing);
+    await _openCosts(tester);
     expect(
       find.text('Used together with Coffee, so the two can’t be told apart'),
       findsOneWidget,
@@ -459,7 +492,7 @@ void main() {
     await _pump(tester, insightsOverrides(health: health));
 
     expect(find.text(InsightsPage.connectLabel), findsOneWidget);
-    expect(find.text(InsightsPage.foundHeading), findsNothing);
+    expect(find.text(InsightsPage.costsHeading), findsNothing);
     expect(health.authorizationRequests, 0);
     expect(health.reads, 0);
 
@@ -468,7 +501,7 @@ void main() {
 
     expect(health.authorizationRequests, 1);
     expect(health.reads, greaterThan(0));
-    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text(InsightsPage.connectLabel), findsNothing);
     expect(find.textContaining('On nights after Coffee'), findsOneWidget);
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool(healthConnectedKey), isTrue);
@@ -691,7 +724,7 @@ void main() {
       InsightsPage.title,
       InsightsPage.span(first),
       '',
-      InsightsPage.foundHeading,
+      InsightsPage.costsHeading,
     ]);
     expect(lines, contains('Coffee · sleep'));
     expect(
@@ -729,7 +762,7 @@ void main() {
         locale: 'en',
       ),
       '${InsightsPage.title}\n\n'
-      '${InsightsPage.foundHeading}\n'
+      '${InsightsPage.costsHeading}\n'
       '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n\n'
       '${InsightsPage.foot}\n',
     );
@@ -807,6 +840,283 @@ void main() {
         (yesterday, HealthMetric.stepCount.id),
       ],
     );
+  });
+
+  testWidgets('the page is three question sections, in order, the two '
+      'without answers yet saying what will be there', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+      ),
+    );
+
+    final List<double> tops = <double>[
+      for (final String heading in <String>[
+        InsightsPage.costsHeading,
+        InsightsPage.cuttingDownHeading,
+        InsightsPage.setsOffHeading,
+        InsightsPage.copyLabel,
+      ])
+        tester.getTopLeft(find.text(heading)).dy,
+    ];
+    expect(tops, orderedEquals(tops.toList()..sort()));
+    expect(find.text(InsightsPage.cuttingDownBody), findsOneWidget);
+    expect(find.text(InsightsPage.setsOffBody), findsOneWidget);
+    expect(find.text(InsightsPage.lastNightHeading), findsNothing);
+  });
+
+  testWidgets('with every habit short of days, What it costs says how far '
+      'along the furthest is', (WidgetTester tester) async {
+    _connected();
+    HabitRefusal short(String habit, int days) => HabitRefusal(
+      habitId: habit,
+      metricId: 'sleepDeep',
+      lagDays: 1,
+      usableDays: days,
+      exposedDays: days ~/ 2,
+      raw: null,
+      reason: RefusalReason.tooFewDays,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        runner: (_) async => InsightsReport(
+          findings: const <HabitFinding>[],
+          refused: <HabitRefusal>[short('coffee', 9), short('tea', 4)],
+        ),
+      ),
+    );
+
+    expect(find.text(InsightsPage.earlyTitle), findsOneWidget);
+    expect(find.text(InsightsPage.earlyBody(9, 21)), findsOneWidget);
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value,
+      closeTo(9 / 21, 1e-9),
+    );
+    expect(find.text(InsightsPage.nothingClear), findsNothing);
+  });
+
+  testWidgets('last night against the usual leads the page, with what was '
+      'logged the day before', (WidgetTester tester) async {
+    _connected();
+    final DateTime yesterday = insightsToday.subtract(const Duration(days: 1));
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          ...insightsVices,
+          fakeVice('wine', name: 'Wine', unit: Unit.drink),
+        ]),
+        activities: AsyncData<List<ViceActivity>>(<ViceActivity>[
+          ...insightsJournal().activities.where(
+            (ViceActivity a) => a.viceID != 'water',
+          ),
+          fakeActivity('wine', 2, yesterday.add(const Duration(hours: 20))),
+          // After midnight: still the evening before.
+          fakeActivity('wine', 1, insightsToday.add(const Duration(hours: 1))),
+          // The day before yesterday, so not counted.
+          fakeActivity('wine', 4, yesterday.subtract(const Duration(hours: 2))),
+        ]),
+        lastNight: const LastNight(
+          sleepingHeartRate: NightCompare(
+            value: 57.2,
+            usual: 54,
+            low: 53,
+            high: 55,
+          ),
+          heartRateVariability: NightCompare(
+            value: 41,
+            usual: 48,
+            low: 45,
+            high: 51,
+          ),
+          asleep: NightCompare(value: 410, usual: 435, low: 420, high: 450),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getTopLeft(find.text(InsightsPage.lastNightHeading)).dy,
+      lessThan(tester.getTopLeft(find.text(InsightsPage.costsHeading)).dy),
+    );
+    expect(find.text('Sleeping heart rate'), findsOneWidget);
+    expect(find.text('57 bpm', findRichText: true), findsOneWidget);
+    expect(find.text('usual 54 · 3 above'), findsOneWidget);
+    expect(find.text('usual range 45–51 · below'), findsOneWidget);
+    expect(find.text('6 h 50 m', findRichText: true), findsOneWidget);
+    expect(find.text('usual 7 h 15 m · 25 min under'), findsOneWidget);
+    expect(
+      find.textContaining('Yesterday: Wine 3 drinks, last at 1:00'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a night in the usual range says so', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        activities: const AsyncData<List<ViceActivity>>(<ViceActivity>[]),
+        lastNight: const LastNight(
+          sleepingHeartRate: NightCompare(
+            value: 54.4,
+            usual: 54,
+            low: 53,
+            high: 55,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('usual 54 · in your usual range'), findsOneWidget);
+    expect(find.text('HRV'), findsNothing);
+    expect(find.text('Nothing logged yesterday'), findsOneWidget);
+  });
+
+  group('last night waits for no engine', () {
+    const LastNight night = LastNight(
+      sleepingHeartRate: NightCompare(value: 57, usual: 54, low: 53, high: 55),
+    );
+
+    testWidgets('it leads the page while the engine runs', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final Completer<InsightsReport> never = Completer<InsightsReport>();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: insightsOverrides(
+            health: FakeHealthSource(
+              read: HealthValues(insightsJournal().health),
+            ),
+            runner: (_) => never.future,
+            activities: const AsyncData<List<ViceActivity>>(<ViceActivity>[]),
+            lastNight: night,
+          ),
+          child: MaterialApp(
+            theme: appTheme(Brightness.light),
+            home: const InsightsPage(),
+          ),
+        ),
+      );
+      for (int i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+
+      expect(find.text(InsightsPage.loadingLabel), findsOneWidget);
+      expect(find.text(InsightsPage.lastNightHeading), findsOneWidget);
+      expect(find.text('usual 54 · 3 above'), findsOneWidget);
+      expect(find.text('Nothing logged yesterday'), findsOneWidget);
+    });
+
+    testWidgets('and when the engine fails', (WidgetTester tester) async {
+      _connected();
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          runner: (_) async => throw StateError('engine'),
+          lastNight: night,
+        ),
+      );
+
+      expect(find.text('Insights couldn’t be worked out'), findsOneWidget);
+      expect(find.text(InsightsPage.lastNightHeading), findsOneWidget);
+      expect(find.text('usual 54 · 3 above'), findsOneWidget);
+    });
+  });
+
+  group('last night notes', () {
+    test('agree with the whole numbers shown', () {
+      expect(
+        lastNightHeartNote(
+          const NightCompare(value: 56.6, usual: 54.4, low: 53, high: 55),
+        ),
+        'usual 54 · 3 above',
+      );
+      expect(
+        lastNightSleepNote(
+          const NightCompare(value: 409.6, usual: 435.4, low: 420, high: 450),
+        ),
+        'usual 7 h 15 m · 25 min under',
+      );
+      expect(
+        lastNightHrvNote(
+          const NightCompare(value: 44.4, usual: 48, low: 45, high: 51),
+        ),
+        'usual range 45–51 · below',
+      );
+    });
+
+    test('a range whose ends round to one number is one number', () {
+      expect(
+        lastNightHrvNote(
+          const NightCompare(value: 44.6, usual: 45.3, low: 45.2, high: 45.4),
+        ),
+        'usual 45 · in your usual range',
+      );
+    });
+
+    test('the check as text, one row a line', () {
+      const LastNight night = LastNight(
+        sleepingHeartRate: NightCompare(
+          value: 57,
+          usual: 54,
+          low: 53,
+          high: 55,
+        ),
+        heartRateVariability: NightCompare(
+          value: 41,
+          usual: 48,
+          low: 45,
+          high: 51,
+        ),
+        asleep: NightCompare(value: 410, usual: 435, low: 420, high: 450),
+      );
+      final List<String> lines = lastNightText(night, const <YesterdayLine>[
+        (mark: null, text: 'Yesterday: Wine 3 drinks, last at 22:05'),
+      ]);
+      expect(lines, <String>[
+        'Sleeping heart rate: 57 bpm, usual 54 · 3 above',
+        'HRV: 41 ms, usual range 45–51 · below',
+        'Sleep: 6 h 50 m, usual 7 h 15 m · 25 min under',
+        'Yesterday: Wine 3 drinks, last at 22:05',
+      ]);
+      expect(lastNightText(night, null), hasLength(3));
+      expect(
+        insightsText(
+          cards: const <InsightCard>[],
+          refused: const <HabitRefusal>[],
+          firstDay: null,
+          nameOf: (String id) => id,
+          locale: 'en',
+          lastNight: lines,
+          emptyTitle: InsightsPage.earlyTitle,
+          emptyBody: InsightsPage.earlyBody(9, 21),
+        ),
+        '${InsightsPage.title}\n\n'
+        '${InsightsPage.lastNightHeading}\n${lines.join('\n')}\n\n'
+        '${InsightsPage.costsHeading}\n'
+        '${InsightsPage.earlyTitle}: ${InsightsPage.earlyBody(9, 21)}\n\n'
+        '${InsightsPage.foot}\n',
+      );
+    });
   });
 
   group('copy', () {

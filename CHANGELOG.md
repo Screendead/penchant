@@ -88,6 +88,13 @@ pull request titles (`gh pr list --state merged`).
   morphs its line into the new range, instead of putting a spinner in its place.
 - A habit's history opens with a Last 30 days card: the total, a 24-hour ring of when it happened, and the
   three hours that hold the most.
+- Insights is organised by question: What it costs (the two largest findings, then "More on what it costs" for the
+  rest and the habits with nothing clear yet), How cutting down is going, and What sets it off. The last two say
+  what they will show until Penchant can work them out. At the top, last night against your usual: sleeping heart
+  rate, HRV while in bed and time asleep against your past four weeks, with what you logged the day before. Each
+  morning until noon, Today shows last night's sleeping heart rate in one line under the dial; a tap opens Insights,
+  where the check shows while the rest is still being worked out. Copy as text includes it. Health data stays on
+  your iPhone.
 
 ### Fixed
 

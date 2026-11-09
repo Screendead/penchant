@@ -26,6 +26,7 @@ import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/guest_expiry_banner.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/last_night_line.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/sync_status.dart';
@@ -399,6 +400,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                             ),
                           ),
                         PendingDayNote(selectedDate: day),
+                        if (day == today) const LastNightLine(),
                         const SizedBox(height: 10),
                         if (vices == null)
                           const Padding(

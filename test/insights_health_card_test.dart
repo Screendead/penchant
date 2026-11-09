@@ -27,6 +27,12 @@ Future<void> _pump(WidgetTester tester, List<Override> overrides) async {
   await tester.pumpAndSettle();
 }
 
+// Once Health is read with nothing to ask, its card sits in the drill-in.
+Future<void> _openCosts(WidgetTester tester) async {
+  await tester.tap(find.text(InsightsPage.moreCosts));
+  await tester.pumpAndSettle();
+}
+
 void _prefs({bool connected = true, int? askedVersion}) =>
     SharedPreferences.setMockInitialValues(<String, Object>{
       healthConnectedKey: connected,
@@ -65,6 +71,8 @@ void main() {
     expect(health.authorizationRequests, 1);
     expect(health.reads, reads + insightsHealthCalls);
     expect(find.text(InsightsPage.askAgainLabel), findsNothing);
+    expect(find.text('Connected'), findsNothing);
+    await _openCosts(tester);
     expect(find.text('Connected'), findsOneWidget);
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     expect(prefs.getInt(healthAskedVersionKey), healthReadTypesVersion);
@@ -76,6 +84,8 @@ void main() {
     _prefs(askedVersion: healthReadTypesVersion);
     final FakeHealthSource health = _health(HealthRequestStatus.unnecessary);
     await _pump(tester, insightsOverrides(health: health));
+    expect(find.text('Connected'), findsNothing);
+    await _openCosts(tester);
 
     expect(find.text('Connected'), findsOneWidget);
     expect(find.text(InsightsPage.askAgainLabel), findsNothing);
@@ -104,6 +114,7 @@ void main() {
     );
 
     expect(find.text(InsightsPage.askAgainLabel), findsNothing);
+    await _openCosts(tester);
     expect(find.text('Connected'), findsOneWidget);
   });
 

@@ -3,19 +3,28 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
+import 'package:tracker/providers/last_night_provider.dart';
+import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 /// What follows each habit, from the whole journal and Apple Health, worked
@@ -42,14 +51,37 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String nothingClear = 'Nothing clear yet';
   static const String onIPhone = 'Available on iPhone';
   static const String refusedHeading = 'Not enough to say';
-  static const String foundHeading = 'What follows';
   static const String nothingClearBody =
       'No habit has a difference that stands out from your usual days yet.';
   static const String copyLabel = 'Copy as text';
 
-  /// Cards shown before "Show N more".
-  static const int shownCards = 6;
-  static String showMore(int n) => 'Show $n more';
+  static const String lastNightHeading = 'Last night against your usual';
+  static const String costsHeading = 'What it costs';
+  static const String cuttingDownHeading = 'How cutting down is going';
+  static const String setsOffHeading = 'What sets it off';
+
+  /// Cards "What it costs" shows before its "more" row.
+  static const int previewCards = 2;
+  static const String moreCosts = 'More on what it costs';
+  static String more(int n) => '$n more';
+
+  static const String earlyTitle = 'Not enough to say yet';
+  static String earlyBody(int have, int need) =>
+      'Each habit needs $need days with both your journal and Apple Health. '
+      'You have $have.';
+
+  // Engines p, q and k (HANDOVER item 7) fill these; until then they say
+  // what will be here, never a count nothing computes.
+  static const String cuttingDownTitle = 'Nothing to show yet';
+  static const String cuttingDownBody =
+      'When a habit stays lower for a few weeks, this will show what moved '
+      'with it: your sleep and heart against before, and any habit that rose '
+      'in its place.';
+  static const String setsOffTitle = 'Nothing to show yet';
+  static const String setsOffBody =
+      'This will show what tends to come before each habit, such as a short '
+      'night or another habit.';
+
   static const String copied = 'Insights copied';
   static const String foot =
       'Worked out on this device from your journal and Apple Health; '
@@ -76,7 +108,6 @@ class InsightsPage extends ConsumerStatefulWidget {
 
 class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connecting = false;
-  bool _showAll = false;
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -130,25 +161,23 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     final AsyncValue<InsightsView> view = ref.watch(insightsProvider);
     final AsyncValue<List<Vice>> habits = ref.watch(viceListProvider);
     final List<Vice>? vices = habits.value;
-    final Map<String, String> names = <String, String>{
-      for (final Vice v in vices ?? const <Vice>[]) v.id: v.name,
-    };
-    final Map<String, Unit> units = <String, Unit>{
-      for (final Vice v in vices ?? const <Vice>[]) v.id: v.unit,
-    };
     // Health's state is known before the journal loads, so the card shows it.
     final HealthState? health =
         view.value?.health ?? ref.watch(healthStateProvider).value;
+    final bool askAgain = ref.watch(healthAskAgainProvider).value ?? false;
 
     return CardPage(
       title: InsightsPage.title,
       children: <Widget>[
-        _HealthCard(
-          state: health,
-          askAgain: ref.watch(healthAskAgainProvider).value ?? false,
-          connecting: _connecting,
-          onConnect: _connect,
-        ),
+        // Once Health is read with nothing to ask, its card moves to the
+        // drill-in, under the findings it explains.
+        if (health != null && !_healthSettled(health, askAgain))
+          _HealthCard(
+            state: health,
+            askAgain: askAgain,
+            connecting: _connecting,
+            onConnect: _connect,
+          ),
         ...switch (view) {
           AsyncError() => <Widget>[
             const SizedBox(height: DialSpace.l),
@@ -168,11 +197,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           ],
           AsyncData(:final InsightsView value) when vices != null => _body(
             value,
-            names,
-            units,
+            vices,
           ),
-          _ => const <Widget>[
-            _MessageCard(InsightsPage.loadingLabel, busy: true),
+          // Today's line opens here, so last night waits for no engine.
+          _ => <Widget>[
+            if (vices != null)
+              _LastNightSection(vices: vices, marks: habitMarks(vices)),
+            const _MessageCard(InsightsPage.loadingLabel, busy: true),
           ],
         },
         const CardFoot(InsightsPage.foot),
@@ -180,13 +211,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     );
   }
 
-  List<Widget> _body(
-    InsightsView view,
-    Map<String, String> names,
-    Map<String, Unit> units,
-  ) {
-    String nameOf(String id) => names[id] ?? 'a removed habit';
-    Unit unitOf(String id) => units[id] ?? Unit.fallback;
+  List<Widget> _body(InsightsView view, List<Vice> vices) {
     switch (view.health) {
       case HealthOnIPhone():
         return const <Widget>[
@@ -249,6 +274,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
     if (result is InsightsFailed) {
       return <Widget>[
+        _LastNightSection(vices: vices, marks: habitMarks(vices)),
         _MessageCard(
           'Insights couldn’t be worked out',
           body: 'Try again in a moment.',
@@ -256,89 +282,79 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         ),
       ];
     }
-    final InsightsComputed computed = result as InsightsComputed;
-    final InsightsReport report = computed.report;
-    final List<InsightCard> cards = insightCards(<HabitFinding>[
-      for (final HabitFinding f in report.findings)
-        if (names.containsKey(f.habitId)) f,
-    ], floors: report.floors);
-    final int hidden = _showAll
-        ? 0
-        : max(0, cards.length - InsightsPage.shownCards);
-    final List<HabitRefusal> refused = <HabitRefusal>[
-      for (final HabitRefusal r in report.refused)
-        if (names.containsKey(r.habitId)) r,
-    ]..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
-    final String locale = formatLocale;
-    // A legacy entry of a vice that is gone would date the span from a habit
-    // the page doesn't show.
-    final DateTime? firstDay = insightsFirstDay(
-      computed.firstDays,
-      names.containsKey,
-    );
+    final _Costs costs = _Costs(result as InsightsComputed, vices);
+    final List<InsightCard> cards = costs.cards;
+    final int hidden = max(0, cards.length - InsightsPage.previewCards);
     return <Widget>[
-      if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
-      if (view.hoursPending)
-        const CardFoot(InsightsPage.hoursAfterPending)
-      else if (report.hoursAfterChecks > 0)
-        const CardFoot(InsightsPage.hoursAfterNote),
-      const CardSectionLabel(InsightsPage.foundHeading),
-      if (cards.isEmpty)
-        const _MessageCard(
-          InsightsPage.nothingClear,
-          top: 0,
-          body: InsightsPage.nothingClearBody,
-        ),
+      if (costs.firstDay case final DateTime first)
+        CardFoot(InsightsPage.span(first)),
+      if (view.hoursPending) const CardFoot(InsightsPage.hoursAfterPending),
+      _LastNightSection(vices: vices, marks: costs.marks),
+      const CardSectionLabel(InsightsPage.costsHeading),
+      if (cards.isEmpty) costs.emptyBox(),
       for (int i = 0; i < cards.length - hidden; i++)
-        _FindingCard(
-          card: cards[i],
-          habit: nameOf(cards[i].habitId),
-          unit: unitOf(cards[i].habitId),
-          locale: locale,
-          top: i == 0 ? 0 : DialSpace.s,
-        ),
-      if (hidden > 0)
-        DialCard(
-          children: <Widget>[
-            CardRow(
-              label: InsightsPage.showMore(hidden),
-              onTap: () => setState(() => _showAll = true),
-            ),
-          ],
-        ),
-      if (refused.isNotEmpty) ...<Widget>[
-        const CardSectionLabel(InsightsPage.refusedHeading),
-        DialCard(
-          top: 0,
-          children: <Widget>[
-            for (final HabitRefusal r in refused)
-              CardRow(
-                label: nameOf(r.habitId),
-                subtitle: refusalReason(r, nameOf, floors: report.floors),
-              ),
-          ],
-        ),
-      ],
+        costs.card(cards[i], top: i == 0 ? 0 : DialSpace.xs),
+      // Always there: the drill-in also holds the refusals, the hours-after
+      // note and, once settled, the Health card.
       DialCard(
+        top: DialSpace.xs,
         children: <Widget>[
           CardRow(
-            label: InsightsPage.copyLabel,
-            subtitle: 'To the clipboard, for a note or a message',
-            onTap: () => _copy(
-              insightsText(
-                cards: cards,
-                refused: refused,
-                floors: report.floors,
-                firstDay: firstDay,
-                nameOf: nameOf,
-                unitOf: unitOf,
-                locale: locale,
+            label: InsightsPage.moreCosts,
+            value: hidden > 0 ? Text(InsightsPage.more(hidden)) : null,
+            glyph: DialGlyph.right,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const InsightsCostsPage(),
               ),
             ),
           ),
         ],
       ),
+      const CardSectionLabel(InsightsPage.cuttingDownHeading),
+      const NotYetBox(
+        InsightsPage.cuttingDownTitle,
+        body: InsightsPage.cuttingDownBody,
+      ),
+      const CardSectionLabel(InsightsPage.setsOffHeading),
+      const NotYetBox(
+        InsightsPage.setsOffTitle,
+        body: InsightsPage.setsOffBody,
+      ),
+      DialCard(
+        children: <Widget>[
+          CardRow(
+            label: InsightsPage.copyLabel,
+            subtitle: 'To the clipboard, for a note or a message',
+            onTap: () => _copy(costs.text(_lastNightLines(costs.marks, vices))),
+          ),
+        ],
+      ),
     ];
+  }
+
+  // The last-night section as the page shows it now, for the copied text.
+  List<String> _lastNightLines(Map<String, HabitMark> marks, List<Vice> vices) {
+    final LastNight? night = ref.read(lastNightProvider).value;
+    if (night == null) return const <String>[];
+    final DateTime today = ref.read(todayProvider);
+    final List<ViceActivity>? journal = ref
+        .read(viceActivityRangeProvider(insightsRange(today)))
+        .value;
+    return lastNightText(
+      night,
+      journal == null
+          ? null
+          : yesterdayLines(
+              journal,
+              vices,
+              marks,
+              today,
+              alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(
+                context,
+              ),
+            ),
+    );
   }
 
   // Health findings reach the clipboard only from this tap; nothing else may
@@ -352,7 +368,163 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   }
 }
 
-/// The findings and refusals as the page shows them, in plain text.
+// Read with values and nothing new to ask: the card only says so.
+bool _healthSettled(HealthState state, bool askAgain) =>
+    !askAgain && state is HealthReady && state.values.isNotEmpty;
+
+/// "What it costs" in full: every card, the habits with nothing clear and
+/// why, and the Health card once it has nothing to ask.
+class InsightsCostsPage extends ConsumerWidget {
+  const InsightsCostsPage({super.key});
+
+  static const String lede =
+      'What follows each habit in your sleep, heart and activity';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final InsightsView? view = ref.watch(insightsProvider).value;
+    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final bool askAgain = ref.watch(healthAskAgainProvider).value ?? false;
+    final InsightsResult? result = view?.result;
+    return CardPage(
+      title: InsightsPage.costsHeading,
+      children: <Widget>[
+        const CardFoot(lede),
+        if (view != null && result is InsightsComputed && vices != null)
+          ..._body(_Costs(result, vices), view.hoursPending)
+        else
+          const _MessageCard(InsightsPage.loadingLabel, busy: true),
+        if (view?.health case final HealthState health
+            when _healthSettled(health, askAgain))
+          _HealthCard(state: health, askAgain: false),
+        const CardFoot(InsightsPage.foot),
+      ],
+    );
+  }
+
+  List<Widget> _body(_Costs costs, bool hoursPending) => <Widget>[
+    if (hoursPending)
+      const CardFoot(InsightsPage.hoursAfterPending)
+    else if (costs.report.hoursAfterChecks > 0)
+      const CardFoot(InsightsPage.hoursAfterNote),
+    if (costs.cards.isEmpty)
+      Padding(
+        padding: const EdgeInsets.only(top: DialSpace.l),
+        child: costs.emptyBox(),
+      ),
+    for (final (int i, InsightCard card) in costs.cards.indexed)
+      costs.card(card, top: i == 0 ? DialSpace.l : DialSpace.xs),
+    if (costs.refused.isNotEmpty) ...<Widget>[
+      const CardSectionLabel(InsightsPage.refusedHeading),
+      DialCard(
+        top: 0,
+        children: <Widget>[
+          for (final HabitRefusal r in costs.refused)
+            CardRow(
+              label: costs.nameOf(r.habitId),
+              subtitle: refusalReason(
+                r,
+                costs.nameOf,
+                floors: costs.report.floors,
+              ),
+            ),
+        ],
+      ),
+    ],
+  ];
+}
+
+// The report as both "What it costs" views show it: the habits the page
+// knows, by name, unit and mark.
+class _Costs {
+  _Costs(InsightsComputed computed, List<Vice> vices)
+    : report = computed.report,
+      marks = habitMarks(vices),
+      _names = <String, String>{for (final Vice v in vices) v.id: v.name},
+      _units = <String, Unit>{for (final Vice v in vices) v.id: v.unit} {
+    cards = insightCards(<HabitFinding>[
+      for (final HabitFinding f in report.findings)
+        if (_names.containsKey(f.habitId)) f,
+    ], floors: report.floors);
+    refused = <HabitRefusal>[
+      for (final HabitRefusal r in report.refused)
+        if (_names.containsKey(r.habitId)) r,
+    ]..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
+    // A legacy entry of a vice that is gone would date the span from a habit
+    // the page doesn't show.
+    firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
+  }
+
+  final InsightsReport report;
+  final Map<String, HabitMark> marks;
+  final Map<String, String> _names;
+  final Map<String, Unit> _units;
+  late final List<InsightCard> cards;
+  late final List<HabitRefusal> refused;
+  late final DateTime? firstDay;
+
+  String nameOf(String id) => _names[id] ?? 'a removed habit';
+  Unit unitOf(String id) => _units[id] ?? Unit.fallback;
+
+  Widget card(InsightCard card, {required double top}) => _FindingCard(
+    card: card,
+    habit: nameOf(card.habitId),
+    unit: unitOf(card.habitId),
+    mark: marks[card.habitId] ?? const HabitMark(0),
+    locale: formatLocale,
+    top: top,
+  );
+
+  // With no card: every habit still short of the days a comparison needs
+  // says how far the furthest along has come; otherwise nothing is clear.
+  ({String title, String body, double? progress}) emptyCopy() {
+    const InsightGates gates = InsightGates();
+    final bool early =
+        refused.isNotEmpty &&
+        refused.every(
+          (HabitRefusal r) =>
+              r.reason == RefusalReason.tooFewDays &&
+              r.usableDays < gates.minDays,
+        );
+    if (!early) {
+      return (
+        title: InsightsPage.nothingClear,
+        body: InsightsPage.nothingClearBody,
+        progress: null,
+      );
+    }
+    final int have = refused.map((HabitRefusal r) => r.usableDays).reduce(max);
+    return (
+      title: InsightsPage.earlyTitle,
+      body: InsightsPage.earlyBody(have, gates.minDays),
+      progress: have / gates.minDays,
+    );
+  }
+
+  Widget emptyBox() {
+    final ({String title, String body, double? progress}) copy = emptyCopy();
+    return NotYetBox(copy.title, body: copy.body, progress: copy.progress);
+  }
+
+  String text(List<String> lastNight) {
+    final ({String title, String body, double? progress}) empty = emptyCopy();
+    return insightsText(
+      cards: cards,
+      refused: refused,
+      floors: report.floors,
+      firstDay: firstDay,
+      nameOf: nameOf,
+      unitOf: unitOf,
+      locale: formatLocale,
+      lastNight: lastNight,
+      emptyTitle: empty.title,
+      emptyBody: empty.body,
+    );
+  }
+}
+
+/// The page as it shows it, in plain text: last night's rows ([lastNight],
+/// from [lastNightText]), then the findings and refusals.
 String insightsText({
   required List<InsightCard> cards,
   required List<HabitRefusal> refused,
@@ -361,15 +533,20 @@ String insightsText({
   required String Function(String habitId) nameOf,
   Unit Function(String habitId) unitOf = _anyUnit,
   required String locale,
+  List<String> lastNight = const <String>[],
+  String emptyTitle = InsightsPage.nothingClear,
+  String emptyBody = InsightsPage.nothingClearBody,
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
   if (firstDay != null) out.write('\n${InsightsPage.span(firstDay)}');
-  out.write('\n\n${InsightsPage.foundHeading}\n');
-  if (cards.isEmpty) {
-    out.write(
-      '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n',
-    );
+  if (lastNight.isNotEmpty) {
+    out.write('\n\n${InsightsPage.lastNightHeading}');
+    for (final String line in lastNight) {
+      out.write('\n$line');
+    }
   }
+  out.write('\n\n${InsightsPage.costsHeading}\n');
+  if (cards.isEmpty) out.write('$emptyTitle: $emptyBody\n');
   for (final InsightCard card in cards) {
     final HabitFinding f = card.headline;
     final String habit = nameOf(f.habitId);
@@ -406,8 +583,8 @@ class _HealthCard extends StatelessWidget {
   const _HealthCard({
     required this.state,
     required this.askAgain,
-    required this.connecting,
-    required this.onConnect,
+    this.connecting = false,
+    this.onConnect,
   });
 
   final HealthState? state;
@@ -415,7 +592,9 @@ class _HealthCard extends StatelessWidget {
   /// Connected before the app read a type it reads now.
   final bool askAgain;
   final bool connecting;
-  final VoidCallback onConnect;
+
+  /// Shows the Health sheet; null where no state offers it.
+  final VoidCallback? onConnect;
 
   @override
   Widget build(BuildContext context) {
@@ -478,19 +657,12 @@ class _HealthCard extends StatelessWidget {
 }
 
 class _MessageCard extends StatelessWidget {
-  const _MessageCard(
-    this.title, {
-    this.body,
-    this.busy = false,
-    this.onRetry,
-    this.top = DialSpace.l,
-  });
+  const _MessageCard(this.title, {this.body, this.busy = false, this.onRetry});
 
   final String title;
   final String? body;
   final bool busy;
   final VoidCallback? onRetry;
-  final double top;
 
   @override
   Widget build(BuildContext context) {
@@ -498,7 +670,6 @@ class _MessageCard extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final bool still = MediaQuery.disableAnimationsOf(context);
     return DialCard(
-      top: top,
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
@@ -555,6 +726,7 @@ class _FindingCard extends StatelessWidget {
     required this.card,
     required this.habit,
     required this.unit,
+    required this.mark,
     required this.locale,
     required this.top,
   });
@@ -562,6 +734,7 @@ class _FindingCard extends StatelessWidget {
   final InsightCard card;
   final String habit;
   final Unit unit;
+  final HabitMark mark;
   final String locale;
   final double top;
 
@@ -580,9 +753,17 @@ class _FindingCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                '$habit · ${card.family.label}',
-                style: DialTypeScale.label.copyWith(color: colors.muted),
+              Row(
+                children: <Widget>[
+                  HabitPip(mark: mark),
+                  const SizedBox(width: DialSpace.xs),
+                  Expanded(
+                    child: Text(
+                      '$habit · ${card.family.label}',
+                      style: DialTypeScale.label.copyWith(color: colors.muted),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
               Text(
@@ -693,4 +874,264 @@ class _RangePainter extends CustomPainter {
       old.surface != surface ||
       old.zero != zero ||
       old.track != track;
+}
+
+/// The full last-night check, at the top of Insights: sleeping heart rate,
+/// HRV and time asleep against the nights before, and what was logged the
+/// day before. Today's line is its first row. Nothing while Health is read.
+class _LastNightSection extends ConsumerWidget {
+  const _LastNightSection({required this.vices, required this.marks});
+
+  final List<Vice> vices;
+  final Map<String, HabitMark> marks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final LastNight? night = ref.watch(lastNightProvider).value;
+    if (night == null) return const SizedBox.shrink();
+    final DateTime today = ref.watch(todayProvider);
+    // The page's own journal read, so this costs no query of its own; no
+    // "nothing logged" before it answers.
+    final List<ViceActivity>? journal = ref
+        .watch(viceActivityRangeProvider(insightsRange(today)))
+        .value;
+    final List<Widget> rows = <Widget>[
+      for (final NightRow row in nightRows(night))
+        _NightRow(label: row.label, value: row.value, note: row.note),
+      if (journal != null)
+        for (final YesterdayLine line in yesterdayLines(
+          journal,
+          vices,
+          marks,
+          today,
+          alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+        ))
+          _YesterdayRow(mark: line.mark, text: line.text),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const CardSectionLabel(InsightsPage.lastNightHeading),
+        DialCard(top: 0, inset: 0, children: rows),
+      ],
+    );
+  }
+}
+
+/// One measure's row: its label, each number with its unit ("6 h 50 m" is
+/// two) and the note against the usual.
+typedef NightRow = ({String label, List<(String, String)> value, String note});
+
+/// The rows of the last-night check, in the order shown.
+List<NightRow> nightRows(LastNight night) => <NightRow>[
+  if (night.sleepingHeartRate case final NightCompare c)
+    (
+      label: 'Sleeping heart rate',
+      value: <(String, String)>[('${c.shownValue}', 'bpm')],
+      note: lastNightHeartNote(c),
+    ),
+  if (night.heartRateVariability case final NightCompare c)
+    (
+      label: 'HRV',
+      value: <(String, String)>[('${c.shownValue}', 'ms')],
+      note: lastNightHrvNote(c),
+    ),
+  if (night.asleep case final NightCompare c)
+    (
+      label: 'Sleep',
+      value: <(String, String)>[
+        ('${c.shownValue ~/ 60}', 'h'),
+        ('${c.shownValue % 60}', 'm'),
+      ],
+      note: lastNightSleepNote(c),
+    ),
+];
+
+/// "Yesterday: Wine 3 drinks, last at 22:05", with the habit's mark; or the
+/// one line saying nothing was logged.
+typedef YesterdayLine = ({HabitMark? mark, String text});
+
+/// What was logged the day before, as the engine keys it: a use before
+/// 05:00 counts to the evening before, so last night's drinks after midnight
+/// are yesterday's. Habits in creation order; archived ones left out.
+List<YesterdayLine> yesterdayLines(
+  List<ViceActivity> journal,
+  List<Vice> vices,
+  Map<String, HabitMark> marks,
+  DateTime today, {
+  required bool alwaysUse24HourFormat,
+}) {
+  final DateTime from = addDays(
+    today,
+    -1,
+  ).add(const Duration(hours: lateUseCutoffHour));
+  final DateTime to = today.add(const Duration(hours: lateUseCutoffHour));
+  final Map<String, ({num total, DateTime last})> used =
+      <String, ({num total, DateTime last})>{};
+  for (final ViceActivity a in journal) {
+    final DateTime at = a.createdAt.toDate();
+    if (at.isBefore(from) || !at.isBefore(to)) continue;
+    final ({num total, DateTime last})? had = used[a.viceID];
+    used[a.viceID] = (
+      total: (had?.total ?? 0) + a.measure,
+      last: had == null || at.isAfter(had.last) ? at : had.last,
+    );
+  }
+  final List<Vice> shown = <Vice>[
+    for (final Vice v in vices)
+      if (!v.archived && used.containsKey(v.id)) v,
+  ]..sort((a, b) => marks[a.id]!.creationIndex - marks[b.id]!.creationIndex);
+  if (shown.isEmpty) {
+    return const <YesterdayLine>[
+      (mark: null, text: 'Nothing logged yesterday'),
+    ];
+  }
+  return <YesterdayLine>[
+    for (final Vice v in shown)
+      (
+        mark: marks[v.id],
+        text:
+            'Yesterday: ${v.name} ${v.unit.label(used[v.id]!.total)}, '
+            'last at ${formatTime(used[v.id]!.last, alwaysUse24HourFormat: alwaysUse24HourFormat)}',
+      ),
+  ];
+}
+
+/// The check as text, one row a line: "Sleeping heart rate: 57 bpm, usual
+/// 54 · 3 above". [yesterday] is null while the journal has not answered.
+List<String> lastNightText(
+  LastNight night,
+  List<YesterdayLine>? yesterday,
+) => <String>[
+  for (final NightRow row in nightRows(night))
+    '${row.label}: '
+        '${row.value.map(((String, String) v) => '${v.$1} ${v.$2}').join(' ')}'
+        ', ${row.note}',
+  if (yesterday != null)
+    for (final YesterdayLine line in yesterday) line.text,
+];
+
+/// "usual 54 · 3 above", "usual 54 · in your usual range".
+String lastNightHeartNote(NightCompare c) =>
+    'usual ${c.shownUsual} · ${switch (c.side) {
+      NightSide.above => '${c.shownBy} above',
+      NightSide.below => '${c.shownBy} below',
+      NightSide.usual => 'in your usual range',
+    }}';
+
+/// "usual range 45–51 · below"; a range whose ends round to one number is
+/// "usual 48".
+String lastNightHrvNote(NightCompare c) {
+  final int low = c.low.round();
+  final int high = c.high.round();
+  final String usual = low == high ? 'usual $low' : 'usual range $low–$high';
+  return '$usual · ${switch (c.side) {
+    NightSide.above => 'above',
+    NightSide.below => 'below',
+    NightSide.usual => low == high ? 'in your usual range' : 'within it',
+  }}';
+}
+
+/// "usual 7 h 15 m · 25 min under".
+String lastNightSleepNote(NightCompare c) =>
+    'usual ${formatSleep(c.usual)} · ${switch (c.side) {
+      NightSide.above => '${c.shownBy} min over',
+      NightSide.below => '${c.shownBy} min under',
+      NightSide.usual => 'in your usual range',
+    }}';
+
+/// Minutes as "6 h 50 m".
+String formatSleep(double minutes) {
+  final int whole = minutes.round();
+  return '${whole ~/ 60} h ${whole % 60} m';
+}
+
+class _NightRow extends StatelessWidget {
+  const _NightRow({
+    required this.label,
+    required this.value,
+    required this.note,
+  });
+
+  final String label;
+
+  /// Each number with its unit: "6 h 50 m" is two.
+  final List<(String, String)> value;
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final DialColors colors = DialColors.of(context);
+    final DialType type = DialType.of(context);
+    final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    return MergeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    label,
+                    style: DialTypeScale.body.copyWith(color: scheme.onSurface),
+                  ),
+                ),
+                Text.rich(
+                  TextSpan(
+                    children: <InlineSpan>[
+                      for (final (int i, (String number, String unit))
+                          in value.indexed) ...<InlineSpan>[
+                        TextSpan(text: number, style: type.monoM),
+                        TextSpan(
+                          text: i == value.length - 1 ? ' $unit' : ' $unit ',
+                          style: small,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(note, style: small),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _YesterdayRow extends StatelessWidget {
+  const _YesterdayRow({required this.text, this.mark});
+
+  final String text;
+  final HabitMark? mark;
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final HabitMark? mark = this.mark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      child: Row(
+        children: <Widget>[
+          if (mark != null) ...<Widget>[
+            HabitPip(mark: mark),
+            const SizedBox(width: DialSpace.xs),
+          ],
+          Expanded(
+            child: Text(
+              text,
+              style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
