@@ -14,7 +14,7 @@ pull request titles (`gh pr list --state merged`).
   little to say and why. Worked out on the device; Health data never leaves it (#173).
 - Insights checks every habit against every Health measure at once, so it now allows for that: a difference that
   could be a fluke among so many checks is listed as "Could be chance: one of many comparisons" rather than shown as a
-  finding (#PR).
+  finding (#175).
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
