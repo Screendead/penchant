@@ -198,7 +198,12 @@ enum HealthDays {
     let days =
       calendar.dateComponents([.day], from: calendar.startOfDay(for: noon), to: calendar.startOfDay(for: date)).day ?? 0
     let c = calendar.dateComponents([.hour, .minute, .second], from: date)
-    return Double(days * 24 * 60 + ((c.hour ?? 0) - 12) * 60 + (c.minute ?? 0)) + Double(c.second ?? 0) / 60
+    // In one expression, CI's Swift compiler gives up type-checking it.
+    let hour: Int = c.hour ?? 0
+    let minute: Int = c.minute ?? 0
+    let second: Int = c.second ?? 0
+    let whole: Int = days * 24 * 60 + (hour - 12) * 60 + minute
+    return Double(whole) + Double(second) / 60
   }
 
   static func minutes(_ samples: [SleepSample], _ values: Set<Int>) -> Double {
