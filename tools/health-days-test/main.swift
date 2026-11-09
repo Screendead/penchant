@@ -229,9 +229,8 @@ do {
   check("staged nap and another app's night", rows["2026-11-08 sleepAsleep"] == 520 && rows["2026-11-08 sleepCore"] == 40, "\(rows)")
 }
 
-// Another app's sleep that the Watch wrote nothing in, on a night whose main
-// sleep the Watch recorded, is dropped: the Watch was worn and did not call it
-// sleep. Watch core 00:00-03:00, awake 03:00-04:00, deep 04:00-08:00 on
+// Another app's sleep that has no Watch sample, before a night's main sleep
+// that has one, is dropped. Watch core 00:00-03:00, awake 03:00-04:00, deep 04:00-08:00 on
 // 2 March; the app's asleep 17:00-19:00 the evening before.
 func march(_ samples: [HealthDays.SleepSample]) -> [String: Double] {
   values(HealthDays.sleepRows(samples, metrics: allSleep, start: at(2026, 3, 1), end: at(2026, 3, 8), calendar))
@@ -261,7 +260,7 @@ do {
 
 // The Watch dies at 01:00 and the app covers 23:00-07:00: the app's night
 // still counts, being one sleep with the Watch's piece in it, and the evening
-// span is dropped as the Watch was worn that night.
+// span before it is dropped.
 do {
   let died = from("com.apple.health.watch", watch: true, [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 1), 3)])
   let appNight = from("com.example.sleepapp", [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 7), 1)])
@@ -291,8 +290,55 @@ do {
     check("app-only nap, no Watch that night", rows["2026-03-03 sleepAsleep"] == 520, "\(rows)")
     check("app-only nap, the Watch's night", rows["2026-03-02 sleepAsleep"] == 420, "\(rows)")
   }
-  let nap = from("com.example.sleepapp", [sample(at(2026, 3, 2, 15), at(2026, 3, 2, 15, 40), 1)])
-  check("app-only nap alone on its night", march(marchWatch + nap)["2026-03-03 sleepAsleep"] == 40)
+}
+
+// The Watch records 23:00-04:00 and dies; the app's asleep 23:00-04:30 is the
+// same sleep, and its 05:15-07:00 after the gap is a sleep of its own, after
+// the main one, so it counts.
+do {
+  let watch = from("com.apple.health.watch", watch: true, [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 4), 3)])
+  let app = from(
+    "com.example.sleepapp",
+    [
+      sample(at(2026, 3, 1, 23), at(2026, 3, 2, 4, 30), 1),
+      sample(at(2026, 3, 2, 5, 15), at(2026, 3, 2, 7), 1),
+    ])
+  for order in [watch + app, app + watch] {
+    let rows = march(order)
+    check("Watch died, later app sleep", rows["2026-03-02 sleepAsleep"] == 405 && rows["2026-03-02 sleepCore"] == 300, "\(rows)")
+  }
+}
+
+// The Watch records 23:00-06:00 and comes off to charge; the app's 06:45-09:00
+// after it counts.
+do {
+  let watch = from("com.apple.health.watch", watch: true, [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 6), 3)])
+  let app = from("com.example.sleepapp", [sample(at(2026, 3, 2, 6, 45), at(2026, 3, 2, 9), 1)])
+  for order in [watch + app, app + watch] {
+    check("Watch off to charge, later app sleep", march(order)["2026-03-02 sleepAsleep"] == 555, "\(march(order))")
+  }
+}
+
+// A tie for the main sleep goes to the one with a Watch sample: Watch core
+// 00:00-02:00 and the app's 17:00-19:00 the evening before, 120 each.
+do {
+  let watch = from("com.apple.health.watch", watch: true, [sample(at(2026, 3, 2, 0), at(2026, 3, 2, 2), 3)])
+  for order in [watch + appEvening, appEvening + watch] {
+    let rows = march(order)
+    check("tie goes to the Watch", rows["2026-03-02 sleepAsleep"] == 120 && rows["2026-03-02 sleepCore"] == 120, "\(rows)")
+  }
+}
+
+// Only a Watch drops anything, whatever else the read holds: a ring's staged
+// night 23:00-07:00 on 4 March keeps the app's nap 14:00-15:00 before it, with
+// or without a Watch night elsewhere in the read.
+do {
+  let ring = from("com.example.ring", [sample(at(2026, 3, 3, 23), at(2026, 3, 4, 7), 3)])
+  let nap = from("com.example.sleepapp", [sample(at(2026, 3, 3, 14), at(2026, 3, 3, 15), 1)])
+  for order in [ring + nap, nap + ring, marchWatch + ring + nap, nap + ring + marchWatch] {
+    let rows = march(order)
+    check("ring night keeps the app's nap", rows["2026-03-04 sleepAsleep"] == 540, "\(rows)")
+  }
 }
 
 // A sleep goes to the night its chosen source ends on. Another app's span to

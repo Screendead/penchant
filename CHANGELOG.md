@@ -91,8 +91,9 @@ pull request titles (`gh pr list --state merged`).
   most of that sleep, and so does your heart rate while asleep. A night the Watch caught only part of, or a nap only
   the Watch caught, takes the rest from the app that recorded it (#182).
 - Sleep from Apple Health no longer adds another app's evening or daytime sleep to a night Apple Watch recorded:
-  on a night whose main sleep the Watch recorded, a sleep only the other app saw is left out. A night the app alone
-  recorded, or an app's nap on a night the Watch missed, still counts (#186).
+  a sleep only the other app saw, before the night's main sleep that the Watch recorded, is left out. What the app
+  recorded after the Watch stopped, a night the app alone recorded, and a night's naps when its main sleep is the
+  app's still count (#186).
 - On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
   your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
   background to save it. If that is cut short, the tap still waits on the device and saves later, as before.

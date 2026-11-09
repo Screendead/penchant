@@ -199,7 +199,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         asleep, bundle id), whose span takes in 3/4 of the sleep's asleep time from every source, else the one with
         the most asleep; in bed from that source or else the one with the most; the sleep is keyed by its chosen
         source's end; sleeping heart rate uses the same choice. Review, merge, install.
-        Then **#186** `fix/health-sleep-sessions`: a night whose main sleep has the Watch drops sleeps the Watch wrote nothing in.
+        Then **#186** `fix/health-sleep-sessions`: Watch-less sleeps before a Watch main sleep drop; waits on Jack (recommend: ship; it drops an app's real nap too).
      5. **i. Dose and timing** next (after 3; same engine files). Jack, 2026-11-09: a habit used every day must still
         yield insights: amount per day, time of first and last use, the hours around each use (j), co-occurrence
         with other habits (l), and the before and after of a streak's start (m).
