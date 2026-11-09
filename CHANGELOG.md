@@ -77,8 +77,9 @@ pull request titles (`gh pr list --state merged`).
 ### Fixed
 
 - Sleep from Apple Health no longer counts the time you lay awake as asleep when another sleep app also records
-  the night: each night's sleep, stages and awake time now come from one source, the one that records stages
-  (usually Apple Watch), and so does your heart rate while asleep (#182).
+  the night: each sleep's time asleep, stages and awake time now come from one source, Apple Watch when it recorded
+  most of that sleep, and so does your heart rate while asleep. A night the Watch caught only part of, or a nap only
+  the Watch caught, takes the rest from the app that recorded it (#182).
 - On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
   your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
   background to save it. If that is cut short, the tap still waits on the device and saves later, as before.
