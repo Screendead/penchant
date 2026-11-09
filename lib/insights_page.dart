@@ -23,6 +23,12 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String route = '/insights';
   static const String title = 'Insights';
   static const String connectLabel = 'Connect Apple Health';
+  static const String askAgainLabel = 'Allow new Health data';
+  static const String askAgainBody =
+      'Penchant can read more Health data now. Tap to allow it.';
+  static const String manageLabel = 'Manage Health access';
+  static const String manageBody =
+      'Settings > Privacy & Security > Health > Penchant';
   static const String loadingLabel = 'Working out your insights';
   static const String noHealthData = 'No Health data to read';
   static const String noHealthDataBody =
@@ -121,6 +127,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       children: <Widget>[
         _HealthCard(
           state: health,
+          askAgain: ref.watch(healthAskAgainProvider).value ?? false,
           connecting: _connecting,
           onConnect: _connect,
         ),
@@ -350,29 +357,41 @@ Unit _anyUnit(String _) => Unit.fallback;
 class _HealthCard extends StatelessWidget {
   const _HealthCard({
     required this.state,
+    required this.askAgain,
     required this.connecting,
     required this.onConnect,
   });
 
   final HealthState? state;
+
+  /// Connected before the app read a type it reads now.
+  final bool askAgain;
   final bool connecting;
   final VoidCallback onConnect;
 
   @override
   Widget build(BuildContext context) {
+    CardRow sheetRow(String label, String subtitle) => CardRow(
+      label: label,
+      subtitle: subtitle,
+      enabled: !connecting,
+      glyph: connecting ? null : DialGlyph.right,
+      trailing: connecting
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : null,
+      onTap: onConnect,
+    );
     final Widget row = switch (state) {
-      HealthNotConnected() => CardRow(
-        label: InsightsPage.connectLabel,
-        subtitle: 'Sleep, heart and activity totals, read on this iPhone only',
-        enabled: !connecting,
-        glyph: connecting ? null : DialGlyph.right,
-        trailing: connecting
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : null,
-        onTap: onConnect,
+      HealthNotConnected() => sheetRow(
+        InsightsPage.connectLabel,
+        'Sleep, heart and activity totals, read on this iPhone only',
+      ),
+      HealthReady() when askAgain => sheetRow(
+        InsightsPage.askAgainLabel,
+        InsightsPage.askAgainBody,
       ),
       HealthOnIPhone() => const CardRow(
         label: 'Apple Health',
@@ -395,7 +414,18 @@ class _HealthCard extends StatelessWidget {
         value: Text('Connected'),
       ),
     };
-    return DialCard(children: <Widget>[row]);
+    return DialCard(
+      children: <Widget>[
+        row,
+        // A type refused on the sheet is never asked again; only Settings
+        // changes it. An empty Health already says so below the card.
+        if (state case HealthReady(:final values) when values.isNotEmpty)
+          const CardRow(
+            label: InsightsPage.manageLabel,
+            subtitle: InsightsPage.manageBody,
+          ),
+      ],
+    );
   }
 }
 

@@ -182,6 +182,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      to, and the Health loop stops when the page is left. Not run on a device: the 13 HealthKit calls' time on a
      phone with years of data, and the one-time read's cost over a multi-year journal (every document once per
      open), are unmeasured.
+   - **Ask again for new Health types** (`fix/health-reask`, #184, open): Health connected before #178 was never asked for heart rate; the card now offers "Allow new Health data" when HealthKit's `getRequestStatusForAuthorization` says `.shouldRequest` (a stored read-types version decides when it can't tell), and names where to manage access. Not run on a device.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
@@ -199,6 +200,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         asleep, bundle id), whose span takes in 3/4 of the sleep's asleep time from every source, else the one with
         the most asleep; in bed from that source or else the one with the most; the sleep is keyed by its chosen
         source's end; sleeping heart rate uses the same choice. Review, merge, install.
+        Then **#186** `fix/health-sleep-sessions`: Watch-less sleeps before a Watch main sleep drop; Jack picked B (2026-11-09): drop app-only sleeps before the Watch's main sleep; later ones stay.
      5. **i. Dose and timing: done when this PR merges** (#185, `feat/insights-dose-timing`). Jack, 2026-11-09: a habit
         used every day must still yield insights: amount per day, time of first and last use, the hours around each
         use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).

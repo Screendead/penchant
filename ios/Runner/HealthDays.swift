@@ -112,18 +112,26 @@ enum HealthDays {
   // Each sleep is found across every source, then keeps one source's samples
   // (oneSource), and goes to the night of the last end of what it kept, so
   // one that crosses noon is not split and a dropped source cannot move it.
-  // Keys are "yyyy-MM-dd"; nights outside [start, end) and nights with no
-  // samples have no entry.
+  // Then a night whose main sleep (the most asleep time kept; a tie goes to a
+  // sleep with a Watch sample) has a Watch sample drops the sleeps before it
+  // that have none. Sleeps after it stay: the rest of a night the Watch
+  // stopped recording. Keys are "yyyy-MM-dd"; nights outside [start, end) and
+  // nights with no samples have no entry.
   static func nights(_ samples: [SleepSample], start: Date, end: Date, _ calendar: Calendar) -> [String: [SleepSample]] {
     let order = preference(samples)
-    var byNight: [String: [SleepSample]] = [:]
+    var byNight: [String: [(kept: [SleepSample], asleep: Double, watch: Bool, start: Date)]] = [:]
     for session in sessions(samples) {
-      guard let (kept, last) = oneSource(session, order) else { continue }
+      guard let (kept, last) = oneSource(session, order), let first = session.first else { continue }
       let night = nightOf(last, calendar)
       guard night >= start, night < end else { continue }
-      byNight[key(night, calendar), default: []].append(contentsOf: kept)
+      let watch = session.contains { $0.watch }
+      byNight[key(night, calendar), default: []].append((kept, minutes(kept, asleepValues), watch, first.start))
     }
-    return byNight
+    return byNight.mapValues { sleeps in
+      let main = sleeps.max { a, b in a.asleep != b.asleep ? a.asleep < b.asleep : !a.watch && b.watch }!
+      guard main.watch else { return sleeps.flatMap(\.kept) }
+      return sleeps.filter { $0.watch || $0.start > main.start }.flatMap(\.kept)
+    }
   }
 
   static func minutes(_ samples: [SleepSample], _ values: Set<Int>) -> Double {
