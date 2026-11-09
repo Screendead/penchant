@@ -26,7 +26,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-flutter
-      # e2e.yml's caches, restored and never saved, so PR builds don't evict master's entries.
+      # e2e.yml's key, which needs the runner's image (not in the env context).
+      - name: Image version
+        run: echo "IMAGE=$ImageOS-$ImageVersion" >> "$GITHUB_ENV"
+      # e2e.yml's caches, restored and never saved, so PR builds don't evict master's entries; the paths must match.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -35,10 +38,12 @@ jobs:
           key: swiftpm-${{ runner.os }}-${{ hashFiles('ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            build/ios
+          key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
-            deriveddata-${{ env.ImageOS }}-${{ env.ImageVersion }}-
+            deriveddata-${{ env.IMAGE }}-
       # The Simulator debug build the e2e run makes.
       - name: Build (iOS Simulator, debug)
         run: flutter build ios --simulator --debug --dart-define=USE_FIREBASE_EMULATORS=true
