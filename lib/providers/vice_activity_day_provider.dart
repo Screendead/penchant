@@ -95,19 +95,21 @@ final viceActivityRecentForUserProvider = StreamProvider.autoDispose
 typedef ActivityRange = ({DateTime start, DateTime end});
 
 // Every activity in [start, end), for Insights. The same query shape as the
-// day's, so the same index.
-final viceActivityRangeForUserProvider = StreamProvider.autoDispose
+// day's, so the same index. Read once rather than listened to: the range can
+// be the whole journal, and a listener would read and open every entry again
+// on each change, and rerun the engine over it.
+final viceActivityRangeForUserProvider = FutureProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, ActivityRange range})>(
       retry: firestoreRetry,
-      (ref, key) {
+      (ref, key) async {
         final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
-        return _activitiesBetween(
-          key.uid,
-          key.range.start,
-          key.range.end,
-        ).snapshots().asyncMap(
-          (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
-        );
+        final QuerySnapshot<Map<String, dynamic>> snapshot =
+            await _activitiesBetween(
+              key.uid,
+              key.range.start,
+              key.range.end,
+            ).get();
+        return ViceActivity.openQuerySnapshot(snapshot, opener);
       },
     );
 

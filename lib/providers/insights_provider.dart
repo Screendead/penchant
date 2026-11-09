@@ -106,14 +106,24 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   try {
     if (!await source.isAvailable()) return const HealthUnsupported();
     if (!connected) return const HealthNotConnected();
-    return switch (await source.dailyValues(
-      _engineMetrics,
-      range.start,
-      range.end,
+    final List<DailyOutcome> values = <DailyOutcome>[];
+    for (final ({DateTime start, DateTime end}) chunk in insightsHealthChunks(
+      range,
     )) {
-      HealthUnavailable() => const HealthUnsupported(),
-      HealthValues(:final List<DailyOutcome> values) => HealthReady(values),
-    };
+      // Left before the read finished: the value would be thrown away.
+      if (!ref.mounted) return const HealthFailed();
+      switch (await source.dailyValues(
+        _engineMetrics,
+        chunk.start,
+        chunk.end,
+      )) {
+        case HealthUnavailable():
+          return const HealthUnsupported();
+        case HealthValues(values: final List<DailyOutcome> chunkValues):
+          values.addAll(chunkValues);
+      }
+    }
+    return HealthReady(values);
   } on PlatformException catch (e) {
     return switch (e.code) {
       healthDatabaseInaccessible => const HealthLocked(),
@@ -142,9 +152,15 @@ sealed class InsightsResult {
 }
 
 final class InsightsComputed extends InsightsResult {
-  const InsightsComputed(this.report);
+  const InsightsComputed(
+    this.report, {
+    this.firstDays = const <String, DateTime>{},
+  });
 
   final InsightsReport report;
+
+  /// Each habit's first day in the journal, by vice ID.
+  final Map<String, DateTime> firstDays;
 }
 
 final class InsightsFailed extends InsightsResult {
@@ -170,6 +186,7 @@ final _engineProvider = FutureProvider.autoDispose
               today: key.today,
             ),
           ),
+          firstDays: insightsFirstDays(key.activities),
         );
       } catch (_) {
         return const InsightsFailed();
@@ -184,8 +201,8 @@ typedef InsightsView = ({HealthState health, InsightsResult? result});
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   final HealthState? state = ref.watch(healthStateProvider).value;
   if (state == null) return const AsyncLoading<InsightsView>();
-  // The year of the journal is a live query billed per document, so it is
-  // opened only when there is Health data to compare it with.
+  // The whole journal is read once per open, billed per document, so it is
+  // read only when there is Health data to compare it with.
   if (state case HealthReady(
     :final List<DailyOutcome> values,
   ) when values.isNotEmpty) {

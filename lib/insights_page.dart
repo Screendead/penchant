@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -13,8 +14,8 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
-/// What follows each habit, from the last year of the journal and Apple
-/// Health, worked out on the device.
+/// What follows each habit, from the whole journal and Apple Health, worked
+/// out on the device.
 class InsightsPage extends ConsumerStatefulWidget {
   const InsightsPage({super.key});
 
@@ -24,7 +25,7 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String loadingLabel = 'Working out your insights';
   static const String noHealthData = 'No Health data to read';
   static const String noHealthDataBody =
-      'Penchant found no sleep, heart or activity data from the last year. '
+      'Penchant found no sleep, heart or activity data. '
       'If you didn’t allow it to read Health, find Health in Settings and '
       'turn it on under Data Access & Devices > Penchant.';
   static const String noHealthDataValue = 'No data';
@@ -32,6 +33,18 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String onIPhone = 'Available on iPhone';
   static const String refusedHeading = 'Not enough to say';
   static const String foundHeading = 'What follows';
+  static const String nothingClearBody =
+      'No habit has a difference that stands out from your usual days yet.';
+  static const String copyLabel = 'Copy as text';
+  static const String copied = 'Insights copied';
+  static const String foot =
+      'Worked out on this device from your journal and Apple Health; '
+      'Penchant sends none of it anywhere. These are patterns in your own days, '
+      'not medical advice, and a pattern doesn’t show that one thing '
+      'causes another.';
+
+  static String span(DateTime firstDay) =>
+      'From ${formatDate(firstDay)} to today';
 
   @override
   ConsumerState<InsightsPage> createState() => _InsightsPageState();
@@ -132,12 +145,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             _MessageCard(InsightsPage.loadingLabel, busy: true),
           ],
         },
-        const CardFoot(
-          'Worked out on this device from your journal and Apple Health; '
-          'Health data never leaves it. These are patterns in your own days, '
-          'not medical advice, and a pattern doesn’t show that one thing '
-          'causes another.',
-        ),
+        const CardFoot(InsightsPage.foot),
       ],
     );
   }
@@ -213,7 +221,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         ),
       ];
     }
-    final InsightsReport report = (result as InsightsComputed).report;
+    final InsightsComputed computed = result as InsightsComputed;
+    final InsightsReport report = computed.report;
     final List<HabitFinding> findings = <HabitFinding>[
       for (final HabitFinding f in report.findings)
         if (names.containsKey(f.habitId)) f,
@@ -223,15 +232,20 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         if (names.containsKey(r.habitId)) r,
     ]..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
     final String locale = formatLocale;
+    // A legacy entry of a vice that is gone would date the span from a habit
+    // the page doesn't show.
+    final DateTime? firstDay = insightsFirstDay(
+      computed.firstDays,
+      names.containsKey,
+    );
     return <Widget>[
+      if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
       const CardSectionLabel(InsightsPage.foundHeading),
       if (findings.isEmpty)
         const _MessageCard(
           InsightsPage.nothingClear,
           top: 0,
-          body:
-              'No habit has a difference that stands out from your usual '
-              'days yet.',
+          body: InsightsPage.nothingClearBody,
         ),
       for (int i = 0; i < findings.length; i++)
         _FindingCard(
@@ -253,8 +267,69 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           ],
         ),
       ],
+      DialCard(
+        children: <Widget>[
+          CardRow(
+            label: InsightsPage.copyLabel,
+            subtitle: 'To the clipboard, for a note or a message',
+            onTap: () => _copy(
+              insightsText(
+                findings: findings,
+                refused: refused,
+                firstDay: firstDay,
+                nameOf: nameOf,
+                locale: locale,
+              ),
+            ),
+          ),
+        ],
+      ),
     ];
   }
+
+  // Health findings reach the clipboard only from this tap; nothing else may
+  // copy or send them.
+  Future<void> _copy(String text) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: text));
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text(InsightsPage.copied)));
+  }
+}
+
+/// The findings and refusals as the page shows them, in plain text.
+String insightsText({
+  required List<HabitFinding> findings,
+  required List<HabitRefusal> refused,
+  required DateTime? firstDay,
+  required String Function(String habitId) nameOf,
+  required String locale,
+}) {
+  final StringBuffer out = StringBuffer(InsightsPage.title);
+  if (firstDay != null) out.write('\n${InsightsPage.span(firstDay)}');
+  out.write('\n\n${InsightsPage.foundHeading}\n');
+  if (findings.isEmpty) {
+    out.write(
+      '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n',
+    );
+  }
+  for (final HabitFinding f in findings) {
+    final String habit = nameOf(f.habitId);
+    out
+      ..write('\n$habit · ${metricCopy(f.metricId)!.name}\n')
+      ..write('${findingSentence(f, habit, locale)}\n')
+      ..write('${findingRange(f, locale)}\n')
+      ..write('${findingBasis(f, habit)}\n');
+  }
+  if (refused.isNotEmpty) {
+    out.write('\n${InsightsPage.refusedHeading}\n');
+    for (final HabitRefusal r in refused) {
+      out.write('${nameOf(r.habitId)}: ${refusalReason(r, nameOf)}\n');
+    }
+  }
+  out.write('\n${InsightsPage.foot}\n');
+  return out.toString();
 }
 
 class _HealthCard extends StatelessWidget {

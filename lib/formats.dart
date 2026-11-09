@@ -86,6 +86,8 @@ Locale resolveAppLocale(
 String formatDay(DateTime day) =>
     DateFormat.yMMMMEEEEd(formatLocale).format(day);
 
+String formatDate(DateTime day) => DateFormat.yMMMMd(formatLocale).format(day);
+
 String formatShortDay(DateTime day) =>
     DateFormat.MMMd(formatLocale).format(day);
 
