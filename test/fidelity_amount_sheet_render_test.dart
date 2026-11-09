@@ -1,6 +1,7 @@
-// Renders the amount sheet, new and editing, at the Day Dial mock-up's size and
-// clock, for side-by-side comparison with the mock-up's Record still
-// (stills-record.png, frame 2; tools/fidelity/README.md):
+// Renders the amount sheet, new and editing, at the Day Dial mock-up's size,
+// clock and record day (its time dial's faded entries), for side-by-side
+// comparison with the mock-up's Record still (stills-record.png, frame 2;
+// tools/fidelity/README.md):
 //   flutter test test/fidelity_amount_sheet_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -14,14 +15,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
+import 'package:tracker/widgets/time_dial.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -43,26 +47,39 @@ Future<void> _loadFonts() async {
 
 void main() {
   setUpAll(_loadFonts);
-  final Vice coffee = Vice(
-    id: 'coffee',
-    name: 'Coffee',
-    unit: Unit.drink,
+  Vice vice(String id, String name, Unit unit, int order) => Vice(
+    id: id,
+    name: name,
+    unit: unit,
     ownerID: ownerID,
-    createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+    createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, order)),
     archived: false,
   );
-  // Coffee is the oldest habit, so it takes the first mark, as in the mock-up.
+  // The mock-up's habits in its order, so Coffee takes the first mark.
   final List<Vice> habits = <Vice>[
-    coffee,
-    Vice(
-      id: 'tea',
-      name: 'Tea',
-      unit: Unit.drink,
-      ownerID: ownerID,
-      createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 2)),
-      archived: false,
-    ),
+    vice('coffee', 'Coffee', Unit.drink, 1),
+    vice('takeaway', 'Takeaway', Unit.item, 2),
+    vice('alcohol', 'Alcohol', Unit.drink, 3),
+    vice('late', 'Late nights', Unit.time, 4),
+    vice('scroll', 'Doomscrolling', Unit.minute, 5),
   ];
+  // The mock-up's record day (fidelity_render_test.dart's 'record' scene):
+  // habit, minute of the day, quantity.
+  const List<(int, int, int)> record = <(int, int, int)>[
+    (3, 40, 1),
+    (0, 425, 1),
+    (4, 440, 15),
+    (0, 580, 1),
+    (1, 770, 2),
+    (4, 1005, 10),
+  ];
+  final DateTime today = DateTime(2026, 11, 5);
+  final List<ViceActivity> recordDay = <ViceActivity>[
+    for (final (int h, int minute, int q) in record)
+      fakeActivity(habits[h].id, q, today.add(Duration(minutes: minute))),
+  ];
+  final DateTime at = DateTime(2026, 11, 5, 18, 30);
+  final ViceActivity edited = fakeActivity('coffee', 2, at);
 
   for (final Brightness brightness in Brightness.values) {
     for (final String name in <String>['new', 'edit']) {
@@ -96,9 +113,13 @@ void main() {
                   (ref) => Stream.value(FakeUser(ownerID)),
                 ),
                 viceActivityProvider.overrideWith(
-                  (ref, String id) => AsyncData(
-                    fakeActivity('coffee', 2, DateTime(2026, 11, 5, 18, 30)),
-                  ),
+                  (ref, String id) => AsyncData(edited),
+                ),
+                viceActivityDayProvider.overrideWith(
+                  (ref, DateTime day) => AsyncData(<ViceActivity>[
+                    ...recordDay,
+                    if (name == 'edit') edited,
+                  ]),
                 ),
               ],
               child: RepaintBoundary(
@@ -129,16 +150,17 @@ void main() {
               find.widgetWithText(TextFormField, 'Quantity'),
               '2',
             );
+            tester
+                    .widget<EntryTimeField>(find.byType(EntryTimeField))
+                    .controller
+                    .at =
+                at;
           } else {
             navigator.currentState!.push(
               MaterialPageRoute<void>(
                 builder: (_) => ViceActivityEditorPage(
                   viceID: 'coffee',
-                  activityID: fakeActivity(
-                    'coffee',
-                    2,
-                    DateTime(2026, 11, 5, 18, 30),
-                  ).id,
+                  activityID: edited.id,
                 ),
               ),
             );

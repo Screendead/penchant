@@ -254,6 +254,15 @@ class DialShadows {
     ),
   ];
 
+  // The time dial's knob: the mock-up's 0 2 4 black at 30%, in both themes.
+  static List<BoxShadow> knob(Brightness b) => <BoxShadow>[
+    BoxShadow(
+      color: const Color(0x4D000000),
+      offset: const Offset(0, 2),
+      blurRadius: _blur(4),
+    ),
+  ];
+
   // The Log button's drop, in accent at 60%; its 6 pt halo is a border.
   static List<BoxShadow> logButton(Brightness b) => <BoxShadow>[
     BoxShadow(
