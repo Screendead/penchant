@@ -218,6 +218,18 @@ void main() {
       expect(find.byType(ViceForm), findsOneWidget);
       expect(find.text('Not saved. $_offline'), findsOneWidget);
     });
+
+    testWidgets('without the journal key writes nothing and keeps the form', (
+      WidgetTester tester,
+    ) async {
+      writes.canCreate = false;
+      await fillAndSave(tester);
+
+      expect(writes.writes, isEmpty);
+      expect(find.byType(ViceForm), findsOneWidget);
+      expect(find.text('Not saved. $noJournalKeyMessage'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Coffee'), findsOneWidget);
+    });
   });
 
   group('Edit Habit', () {
@@ -699,6 +711,27 @@ void main() {
       expect(dialog, findsNothing);
     });
 
+    testWidgets('without the journal key writes nothing and keeps the sheet, '
+        'then saves once the key loads', (WidgetTester tester) async {
+      writes.canCreate = false;
+      await fill(tester);
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, isEmpty);
+      expect(dialog, findsOneWidget);
+      expect(find.text('Not recorded. $noJournalKeyMessage'), findsOneWidget);
+
+      writes.canCreate = true;
+      await tester.ensureVisible(record);
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, hasLength(1));
+      expectRecorded(writes.writes.single, 'activity-1');
+      expect(dialog, findsNothing);
+    });
+
     testWidgets('a denied write reads as a vice that no longer exists', (
       WidgetTester tester,
     ) async {
@@ -928,6 +961,22 @@ void main() {
         'Late train',
       ]);
       expect(find.text(restoredMessage), findsOneWidget);
+    });
+
+    testWidgets('Undo without the journal key restores nothing and says why', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      writes.canCreate = false;
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(writes.writes, [Write('deleteActivity', activity.id)]);
+      expect(find.text('Not restored. $noJournalKeyMessage'), findsOneWidget);
     });
 
     testWidgets('a delete that outlasts the timeout says it will sync', (

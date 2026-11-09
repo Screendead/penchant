@@ -330,6 +330,85 @@ void main() {
     expect(directory.records, isEmpty);
   });
 
+  group('offline with no key here, each recheck asks again', () {
+    late StreamController<void> recheck;
+    late KeyService rechecking;
+
+    setUp(() {
+      directory.offline = true;
+      recheck = StreamController<void>();
+      rechecking = serviceOver(
+        store,
+        directory,
+        rechecks: () => recheck.stream,
+      );
+    });
+
+    tearDown(() => recheck.close());
+
+    Future<StreamIterator<JournalKeyState>> unknown() async {
+      final StreamIterator<JournalKeyState> states =
+          StreamIterator<JournalKeyState>(rechecking.resolve(uid));
+      addTearDown(states.cancel);
+      expect(await states.moveNext(), isTrue);
+      expect(states.current, isA<KeyUnknown>());
+      return states;
+    }
+
+    test('and makes the first key once the server answers', () async {
+      final StreamIterator<JournalKeyState> states = await unknown();
+      final Future<bool> next = states.moveNext();
+      recheck.add(null);
+      await pumpEventQueue();
+      expect(store.keys, isEmpty);
+
+      directory.offline = false;
+      recheck.add(null);
+
+      expect(await next, isTrue);
+      final KeyReady ready = states.current as KeyReady;
+      expect(ready.record!.keyID, keyIDOf(store.keys[uid]!.journalKey));
+      expect(await states.moveNext(), isFalse);
+      expect(recheck.hasListener, isFalse);
+    });
+
+    test('and uses a key that syncs in while still offline', () async {
+      final StreamIterator<JournalKeyState> states = await unknown();
+      final StoredKey synced = await store.save(
+        uid,
+        journalKey: JournalKey.generate(),
+      );
+      recheck.add(null);
+
+      expect(await states.moveNext(), isTrue);
+      final KeyReady ready = states.current as KeyReady;
+      expect(ready.stored.journalKey.sameAs(synced.journalKey), isTrue);
+      expect(ready.record, isNull);
+      expect(await states.moveNext(), isFalse);
+    });
+
+    test(
+      'and locks behind the recovery key when the server names another',
+      () async {
+        final StreamIterator<JournalKeyState> states = await unknown();
+        directory.records[uid] = await recordOf(
+          service,
+          StoredKey(
+            journalKey: JournalKey.generate(),
+            recoveryKey: RecoveryKey.generate(),
+            location: KeyLocation.synced,
+          ),
+        );
+        directory.offline = false;
+        recheck.add(null);
+
+        expect(await states.moveNext(), isTrue);
+        expect(states.current, isA<KeyNeedsRecovery>());
+        expect(store.keys, isEmpty);
+      },
+    );
+  });
+
   test('a read denied after sign-out ends quietly and makes nothing', () async {
     directory.denied = true;
 

@@ -119,6 +119,15 @@ Future<void> _restore(
   ViceActivity activity,
   String entry,
 ) async {
+  if (!writes.canCreate) {
+    if (messenger.mounted) {
+      showUndoBar(
+        messenger,
+        const TextSpan(text: 'Not restored. $noJournalKeyMessage'),
+      );
+    }
+    return;
+  }
   String message;
   try {
     message =

@@ -60,6 +60,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     final String name = viceNameController.text;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
+    if (vice == null && !ref.read(trackerWritesProvider).canCreate) {
+      // The form stays open with what was typed.
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Not saved. $noJournalKeyMessage')),
+      );
+      return;
+    }
+
     final SentWrite? write;
     if (vice == null) {
       write = ref

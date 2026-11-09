@@ -8,6 +8,12 @@ const Duration writeTimeout = Duration(seconds: 10);
 const String queuedMessage =
     'Saved on this device. It will sync when you are back online.';
 
+// Shown instead of writing: the rules refuse a new habit or entry without
+// its sealed field, and only a loaded journal key makes one.
+const String noJournalKeyMessage =
+    'Your journal key has not loaded yet, so this cannot be saved. '
+    'Go online, then try again.';
+
 const String queuedDeleteMessage =
     'Deleted on this device. It will sync when you are back online.';
 

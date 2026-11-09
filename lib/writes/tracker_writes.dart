@@ -42,7 +42,8 @@ Object? comparableValue(Object? value) => switch (value) {
 
 // Every write the app makes. The field sets must match what firestore.rules
 // accepts on create and update. With a [FieldSealer], content fields go into
-// one sealed field; without one, every field is plaintext.
+// one sealed field. The rules refuse a create without one, so without a
+// sealer only updates and deletes are written, in plaintext.
 class TrackerWrites {
   TrackerWrites(
     this._firestore, {
@@ -82,6 +83,18 @@ class TrackerWrites {
     return write(Blob(envelope));
   }
 
+  /// Whether [addVice] and [recordActivity] can write: the journal key has
+  /// loaded. Callers check first and tell the user rather than lose input.
+  bool get canCreate => _sealer != null;
+
+  FieldSealer _createSealer() {
+    final FieldSealer? sealer = _sealer;
+    if (sealer == null) {
+      throw StateError('no journal key to seal a new document with');
+    }
+    return sealer;
+  }
+
   SentWrite _issued(SentWrite write) {
     _onWrite?.call();
     return write;
@@ -101,33 +114,25 @@ class TrackerWrites {
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
+    final FieldSealer sealer = _createSealer();
     final DocumentReference<Map<String, dynamic>> vice = _vices.doc();
-    final Map<String, Object> structural = <String, Object>{
-      'ownerID': ownerID,
-      'createdAt': FieldValue.serverTimestamp(),
-      'archived': false,
-    };
-    final FieldSealer? sealer = _sealer;
     return _issued(
       SentWrite(
-        sealer == null
-            ? vice.set({
-                'name': name,
-                'unit': unit.name,
-                'category': category.name,
-                ...structural,
-              })
-            : _sealing(
-                sealer,
-                vice,
-                <String, Object?>{
-                  'name': name,
-                  'unit': unit.name,
-                  'category': category.name,
-                },
-                (Blob envelope) =>
-                    vice.set({sealedField: envelope, ...structural}),
-              ),
+        _sealing(
+          sealer,
+          vice,
+          <String, Object?>{
+            'name': name,
+            'unit': unit.name,
+            'category': category.name,
+          },
+          (Blob envelope) => vice.set({
+            sealedField: envelope,
+            'ownerID': ownerID,
+            'createdAt': FieldValue.serverTimestamp(),
+            'archived': false,
+          }),
+        ),
         collection: _vices.id,
         id: vice.id,
         op: WriteOp.create,
@@ -197,33 +202,27 @@ class TrackerWrites {
     required DateTime createdAt,
     List<String> triggers = const <String>[],
   }) {
+    final FieldSealer sealer = _createSealer();
     final DocumentReference<Map<String, dynamic>> activity = _activities.doc(
       activityID,
     );
-    final Map<String, Object> plaintext = <String, Object>{
-      'amount': ?amount,
-      'createdAt': createdAt,
-      'ownerID': ownerID,
-      'quantity': quantity,
-      'viceID': viceID,
-    };
-    final FieldSealer? sealer = _sealer;
     return _issued(
       SentWrite(
         // Sealed even when empty, so the stored shape does not say whether
         // the entry has triggers.
-        sealer == null
-            ? activity.set({
-                ...plaintext,
-                if (triggers.isNotEmpty) triggersField: writeTriggers(triggers),
-              })
-            : _sealing(
-                sealer,
-                activity,
-                <String, Object?>{triggersField: writeTriggers(triggers)},
-                (Blob envelope) =>
-                    activity.set({...plaintext, sealedField: envelope}),
-              ),
+        _sealing(
+          sealer,
+          activity,
+          <String, Object?>{triggersField: writeTriggers(triggers)},
+          (Blob envelope) => activity.set({
+            'amount': ?amount,
+            'createdAt': createdAt,
+            'ownerID': ownerID,
+            'quantity': quantity,
+            'viceID': viceID,
+            sealedField: envelope,
+          }),
+        ),
         collection: _activities.id,
         id: activityID,
         op: WriteOp.create,

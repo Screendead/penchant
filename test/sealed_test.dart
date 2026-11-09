@@ -453,23 +453,36 @@ void main() {
     );
   });
 
-  test('without a sealer the writes stay plaintext', () async {
-    final _Store store = _Store();
-    final TrackerWrites writes = TrackerWrites(store.firestore);
-    final SentWrite write = writes.addVice(
-      ownerID: 'owner',
-      name: 'Coffee',
-      unit: Unit.drink,
-    );
-    await write.done;
-    await writes.updateVice(_vice(), name: 'Espresso').done;
+  test(
+    'without a sealer nothing is created and updates stay plaintext',
+    () async {
+      final _Store store = _Store();
+      final TrackerWrites writes = TrackerWrites(store.firestore);
+      expect(writes.canCreate, isFalse);
+      expect(
+        () =>
+            writes.addVice(ownerID: 'owner', name: 'Coffee', unit: Unit.drink),
+        throwsStateError,
+      );
+      expect(
+        () => writes.recordActivity(
+          'a',
+          ownerID: 'owner',
+          viceID: 'coffee',
+          quantity: 1,
+          createdAt: _at.toDate(),
+          triggers: <String>['social'],
+        ),
+        throwsStateError,
+      );
+      await writes.updateVice(_vice(), name: 'Espresso').done;
 
-    expect(store.sets['vices/${write.id}']!['name'], 'Coffee');
-    expect(store.sets['vices/${write.id}']!.containsKey(sealedField), isFalse);
-    expect(store.updates['vices/coffee'], <Object, Object?>{
-      'name': 'Espresso',
-    });
-  });
+      expect(store.sets, isEmpty);
+      expect(store.updates['vices/coffee'], <Object, Object?>{
+        'name': 'Espresso',
+      });
+    },
+  );
 
   test('the export carries opened fields in place of the envelope', () async {
     final Map<String, dynamic> stored = await sealedVice('coffee');

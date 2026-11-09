@@ -41,6 +41,16 @@ class FakeTrackerWrites implements TrackerWrites {
   Object? serverError;
   final List<String> checked = <String>[];
   int _ids = 0;
+  // False stands for a device whose journal key has not loaded: creates
+  // throw, as TrackerWrites' do.
+  @override
+  bool canCreate = true;
+
+  void _requireKey() {
+    if (!canCreate) {
+      throw StateError('no journal key to seal a new document with');
+    }
+  }
 
   SentWrite _write(
     Write write, {
@@ -67,16 +77,19 @@ class FakeTrackerWrites implements TrackerWrites {
     required String name,
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
-  }) => _write(
-    Write('addVice', 'vice-${++_ids}', <String, Object?>{
-      'ownerID': ownerID,
-      'name': name,
-      'unit': unit,
-      'category': category,
-    }),
-    collection: 'vices',
-    op: WriteOp.create,
-  );
+  }) {
+    _requireKey();
+    return _write(
+      Write('addVice', 'vice-${++_ids}', <String, Object?>{
+        'ownerID': ownerID,
+        'name': name,
+        'unit': unit,
+        'category': category,
+      }),
+      collection: 'vices',
+      op: WriteOp.create,
+    );
+  }
 
   @override
   SentWrite updateVice(
@@ -136,18 +149,21 @@ class FakeTrackerWrites implements TrackerWrites {
     double? amount,
     required DateTime createdAt,
     List<String> triggers = const <String>[],
-  }) => _write(
-    Write('recordActivity', activityID, <String, Object?>{
-      'ownerID': ownerID,
-      'viceID': viceID,
-      'quantity': quantity,
-      'amount': ?amount,
-      'createdAt': createdAt,
-      if (triggers.isNotEmpty) 'triggers': triggers,
-    }),
-    collection: 'activities',
-    op: WriteOp.create,
-  );
+  }) {
+    _requireKey();
+    return _write(
+      Write('recordActivity', activityID, <String, Object?>{
+        'ownerID': ownerID,
+        'viceID': viceID,
+        'quantity': quantity,
+        'amount': ?amount,
+        'createdAt': createdAt,
+        if (triggers.isNotEmpty) 'triggers': triggers,
+      }),
+      collection: 'activities',
+      op: WriteOp.create,
+    );
+  }
 
   @override
   SentWrite updateActivity(

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/data/queued_log.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/errors/report_error.dart';
@@ -33,6 +32,9 @@ typedef FlushLeft = ({DateTime? next, bool refused, bool unacknowledged});
 /// exited process sends it only when Penchant next starts. A delete leaves
 /// anyway, because the SDK's queued copy reaches the server first and the
 /// rules refuse a repeat delete.
+///
+/// Without the journal key [writes] cannot create, so every log stays queued
+/// for a flush that has it, and counts as unacknowledged.
 Future<FlushLeft> flushQueuedLogs({
   required WidgetBridge bridge,
   required TrackerWrites writes,
@@ -44,10 +46,14 @@ Future<FlushLeft> flushQueuedLogs({
   final ({List<QueuedLog> ready, List<QueuedLog> cancelled, DateTime? next})
   batch = readyLogs(await bridge.pendingLogs(), uid: uid, now: now);
   final List<QueuedLog> done = <QueuedLog>[...batch.cancelled];
-  bool refused = false;
-  bool unacknowledged = false;
-  await Future.wait(<Future<void>>[
+  final List<QueuedLog> writable = <QueuedLog>[
     for (final QueuedLog log in batch.ready)
+      if (writes.canCreate || log.op != QueuedLogOp.log) log,
+  ];
+  bool refused = false;
+  bool unacknowledged = writable.length < batch.ready.length;
+  await Future.wait(<Future<void>>[
+    for (final QueuedLog log in writable)
       _write(log, writes, rejected, inBackground: inBackground).then((
         _Written written,
       ) {
@@ -126,9 +132,9 @@ final widgetLogFlushProvider = Provider<void>((ref) {
     return;
   }
   // Until the key loads (or while it is missing or locked) TrackerWrites has
-  // no sealer and would store the log without its sealed field. The queue
-  // keeps it, and the sealer arriving rebuilds this provider.
-  if (ref.watch(e2eeEnabledProvider) && ref.watch(sealerProvider) == null) {
+  // no sealer and cannot create. The queue keeps the logs, and the sealer
+  // arriving rebuilds this provider.
+  if (ref.watch(sealerProvider) == null) {
     return;
   }
   final WidgetBridge bridge = ref.watch(widgetBridgeProvider);
