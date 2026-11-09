@@ -205,7 +205,6 @@ void main() {
       expect(dose.step, 1);
       expect(dose.effect, inInclusiveRange(-9, -3));
       expect(dose.interval.high, lessThan(0));
-      // A day whose one entry fell after midnight has none of its own.
       expect(dose.usableDays, greaterThan(days - 10));
       expect(report.refused.where((r) => r.habitId == 'Coffee'), isEmpty);
       expect(
