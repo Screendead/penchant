@@ -5,6 +5,7 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights_page.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
@@ -20,6 +21,7 @@ class Homepage extends ConsumerStatefulWidget {
   static const String menuLabel = 'Penchant menu';
   static const Key menuKey = ValueKey<String>('penchant-menu');
   static const String habitsItem = 'Habits';
+  static const String insightsItem = 'Insights';
   static const String settingsItem = 'Settings';
 
   @override
@@ -176,6 +178,13 @@ class _AppMenu extends StatelessWidget {
                 onPressed: () =>
                     Navigator.of(context).pushNamed('/manage-data'),
                 child: const Text(Homepage.habitsItem),
+              ),
+              MenuItemButton(
+                style: itemStyle,
+                leadingIcon: const StrokeIcon(DialGlyph.insights, size: 20),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed(InsightsPage.route),
+                child: const Text(Homepage.insightsItem),
               ),
               MenuItemButton(
                 style: itemStyle,
