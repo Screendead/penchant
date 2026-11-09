@@ -114,6 +114,11 @@ enum RefusalReason {
   /// The adjusted interval includes zero.
   withinNoise,
 
+  /// For [InsightKind.dose] or [InsightKind.lastUse] on a sleep outcome: the
+  /// amount or time moves so closely with when sleep began that the two
+  /// cannot be told apart.
+  followsBedtime,
+
   /// For [InsightKind.dose] or [InsightKind.lastUse]: the adjusted interval
   /// excludes zero, but the fit without the day that pulls the effect
   /// furthest from zero does not.
@@ -448,6 +453,24 @@ HabitInsight _whatFollowsOne(
   );
 }
 
+/// The outcome, in clock minutes after the noon that opens the night, of when
+/// a night's main sleep began (`HealthMetric.sleepOnset`).
+const String sleepOnsetId = 'sleepOnset';
+
+/// The sleep outcomes that are minutes of a night (`HealthMetric`'s sleep
+/// minutes), for which [doseFollows] and [lastUseFollows] hold [sleepOnsetId]
+/// fixed. With a set wake time, every minute later to bed is a minute less in
+/// bed and some share of a minute less of each stage, so a habit used later
+/// on the evenings bed comes later would be credited with that arithmetic.
+const Set<String> sleepMinutesIds = <String>{
+  'sleepInBed',
+  'sleepAsleep',
+  'sleepAwake',
+  'sleepCore',
+  'sleepDeep',
+  'sleepREM',
+};
+
 /// For each habit, what [metricId] looks like [lagDays] days after a day it
 /// was used, by how much it was used: among the days of its span (see
 /// [whatFollows]) that it was used, the day's total as the habit's column of
@@ -463,6 +486,14 @@ HabitInsight _whatFollowsOne(
 /// A result that one day decides is refused as [RefusalReason.oneDay]: the
 /// fit without the day that pulls the effect furthest from zero must still
 /// exclude zero.
+///
+/// For the minutes of sleep ([sleepMinutesIds]), the time sleep began that
+/// night ([sleepOnsetId]) is in the model when it varies, and the days
+/// without one are left out, so the effect is the habit's at the same
+/// bedtime: an effect that works by moving bedtime is not counted. When
+/// [outcomes] hold no [sleepOnsetId] at all, nothing is held fixed. Refused
+/// as [RefusalReason.followsBedtime] when the amount moves so closely with
+/// bedtime that the two cannot be told apart.
 ///
 /// Refused as [RefusalReason.steadyAmount] when the totals barely vary (see
 /// [InsightGates.minAmountSpread]), and as [RefusalReason.uneven] when
@@ -502,12 +533,14 @@ List<HabitInsight> doseFollows({
 /// [lateUseCutoffHour] counted as a late use of the day before
 /// ([lateDayOf]). [HabitInsight.step] is 60, so an effect is per hour later.
 /// The day's total amount (over the same uses) is in the model too when it
-/// varies, so a later finish is not credited with what a larger amount does.
+/// varies, so a later finish is not credited with what a larger amount does,
+/// and for the minutes of sleep, the time sleep began, as for [doseFollows].
 ///
 /// Refused as [RefusalReason.steadyTiming] when the last use comes at nearly
 /// the same time each day ([InsightGates.minTimingSpreadMinutes]), and as
 /// [RefusalReason.followsAmount] when it moves so closely with the day's
-/// amount that the two cannot be told apart.
+/// amount that the two cannot be told apart, and as
+/// [RefusalReason.followsBedtime] when it does so with bedtime.
 List<HabitInsight> lastUseFollows({
   required DailyHabitSeries habits,
   required OutcomeSeries outcomes,
@@ -555,13 +588,22 @@ HabitInsight _amongDaysOfUse(
     from,
     through,
   );
+  final bool bedtime =
+      sleepMinutesIds.contains(metricId) &&
+      outcomes.metricIds.contains(sleepOnsetId);
   final List<DateTime> days = <DateTime>[];
   final List<double> y = <double>[], x = <double>[], amount = <double>[];
+  final List<double> onset = <double>[];
   for (final DateTime day in useDays) {
     if (start == null || end == null) break;
     if (day.isBefore(start) || day.isAfter(end)) continue;
     final double? value = outcomes.value(metricId, addDays(day, lagDays));
     if (value == null) continue;
+    if (bedtime) {
+      final double? began = outcomes.value(sleepOnsetId, addDays(day, lagDays));
+      if (began == null) continue;
+      onset.add(began);
+    }
     days.add(day);
     y.add(value);
     amount.add(habits.lateDayTotal(id, day));
@@ -610,7 +652,12 @@ HabitInsight _amongDaysOfUse(
     judged,
     period: period,
     others: _otherHabits(id, habitIds, habits, days, gates),
-    own: timing && sampleVariance(amount) > 0 ? amount : null,
+    own: <_Own>[
+      if (timing && sampleVariance(amount) > 0)
+        (column: amount, reason: RefusalReason.followsAmount),
+      if (bedtime && sampleVariance(onset) > 0)
+        (column: onset, reason: RefusalReason.followsBedtime),
+    ],
     gates: gates,
   );
 }
@@ -676,14 +723,18 @@ int _varyingPeriods(List<double> x, List<int> period) {
   return seen.values.where((s) => s.length > 1).length;
 }
 
+// A column held fixed beside the habit's own (its amount, or bedtime), and
+// the refusal when the habit's column cannot be told apart from it.
+typedef _Own = ({List<double> column, RefusalReason reason});
+
 // One least-squares model of the outcome on an intercept, the habit's
-// column, the time terms, [own] (another column of this habit's, when given)
-// and the other habits' use, and the habit's coefficient judged.
+// column, the time terms, [own] and the other habits' use, and the habit's
+// coefficient judged.
 HabitInsight _attribute(
   _Judged judged, {
   required List<int> period,
   required Map<String, List<double>> others,
-  List<double>? own,
+  List<_Own> own = const <_Own>[],
   required InsightGates gates,
 }) {
   final List<DateTime> days = judged.days;
@@ -709,14 +760,14 @@ HabitInsight _attribute(
       return byUse != 0 ? byUse : a.compareTo(b);
     });
 
-  List<List<double>> design(List<String> ids, {required bool withOwn}) =>
+  List<List<double>> design(List<String> ids, {required List<_Own> held}) =>
       <List<double>>[
         for (int r = 0; r < days.length; r++)
           <double>[
             1,
             x[r],
             ...time[r],
-            if (withOwn) own![r],
+            for (final _Own o in held) o.column[r],
             for (final String other in ids) others[other]![r],
           ],
       ];
@@ -735,33 +786,36 @@ HabitInsight _attribute(
   // so this is 1 / (1 - R_j^2).
   final double mx = mean(x);
   final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
-  double inflation(List<String> ids, {required bool withOwn}) =>
-      (invert(gram(design(ids, withOwn: withOwn)))?[1][1] ?? double.infinity) *
-      ss;
-  if (inflation(const <String>[], withOwn: false) >
+  double inflation(List<String> ids, {required List<_Own> held}) =>
+      (invert(gram(design(ids, held: held)))?[1][1] ?? double.infinity) * ss;
+  if (inflation(const <String>[], held: const <_Own>[]) >
       gates.maxVarianceInflation) {
     return judged.refuse(RefusalReason.uneven);
   }
-  final bool withOwn =
-      own != null && addsSomething(design(const <String>[], withOwn: true));
-  // The time terms alone passed, so what inflates the column here is [own].
-  if (withOwn &&
-      inflation(const <String>[], withOwn: true) > gates.maxVarianceInflation) {
-    return judged.refuse(RefusalReason.followsAmount);
+  final List<_Own> held = <_Own>[];
+  for (final _Own o in own) {
+    if (!addsSomething(design(const <String>[], held: <_Own>[...held, o]))) {
+      continue;
+    }
+    held.add(o);
+    // What came before passed, so what inflates the column now is [o].
+    if (inflation(const <String>[], held: held) > gates.maxVarianceInflation) {
+      return judged.refuse(o.reason);
+    }
   }
-  final int fixedColumns = time.first.length + (withOwn ? 1 : 0);
+  final int fixedColumns = time.first.length + held.length;
 
   // Covariates join the most used first; one more column than would leave a
   // residual degree of freedom is skipped.
   final List<String> inModel = <String>[];
   for (final String other in covariates) {
     if (inModel.length + fixedColumns + 4 > days.length) break;
-    if (addsSomething(design(<String>[...inModel, other], withOwn: withOwn))) {
+    if (addsSomething(design(<String>[...inModel, other], held: held))) {
       inModel.add(other);
     }
   }
   // The habit whose leaving out frees the column most; the time terms and
-  // [own] alone were checked above, so one of [inModel] is the cause.
+  // [held] alone were checked above, so one of [inModel] is the cause.
   String? partner() {
     String? best;
     double lowest = double.infinity;
@@ -769,7 +823,7 @@ HabitInsight _attribute(
       final double v = inflation(<String>[
         for (final String id in inModel)
           if (id != other) id,
-      ], withOwn: withOwn);
+      ], held: held);
       if (best == null || v < lowest) {
         lowest = v;
         best = other;
@@ -778,7 +832,7 @@ HabitInsight _attribute(
     return best;
   }
 
-  final List<List<double>> rows = design(inModel, withOwn: withOwn);
+  final List<List<double>> rows = design(inModel, held: held);
   if (invert(gram(rows)) == null) {
     return judged.refuse(RefusalReason.entangled, entangledWith: partner());
   }

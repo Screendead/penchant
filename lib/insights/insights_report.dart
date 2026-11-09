@@ -94,7 +94,8 @@ class InsightsInput {
           // Today's day totals and averages cover only part of it; the night
           // that ended today is whole.
           if (o.date.isBefore(unfinished) ||
-              (metricCopy(o.metricId)?.night ?? false))
+              (metricCopy(o.metricId)?.night ?? false) ||
+              o.metricId == sleepOnsetId)
             DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
       ],
       from: range.start,
@@ -116,9 +117,10 @@ class InsightsReport {
 
   /// One refusal for each habit with no finding of any kind on any outcome,
   /// the one that says most: entangled, then possibly chance, then logged
-  /// unevenly, then resting on one day, then within the noise, then a steady amount or time or a time
-  /// that follows the amount, then too few days; on a tie, the days-with-and-without comparison's, then the one
-  /// from the most days.
+  /// unevenly, then resting on one day, then within the noise, then a steady
+  /// amount or time, or one that follows the amount or bedtime, then too few
+  /// days; on a tie, the days-with-and-without comparison's, then the one from
+  /// the most days.
   final List<HabitRefusal> refused;
 }
 
@@ -195,7 +197,8 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
     RefusalReason.withinNoise => 4,
     RefusalReason.steadyAmount ||
     RefusalReason.steadyTiming ||
-    RefusalReason.followsAmount => 5,
+    RefusalReason.followsAmount ||
+    RefusalReason.followsBedtime => 5,
     RefusalReason.tooFewDays => 6,
   };
   return refusals.reduce((a, b) {
@@ -410,6 +413,9 @@ String _amongUseRefusal(
     'nearly the same each day, so there’s no difference to compare',
   RefusalReason.followsAmount =>
     'later on days with more, so it can’t be told apart from the amount',
+  RefusalReason.followsBedtime =>
+    'moves with when you fall asleep, so it can’t be told apart from '
+        'your bedtime',
   RefusalReason.uneven =>
     'changed with the months, so it can’t be told apart from other changes',
   RefusalReason.entangled => switch (refusal.entangledWith) {
@@ -454,4 +460,7 @@ String _useRefusal(
     'Later on days with more, so it can’t be told apart from the amount',
   RefusalReason.oneDay =>
     'Rests on one unusual day, so it may not hold on the others',
+  RefusalReason.followsBedtime =>
+    'Moves with when you fall asleep, so it can’t be told apart from your '
+        'bedtime',
 };
