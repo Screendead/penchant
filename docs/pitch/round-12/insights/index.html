@@ -75,6 +75,9 @@ section{display:grid;gap:22px;min-width:0}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:28px 24px;align-items:start}
 .opt{display:grid;gap:14px;min-width:0;justify-items:center}
 .opt > *{width:100%;max-width:340px}
+.opts.sg .opt{grid-row:span 4;grid-template-rows:subgrid;row-gap:14px}
+.opts.sg .ohead{align-self:end}
+.opts.sg .phone,.opts.sg .ccr{align-self:start}
 .ohead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .ohead .cid{font:500 13px/1 var(--fm);color:var(--muted)}
 .badge{font:600 11px/1 var(--ft);text-transform:uppercase;letter-spacing:.07em;background:var(--rec-soft);color:var(--rec);border-radius:999px;padding:5px 9px;align-self:center}
@@ -216,7 +219,7 @@ section{display:grid;gap:22px;min-width:0}
     <p>Same answers in each option; what changes is what you see first and how you get to the rest. Effort is UI only: the answer engines are shared by all three.</p>
   </div>
 
-  <div class="opts">
+  <div class="opts sg">
 
     <!-- 1A -->
     <div class="opt">
@@ -417,8 +420,8 @@ section{display:grid;gap:22px;min-width:0}
             <line class="thr" x1="173.2" y1="10" x2="173.2" y2="90"/><text class="ann" x="167" y="20" text-anchor="end">from the 3rd</text>
             <polyline class="lw" points="28,90 76.4,87.33 124.8,83.33 173.2,63.33 221.6,43.33 270,23.33"/>
             <circle class="pt" cx="28" cy="90" r="3"/><circle class="pt" cx="76.4" cy="87.33" r="3"/><circle class="pt" cx="124.8" cy="83.33" r="3"/><circle class="pt" cx="173.2" cy="63.33" r="3"/><circle class="pt" cx="221.6" cy="43.33" r="3"/><circle class="pt" cx="270" cy="23.33" r="3"/>
-            <text class="val" x="76.4" y="80">+0.4</text><text class="val" x="124.8" y="76">+1</text><text class="val" x="186" y="58">+4</text><text class="val" x="234" y="38">+7</text><text class="val" x="258" y="19">+10</text>
-            <text class="tk tkc" x="28" y="104">0</text><text class="tk tkc" x="76.4" y="104">1</text><text class="tk tkc" x="124.8" y="104">2</text><text class="tk tkc" x="173.2" y="104">3</text><text class="tk tkc" x="221.6" y="104">4</text><text class="tk tkc" x="270" y="104">5 drinks</text>
+            <text class="val" x="76.4" y="80">+0.4</text><text class="val" x="124.8" y="76">+1</text><text class="val" x="188" y="74">+4</text><text class="val" x="236" y="56">+7</text><text class="val" x="262" y="40">+10</text>
+            <text class="tk tkc" x="28" y="104">0</text><text class="tk tkc" x="76.4" y="104">1</text><text class="tk tkc" x="124.8" y="104">2</text><text class="tk tkc" x="173.2" y="104">3</text><text class="tk tkc" x="221.6" y="104">4</text><text class="tk tkc" x="270" y="104">5</text>
           </svg>
           <p class="sm">bpm above your usual night · from <span class="m">158</span> nights, <span class="m">61</span> with Wine</p>
         </div>
@@ -518,7 +521,7 @@ section{display:grid;gap:22px;min-width:0}
     <p>One check each morning: last night’s sleeping heart rate, HRV and sleep against your own usual, with what you logged the day before. The numbers are the same in every option.</p>
   </div>
 
-  <div class="opts">
+  <div class="opts sg">
 
     <!-- 2A -->
     <div class="opt">
@@ -537,7 +540,7 @@ section{display:grid;gap:22px;min-width:0}
           <g class="c5"><circle class="bd" cx="0" cy="-84" r="5.5" transform="rotate(112.5)"/></g>
           <circle class="hub" r="32"/><text class="clock" x="0" y="3">07:42</text><text class="ent" x="0" y="15">2 entries</text>
         </svg>
-        <div class="ln"><span><b>Last night</b> · sleeping heart rate <span class="m">57</span> bpm, <span class="m">3</span> above your usual · sleep <span class="m">6</span> h <span class="m">50</span> m, <span class="m">25</span> min under · after <span class="m">3</span> Wine</span></div>
+        <div class="ln"><span><b>Last night</b> · sleeping heart rate <span class="m">57</span> bpm, <span class="m">3</span> above your usual · sleep <span class="m">6</span> h <span class="m">50</span> m, <span class="m">25</span> min under · after <span class="m">3</span> drinks of Wine</span></div>
         <div class="tally">
           <div class="trow c1"><span class="bead"></span><span class="n">Coffee</span><span class="q"><b>1</b><small>drink</small></span><span class="plus">+</span></div>
           <div class="trow z c2"><span class="bead"></span><span class="n">Tea</span><span class="q"><b>0</b><small>drinks</small></span><span class="plus">+</span></div>
