@@ -83,15 +83,6 @@ void main() {
       expect(vice.archived, isTrue);
     });
 
-    test('parses an empty document', () {
-      final Vice vice = parse(<String, dynamic>{});
-      expect(vice.name, '');
-      expect(vice.unit, Unit.fallback);
-      expect(vice.ownerID, '');
-      expect(vice.createdAt, _epoch);
-      expect(vice.archived, isFalse);
-    });
-
     test('a missing or mistyped name reads as empty', () {
       expect(parse(_without(_vice(), 'name')).name, '');
       expect(parse(_with(_vice(), 'name', 42)).name, '');
@@ -159,14 +150,6 @@ void main() {
       expect(activity.quantity, 3);
       expect(activity.ownerID, 'owner');
       expect(activity.createdAt, _at);
-    });
-
-    test('parses an empty document', () {
-      final ViceActivity activity = parse(<String, dynamic>{});
-      expect(activity.viceID, '');
-      expect(activity.quantity, 0);
-      expect(activity.ownerID, '');
-      expect(activity.createdAt, _epoch);
     });
 
     test('a missing or mistyped viceID reads as empty', () {

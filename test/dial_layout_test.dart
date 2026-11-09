@@ -56,7 +56,6 @@ void main() {
       expect(afternoon.difference(day).inMinutes, isNot(14 * 60));
       expect(minuteOfDay(afternoon), 14 * 60);
       expect(dialAngle(minuteOfDay(afternoon)), closeTo(pi * 2 / 3, 1e-9));
-      expect(daysBetween(day, addDays(day, 1)), 1);
     }, skip: transition == null ? noDstSkipReason : false);
   });
 

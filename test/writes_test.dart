@@ -1429,7 +1429,7 @@ void main() {
 
       expect(_rejected('Not saved: coffee, 2 items, '), findsOneWidget);
       expect(_rejected('Not deleted'), findsNothing);
-      expect(find.textContaining('Unable to undo'), findsNothing);
+      expect(find.textContaining('Could not undo'), findsNothing);
     });
 
     testWidgets('a history delete refused before its own timeout, after the '

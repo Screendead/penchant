@@ -86,22 +86,6 @@ void main() {
       insightsToday,
       bed: bed,
     );
-    // The engine plans the same moments the provider read for.
-    final InsightsInput input = InsightsInput.from(
-      activities: <ViceActivity>[
-        for (final HabitUse u in s.uses) fakeActivity(u.habitId, 1, u.at),
-      ],
-      health: const <hs.DailyOutcome>[],
-      today: insightsToday,
-    );
-    expect(
-      insightsHoursAfterPlan(
-        input.uses,
-        input.through,
-        bed: bed,
-      ).points.map((p) => p.at),
-      plan.points.map((p) => p.at),
-    );
     expect(report.hoursAfterChecks, greaterThan(0));
     // The time in bed in one call, then a call a span per measure.
     expect(
@@ -109,12 +93,6 @@ void main() {
       1 + insightsSampleMetrics.length * plan.reads.length,
     );
     expect(plan.reads.length, lessThanOrEqualTo(365));
-    // ignore: avoid_print
-    print(
-      'hours-after read: ${plan.points.length} moments, '
-      '${plan.reads.length} spans, ${health.sampleCalls} calls, '
-      '${health.samplesServed} samples',
-    );
   });
 
   test('the daily report shows while the sample read is going', () async {

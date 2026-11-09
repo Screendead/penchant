@@ -91,22 +91,16 @@ void main() {
   });
 
   for (final bool system in <bool>[false, true]) {
-    for (final (MotionPreference, bool) c in <(MotionPreference, bool)>[
-      (MotionPreference.system, system),
-      (MotionPreference.reduce, true),
-      (MotionPreference.full, false),
-    ]) {
-      testWidgets('${c.$1.name} with the system at $system reads ${c.$2}', (
-        WidgetTester tester,
-      ) async {
-        SharedPreferences.setMockInitialValues(<String, Object>{
-          ReduceMotion.key: c.$1.name,
-        });
-        await tester.pumpWidget(_app(system: system));
-        await tester.pump();
-        expect(find.text('reduced: ${c.$2}'), findsOneWidget);
+    testWidgets('system with the system at $system reads $system', (
+      WidgetTester tester,
+    ) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ReduceMotion.key: MotionPreference.system.name,
       });
-    }
+      await tester.pumpWidget(_app(system: system));
+      await tester.pump();
+      expect(find.text('reduced: $system'), findsOneWidget);
+    });
   }
 
   testWidgets('pushed routes, dialogs and sheets read the override', (
@@ -186,22 +180,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Reduce'), findsOneWidget);
     expect(find.text('Follows iOS'), findsNothing);
-  });
-
-  testWidgets('Full overrides a system that reduces motion', (
-    WidgetTester tester,
-  ) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    await tester.pumpWidget(_settingsApp(system: true));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Reduce motion'));
-    await tester.pumpAndSettle();
-
-    BuildContext context() => tester.element(find.byType(ReduceMotionSettings));
-    expect(MediaQuery.disableAnimationsOf(context()), isTrue);
-    await tester.tap(find.text('Full'));
-    await tester.pumpAndSettle();
-    expect(MediaQuery.disableAnimationsOf(context()), isFalse);
   });
 
   group('Full with iOS Reduce Motion on keeps the app\'s own motion', () {

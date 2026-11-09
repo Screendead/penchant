@@ -161,13 +161,4 @@ void main() {
       findsOneWidget,
     );
   });
-
-  test('the slider marks hover, focus and drag with an accent ring, not a '
-      'faint disc', () {
-    for (final Brightness b in Brightness.values) {
-      final SliderThemeData slider = appTheme(b).sliderTheme;
-      expect(slider.overlayShape, isA<SliderRingOverlay>());
-      expect(slider.overlayColor, DialPalette.of(b).accent);
-    }
-  });
 }

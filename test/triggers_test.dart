@@ -19,16 +19,38 @@ class _MockDocument extends Mock
 
 void main() {
   group('the trigger tree', () {
-    test('has the seven roots Jack picked, in order', () {
-      expect(triggerTree.map((TriggerNode n) => n.label), [
-        'Social',
-        'Feeling',
-        'Work',
-        'Body',
-        'Routine',
-        'Place',
-        'Craving',
-      ]);
+    // Shipped ids are stored in documents and never change; labels may.
+    test('keeps every shipped root and child id', () {
+      expect(
+        <String, List<String>>{
+          for (final TriggerNode n in triggerTree)
+            n.id: <String>[for (final TriggerNode c in n.children) c.id],
+        },
+        <String, List<String>>{
+          'social': ['friends', 'party', 'date', 'family', 'offered', 'alone'],
+          'feeling': [
+            'stressed',
+            'bored',
+            'low',
+            'anxious',
+            'lonely',
+            'happy',
+            'restless',
+          ],
+          'work': [
+            'meeting',
+            'deadline',
+            'break',
+            'done',
+            'hard-talk',
+            'long-day',
+          ],
+          'body': ['tired', 'hungry', 'pain', 'no-sleep', 'exercise', 'unwell'],
+          'routine': ['morning', 'meal', 'wind-down', 'weekend', 'habit'],
+          'place': ['home', 'bar', 'commute', 'travelling', 'outdoors'],
+          'craving': ['saw', 'smelled', 'others', 'feed', 'wanted'],
+        },
+      );
     });
 
     test('every path is unique, holds no separator inside an id, and fits '

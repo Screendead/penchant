@@ -97,9 +97,19 @@ void main() {
   });
 
   test('a null or non-list answer is no data', () async {
-    answer((_) => null);
-    final read = await source.dailyValues({HealthMetric.stepCount}, start, end);
-    expect((read as HealthValues).values, isEmpty);
+    for (final Object? reply in <Object?>[
+      null,
+      <String, Object>{'date': '2026-11-08', 'metric': 'stepCount', 'value': 1},
+      'rows',
+    ]) {
+      answer((_) => reply);
+      final read = await source.dailyValues(
+        {HealthMetric.stepCount},
+        start,
+        end,
+      );
+      expect((read as HealthValues).values, isEmpty, reason: '$reply');
+    }
   });
 
   test('the native unavailable code reads as unavailable', () async {
@@ -367,6 +377,7 @@ void main() {
     });
   });
 
+  // HealthChannel.swift matches this id as a literal.
   test('sleeping heart rate is a daily metric the channel is asked for', () {
     expect(HealthMetric.sleepingHeartRate.id, 'sleepingHeartRate');
     expect(

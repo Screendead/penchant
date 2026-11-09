@@ -285,40 +285,42 @@ void main() {
     expect(bridge.queue, isEmpty);
   });
 
-  test('a flush native asks for writes logs queued while the app runs, '
-      'and nothing polls', () async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
-    final FakeTrackerWrites writes = FakeTrackerWrites();
-    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[]);
-    final ProviderContainer container = ProviderContainer(
-      overrides: [
-        userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
-        memoryJournal(),
-        widgetBridgeProvider.overrideWithValue(bridge),
-        trackerWritesProvider.overrideWithValue(writes),
-        sealerProvider.overrideWith((ref) => FakeSealer()),
-      ],
-    );
-    addTearDown(container.dispose);
-    container.listen(widgetLogFlushProvider, (_, _) {});
-    await container.read(userProvider.future);
-    await pumpEventQueue();
-    expect(bridge.flushRequest, isNotNull);
+  test(
+    'a flush native asks for writes logs queued while the app runs',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final FakeTrackerWrites writes = FakeTrackerWrites();
+      final _QueueBridge bridge = _QueueBridge(<QueuedLog>[]);
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
+          memoryJournal(),
+          widgetBridgeProvider.overrideWithValue(bridge),
+          trackerWritesProvider.overrideWithValue(writes),
+          sealerProvider.overrideWith((ref) => FakeSealer()),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(widgetLogFlushProvider, (_, _) {});
+      await container.read(userProvider.future);
+      await pumpEventQueue();
+      expect(bridge.flushRequest, isNotNull);
 
-    bridge.queue = <QueuedLog>[
-      _log('a', DateTime.now().subtract(const Duration(minutes: 1))),
-    ];
-    await bridge.flushRequest!();
-    expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
-      'recordActivity:a',
-    ]);
-    expect(bridge.queue, isEmpty);
+      bridge.queue = <QueuedLog>[
+        _log('a', DateTime.now().subtract(const Duration(minutes: 1))),
+      ];
+      await bridge.flushRequest!();
+      expect(writes.writes.map((Write w) => '${w.op}:${w.id}'), <String>[
+        'recordActivity:a',
+      ]);
+      expect(bridge.queue, isEmpty);
 
-    container.dispose();
-    expect(bridge.flushRequest, isNull);
-  });
+      container.dispose();
+      expect(bridge.flushRequest, isNull);
+    },
+  );
 
   // testWidgets, which demangles the stack reportError prints.
   testWidgets('flushQueuedLogs in the background leaves a refused log queued '
@@ -465,7 +467,7 @@ void main() {
       expect(bridge.queue, hasLength(1));
     });
 
-    test('E2EE off, so no sealer: retry, the queue untouched', () async {
+    test('a log that cannot be created stays queued: retry', () async {
       final (outcome, bridge, writes) = await run(
         e2ee: false,
         canCreate: false,

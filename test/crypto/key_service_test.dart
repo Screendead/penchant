@@ -485,7 +485,7 @@ void main() {
   test('a new journal replaces the key here and on the server', () async {
     await service.resolve(uid).toList();
     final String before = directory.records[uid]!.keyID;
-    await service.setFlagsForTest(uid);
+    await directory.setFlags(uid, saved: true);
 
     await service.startNewJournal(uid);
 
@@ -632,9 +632,4 @@ Future<void> pumpUntil(bool Function() done) async {
     await Future<void>.delayed(Duration.zero);
   }
   expect(done(), isTrue);
-}
-
-extension on KeyService {
-  Future<void> setFlagsForTest(String uid) =>
-      directory.setFlags(uid, saved: true);
 }

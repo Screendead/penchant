@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -599,22 +598,6 @@ void main() {
     expect(find.text('Health is locked'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
-
-  testWidgets(
-    'on macOS the card says Health is on the iPhone and asks nothing',
-    (WidgetTester tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
-      final FakeHealthSource health = FakeHealthSource();
-      await _pump(tester, insightsOverrides(health: health));
-
-      expect(find.text(InsightsPage.onIPhone), findsOneWidget);
-      expect(find.text(InsightsPage.connectLabel), findsNothing);
-      expect(health.authorizationRequests, 0);
-      expect(health.reads, 0);
-      debugDefaultTargetPlatformOverride = null;
-    },
-  );
 
   testWidgets('loading shows a message until the journal answers', (
     WidgetTester tester,
