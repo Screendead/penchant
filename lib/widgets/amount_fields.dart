@@ -5,20 +5,19 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/widgets/activity_date_field.dart';
+import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 
-// The amount sheet's fields: a stepper over a typed amount, the entry's date
-// and time, and its triggers. A new entry's sheet and the entry editor both
+// The amount sheet's fields: a stepper over a typed amount, the entry's time
+// on the mini dial, and its triggers. A new entry's sheet and the entry editor both
 // build them, inside their own Form.
 class AmountFields extends StatelessWidget {
   const AmountFields({
     super.key,
     required this.quantityController,
     required this.unit,
-    required this.dateController,
-    required this.startLive,
-    this.manualSeed,
+    required this.timeController,
+    this.editing,
     required this.triggers,
     required this.onTriggersChanged,
     required this.viceID,
@@ -35,9 +34,10 @@ class AmountFields extends StatelessWidget {
 
   final TextEditingController quantityController;
   final Unit unit;
-  final TextEditingController dateController;
-  final bool startLive;
-  final DateTime Function()? manualSeed;
+  final EntryTimeController timeController;
+  // The id of the entry being edited, which the dial leaves off its faded
+  // entries.
+  final String? editing;
   final List<String> triggers;
   final ValueChanged<List<String>> onTriggersChanged;
   final String? viceID;
@@ -120,11 +120,11 @@ class AmountFields extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        ActivityDateField(
-          controller: dateController,
-          startLive: startLive,
-          manualSeed: manualSeed,
+        const SizedBox(height: 10),
+        EntryTimeField(
+          controller: timeController,
+          editing: editing,
+          enabled: enabled,
         ),
         const SizedBox(height: 8),
         Align(

@@ -232,6 +232,7 @@ class CalendarSheet extends ConsumerStatefulWidget {
     required this.today,
     required this.habits,
     required this.marks,
+    this.footnote = dialFootnote,
   });
 
   final DateTime selected;
@@ -239,8 +240,12 @@ class CalendarSheet extends ConsumerStatefulWidget {
   final List<Vice> habits;
   final Map<String, HabitMark> marks;
 
-  static const String footnote =
+  static const String dialFootnote =
       'A dot for each habit logged that day. Tap a day to open its dial.';
+  static const String timeFootnote =
+      'A dot for each habit logged that day. Tap a day to move the entry to it.';
+
+  final String footnote;
 
   // Which of [habits] have an entry on each day of the month, by day number.
   static Map<int, List<Vice>> loggedByDay(
@@ -428,7 +433,7 @@ class _CalendarSheetState extends ConsumerState<CalendarSheet> {
             ),
           const SizedBox(height: DialSpace.m),
           Text(
-            CalendarSheet.footnote,
+            widget.footnote,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: colors.muted),
           ),
