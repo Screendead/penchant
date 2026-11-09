@@ -376,4 +376,15 @@ void main() {
       expect(calls, isEmpty);
     });
   });
+
+  // HealthChannel.swift matches this id as a literal.
+  test('sleeping heart rate is a daily metric the channel is asked for', () {
+    expect(HealthMetric.sleepingHeartRate.id, 'sleepingHeartRate');
+    expect(
+      decodeHealthRows([
+        {'date': '2026-11-08', 'metric': 'sleepingHeartRate', 'value': 52.5},
+      ]),
+      [DailyOutcome(DateTime(2026, 11, 8), 'sleepingHeartRate', 52.5)],
+    );
+  });
 }
