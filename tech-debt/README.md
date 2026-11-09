@@ -3,8 +3,7 @@
 An exhaustive catalogue of this repository's technical debt as of 2026-08-11. Each subdirectory is one class of debt;
 each file inside is one issue: what it is, what it costs, and the evidence, never a prescription for the fix, which is
 the PR's to design. The register burns down by deletion: when an issue is fixed or stops being true, the PR deletes its
-file and its line below (and a directory it empties); a PR that fixes debt as a side effect deletes the file too. When
-this directory is gone the debt is gone.
+file and its line below (and a directory it empties). When this directory is gone the debt is gone.
 
 `tools/tech-debt-recount.py` recomputes the counts, drops lines whose file is gone, keeps both sides of a merge
 conflict in this file, and fails if a report file has no line (`--check` exits 1 if a rewrite would change the file).

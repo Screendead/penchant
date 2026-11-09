@@ -4,7 +4,7 @@ Habit journal & sleep insights: a journal for logging what you do, seeing the tr
 define a habit (a name and a unit), log activities against it, and read the trends: Today's Day Dial, a 24-hour face
 of the day's entries, and the Trends sheet for one habit over a date range.
 
-A Flutter app for iOS and macOS over Firebase Auth and Cloud Firestore, with one scheduled Cloud Function
+A Flutter app for iOS and macOS over Firebase Auth and Cloud Firestore, with two scheduled Cloud Functions
 (`functions/`). The code and stored data still call a habit a "vice" (`CLAUDE.md`).
 
 ## Run it
