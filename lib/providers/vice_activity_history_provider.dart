@@ -135,10 +135,12 @@ const Duration countRetryDelay = Duration(seconds: 30);
 // the server cannot answer, it counts what this device holds instead, which
 // may be only part of the history. Coming back online re-runs it through
 // offlineProvider; a server failure while online sets no flag, so it retries.
+// With [countCached] false a device count is not taken and its count is 0.
 Future<ActivityCount> _countActivities(
   Ref ref,
-  Query<Map<String, dynamic>> query,
-) async {
+  Query<Map<String, dynamic>> query, {
+  bool countCached = true,
+}) async {
   final bool offline = ref.watch(
     offlineProvider.select((AsyncValue<bool> value) => value.value == true),
   );
@@ -160,11 +162,11 @@ Future<ActivityCount> _countActivities(
     }
   }
 
-  final QuerySnapshot<Map<String, dynamic>> cached = await query.get(
-    const GetOptions(source: Source.cache),
-  );
+  final int cached = countCached
+      ? (await query.get(const GetOptions(source: Source.cache))).size
+      : 0;
   return (
-    count: cached.size,
+    count: cached,
     source: offline
         ? CountSource.deviceOffline
         : CountSource.deviceServerFailed,
@@ -185,6 +187,8 @@ final viceActivityCountForUserProvider = FutureProvider.autoDispose
 
 // Every activity the user owns, whatever its viceID: Habits subtracts the
 // per-habit counts from it to learn whether entries of a deleted habit exist.
+// Only the server's count is used, and a device count would load every cached
+// entry, so none is taken.
 final activityTotalCountForUserProvider = FutureProvider.autoDispose
     .family<ActivityCount, String>(
       retry: firestoreRetry,
@@ -193,6 +197,7 @@ final activityTotalCountForUserProvider = FutureProvider.autoDispose
         FirebaseFirestore.instance
             .collection('activities')
             .where('ownerID', isEqualTo: uid),
+        countCached: false,
       ),
     );
 

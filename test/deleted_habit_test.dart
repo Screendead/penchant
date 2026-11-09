@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/deleted_habit_page.dart';
@@ -18,6 +20,27 @@ import 'package:tracker/widgets/rejected_writes_banner.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
+
+// QueryDocumentSnapshot is @sealed, and a mock is the only way to build one
+// without a Firestore instance.
+// ignore_for_file: subtype_of_sealed_class
+class _Doc extends Mock
+    implements QueryDocumentSnapshot<Map<String, dynamic>> {}
+
+class _Metadata extends Mock implements SnapshotMetadata {}
+
+QueryDocumentSnapshot<Map<String, dynamic>> _doc(
+  String id,
+  Map<String, dynamic> data,
+) {
+  final _Metadata metadata = _Metadata();
+  when(() => metadata.hasPendingWrites).thenReturn(false);
+  final _Doc doc = _Doc();
+  when(() => doc.id).thenReturn(id);
+  when(() => doc.data()).thenReturn(data);
+  when(() => doc.metadata).thenReturn(metadata);
+  return doc;
+}
 
 void main() {
   final Vice coffee = fakeVice('coffee');
@@ -258,4 +281,35 @@ void main() {
     addTearDown(container.dispose);
     expect(container.read(deletedHabitActivitiesProvider).isLoading, isTrue);
   });
+
+  test(
+    'keeps only entries whose viceID names no habit, newest first',
+    () async {
+      Map<String, dynamic> entry(Object? viceID, int day) => <String, dynamic>{
+        'viceID': ?viceID,
+        'quantity': 1,
+        'ownerID': ownerID,
+        'createdAt': Timestamp.fromDate(DateTime(2026, 11, day)),
+      };
+      final List<ViceActivity> found = await entriesOfNoHabit(
+        <QueryDocumentSnapshot<Map<String, dynamic>>>[
+          _doc('live', entry('coffee', 1)),
+          // A locked or archived habit's id is still an owned vice's.
+          _doc('locked', entry('sealed-vice', 2)),
+          _doc('older', entry('gone', 3)),
+          _doc('newer', entry('gone', 5)),
+          _doc('no-vice', entry(null, 4)),
+          _doc('mistyped', entry(7, 6)),
+        ],
+        <String>{'coffee', 'sealed-vice'},
+        SealedOpener(null),
+      );
+      expect(found.map((ViceActivity a) => a.id), <String>[
+        'mistyped',
+        'newer',
+        'no-vice',
+        'older',
+      ]);
+    },
+  );
 }

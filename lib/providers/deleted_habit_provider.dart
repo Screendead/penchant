@@ -41,39 +41,66 @@ const int deletedHabitPageSize = 500;
 // A Firestore document ID never holds a '/', so it parts the IDs.
 const String _idSeparator = '/';
 
+/// Of [activities], those whose viceID names none of [viceIDs], newest first.
+Future<List<ViceActivity>> entriesOfNoHabit(
+  Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> activities,
+  Set<String> viceIDs,
+  SealedOpener opener,
+) async {
+  final List<ViceActivity> found = <ViceActivity>[
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in activities)
+      if (!viceIDs.contains(readString(doc.data()['viceID'])))
+        await ViceActivity.open(doc, doc.data(), opener),
+  ];
+  return found..sort(
+    (ViceActivity a, ViceActivity b) => b.createdAt.compareTo(a.createdAt),
+  );
+}
+
+Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _readOwned(
+  String collection,
+  String uid,
+) async {
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs =
+      <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+  Query<Map<String, dynamic>> page = FirebaseFirestore.instance
+      .collection(collection)
+      .where('ownerID', isEqualTo: uid)
+      .orderBy(FieldPath.documentId)
+      .limit(deletedHabitPageSize);
+  while (true) {
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await page.get(
+      const GetOptions(source: Source.server),
+    );
+    docs.addAll(snapshot.docs);
+    if (snapshot.docs.length < deletedHabitPageSize) return docs;
+    page = page.startAfterDocument(snapshot.docs.last);
+  }
+}
+
 /// Read once per open of the page, not listened to: finding them means
 /// reading every entry the user owns, the export's shape (paged by document
-/// ID, so an entry lacking createdAt is not skipped), newest first.
+/// ID, so an entry lacking createdAt is not skipped).
+///
+/// The habits come from the server too, read after the entries, and join the
+/// listed ones: the list orders by createdAt, so it omits a vice lacking one,
+/// and its first snapshot is the cache's, which can lack a habit added on
+/// another device. Read after, every habit an entry was logged to since the
+/// rules began requiring an owned one is there unless it has been deleted.
 final deletedHabitActivitiesForUserProvider = FutureProvider.autoDispose
     .family<List<ViceActivity>, ({String uid, String viceIDs})>(
       retry: firestoreRetry,
       (ref, key) async {
         final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
-        final Set<String> known = <String>{
+        final List<QueryDocumentSnapshot<Map<String, dynamic>>> activities =
+            await _readOwned('activities', key.uid);
+        final List<QueryDocumentSnapshot<Map<String, dynamic>>> vices =
+            await _readOwned('vices', key.uid);
+        return entriesOfNoHabit(activities, <String>{
           if (key.viceIDs.isNotEmpty) ...key.viceIDs.split(_idSeparator),
-        };
-        final List<ViceActivity> found = <ViceActivity>[];
-        Query<Map<String, dynamic>> page = FirebaseFirestore.instance
-            .collection('activities')
-            .where('ownerID', isEqualTo: key.uid)
-            .orderBy(FieldPath.documentId)
-            .limit(deletedHabitPageSize);
-        while (true) {
-          final QuerySnapshot<Map<String, dynamic>> snapshot = await page.get();
-          for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
-              in snapshot.docs) {
-            final Map<String, dynamic> json = doc.data();
-            if (!known.contains(readString(json['viceID']))) {
-              found.add(await ViceActivity.open(doc, json, opener));
-            }
-          }
-          if (snapshot.docs.length < deletedHabitPageSize) break;
-          page = page.startAfterDocument(snapshot.docs.last);
-        }
-        return found..sort(
-          (ViceActivity a, ViceActivity b) =>
-              b.createdAt.compareTo(a.createdAt),
-        );
+          for (final QueryDocumentSnapshot<Map<String, dynamic>> vice in vices)
+            vice.id,
+        }, opener);
       },
     );
 

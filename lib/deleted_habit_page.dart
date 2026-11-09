@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -435,7 +437,7 @@ class _RingPainter extends CustomPainter {
       ..strokeWidth = 1.5;
     final Rect rect = (Offset.zero & size).deflate(paint.strokeWidth / 2);
     const int dashes = 8;
-    const double sweep = 2 * 3.141592653589793 / dashes;
+    const double sweep = 2 * math.pi / dashes;
     for (int i = 0; i < dashes; i++) {
       canvas.drawArc(rect, i * sweep, sweep * 0.6, false, paint);
     }
