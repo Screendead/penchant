@@ -83,6 +83,9 @@ List<HabitInsight> everyComparison(InsightsInput input) {
   ];
 }
 
+Set<(String, String)> pairs(Iterable<HabitFinding> findings) =>
+    <(String, String)>{for (final f in findings) (f.habitId, f.metricId)};
+
 void main() {
   test('on pure noise, false findings across 5 habits x 9 outcomes fall from '
       'about 1 in 20 checks to about 1 in 500', () {
@@ -97,10 +100,13 @@ void main() {
       rawFindings += rawFound;
       if (rawFound > 0) rawReports++;
 
-      final int found = controlFalseDiscoveries(
-        raw,
-      ).whereType<HabitFinding>().length;
-      if (seed < 20) expect(computeInsights(input).findings.length, found);
+      final Set<(String, String)> corrected = pairs(
+        controlFalseDiscoveries(raw).whereType<HabitFinding>(),
+      );
+      final int found = corrected.length;
+      if (seed < 20 || found > 0) {
+        expect(pairs(computeInsights(input).findings), corrected);
+      }
       findings += found;
       if (found > 0) reports++;
     }
@@ -134,7 +140,8 @@ void main() {
 
   test('a finding that does not survive the correction is refused as chance, '
       'and that reason outranks the noise', () {
-    for (int seed = 0; ; seed++) {
+    const int seeds = 200;
+    for (int seed = 0; seed < seeds; seed++) {
       final InsightsInput input = noiseInput(seed);
       final List<HabitInsight> corrected = controlFalseDiscoveries(
         everyComparison(input),
@@ -164,5 +171,6 @@ void main() {
       );
       return;
     }
+    fail('no chance refusal without a sibling finding in $seeds seeds');
   });
 }
