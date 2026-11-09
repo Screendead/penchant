@@ -27,7 +27,7 @@ an extrapolation. The cards say "went with" for these, never "caused".
 | Time awake in the night | 20 min | Consensus | Sateia 2017 (AASM insomnia guideline): 20 min of wake after sleep onset is the clinical-significance threshold for polysomnography, set by the task force's judgement before analysis. |
 | Core sleep | 10 min | Kept | No source isolates light (N1 + N2) sleep. |
 | Deep sleep | 10 min | Kept | Tasali 2008 suppressed slow-wave sleep by about 90% and insulin sensitivity fell about 25%; Herzog 2013, up to 20%. Both cut most of the night's deep sleep, so neither gives a smallest change. |
-| REM sleep | 5% of usual time asleep | Sourced (share) | Leary 2020: each 5 percentage points less of the night in REM went with 13% higher mortality in MrOS (HR 1.13, 1.08 to 1.19) and 17% in the Wisconsin cohort. Floor = 0.05 x the person's median nightly time asleep; 10 min without sleep data. |
+| REM sleep | 5% of usual time asleep | Sourced (share) | Leary 2020: each 5 percentage points less of the night in REM went with 13% higher mortality in MrOS (HR 1.13, 1.08 to 1.19) and 17% in the Wisconsin cohort. Floor = 0.05 x the person's median nightly time asleep; 10 min with under 14 nights of it. |
 | Heart rate variability (SDNN) | half the person's night-to-night variation | Sourced (own noise) | Javaloyes 2019: cyclists whose training eased when 7-day HRV fell half a standard deviation below their own 4-week usual improved 40-min time trial 7.3% and peak power 5.1% over a fixed plan (the 0.5 SD rule read in HRV4Training's summary of the paper). 3 ms when there are too few nights to measure the variation. Hillebrand 2013 (1% higher SDNN, about 1% lower cardiovascular risk, read in a search summary, not the abstract) gives a slope, not a floor. |
 | Resting heart rate | 5 bpm | Sourced | Vazir 2018 (ARIC, 15,680 people, 28 years): each 5 bpm rise from the previous visit went with 12% higher all-cause mortality (HR 1.12, 1.10 to 1.15). Zhang 2016's meta-analysis reports per 10 bpm (RR 1.09). |
 | Heart rate while asleep | 5 bpm | Inferred | No source for sleeping heart rate alone; taken from resting heart rate (Vazir 2018), which a night's lowest rates track. |
@@ -70,7 +70,7 @@ One line per card, for the headline's outcome, in short form; none for a kept fl
 - Heart rate while asleep: "Each 5 bpm rise in resting heart rate went with 12% higher mortality (Vazir 2018)."
 - Blood oxygen: "Each point lower at night went with 33% more heart events, in dialysis (Zoccali 2002)."
 - Steps: "Each 500 more steps a day went with 7% lower heart-disease death (Banach 2023)."
-- Active energy: "About 85 kcal more a day went with 21% lower mortality (Strain 2020)."
+- Active energy: "About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower mortality (Strain 2020)."
 
 ## Sources
 

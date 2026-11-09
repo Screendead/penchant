@@ -211,12 +211,19 @@ void main() {
                 DailyOutcome(date: day.key, metricId: id, value: day.value),
         ]);
 
-    test('REM’s is 5% of the usual night asleep, 10 min without one', () {
+    test('REM’s is 5% of the usual night asleep, 10 min with under 14 '
+        'nights', () {
       final Map<String, double> floors = resolveFloors(
         series('sleepAsleep', <double>[for (int i = 0; i < 30; i++) 440]),
       );
       expect(floors['sleepREM'], closeTo(22, 1e-9));
       expect(resolveFloors(series('sleepCore', <double>[200]))['sleepREM'], 10);
+      expect(
+        resolveFloors(
+          series('sleepAsleep', <double>[for (int i = 0; i < 13; i++) 440]),
+        )['sleepREM'],
+        10,
+      );
     });
 
     test(

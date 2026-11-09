@@ -296,7 +296,7 @@ enum FloorRule {
   fixed,
 
   /// [remShareOfNight] of the person's usual time asleep; the floor as it
-  /// stands without sleep data.
+  /// stands with under [minNoisePairs] nights of it.
   shareOfNight,
 
   /// [noiseShare] of the person's own night-to-night variation alone; the
@@ -421,7 +421,7 @@ Map<String, double> resolveFloors(OutcomeSeries outcomes) {
         final double floor = switch (metric.value.rule) {
           FloorRule.fixed => metric.value.floor,
           // The median over every night with time asleep, REM or not.
-          FloorRule.shareOfNight when asleep.isNotEmpty =>
+          FloorRule.shareOfNight when asleep.length >= minNoisePairs =>
             remShareOfNight * median(asleep.values.toList()),
           FloorRule.shareOfNight => metric.value.floor,
           FloorRule.ownNoise => noise ?? metric.value.floor,
@@ -636,7 +636,8 @@ String? metricEvidence(String metricId) => switch (metricId) {
     'Each 500 more steps a day went with 7% lower heart-disease death '
         '(Banach 2023).',
   'activeEnergyBurned' =>
-    'About 85 kcal more a day went with 21% lower mortality (Strain 2020).',
+    'About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower '
+        'mortality (Strain 2020).',
   _ => null,
 };
 
