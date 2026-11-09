@@ -3,11 +3,9 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
@@ -27,7 +25,7 @@ void main() {
 
   testWidgets('an entry saved offline that the server refuses on reconnect '
       'is named on screen until dismissed', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-rejected@example.com');
     await addVicesThroughManageData(tester);
     final String coffeeID = await storedViceID('Coffee');
@@ -76,7 +74,7 @@ void main() {
 
   testWidgets('an Undo of an entry the server refuses is not called not '
       'deleted', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-rejected-undo@example.com');
     await addVicesThroughManageData(tester);
     final String coffeeID = await storedViceID('Coffee');
@@ -109,7 +107,7 @@ void main() {
       'undoes was refused, is not called a failed Undo', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-rejected-undo-early@example.com');
     await addVicesThroughManageData(tester);
     final String coffeeID = await storedViceID('Coffee');
@@ -169,7 +167,7 @@ void main() {
         } when owner == by)
           what,
     ];
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-rejected-restart@example.com');
     await addVicesThroughManageData(tester);
     final String coffeeID = await storedViceID('Coffee');
@@ -209,7 +207,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
 
     // The next launch: Auth kept the session; Firestore starts afresh, online.
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await pumpUntil(tester, rejected);
     expect(inBanner('The server refused this change.'), findsOneWidget);
     await screenshot(tester, 'rejected-write-earlier-launch');

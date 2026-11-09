@@ -1,14 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 
 import 'support.dart';
@@ -21,14 +19,12 @@ Future<void> _waitForEmulator() =>
 
 Future<Map<String, dynamic>> _storedVice(String name) async {
   await _waitForEmulator();
-  final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
-      .instance
-      .collection('vices')
-      .where('ownerID', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-      .where('name', isEqualTo: name)
-      .get();
-  expect(vices.docs, hasLength(1), reason: 'vice $name');
-  return vices.docs.single.data();
+  final String viceID = await storedViceID(name);
+  return (await FirebaseFirestore.instance
+          .collection('vices')
+          .doc(viceID)
+          .get(const GetOptions(source: Source.server)))
+      .data()!;
 }
 
 Future<void> _setArchived(
@@ -58,7 +54,7 @@ void main() {
 
   testWidgets('archiving a vice takes it off Today and unarchiving brings it '
       'back', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-archive@example.com');
     await addVicesThroughManageData(tester, const <String>[
       'Coffee',
@@ -90,7 +86,7 @@ void main() {
 
   testWidgets('a vice stored without the archived field shows on Today, '
       'takes a recording, and can be archived', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-legacy-vice@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
     await recordActivity(tester, 'Coffee', 2);
@@ -135,7 +131,7 @@ void main() {
   testWidgets('the editor saves a changed quantity', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-edit@example.com');
     await addVicesThroughManageData(tester);
     await recordActivity(tester, 'Coffee', 2);
@@ -164,7 +160,7 @@ void main() {
 
   testWidgets('a decimal quantity is stored as its amount, totals count it '
       'exactly, and the editor changes it', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-amount@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
 

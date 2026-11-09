@@ -29,53 +29,66 @@ void main() {
         );
     final String uid = credential.user!.uid;
     final FirebaseFirestore db = FirebaseFirestore.instance;
-    final Timestamp at = Timestamp.now();
+    final DateTime now = DateTime.now();
+    final Map<String, Object> at = <String, Object>{
+      'timestampValue': now.toUtc().toIso8601String(),
+    };
+    Map<String, Object> text(String value) => <String, Object>{
+      'stringValue': value,
+    };
+    final Map<String, Object> owner = text(uid);
 
-    // More vices than one page, so the run crosses a page boundary.
+    // Legacy plaintext, which the rules no longer take from a client. More
+    // vices than one page, so the run crosses a page boundary.
     const int viceCount = 520;
     final DocumentReference<Map<String, dynamic>> coffee = db
         .collection('vices')
         .doc();
-    await coffee.set(<String, Object>{
-      'name': 'Coffee',
-      'unit': 'drink',
-      'ownerID': uid,
-      'createdAt': at,
-      'archived': false,
-      'category': 'caffeine',
+    await createAllBypassingRules('vices', <String, Map<String, Object>>{
+      coffee.id: <String, Object>{
+        'name': text('Coffee'),
+        'unit': text('drink'),
+        'ownerID': owner,
+        'createdAt': at,
+        'archived': <String, Object>{'booleanValue': false},
+        'category': text('caffeine'),
+      },
+      for (int n = 1; n < viceCount; n++)
+        db.collection('vices').doc().id: <String, Object>{
+          'name': text('Habit $n'),
+          'unit': text('item'),
+          'ownerID': owner,
+          'createdAt': at,
+          'archived': <String, Object>{'booleanValue': true},
+          'category': text('other'),
+        },
     });
-    for (int start = 1; start < viceCount; start += 400) {
-      final WriteBatch batch = db.batch();
-      for (int n = start; n < viceCount && n < start + 400; n++) {
-        batch.set(db.collection('vices').doc(), <String, Object>{
-          'name': 'Habit $n',
-          'unit': 'item',
-          'ownerID': uid,
-          'createdAt': at,
-          'archived': true,
-          'category': 'other',
-        });
-      }
-      await batch.commit();
-    }
-    final DocumentReference<Map<String, dynamic>> plain = await db
+    final DocumentReference<Map<String, dynamic>> plain = db
         .collection('activities')
-        .add(<String, Object>{
-          'viceID': coffee.id,
-          'quantity': 2,
-          'ownerID': uid,
-          'createdAt': at,
-        });
-    final DocumentReference<Map<String, dynamic>> triggered = await db
+        .doc();
+    final DocumentReference<Map<String, dynamic>> triggered = db
         .collection('activities')
-        .add(<String, Object>{
-          'viceID': coffee.id,
-          'quantity': 3,
-          'amount': 2.5,
-          'ownerID': uid,
-          'createdAt': at,
-          'triggers': <String>['social'],
-        });
+        .doc();
+    await createAllBypassingRules('activities', <String, Map<String, Object>>{
+      plain.id: <String, Object>{
+        'viceID': text(coffee.id),
+        'quantity': <String, Object>{'integerValue': '2'},
+        'ownerID': owner,
+        'createdAt': at,
+      },
+      triggered.id: <String, Object>{
+        'viceID': text(coffee.id),
+        'quantity': <String, Object>{'integerValue': '3'},
+        'amount': <String, Object>{'doubleValue': 2.5},
+        'ownerID': owner,
+        'createdAt': at,
+        'triggers': <String, Object>{
+          'arrayValue': <String, Object>{
+            'values': <Object>[text('social')],
+          },
+        },
+      },
+    });
 
     final FakeSealer sealer = FakeSealer();
     await tester.pumpWidget(

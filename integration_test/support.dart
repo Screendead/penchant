@@ -7,17 +7,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/crypto/journal_field_sealer.dart';
 import 'package:tracker/crypto/key_store.dart';
 import 'package:tracker/crypto/native_aes.dart';
+import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/onboarding/presets.dart';
@@ -34,6 +38,8 @@ import 'package:tracker/widgets/native_auth_field.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
+
+import '../test/fake_sealer.dart';
 
 const Duration timeout = Duration(seconds: 30);
 
@@ -538,8 +544,63 @@ Future<void> scrollIntoView(WidgetTester tester, Finder finder) async {
   await tester.pump();
 }
 
-// A launch through startApp seals with the keychain's key, so a sealed vice's
-// name is matched by opening it with that key.
+// The rules refuse a create without its sealed field, so every app the tests
+// pump seals. Those not launched through startApp, whose key service would
+// put a journal key in the keychain and gate the first launch on it, seal
+// with this fixed key instead.
+final FakeSealer e2eSealer = FakeSealer();
+
+// With a key the first-launch migrator would seal the legacy documents a test
+// writes past the rules, partway through the test; sealing_migration_test
+// runs it on purpose.
+class _NoMigration extends PlaintextMigration {
+  @override
+  MigrationStatus build() => MigrationStatus.idle;
+}
+
+Widget e2eApp({Key? key, List<Override> overrides = const <Override>[]}) =>
+    ProviderScope(
+      key: key,
+      overrides: <Override>[
+        sealerProvider.overrideWithValue(e2eSealer),
+        plaintextMigrationProvider.overrideWith(_NoMigration.new),
+        ...overrides,
+      ],
+      child: const MyApp(),
+    );
+
+// A document's content fields, opened with the keychain's key (a launch
+// through startApp) or [e2eSealer]; a plaintext document as it is.
+Future<Map<String, Object?>> storedContent(
+  DocumentSnapshot<Map<String, dynamic>> doc,
+) async {
+  final Map<String, dynamic> data = doc.data()!;
+  final Object? envelope = data[sealedField];
+  if (envelope is! Blob) {
+    return data;
+  }
+  final StoredKey? stored = await KeyStore().read(
+    FirebaseAuth.instance.currentUser!.uid,
+  );
+  for (final FieldSealer sealer in <FieldSealer>[
+    if (stored != null)
+      JournalFieldSealer(
+        stored.journalKey.sealer(nativeAesGcm(secretKeyLength: 32)),
+      ),
+    e2eSealer,
+  ]) {
+    try {
+      return await sealer.open(
+        envelope.bytes,
+        context: sealContext(doc.reference.parent.id, doc.id),
+      );
+    } on Object {
+      continue;
+    }
+  }
+  throw StateError('no key opens ${doc.reference.path}');
+}
+
 Future<String> storedViceID(String viceName) async {
   final String uid = FirebaseAuth.instance.currentUser!.uid;
   final QuerySnapshot<Map<String, dynamic>> vices = await FirebaseFirestore
@@ -547,21 +608,9 @@ Future<String> storedViceID(String viceName) async {
       .collection('vices')
       .where('ownerID', isEqualTo: uid)
       .get();
-  final StoredKey? stored = await KeyStore().read(uid);
-  final FieldSealer? sealer = stored == null
-      ? null
-      : JournalFieldSealer(
-          stored.journalKey.sealer(nativeAesGcm(secretKeyLength: 32)),
-        );
-  final SealedOpener opener = SealedOpener(sealer);
   final List<String> matches = <String>[
     for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in vices.docs)
-      if (contentOf(
-            doc.data(),
-            await opener.open('vices', doc.id, doc.data()),
-          )['name'] ==
-          viceName)
-        doc.id,
+      if ((await storedContent(doc))['name'] == viceName) doc.id,
   ];
   expect(matches, hasLength(1), reason: 'vice $viceName');
   return matches.single;
@@ -605,6 +654,51 @@ Future<void> createBypassingRules(
     final String body = await response.transform(utf8.decoder).join();
     if (response.statusCode != HttpStatus.ok) {
       throw StateError('POST $uri returned ${response.statusCode}: $body');
+    }
+  } finally {
+    client.close();
+  }
+}
+
+// [createBypassingRules] for many documents of one collection, a commit of
+// up to 400 at a time.
+Future<void> createAllBypassingRules(
+  String collection,
+  Map<String, Map<String, Object>> documents,
+) async {
+  const String root = 'projects/$emulatorProjectId/databases/(default)';
+  final HttpClient client = HttpClient();
+  try {
+    final Uri uri = Uri.parse(
+      'http://$emulatorHost:$firestoreEmulatorPort/v1/$root/documents:commit',
+    );
+    final List<MapEntry<String, Map<String, Object>>> all = documents.entries
+        .toList();
+    for (int start = 0; start < all.length; start += 400) {
+      final HttpClientRequest request = await client.postUrl(uri);
+      request.headers
+        ..set(HttpHeaders.authorizationHeader, 'Bearer owner')
+        ..contentType = ContentType.json;
+      request.write(
+        jsonEncode(<String, Object>{
+          'writes': <Object>[
+            for (final MapEntry<String, Map<String, Object>>(:key, :value)
+                in all.skip(start).take(400))
+              <String, Object>{
+                'update': <String, Object>{
+                  'name': '$root/documents/$collection/$key',
+                  'fields': value,
+                },
+                'currentDocument': <String, Object>{'exists': false},
+              },
+          ],
+        }),
+      );
+      final HttpClientResponse response = await request.close();
+      final String body = await response.transform(utf8.decoder).join();
+      if (response.statusCode != HttpStatus.ok) {
+        throw StateError('POST $uri returned ${response.statusCode}: $body');
+      }
     }
   } finally {
     client.close();

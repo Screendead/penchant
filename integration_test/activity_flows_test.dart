@@ -1,14 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/day_dial.dart';
@@ -72,7 +70,7 @@ Future<void> _pickDay(WidgetTester tester, DateTime day) async {
 }
 
 Future<void> _startApp(WidgetTester tester, String email) async {
-  await tester.pumpWidget(const ProviderScope(child: MyApp()));
+  await tester.pumpWidget(e2eApp());
   await register(tester, email);
   await addVicesThroughManageData(tester);
 }
@@ -236,7 +234,7 @@ void main() {
 
   testWidgets('the tallies follow each habit added and the day shown, and an '
       'empty day reads as a clear day', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-bars@example.com');
     await addVicesThroughManageData(tester, const <String>['Coffee']);
 
@@ -299,7 +297,10 @@ void main() {
     );
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> stored =
         await storedActivities('Coffee');
-    expect(stored.single.data()['triggers'], <String>['work/meeting']);
+    expect(stored.single.data().containsKey('triggers'), isFalse);
+    expect((await storedContent(stored.single))['triggers'], <String>[
+      'work/meeting',
+    ]);
 
     await openFromMenu(tester, Homepage.habitsItem);
     await pumpUntil(tester, habitsCount('1 entry'));

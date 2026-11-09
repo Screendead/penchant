@@ -1,12 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -27,7 +25,7 @@ void main() {
 
   testWidgets('Today totals an account with more vices than an `in` filter '
       'takes', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-many-vices@example.com');
 
     final List<String> names = <String>[
@@ -48,7 +46,7 @@ void main() {
 
   testWidgets('the history page shows 50 entries at a time and the next 50 on '
       'request', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-history-pages@example.com');
 
     const int pageSize = ViceActivityHistoryPage.pageSize;

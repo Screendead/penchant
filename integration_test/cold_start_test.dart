@@ -1,11 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 
 import 'support.dart';
 
@@ -14,9 +12,7 @@ import 'support.dart';
 // tree goes first: on macOS two live menu bars assert.
 Future<void> _relaunch(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox());
-  await tester.pumpWidget(
-    ProviderScope(key: UniqueKey(), child: const MyApp()),
-  );
+  await tester.pumpWidget(e2eApp(key: UniqueKey()));
 }
 
 void main() {

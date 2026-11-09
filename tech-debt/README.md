@@ -16,13 +16,12 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**11 issues: 0 critical, 0 high, 1 medium, 10 low.**
+**10 issues: 0 critical, 0 high, 0 medium, 10 low.**
 
-## Firebase Data Layer (4)
+## Firebase Data Layer (3)
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **medium** — [The rules still accept a vice's name and unit, and an activity's triggers, in plaintext](firebase-data-layer/plaintext-creates-are-still-accepted.md)
 - **low** — [A sealed entry can be moved in time or rolled back without the client noticing](firebase-data-layer/sealed-blobs-bind-neither-time-nor-state.md)
 - **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 - **low** — [Legacy activities of a missing vice appear on no screen](firebase-data-layer/vice-activity-relationship-is-unenforced.md)

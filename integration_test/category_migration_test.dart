@@ -175,7 +175,7 @@ void main() {
       'next fills the rest once each, writing nothing but category', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-category@example.com');
     final String uid = FirebaseAuth.instance.currentUser!.uid;
     // No migrator listens while the legacy data goes in.

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
@@ -19,7 +17,7 @@ SemanticsFinder _wedgeNode(String label) => find.semantics.byPredicate(
 );
 
 Future<void> _startApp(WidgetTester tester, String email) async {
-  await tester.pumpWidget(const ProviderScope(child: MyApp()));
+  await tester.pumpWidget(e2eApp());
   await register(tester, email);
   await addVicesThroughManageData(tester);
 }

@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
@@ -28,7 +26,7 @@ void main() {
       'synced, then sync once, when the network returns', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-offline@example.com');
     await addVicesThroughManageData(tester);
     final Finder banner = find.text(OfflineBanner.message);

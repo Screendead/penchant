@@ -3,14 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
-import 'package:tracker/main.dart';
 import 'package:tracker/trends/trends_day.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -62,7 +60,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-trends@example.com');
 
     await _writes.addVice(ownerID: _uid, name: 'Coffee', unit: Unit.drink).done;
