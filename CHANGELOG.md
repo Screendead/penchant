@@ -12,13 +12,19 @@ pull request titles (`gh pr list --state merged`).
 - Insights, from the Penchant menu: connect Apple Health on iPhone, then see what follows each habit over the last
   year ("On nights after Coffee, your deep sleep averages 18 min less", with its range), and which habits have too
   little to say and why. Worked out on the device; Health data never leaves it (#173).
+- On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
+  out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
+  Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a
+  backoff for about an hour. Opening Penchant meanwhile brings up the app as usual.
 - Groundwork for insights on iPhone: Penchant can read daily sleep, heart, breathing, oxygen, wrist temperature,
   step and energy totals from Apple Health, read-only and kept on the device. Nothing asks for access or shows them
   yet.
 - On the Mac, Penchant sits in the menu bar, and stays there after the app quits: a small helper that starts at login
-  lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. Logs made while the
-  app is closed wait, marked "Saved — syncs when Penchant opens", and the app saves them when it next opens. Closing
-  the window no longer quits the app; click the Dock icon or Open Penchant to bring it back.
+  lists today's count for each habit, and a click on one logs one now, with Undo for five seconds. A log made while the
+  app is closed is marked "Saved — syncs shortly", or "Saved — open Penchant to sync" when only the app can save it
+  (its journal key needs recovery, or the server refused it). The menu's Quit hides the item until the next login or
+  launch, and logs from the widgets go on saving meanwhile. Closing the window no longer quits the app; click the Dock
+  icon or Open Penchant to bring it back.
 - A "Last week" widget for the iPhone and iPad Home Screen, in every size, and the Lock Screen: every habit over the
   last 7 days on a week dial in the app's colours. It updates whenever the app is open and changes, and clears when
   you sign out.
@@ -61,7 +67,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
-
+- On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
+  your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
+  background to save it. If that is cut short, the tap still waits on the device and saves later, as before.
 - Opening or closing a page in dark mode no longer flashes white halfway through the transition.
 - A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
 

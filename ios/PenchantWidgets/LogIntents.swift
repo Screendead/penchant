@@ -112,6 +112,20 @@ struct UndoLogIntent: AppIntent {
   }
 }
 
+#if os(iOS)
+  // A widget button or control runs an intent in the widget extension unless
+  // it adopts one of a few protocols, LiveActivityIntent among them; then iOS
+  // runs it in the app's process, launching the app in the background
+  // (developer.apple.com, "Adding interactivity to widgets and Live
+  // Activities"). Only the app can write to Firestore, so this is what lets a
+  // tap reach it while Penchant is closed. No Live Activity is involved.
+  @available(iOS 17.0, *)
+  extension LogOneIntent: LiveActivityIntent {}
+
+  @available(iOS 17.0, *)
+  extension UndoLogIntent: LiveActivityIntent {}
+#endif
+
 @available(iOS 17.0, macOS 14.0, *)
 func reloadEverything() {
   WidgetCenter.shared.reloadAllTimelines()
