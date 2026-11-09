@@ -71,6 +71,41 @@ enum InsightKind {
   /// Among days with the habit, the clock time of its last use, a use before
   /// [lateUseCutoffHour] counting as the evening before.
   lastUse,
+
+  /// A Health sample measure in [HabitInsight.window] after each use, against
+  /// the hour before it, beyond the same change at that time on other days.
+  hoursAfter,
+}
+
+/// Minutes after a use, from [start] up to [end].
+typedef HourWindow = ({int start, int end});
+
+/// Why an [InsightKind.hoursAfter] comparison had too few days: the cause
+/// that left out the most moments.
+enum HoursAfterShortfall {
+  /// Too few uses clear of the habit in the 4 hours before.
+  uses,
+
+  /// No night's sleep recorded before the moment, so no time awake to match.
+  noSleep,
+
+  /// The hour before or the window touched sleep, waking included.
+  nearSleep,
+
+  /// Another habit was used from the hour before to the window's end.
+  otherHabit,
+
+  /// The habit again before the window's end.
+  sameHabit,
+
+  /// Under the readings needed before and after.
+  readings,
+
+  /// A walk in the hour before or the window.
+  walk,
+
+  /// Too few nearby moments clear of the habit to compare with.
+  controls,
 }
 
 /// The outcome after days a habit was used against after days it was not,
@@ -142,6 +177,7 @@ sealed class HabitInsight {
     required this.raw,
     this.kind = InsightKind.use,
     this.step = 1,
+    this.window,
   });
 
   final String habitId;
@@ -162,6 +198,9 @@ sealed class HabitInsight {
   /// per: 1 for [InsightKind.use], an amount in the habit's unit for
   /// [InsightKind.dose], minutes for [InsightKind.lastUse].
   final double step;
+
+  /// Set for [InsightKind.hoursAfter] alone.
+  final HourWindow? window;
 }
 
 class HabitFinding extends HabitInsight {
@@ -174,6 +213,7 @@ class HabitFinding extends HabitInsight {
     required super.raw,
     super.kind,
     super.step,
+    super.window,
     required this.effect,
     required this.interval,
     required this.standardized,
@@ -206,14 +246,19 @@ class HabitRefusal extends HabitInsight {
     required super.raw,
     super.kind,
     super.step,
+    super.window,
     required this.reason,
     this.entangledWith,
     this.effect,
     this.interval,
     this.pValue,
+    this.shortfall,
   });
 
   final RefusalReason reason;
+
+  /// Set for [InsightKind.hoursAfter] with [RefusalReason.tooFewDays].
+  final HoursAfterShortfall? shortfall;
   final String? entangledWith;
   final double? effect;
   final Interval? interval;
@@ -862,6 +907,7 @@ List<HabitInsight> controlFalseDiscoveries(
           raw: f.raw,
           kind: f.kind,
           step: f.step,
+          window: f.window,
           reason: RefusalReason.chance,
           effect: f.effect,
           interval: f.interval,

@@ -24,6 +24,12 @@ pull request titles (`gh pr list --state merged`).
   ("A last Coffee an hour later goes with ..."), among the days you had it. An entry before 05:00 counts toward the
   day before, for both. A habit whose amount or time barely changes says so instead, as does a last use that only
   comes later because you had more, and a result that rests on one unusual day is not shown (#185).
+- Insights looks at the hours after each use, not just the next day: "One to two hours after Coffee, your heart rate,
+  set against the hour before, averages 6 bpm higher than at the same time after waking without it". Each use is
+  compared with nearby days at the same time after waking, using your sleep from Apple Health, so the climb after
+  getting up and a walk don't count; a use within an hour of waking or near bed is left out and the page says so. It
+  reads heart rate from Apple Health around your last 120 uses of each habit in the past year, and shows the daily
+  findings while it reads. Worked out on the device; Health data never leaves it (#187).
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a

@@ -7,6 +7,7 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -49,6 +50,16 @@ class InsightsPage extends ConsumerStatefulWidget {
       'Penchant sends none of it anywhere. These are patterns in your own days, '
       'not medical advice, and a pattern doesn’t show that one thing '
       'causes another.';
+
+  static const String hoursAfterNote =
+      'Heart rate in the hours after a use comes from the last '
+      '$hoursAfterMaxEvents uses of each habit in the past year, against '
+      'the same time after waking on nearby days. Uses you time by how you '
+      'feel, such as coffee when tired, can show a change that would have '
+      'come anyway.';
+
+  static const String hoursAfterPending =
+      'Still reading heart rate around your uses from Apple Health.';
 
   static String span(DateTime firstDay) =>
       'From ${formatDate(firstDay)} to today';
@@ -257,6 +268,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     );
     return <Widget>[
       if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
+      if (view.hoursPending)
+        const CardFoot(InsightsPage.hoursAfterPending)
+      else if (report.hoursAfterChecks > 0)
+        const CardFoot(InsightsPage.hoursAfterNote),
       const CardSectionLabel(InsightsPage.foundHeading),
       if (findings.isEmpty)
         const _MessageCard(

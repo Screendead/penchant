@@ -62,11 +62,14 @@ enum HealthChannel {
     case "heartRate": return (HKQuantityType(.heartRate), HKUnit.count().unitDivided(by: .minute()))
     case "heartRateVariabilitySDNN": return (HKQuantityType(.heartRateVariabilitySDNN), .secondUnit(with: .milli))
     case "respiratoryRate": return (HKQuantityType(.respiratoryRate), HKUnit.count().unitDivided(by: .minute()))
+    case "stepCount": return (HKQuantityType(.stepCount), .count())
     default: return nil
     }
   }
 
   static let maxSamplesPerCall = 20_000
+  // HealthSampleMetric.bed: spans rather than readings, one page.
+  private static let bedMetric = "bed"
   private static let sleepingHeartRate = "sleepingHeartRate"
 
   // healthReadTypesVersion in lib/providers/insights_provider.dart counts
@@ -140,7 +143,7 @@ enum HealthChannel {
         }
       case "samples":
         guard let args = call.arguments as? [String: Any],
-          let metric = args["metric"] as? String, let type = sampleType(metric),
+          let metric = args["metric"] as? String, metric == bedMetric || sampleType(metric) != nil,
           let from = (args["start"] as? NSNumber)?.int64Value, let to = (args["end"] as? NSNumber)?.int64Value,
           let limit = (args["limit"] as? NSNumber)?.intValue, limit >= 1, limit <= maxSamplesPerCall
         else {
@@ -152,13 +155,18 @@ enum HealthChannel {
           result(["samples": FlutterStandardTypedData(float64: Data()), "next": NSNull()])
           return
         }
-        samples(type: type, from: from, to: to, limit: limit) { outcome in
+        let reply: (Result<[String: Any], Error>) -> Void = { outcome in
           DispatchQueue.main.async {
             switch outcome {
             case .success(let page): result(page)
             case .failure(let error): result(flutterError(error))
             }
           }
+        }
+        if let type = sampleType(metric) {
+          samples(type: type, from: from, to: to, limit: limit, completion: reply)
+        } else {
+          bedSpans(from: from, to: to, completion: reply)
         }
       default:
         result(FlutterMethodNotImplemented)
@@ -243,13 +251,7 @@ enum HealthChannel {
         predicate: HKQuery.predicateForSamples(withStart: from, end: to), limit: HKObjectQueryNoLimit,
         sortDescriptors: nil
       ) { _, samples, error in
-        let sleep = ((samples as? [HKCategorySample]) ?? []).map { sample in
-          let source = sample.sourceRevision.source.bundleIdentifier
-          let product = sample.sourceRevision.productType
-          return HealthDays.SleepSample(
-            start: sample.startDate, end: sample.endDate, value: sample.value, source: source,
-            watch: product?.hasPrefix("Watch") == true && source.hasPrefix("com.apple.health"))
-        }
+        let sleep = sleepSamples(samples)
         let sleepRows = HealthDays.sleepRows(sleep, metrics: wantedSleep, start: start, end: end, calendar)
         let asleep = HealthDays.asleepIntervals(HealthDays.nights(sleep, start: start, end: end, calendar))
         guard wantsSleepingHeartRate, error == nil, !asleep.isEmpty else {
@@ -278,6 +280,46 @@ enum HealthChannel {
         completion(.success(rows))
       }
     }
+  }
+
+  private static func sleepSamples(_ samples: [HKSample]?) -> [HealthDays.SleepSample] {
+    ((samples as? [HKCategorySample]) ?? []).map { sample in
+      let source = sample.sourceRevision.source.bundleIdentifier
+      let product = sample.sourceRevision.productType
+      return HealthDays.SleepSample(
+        start: sample.startDate, end: sample.endDate, value: sample.value, source: source,
+        watch: product?.hasPrefix("Watch") == true && source.hasPrefix("com.apple.health"))
+    }
+  }
+
+  // The spans in bed or asleep that start in [from, to), as one page of
+  // samples with value 0, each night from the source the sleep metrics use.
+  // A year of nights is a few thousand samples, so there is no paging.
+  private static func bedSpans(
+    from: Int64, to: Int64, completion: @escaping (Result<[String: Any], Error>) -> Void
+  ) {
+    let first = calendar.startOfDay(for: HealthDays.date(micros: from))
+    let last = HealthDays.adding(days: 2, to: calendar.startOfDay(for: HealthDays.date(micros: to)), calendar)
+    let (fetchFrom, fetchTo) = HealthDays.sleepFetchWindow(start: first, end: last, calendar)
+    let query = HKSampleQuery(
+      sampleType: HKCategoryType(.sleepAnalysis),
+      predicate: HKQuery.predicateForSamples(withStart: fetchFrom, end: fetchTo), limit: HKObjectQueryNoLimit,
+      sortDescriptors: nil
+    ) { _, samples, error in
+      if let error, !isNoData(error) {
+        completion(.failure(error))
+        return
+      }
+      let nights = HealthDays.nights(sleepSamples(samples), start: first, end: last, calendar)
+      let spans = HealthDays.bedSpans(nights).filter {
+        let start = HealthDays.micros($0.0)
+        return start >= from && start < to
+      }
+      let flat = HealthDays.flatten(spans.map { HealthDays.QuantitySample(start: $0.0, end: $0.1, value: 0) })
+      let data = flat.withUnsafeBufferPointer { Data(buffer: $0) }
+      completion(.success(["samples": FlutterStandardTypedData(float64: data), "next": NSNull()]))
+    }
+    store.execute(query)
   }
 
   // Reads only the heart rate inside each night's asleep span, so a year of
