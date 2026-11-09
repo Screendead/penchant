@@ -159,7 +159,13 @@ void main() {
         all,
       ).whereType<HabitFinding>().length;
       if (seed < 10) {
-        expect(computeInsights(input).findings.length, kept);
+        expect(
+          computeInsights(input).findings.length,
+          controlFalseDiscoveries(all)
+              .whereType<HabitFinding>()
+              .where((f) => practicalSize(f) >= 1)
+              .length,
+        );
       }
       after += kept;
       if (kept > 0) reports++;
@@ -197,13 +203,15 @@ void main() {
   test('a dose effect on a habit used every day is found, per unit', () {
     for (int seed = 0; seed < 30; seed++) {
       final InsightsReport report = computeInsights(
-        dailyCoffee(seed, (d) => 80 - 6.0 * d.amount),
+        // Large enough per drink to clear the 10 min floor at the narrowest
+        // spread of 1 to 4 drinks.
+        dailyCoffee(seed, (d) => 80 - 15.0 * d.amount),
       );
       final HabitFinding dose = report.findings.singleWhere(
         (f) => f.habitId == 'Coffee' && f.kind == InsightKind.dose,
       );
       expect(dose.step, 1);
-      expect(dose.effect, inInclusiveRange(-9, -3));
+      expect(dose.effect, inInclusiveRange(-18, -12));
       expect(dose.interval.high, lessThan(0));
       expect(dose.usableDays, greaterThan(days - 10));
       expect(report.refused.where((r) => r.habitId == 'Coffee'), isEmpty);

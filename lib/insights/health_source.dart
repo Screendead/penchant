@@ -105,7 +105,15 @@ enum HealthSampleMetric {
   heartRateVariabilitySDNN('heartRateVariabilitySDNN'),
 
   /// Breaths per minute.
-  respiratoryRate('respiratoryRate');
+  respiratoryRate('respiratoryRate'),
+
+  /// A count over each sample's interval.
+  stepCount('stepCount'),
+
+  /// Spans in bed, asleep or awake in bed (value 0), each sleep from the one
+  /// source the sleep metrics choose, merged: when the person was not up.
+  /// One page, whatever the limit.
+  bed('bed');
 
   const HealthSampleMetric(this.id);
 

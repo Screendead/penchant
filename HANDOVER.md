@@ -168,8 +168,8 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
      Findings are now corrected for many tests at once (#175, merged): Benjamini-Hochberg at q = 0.1 across every
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
-     checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
-     floor and the block-bootstrap interval of gates 2 to 4 are still not built.
+     checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size and the
+     block-bootstrap interval of gates 2 and 4 are still not built; the practical-size floor is (below).
      Spans with faded logging (#181, open): a trend and a second-half level in the model, and a refusal ("Used far
      more at some times than others") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged
      (0.24%, 8%). Review fix: the 3x check also runs on days gone without (patchy early logging of a daily habit),
@@ -184,6 +184,21 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      open), are unmeasured.
    - **Ask again for new Health types** (`fix/health-reask`, #184, open): Health connected before #178 was never asked for heart rate; the card now offers "Allow new Health data" when HealthKit's `getRequestStatusForAuthorization` says `.shouldRequest` (a stored read-types version decides when it can't tell), and names where to manage access. Not run on a device.
    - **Archived habits hidden** (Jack, 2026-11-09: "Archived habits shouldn't show any cards"; `fix/insights-hide-archived`, #189, open): no card, no refusal row, out of the Benjamini-Hochberg family; their uses stay as covariates.
+   - **Fewer, larger cards** (Jack, 2026-11-09, on his real data: about 27 cards, many near-duplicates too small to
+     matter; #192, open, `feat/insights-floor-and-cards`). After Benjamini-Hochberg and every existing refusal, untouched: a
+     finding under its outcome's floor (`metricFloors`, `lib/insights/insights_report.dart`) is refused as "Too small
+     to matter: under 10 min a night of core sleep", ranked first among a habit's refusals. An amount or a time is
+     judged at effect / step x the interquartile range of the habit's day totals or last-use minutes over the days
+     used; a use or hours-after effect as is. Floors, **Claude's defaults pending Jack's review**: sleep (asleep, in
+     bed, awake, core, deep, REM) 10 min; HRV 3 ms; resting and sleeping heart rate 1 bpm; hours-after heart rate
+     2 bpm; breathing 0.3 a minute; blood oxygen 1 point; wrist temperature 0.1 °C; steps 1,000; active energy 50
+     kcal. Then one card per habit and family (sleep; heart: HRV, resting, sleeping and hours-after heart rate;
+     breathing with blood oxygen; temperature; activity), led by its largest finding by effect / floor, with range
+     and days for the headline alone and the rest as short lines ("More per extra drink: REM sleep 4 min less",
+     "Later last use: time asleep 11 min less per hour"). Cards sort by headline effect / floor; six show, the rest
+     behind "Show N more". Open questions: a habit logged at one amount on most days (but 7 or more days off it)
+     has an interquartile range of 0, so every amount finding of it is refused as too small; the calibration rates
+     above were measured before the floor and are not rerun (the floor can only lower them).
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
    - **Checkpoint 2026-11-09 (resume here).** Merged and on both devices (build 985): a #170, b #171, c #173, the
@@ -202,10 +217,21 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         the most asleep; in bed from that source or else the one with the most; the sleep is keyed by its chosen
         source's end; sleeping heart rate uses the same choice. Review, merge, install.
         Then **#186** `fix/health-sleep-sessions`: Watch-less sleeps before a Watch main sleep drop; Jack picked B (2026-11-09): drop app-only sleeps before the Watch's main sleep; later ones stay.
-     5. **i. Dose and timing: done when this PR merges** (#185, `feat/insights-dose-timing`). Jack, 2026-11-09: a habit
+     5. **i. Dose and timing: done when this PR merges** (#185, `feat/insights-dose-timing`). Then **j**
+        (#187, `feat/insights-hours-after`, below). Jack, 2026-11-09: a habit
         used every day must still yield insights: amount per day, time of first and last use, the hours around each
         use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).
-     6. **#190** `fix/insights-bedtime`, **waits on Jack**: amount and time on sleep minutes held at bedtime and saying "at the same bedtime" (the use card stays total), or report total and same-bedtime both, or hold it for time only; recommend the first. Onset read from its own noon, misread nights (>6 h off) dropped. Not run on a device.
+     6. **#192** `feat/insights-floor-and-cards`: the effect-size floor and one card per habit and family (Fewer,
+        larger cards, above). Review, merge, install; Jack to review the floors.
+     7. **Next for item 7: build 1A + 2C on top of the trim (#192)**: the round-12 decision (Direction, below). Not
+        started.
+     8. **Then: floors from the literature** (Jack, 2026-11-09: each floor is the smallest change shown to have
+        *some measurable effect*, as a number or a % of the person's usual, so a card can also say what that size
+        is likely to do). Replace #192's reasoned floors with sourced ones per metric, citing each. Where a source
+        reports a share of baseline, use the person's own usual. Check each floor against the person's
+        night-to-night noise so a floor never sits inside it. Add one line per card on what an effect of that size
+        has been shown to do, with the source. The research comes first, as an agent pass with citations; then a
+        small engine and copy PR. Not started.
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
@@ -232,18 +258,54 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        400 seeds): 5.3% raw, 0.17% of checks and 9.8% of reports after BH. Not covered: a change in amount and
        outcome inside one month (step at day 50: 19% false findings; step m). The time of the first use against the
        previous night's sleep is k.
-     - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
-       each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
-       The sample read is #178 (`feat/health-samples`): `HealthSource.samples` and `healthSamplePages` page heart
-       rate, HRV and respiratory rate by start time, 20,000 a call; `HealthMetric.sleepingHeartRate` is the night's
-       mean heart rate inside its asleep intervals, keyed like the sleep metrics. The engine does not use either yet:
-       `metricCopy` has no entry for `sleepingHeartRate`, so the report skips it; its copy needs `night: true`, and
-       `healthStateProvider` leaves it out of its read until then (its query holds up the whole read and its cost
-       over a year of nights is unmeasured: measure on a device when adding it back). A person who connected Health
-       before this build is not asked for heart rate again: a not-determined heart rate read costs
-       `sleepingHeartRate` alone (no row), but `samples` throws `not-determined` for them, so j's provider must show
-       the Health sheet again on it. Neither not-determined path is checked on a device. Page bounds are exact in
-       whole microseconds (`HealthDays.firstDate`), so ties at a page boundary are read once.
+     - **j. Hours after a use: this PR** (#187, `feat/insights-hours-after`). `lib/insights/hours_after.dart`: for each use
+       with none of the habit in the 4 h before and every window ended by today's start, heart rate (and HRV) in 0-30,
+       30-60, 60-120 and 120-240 min after, less the hour before. Heart rate climbs after waking whatever the clock
+       says (review of the first version: same-clock controls gave Coffee-on-waking a false finding in 40 of 40
+       whole-day reports, through BH), so moments are timed from waking: the time in bed comes from Health
+       (`HealthSampleMetric.bed`, a new `samples` branch in `HealthChannel.swift` over `HealthDays.nights`, one call
+       for the year, no new read type), a day's waking is the end of its longest span ending 18:00 the day before to
+       15:00, and a moment needs a known waking before its hour before and no time in bed to its last window's end.
+       The control is the same difference as long after waking on the nearest day within 7 whose waking is within
+       2 h of the use day's (by clock), inside the habit's span and clear of it 4 h either side. So Coffee within an
+       hour of waking, or anything within 4 h of bed, is refused in words; a day with no night recorded gives no
+       moment (a Watch charged overnight gives no hours-after at all, and the page does not say why: the "needs your
+       sleep" refusal exists, but with nothing planned the provider reads no heart rate and the engine skips the
+       comparison; steps-based waking is the named fallback, not built). A window is dropped when another habit was used from its baseline to its end, the habit again before
+       its end, under 3 readings in baseline or window, or a walk (any 10 min over 60 steps a minute in the
+       baseline, or from 30 min before the window to its end); the change in steps a minute is a covariate.
+       Moments are averaged per day, one OLS per window on days (intercept, use, steps); at least 10 days each side.
+       Results join the page's Benjamini-Hochberg family. A too-few-days refusal names the cause that left out the
+       most moments on the short side (few uses, no sleep recorded, near waking or bed, another habit, the habit
+       again, readings, walks, no clear nearby days). Copy: "One to two hours after Coffee, your heart rate, set
+       against the hour before, averages 6 bpm higher than at the same time after waking without it." Cost: the
+       last 120 uses per habit in the last 365 days, one control each, one call for bed then one sample read a day
+       per measure (heart rate, HRV, steps; `HealthSampleMetric.stepCount` added), the measures side by side, capped
+       at 60 s; the page says so. The page shows the daily report while that runs ("Still reading heart rate ...")
+       and recomputes when it lands, so a daily finding can then move to "could be chance". Synthetic year (Coffee,
+       Tea, Water): 702 moments, 249 spans, 748 channel calls, 64,729 samples. `sleepingHeartRate` has copy ("heart
+       rate while asleep", a night metric) but stays out of `healthStateProvider`'s read: its query holds up the
+       whole read and its cost over a year of nights is unmeasured; measure on a device when adding it back. A
+       `not-determined` sample read leaves hours-after out, not the page; the Health card's "Allow new Health data"
+       (#184) offers the sheet. Measured (`tools/insights-calibration/hours_after_test.dart`, false or true findings
+       per window before BH, 0-30 / 30-60 / 60-120 / 120-240): clock-tied morning climb, 400 seeds: noise 2.8 / 3.0 /
+       1.5 / 1.0%; walk after 70% of Coffees 4.5 / 5.5 / 1.5 / 1.0%; +1 bpm at 60-120 found 56%, +3 bpm 100%; +1.5
+       bpm at 0-30 over 60 days 80%. Whole days with sleep (heart rate 52 asleep, 62 plus a 10 bpm climb over 2 h
+       after waking; weekday waking 06:30, weekend 08:30), 200 seeds: Coffee 15-60 min after waking 0 / 0 / 0 / 0%
+       (refused near waking; 0 of 40 whole reports, from 40 of 40), Coffee 2-3 h after waking 1.0 / 3.5 / 2.5 / 1.0%,
+       weekdays 07:00 2.0 / 1.0 / 0 / 0%, random 09:00-15:00 4.5 / 3.0 / 1.5 / 4.0%, heart rate every 10 min with 30%
+       missing 4.0 / 3.0 / 3.0 / 3.0%, 30% of nights missing and 30% split 6.0 / 3.5 / 2.0 / 2.5%, beside Cigarettes
+       8 a day 3.5 / 3.5 / 0 / 0%, Cigarettes 8 a day itself 0.5 / 0 / 0 / 0% (refused: no clear days, the habit
+       again), bedtime Coffee refused; +3 bpm at 60-120 found 87% (2-3 h after waking) and 100% (random). Whole
+       page on noise (9 day outcomes, Coffee, Tea, Water): hours-after raw 3.0% of 4,792 checks, 0.1% after BH; 8.5%
+       of reports show any finding, 1.3% an hours-after one. Known limit, not fixed: a use timed by how the person
+       feels (Coffee at the day's low point) gives 16 / 5.5 / 14 / 32.5% false findings (regression to the mean
+       from a baseline picked low; the first version gave 12 / 7.5 / 7.5 / 18%); it needs another estimator, and the
+       page note says so. Not run on a device: the bed read and the 748 calls' time, real Watch sampling density
+       (synthetic is a reading every 5 min; the 3-reading gate may refuse sparser data), real sleep records
+       (sources, naps, the 18:00-15:00 waking rule), iPhone and Watch step samples double-counted (errs toward
+       dropping a moment). HRV at Watch density (a few a day) is refused for too few readings. With no step samples
+       at all the walk guard and the steps covariate drop out.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.
@@ -251,15 +313,41 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        pinned on a habit that began at the same time.
    - **Direction (Jack, 2026-11-09, "sounds good" to Claude's recommendation):** Insights becomes question-led, not a
      list of "days after X, Y differs" cards. Archived habits show no cards (they stay in the model as covariates).
+     **Bedtime on sleep cards, decided (Jack, 2026-11-09): option 2.** Amount and time cards on sleep-minute metrics
+     show the total effect as the headline, then a line with the part left at the same bedtime (for example "11 min
+     less per hour later, 4 min of it at the same bedtime"). Rework #190 to show both, on top of #192's card lines.
      Build order after the steps in flight (j, the bedtime fix): **n. where's the line** (a dose threshold instead of
      one straight line, and a time cut-off), **o. recovery time** (nights until a measure returns to baseline after a
      heavy day), **p. payoff from cutting down** (measures since a habit fell, against the old baseline), **q.
      replacement** (one habit rising as another falls), then **k. triggers**, where calendar, places and daylight add
-     most; plus a daily "last night against your usual". Page structure and where the daily check lives are pitched
-     in round 12 (`docs/pitch/round-12/insights/`).
+     most; plus a daily "last night against your usual". Page structure and where the daily check lives were pitched
+     in round 12 (`docs/pitch/round-12/insights/`); **decided (Jack, 2026-11-09): 1A**, the Insights page as three
+     question sections, **and 2C**, the last-night check in both places: Today shows sleeping heart rate alone and
+     opens Insights, where the full check sits at the top.
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
+
+### Third run (`/finish-and-pitch`, 2026-11-09)
+
+Usage: the all-models weekly limit stood at 98% with no overage, so every agent runs on Fable (its own budget) and
+the run lands small items first. Stale in the lists below, checked 2026-11-09: D4 (#141), U1 (#155), U6 (#156), D16
+(#153) and D2's pills, page fades and range morph (#147, #149, #150) are merged.
+
+**DECIDED, this run:**
+
+- **T1.** #190 reworked to the bedtime call (total as headline, same-bedtime part on a line), on #192's cards; merge.
+- **T2.** Item 7's 1A + 2C (round 12): Insights as three question sections; last-night check at its top, Today's
+  sleeping heart rate opening it.
+- **T3.** Item 7's literature floors: sourced research, then the engine and copy PR.
+- **T4.** D6, #151: prove the macOS e2e job on its branch (`workflow_dispatch`) before merging.
+- **T5.** `r10-pitch-branches` C: tag `archive/<branch>` and delete the pitch branches (no `archive/*` tag exists);
+  D15: close #128 if P2 no longer needs it.
+- **T6.** D1's follow-up: the mini time dial replacing `ActivityDateField`, as mocked; then D2's edited bead travel.
+- **T7.** Item 5: the next medium register class, one PR.
+
+**Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6.
+**UNDECIDED:** the API key restrictions (unchanged); new calls raised by T2 or T3 go on this run's pitch page.
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 

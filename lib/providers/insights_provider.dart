@@ -4,9 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -90,6 +93,8 @@ Future<bool> connectHealth(ProviderContainer container) async {
     // Asked again next launch.
   }
   container.invalidate(healthConnectedProvider);
+  // A read refused before the sheet was answered is kept as no samples.
+  container.invalidate(_samplesProvider);
   return true;
 }
 
@@ -126,8 +131,8 @@ final class HealthReady extends HealthState {
   final List<DailyOutcome> values;
 }
 
-// sleepingHeartRate waits for the engine to have words for it: its query
-// holds up the whole read and its cost on a year of nights is unmeasured.
+// sleepingHeartRate's query holds up the whole read and its cost on a year
+// of nights is unmeasured: measure it on a device before reading it here.
 final Set<HealthMetric> _engineMetrics = {
   for (final m in HealthMetric.values)
     if (m != HealthMetric.sleepingHeartRate) m,
@@ -176,6 +181,77 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   }
 });
 
+typedef _SamplesKey = ({List<ViceActivity> activities, DateTime today});
+
+/// How long the hours-after read may take before it is left out.
+const Duration hoursAfterReadTimeout = Duration(seconds: 60);
+
+/// The Health samples around the journal's uses that [hoursAfter] needs, by
+/// [HealthSampleMetric.id]: the time in bed over the past year in one read,
+/// then one span a day per measure, in pages, the measures side by side.
+/// Empty when any read fails or [hoursAfterReadTimeout] passes, which leaves
+/// the hours-after comparisons out rather than the page: someone who
+/// connected Health before heart rate was read gets `not-determined` here,
+/// and the Health card already offers the sheet again.
+final _samplesProvider = FutureProvider.autoDispose
+    .family<Map<String, List<HealthSample>>, _SamplesKey>((ref, key) async {
+      const Map<String, List<HealthSample>> none =
+          <String, List<HealthSample>>{};
+      final HealthSource source = ref.read(healthSourceProvider);
+      Future<List<HealthSample>?> read(
+        HealthSampleMetric metric,
+        List<({DateTime start, DateTime end})> spans,
+      ) async {
+        final List<HealthSample> got = <HealthSample>[];
+        for (final ({DateTime start, DateTime end}) span in spans) {
+          await for (final HealthSampleRead page in healthSamplePages(
+            source,
+            metric,
+            span.start,
+            span.end,
+          )) {
+            if (!ref.mounted) return null;
+            switch (page) {
+              case HealthUnavailable():
+                return null;
+              case HealthSamples(:final List<HealthSample> samples):
+                got.addAll(samples);
+            }
+          }
+        }
+        return got;
+      }
+
+      Future<Map<String, List<HealthSample>>> readAll() async {
+        final List<HealthSample>? bed = await read(HealthSampleMetric.bed, [
+          (start: insightsBedFrom(key.today), end: startOfDay(key.today)),
+        ]);
+        if (bed == null || !ref.mounted) return none;
+        final HoursAfterPlan plan = insightsHoursAfterPlan(
+          habitUsesFrom(key.activities).toList(),
+          key.today,
+          bed: bed,
+        );
+        if (plan.reads.isEmpty) return none;
+        final List<List<HealthSample>?> got = await Future.wait([
+          for (final HealthSampleMetric m in insightsSampleMetrics)
+            read(m, plan.reads),
+        ]);
+        if (got.contains(null)) return none;
+        return <String, List<HealthSample>>{
+          HealthSampleMetric.bed.id: bed,
+          for (int i = 0; i < insightsSampleMetrics.length; i++)
+            insightsSampleMetrics[i].id: got[i]!,
+        };
+      }
+
+      try {
+        return await readAll().timeout(hoursAfterReadTimeout);
+      } catch (_) {
+        return none;
+      }
+    });
+
 typedef InsightsRunner = Future<InsightsReport> Function(InsightsInput input);
 
 /// Where the engine runs: another isolate, since its cost grows with the
@@ -214,6 +290,7 @@ final class InsightsFailed extends InsightsResult {
 typedef _EngineKey = ({
   List<ViceActivity> activities,
   List<DailyOutcome> health,
+  Map<String, List<HealthSample>> samples,
   DateTime today,
   String archived,
 });
@@ -230,6 +307,7 @@ final _engineProvider = FutureProvider.autoDispose
               activities: key.activities,
               health: key.health,
               today: key.today,
+              samples: key.samples,
               archived: <String>{
                 if (key.archived.isNotEmpty)
                   ...key.archived.split(_archivedSeparator),
@@ -246,7 +324,15 @@ final _engineProvider = FutureProvider.autoDispose
 /// What the Insights screen shows. Loading until Health has answered and, when
 /// it has values, the journal too; a journal failure is an error. With no
 /// Health values the report is null: there is nothing to compare against.
-typedef InsightsView = ({HealthState health, InsightsResult? result});
+/// The daily report shows first; while [hoursPending] the hours-after read
+/// is still going, and the report is computed again once it lands, so a
+/// daily finding can then move into the many-comparisons correction's
+/// "could be chance".
+typedef InsightsView = ({
+  HealthState health,
+  InsightsResult? result,
+  bool hoursPending,
+});
 
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   final HealthState? state = ref.watch(healthStateProvider).value;
@@ -272,24 +358,38 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     if (journal == null || vices == null) {
       return const AsyncLoading<InsightsView>();
     }
-    final AsyncValue<InsightsResult> result = ref.watch(
-      _engineProvider((
-        activities: journal,
-        health: values,
-        today: today,
-        archived: ([
-          for (final Vice v in vices)
-            if (v.archived) v.id,
-        ]..sort()).join(_archivedSeparator),
-      )),
-    );
-    return switch (result.value) {
-      final InsightsResult r => AsyncData<InsightsView>((
-        health: state,
-        result: r,
-      )),
-      null => const AsyncLoading<InsightsView>(),
-    };
+    final String archived = ([
+      for (final Vice v in vices)
+        if (v.archived) v.id,
+    ]..sort()).join(_archivedSeparator);
+    final Map<String, List<HealthSample>>? samples = ref
+        .watch(_samplesProvider((activities: journal, today: today)))
+        .value;
+    InsightsResult? report(Map<String, List<HealthSample>> read) => ref
+        .watch(
+          _engineProvider((
+            activities: journal,
+            health: values,
+            samples: read,
+            today: today,
+            archived: archived,
+          )),
+        )
+        .value;
+    const Map<String, List<HealthSample>> none = <String, List<HealthSample>>{};
+    // The daily report stays up while the one with hours-after computes.
+    final InsightsResult? full = samples == null ? null : report(samples);
+    final InsightsResult? shown = full ?? report(none);
+    if (shown == null) return const AsyncLoading<InsightsView>();
+    return AsyncData<InsightsView>((
+      health: state,
+      result: shown,
+      hoursPending: full == null,
+    ));
   }
-  return AsyncData<InsightsView>((health: state, result: null));
+  return AsyncData<InsightsView>((
+    health: state,
+    result: null,
+    hoursPending: false,
+  ));
 });

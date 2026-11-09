@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -43,12 +46,26 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String nothingClearBody =
       'No habit has a difference that stands out from your usual days yet.';
   static const String copyLabel = 'Copy as text';
+
+  /// Cards shown before "Show N more".
+  static const int shownCards = 6;
+  static String showMore(int n) => 'Show $n more';
   static const String copied = 'Insights copied';
   static const String foot =
       'Worked out on this device from your journal and Apple Health; '
       'Penchant sends none of it anywhere. These are patterns in your own days, '
       'not medical advice, and a pattern doesn’t show that one thing '
       'causes another.';
+
+  static const String hoursAfterNote =
+      'Heart rate in the hours after a use comes from the last '
+      '$hoursAfterMaxEvents uses of each habit in the past year, against '
+      'the same time after waking on nearby days. Uses you time by how you '
+      'feel, such as coffee when tired, can show a change that would have '
+      'come anyway.';
+
+  static const String hoursAfterPending =
+      'Still reading heart rate around your uses from Apple Health.';
 
   static String span(DateTime firstDay) =>
       'From ${formatDate(firstDay)} to today';
@@ -59,6 +76,7 @@ class InsightsPage extends ConsumerStatefulWidget {
 
 class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connecting = false;
+  bool _showAll = false;
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -240,10 +258,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
     final InsightsComputed computed = result as InsightsComputed;
     final InsightsReport report = computed.report;
-    final List<HabitFinding> findings = <HabitFinding>[
+    final List<InsightCard> cards = insightCards(<HabitFinding>[
       for (final HabitFinding f in report.findings)
         if (names.containsKey(f.habitId)) f,
-    ];
+    ]);
+    final int hidden = _showAll
+        ? 0
+        : max(0, cards.length - InsightsPage.shownCards);
     final List<HabitRefusal> refused = <HabitRefusal>[
       for (final HabitRefusal r in report.refused)
         if (names.containsKey(r.habitId)) r,
@@ -257,20 +278,33 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     );
     return <Widget>[
       if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
+      if (view.hoursPending)
+        const CardFoot(InsightsPage.hoursAfterPending)
+      else if (report.hoursAfterChecks > 0)
+        const CardFoot(InsightsPage.hoursAfterNote),
       const CardSectionLabel(InsightsPage.foundHeading),
-      if (findings.isEmpty)
+      if (cards.isEmpty)
         const _MessageCard(
           InsightsPage.nothingClear,
           top: 0,
           body: InsightsPage.nothingClearBody,
         ),
-      for (int i = 0; i < findings.length; i++)
+      for (int i = 0; i < cards.length - hidden; i++)
         _FindingCard(
-          finding: findings[i],
-          habit: nameOf(findings[i].habitId),
-          unit: unitOf(findings[i].habitId),
+          card: cards[i],
+          habit: nameOf(cards[i].habitId),
+          unit: unitOf(cards[i].habitId),
           locale: locale,
           top: i == 0 ? 0 : DialSpace.s,
+        ),
+      if (hidden > 0)
+        DialCard(
+          children: <Widget>[
+            CardRow(
+              label: InsightsPage.showMore(hidden),
+              onTap: () => setState(() => _showAll = true),
+            ),
+          ],
         ),
       if (refused.isNotEmpty) ...<Widget>[
         const CardSectionLabel(InsightsPage.refusedHeading),
@@ -292,7 +326,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             subtitle: 'To the clipboard, for a note or a message',
             onTap: () => _copy(
               insightsText(
-                findings: findings,
+                cards: cards,
                 refused: refused,
                 firstDay: firstDay,
                 nameOf: nameOf,
@@ -319,7 +353,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
 
 /// The findings and refusals as the page shows them, in plain text.
 String insightsText({
-  required List<HabitFinding> findings,
+  required List<InsightCard> cards,
   required List<HabitRefusal> refused,
   required DateTime? firstDay,
   required String Function(String habitId) nameOf,
@@ -329,18 +363,23 @@ String insightsText({
   final StringBuffer out = StringBuffer(InsightsPage.title);
   if (firstDay != null) out.write('\n${InsightsPage.span(firstDay)}');
   out.write('\n\n${InsightsPage.foundHeading}\n');
-  if (findings.isEmpty) {
+  if (cards.isEmpty) {
     out.write(
       '${InsightsPage.nothingClear}: ${InsightsPage.nothingClearBody}\n',
     );
   }
-  for (final HabitFinding f in findings) {
+  for (final InsightCard card in cards) {
+    final HabitFinding f = card.headline;
     final String habit = nameOf(f.habitId);
+    final Unit unit = unitOf(f.habitId);
     out
-      ..write('\n$habit · ${metricCopy(f.metricId)!.name}\n')
-      ..write('${findingSentence(f, habit, locale, unit: unitOf(f.habitId))}\n')
+      ..write('\n$habit · ${card.family.label}\n')
+      ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
       ..write('${findingRange(f, locale)}\n')
       ..write('${findingBasis(f, habit)}\n');
+    for (final HabitFinding other in card.others) {
+      out.write('${findingLine(other, locale, unit: unit)}\n');
+    }
   }
   if (refused.isNotEmpty) {
     out.write('\n${InsightsPage.refusedHeading}\n');
@@ -504,14 +543,14 @@ class _MessageCard extends StatelessWidget {
 
 class _FindingCard extends StatelessWidget {
   const _FindingCard({
-    required this.finding,
+    required this.card,
     required this.habit,
     required this.unit,
     required this.locale,
     required this.top,
   });
 
-  final HabitFinding finding;
+  final InsightCard card;
   final String habit;
   final Unit unit;
   final String locale;
@@ -521,7 +560,7 @@ class _FindingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
-    final MetricCopy copy = metricCopy(finding.metricId)!;
+    final HabitFinding finding = card.headline;
     final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
     return DialCard(
       top: top,
@@ -532,7 +571,7 @@ class _FindingCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                '$habit · ${copy.name}',
+                '$habit · ${card.family.label}',
                 style: DialTypeScale.label.copyWith(color: colors.muted),
               ),
               const SizedBox(height: 6),
@@ -559,6 +598,12 @@ class _FindingCard extends StatelessWidget {
               const SizedBox(height: DialSpace.xs),
               Text(findingRange(finding, locale), style: small),
               Text(findingBasis(finding, habit), style: small),
+              if (card.others.isNotEmpty) const SizedBox(height: DialSpace.s),
+              for (final HabitFinding other in card.others)
+                Text(
+                  findingLine(other, locale, unit: unit),
+                  style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
+                ),
             ],
           ),
         ),

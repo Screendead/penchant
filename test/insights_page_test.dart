@@ -9,6 +9,7 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/stats.dart' as stats;
@@ -18,6 +19,7 @@ import 'package:tracker/main.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
 import 'fakes.dart';
+import 'insights/hours_after_synthetic.dart';
 import 'insights_harness.dart';
 
 Future<void> _pump(WidgetTester tester, List<Override> overrides) async {
@@ -81,6 +83,51 @@ void main() {
     expect(find.text('Within the noise: no clear difference'), findsOneWidget);
     expect(find.text('Water'), findsOneWidget);
     expect(find.textContaining('Too few days yet'), findsOneWidget);
+    // No heart rate readings, so nothing ran in the hours after a use.
+    expect(find.text(InsightsPage.hoursAfterNote), findsNothing);
+  });
+
+  testWidgets('heart rate in the hours after a use reads in its own words', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    final Synthetic s = insightsHoursYear();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(
+          read: HealthValues(insightsJournal().health),
+          sampleData: <HealthSampleMetric, List<HealthSample>>{
+            for (final HealthSampleMetric m in HealthSampleMetric.values)
+              if (s.samples[m.id] case final List<HealthSample> list) m: list,
+          },
+        ),
+        activities: AsyncData<List<ViceActivity>>(<ViceActivity>[
+          for (final HabitUse u in s.uses) fakeActivity(u.habitId, 1, u.at),
+        ]),
+      ),
+    );
+
+    expect(
+      find.textContaining(
+        RegExp(
+          r'^One to two hours after Coffee, your heart rate, set against the '
+          r'hour before, averages \d bpm higher than at the same time after '
+          r'waking without it\.$',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        RegExp(
+          r'^From \d+ days with Coffee, against \d+ days at the same time '
+          r'after waking with none of it within 4 hours$',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(InsightsPage.hoursAfterNote), findsOneWidget);
   });
 
   testWidgets('a habit that may be chance among many comparisons says so', (
@@ -120,22 +167,23 @@ void main() {
   });
 
   testWidgets('an amount and a time of last use read in their own words, in '
-      'the habit\'s unit', (WidgetTester tester) async {
+      'the habit\'s unit, on one card', (WidgetTester tester) async {
     _connected();
-    HabitFinding finding(InsightKind kind, double step) => HabitFinding(
-      habitId: 'coffee',
-      metricId: 'sleepDeep',
-      lagDays: 1,
-      usableDays: 120,
-      exposedDays: 120,
-      raw: null,
-      kind: kind,
-      step: step,
-      effect: -6,
-      interval: const stats.Interval(-9, -3),
-      standardized: -0.5,
-      pValue: 0.001,
-    );
+    HabitFinding finding(InsightKind kind, double step, double effect) =>
+        HabitFinding(
+          habitId: 'coffee',
+          metricId: 'sleepDeep',
+          lagDays: 1,
+          usableDays: 120,
+          exposedDays: 120,
+          raw: null,
+          kind: kind,
+          step: step,
+          effect: effect,
+          interval: stats.Interval(effect * 1.5, effect / 2),
+          standardized: -0.5,
+          pValue: 0.001,
+        );
     await _pump(
       tester,
       insightsOverrides(
@@ -145,30 +193,92 @@ void main() {
         ]),
         runner: (_) async => InsightsReport(
           findings: <HabitFinding>[
-            finding(InsightKind.dose, 1),
-            finding(InsightKind.lastUse, 60),
+            finding(InsightKind.dose, 1, -6),
+            finding(InsightKind.lastUse, 60, -12),
           ],
           refused: const <HabitRefusal>[],
         ),
       ),
     );
 
-    expect(
-      find.text(
-        'On days with one more drink logged for Coffee, your deep sleep that '
-        'night averages 6 min less.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Coffee · sleep'), findsOneWidget);
     expect(
       find.text(
         'On days your last use of Coffee is an hour later, your deep sleep '
-        'that night averages 6 min less.',
+        'that night averages 12 min less.',
       ),
       findsOneWidget,
     );
-    expect(find.text('From 120 days with Coffee'), findsNWidgets(2));
+    expect(
+      find.text('More per extra drink: deep sleep 6 min less'),
+      findsOneWidget,
+    );
+    expect(find.text('From 120 days with Coffee'), findsOneWidget);
     expect(find.text(InsightsPage.refusedHeading), findsNothing);
+  });
+
+  testWidgets('the six largest cards show, the rest behind Show N more', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    const List<String> metrics = <String>[
+      'sleepDeep',
+      'restingHeartRate',
+      'respiratoryRate',
+      'appleSleepingWristTemperature',
+      'stepCount',
+    ];
+    // Two habits x five families: ten cards, each its effect in floors.
+    HabitFinding finding(String habit, String metric, double floors) =>
+        HabitFinding(
+          habitId: habit,
+          metricId: metric,
+          lagDays: 1,
+          usableDays: 120,
+          exposedDays: 60,
+          raw: null,
+          effect: -floors * metricFloor(metric),
+          interval: stats.Interval(
+            -floors * 1.5 * metricFloor(metric),
+            -floors * 0.5 * metricFloor(metric),
+          ),
+          standardized: -0.5,
+          pValue: 0.001,
+        );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee'),
+          fakeVice('tea', name: 'Tea'),
+        ]),
+        runner: (_) async => InsightsReport(
+          findings: <HabitFinding>[
+            for (int i = 0; i < metrics.length; i++) ...<HabitFinding>[
+              finding('coffee', metrics[i], 20.0 - i),
+              finding('tea', metrics[i], 10.0 - i),
+            ],
+          ],
+          refused: const <HabitRefusal>[],
+        ),
+      ),
+    );
+
+    expect(find.text('Coffee · activity'), findsOneWidget);
+    expect(find.text('Tea · sleep'), findsOneWidget);
+    expect(find.text('Tea · heart'), findsNothing);
+    await tester.tap(find.text(InsightsPage.showMore(4)));
+    await tester.pumpAndSettle();
+    expect(find.text(InsightsPage.showMore(4)), findsNothing);
+    for (final String card in <String>[
+      'Tea · heart',
+      'Tea · breathing',
+      'Tea · temperature',
+      'Tea · activity',
+    ]) {
+      expect(find.text(card), findsOneWidget);
+    }
   });
 
   testWidgets('two habits used on the same days are refused as entangled', (
@@ -507,7 +617,7 @@ void main() {
       '',
       InsightsPage.foundHeading,
     ]);
-    expect(lines, contains('Coffee · deep sleep'));
+    expect(lines, contains('Coffee · sleep'));
     expect(
       lines,
       contains(
@@ -525,7 +635,7 @@ void main() {
       contains(matches(RegExp(r'^From \d+ days, \d+ of them with Coffee$'))),
     );
     final int refused = lines.indexOf(InsightsPage.refusedHeading);
-    expect(refused, greaterThan(lines.indexOf('Coffee · deep sleep')));
+    expect(refused, greaterThan(lines.indexOf('Coffee · sleep')));
     expect(lines.sublist(refused + 1, refused + 3), <Object>[
       'Tea: Within the noise: no clear difference',
       matches(RegExp(r'^Water: Too few days yet: \d+ of \d+$')),
@@ -536,7 +646,7 @@ void main() {
   test('copied text with nothing found and an empty journal says so', () {
     expect(
       insightsText(
-        findings: const <HabitFinding>[],
+        cards: const <InsightCard>[],
         refused: const <HabitRefusal>[],
         firstDay: null,
         nameOf: (String id) => id,
