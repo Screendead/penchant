@@ -190,7 +190,9 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      4. **Sleep double count, after #178:** `HealthDays.sleepRows` unions every source's asleep periods, so another
         app's single asleep span over a night covers the Watch's awake periods (synthetic: Watch core 23:00-03:00,
         awake 03:00-04:00, core 04:00-07:00 gives asleep 420; add another source's asleep 23:00-07:00 and it gives
-        480 with awake 60). Fix: per night, take stages from the source that writes them, or subtract awake.
+        480 with awake 60). **`fix/health-sleep-source`, PR #PR:** each night keeps one source's asleep, stages and
+        awake (most staged time, else most asleep; a Watch, then bundle id, break ties), in bed from that source or
+        else the one with the most, and sleeping heart rate uses the same choice. Review, merge, install.
      5. **i. Dose and timing** next (after 3; same engine files). Jack, 2026-11-09: a habit used every day must still
         yield insights: amount per day, time of first and last use, the hours around each use (j), co-occurrence
         with other habits (l), and the before and after of a streak's start (m).
