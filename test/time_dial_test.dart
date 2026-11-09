@@ -57,6 +57,8 @@ Future<void> _open(
   WidgetTester tester,
   FakeTrackerWrites writes, {
   Widget? page,
+  List<Vice>? habits,
+  List<ViceActivity>? todayEntries,
 }) async {
   tester.view.devicePixelRatio = 3;
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
@@ -64,7 +66,7 @@ Future<void> _open(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        ...habitOverrides(<Vice>[_coffee]),
+        ...habitOverrides(habits ?? <Vice>[_coffee]),
         trackerWritesProvider.overrideWithValue(writes),
         memoryJournal(),
         userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
@@ -74,7 +76,7 @@ Future<void> _open(
         viceActivityDayProvider.overrideWith(
           (ref, DateTime day) => AsyncData(
             day == _today
-                ? <ViceActivity>[_other, _edited]
+                ? todayEntries ?? <ViceActivity>[_other, _edited]
                 : const <ViceActivity>[],
           ),
         ),
@@ -279,6 +281,79 @@ void main() {
       await tester.tapAt(_at(tester, 23 * 60));
       await tester.pump();
       expect(_time(tester).at, DateTime(2026, 11, 3, 23));
+    });
+  });
+
+  test('a day ahead of the clock shows as its date, not a weekday word', () {
+    expect(EntryTimeField.dayText(DateTime(2026, 11, 6), _today), 'Fri, Nov 6');
+    expect(
+      EntryTimeField.dayText(DateTime(2026, 11, 4), _today),
+      'Yesterday, Wed, Nov 4',
+    );
+  });
+
+  testWidgets('with a time set, the line under the dial follows the clock', (
+    tester,
+  ) async {
+    DateTime now = _now;
+    await withClock(Clock(() => now), () async {
+      await _open(tester, writes);
+      await tester.tapAt(_at(tester, 21 * 60 + 5));
+      await tester.pump();
+      expect(_time(tester).at, DateTime(2026, 11, 5, 21, 5));
+      expect(find.text('5 min ago'), findsOneWidget);
+
+      now = now.add(const Duration(minutes: 1));
+      await tester.pump(const Duration(minutes: 1));
+      expect(find.text('6 min ago'), findsOneWidget);
+    });
+  });
+
+  testWidgets('the day reads to a screen reader as one button with its hint, '
+      'and the separators say nothing', (tester) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await withClock(Clock.fixed(_now), () async {
+      await _open(tester, writes);
+      await tester.tapAt(_at(tester, 6 * 60));
+      await tester.pump();
+      expect(
+        tester.getSemantics(find.text('Today')),
+        matchesSemantics(
+          label: 'Today',
+          hint: EntryTimeField.chooseDay,
+          isButton: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+        ),
+      );
+      expect(find.semantics.byLabel(' · '), findsNothing);
+    });
+    semantics.dispose();
+  });
+
+  testWidgets('an archived habit\'s entries stay off the dial, as off Today', (
+    tester,
+  ) async {
+    final Vice tea = fakeVice('tea', unit: Unit.drink, archived: true);
+    final ViceActivity teaTime = fakeActivity(
+      'tea',
+      1,
+      DateTime(2026, 11, 5, 16),
+    );
+    await withClock(Clock.fixed(_now), () async {
+      await _open(
+        tester,
+        writes,
+        habits: <Vice>[_coffee, tea],
+        todayEntries: <ViceActivity>[_other, teaTime],
+      );
+      expect(
+        tester.widget<TimeDial>(find.byType(TimeDial)).ghosts.map((g) => g.id),
+        <String>[_other.id],
+      );
     });
   });
 

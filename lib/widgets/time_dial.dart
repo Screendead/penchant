@@ -42,17 +42,14 @@ class EntryTimeController extends ChangeNotifier {
       return;
     }
     _at = moment;
-    _arm();
     notifyListeners();
   }
 
-  // While it follows the clock, listeners hear each new minute.
+  // Listeners hear each new minute: the shown time while it follows the
+  // clock, and with a fixed one, how long ago it is and how far the dial
+  // reaches on today.
   void _arm() {
     _minute?.cancel();
-    _minute = null;
-    if (_at != null) {
-      return;
-    }
     final DateTime now = clock.now();
     _minute = Timer(
       Duration(seconds: 60 - now.second, milliseconds: -now.millisecond),
@@ -429,7 +426,10 @@ class EntryTimeField extends ConsumerWidget {
     if (day == today) {
       return dayWord(day, today);
     }
-    if (daysBetween(day, today) < 2) {
+    final int back = daysBetween(day, today);
+    // A day ahead of the clock (a wrong one can date an entry so) gets the
+    // plain date, not a weekday word for it.
+    if (back >= 0 && back < 2) {
       return '${dayWord(day, today)}, ${dayPillDate(day, today)}';
     }
     return (day.year == today.year
@@ -501,10 +501,18 @@ class EntryTimeField extends ConsumerWidget {
         final List<ViceActivity> activities =
             ref.watch(viceActivityDayProvider(day)).value ??
             const <ViceActivity>[];
-        final List<DialEntry> ghosts = dialEntries(habits, <ViceActivity>[
-          for (final ViceActivity a in activities)
-            if (a.id != editing) a,
-        ], (Vice v) => marks[v.id]!);
+        // Archived habits' entries stay off, as off Today's dial.
+        final List<DialEntry> ghosts = dialEntries(
+          <Vice>[
+            for (final Vice v in habits)
+              if (!v.archived) v,
+          ],
+          <ViceActivity>[
+            for (final ViceActivity a in activities)
+              if (a.id != editing) a,
+          ],
+          (Vice v) => marks[v.id]!,
+        );
         final DialColors colors = DialColors.of(context);
         final ColorScheme scheme = Theme.of(context).colorScheme;
         final TextStyle meta = DialTypeScale.bodyS.copyWith(
@@ -522,7 +530,7 @@ class EntryTimeField extends ConsumerWidget {
           ),
         );
         final String? ago = isToday ? agoText(at, now) : null;
-        final Widget dot = Text(' · ', style: meta);
+        final Widget dot = ExcludeSemantics(child: Text(' · ', style: meta));
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -542,14 +550,18 @@ class EntryTimeField extends ConsumerWidget {
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
-                Semantics(
-                  hint: chooseDay,
-                  child: TextButton(
-                    style: link,
-                    onPressed: enabled
-                        ? () => _chooseDay(context, day, today, habits)
-                        : null,
-                    child: Text(dayText(day, today)),
+                // Merged, so the hint is read with the button, not as a
+                // node of its own before it.
+                MergeSemantics(
+                  child: Semantics(
+                    hint: chooseDay,
+                    child: TextButton(
+                      style: link,
+                      onPressed: enabled
+                          ? () => _chooseDay(context, day, today, habits)
+                          : null,
+                      child: Text(dayText(day, today)),
+                    ),
                   ),
                 ),
                 if (isToday) ...<Widget>[
