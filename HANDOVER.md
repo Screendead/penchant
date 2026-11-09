@@ -170,7 +170,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
      checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
-   - **Whole history and Copy as text** (Jack, 2026-11-09: "i've got more than a year's worth of data"; PR open,
+   - **Whole history and Copy as text** (Jack, 2026-11-09: "i've got more than a year's worth of data"; #179, open,
      `feat/insights-whole-history`): the journal query runs from 2000 (the date picker's floor) to today, keyed on
      the day; Health is read from September 2014 (HealthKit's launch) in calendar-year calls, 13 today; the page says
      "From <first entry> to today", and "Copy as text" puts the findings and refusals on the clipboard on a tap. Not
