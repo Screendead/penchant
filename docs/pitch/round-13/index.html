@@ -42,7 +42,7 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px}
 
 <div class="wrap">
   <header style="display:grid;gap:8px">
-    <h1>Round 13: ten calls</h1>
+    <h1>Round 13: eleven calls</h1>
     <p class="lede">From the 2026-11-09 run. Each option is built or is a one-constant change on master. Tap an option to pick it; your picks save here and I read them back.</p>
     <p class="status" id="status">Loading saved picks…</p>
   </header>
@@ -54,7 +54,8 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px}
       <li>The mini time dial in the amount sheet and editor; an edited bead travels to its new time (#199).</li>
       <li>Sealing migrator keeps going past an oversized old document; an unused index is gone (#196).</li>
       <li>The macOS e2e suite runs in CI after each merge (#151). It proves screens and flows, not keychain sign-in.</li>
-      <li>Insights as three questions with the last-night check (#198) and floors from the literature (#197): merging now.</li>
+      <li>Insights as three questions with the last-night check (#198) and floors from the literature (#197).</li>
+      <li>18 archived pitch branches deleted; their <span class="tag">archive/*</span> tags keep every tip.</li>
     </ul>
   </section>
 
@@ -63,10 +64,8 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px}
   <section class="call" style="gap:8px">
     <h2>For you to do</h2>
     <ul>
-      <li><b>Delete 18 archived branches.</b> Their <span class="tag">archive/*</span> tags are pushed and checked; the permission check refused my delete. Say "delete them" and I will, or run it yourself.</li>
-      <li><b>Install master on iPhone and Mac?</b> #196 changes the encryption migrator, so I ask first.</li>
       <li><b>Orphan cleanup logs</b> (B1): read <span class="tag">dailyOrphanCleanup</span>'s dry-run logs, then I pitch the flip.</li>
-      <li><b>Optional:</b> paste the output of <span class="tag">firebase firestore:indexes --project screendead-vice-tracker</span> so I can reconcile the live indexes.</li>
+      <li><b>Delete the old Tracker install</b> from your iPhone, then its two iOS registrations in the Firebase console.</li>
     </ul>
   </section>
 </div>
@@ -133,6 +132,11 @@ const CALLS = [
    ['b','A "Deleted habit" row in Manage Data','You can see, export or delete them. Small and reversible.',true],
    ['c','A server job deletes them','Removes your data without asking.']],
   rec:'B: your data stays yours and visible. Not built yet.'},
+ {id:'live-indexes', area:'Firestore (production)', q:'Remove the 5 live indexes nothing uses',
+  opts:[
+   ['a','Remove them','One indexes deploy with --force, by me with your leave or by you. Fewer index writes on every entry.',true],
+   ['b','Keep them','They cost a little storage and write time; the old Tracker install might still use one until you delete it.']],
+  rec:'Remove: the index test proves every current query is covered by the 3 indexes in the repo.'},
  {id:'api-key', area:'Security (console)', q:'Restrict the Firebase client key in the Google Cloud console',
   opts:[
    ['a','iOS bundle restriction plus Firebase APIs only','You set it in the console; stops casual reuse of the key.',true],
