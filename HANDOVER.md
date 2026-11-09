@@ -181,8 +181,8 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      1. **#178** `feat/health-samples`: timestamped samples, paged; nightly sleeping heart rate. Review, merge, install.
      2. **#179** `feat/insights-whole-history`: whole journal history, Health in yearly calls, Copy as text.
      3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "used far more at
-        some times than others" refusal, so a habit whose logging fades is not credited with a step change in an outcome; and a
-        too-few-days refusal that says which side is short.
+        some times than others" refusal, so a habit whose logging fades is not credited with a step change in an
+        outcome; and a too-few-days refusal that says which side is short.
      4. **Sleep double count, after #178:** `HealthDays.sleepRows` unions every source's asleep periods, so another
         app's single asleep span over a night covers the Watch's awake periods (synthetic: Watch core 23:00-03:00,
         awake 03:00-04:00, core 04:00-07:00 gives asleep 420; add another source's asleep 23:00-07:00 and it gives
