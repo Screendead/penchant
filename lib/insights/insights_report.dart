@@ -59,8 +59,8 @@ class InsightsReport {
   final List<HabitFinding> findings;
 
   /// One refusal for each habit with no finding on any outcome, the one that
-  /// says most: entangled, then possibly chance, then within the noise, then
-  /// too few days.
+  /// says most: entangled, then possibly chance, then logged unevenly, then
+  /// within the noise, then too few days.
   final List<HabitRefusal> refused;
 }
 
@@ -114,8 +114,9 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
   int rank(RefusalReason reason) => switch (reason) {
     RefusalReason.entangled => 0,
     RefusalReason.chance => 1,
-    RefusalReason.withinNoise => 2,
-    RefusalReason.tooFewDays => 3,
+    RefusalReason.uneven => 2,
+    RefusalReason.withinNoise => 3,
+    RefusalReason.tooFewDays => 4,
   };
   return refusals.reduce((a, b) {
     final int byReason = rank(a.reason).compareTo(rank(b.reason));
@@ -276,7 +277,15 @@ String refusalReason(
 }) => switch (refusal.reason) {
   RefusalReason.tooFewDays when refusal.usableDays < gates.minDays =>
     'Too few days yet: ${refusal.usableDays} of ${gates.minDays}',
-  RefusalReason.tooFewDays => 'Too few days with and without it yet',
+  // The span ends on a use, so more days add days with it, not without.
+  RefusalReason.tooFewDays
+      when refusal.usableDays - refusal.exposedDays < gates.minUnexposedDays =>
+    'Used almost every day: too few days without it to compare',
+  RefusalReason.tooFewDays =>
+    'Too few days with it yet: ${refusal.exposedDays} of '
+        '${gates.minExposedDays}',
+  RefusalReason.uneven =>
+    'Logged unevenly over time, so it can’t be told apart from other changes',
   RefusalReason.entangled => switch (refusal.entangledWith) {
     final String other =>
       'Used together with ${nameOf(other)}, so the two can’t be told apart',

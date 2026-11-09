@@ -12,6 +12,8 @@ class InsightGates {
     this.minExposedDays = 7,
     this.minUnexposedDays = 7,
     this.maxVarianceInflation = 5,
+    this.maxUseRateRatio = 3,
+    this.unevenSignificance = 0.01,
     this.level = 0.95,
     this.falseDiscoveryRate = 0.1,
   });
@@ -20,6 +22,12 @@ class InsightGates {
   final int minExposedDays;
   final int minUnexposedDays;
   final double maxVarianceInflation;
+
+  /// How many times more often a habit may be used in one half of its span
+  /// than in the other, unless the difference is within
+  /// [unevenSignificance] of chance.
+  final double maxUseRateRatio;
+  final double unevenSignificance;
   final double level;
 
   /// Benjamini-Hochberg's q across every comparison in one report.
@@ -49,8 +57,14 @@ class Comparison {
 }
 
 enum RefusalReason {
-  /// Too few usable days, or too few days with or without the habit.
+  /// Too few usable days, or too few days with or without the habit;
+  /// [HabitInsight.exposedDays] says which.
   tooFewDays,
+
+  /// Used far more in one half of its span than in the other, or so much in
+  /// step with the time terms that the model cannot tell it from a drift or a
+  /// change in the outcome over the same months.
+  uneven,
 
   /// Used on so many of the same days as [HabitRefusal.entangledWith] that the
   /// two cannot be told apart.
@@ -71,6 +85,7 @@ sealed class HabitInsight {
     required this.metricId,
     required this.lagDays,
     required this.usableDays,
+    required this.exposedDays,
     required this.raw,
   });
 
@@ -78,6 +93,9 @@ sealed class HabitInsight {
   final String metricId;
   final int lagDays;
   final int usableDays;
+
+  /// Of [usableDays], the days the habit was used.
+  final int exposedDays;
 
   /// Null when either side has fewer than two days.
   final Comparison? raw;
@@ -89,6 +107,7 @@ class HabitFinding extends HabitInsight {
     required super.metricId,
     required super.lagDays,
     required super.usableDays,
+    required super.exposedDays,
     required super.raw,
     required this.effect,
     required this.interval,
@@ -115,6 +134,7 @@ class HabitRefusal extends HabitInsight {
     required super.metricId,
     required super.lagDays,
     required super.usableDays,
+    required super.exposedDays,
     required super.raw,
     required this.reason,
     this.entangledWith,
@@ -143,12 +163,19 @@ class HabitRefusal extends HabitInsight {
 /// days left in that habit's span.
 ///
 /// Attribution: on those days, one least-squares model of the outcome on an
-/// intercept and a 0/1 "used that day" indicator for the habit and for every
-/// other habit that clears the sample gates there, so the coefficient is the
-/// habit's difference with the others held fixed, and a habit that only rides
-/// along with another gets no credit. Another habit counts as not used on the
-/// days outside its own span: that can make its coefficient a proxy for time,
-/// but its coefficient is never the one reported here.
+/// intercept, a linear trend over the span, a level for its second half, and a
+/// 0/1 "used that day" indicator for the habit and for every other habit that
+/// clears the sample gates there, so the coefficient is the habit's difference
+/// with the others and the time held fixed, and a habit that only rides along
+/// with another, or with a drift or a step in the outcome, gets no credit.
+/// Another habit counts as not used on the days outside its own span: that can
+/// make its coefficient a proxy for time, but its coefficient is never the one
+/// reported here.
+///
+/// Balance: a habit used [InsightGates.maxUseRateRatio] times more often in
+/// one half of its span than the other is refused before the fit. Once logging
+/// fades to a few stray entries, the months between them read as days without
+/// it, and any change in the outcome over those months would be pinned on it.
 ///
 /// Each result is judged alone, at [InsightGates.level]; across many habits
 /// and outcomes some will clear it by chance, so a report runs every result
@@ -220,6 +247,7 @@ HabitInsight _whatFollowsOne(
   }
 
   final List<double> x = exposureOf(id);
+  final int exposed = x.where((v) => v == 1).length;
   final Comparison? raw = _welch(x, y, gates.level);
 
   HabitRefusal refuse(
@@ -233,6 +261,7 @@ HabitInsight _whatFollowsOne(
     metricId: metricId,
     lagDays: lagDays,
     usableDays: days.length,
+    exposedDays: exposed,
     raw: raw,
     reason: reason,
     entangledWith: entangledWith,
@@ -244,6 +273,16 @@ HabitInsight _whatFollowsOne(
   if (days.length < gates.minDays || !clearsSampleGates(x)) {
     return refuse(RefusalReason.tooFewDays);
   }
+
+  // Halves by usable days, so each holds at least half of minDays.
+  final int half = days.length ~/ 2;
+  if (_unevenHalves(x, half, gates)) return refuse(RefusalReason.uneven);
+  final int span = daysBetween(days.first, days.last);
+  final List<List<double>> time = <List<double>>[
+    for (int r = 0; r < days.length; r++)
+      <double>[daysBetween(days.first, days[r]) / span - 0.5, r < half ? 0 : 1],
+  ];
+  final int timeColumns = time.first.length;
 
   // A habit refused for its sample never enters: a one-off use would absorb
   // its day, cost a degree of freedom and inflate this habit's variance.
@@ -273,15 +312,30 @@ HabitInsight _whatFollowsOne(
 
   List<List<double>> design(List<String> ids) => <List<double>>[
     for (int r = 0; r < days.length; r++)
-      <double>[1, x[r], for (final String other in ids) others[other]![r]],
+      <double>[
+        1,
+        x[r],
+        ...time[r],
+        for (final String other in ids) others[other]![r],
+      ],
   ];
+
+  // With an intercept in the model, (X'X)^-1 at j is 1 / (SS_j (1 - R_j^2)),
+  // so this is 1 / (1 - R_j^2).
+  final double mx = mean(x);
+  final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
+  double inflationIn(List<List<double>> rows) =>
+      (invert(gram(rows))?[1][1] ?? double.infinity) * ss;
+  if (inflationIn(design(const <String>[])) > gates.maxVarianceInflation) {
+    return refuse(RefusalReason.uneven);
+  }
 
   // Covariates join the most used first. One that duplicates those already in
   // changes nothing this habit's coefficient can see, so it is skipped; one
   // more column than would leave a residual degree of freedom is skipped too.
   final List<String> inModel = <String>[];
   for (final String other in covariates) {
-    if (inModel.length + 4 > days.length) break;
+    if (inModel.length + timeColumns + 4 > days.length) break;
     final List<List<double>> without = <List<double>>[
       for (final List<double> row in design(<String>[...inModel, other]))
         <double>[row[0], ...row.skip(2)],
@@ -301,10 +355,6 @@ HabitInsight _whatFollowsOne(
   final double effect = fit.coefficients[column];
   final Interval interval = fit.interval(column, level: gates.level);
   final double pValue = fit.pValue(column);
-  // With an intercept in the model, (X'X)^-1 at j is 1 / (SS_j (1 - R_j^2)),
-  // so this is 1 / (1 - R_j^2).
-  final double mx = mean(x);
-  final double ss = x.fold<double>(0, (s, v) => s + (v - mx) * (v - mx));
   final double inflation = fit.inverseGram[column][column] * ss;
   if (inflation > gates.maxVarianceInflation) {
     return refuse(
@@ -329,6 +379,7 @@ HabitInsight _whatFollowsOne(
     metricId: metricId,
     lagDays: lagDays,
     usableDays: days.length,
+    exposedDays: exposed,
     raw: raw,
     effect: effect,
     interval: interval,
@@ -368,6 +419,7 @@ List<HabitInsight> controlFalseDiscoveries(
           metricId: f.metricId,
           lagDays: f.lagDays,
           usableDays: f.usableDays,
+          exposedDays: f.exposedDays,
           raw: f.raw,
           reason: RefusalReason.chance,
           effect: f.effect,
@@ -377,6 +429,24 @@ List<HabitInsight> controlFalseDiscoveries(
         final HabitInsight other => other,
       },
   ];
+}
+
+// The ratio alone would refuse a rare habit's chance clumping in a short
+// span; the test alone would refuse a mild drift in a long one, which the time
+// terms absorb.
+bool _unevenHalves(List<double> x, int half, InsightGates gates) {
+  final List<double> a = x.sublist(0, half), b = x.sublist(half);
+  final double ra = mean(a), rb = mean(b);
+  if (max(ra, rb) <= gates.maxUseRateRatio * min(ra, rb)) return false;
+  final double pooled =
+      ((a.length - 1) * sampleVariance(a) +
+          (b.length - 1) * sampleVariance(b)) /
+      (x.length - 2);
+  final double se = sqrt(pooled * (1 / a.length + 1 / b.length));
+  final double p = se == 0
+      ? 0
+      : studentTTwoSided((ra - rb) / se, (x.length - 2).toDouble());
+  return p < gates.unevenSignificance;
 }
 
 Comparison? _welch(List<double> exposure, List<double> y, double level) {

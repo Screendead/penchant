@@ -69,6 +69,10 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Insights no longer credits a habit with a change that happened while you had stopped logging it: a habit logged
+  far more in one half of its time than the other is listed as "Logged unevenly over time", and a slow drift or a
+  sudden change in a Health measure is allowed for before any habit is compared. A habit used every day now says it
+  has too few days without it, rather than asking you to wait.
 - On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
   your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
   background to save it. If that is cut short, the tap still waits on the device and saves later, as before.
