@@ -512,7 +512,7 @@ class EntryTimeField extends ConsumerWidget {
         );
         final ButtonStyle link = TextButton.styleFrom(
           minimumSize: const Size(DialSize.minTapTarget, DialSize.minTapTarget),
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 2),
           foregroundColor: scheme.onSurface,
           textStyle: meta.copyWith(
             fontWeight: FontWeight.w600,
