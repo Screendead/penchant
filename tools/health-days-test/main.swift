@@ -229,6 +229,72 @@ do {
   check("staged nap and another app's night", rows["2026-11-08 sleepAsleep"] == 520 && rows["2026-11-08 sleepCore"] == 40, "\(rows)")
 }
 
+// Another app's sleep that the Watch wrote nothing in, on a night whose main
+// sleep the Watch recorded, is dropped: the Watch was worn and did not call it
+// sleep. Watch core 00:00-03:00, awake 03:00-04:00, deep 04:00-08:00 on
+// 2 March; the app's asleep 17:00-19:00 the evening before.
+func march(_ samples: [HealthDays.SleepSample]) -> [String: Double] {
+  values(HealthDays.sleepRows(samples, metrics: allSleep, start: at(2026, 3, 1), end: at(2026, 3, 8), calendar))
+}
+let marchWatch = from(
+  "com.apple.health.watch", watch: true,
+  [
+    sample(at(2026, 3, 2, 0), at(2026, 3, 2, 3), 3),
+    sample(at(2026, 3, 2, 3), at(2026, 3, 2, 4), 2),
+    sample(at(2026, 3, 2, 4), at(2026, 3, 2, 8), 4),
+  ])
+let appEvening = from("com.example.sleepapp", [sample(at(2026, 3, 1, 17), at(2026, 3, 1, 19), 1)])
+do {
+  check("evening repro, Watch alone", march(marchWatch)["2026-03-02 sleepAsleep"] == 420)
+  for order in [marchWatch + appEvening, appEvening + marchWatch] {
+    let rows = march(order)
+    check("evening repro, with the app", rows["2026-03-02 sleepAsleep"] == 420 && rows["2026-03-02 sleepAwake"] == 60, "\(rows)")
+    check("evening repro, stages", rows["2026-03-02 sleepCore"] == 180 && rows["2026-03-02 sleepDeep"] == 240, "\(rows)")
+    check("evening repro, one night", Set(rows.keys.map { String($0.prefix(10)) }) == ["2026-03-02"], "\(rows)")
+  }
+  let asleep = HealthDays.asleepIntervals(
+    HealthDays.nights(marchWatch + appEvening, start: at(2026, 3, 1), end: at(2026, 3, 8), calendar))
+  let heart = values(
+    HealthDays.meanInsideRows([hr(at(2026, 3, 1, 18), 90), hr(at(2026, 3, 2, 1), 50)], asleep: asleep, metric: "hr"))
+  check("evening repro, heart rate", heart["2026-03-02 hr"] == 50, "\(heart)")
+}
+
+// The Watch dies at 01:00 and the app covers 23:00-07:00: the app's night
+// still counts, being one sleep with the Watch's piece in it, and the evening
+// span is dropped as the Watch was worn that night.
+do {
+  let died = from("com.apple.health.watch", watch: true, [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 1), 3)])
+  let appNight = from("com.example.sleepapp", [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 7), 1)])
+  for order in [died + appNight, appNight + died] {
+    let rows = march(order)
+    check("Watch died, app night", rows["2026-03-02 sleepAsleep"] == 480 && rows["2026-03-02 sleepCore"] == nil, "\(rows)")
+  }
+  for order in [died + appNight + appEvening, appEvening + appNight + died] {
+    let rows = march(order)
+    check("Watch died, evening dropped", rows["2026-03-02 sleepAsleep"] == 480, "\(rows)")
+  }
+}
+
+// A night only the app recorded, evening and nap included, counts whole,
+// though the Watch recorded the night before.
+do {
+  let appOnly = from(
+    "com.example.sleepapp",
+    [
+      sample(at(2026, 3, 2, 15), at(2026, 3, 2, 15, 40), 1),
+      sample(at(2026, 3, 2, 23), at(2026, 3, 3, 7), 1),
+    ])
+  let appNight = from("com.example.sleepapp", [sample(at(2026, 3, 1, 23), at(2026, 3, 2, 7), 1)])
+  check("app alone, evening and night", march(appEvening + appNight)["2026-03-02 sleepAsleep"] == 600)
+  for order in [marchWatch + appOnly, appOnly + marchWatch] {
+    let rows = march(order)
+    check("app-only nap, no Watch that night", rows["2026-03-03 sleepAsleep"] == 520, "\(rows)")
+    check("app-only nap, the Watch's night", rows["2026-03-02 sleepAsleep"] == 420, "\(rows)")
+  }
+  let nap = from("com.example.sleepapp", [sample(at(2026, 3, 2, 15), at(2026, 3, 2, 15, 40), 1)])
+  check("app-only nap alone on its night", march(marchWatch + nap)["2026-03-03 sleepAsleep"] == 40)
+}
+
 // A sleep goes to the night its chosen source ends on. Another app's span to
 // 12:30, joined to the Watch's night and dropped, does not move it to the next.
 do {

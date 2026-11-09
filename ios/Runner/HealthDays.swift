@@ -112,18 +112,33 @@ enum HealthDays {
   // Each sleep is found across every source, then keeps one source's samples
   // (oneSource), and goes to the night of the last end of what it kept, so
   // one that crosses noon is not split and a dropped source cannot move it.
-  // Keys are "yyyy-MM-dd"; nights outside [start, end) and nights with no
-  // samples have no entry.
+  // Then a night whose main sleep (the most asleep time kept; a tie goes to
+  // the preferred source) has samples from the preferred source, the first in
+  // order and only if it writes stages, drops its sleeps in which that source
+  // wrote nothing: another app's evening span on a night the Watch recorded
+  // is the Watch not counting it as sleep, not a nap it missed. A night whose
+  // main sleep only another app recorded keeps everything, a nap the Watch
+  // caught included. Keys are "yyyy-MM-dd"; nights outside [start, end) and
+  // nights with no samples have no entry.
   static func nights(_ samples: [SleepSample], start: Date, end: Date, _ calendar: Calendar) -> [String: [SleepSample]] {
     let order = preference(samples)
-    var byNight: [String: [SleepSample]] = [:]
+    let preferred = order.first.flatMap { source in
+      samples.contains { $0.source == source && stageValues.contains($0.value) } ? source : nil
+    }
+    var byNight: [String: [(kept: [SleepSample], asleep: Double, preferred: Bool)]] = [:]
     for session in sessions(samples) {
       guard let (kept, last) = oneSource(session, order) else { continue }
       let night = nightOf(last, calendar)
       guard night >= start, night < end else { continue }
-      byNight[key(night, calendar), default: []].append(contentsOf: kept)
+      let hasPreferred = preferred.map { source in session.contains { $0.source == source } } ?? false
+      byNight[key(night, calendar), default: []].append((kept, minutes(kept, asleepValues), hasPreferred))
     }
-    return byNight
+    return byNight.mapValues { sleeps in
+      let mostWith = sleeps.filter(\.preferred).map(\.asleep).max()
+      let mostWithout = sleeps.filter { !$0.preferred }.map(\.asleep).max() ?? -1
+      let drop = mostWith.map { $0 >= mostWithout } ?? false
+      return sleeps.filter { $0.preferred || !drop }.flatMap(\.kept)
+    }
   }
 
   static func minutes(_ samples: [SleepSample], _ values: Set<Int>) -> Double {
