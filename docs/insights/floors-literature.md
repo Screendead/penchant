@@ -28,7 +28,7 @@ an extrapolation. The cards say "went with" for these, never "caused".
 | Core sleep | 10 min | Kept | No source isolates light (N1 + N2) sleep. |
 | Deep sleep | 10 min | Kept | Tasali 2008 suppressed slow-wave sleep by about 90% and insulin sensitivity fell about 25%; Herzog 2013, up to 20%. Both cut most of the night's deep sleep, so neither gives a smallest change. |
 | REM sleep | 5% of usual time asleep | Sourced (share) | Leary 2020: each 5 percentage points less of the night in REM went with 13% higher mortality in MrOS (HR 1.13, 1.08 to 1.19) and 17% in the Wisconsin cohort. Floor = 0.05 x the person's median nightly time asleep; 10 min without sleep data. |
-| Heart rate variability (SDNN) | half the person's night-to-night variation | Sourced (own noise) | Javaloyes 2019: cyclists whose training eased when 7-day HRV fell half a standard deviation below their own 4-week usual improved 40-min time trial 7.3% and peak power 5.1% over a fixed plan (the 0.5 SD rule read in HRV4Training's summary of the paper). 3 ms when there are too few nights to measure the variation. Hillebrand 2013 (1% higher SDNN, about 1% lower cardiovascular risk) gives a slope, not a floor. |
+| Heart rate variability (SDNN) | half the person's night-to-night variation | Sourced (own noise) | Javaloyes 2019: cyclists whose training eased when 7-day HRV fell half a standard deviation below their own 4-week usual improved 40-min time trial 7.3% and peak power 5.1% over a fixed plan (the 0.5 SD rule read in HRV4Training's summary of the paper). 3 ms when there are too few nights to measure the variation. Hillebrand 2013 (1% higher SDNN, about 1% lower cardiovascular risk, read in a search summary, not the abstract) gives a slope, not a floor. |
 | Resting heart rate | 5 bpm | Sourced | Vazir 2018 (ARIC, 15,680 people, 28 years): each 5 bpm rise from the previous visit went with 12% higher all-cause mortality (HR 1.12, 1.10 to 1.15). Zhang 2016's meta-analysis reports per 10 bpm (RR 1.09). |
 | Heart rate while asleep | 5 bpm | Inferred | No source for sleeping heart rate alone; taken from resting heart rate (Vazir 2018), which a night's lowest rates track. |
 | Heart rate, hours after a use | 2 bpm | Kept | A minute-level rate against the hour before; no source gives a smallest effect for it. |
@@ -50,8 +50,8 @@ alone. Heart rate in the hours after a use has no daily series and no check.
 
 For scale, without any person's data: Quer 2020 (92,457 wearable users, 33 million days) found resting heart rate
 moves about 3 bpm day to day within a person, so half of it, about 1.5 bpm, is under the 5 bpm floor. The check
-binds where the floor is small against the scatter: core, deep and REM sleep, time in bed and wrist temperature for
-most people.
+is expected to bind where the floor is small against the scatter (core, deep and REM sleep, time in bed, wrist
+temperature); no person's series has been run through it yet.
 
 Reading "inside the noise" as the whole typical error (rather than half) would refuse most sleep findings, since a
 mean over many nights is properly smaller than one night's scatter; reading it as the standard error of the
