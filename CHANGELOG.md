@@ -64,7 +64,9 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
-
+- On iPhone and iPad, a tap on the Log widget or the Log one control, or a log from Siri or Shortcuts, now reaches
+  your journal seconds after its Undo window closes even while Penchant is closed: iOS starts Penchant in the
+  background to save it. If that is cut short, the tap still waits on the device and saves later, as before.
 - Opening or closing a page in dark mode no longer flashes white halfway through the transition.
 - A notice shown while the keyboard opens no longer jumps off the top of the screen for a frame.
 
