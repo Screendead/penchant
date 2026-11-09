@@ -15,6 +15,7 @@ import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/insights_page.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -200,6 +201,8 @@ Widget routePage(String? name) {
       return ViceActivityHistoryPage(viceID: viceID);
     case ['vices', final String viceID, 'activities', final String activityID]:
       return ViceActivityEditorPage(viceID: viceID, activityID: activityID);
+    case ['insights']:
+      return const InsightsPage();
     case ['manage-data']:
       return const ManageData();
     case ['settings']:

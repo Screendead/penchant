@@ -91,3 +91,31 @@ final viceActivityRecentForUserProvider = StreamProvider.autoDispose
         );
       },
     );
+
+typedef ActivityRange = ({DateTime start, DateTime end});
+
+// Every activity in [start, end), for Insights. The same query shape as the
+// day's, so the same index.
+final viceActivityRangeForUserProvider = StreamProvider.autoDispose
+    .family<List<ViceActivity>, ({String uid, ActivityRange range})>(
+      retry: firestoreRetry,
+      (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
+        return _activitiesBetween(
+          key.uid,
+          key.range.start,
+          key.range.end,
+        ).snapshots().asyncMap(
+          (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+        );
+      },
+    );
+
+final viceActivityRangeProvider = Provider.autoDispose
+    .family<AsyncValue<List<ViceActivity>>, ActivityRange>((ref, range) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) =>
+            viceActivityRangeForUserProvider((uid: uid, range: range)),
+      );
+    });

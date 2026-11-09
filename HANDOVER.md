@@ -88,8 +88,8 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **d. Habits, history and the entry editor** (#100, `feat/overhaul-1d-habits`): Manage Data becomes Habits; Habits
      and history in the card style; swipe-to-delete with Undo on history rows and Undo on the editor's delete (the
      register's inconsistent-delete item is gone); Archive and Edit habit moved to the history page; editing reuses
-     the amount sheet. Left: the amount sheet (D1; the editor kept its form), the history page's "Last 30 days" summary
-     card (D4), page transitions (1f, D2).
+     the amount sheet. Left: the amount sheet (D1; the editor kept its form), the history page's "Last 30 days"
+     summary card (D4), page transitions (1f, D2).
    - **e. Auth and settings screens** (#99, `feat/overhaul-1e-account`): one sign-in screen with a segmented control and
      the password checklist; Settings and Account Settings in the card style; copy as written (`r3-delete-copy`); a
      3:1 keyboard focus ring (a 2 pt accent ring in place of Material's 12% overlay) on card rows, the sign-in segments
@@ -128,43 +128,58 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
 
    Constraints: native Swift targets (WidgetKit, App Intents), because Flutter does not run in an extension. Writing
    an activity needs no key (its fields are plaintext under `r2-e2ee`), but habit names are sealed, so showing them
-   needs the app's Firebase Auth session and the E2EE key through a shared Keychain access group and an App Group. The free signing team can sign App Groups and app extensions on iOS (proven
-   2026-11-08 on `spike/widget-app-group`, commit becdcaf: extension `com.screendead.penchant.widgets` read what the
-   app wrote to App Group `group.com.screendead.penchant` on Jack's iPhone; `tools/add-widget-target.rb` there
-   generates the target); Apple's docs give free teams macOS App Groups, but whether sandboxed macOS needs a
-   TEAMID-prefixed group name is unchecked. Read Apple's current WidgetKit, App Intents and ControlWidget docs first.
-   Jack's round 10 picks settle the open questions (`r10-widget-top` D, `r10-widget-undo` B, `r10-intents` A,
-   `r10-mac-widgets` A; round 10, below); whether WidgetKit can hold and revert the Undo state is unchecked. The idea
-   file is [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md).
-   Status 2026-11-08: per Jack (2026-11-08: "the menu bar app should still be present even when the app is cmd+q'd
-   too"), the Mac menu bar is a native login-item helper (`macos/PenchantMenuBar`, a SwiftUI
-   `MenuBarExtra` embedded at `Contents/Library/LoginItems`, registered with `SMAppService.loginItem` at each app
-   launch). It reads the widgets' App Group snapshot and queues logs in their `LogQueue`, which the app writes, sealed,
-   on its next flush. With the app closed, the helper launches it hidden (no window or Dock icon) to flush and quit
-   (`FlushMode`, PR #167; Jack 2026-11-08: "do it properly"), and the run leaves its outcome in the App Group: the helper retries a `retry` when the
-   network returns, on wake and on a backoff of about an hour, and says "open Penchant to sync" for a `blocked` one.
-   The in-process popover (#157, #163) is gone, and with it the private `enableMultiView` call, which also sent
-   VoiceOver to the wrong view (`FlutterEngine.mm`, `update_semantics_callback2`).
-   On iOS the log intents are `LiveActivityIntent`s (PR #166), so a widget, control, Siri or Shortcuts log runs in
-   Penchant's process, launched in the background if need be; it flushes once the Undo hold passes, under a background
-   task, with `BGAppRefreshTask` as the fallback. Jack's "do it properly" (2026-11-08) settled `r11-ios-widget-sync` as
-   B. Both platforms installed as build 964; neither path proven on a device yet.
+   needs the app's Firebase Auth session and the E2EE key through a shared Keychain access group and an App Group. The
+   free signing team can sign App Groups and app extensions on iOS (proven 2026-11-08 on `spike/widget-app-group`,
+   commit becdcaf: extension `com.screendead.penchant.widgets` read what the app wrote to App Group
+   `group.com.screendead.penchant` on Jack's iPhone; `tools/add-widget-target.rb` there generates the target); Apple's
+   docs give free teams macOS App Groups, but whether sandboxed macOS needs a TEAMID-prefixed group name is unchecked.
+   Read Apple's current WidgetKit, App Intents and ControlWidget docs first. Jack's round 10 picks settle the open
+   questions (`r10-widget-top` D, `r10-widget-undo` B, `r10-intents` A, `r10-mac-widgets` A; round 10, below); whether
+   WidgetKit can hold and revert the Undo state is unchecked. The idea file is
+   [widgets-and-shortcuts](ideas/growth-later/widgets-and-shortcuts.md). Status 2026-11-08: per Jack (2026-11-08: "the
+   menu bar app should still be present even when the app is cmd+q'd too"), the Mac menu bar is a native login-item
+   helper (`macos/PenchantMenuBar`, a SwiftUI `MenuBarExtra` embedded at `Contents/Library/LoginItems`, registered
+   with `SMAppService.loginItem` at each app launch). It reads the widgets' App Group snapshot and queues logs in
+   their `LogQueue`, which the app writes, sealed, on its next flush. With the app closed, the helper launches it
+   hidden (no window or Dock icon) to flush and quit (`FlushMode`, PR #167; Jack 2026-11-08: "do it properly"), and
+   the run leaves its outcome in the App Group: the helper retries a `retry` when the network returns, on wake and on
+   a backoff of about an hour, and says "open Penchant to sync" for a `blocked` one. The in-process popover (#157,
+   #163) is gone, and with it the private `enableMultiView` call, which also sent VoiceOver to the wrong view
+   (`FlutterEngine.mm`, `update_semantics_callback2`). On iOS the log intents are `LiveActivityIntent`s (PR #166), so
+   a widget, control, Siri or Shortcuts log runs in Penchant's process, launched in the background if need be; it
+   flushes once the Undo hold passes, under a background task, with `BGAppRefreshTask` as the fallback. Jack's "do it
+   properly" (2026-11-08) settled `r11-ios-widget-sync` as B. Both platforms installed as build 964; neither path
+   proven on a device yet.
 
 7. **Insights, built free** (Jack, 2026-11-08: "build it free for me, we can paywall later"). The Pro features ship
    unlocked; the paywall and StoreKit wait until he decides to sell. Apple Health works on the free team: a signed probe
    build on 2026-11-08 got a profile granting `com.apple.developer.healthkit` and background delivery. One small,
    resumable PR per step, merged on green and ticked here. Health and every source below stay on the device:
    nothing they read goes to Firestore, analytics or crash reports.
-   - **a. Engine core** (pure Dart, `lib/insights/`): per-day series from the decrypted journal, a "what follows"
-     comparison of an outcome on days after each habit against days without, attributed per habit, and a refusal to
-     report below a minimum sample or inside the noise (`ideas/insights/insights-engine.md`).
-   - **b. Health reading** (iOS Swift channel): the entitlement, usage string, permission asked from the Insights
-     screen only, daily and nightly aggregates (`HKStatisticsCollectionQuery`) for sleep stages, HRV, resting heart
-     rate, respiratory rate, oxygen, wrist temperature, steps and energy, kept in an on-device store
+   - **a. Engine core** (merged, #170; pure Dart, `lib/insights/`): per-day series from the decrypted journal, a "what
+     follows" comparison of an outcome on days after each habit against days without, attributed per habit, and a
+     refusal to report below a minimum sample or inside the noise (`ideas/insights/insights-engine.md`).
+   - **b. Health reading** (merged, #171; iOS Swift channel): the entitlement, usage string, permission asked from the
+     Insights screen only, daily and nightly aggregates (`HKStatisticsCollectionQuery`) for sleep stages, HRV, resting
+     heart rate, respiratory rate, oxygen, wrist temperature, steps and energy, kept in an on-device store
      (`ideas/insights/apple-health-correlation.md`, recommendation B with C's aggregates).
-   - **c. Insights screen:** connect Health, then show the engine's findings; empty Health reads as "no data yet".
+   - **c. Insights screen** (merged, #173): connect Health, then show the engine's findings; empty Health reads as
+     "no data yet". Stills in `docs/pitch/round-11/insights/`. Not run on a device: the real
+     HealthKit sheet and read, and the engine in another isolate, are proven only by widget tests with fakes.
    - **d. Health history backfill and incremental sync** (anchored queries, then background delivery).
    - **e. Calendar** (`ideas/insights/calendar-integration.md`). **f. Weekly review**, then **g. trend overlays**.
+   - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
+     health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
+     after the many-comparisons correction and the whole-history range:
+     - **i. Dose and timing:** the day's amount instead of used/not used, and the time of the last use (a late
+       finish against an early one).
+     - **j. Hours after a use:** heart rate and HRV samples from Health (not daily totals) in the 0 to 6 hours after
+       each entry, against the same hours on days without it; overnight (sleeping) heart rate as its own measure.
+     - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
+       day's use, and heart rate in the hour before an entry.
+     - **l. One habit after another:** how often a habit follows another within minutes, against chance.
+     - **m. Step changes:** a level shift in a measure (an illness, a new routine) found and modelled, so it is not
+       pinned on a habit that began at the same time.
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
