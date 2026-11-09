@@ -161,7 +161,9 @@ ThemeData appTheme(Brightness brightness) {
     pageTransitionsTheme: PageTransitionsTheme(
       builders: <TargetPlatform, PageTransitionsBuilder>{
         for (final TargetPlatform platform in TargetPlatform.values)
-          platform: const DialPageTransitionsBuilder(),
+          platform: DialPageTransitionsBuilder(
+            backGesture: platform == TargetPlatform.iOS,
+          ),
       },
     ),
     extensions: <ThemeExtension<dynamic>>[
