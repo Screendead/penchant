@@ -19,6 +19,8 @@ import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/log_fan.dart';
 
+import 'package:tracker/deleted_habit_page.dart';
+
 import 'fakes.dart';
 import 'trends_harness.dart';
 
@@ -27,6 +29,7 @@ void main() {
     // Every name the app pushes.
     const Map<String, Type> pages = <String, Type>{
       '/manage-data': ManageData,
+      '/deleted-habit': DeletedHabitPage,
       '/settings': Settings,
       '/settings/account': AccountSettings,
       '/vices/add': ViceForm,
