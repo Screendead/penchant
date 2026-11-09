@@ -663,7 +663,7 @@ String _hoursAfterRefusal(HabitRefusal refusal) {
             'compare with',
     },
     RefusalReason.chance => 'could be chance, one of many comparisons',
-    RefusalReason.tooSmall => 'too small to matter: ${_underFloor(refusal)}',
+    RefusalReason.tooSmall => 'too small to matter, ${_underFloor(refusal)}',
     _ => 'within the noise, no clear difference',
   };
 }
@@ -692,7 +692,7 @@ String _amongUseRefusal(
   RefusalReason.withinNoise => 'within the noise, no clear difference',
   RefusalReason.chance => 'could be chance, one of many comparisons',
   RefusalReason.tooSmall =>
-    'too small to matter: ${_underFloor(refusal)} across your usual range',
+    'too small to matter, ${_underFloor(refusal)} across your usual range',
 };
 
 String _useRefusal(

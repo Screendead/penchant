@@ -32,7 +32,7 @@ pull request titles (`gh pr list --state merged`).
   findings while it reads. Worked out on the device; Health data never leaves it (#187).
 - Insights shows fewer, clearer cards: a difference too small to matter (under 10 min of sleep a night, say) is
   listed under "Not enough to say" instead, each habit gets one card for its sleep, one for its heart and so on, with
-  its other findings there as short lines, and the six largest show first, the rest behind "Show more".
+  its other findings there as short lines, and the six largest show first, the rest behind "Show more" (#192).
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
   out of sight, with no window or Dock icon, to save it, and it quits again once done. Online that takes seconds.
   Offline, the log stays queued and the helper tries again when the network comes back or the Mac wakes, and on a

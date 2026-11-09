@@ -185,7 +185,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **Ask again for new Health types** (`fix/health-reask`, #184, open): Health connected before #178 was never asked for heart rate; the card now offers "Allow new Health data" when HealthKit's `getRequestStatusForAuthorization` says `.shouldRequest` (a stored read-types version decides when it can't tell), and names where to manage access. Not run on a device.
    - **Archived habits hidden** (Jack, 2026-11-09: "Archived habits shouldn't show any cards"; `fix/insights-hide-archived`, #189, open): no card, no refusal row, out of the Benjamini-Hochberg family; their uses stay as covariates.
    - **Fewer, larger cards** (Jack, 2026-11-09, on his real data: about 27 cards, many near-duplicates too small to
-     matter; `feat/insights-floor-and-cards`). After Benjamini-Hochberg and every existing refusal, untouched: a
+     matter; #192, open, `feat/insights-floor-and-cards`). After Benjamini-Hochberg and every existing refusal, untouched: a
      finding under its outcome's floor (`metricFloors`, `lib/insights/insights_report.dart`) is refused as "Too small
      to matter: under 10 min a night of core sleep", ranked first among a habit's refusals. An amount or a time is
      judged at effect / step x the interquartile range of the habit's day totals or last-use minutes over the days
@@ -221,6 +221,10 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         (#187, `feat/insights-hours-after`, below). Jack, 2026-11-09: a habit
         used every day must still yield insights: amount per day, time of first and last use, the hours around each
         use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).
+     6. **#192** `feat/insights-floor-and-cards`: the effect-size floor and one card per habit and family (Fewer,
+        larger cards, above). Review, merge, install; Jack to review the floors.
+     7. **Next for item 7: build 1A + 2C on top of the trim (#192)**: the round-12 decision (Direction, below). Not
+        started.
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
@@ -306,8 +310,10 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      one straight line, and a time cut-off), **o. recovery time** (nights until a measure returns to baseline after a
      heavy day), **p. payoff from cutting down** (measures since a habit fell, against the old baseline), **q.
      replacement** (one habit rising as another falls), then **k. triggers**, where calendar, places and daylight add
-     most; plus a daily "last night against your usual". Page structure and where the daily check lives are pitched
-     in round 12 (`docs/pitch/round-12/insights/`).
+     most; plus a daily "last night against your usual". Page structure and where the daily check lives were pitched
+     in round 12 (`docs/pitch/round-12/insights/`); **decided (Jack, 2026-11-09): 1A**, the Insights page as three
+     question sections, **and 2C**, the last-night check in both places: Today shows sleeping heart rate alone and
+     opens Insights, where the full check sits at the top.
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.

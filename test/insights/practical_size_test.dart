@@ -185,7 +185,7 @@ void main() {
         ),
         (id) => id,
       ),
-      'Time of last use: too small to matter: under 1,000 a day of step '
+      'Time of last use: too small to matter, under 1,000 a day of step '
       'count across your usual range',
     );
   });
