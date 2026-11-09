@@ -26,7 +26,7 @@ void main() {
 
   group('compareLastNight', () {
     test(
-      'last night against the median and quartiles of the nights before',
+      'last night against the median and 10th to 90th percentiles of the nights before',
       () {
         final NightCompare c = compareLastNight(
           _nights(<int, double>{
@@ -39,8 +39,8 @@ void main() {
         )!;
         expect(c.value, 60);
         expect(c.usual, 52);
-        expect(c.low, 51);
-        expect(c.high, 53);
+        expect(c.low, 50);
+        expect(c.high, 54);
         expect(c.side, NightSide.above);
       },
     );
@@ -65,7 +65,7 @@ void main() {
       );
     });
 
-    test('a value outside the quartiles but shown as the usual is usual', () {
+    test('a value outside the usual range but shown as the usual is usual', () {
       const NightCompare c = NightCompare(
         value: 54.4,
         usual: 54,
