@@ -92,7 +92,7 @@ jobs:
       - name: End to end (iOS Simulator)
         env:
           # Every write the tests leave unacknowledged (offline, refused) waits out the timeout; 10 s in the app.
-          E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=5000
+          E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=5000 -v
         run: |
           set -o pipefail
           tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
@@ -104,7 +104,9 @@ jobs:
         if: always()
         with:
           name: xcode-build-log-ios
-          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog
+            ${{ runner.temp }}/e2e-ios.log
           if-no-files-found: ignore
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
