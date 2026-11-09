@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/deleted_habit_page.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/providers/deleted_habit_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/bead_painter.dart';
@@ -23,6 +25,7 @@ class ManageData extends ConsumerStatefulWidget {
       'Colours follow the order habits were added, archived ones included. '
       'From the sixth habit on, the five colours repeat as rings.';
   static const String countUnavailable = 'Count unavailable';
+  static const String deletedHabitNote = 'Their habit no longer exists';
 
   static String countText(ActivityCount count) {
     final String activities =
@@ -54,6 +57,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
         if (vice.archived) vice,
     ];
     final Map<String, HabitMark> marks = habitMarks(viceList ?? const <Vice>[]);
+    final int? orphans = ref.watch(deletedHabitCountProvider);
 
     return DialPage(
       title: ManageData.title,
@@ -82,17 +86,88 @@ class _ManageDataState extends ConsumerState<ManageData> {
             padding: EdgeInsets.only(top: 80),
             child: Center(child: CircularProgressIndicator()),
           )
-        else if (viceList.isEmpty)
-          const PageFootnote('No habits yet. Tap + to add one.')
-        else ...<Widget>[
+        else if (viceList.isEmpty) ...<Widget>[
+          const PageFootnote('No habits yet. Tap + to add one.'),
+          if (orphans != null) ...<Widget>[
+            const SizedBox(height: DialSpace.l),
+            _deletedHabitCard(orphans),
+          ],
+        ] else ...<Widget>[
           const SizedBox(height: DialSpace.l),
           if (active.isNotEmpty) _card(active, marks),
           if (archived.isNotEmpty) ...<Widget>[
             const SectionLabel(ManageData.archivedLabel),
             _card(archived, marks),
           ],
+          if (orphans != null) ...<Widget>[
+            const SizedBox(height: DialSpace.l),
+            _deletedHabitCard(orphans),
+          ],
           const PageFootnote(ManageData.colourNote),
         ],
+      ],
+    );
+  }
+
+  Future<void> _open(String route) async {
+    await Navigator.of(context).pushNamed(route);
+    // The counts are not live; the page opened can delete entries.
+    if (mounted) {
+      ref.invalidate(viceActivityCountForUserProvider);
+      ref.invalidate(activityTotalCountForUserProvider);
+    }
+  }
+
+  // Shown only while the counts say such entries exist.
+  Widget _deletedHabitCard(int count) {
+    final DialColors colors = DialColors.of(context);
+    return DialCard(
+      children: <Widget>[
+        InkWell(
+          onTap: () => _open(DeletedHabitPage.route),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 66),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 4, 8),
+              child: Row(
+                children: <Widget>[
+                  const DeletedHabitPip(size: 14),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          DeletedHabitPage.title,
+                          style: DialTypeScale.bodyL.copyWith(
+                            height: 1.2,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${DeletedHabitPage.entries(count)} · '
+                          '${ManageData.deletedHabitNote}',
+                          style: DialTypeScale.bodyS.copyWith(
+                            color: colors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: StrokeIcon(
+                      DialGlyph.right,
+                      size: 18,
+                      color: colors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -111,13 +186,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
 
     // An archived vice keeps its history, so its row still opens it.
     return InkWell(
-      onTap: () async {
-        await Navigator.of(context).pushNamed('/vices/${vice.id}/activities');
-        // The count is not live; the history page can delete entries.
-        if (mounted) {
-          ref.invalidate(viceActivityCountForUserProvider);
-        }
-      },
+      onTap: () => _open('/vices/${vice.id}/activities'),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 66),
         child: Padding(

@@ -12,7 +12,8 @@ double sampleVariance(List<double> values) {
 }
 
 // The [q] quantile by linear interpolation between order statistics (R's
-// type 7). [values] must not be empty.
+// type 7: the sorted value at fractional index (n - 1) * q, so the 10th
+// percentile is q = 0.1). [values] must not be empty.
 double quantile(List<double> values, double q) {
   final List<double> sorted = values.toList()..sort();
   final double h = (sorted.length - 1) * q;

@@ -25,7 +25,7 @@ class NightCompare {
   /// The median of the baseline nights.
   final double usual;
 
-  /// The baseline's first and third quartiles: the usual range.
+  /// The baseline's 10th and 90th percentiles ([quantile]): the usual range.
   final double low;
   final double high;
 
@@ -59,8 +59,8 @@ NightCompare? compareLastNight(Map<DateTime, double> byNight, DateTime today) {
   return NightCompare(
     value: last,
     usual: quantile(before, 0.5),
-    low: quantile(before, 0.25),
-    high: quantile(before, 0.75),
+    low: quantile(before, 0.1),
+    high: quantile(before, 0.9),
   );
 }
 

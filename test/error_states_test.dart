@@ -284,6 +284,7 @@ void main() {
       );
       await _pump(tester, [
         viceListForUserProvider.overrideWith((ref, uid) => vices.listen()),
+        activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
       ], const ManageData());
 
       expect(

@@ -45,7 +45,7 @@ void main() {
 
     expect(
       find.text(
-        'Last night · sleeping heart rate 3 bpm above your usual',
+        'Last night · heart rate 3 bpm above usual',
         findRichText: true,
       ),
       findsOneWidget,
@@ -84,13 +84,13 @@ void main() {
       LastNightLine.body(
         const NightCompare(value: 54.4, usual: 54, low: 53, high: 55),
       ),
-      'sleeping heart rate in your usual range',
+      'heart rate within usual',
     );
     expect(
       LastNightLine.body(
         const NightCompare(value: 50.6, usual: 54, low: 53, high: 55),
       ),
-      'sleeping heart rate 3 bpm below your usual',
+      'heart rate 3 bpm below usual',
     );
   });
 }

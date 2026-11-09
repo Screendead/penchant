@@ -461,6 +461,9 @@ void main() {
                 offlineProvider.overrideWith((ref) => Stream.value(false)),
                 trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
                 viceListProvider.overrideWith((ref) => AsyncData(_habits)),
+                activityTotalCountProvider.overrideWithValue(
+                  const AsyncLoading(),
+                ),
                 viceActivityCountProvider.overrideWith(
                   (ref, String viceID) => AsyncData((
                     count: of(viceID).length,

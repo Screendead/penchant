@@ -467,6 +467,7 @@ void main() {
       viceActivityHistoryProvider.overrideWith(
         (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
       ),
+      activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
       viceActivityCountProvider.overrideWith(
         (ref, String viceID) =>
             const AsyncData((count: 0, source: CountSource.server)),
@@ -561,6 +562,7 @@ void main() {
         viceListProvider.overrideWithValue(
           AsyncData([active, archived, beer, water]),
         ),
+        activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
         viceActivityCountProvider.overrideWith(
           (ref, String viceID) => counts[viceID]!,
         ),
@@ -1477,6 +1479,7 @@ void main() {
       final _LateRefusal refusal = holdWrites();
       await _pumpOpened(tester, writes, [
         viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+        activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
         viceActivityCountProvider.overrideWith(
           (ref, String viceID) =>
               const AsyncData((count: 0, source: CountSource.server)),
@@ -1506,6 +1509,7 @@ void main() {
         users: users.stream,
         [
           viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+          activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
           viceActivityCountProvider.overrideWith(
             (ref, String viceID) =>
                 const AsyncData((count: 0, source: CountSource.server)),

@@ -144,8 +144,10 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
 - `functions.yml` tests (`npm --prefix functions test`) PRs touching `functions/`, `firebase.json` or itself; on such
   a push to `master` it deploys (`firebase deploy --only functions`, same pinned firebase-tools,
   `firestore-production` environment) only while repository variable `DEPLOY_FUNCTIONS` is `true` (unset, skipped).
-- `macos-build.yml`, by hand only (`gh workflow run macos-build.yml`), builds the macOS app unsigned (debug, release,
-  debug with the emulator define) on a `macos-26` runner.
+- `macos-build.yml` (Native build), on PRs touching `ios/`, `macos/`, `pubspec.*`, the Flutter pin or itself, builds
+  the iOS Simulator app (debug, emulator define, e2e's Swift and DerivedData caches restored, never saved) and the
+  macOS app unsigned (debug) on `macos-26` runners, since nothing else before merge compiles Swift (#213). By hand
+  (`gh workflow run macos-build.yml`) it also builds macOS release and debug with the emulator define.
 
 Nothing builds an iOS release or deploys either app. Flutter is pinned in `.github/actions/setup-flutter/action.yml`;
 bump it when the local `flutter --version` changes. CI uses `dart analyze` because riverpod_lint, an analyzer plugin
@@ -252,9 +254,14 @@ guest leaves `userProvider`'s `User` anonymous, so guest checks ask `Account.isG
 (`ViceActivityHistoryPage.pageSize`, plus one to learn whether older entries exist); the calendar sheet reads one
 month for its dots (the day query's shape and index); the editor listens to its one document; Manage Data counts each
 vice's activities with a server-side `count()`, which is not live, ignores writes queued on the device, and fails
-offline. Insights reads every activity from 2000 (the date picker's floor) to today, the one unbounded activity
-query: a one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. The vice lists
-have no limit (`r4-vice-cap`, under Days).
+offline. Insights reads every activity from 2000 (the date picker's floor) to today, an unbounded activity query: a
+one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. Habits learns whether
+entries of a deleted (or foreign) habit exist by one more `count()`, every owned activity, less each habit's count
+(`deletedHabitCountProvider`, shown only when every count is the server's); only then is its "Deleted habit" row there,
+and `DeletedHabitPage` reads every owned activity once per open (the export's shape, paged by document id, from the
+server), then every owned vice, to list those of no vice. Their deletes are confirmed on the page, with no Undo: the
+rules refuse recreating an entry whose vice the writer does not own. The vice lists have no limit (`r4-vice-cap`, under
+Days).
 
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
@@ -458,11 +465,13 @@ a public identifier: Firebase says such keys "do not need to be treated as secre
 checked-in config files", provided the key is restricted to Firebase APIs and setup follows the page's guidelines
 (https://firebase.google.com/docs/projects/api-keys). Today Firestore rules are the protection (App Check: Emulator
 wiring). The key's restrictions live in the production project's Google Cloud console, which Claude does not touch and
-repo files cannot show; they are not yet set (HANDOVER.md). Recommended there
-(https://docs.cloud.google.com/docs/authentication/api-keys): an iOS application restriction to
-`com.screendead.penchant` and an API restriction to the Firebase APIs the app calls; Google notes the bundle-ID check
-is easy to bypass, so it stops only casual reuse. The earlier `com.screendead.tracker.tracker` registration's key
-stays valid until revoked there (HANDOVER.md). Never commit a service-account file or `privateKey.json`;
+repo files cannot show. Seen there by Jack on 2026-11-09: the key Firebase made on 2026-11-05 allows the iOS app
+`com.screendead.penchant` only and 8 APIs (Cloud Firestore, Cloud Datastore, Cloud Logging, Firebase App Check,
+Firebase Installations, Firebase Management, Identity Toolkit, Token Service); the macOS app uses it under the same
+bundle ID. Google notes the bundle-ID check
+is easy to bypass, so it stops only casual reuse (https://docs.cloud.google.com/docs/authentication/api-keys). The
+other key, "Auth email links - do not delete" (HTTP referrers), serves the auth email links; the old
+`com.screendead.tracker.tracker` key no longer appears. Never commit a service-account file or `privateKey.json`;
 `admin/.gitignore` and the root `.gitignore` exclude them.
 
 **Emulator wiring.** `lib/firebase_init.dart` does all Firebase setup. Without the `USE_FIREBASE_EMULATORS`

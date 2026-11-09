@@ -16,13 +16,20 @@ class LastNightLine extends ConsumerWidget {
 
   static const String lead = 'Last night';
 
-  /// "sleeping heart rate 3 bpm above your usual".
+  /// "heart rate 3 bpm above usual"; one line at 390 pt after "Last night".
   static String body(NightCompare heart) => switch (heart.side) {
+    NightSide.above => 'heart rate ${heart.shownBy} bpm above usual',
+    NightSide.below => 'heart rate ${heart.shownBy} bpm below usual',
+    NightSide.usual => 'heart rate within usual',
+  };
+
+  /// The full meaning for a screen reader.
+  static String spoken(NightCompare heart) => switch (heart.side) {
     NightSide.above =>
       'sleeping heart rate ${heart.shownBy} bpm above your usual',
     NightSide.below =>
       'sleeping heart rate ${heart.shownBy} bpm below your usual',
-    NightSide.usual => 'sleeping heart rate in your usual range',
+    NightSide.usual => 'sleeping heart rate within your usual range',
   };
 
   @override
@@ -58,7 +65,7 @@ class LastNightLine extends ConsumerWidget {
             onTap: () => Navigator.of(context).pushNamed(InsightsPage.route),
             child: Semantics(
               button: true,
-              label: '$lead, ${body(heart)}',
+              label: '$lead, ${spoken(heart)}',
               hint: 'Opens Insights',
               excludeSemantics: true,
               child: ConstrainedBox(

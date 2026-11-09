@@ -53,6 +53,22 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
+## Pick up here (session restart, 2026-11-09 ~22:00 UTC)
+
+In flight when the session restarted; do these first, in order:
+
+1. Done: `master` e2e 42690070034 green; #207 and #208 merged (7b8e870) and installed on the iPhone and Mac; the
+   native compile check is `macos-build.yml` on PRs (this PR).
+2. Done: #209 (sealed-only creates) merged after e2e run 42694948177 passed; CI deploys its rules. It is an
+   encryption change, so ask Jack before installing it on the devices.
+
+Minor calls made as built (Claude's, recommended; Jack may overturn): deleting an entry while the key is missing makes
+Undo say "Not restored"; keep the `e2eeEnabled` constant; no Undo on Deleted-habit deletes; the same-bedtime part sits
+outside the BH family; the bedtime "can't be told" wording; the entry editor is a fullscreen dialog, so it gets no
+edge swipe; under Reduce motion the page below a Back pop ignores taps for the full 320 ms (#207 review; one-line fix
+in the PR's review notes if wanted). Out-of-scope follow-ups from #209's review: Save on a locked habit returns
+silently; a key whose publish failed is used unchecked for the session.
+
 ## The queue (DECIDED work, in order)
 
 Each goal is clear or follows from Jack's calls below. Subagents write PR bodies to uniquely named scratchpad
@@ -352,8 +368,7 @@ unresolved. None of #197, #198 or #199 has run on a device.
 To build: `usual-range` B (10th to 90th percentile of the last 28 nights), `today-line` B ("Last night · heart rate
 3 bpm above usual"), `plaintext-creates` C (rules refuse a vice or activity create without `sealed`, now; the app
 writes no plaintext create), `orphan-entries` B (a "Deleted habit" row in Habits to see, export or delete entries
-whose habit is gone). For Jack: `api-key` A (restrict the key in the Cloud console). Open: `live-indexes` (added
-after he answered).
+whose habit is gone). `api-key` A: already set, checked by Jack 2026-11-09. `live-indexes`: removed by a forced indexes deploy, 2026-11-09.
 
 **Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6, the
 branch deletions above.
@@ -679,12 +694,7 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 None on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
-`r7-ci` are moot. One call is open off the pitch page:
-
-- **The client API key's restrictions** (UNDECIDED; not yet set): they live in the production project's Google Cloud
-  console, which Claude does not touch. Recommended, not decided: an iOS application restriction to
-  `com.screendead.penchant` and an API restriction to the Firebase APIs the app calls. Reasoning in `CLAUDE.md`
-  "Client API key".
+`r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
 
 ## For Jack to do (not decisions)
 
