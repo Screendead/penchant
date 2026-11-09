@@ -131,7 +131,14 @@ const List<hs.HealthSampleMetric> insightsSampleMetrics =
     ];
 
 class InsightsReport {
-  const InsightsReport({required this.findings, required this.refused});
+  const InsightsReport({
+    required this.findings,
+    required this.refused,
+    this.hoursAfterChecks = 0,
+  });
+
+  /// How many hours-after comparisons ran: none without heart rate readings.
+  final int hoursAfterChecks;
 
   /// Strongest first, by [HabitFinding.standardized]'s size.
   final List<HabitFinding> findings;
@@ -170,7 +177,7 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<HabitInsight> hours = input.samples.isEmpty
       ? const <HabitInsight>[]
       : hoursAfter(
-          plan: insightsHoursAfterPlan(input.uses, addDays(input.through, 1)),
+          plan: insightsHoursAfterPlan(input.uses, input.through),
           uses: input.uses,
           samples: input.samples,
         );
@@ -209,6 +216,7 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<String> refusedIds =
       refusals.keys.where((id) => !found.contains(id)).toList()..sort();
   return InsightsReport(
+    hoursAfterChecks: hours.length,
     findings: findings,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),

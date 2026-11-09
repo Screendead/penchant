@@ -172,7 +172,7 @@ void main() {
         uses: s.uses,
         outcomes: const <DailyOutcome>[],
         from: syntheticStart,
-        through: addDays(s.through, -1),
+        through: s.through,
         samples: s.samples,
       ),
     );

@@ -72,6 +72,19 @@ void main() {
       isTrue,
     );
     final HoursAfterPlan plan = insightsHoursAfterPlan(s.uses, insightsToday);
+    // The engine plans the same moments the provider read for.
+    final InsightsInput input = InsightsInput.from(
+      activities: <ViceActivity>[
+        for (final HabitUse u in s.uses) fakeActivity(u.habitId, 1, u.at),
+      ],
+      health: const <hs.DailyOutcome>[],
+      today: insightsToday,
+    );
+    expect(
+      insightsHoursAfterPlan(input.uses, input.through).points.map((p) => p.at),
+      plan.points.map((p) => p.at),
+    );
+    expect(report.hoursAfterChecks, greaterThan(0));
     final int perMetric = health.sampleCalls ~/ insightsSampleMetrics.length;
     expect(perMetric, plan.reads.length);
     expect(plan.reads.length, lessThanOrEqualTo(365));

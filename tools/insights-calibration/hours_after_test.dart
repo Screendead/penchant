@@ -125,7 +125,7 @@ void main() {
         uses: s.uses,
         outcomes: outcomes,
         from: syntheticStart,
-        through: addDays(s.through, -1),
+        through: s.through,
         samples: s.samples,
       );
       final List<HabitInsight> hours = hoursAfter(

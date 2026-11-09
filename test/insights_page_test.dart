@@ -83,6 +83,8 @@ void main() {
     expect(find.text('Within the noise: no clear difference'), findsOneWidget);
     expect(find.text('Water'), findsOneWidget);
     expect(find.textContaining('Too few days yet'), findsOneWidget);
+    // No heart rate readings, so nothing ran in the hours after a use.
+    expect(find.text(InsightsPage.hoursAfterNote), findsNothing);
   });
 
   testWidgets('heart rate in the hours after a use reads in its own words', (

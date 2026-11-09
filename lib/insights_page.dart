@@ -263,7 +263,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     );
     return <Widget>[
       if (firstDay != null) CardFoot(InsightsPage.span(firstDay)),
-      const CardFoot(InsightsPage.hoursAfterNote),
+      if (report.hoursAfterChecks > 0)
+        const CardFoot(InsightsPage.hoursAfterNote),
       const CardSectionLabel(InsightsPage.foundHeading),
       if (findings.isEmpty)
         const _MessageCard(

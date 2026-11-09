@@ -255,7 +255,8 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        density (synthetic is a reading every 5 min; Watch at rest samples less often, which the 3-reading gate
        may refuse), iPhone and Watch step samples double-counted (raw samples are not merged; errs toward dropping
        a moment), and the sleeping heart rate query's cost over years of nights. HRV at Watch density (a few a day)
-       is refused for too few readings.
+       is refused for too few readings. The Swift line is not built; with no step samples at all the walk guard and
+       the steps covariate drop out.
      - **k. Before a use:** the reverse direction: last night's sleep, HRV and resting heart rate against the next
        day's use, and heart rate in the hour before an entry.
      - **l. One habit after another:** how often a habit follows another within minutes, against chance.

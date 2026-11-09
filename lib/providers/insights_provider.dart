@@ -90,6 +90,8 @@ Future<bool> connectHealth(ProviderContainer container) async {
     // Asked again next launch.
   }
   container.invalidate(healthConnectedProvider);
+  // A read refused before the sheet was answered is kept as no samples.
+  container.invalidate(_samplesProvider);
   return true;
 }
 
