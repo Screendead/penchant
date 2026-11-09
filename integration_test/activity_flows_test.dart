@@ -10,7 +10,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
-import 'package:tracker/widgets/activity_date_field.dart';
+import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -433,13 +433,8 @@ void main() {
     await tap(tester, historyEntry(4));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     expect(
-      tester
-          .widget<TextFormField>(
-            find.widgetWithText(TextFormField, 'Date and Time'),
-          )
-          .controller!
-          .text,
-      ActivityDateField.format.format(epoch.toDate()),
+      tester.widget<EntryTimeField>(find.byType(EntryTimeField)).controller.at,
+      epoch.toDate(),
     );
     await enterText(tester, 'Quantity', '5');
     await saveEditor();
@@ -455,11 +450,7 @@ void main() {
     await tap(tester, historyEntry(3));
     await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
     final DateTime moved = addDays(today, -1).add(const Duration(hours: 9));
-    await enterText(
-      tester,
-      'Date and Time',
-      ActivityDateField.format.format(moved),
-    );
+    await setEntryTime(tester, moved);
     await saveEditor();
     final Map<String, dynamic> requantified = await stored('legacy-quantity');
     expect(requantified['quantity'], 2.5);
