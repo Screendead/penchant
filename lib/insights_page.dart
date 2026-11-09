@@ -374,9 +374,11 @@ String insightsText({
     final HabitFinding f = card.headline;
     final String habit = nameOf(f.habitId);
     final Unit unit = unitOf(f.habitId);
+    final String? bedtime = bedtimeLine(f, locale, unit: unit);
     out
       ..write('\n$habit · ${card.family.label}\n')
       ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
+      ..write(bedtime == null ? '' : '$bedtime\n')
       ..write('${findingRange(f, locale)}\n')
       ..write('${findingBasis(f, habit)}\n');
     if (findingEvidence(f) case final String evidence) {
@@ -569,6 +571,7 @@ class _FindingCard extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final HabitFinding finding = card.headline;
     final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    final String? bedtime = bedtimeLine(finding, locale, unit: unit);
     return DialCard(
       top: top,
       children: <Widget>[
@@ -586,6 +589,13 @@ class _FindingCard extends StatelessWidget {
                 findingSentence(finding, habit, locale, unit: unit),
                 style: DialTypeScale.bodyL.copyWith(color: scheme.onSurface),
               ),
+              if (bedtime != null) ...<Widget>[
+                const SizedBox(height: DialSpace.xs),
+                Text(
+                  bedtime,
+                  style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
+                ),
+              ],
               const SizedBox(height: DialSpace.s),
               ExcludeSemantics(
                 child: SizedBox(

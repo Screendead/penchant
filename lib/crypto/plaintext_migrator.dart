@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/sealed.dart';
+import 'package:tracker/errors/report_error.dart';
 
 /// Where the migrator reads the user's documents and writes their sealed
 /// form. [FirestoreMigrationSource] in the app; a map in tests.
@@ -112,8 +113,9 @@ class PlaintextMigrator {
       return null;
     }
     final Object? name = data['name'];
-    return <String, Object>{
-      sealedField: Blob(
+    final Blob blob;
+    try {
+      blob = Blob(
         await sealer.seal(<String, Object?>{
           for (final String field in fields)
             if (data.containsKey(field)) field: data[field],
@@ -124,7 +126,15 @@ class PlaintextMigrator {
               name is String)
             'category': guessCategory(name).name,
         }, context: sealContext(collection, docId)),
-      ),
+      );
+    } on ArgumentError catch (e, stack) {
+      // Legacy content past the largest envelope (4094 bytes of JSON) cannot
+      // be sealed; left in plaintext, it must not fail its whole batch.
+      reportError(e, stack, context: 'while sealing $collection/$docId');
+      return null;
+    }
+    return <String, Object>{
+      sealedField: blob,
       for (final String field in fields)
         if (data.containsKey(field)) field: FieldValue.delete(),
     };

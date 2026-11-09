@@ -252,6 +252,17 @@ void main() {
       expect(update!.keys, unorderedEquals(<String>[sealedField, 'name']));
     });
 
+    test('leaves a name too long to seal in plaintext', () async {
+      expect(
+        await migrator.update('vices', 'v1', {
+          'name': 'x' * 5000,
+          'unit': 'drink',
+          'ownerID': ownerID,
+        }),
+        isNull,
+      );
+    });
+
     test('leaves a sealed document, or one with nothing to seal', () async {
       expect(
         await migrator.update('vices', 'v1', {
@@ -292,6 +303,30 @@ void main() {
         expect(progress, <int>[500, 1000, 1206]);
         expect(source.collections['activities']!['a0']!['quantity'], 2);
         expect(source.collections['vices']!['other']!['name'], 'Tea other');
+      },
+    );
+
+    test(
+      'one document too long to seal leaves the rest of its batch sealed',
+      () async {
+        final MemorySource source = MemorySource()
+          ..addVice('v0')
+          ..addVice('v1')
+          ..addVice('v2');
+        source.collections['vices']!['v1']!['name'] = 'x' * 5000;
+
+        expect(
+          await PlaintextMigrator(
+            source: source,
+            sealer: FakeSealer(),
+          ).run(ownerID),
+          2,
+        );
+        expect(source.batchSizes, <int>[2]);
+        expect(source.plaintextLeft, 1);
+        expect(source.collections['vices']!['v1']!['name'], 'x' * 5000);
+        expect(source.collections['vices']!['v0'], contains(sealedField));
+        expect(source.collections['vices']!['v2'], contains(sealedField));
       },
     );
 

@@ -370,7 +370,8 @@ between two arcs overlaps both). Tapping an arc opens the entry nearest the tapp
 button naming the hour and each habit's total that opens the hour's latest entry, with one custom action per entry.
 The dial is one `Semantics` node labelled `DayDial.summary` (day, each total, first and last entry times). Motion
 follows `DialMotion`: a day change contracts the beads, then a hand sweeps round and each bead springs in as it
-passes; a logged bead flies in from the `+` or wedge via `beadArrivalsProvider`; a pending bead's dashed rim turns
+passes; a logged bead flies in from the `+` or wedge via `beadArrivalsProvider`; an edited one travels round the rim to its
+new time, starting on the first frame the dial draws (the editor covers it, muting its ticker); a pending bead's dashed rim turns
 until it syncs; under `MediaQuery.disableAnimations` all of it is a 150 ms fade and the clock ticks once a minute, so
 widget tests of pending entries cannot `pumpAndSettle` with animations on. Day navigation is `DayPicker`
 (`lib/widgets/day_picker.dart`): arrows, a sideways swipe on the dial, and the date pill's `CalendarSheet`; no oldest
@@ -405,8 +406,11 @@ The rest of the e2e suite follows whichever layout it gets (`splitLayout`, `inte
 
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection across rebuilds. Both read
 the current day from `todayProvider`; Today follows it unless the user picked another day, and a log (always now)
-returns a past day to today. Activity dates go through `ActivityDateField` (`lib/widgets/`): one format, lock toggle,
-live clock and picker for the record dialog and the editor.
+returns a past day to today. Entry times go through `EntryTimeField` (`lib/widgets/time_dial.dart`) in the amount
+sheet and the editor: a mini `TimeDial` (the day's other entries faded, a knob snapping to 5 minutes, clamped to now on
+today; a slider to a screen reader, arrow and page keys) over an `EntryTimeController`, whose null time follows the clock
+so an untouched new entry is logged at the moment of saving, to the second. The day under the dial opens the
+`CalendarSheet` to move the entry to another day.
 
 **Server side.** Two scheduled functions in `functions/index.js`. `monthlySummaries` (03:00 UTC on the 1st;
 `r8-bead-size`) writes `summaries/{uid}` for every user owning a vice: `{computedAt, windowDays: 90, vices: {viceID:

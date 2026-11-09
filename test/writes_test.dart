@@ -689,6 +689,7 @@ void main() {
       expect(find.text('Not recorded. $_offline'), findsOneWidget);
 
       writes.respond = null;
+      await tester.ensureVisible(record);
       await tester.tap(record);
       await tester.pumpAndSettle();
 

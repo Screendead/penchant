@@ -22,8 +22,8 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/widgets/activity_date_field.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/undo_bar.dart' as undo_bar;
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/rejected_writes.dart';
@@ -85,7 +85,7 @@ class _RecordNewActivityDialogState
     extends ConsumerState<RecordNewActivityDialog> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   Vice? selectedVice;
-  final TextEditingController dateController = TextEditingController();
+  final EntryTimeController timeController = EntryTimeController();
   final TextEditingController quantityController = TextEditingController(
     text: formatAmount(defaultQuantity),
   );
@@ -124,7 +124,7 @@ class _RecordNewActivityDialogState
       error = null;
     });
 
-    final DateTime date = ActivityDateField.format.parse(dateController.text);
+    final DateTime date = timeController.value;
     final Vice vice = selectedVice!;
     final num typed = parseAmount(quantityController.text)!;
     final StoredMeasure measure = storedMeasure(typed);
@@ -208,7 +208,7 @@ class _RecordNewActivityDialogState
   // The button's label in runs; the numbers in a run marked true set in Mono.
   List<(String, bool)> _submitLabel(Vice? vice) {
     final num typed = parseAmount(quantityController.text) ?? 0;
-    final DateTime? at = ActivityDateField.format.tryParse(dateController.text);
+    final DateTime at = timeController.value;
     final List<(String, bool)> runs = vice == null
         ? <(String, bool)>[('Record', false)]
         : <(String, bool)>[
@@ -216,9 +216,6 @@ class _RecordNewActivityDialogState
             (formatCount(typed), true),
             (' ${vice.unit.nameFor(typed)}', false),
           ];
-    if (at == null) {
-      return runs;
-    }
     return <(String, bool)>[
       ...runs,
       (' at ', false),
@@ -363,8 +360,7 @@ class _RecordNewActivityDialogState
                       AmountFields(
                         quantityController: quantityController,
                         unit: chosen?.unit ?? Unit.item,
-                        dateController: dateController,
-                        startLive: true,
+                        timeController: timeController,
                         triggers: triggers,
                         onTriggersChanged: (List<String> picked) =>
                             setState(() => triggers = picked),
@@ -377,7 +373,7 @@ class _RecordNewActivityDialogState
                       ListenableBuilder(
                         listenable: Listenable.merge(<Listenable>[
                           quantityController,
-                          dateController,
+                          timeController,
                         ]),
                         builder: (BuildContext context, _) {
                           final List<(String, bool)> runs = _submitLabel(
@@ -437,7 +433,7 @@ class _RecordNewActivityDialogState
 
   @override
   void dispose() {
-    dateController.dispose();
+    timeController.dispose();
     quantityController.dispose();
     super.dispose();
   }

@@ -35,11 +35,19 @@ enum HealthDays {
     ("sleepDeep", [4]),
     ("sleepREM", [5]),
   ]
+  // When the night's main sleep began and ended (sleepTimingRows).
+  static let sleepTimingMetrics: Set<String> = ["sleepOnset", "sleepEnd"]
 
   // Sleep samples less than this far apart belong to one sleep. A gap this
   // short with nothing recorded is a sleep the sources missed a piece of, not
   // a nap.
   static let sessionGap: TimeInterval = 30 * 60
+
+  // A night's sleeps less than this far apart are one night's sleep for its
+  // onset and end: a night broken by an hour awake, or by a Watch taken off,
+  // still began when the first part did. An evening nap ends further from
+  // bedtime than this.
+  static let nightGap: TimeInterval = 60 * 60
 
   static func day(_ value: Any?, _ calendar: Calendar) -> Date? {
     guard let parts = (value as? String)?.split(separator: "-").compactMap({ Int($0) }), parts.count == 3 else {
@@ -118,20 +126,79 @@ enum HealthDays {
   // stopped recording. Keys are "yyyy-MM-dd"; nights outside [start, end) and
   // nights with no samples have no entry.
   static func nights(_ samples: [SleepSample], start: Date, end: Date, _ calendar: Calendar) -> [String: [SleepSample]] {
+    nightSleeps(samples, start: start, end: end, calendar).mapValues { $0.sleeps.flatMap(\.kept) }
+  }
+
+  typealias Sleep = (kept: [SleepSample], asleep: Double, inBed: Double, watch: Bool, start: Date, end: Date)
+
+  // nights, with each night's sleeps apart and its main sleep named.
+  static func nightSleeps(_ samples: [SleepSample], start: Date, end: Date, _ calendar: Calendar)
+    -> [String: (sleeps: [Sleep], main: Sleep)]
+  {
     let order = preference(samples)
-    var byNight: [String: [(kept: [SleepSample], asleep: Double, watch: Bool, start: Date)]] = [:]
+    var byNight: [String: [Sleep]] = [:]
     for session in sessions(samples) {
       guard let (kept, last) = oneSource(session, order), let first = session.first else { continue }
       let night = nightOf(last, calendar)
       guard night >= start, night < end else { continue }
       let watch = session.contains { $0.watch }
-      byNight[key(night, calendar), default: []].append((kept, minutes(kept, asleepValues), watch, first.start))
+      byNight[key(night, calendar), default: []].append(
+        (kept, minutes(kept, asleepValues), minutes(kept, [0]), watch, first.start, last))
     }
+    // With no asleep time anywhere (an iPhone's bedtime schedule alone), the
+    // most time in bed names the main sleep, so an in-bed nap is not it.
     return byNight.mapValues { sleeps in
-      let main = sleeps.max { a, b in a.asleep != b.asleep ? a.asleep < b.asleep : !a.watch && b.watch }!
-      guard main.watch else { return sleeps.flatMap(\.kept) }
-      return sleeps.filter { $0.watch || $0.start > main.start }.flatMap(\.kept)
+      let main = sleeps.max { a, b in
+        if a.asleep != b.asleep { return a.asleep < b.asleep }
+        if a.watch != b.watch { return b.watch }
+        return a.inBed < b.inBed
+      }!
+      guard main.watch else { return (sleeps, main) }
+      return (sleeps.filter { $0.watch || $0.start > main.start }, main)
     }
+  }
+
+  // Each row is ["date": night, "metric": "sleepOnset" or "sleepEnd",
+  // "value": minutes]: the first and last asleep moment (in bed, when none
+  // is asleep) of the night's main sleep and the sleeps joined to it less
+  // than nightGap apart, so a nap moves neither and a broken night keeps its
+  // first part. The value is clock minutes after the last noon before the
+  // sleep began, so onset is in 0 to 1440 even for a sleep that ends after
+  // noon and so counts for the next night, and it runs on across midnight
+  // (23:00 is 660, 01:00 is 780) with no DST change in the night moving it,
+  // as with a habit's time of use. End counts from the same noon.
+  static func sleepTimingRows(
+    _ samples: [SleepSample], metrics: Set<String>, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    let byNight = nightSleeps(samples, start: start, end: end, calendar)
+    var rows: [[String: Any]] = []
+    for night in byNight.keys.sorted() {
+      let (sleeps, main) = byNight[night]!
+      let ordered = sleeps.sorted { $0.start < $1.start }
+      guard let at = ordered.firstIndex(where: { $0.start == main.start && $0.end == main.end }) else { continue }
+      var from = at
+      var to = at
+      while from > 0, ordered[from].start.timeIntervalSince(ordered[from - 1].end) < nightGap { from -= 1 }
+      while to < ordered.count - 1, ordered[to + 1].start.timeIntervalSince(ordered[to].end) < nightGap { to += 1 }
+      let kept = ordered[from...to].flatMap(\.kept)
+      let asleep = kept.filter { asleepValues.contains($0.value) }
+      let span = asleep.isEmpty ? kept.filter { $0.value == 0 } : asleep
+      guard let first = span.map(\.start).min(), let last = span.map(\.end).max() else { continue }
+      let opens = noon(before: nightOf(first, calendar), calendar)
+      for (id, at) in [("sleepOnset", first), ("sleepEnd", last)] where metrics.contains(id) {
+        rows.append(["date": night, "metric": id, "value": clockMinutes(at, after: opens, calendar)])
+      }
+    }
+    return rows
+  }
+
+  // Wall-clock minutes from noon to date, counting whole calendar days from
+  // noon's day, so it ignores a DST change between them.
+  static func clockMinutes(_ date: Date, after noon: Date, _ calendar: Calendar) -> Double {
+    let days =
+      calendar.dateComponents([.day], from: calendar.startOfDay(for: noon), to: calendar.startOfDay(for: date)).day ?? 0
+    let c = calendar.dateComponents([.hour, .minute, .second], from: date)
+    return Double(days * 24 * 60 + ((c.hour ?? 0) - 12) * 60 + (c.minute ?? 0)) + Double(c.second ?? 0) / 60
   }
 
   static func minutes(_ samples: [SleepSample], _ values: Set<Int>) -> Double {

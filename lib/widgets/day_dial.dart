@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
@@ -19,6 +19,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/bead_arrivals.dart';
 import 'package:tracker/widgets/bead_painter.dart';
+import 'package:tracker/widgets/dial_face_painter.dart';
 
 // One entry as the dial draws it.
 class DialEntry {
@@ -288,6 +289,14 @@ class _DayDialState extends ConsumerState<DayDial>
   final Map<String, Duration> _fadeInAt = <String, Duration>{};
   final Set<String> _flying = <String>{};
   Set<String> _known = <String>{};
+  // Each shown entry's time and place, to tell when an edit moves one.
+  Map<String, DateTime> _shownAt = const <String, DateTime>{};
+  Map<String, BeadPlacement> _shownLayout = const <String, BeadPlacement>{};
+  // Beads travelling round the rim to an edited time, from where they were.
+  // A travel starts on the first frame the dial draws, since an edit is made
+  // on a page covering the dial, whose ticker is muted until it pops.
+  final Map<String, ({BeadPlacement from, Duration? start})> _travels =
+      <String, ({BeadPlacement from, Duration? start})>{};
   Set<String> _pending = <String>{};
   final List<OverlayEntry> _flights = <OverlayEntry>[];
 
@@ -329,6 +338,7 @@ class _DayDialState extends ConsumerState<DayDial>
       _outgoing = old.entries ?? const <DialEntry>[];
       _outgoingLayout = DayDial.layout(_outgoing, stored: old.storedTypicals);
       _known = <String>{};
+      _travels.clear();
       _popAt.clear();
       _landAt.clear();
       _fadeInAt.clear();
@@ -397,6 +407,21 @@ class _DayDialState extends ConsumerState<DayDial>
   // unsynced offline does not rebuild the dial every frame.
   void _onTick(Duration elapsed) {
     _t = elapsed;
+    for (final MapEntry<String, ({BeadPlacement from, Duration? start})>(
+          key: id,
+          value: travel,
+        )
+        in _travels.entries.toList()) {
+      if (travel.start case final Duration start) {
+        if (elapsed - start >= DialMotion.beadTravel) {
+          _travels.remove(id);
+          _landAt[id] = elapsed;
+          HapticFeedback.lightImpact();
+        }
+      } else {
+        _travels[id] = (from: travel.from, start: elapsed);
+      }
+    }
     _spin.value = _reduced
         ? 0
         : elapsed.inMicroseconds /
@@ -431,7 +456,8 @@ class _DayDialState extends ConsumerState<DayDial>
       _fadeInAt.values.any(
         (Duration s) => _within(s, DialMotion.reducedFade),
       ) ||
-      _within(_clearStart, DialMotion.cleanDayGlow);
+      _within(_clearStart, DialMotion.cleanDayGlow) ||
+      _travels.isNotEmpty;
 
   Duration get _leaving =>
       _reduced ? DialMotion.reducedFade : DialMotion.dayContract;
@@ -477,6 +503,7 @@ class _DayDialState extends ConsumerState<DayDial>
       _contractStart = null;
       _outgoing = const <DialEntry>[];
       _known = ids;
+      _remember(entries);
       ref.read(beadArrivalsProvider).takeAll(ids);
       if (entries.isNotEmpty) {
         if (_reduced) {
@@ -502,7 +529,63 @@ class _DayDialState extends ConsumerState<DayDial>
         _popAt[id] = _start();
       }
     }
+    _travel(entries);
     _known = ids;
+  }
+
+  void _remember(List<DialEntry> entries) {
+    _shownAt = <String, DateTime>{
+      for (final DialEntry e in entries) e.id: e.at,
+    };
+    _shownLayout = DayDial.layout(entries, stored: widget.storedTypicals);
+  }
+
+  // An entry still on the day whose time changed travels round the rim to its
+  // new place; under reduce motion it fades in there instead.
+  void _travel(List<DialEntry> entries) {
+    final Map<String, BeadPlacement> was = _shownLayout;
+    final Map<String, DateTime> wasAt = _shownAt;
+    _remember(entries);
+    for (final DialEntry e in entries) {
+      final DateTime? before = wasAt[e.id];
+      final BeadPlacement? from = was[e.id];
+      if (before == null ||
+          before == e.at ||
+          from == null ||
+          _shownLayout[e.id] == null) {
+        continue;
+      }
+      if (_reduced) {
+        _fadeInAt[e.id] = _start();
+      } else {
+        _travels[e.id] = (from: _travelPlace(e.id) ?? from, start: null);
+        _start();
+      }
+    }
+  }
+
+  // Where a travelling bead is now, or null when it is not travelling.
+  BeadPlacement? _travelPlace(String id) {
+    final ({BeadPlacement from, Duration? start})? travel = _travels[id];
+    final BeadPlacement? to = _shownLayout[id];
+    if (travel == null || to == null) {
+      return null;
+    }
+    final Duration? start = travel.start;
+    final double k = start == null
+        ? 0
+        : DialMotion.travel.transform(
+            ((_t - start).inMicroseconds / DialMotion.beadTravel.inMicroseconds)
+                .clamp(0, 1),
+          );
+    final BeadPlacement from = travel.from;
+    // The short way round, as the mock-up's travel goes.
+    final double turn = ((to.angle - from.angle + pi) % (2 * pi)) - pi;
+    return BeadPlacement(
+      angle: from.angle + turn * k,
+      track: from.track + (to.track - from.track) * k,
+      radius: from.radius + (to.radius - from.radius) * k,
+    );
   }
 
   void _fly(String id, Offset from) {
@@ -765,7 +848,8 @@ class _DayDialState extends ConsumerState<DayDial>
 
         final List<_PlacedBead> beads = <_PlacedBead>[
           for (final DialEntry e in shown)
-            if (layout[e.id] case final BeadPlacement p)
+            if ((contracting ? null : _travelPlace(e.id)) ?? layout[e.id]
+                case final BeadPlacement p)
               _PlacedBead(
                 entry: e,
                 centre: centre + p.position * scale * contract,
@@ -775,7 +859,10 @@ class _DayDialState extends ConsumerState<DayDial>
                     ? (_reduced ? 1 - left : 1)
                     : _beadOpacity(e.id),
                 fill: _syncFill(e.id),
-                label: shown.length <= DialFace.timedBeads && !contracting
+                label:
+                    shown.length <= DialFace.timedBeads &&
+                        !contracting &&
+                        !_travels.containsKey(e.id)
                     ? (
                         text: formatClock(e.at),
                         at: beadLabelOffset(p.angle, p.radius),
@@ -799,7 +886,7 @@ class _DayDialState extends ConsumerState<DayDial>
         final Widget face = RepaintBoundary(
           child: CustomPaint(
             size: size,
-            painter: _FacePainter(
+            painter: DialFacePainter(
               colors: colors,
               surface: scheme.surfaceContainerLow,
               numeralStyle: type.dialNumeral,
@@ -1144,124 +1231,6 @@ class _PlacedArc {
   // The pop or landing spring of its width.
   final double scale;
   final double opacity;
-}
-
-class _FacePainter extends CustomPainter {
-  _FacePainter({
-    required this.colors,
-    required this.surface,
-    required this.numeralStyle,
-    required this.textScaler,
-    required this.clear,
-    required this.shadows,
-    required this.ringAlpha,
-  });
-
-  final List<BoxShadow> shadows;
-  final double ringAlpha;
-  final DialColors colors;
-  final Color surface;
-  final TextStyle numeralStyle;
-  final TextScaler textScaler;
-  // 0 with entries, 1 on a clear day; between while the ring draws on.
-  final double clear;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double scale = size.shortestSide / DialFace.side;
-    canvas.save();
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.scale(scale);
-
-    for (final BoxShadow shadow in shadows) {
-      canvas.drawCircle(
-        shadow.offset,
-        DialFace.disc + shadow.spreadRadius,
-        shadow.toPaint(),
-      );
-    }
-    canvas.drawCircle(Offset.zero, DialFace.disc, Paint()..color = surface);
-    canvas.drawCircle(
-      Offset.zero,
-      DialFace.disc,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = colors.line,
-    );
-
-    if (clear > 0) {
-      canvas.drawCircle(
-        Offset.zero,
-        DialFace.clearRing,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = DialFace.clearBand
-          ..color = colors.clear.withValues(
-            alpha: colors.clear.a * min(1, clear * 2),
-          ),
-      );
-      canvas.drawArc(
-        Rect.fromCircle(center: Offset.zero, radius: DialFace.clearRing),
-        -pi / 2,
-        2 * pi * clear,
-        false,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..strokeCap = StrokeCap.round
-          ..color = colors.clearInk.withValues(alpha: ringAlpha),
-      );
-    }
-
-    for (int i = 0; i < 24; i++) {
-      final bool major = i % 3 == 0;
-      final double a = dialAngle(i * 60.0);
-      final Paint paint = Paint()
-        ..strokeCap = StrokeCap.round
-        ..strokeWidth = major ? 1.4 : 1
-        ..color = colors.spoke.withValues(
-          alpha: colors.spoke.a * spokeOpacity(major: major, clear: clear),
-        );
-      canvas.drawLine(
-        dialPoint(
-          a,
-          major ? DialFace.majorSpokeInner : DialFace.minorSpokeInner,
-        ),
-        dialPoint(
-          a,
-          major ? DialFace.majorSpokeOuter : DialFace.minorSpokeOuter,
-        ),
-        paint,
-      );
-    }
-
-    for (final int hour in const <int>[0, 6, 12, 18]) {
-      final TextPainter numeral = TextPainter(
-        text: TextSpan(
-          text: hour.toString().padLeft(2, '0'),
-          style: numeralStyle.copyWith(color: colors.muted),
-        ),
-        textDirection: TextDirection.ltr,
-        textScaler: textScaler,
-      )..layout();
-      final Offset at = dialPoint(dialAngle(hour * 60.0), DialFace.numerals);
-      numeral.paint(canvas, at - Offset(numeral.width / 2, numeral.height / 2));
-      numeral.dispose();
-    }
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_FacePainter old) =>
-      old.clear != clear ||
-      old.ringAlpha != ringAlpha ||
-      !listEquals(old.shadows, shadows) ||
-      old.colors != colors ||
-      old.surface != surface ||
-      old.numeralStyle != numeralStyle ||
-      old.textScaler != textScaler;
 }
 
 class _HandPainter extends CustomPainter {
