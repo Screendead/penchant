@@ -225,6 +225,13 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
         larger cards, above). Review, merge, install; Jack to review the floors.
      7. **Next for item 7: build 1A + 2C on top of the trim (#192)**: the round-12 decision (Direction, below). Not
         started.
+     8. **Then: floors from the literature** (Jack, 2026-11-09: each floor is the smallest change shown to have
+        *some measurable effect*, as a number or a % of the person's usual, so a card can also say what that size
+        is likely to do). Replace #192's reasoned floors with sourced ones per metric, citing each. Where a source
+        reports a share of baseline, use the person's own usual. Check each floor against the person's
+        night-to-night noise so a floor never sits inside it. Add one line per card on what an effect of that size
+        has been shown to do, with the source. The research comes first, as an agent pass with citations; then a
+        small engine and copy PR. Not started.
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:
