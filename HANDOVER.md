@@ -204,6 +204,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      5. **i. Dose and timing: done when this PR merges** (#185, `feat/insights-dose-timing`). Jack, 2026-11-09: a habit
         used every day must still yield insights: amount per day, time of first and last use, the hours around each
         use (j), co-occurrence with other habits (l), and the before and after of a streak's start (m).
+     6. **`fix/insights-bedtime`**: sleep onset/end exported; amount and time on sleep minutes held at bedtime ("moves with when you fall asleep" when inseparable); "rests on one unusual day"; name-agnostic sentences. Not run on a device.
    - **Finer than days** (Jack, 2026-11-09: days with and without a habit are "not granular enough"; check whether
      health signals *precede* use, and what happens in the minutes and hours after a use). Engine steps, one PR each,
      after the many-comparisons correction and the whole-history range:

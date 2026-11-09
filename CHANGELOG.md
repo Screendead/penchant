@@ -19,9 +19,9 @@ pull request titles (`gh pr list --state merged`).
   starts ("From 3 March 2024 to today"). "Copy as text" puts the findings and the reasons for the rest on the
   clipboard, for a note or a message. Penchant sends none of it anywhere; the text goes where you paste it, and with
   Handoff on, the clipboard also reaches your other Apple devices (#179).
-- Insights now finds things about a habit you keep up every day: how the amount goes with what follows ("Each extra
-  drink of Coffee goes with your deep sleep that night averaging 6 min less") and how the time of your last one does
-  ("A last Coffee an hour later goes with ..."), among the days you had it. An entry before 05:00 counts toward the
+- Insights now finds things about a habit you keep up every day: how the amount goes with what follows ("On days
+  with one more drink logged for Coffee, your deep sleep that night averages 6 min less") and how the time of your
+  last one does ("On days your last use of Coffee is an hour later, ..."), among the days you had it. An entry before 05:00 counts toward the
   day before, for both. A habit whose amount or time barely changes says so instead, as does a last use that only
   comes later because you had more, and a result that rests on one unusual day is not shown (#185).
 - On the Mac, a log from the menu bar or a widget saves while Penchant is closed: the menu bar helper starts Penchant
@@ -81,6 +81,11 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Insights no longer blames a late habit for the sleep you lose by going to bed later: for the minutes of sleep, an
+  amount or a time of last use is compared at the same bedtime (when you fell asleep, read from Apple Health), and
+  one that can't be told apart from your bedtime says so. A result that hangs on one unusual day now says "rests on
+  one unusual day" rather than "within the noise", and the sentences read for any habit name ("On days your last use
+  of Gummies is an hour later, ...").
 - Insights asks for Apple Health data added since you connected it: if you connected before Penchant read heart rate,
   the Health card says "Allow new Health data", and a tap shows the Health sheet for the new types only. The card also
   says where to change Health access later (Settings > Privacy & Security > Health > Penchant).
