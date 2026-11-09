@@ -252,9 +252,14 @@ guest leaves `userProvider`'s `User` anonymous, so guest checks ask `Account.isG
 (`ViceActivityHistoryPage.pageSize`, plus one to learn whether older entries exist); the calendar sheet reads one
 month for its dots (the day query's shape and index); the editor listens to its one document; Manage Data counts each
 vice's activities with a server-side `count()`, which is not live, ignores writes queued on the device, and fails
-offline. Insights reads every activity from 2000 (the date picker's floor) to today, the one unbounded activity
-query: a one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. The vice lists
-have no limit (`r4-vice-cap`, under Days).
+offline. Insights reads every activity from 2000 (the date picker's floor) to today, an unbounded activity query: a
+one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. Habits learns whether
+entries of a deleted (or foreign) habit exist by one more `count()`, every owned activity, less each habit's count
+(`deletedHabitCountProvider`, shown only when every count is the server's); only then is its "Deleted habit" row there,
+and `DeletedHabitPage` reads every owned activity once per open (the export's shape, paged by document id, from the
+server), then every owned vice, to list those of no vice. Their deletes are confirmed on the page, with no Undo: the
+rules refuse recreating an entry whose vice the writer does not own. The vice lists have no limit (`r4-vice-cap`, under
+Days).
 
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level

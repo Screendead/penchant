@@ -135,49 +135,76 @@ const Duration countRetryDelay = Duration(seconds: 30);
 // the server cannot answer, it counts what this device holds instead, which
 // may be only part of the history. Coming back online re-runs it through
 // offlineProvider; a server failure while online sets no flag, so it retries.
+// With [countCached] false a device count is not taken and its count is 0.
+Future<ActivityCount> _countActivities(
+  Ref ref,
+  Query<Map<String, dynamic>> query, {
+  bool countCached = true,
+}) async {
+  final bool offline = ref.watch(
+    offlineProvider.select((AsyncValue<bool> value) => value.value == true),
+  );
+
+  if (!offline) {
+    try {
+      final AggregateQuerySnapshot snapshot = await query.count().get().timeout(
+        writeTimeout,
+      );
+      return (count: snapshot.count ?? 0, source: CountSource.server);
+    } on FirebaseException catch (e, stack) {
+      reportError(e, stack, context: 'while counting activities');
+    } on TimeoutException {
+      // Counted from the cache below.
+    }
+    if (ref.mounted) {
+      final Timer retry = Timer(countRetryDelay, ref.invalidateSelf);
+      ref.onDispose(retry.cancel);
+    }
+  }
+
+  final int cached = countCached
+      ? (await query.get(const GetOptions(source: Source.cache))).size
+      : 0;
+  return (
+    count: cached,
+    source: offline
+        ? CountSource.deviceOffline
+        : CountSource.deviceServerFailed,
+  );
+}
+
 final viceActivityCountForUserProvider = FutureProvider.autoDispose
     .family<ActivityCount, ({String uid, String viceID})>(
       retry: firestoreRetry,
-      (ref, key) async {
-        final bool offline = ref.watch(
-          offlineProvider.select(
-            (AsyncValue<bool> value) => value.value == true,
-          ),
-        );
-        final Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+      (ref, key) => _countActivities(
+        ref,
+        FirebaseFirestore.instance
             .collection('activities')
             .where('viceID', isEqualTo: key.viceID)
-            .where('ownerID', isEqualTo: key.uid);
-
-        if (!offline) {
-          try {
-            final AggregateQuerySnapshot snapshot = await query
-                .count()
-                .get()
-                .timeout(writeTimeout);
-            return (count: snapshot.count ?? 0, source: CountSource.server);
-          } on FirebaseException catch (e, stack) {
-            reportError(e, stack, context: 'while counting activities');
-          } on TimeoutException {
-            // Counted from the cache below.
-          }
-          if (ref.mounted) {
-            final Timer retry = Timer(countRetryDelay, ref.invalidateSelf);
-            ref.onDispose(retry.cancel);
-          }
-        }
-
-        final QuerySnapshot<Map<String, dynamic>> cached = await query.get(
-          const GetOptions(source: Source.cache),
-        );
-        return (
-          count: cached.size,
-          source: offline
-              ? CountSource.deviceOffline
-              : CountSource.deviceServerFailed,
-        );
-      },
+            .where('ownerID', isEqualTo: key.uid),
+      ),
     );
+
+// Every activity the user owns, whatever its viceID: Habits subtracts the
+// per-habit counts from it to learn whether entries of a deleted habit exist.
+// Only the server's count is used, and a device count would load every cached
+// entry, so none is taken.
+final activityTotalCountForUserProvider = FutureProvider.autoDispose
+    .family<ActivityCount, String>(
+      retry: firestoreRetry,
+      (ref, uid) => _countActivities(
+        ref,
+        FirebaseFirestore.instance
+            .collection('activities')
+            .where('ownerID', isEqualTo: uid),
+        countCached: false,
+      ),
+    );
+
+final activityTotalCountProvider =
+    Provider.autoDispose<AsyncValue<ActivityCount>>((ref) {
+      return watchForSignedInUser(ref, activityTotalCountForUserProvider.call);
+    });
 
 final viceActivityCountProvider = Provider.autoDispose
     .family<AsyncValue<ActivityCount>, String>((ref, viceID) {
