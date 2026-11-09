@@ -173,4 +173,50 @@ void main() {
     }
     fail('no chance refusal without a sibling finding in $seeds seeds');
   });
+
+  group('a refusal for too few days says which side is short', () {
+    HabitRefusal tooFew(int usable, int exposed) => HabitRefusal(
+      habitId: 'Coffee',
+      metricId: metricIds.first,
+      lagDays: 1,
+      usableDays: usable,
+      exposedDays: exposed,
+      raw: null,
+      reason: RefusalReason.tooFewDays,
+    );
+    String reason(HabitRefusal r) => refusalReason(r, (id) => id);
+
+    test('too few days in all', () {
+      expect(reason(tooFew(12, 6)), 'Too few days yet: 12 of 21');
+    });
+
+    test('too few days with it', () {
+      expect(reason(tooFew(60, 4)), 'Too few days with it yet: 4 of 7');
+    });
+
+    test('an unbroken streak, where waiting will not help', () {
+      expect(
+        reason(tooFew(60, 57)),
+        'Used almost every day: too few days without it to compare',
+      );
+    });
+  });
+
+  test('a habit used unevenly over time says so', () {
+    expect(
+      refusalReason(
+        const HabitRefusal(
+          habitId: 'Tea',
+          metricId: 'sleepDeep',
+          lagDays: 1,
+          usableDays: 121,
+          exposedDays: 23,
+          raw: null,
+          reason: RefusalReason.uneven,
+        ),
+        (id) => id,
+      ),
+      'Used far more at some times than others, so it can’t be told apart from other changes',
+    );
+  });
 }

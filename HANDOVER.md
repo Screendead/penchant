@@ -170,6 +170,10 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      habit x outcome on the page; on pure noise (5 habits x 9 outcomes, 400 seeds) false findings fell from 5.0% of
      checks (91% of reports showing one) to 0.23% (8%). The autocorrelation-corrected sample size, the practical-size
      floor and the block-bootstrap interval of gates 2 to 4 are still not built.
+     Spans with faded logging (#181, open): a trend and a second-half level in the model, and a refusal ("Used far
+     more at some times than others") for a habit used over 3x as often in one half (p < 0.01); noise rate unchanged
+     (0.24%, 8%). Review fix: the 3x check also runs on days gone without (patchy early logging of a daily habit),
+     and the test allows for runs of use; even-use false refusals stay under 1% (`tools/insights-calibration/`).
    - **Whole history and Copy as text** (Jack, 2026-11-09: "i've got more than a year's worth of data"; #179, open,
      `feat/insights-whole-history`): the journal query runs from 2000 (the date picker's floor) to today, keyed on
      the day; Health is read from September 2014 (HealthKit's launch) in calendar-year calls, 13 today; the page says
@@ -184,9 +188,9 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      many-comparisons correction #175 (Benjamini-Hochberg, q = 0.1). Open or in flight, in merge order:
      1. **#178** `feat/health-samples`: timestamped samples, paged; nightly sleeping heart rate. Review, merge, install.
      2. **#179** `feat/insights-whole-history`: whole journal history, Health in yearly calls, Copy as text.
-     3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "logged unevenly over
-        time" refusal, so a habit whose logging fades is not credited with a step change in an outcome; and a
-        too-few-days refusal that says which side is short.
+     3. **`fix/insights-span-guard`** (check whether its PR exists): a time-trend term and a "used far more at
+        some times than others" refusal, so a habit whose logging fades is not credited with a step change in an
+        outcome; and a too-few-days refusal that says which side is short.
      4. **Sleep double count, after #178:** `HealthDays.sleepRows` unions every source's asleep periods, so another
         app's single asleep span over a night covers the Watch's awake periods (synthetic: Watch core 23:00-03:00,
         awake 03:00-04:00, core 04:00-07:00 gives asleep 420; add another source's asleep 23:00-07:00 and it gives
@@ -534,6 +538,12 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 - **Log widget = Hero with Glow** (Jack 2026-11-08: "B, with C's glow"). The first habit is a dial with a + badge,
   the rest pills with their count and a + button, each on a soft glow of its colour. Renders in
   `docs/pitch/round-11/log-widgets/final/`.
+
+- **Insights: how steep a change in use is refused** (Jack, 2026-11-09: **C**, against the recommended A). Built in
+  #183, merged into #181: a level per calendar month plus the trend; from two periods on, the only balance refusal
+  is fewer than 2 months with days both with and without the habit; a span of one period keeps #181's halves guard.
+  Cut-downs with a real effect are found (80% to 25%: 198/200); the cost is a change in use and a step in the outcome
+  inside one month (34/200 false findings against A's 13 on the bench). The measured table is in #183's PR body.
 
 ## Calls waiting on Jack (UNDECIDED)
 

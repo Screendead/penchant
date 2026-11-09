@@ -76,6 +76,16 @@ pull request titles (`gh pr list --state merged`).
 
 ### Fixed
 
+- Insights no longer credits a habit with a change that happened while you had stopped logging it, or before you
+  logged it every day: a habit logged far more, or far less, in one half of its time than the other is listed as
+  "Used far more at some times than others", and a slow drift or a sudden change in a Health measure is allowed for
+  before any habit is compared. A habit used every day now says it has too few days without it, rather than asking
+  you to wait (#181).
+- Once a second month holds about ten days of a habit's entries, Insights compares it with itself month by month, so
+  cutting it down, or logging it less often, from one month to the next no longer hides what follows it or reads as its
+  effect. A change in use and a change in the outcome inside the same month can still read as an effect, and a shorter
+  span is judged as before. A habit whose use varies in only one month of several is listed as "Used far more at some
+  times than others" (#183).
 - Sleep from Apple Health no longer counts the time you lay awake as asleep when another sleep app also records
   the night: each sleep's time asleep, stages and awake time now come from one source, Apple Watch when it recorded
   most of that sleep, and so does your heart rate while asleep. A night the Watch caught only part of, or a nap only
