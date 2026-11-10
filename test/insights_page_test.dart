@@ -14,6 +14,7 @@ import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
@@ -907,6 +908,88 @@ void main() {
     expect(find.text(InsightsPage.cuttingDownBody), findsOneWidget);
     expect(find.text(InsightsPage.setsOffBody), findsOneWidget);
     expect(find.text(InsightsPage.lastNightHeading), findsNothing);
+  });
+
+  testWidgets('How cutting down is going shows a fall with a finding as a '
+      'card and one with nothing clear as a row with the reason', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    HabitFall fall(String habit, double since) => HabitFall(
+      habitId: habit,
+      day: DateTime(2026, 3, 3),
+      from: DateTime(2025, 12, 2),
+      before: 3,
+      since: since,
+      sinceDays: 60,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        runner: (_) async => InsightsReport(
+          findings: const <HabitFinding>[],
+          refused: const <HabitRefusal>[],
+          payoffs: <Payoff>[
+            Payoff(
+              fall: fall('coffee', 1.5),
+              metricId: 'sleepAsleep',
+              baselineValues: 88,
+              sinceValues: 41,
+              capped: false,
+              effect: 30,
+              interval: const stats.Interval(22, 38),
+              pValue: 0.001,
+            ),
+            Payoff(
+              fall: fall('tea', 0),
+              metricId: 'sleepAsleep',
+              baselineValues: 88,
+              sinceValues: 41,
+              capped: false,
+              effect: 2,
+              interval: const stats.Interval(-9, 13),
+              pValue: 0.6,
+              refusal: PayoffRefusal.withinNoise,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text(InsightsPage.cuttingDownBody), findsNothing);
+    expect(
+      find.text(
+        'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
+        'around Mar 3, 2026.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Since then, your time asleep averages 30 min more than in the 13 '
+        'weeks before, allowing for the trend it was already on.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Range: 22 to 38 min more'), findsOneWidget);
+    expect(find.text('From 88 nights before and 41 since'), findsOneWidget);
+    expect(
+      find.text(
+        'No entries for Tea since Mar 3, 2026, from about 3 items a day '
+        'before. No clear difference in your sleep, heart or activity '
+        'since: within the noise.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(find.text(InsightsPage.cuttingDownHeading)).dy,
+      lessThan(tester.getTopLeft(find.text('Range: 22 to 38 min more')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Range: 22 to 38 min more')).dy,
+      lessThan(tester.getTopLeft(find.text(InsightsPage.setsOffHeading)).dy),
+    );
   });
 
   testWidgets('with every habit short of days, What it costs says how far '
