@@ -53,9 +53,18 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
-## Pick up here (session restart, 2026-11-09 ~22:00 UTC)
+## Pick up here (2026-11-10)
 
-In flight when the session restarted; do these first, in order:
+e2e speed-up (Jack's request: a finished e2e result under 10 minutes after a merge). This PR (`ci/e2e-fast`) trims
+the suite (`docs/pitch/e2e-fast/triage.md`), moves 9 tests into widget tests, runs only smoke on macOS, caches
+`build/ios`, sets content mtimes, and drops the debounce. Measured: iPhone 31.5 min before (2 min debounce, run
+42690070034), 20–26 min after (runs 42739107480, 42741719417, 42744276730); macOS 100 min before, 6–9 min after.
+10 minutes is not reached on standard runners: the call is under "Calls waiting on Jack". Next: `test/audit` (the
+whole-suite audit; the 22 rules tests are kept, branch `test/audit-a` is never merged) as its own PR on top of this
+one. Two cold-cache runs hung after the Xcode build (42716618867, 42733532556); the e2e step now stops at 25 minutes
+and records where.
+
+Earlier (session restart, 2026-11-09 ~22:00 UTC):
 
 1. Done: `master` e2e 42690070034 green; #207 and #208 merged (7b8e870) and installed on the iPhone and Mac; the
    native compile check is `macos-build.yml` on PRs (this PR).
@@ -692,7 +701,11 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
+- **e2e-10min.** Standard `macos-26` runners spend 13 to 18 minutes on setup, simulator first boot and the build
+  before any test runs, so the 10-minute goal needs more than this PR: larger paid runners, sharding, or a
+  self-hosted Mac. On the e2e-fast pitch page.
+
+Otherwise none on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
 `r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
 
