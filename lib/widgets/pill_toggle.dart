@@ -17,10 +17,12 @@ class PillToggle extends StatelessWidget {
     this.semanticsLabel,
     this.padding = const EdgeInsets.symmetric(horizontal: DialSpace.s),
     this.minHeight = DialSize.chipHeight,
+    this.exclusive = true,
   });
 
   final bool selected;
-  final VoidCallback onPressed;
+  // Null disables it.
+  final VoidCallback? onPressed;
   final Widget child;
   final Color color;
   final Color selectedColor;
@@ -30,6 +32,8 @@ class PillToggle extends StatelessWidget {
   final String? semanticsLabel;
   final EdgeInsetsGeometry padding;
   final double minHeight;
+  // False when several of its group can be on at once.
+  final bool exclusive;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +43,7 @@ class PillToggle extends StatelessWidget {
     return MergeSemantics(
       child: Semantics(
         selected: selected,
-        inMutuallyExclusiveGroup: true,
+        inMutuallyExclusiveGroup: exclusive,
         label: semanticsLabel,
         child: TextButton(
           onPressed: onPressed,

@@ -153,3 +153,53 @@ HourProfile hourProfile(UsageRange range, Iterable<ViceActivity> activities) {
     beforeNoonPercent: total == 0 ? 0 : (morning / total * 100).round(),
   );
 }
+
+typedef WeekdayHours = ({
+  // [weekday][hour], Monday first: the average quantity logged in that hour
+  // on one such day of the profile's window.
+  List<List<double>> cells,
+  // Each weekday's average total, Monday first.
+  List<double> days,
+  double total,
+  // 0 for Monday; the earliest on a tie.
+  int busiestDay,
+});
+
+// When in the week [activities] happen, over the days [hourProfile] counts.
+// Each weekday is averaged over how often it falls in that window, since 30
+// days hold five of some weekdays and four of others.
+WeekdayHours weekdayHours(UsageRange range, Iterable<ViceActivity> activities) {
+  final DateTime start = hourProfileStart(range);
+  final DateTime end = range.end;
+  final List<int> occurrences = List<int>.filled(7, 0);
+  for (DateTime d = start; d.isBefore(end); d = addDays(d, 1)) {
+    occurrences[d.weekday - 1]++;
+  }
+
+  final List<List<double>> cells = <List<double>>[
+    for (int w = 0; w < 7; w++) List<double>.filled(24, 0),
+  ];
+  double total = 0;
+  for (final ViceActivity activity in activities) {
+    final DateTime at = activity.createdAt.toDate();
+    if (at.isBefore(start) || !at.isBefore(end)) {
+      continue;
+    }
+    cells[at.weekday - 1][at.hour] += activity.measure;
+    total += activity.measure;
+  }
+
+  final List<double> days = List<double>.filled(7, 0);
+  int busiestDay = 0;
+  for (int w = 0; w < 7; w++) {
+    final int n = max(1, occurrences[w]);
+    for (int h = 0; h < 24; h++) {
+      cells[w][h] /= n;
+      days[w] += cells[w][h];
+    }
+    if (days[w] > days[busiestDay]) {
+      busiestDay = w;
+    }
+  }
+  return (cells: cells, days: days, total: total, busiestDay: busiestDay);
+}

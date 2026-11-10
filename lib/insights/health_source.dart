@@ -180,6 +180,28 @@ final class HealthValues extends HealthRead {
   final List<DailyOutcome> values;
 }
 
+/// What changed in Health since the changes last handled
+/// ([HealthSource.changesHandled]), for the metrics asked about.
+@immutable
+class HealthChanges {
+  const HealthChanges({
+    required this.generation,
+    this.days = const <String, Set<DateTime>>{},
+    this.whole = const <String>{},
+  });
+
+  /// Handing this back clears what this answer named, and nothing marked
+  /// after it.
+  final int generation;
+
+  /// By [HealthMetric.id], the local midnights whose value may have changed.
+  final Map<String, Set<DateTime>> days;
+
+  /// The [HealthMetric.id]s to read in full: not synced before, or a sample
+  /// deleted, whose day HealthKit does not say.
+  final Set<String> whole;
+}
+
 const healthDatabaseInaccessible = 'database-inaccessible';
 const healthNotDetermined = 'not-determined';
 
@@ -224,6 +246,14 @@ abstract interface class HealthSource {
     DateTime end, {
     int limit = maxHealthSamplesPerCall,
   });
+
+  /// What changed since the last [changesHandled], found by HealthKit anchored
+  /// queries (and, while the app is closed, its background delivery). Null
+  /// when Health is unavailable. Throws as [dailyValues] does.
+  Future<HealthChanges?> changes(Set<HealthMetric> metrics);
+
+  /// Once what [changes] named has been read and kept.
+  Future<void> changesHandled(int generation);
 }
 
 /// HealthChannel.swift's cap on one call, so a year of minute-level heart
@@ -373,6 +403,74 @@ class ChannelHealthSource implements HealthSource {
     }
     return decodeHealthSamplePage(page);
   }
+
+  @override
+  Future<HealthChanges?> changes(Set<HealthMetric> metrics) async {
+    if (!_supported) return null;
+    final Object? reply;
+    try {
+      reply = await _channel.invokeMethod<Object?>('changes', {
+        'metrics': [for (final m in metrics) m.id],
+      });
+    } on PlatformException catch (e) {
+      if (e.code == 'unavailable') return null;
+      rethrow;
+    } on MissingPluginException {
+      return null;
+    }
+    return decodeHealthChanges(reply, metrics);
+  }
+
+  @override
+  Future<void> changesHandled(int generation) async {
+    if (!_supported) return;
+    try {
+      await _channel.invokeMethod<void>('changesHandled', {
+        'generation': generation,
+      });
+    } on PlatformException catch (e) {
+      if (e.code == 'unavailable') return;
+      rethrow;
+    } on MissingPluginException {
+      return;
+    }
+  }
+}
+
+/// An answer it cannot read asks for every metric in full, rather than
+/// trust a store it cannot check against.
+@visibleForTesting
+HealthChanges decodeHealthChanges(Object? reply, Set<HealthMetric> metrics) {
+  final HealthChanges everything = HealthChanges(
+    generation: -1,
+    whole: {for (final m in metrics) m.id},
+  );
+  if (reply case {
+    'generation': final int generation,
+    'days': final Map<Object?, Object?> days,
+    'whole': final List<Object?> whole,
+  }) {
+    final Map<String, Set<DateTime>> byMetric = <String, Set<DateTime>>{};
+    for (final MapEntry<Object?, Object?> entry in days.entries) {
+      final Object? metric = entry.key;
+      final Object? keys = entry.value;
+      if (metric is! String || keys is! List) return everything;
+      for (final Object? key in keys) {
+        final DateTime? day = key is String ? parseHealthDayKey(key) : null;
+        if (day == null) return everything;
+        (byMetric[metric] ??= <DateTime>{}).add(day);
+      }
+    }
+    return HealthChanges(
+      generation: generation,
+      days: byMetric,
+      whole: {
+        for (final Object? m in whole)
+          if (m is String) m,
+      },
+    );
+  }
+  return everything;
 }
 
 String healthDayKey(DateTime day) =>

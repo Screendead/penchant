@@ -25,6 +25,37 @@ void main() {
   final start = DateTime(2026, 11, 1);
   final end = DateTime(2026, 11, 8);
 
+  test('asks what changed and hands the generation back', () async {
+    answer(
+      (call) => call.method == 'changes'
+          ? <String, Object?>{
+              'generation': 3,
+              'days': <Object?, Object?>{
+                'stepCount': <Object?>['2026-11-07'],
+              },
+              'whole': <Object?>[],
+            }
+          : null,
+    );
+    final HealthChanges? changes = await source.changes({
+      HealthMetric.stepCount,
+    });
+    expect(calls.first.arguments, {
+      'metrics': ['stepCount'],
+    });
+    expect(changes?.days['stepCount'], {DateTime(2026, 11, 7)});
+    await source.changesHandled(3);
+    expect(calls.last.method, 'changesHandled');
+    expect(calls.last.arguments, {'generation': 3});
+  });
+
+  test('no changes off iOS', () async {
+    expect(
+      await ChannelHealthSource().changes({HealthMetric.stepCount}),
+      isNull,
+    );
+  });
+
   test('sends the metric ids and local day keys', () async {
     answer((_) => <Object?>[]);
     await source.dailyValues(

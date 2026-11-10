@@ -216,6 +216,43 @@ void main() {
     expect(_chipSelected(tester, 'Sweets'), isTrue);
   });
 
+  testWidgets('the pane compares habits, and a resize across 900 pt keeps '
+      'the comparison', (WidgetTester tester) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    _useWindow(tester, 1200);
+    await _pump(tester);
+    int bars() => tester
+        .widget<LineChart>(inTrends(find.byType(LineChart)))
+        .data
+        .lineBarsData
+        .length;
+
+    await tester.tap(inTrends(find.text(TrendsSheet.compareLabel)));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byWidgetPredicate(
+        (Widget w) =>
+            w is PillToggle &&
+            w.semanticsLabel == TrendsSheet.compareChipLabel(_sweets),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(bars(), 3);
+    expect(
+      tester.getSemantics(find.byType(TrendsChart)).label,
+      contains('Compared with Sweets'),
+    );
+
+    await _resize(tester, 800);
+    await openTrends(tester);
+    expect(
+      _chipSelected(tester, TrendsSheet.compareChipLabel(_sweets)),
+      isTrue,
+    );
+    expect(bars(), 3);
+    semantics.dispose();
+  });
+
   testWidgets('an open sheet resized into the split view and back is at its '
       'peek, with the Log button and the arrow keys working', (
     WidgetTester tester,

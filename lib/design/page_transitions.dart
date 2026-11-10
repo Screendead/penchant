@@ -47,16 +47,23 @@ class DialPageTransitionsBuilder extends PageTransitionsBuilder {
       return _fade(reduced, animation, secondaryAnimation, child);
     }
     final bool swiping = route.popGestureInProgress;
-    return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
-      route,
-      context,
-      swiping ? animation : kAlwaysCompleteAnimation,
-      swiping && !reduced ? secondaryAnimation : kAlwaysDismissedAnimation,
-      _fade(
-        reduced,
-        swiping ? kAlwaysCompleteAnimation : animation,
-        swiping ? kAlwaysDismissedAnimation : secondaryAnimation,
-        child,
+    // The slide's edge shadow is a decorated box that takes taps over the
+    // whole page, so under reduce motion a page faded out by a Back pop would
+    // block the page below for the rest of the route's 320 ms.
+    return IgnorePointer(
+      ignoring:
+          reduced && !swiping && animation.status == AnimationStatus.reverse,
+      child: CupertinoRouteTransitionMixin.buildPageTransitions<T>(
+        route,
+        context,
+        swiping ? animation : kAlwaysCompleteAnimation,
+        swiping && !reduced ? secondaryAnimation : kAlwaysDismissedAnimation,
+        _fade(
+          reduced,
+          swiping ? kAlwaysCompleteAnimation : animation,
+          swiping ? kAlwaysDismissedAnimation : secondaryAnimation,
+          child,
+        ),
       ),
     );
   }

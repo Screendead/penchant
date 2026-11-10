@@ -16,7 +16,7 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**8 issues: 0 critical, 0 high, 0 medium, 8 low.**
+**5 issues: 0 critical, 0 high, 0 medium, 5 low.**
 
 ## Firebase Data Layer (2)
 
@@ -25,28 +25,25 @@ Firestore security rules, index and query shapes, the document schema contract, 
 - **low** — [A sealed entry can be moved in time or rolled back without the client noticing](firebase-data-layer/sealed-blobs-bind-neither-time-nor-state.md)
 - **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 
-## Widget State and View Logic (1)
+## Widget State and View Logic (0)
 
 Riverpod provider semantics and lifecycle, resource disposal, build-phase side effects, and the chart and graph computation pipelines.
 
-- **low** — [The undo bar's lift over Log is fixed when it is shown, and applies on every page](widget-state-and-view-logic/undo-bar-lift-is-fixed-at-show-time.md)
 
 ## Error Handling and Observability (0)
 
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 
-## Offline and Write Reliability (1)
+## Offline and Write Reliability (0)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **low** — [A dense hour's arc does not show which of its entries are unsynced](offline-and-write-reliability/dense-hour-arc-shows-no-pending-entries.md)
 
-## Accessibility and Localization (1)
+## Accessibility and Localization (0)
 
 Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, and locale-sensitive formatting and localization scaffolding.
 
-- **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 
 ## Auth and Account Lifecycle (1)
 
