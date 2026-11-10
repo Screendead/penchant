@@ -190,6 +190,17 @@ void main() {
     expect(edited.triggers, <String>['Long day']);
   });
 
+  test('an export carries the triggers and not the binding', () async {
+    await record(triggers: const <String>['social']);
+    final Map<String, dynamic> exported = unsealed(
+      server.stored,
+      await SealedOpener(sealer).open('activities', _id, server.stored),
+    );
+    expect(exported[triggersField], <Object?>['social']);
+    expect(exported.keys, isNot(contains(boundField)));
+    expect(exported.keys, isNot(contains(sealedField)));
+  });
+
   // The limits of the scheme, pinned so that a change to them is noticed.
   group('not detected, or falsely detected:', () {
     test('an envelope sealed before binding is unbound, whatever sits '
@@ -244,6 +255,21 @@ void main() {
       );
       await older.updateActivity(_id, triggers: const <String>['x']).done;
       expect((await read()).binding, SealBinding.unbound);
+    });
+
+    test('two devices editing different fields of one entry read as '
+        'altered', () async {
+      await record();
+      final ViceActivity stale = await read();
+      await writes
+          .updateActivity(
+            _id,
+            createdAt: _at.add(const Duration(hours: 2)),
+            current: stale,
+          )
+          .done;
+      await writes.updateActivity(_id, quantity: 3, current: stale).done;
+      expect((await read()).binding, SealBinding.altered);
     });
 
     test('rolling the whole document back to an earlier state reads as '

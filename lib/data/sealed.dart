@@ -142,8 +142,8 @@ Map<String, Object?> contentOf(
   Map<String, Object?>? opened,
 ) => isSealed(json) ? (opened ?? const <String, Object?>{}) : json;
 
-/// [json] with its envelope replaced by the [opened] fields, or unchanged
-/// when there are none.
+/// [json] with its envelope replaced by the [opened] content fields, or
+/// unchanged when there are none.
 Map<String, dynamic> unsealed(
   Map<String, dynamic> json,
   Map<String, Object?>? opened,
@@ -152,5 +152,6 @@ Map<String, dynamic> unsealed(
     : <String, dynamic>{
         for (final MapEntry<String, dynamic>(:key, :value) in json.entries)
           if (key != sealedField) key: value,
-        ...opened,
+        for (final MapEntry<String, Object?>(:key, :value) in opened.entries)
+          if (key != boundField) key: value,
       };
