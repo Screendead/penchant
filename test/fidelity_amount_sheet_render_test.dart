@@ -157,11 +157,9 @@ void main() {
                 at;
           } else {
             navigator.currentState!.push(
-              MaterialPageRoute<void>(
-                builder: (_) => ViceActivityEditorPage(
-                  viceID: 'coffee',
-                  activityID: edited.id,
-                ),
+              ViceActivityEditorPage.route(
+                const RouteSettings(),
+                ViceActivityEditorPage(viceID: 'coffee', activityID: edited.id),
               ),
             );
           }

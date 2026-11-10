@@ -429,11 +429,15 @@ void main() {
     }, variant: iOS);
   });
 
-  test('every route is a DialPageRoute, so the transition clock applies', () {
+  test('every route but the entry sheet is a DialPageRoute, so the '
+      'transition clock applies', () {
+    expect(
+      generateRoute(const RouteSettings(name: '/vices/v1/activities/a1')),
+      isA<ModalBottomSheetRoute<void>>(),
+    );
     for (final String name in <String>[
       '/vices/add',
       '/vices/v1/edit',
-      '/vices/v1/activities/a1',
       '/vices/v1/activities',
       '/insights',
       '/manage-data',

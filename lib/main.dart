@@ -181,10 +181,12 @@ class AuthStateFailure extends ConsumerWidget {
 
 Route<void> generateRoute(RouteSettings settings) {
   final Widget page = routePage(settings.name);
+  if (page is ViceActivityEditorPage) {
+    return ViceActivityEditorPage.route(settings, page);
+  }
   // Forms that save or discard open as modals; pages to browse push.
   return DialPageRoute<void>(
-    fullscreenDialog:
-        page is ViceForm || page is EditVice || page is ViceActivityEditorPage,
+    fullscreenDialog: page is ViceForm || page is EditVice,
     settings: settings,
     builder: (_) => page,
   );

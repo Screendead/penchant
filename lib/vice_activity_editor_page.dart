@@ -8,6 +8,7 @@ import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
@@ -16,6 +17,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/amount_fields.dart';
+import 'package:tracker/widgets/amount_sheet_frame.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
@@ -30,6 +32,22 @@ class ViceActivityEditorPage extends ConsumerStatefulWidget {
 
   final String viceID;
   final String activityID;
+
+  static const Key saveKey = ValueKey<String>('entry-editor-save');
+  static const Key deleteKey = ValueKey<String>('entry-editor-delete');
+  static const String saveLabel = 'Save';
+  static const String deleteLabel = 'Delete';
+  static const String notFoundMessage = 'Activity not found';
+
+  // The editor as the amount sheet, so the dial stays in view behind it.
+  static Route<void> route(RouteSettings settings, Widget page) =>
+      ModalBottomSheetRoute<void>(
+        builder: (_) => page,
+        settings: settings,
+        isScrollControlled: true,
+        useSafeArea: true,
+        barrierLabel: 'Close',
+      );
 
   @override
   ConsumerState<ViceActivityEditorPage> createState() =>
@@ -219,6 +237,20 @@ class _ViceActivityEditorPageState
     }
   }
 
+  Widget _message(Widget child) => AmountSheetFrame(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: SheetCloseButton(onPressed: () => Navigator.of(context).pop()),
+        ),
+        child,
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<List<Vice>> viceListValue = ref.watch(viceListProvider);
@@ -235,10 +267,10 @@ class _ViceActivityEditorPageState
         };
 
     if (loadError != null && !loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Edit activity')),
-        body: ErrorView(
+      return _message(
+        InfoBox(
           message: loadErrorMessage('this activity', loadError),
+          isError: true,
           onRetry: () {
             ref.invalidate(viceListForUserProvider, asReload: true);
             ref.invalidate(viceActivityForUserProvider, asReload: true);
@@ -251,7 +283,12 @@ class _ViceActivityEditorPageState
 
     if (viceList == null ||
         (activityValue.isLoading && !activityValue.hasError)) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AmountSheetFrame(
+        child: SizedBox(
+          height: 200,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
     }
 
     final Vice? vice = viceList
@@ -261,7 +298,7 @@ class _ViceActivityEditorPageState
         ? null
         : activityValue.value;
     // A delete leaves the local snapshot at once, long before the server
-    // acknowledges it; keep the form up until this page pops.
+    // acknowledges it; keep the form up until this sheet pops.
     final ViceActivity? activity =
         (found != null && found.viceID == widget.viceID)
         ? found
@@ -269,77 +306,102 @@ class _ViceActivityEditorPageState
     shown = activity;
 
     if (vice == null || activity == null) {
-      return const Scaffold(body: Center(child: Text('Activity not found')));
+      return _message(
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Text(notFoundMessage, textAlign: TextAlign.center),
+        ),
+      );
     }
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // The scrim below stops pointers but not a screen reader.
-        ExcludeSemantics(
-          excluding: loading,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text('Edit ${vice.name} activity'),
-              actions: [
-                IconButton(
-                  tooltip: 'Delete',
-                  icon: const Icon(Icons.delete_outline),
-                  // Undo could not write a locked entry's content back.
-                  onPressed: loading || activity.locked
-                      ? null
-                      : () => _deleteActivity(vice, activity),
-                ),
-                TextButton(
-                  onPressed: loading
-                      ? null
-                      : () => _saveActivity(vice, activity),
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      initialValue: vice.name,
-                      readOnly: true,
-                      decoration: const InputDecoration(labelText: 'Habit'),
-                    ),
-                    const SizedBox(height: 24),
-                    AmountFields(
-                      quantityController: quantityController,
-                      unit: vice.unit,
-                      timeController: timeController,
-                      editing: activity.id,
-                      triggers: editedTriggers ?? activity.triggers,
-                      onTriggersChanged: (List<String> picked) =>
-                          setState(() => editedTriggers = picked),
-                      viceID: vice.id,
-                      viceName: vice.name,
-                      enabled: !loading,
-                      quantityValidator: (String? value) =>
-                          quantityError(value, unchanged: activity.measure),
-                      error: error,
-                    ),
-                  ],
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return PopScope(
+      canPop: !loading,
+      // A drag on the sheet would close it mid-save; this one wins the drag.
+      child: GestureDetector(
+        onVerticalDragUpdate: loading ? (_) {} : null,
+        child: Stack(
+          children: [
+            // The scrim below stops pointers but not a screen reader.
+            ExcludeSemantics(
+              excluding: loading,
+              child: AmountSheetFrame(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SheetHabitHeader(
+                        vice: vice,
+                        onClose: loading
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(height: 18),
+                      AmountFields(
+                        quantityController: quantityController,
+                        unit: vice.unit,
+                        timeController: timeController,
+                        editing: activity.id,
+                        triggers: editedTriggers ?? activity.triggers,
+                        onTriggersChanged: (List<String> picked) =>
+                            setState(() => editedTriggers = picked),
+                        viceID: vice.id,
+                        viceName: vice.name,
+                        enabled: !loading,
+                        quantityValidator: (String? value) =>
+                            quantityError(value, unchanged: activity.measure),
+                        error: error,
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          TextButton(
+                            key: ViceActivityEditorPage.deleteKey,
+                            style: TextButton.styleFrom(
+                              foregroundColor: scheme.error,
+                            ),
+                            // Undo could not write a locked entry's content
+                            // back.
+                            onPressed: loading || activity.locked
+                                ? null
+                                : () => _deleteActivity(vice, activity),
+                            child: const Text(ViceActivityEditorPage.deleteLabel),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              key: ViceActivityEditorPage.saveKey,
+                              onPressed: loading
+                                  ? null
+                                  : () => _saveActivity(vice, activity),
+                              child: Text(
+                                ViceActivityEditorPage.saveLabel,
+                                style: DialTypeScale.label.copyWith(
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+            if (loading) ...[
+              Positioned.fill(
+                child: ColoredBox(color: DialColors.of(context).scrim),
+              ),
+              const Positioned.fill(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+          ],
         ),
-        if (loading) ...[
-          Positioned.fill(
-            child: ColoredBox(color: DialColors.of(context).scrim),
-          ),
-          const CircularProgressIndicator(),
-        ],
-      ],
+      ),
     );
   }
 }
