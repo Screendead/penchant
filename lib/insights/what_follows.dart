@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/stats.dart';
+import 'package:tracker/insights/step_changes.dart';
 
 /// When a result is reported rather than refused. The defaults are the idea
 /// file's (`ideas/insights/insights-engine.md`), not tuned on data, except
@@ -424,6 +425,7 @@ class _Judged {
     required this.raw,
     this.step = 1,
     this.cut,
+    this.shifts = const <DateTime>[],
   });
 
   final String id;
@@ -432,6 +434,9 @@ class _Judged {
   final InsightKind kind;
   final List<DateTime> days;
   final List<double> y;
+
+  // When the outcome's level shifted, by the outcome's date.
+  final List<DateTime> shifts;
 
   // The habit's column: 0/1 use, the day's amount, or minutes after midnight.
   final List<double> x;
@@ -530,6 +535,7 @@ HabitInsight _whatFollowsOne(
     x: x,
     exposed: x.where((v) => v == 1).length,
     raw: _welch(x, y, gates.level),
+    shifts: _shiftDates(outcomes, metricId),
   );
 
   if (days.length < gates.minDays || !_clearsSampleGates(x, gates)) {
@@ -797,6 +803,7 @@ HabitInsight _amongDaysOfUse(
     exposed: rows.length,
     raw: null,
     step: step,
+    shifts: _shiftDates(outcomes, metricId),
   );
   final List<int> all = <int>[for (int r = 0; r < days.length; r++) r];
   final HabitInsight total = _amongDaysJudged(
@@ -935,7 +942,7 @@ HabitInsight _amongDaysJudged(
   }
   final double at = cuts.length == 1
       ? cuts.single
-      : _clearestCut(cuts, x, judged.y, _timeTerms(days, period), own);
+      : _clearestCut(cuts, x, judged.y, _timeTerms(judged, period, gates), own);
   final List<double> over = <double>[for (final double v in x) v >= at ? 1 : 0];
   final _Judged sides = _Judged(
     id: judged.id,
@@ -948,6 +955,7 @@ HabitInsight _amongDaysJudged(
     exposed: over.where((v) => v == 1).length,
     raw: null,
     cut: at,
+    shifts: judged.shifts,
   );
   // Only a cut handed in can fail this: the grid's all pass.
   if (!_clearsSampleGates(over, gates)) {
@@ -1133,7 +1141,7 @@ HabitInsight _attribute(
 }) {
   final List<DateTime> days = judged.days;
   final List<double> x = judged.x, y = judged.y;
-  final List<List<double>> time = _timeTerms(days, period);
+  final List<List<double>> time = _timeTerms(judged, period, gates);
   // Bonferroni over the cuts tried, for the interval and so for every gate
   // that reads it.
   final double level = 1 - (1 - gates.level) / searched;
@@ -1287,13 +1295,27 @@ double? insightPValue(HabitInsight insight) => switch (insight) {
   HabitRefusal(:final double? pValue) => pValue,
 };
 
+List<DateTime> _shiftDates(OutcomeSeries outcomes, String metricId) =>
+    <DateTime>[
+      for (final LevelShift s in outcomes.shifts(metricId).shifts) s.at,
+    ];
+
 // A linear trend over the span, then a level for each period after the first,
-// or for the second half of a span of one period.
-List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
+// or for the second half of a span of one period, then a level from each of
+// the outcome's shifts on. A shift joins only with
+// [InsightGates.minExposedDays] of the days on each side of it, and only
+// while the terms stay solvable: one at a month's edge repeats that month's
+// level.
+List<List<double>> _timeTerms(
+  _Judged judged,
+  List<int> period,
+  InsightGates gates,
+) {
+  final List<DateTime> days = judged.days;
   final int periods = period.last + 1;
   final int half = days.length ~/ 2;
   final int span = max(1, daysBetween(days.first, days.last));
-  return <List<double>>[
+  final List<List<double>> terms = <List<double>>[
     for (int r = 0; r < days.length; r++)
       <double>[
         daysBetween(days.first, days[r]) / span - 0.5,
@@ -1303,6 +1325,31 @@ List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
           for (int k = 1; k < periods; k++) period[r] == k ? 1 : 0,
       ],
   ];
+  for (final DateTime shift in judged.shifts) {
+    final List<double> after = <double>[
+      for (final DateTime day in days)
+        addDays(day, judged.lagDays).isBefore(shift) ? 0 : 1,
+    ];
+    final int on = after.where((v) => v == 1).length;
+    if (on < gates.minExposedDays || days.length - on < gates.minExposedDays) {
+      continue;
+    }
+    final List<List<double>> wider = <List<double>>[
+      for (int r = 0; r < days.length; r++) <double>[...terms[r], after[r]],
+    ];
+    final bool solvable =
+        invert(
+          gram(<List<double>>[
+            for (final List<double> row in wider) <double>[1, ...row],
+          ]),
+        ) !=
+        null;
+    if (!solvable) continue;
+    for (int r = 0; r < days.length; r++) {
+      terms[r] = wider[r];
+    }
+  }
+  return terms;
 }
 
 /// [insights] with every finding that fails Benjamini-Hochberg at
