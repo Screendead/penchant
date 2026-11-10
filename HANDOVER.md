@@ -1,6 +1,6 @@
 # Handover — Tracker
 
-*Updated 2026-11-08 (insights queue). Audience: the next agent, or Jack. The current task; `CLAUDE.md` says what this
+*Updated 2026-11-10 (fourth run inventory). Audience: the next agent, or Jack. The current task; `CLAUDE.md` says what this
 file holds and how to keep it.*
 
 ## The goal
@@ -53,23 +53,50 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
-## Pick up here (2026-11-10)
+## Pick up here: fourth run (`/finish-and-pitch`, 2026-11-10)
 
-e2e speed-up (Jack's request: a finished e2e result under 10 minutes after a merge). This PR (`ci/e2e-fast`) trims
-the suite (`docs/pitch/e2e-fast/triage.md`), moves 9 tests into widget tests, runs only smoke on macOS, caches
-`build/ios`, sets content mtimes, and drops the debounce. Measured: iPhone 31.5 min before (2 min debounce, run
-42690070034), 20–26 min after (runs 42739107480, 42741719417, 42744276730); macOS 100 min before, 6–9 min after.
-10 minutes is not reached on standard runners: the call is under "Calls waiting on Jack". Next: `test/audit` (the
-whole-suite audit; the 22 rules tests are kept, branch `test/audit-a` is never merged) as its own PR on top of this
-one. Two cold-cache runs hung after the Xcode build (42716618867, 42733532556); the e2e step now stops at 25 minutes
-and records where.
+Jack: "Do the Flutter bump first. Then as much as you can in parallel using a workflow if appropriate." Inventory
+checked against the code on `master` at a075650 (not against this file, which was a day stale): #178 to #222 are all
+merged, #128 (keychain probe draft) is the only open PR, and the e2e speed-up (#218), the test audit (#219) and
+`e2e-10min` A (#220) are done. The checkpoint lists under queue item 7 below are history.
 
-Earlier (session restart, 2026-11-09 ~22:00 UTC):
+**DECIDED, in order.** The main session merges and ticks items here; workers stop at a green, clean PR.
 
-1. Done: `master` e2e 42690070034 green; #207 and #208 merged (7b8e870) and installed on the iPhone and Mac; the
-   native compile check is `macos-build.yml` on PRs (this PR).
-2. Done: #209 (sealed-only creates) merged after e2e run 42694948177 passed; CI deploys its rules. It is an
-   encryption change, so ask Jack before installing it on the devices.
+- **F1. Flutter 3.47.9 (Dart 3.13.7) and riverpod_lint 3.1.9** (D11; unblocks D9, the universal macOS release build
+  on this Mac). Alone, before anything else builds. Branch `chore/flutter-3.47`.
+- **Lane A, insights engine, one PR per step, in series** (all share `lib/insights/`, `insights_provider.dart`,
+  `insights_page.dart`): n where's the line, o recovery time, p payoff from cutting down, q replacement, k before a
+  use, l one habit after another, m step changes; then the autocorrelation-corrected sample size and block-bootstrap
+  interval (gates 2 and 4), and the steps-based waking fallback for hours-after. None has code today.
+- **Lane B, native iOS sources, in series** (share `Info.plist`, the `pbxproj`, entitlements, `AppDelegate.swift`):
+  Health history backfill and incremental sync (7d: anchored queries, then background delivery; no
+  `HKAnchoredObjectQuery` or `enableBackgroundDelivery` exists), then Calendar reading (7e, EventKit; none exists).
+- **Lane C, Dart screens:** the weekly review (7f), then trend overlays (7g), then the D2 and D1 leftovers: a Trends
+  day point opening by container transform, the entry editor as the sheet rather than a page, a stepper step of 5 for
+  habits whose typical entry is 10 or more (`AmountFields.step` is 1).
+- **Lane D, small fixes, one PR per class:** Save on a locked habit says why instead of returning silently
+  (`lib/vice_form.dart`); under Reduce motion the page below a Back pop takes taps at once; register items
+  `undo-bar-lift-is-fixed-at-show-time`, `dense-hour-arc-shows-no-pending-entries`,
+  `recovery-key-copy-reaches-universal-clipboard`, `background-launches-take-focus-on-the-mac`,
+  `mac-widget-logs-need-the-helper`, `late-undo-offline-waits-for-the-app`; delete
+  `no-localizations-delegates-or-supported-locales` (English only: `r10-languages` A).
+- **Lane E:** store screenshots from the e2e harness (`ideas/release-blockers/store-icon-and-screenshots.md`). Uses
+  the simulator, so it runs when no other agent holds it.
+- **Last: cut 0.2.0** (`r10-release` B: its two gates, the Mac fullscreen layout #155 and AutoFill #133, are merged;
+  `pubspec.yaml` is still 0.1.0), with the `release` skill, then install on both devices.
+
+**UNDECIDED, to build out and pitch:** whether a sealed entry should be bound against being moved in time or rolled
+back (`sealed-blobs-bind-neither-time-nor-state`: a crypto and rules design change); any default a new engine step
+introduces (thresholds, windows, copy); anything a lane finds that is Jack's to call.
+
+**For Jack, not calls:** read the orphan-cleanup dry-run logs (B1); run on a device what never has (widgets, Control
+Centre controls, the menu bar helper's background sync, Insights on real Health data, `sleepingHeartRate`'s read
+cost); delete the old `com.screendead.tracker.tracker` install (B5); where the iPhone-to-Mac journal key sync
+investigation (P2) got to, since its branch is not on the remote and #128 waits on it; deleting the archived remote
+branches and their local worktrees (the permission check refused Claude).
+
+**Blocked:** the paid Apple team's items (B2), what waits on a release (B3), more sources that need an approval or
+entitlement (`ideas/insights/more-data-sources.md`).
 
 Minor calls made as built (Claude's, recommended; Jack may overturn): deleting an entry while the key is missing makes
 Undo say "Not restored"; keep the `e2eeEnabled` constant; no Undo on Deleted-habit deletes; the same-bedtime part sits
