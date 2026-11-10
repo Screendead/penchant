@@ -29,8 +29,9 @@ class LevelShift {
   final int daysBefore;
   final int daysAfter;
 
-  /// For no shift anywhere in the stretch searched, allowing for every place
-  /// one was looked for and for each day resembling the one before.
+  /// For no shift anywhere in the stretch searched beyond a steady drift
+  /// over it, allowing for every place one was looked for and for each day
+  /// resembling the one before.
   final double pValue;
 
   double get change => after - before;
@@ -61,6 +62,12 @@ class LevelShifts {
 /// that a straight line fits at least as well as the two levels is a drift,
 /// not a shift. The clearest shift is taken first, then each side is searched
 /// again, up to [maxLevelShifts].
+///
+/// A shift taken so is one to hold fixed when judging a habit, where a drift
+/// read as a shift costs only a column. To be told to the person it must also
+/// stand out beside a straight line over the same days:
+/// [LevelShift.pValue] is the same test of the split with the line in the
+/// model.
 LevelShifts levelShifts(Map<DateTime, double> values) {
   final List<DateTime> dates = values.keys.toList()..sort();
   final List<double> y = <double>[for (final DateTime d in dates) values[d]!];
@@ -70,9 +77,9 @@ LevelShifts levelShifts(Map<DateTime, double> values) {
   final List<_Split> open = <_Split>[whole];
   final List<_Split> taken = <_Split>[];
   while (taken.length < maxLevelShifts && open.isNotEmpty) {
-    open.sort((a, b) => a.pValue.compareTo(b.pValue));
+    open.sort((a, b) => a.gate.compareTo(b.gate));
     final _Split best = open.removeAt(0);
-    if (best.pValue >= shiftSignificance) break;
+    if (best.gate >= shiftSignificance) break;
     taken.add(best);
     for (final (int lo, int hi) in <(int, int)>[
       (best.lo, best.at),
@@ -110,12 +117,15 @@ LevelShifts levelShifts(Map<DateTime, double> values) {
 }
 
 class _Split {
-  const _Split(this.lo, this.at, this.hi, this.pValue);
+  const _Split(this.lo, this.at, this.hi, this.gate, this.pValue);
 
   // The stretch searched is [lo, hi); the new level starts at [at].
   final int lo;
   final int at;
   final int hi;
+
+  // For no shift, against a flat level and against a straight line.
+  final double gate;
   final double pValue;
 }
 
@@ -148,7 +158,7 @@ _Split? _clearestSplit(List<DateTime> dates, List<double> y, int lo, int hi) {
       at = k;
     }
   }
-  if (at < 0 || between >= total) return _Split(lo, max(at, lo), hi, 1);
+  if (at < 0 || between >= total) return _Split(lo, max(at, lo), hi, 1, 1);
 
   // What a straight line over the dates explains.
   final double t0 = dates[lo].millisecondsSinceEpoch.toDouble();
@@ -163,7 +173,8 @@ _Split? _clearestSplit(List<DateTime> dates, List<double> y, int lo, int hi) {
     sxx += t * t;
     sxy += t * (y[i] - m);
   }
-  if (sxx > 0 && sxy * sxy / sxx >= between) return _Split(lo, at, hi, 1);
+  final double line = sxx > 0 ? sxy * sxy / sxx : 0;
+  if (line >= between) return _Split(lo, at, hi, 1, 1);
 
   double leftMean = 0, rightMean = 0;
   for (int i = lo; i < hi; i++) {
@@ -182,16 +193,38 @@ _Split? _clearestSplit(List<DateTime> dates, List<double> y, int lo, int hi) {
     if (i > lo) lagged += e * previous;
     previous = e;
   }
-  // Clamped as in unevenHalves: a negative value would sharpen the test, and
-  // one near 1 leaves no evidence at all.
-  final double rho = squares == 0 ? 0 : (lagged / squares).clamp(0.0, 0.9);
-  final int df = n - 2;
-  final double t =
-      sqrt(between / ((total - between) / df)) * sqrt((1 - rho) / (1 + rho));
+  // A sample's lag-1 autocorrelation reads low by about (1 + 3 rho) / n for
+  // each level fitted (Kendall 1954). Clamped as in unevenHalves: a negative
+  // value would sharpen the test, and one near 1 leaves no evidence at all.
+  final double raw = squares == 0 ? 0 : lagged / squares;
+  final double rho = (raw + 2 * (1 + 3 * raw) / n).clamp(0.0, 0.9);
+  final double wander = sqrt((1 - rho) / (1 + rho));
   // Student's t as a normal deviate, the form Miller and Siegmund's
   // approximation takes.
-  final double z = t * (1 - 1 / (4 * df)) / sqrt(1 + t * t / (2 * df));
-  return _Split(lo, at, hi, _largestOfSplits(z, minShiftSideDays / n));
+  double chance(double t, int df) => _largestOfSplits(
+    t * wander * (1 - 1 / (4 * df)) / sqrt(1 + t * t / (2 * df)),
+    minShiftSideDays / n,
+  );
+
+  // The split with the line in the model: both with the line taken out.
+  final int nr = hi - at;
+  double sdt = 0;
+  for (int i = at; i < hi; i++) {
+    sdt += dates[i].millisecondsSinceEpoch - t0 - mt;
+  }
+  final double own = (at - lo) * nr / n - (sxx > 0 ? sdt * sdt / sxx : 0);
+  final double shared = nr * (rightMean - m) - (sxx > 0 ? sdt * sxy / sxx : 0);
+  final double rest = own > 1e-9 ? total - line - shared * shared / own : 0;
+  final double beside = own > 1e-9 && rest > 0
+      ? chance(shared.abs() / sqrt(own * rest / (n - 3)), n - 3)
+      : 1;
+  return _Split(
+    lo,
+    at,
+    hi,
+    chance(sqrt(between / ((total - between) / (n - 2))), n - 2),
+    beside,
+  );
 }
 
 // The chance that the largest standardised difference over every split

@@ -28,7 +28,7 @@ void search(
   double Function(int i)? level,
   int? planted,
 }) {
-  int any = 0, near = 0, shifts = 0;
+  int any = 0, near = 0, shifts = 0, told = 0;
   for (int seed = 0; seed < seeds; seed++) {
     final Random r = Random(seed);
     double e = gaussian(r);
@@ -41,6 +41,7 @@ void search(
     final LevelShifts found = levelShifts(values);
     shifts += found.shifts.length;
     if (found.shifts.isNotEmpty) any++;
+    if (found.shifts.any((s) => s.pValue < 0.05)) told++;
     if (planted != null &&
         found.shifts.any(
           (s) => daysBetween(addDays(january5, planted), s.at).abs() <= 5,
@@ -49,7 +50,8 @@ void search(
     }
   }
   stdout.writeln(
-    '$name (n=$seeds): any shift $any, shifts $shifts'
+    '$name (n=$seeds): held fixed in $any ($shifts shifts), p < 0.05 '
+    'beside a line in $told'
     '${planted == null ? '' : ', within 5 days of the planted one $near'}',
   );
 }
