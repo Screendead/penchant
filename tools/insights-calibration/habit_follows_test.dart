@@ -62,7 +62,7 @@ final Map<String, Journal> noise = <String, Journal>{
         ],
       ),
   'both at weekends only': (r, days) => eachDay(
-    days * 3,
+    days,
     (day, _) => day.weekday < DateTime.saturday
         ? const <HabitUse>[]
         : <HabitUse>[

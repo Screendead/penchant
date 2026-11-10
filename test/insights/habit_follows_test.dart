@@ -159,10 +159,9 @@ void main() {
         FollowsVerdict.found,
       );
       expect(
-        judgeHabitFollows(
-          <HabitFollows>[pair],
-          alongside: List<double>.filled(20, 0.9),
-        ).single.verdict,
+        judgeHabitFollows(<HabitFollows>[
+          pair,
+        ], alongside: List<double>.filled(20, 0.9)).single.verdict,
         FollowsVerdict.chance,
       );
     });
@@ -205,22 +204,25 @@ void main() {
       expect(cards.last.others.single.leadId, 'tea');
     });
 
-    test('the copy says how often, against the usual timing, and from what', () {
-      final HabitFollows pair = _pair('coffee', 'cigarettes', share: 0.617);
+    test(
+      'the copy says how often, against the usual timing, and from what',
+      () {
+        final HabitFollows pair = _pair('coffee', 'cigarettes', share: 0.617);
 
-      expect(
-        followsSentence(pair, 'Coffee', 'Cigarettes'),
-        'After Coffee, you log Cigarettes within 15 minutes 62% of the time. '
-        'Your usual timing of each would give 20%.',
-      );
-      expect(
-        followsBasis(pair, 'Coffee'),
-        'From 84 uses of Coffee on 60 days with both',
-      );
-      expect(
-        followsLine(pair, 'Coffee'),
-        'After Coffee: 62% of the time, against 20% by your usual timing',
-      );
-    });
+        expect(
+          followsSentence(pair, 'Coffee', 'Cigarettes'),
+          'After Coffee, you log Cigarettes within 15 minutes 62% of the time. '
+          'Your usual timing of each would give 20%.',
+        );
+        expect(
+          followsBasis(pair, 'Coffee'),
+          'From 84 uses of Coffee on 60 days with both',
+        );
+        expect(
+          followsLine(pair, 'Coffee'),
+          'After Coffee: 62% of the time, against 20% by your usual timing',
+        );
+      },
+    );
   });
 }
