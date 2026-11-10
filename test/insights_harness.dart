@@ -8,6 +8,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -33,6 +34,20 @@ class FixedToday extends Today {
 
   @override
   DateTime build() => _day;
+}
+
+class MemoryHealthStoreFile implements HealthStoreFile {
+  String? contents;
+  int writes = 0;
+
+  @override
+  Future<String?> read() async => contents;
+
+  @override
+  Future<void> write(String contents) async {
+    writes++;
+    this.contents = contents;
+  }
 }
 
 class FakeHealthSource implements HealthSource {
@@ -67,6 +82,33 @@ class FakeHealthSource implements HealthSource {
   int reads = 0;
   Set<HealthMetric>? lastMetrics;
 
+  /// Every daily read, in order.
+  final List<({Set<HealthMetric> metrics, DateTime start, DateTime end})>
+  dailyCalls = <({Set<HealthMetric> metrics, DateTime start, DateTime end})>[];
+
+  /// What [changes] answers; null asks for every metric in full, as a first
+  /// sync does.
+  HealthChanges? nextChanges;
+  int changeChecks = 0;
+  final List<int> handled = <int>[];
+
+  @override
+  Future<HealthChanges?> changes(Set<HealthMetric> metrics) async {
+    changeChecks++;
+    if (!available) return null;
+    if (failure case final PlatformException e) throw e;
+    return nextChanges ??
+        HealthChanges(
+          generation: changeChecks,
+          whole: {for (final m in metrics) m.id},
+        );
+  }
+
+  @override
+  Future<void> changesHandled(int generation) async {
+    handled.add(generation);
+  }
+
   @override
   Future<bool> isAvailable() async => available;
 
@@ -91,6 +133,7 @@ class FakeHealthSource implements HealthSource {
   ) async {
     reads++;
     lastMetrics = metrics;
+    dailyCalls.add((metrics: metrics, start: start, end: end));
     if (failure case final PlatformException e) throw e;
     return switch (read) {
       HealthValues(:final List<DailyOutcome> values) =>
@@ -191,6 +234,7 @@ List<Override> insightsOverrides({
   lastNightProvider.overrideWith((Ref ref) async => lastNight),
   todayProvider.overrideWith(() => FixedToday(insightsToday)),
   healthSourceProvider.overrideWithValue(health),
+  healthStoreFileProvider.overrideWithValue(MemoryHealthStoreFile()),
   insightsRunnerProvider.overrideWithValue(
     runner ?? (InsightsInput input) async => computeInsights(input),
   ),

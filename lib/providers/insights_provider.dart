@@ -9,6 +9,7 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/providers/today_provider.dart';
@@ -21,6 +22,10 @@ import 'package:tracker/providers/vice_list_provider.dart';
 
 final healthSourceProvider = Provider<HealthSource>(
   (ref) => ChannelHealthSource(),
+);
+
+final healthStoreFileProvider = Provider<HealthStoreFile>(
+  (ref) => CacheHealthStoreFile(),
 );
 
 /// Whether this device has shown the Health sheet from Insights. Kept on the
@@ -144,32 +149,27 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   if (defaultTargetPlatform == TargetPlatform.macOS) {
     return const HealthOnIPhone();
   }
-  final ({DateTime start, DateTime end}) range = insightsRange(
-    ref.watch(todayProvider),
-  );
+  final DateTime today = ref.watch(todayProvider);
+  final ({DateTime start, DateTime end}) range = insightsRange(today);
   final HealthSource source = ref.watch(healthSourceProvider);
+  final HealthStoreFile file = ref.watch(healthStoreFileProvider);
   final bool connected = await ref.watch(healthConnectedProvider.future);
   try {
     if (!await source.isAvailable()) return const HealthUnsupported();
     if (!connected) return const HealthNotConnected();
-    final List<DailyOutcome> values = <DailyOutcome>[];
-    for (final ({DateTime start, DateTime end}) chunk in insightsHealthChunks(
-      range,
-    )) {
+    return switch (await syncHealthDaily(
+      source: source,
+      file: file,
+      metrics: _engineMetrics,
+      range: range,
+      today: today,
       // Left before the read finished: the value would be thrown away.
-      if (!ref.mounted) return const HealthFailed();
-      switch (await source.dailyValues(
-        _engineMetrics,
-        chunk.start,
-        chunk.end,
-      )) {
-        case HealthUnavailable():
-          return const HealthUnsupported();
-        case HealthValues(values: final List<DailyOutcome> chunkValues):
-          values.addAll(chunkValues);
-      }
-    }
-    return HealthReady(values);
+      alive: () => ref.mounted,
+    )) {
+      null => const HealthFailed(),
+      HealthUnavailable() => const HealthUnsupported(),
+      HealthValues(:final List<DailyOutcome> values) => HealthReady(values),
+    };
   } on PlatformException catch (e) {
     return switch (e.code) {
       healthDatabaseInaccessible => const HealthLocked(),
