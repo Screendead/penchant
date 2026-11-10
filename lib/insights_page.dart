@@ -16,6 +16,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/before_use_copy.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
+import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
@@ -27,6 +28,7 @@ import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
+import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/weekly_review_page.dart';
@@ -334,7 +336,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         body: InsightsPage.cuttingDownBody,
       ),
       const CardSectionLabel(InsightsPage.setsOffHeading),
-      if (costs.before.isEmpty)
+      if (costs.before.isEmpty && costs.follows.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -347,6 +349,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           mark: costs.marks[card.habitId] ?? const HabitMark(0),
           locale: formatLocale,
           top: i == 0 ? 0 : DialSpace.xs,
+        ),
+      for (final (int i, FollowsCard card) in costs.follows.indexed)
+        HabitFollowsCard(
+          card: card,
+          nameOf: costs.nameOf,
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          top: i == 0 && costs.before.isEmpty ? 0 : DialSpace.xs,
         ),
       DialCard(
         children: <Widget>[
@@ -473,6 +482,10 @@ class _Costs {
       for (final HabitFinding f in report.findings)
         if (_names.containsKey(f.habitId)) f,
     ], floors: report.floors);
+    follows = followsCards(<HabitFollows>[
+      for (final HabitFollows f in report.follows)
+        if (_names.containsKey(f.leadId) && _names.containsKey(f.followerId)) f,
+    ]);
     refused = <HabitRefusal>[
       for (final HabitRefusal r in report.refused)
         if (_names.containsKey(r.habitId)) r,
@@ -493,6 +506,7 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
+  late final List<FollowsCard> follows;
   late final DateTime? firstDay;
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';
@@ -559,6 +573,7 @@ class _Costs {
             formatLocale,
             unit: unitOf(card.habitId),
           ),
+        for (final FollowsCard card in follows) followsText(card, nameOf),
       ],
     );
   }
