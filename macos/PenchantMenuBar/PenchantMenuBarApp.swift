@@ -215,15 +215,14 @@ struct MenuContent: View {
 // and the app's registration leaves that process running the old code from
 // wherever the old bundle went, the Trash included. Penchant
 // posts showMenuBarNotification at each launch; a helper whose bundle on disk
-// is gone or another build then exits, and launchd starts the registered one.
-// The exit status is non-zero so a KeepAlive limited to failures restarts it.
+// is gone or another build then exits, and the app opens its own helper.
 enum Staleness {
   static let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
 
   static func exitIfReplaced() {
     let info = NSDictionary(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
     guard info?["CFBundleVersion"] as? String != build else { return }
-    exit(1)
+    exit(0)
   }
 }
 

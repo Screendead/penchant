@@ -100,15 +100,23 @@ class AppDelegate: FlutterAppDelegate {
       CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(showMenuBarNotification as CFString), nil, nil,
       true)
     // An item enabled earlier and quit since does not relaunch until the next
-    // login, so the app opens it.
-    if NSRunningApplication.runningApplications(withBundleIdentifier: Self.menuBarHelperID).isEmpty {
-      let helper = Bundle.main.bundleURL.appendingPathComponent(
-        "Contents/Library/LoginItems/PenchantMenuBar.app")
-      let configuration = NSWorkspace.OpenConfiguration()
-      configuration.activates = false
-      configuration.addsToRecentItems = false
-      NSWorkspace.shared.openApplication(at: helper, configuration: configuration)
+    // login, so the app opens it. A helper left over from an older build
+    // exits on that notification (Staleness, PenchantMenuBarApp.swift), so
+    // the check runs again once it has had time to go.
+    openMenuBarHelperIfMissing()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3) { self.openMenuBarHelperIfMissing() }
+  }
+
+  private func openMenuBarHelperIfMissing() {
+    guard NSRunningApplication.runningApplications(withBundleIdentifier: Self.menuBarHelperID).isEmpty else {
+      return
     }
+    let helper = Bundle.main.bundleURL.appendingPathComponent(
+      "Contents/Library/LoginItems/PenchantMenuBar.app")
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.activates = false
+    configuration.addsToRecentItems = false
+    NSWorkspace.shared.openApplication(at: helper, configuration: configuration)
   }
 
   // Closing the window keeps the app, so it goes on flushing what the widgets
