@@ -2,7 +2,8 @@ import 'dart:math';
 
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
-import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/health_source.dart'
+    show HealthSample, HealthSampleMetric;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
