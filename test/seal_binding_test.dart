@@ -148,8 +148,9 @@ void main() {
     test('a removed amount', () async {
       await record(amount: 1.5);
       expect(
-        (await read(<String, dynamic>{...server.stored}..remove('amount')))
-            .binding,
+        (await read(
+          <String, dynamic>{...server.stored}..remove('amount'),
+        )).binding,
         SealBinding.altered,
       );
     });
@@ -220,8 +221,10 @@ void main() {
           .done;
       expect((await read()).binding, SealBinding.unbound);
       expect(
-        (await read(<String, dynamic>{...server.stored, 'quantity': 9}))
-            .binding,
+        (await read(<String, dynamic>{
+          ...server.stored,
+          'quantity': 9,
+        })).binding,
         SealBinding.unbound,
       );
     });
