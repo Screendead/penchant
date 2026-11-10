@@ -9,9 +9,9 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
+import 'package:tracker/journal_key/secret_clipboard.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
-import 'package:tracker/journal_key/secret_clipboard.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
