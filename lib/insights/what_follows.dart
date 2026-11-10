@@ -1305,13 +1305,6 @@ List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
   ];
 }
 
-/// The p-value [insight] brings to the report's family; null when nothing was
-/// fitted.
-double? insightPValue(HabitInsight insight) => switch (insight) {
-  HabitFinding(:final double pValue) => pValue,
-  HabitRefusal(:final double? pValue) => pValue,
-};
-
 /// [insights] with every finding that fails Benjamini-Hochberg at
 /// [InsightGates.falseDiscoveryRate] refused as [RefusalReason.chance]. The
 /// family is every result with a p-value, so a fitted habit refused for its
