@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -172,6 +173,7 @@ class FakeTrackerWrites implements TrackerWrites {
     double? amount,
     DateTime? createdAt,
     List<String>? triggers,
+    ViceActivity? current,
   }) => _write(
     Write('updateActivity', activityID, <String, Object?>{
       'quantity': ?quantity,

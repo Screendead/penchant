@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cryptography/dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/errors/report_error.dart';
 
@@ -46,6 +48,51 @@ abstract interface class FieldSealer {
 final sealerProvider = Provider<FieldSealer?>((ref) => null);
 
 String sealContext(String collection, String id) => '$collection/$id';
+
+/// Inside an activity's envelope beside its content: [activityBinding] of the
+/// plaintext fields stored next to the envelope when it was sealed. The key
+/// is no content field, so a build that predates it opens the envelope and
+/// ignores it.
+const String boundField = 'b';
+
+/// Whether an activity's plaintext fields are the ones its envelope was
+/// sealed with. Only [intact] and [altered] come from an envelope carrying
+/// [boundField]; an older envelope, a plaintext document and a locked one
+/// are [unbound].
+enum SealBinding { unbound, intact, altered }
+
+/// 16 bytes of SHA-256 over the fields, base64url: short enough that an
+/// entry without triggers stays in the 64-byte bucket. It needs no key of
+/// its own, since only the journal key can put it inside an envelope.
+String activityBinding({
+  required int createdAtMicros,
+  required String viceID,
+  required int quantity,
+  required double? amount,
+}) {
+  final List<int> digest = const DartSha256()
+      .hashSync(
+        utf8.encode(
+          jsonEncode(<Object?>[
+            createdAtMicros,
+            viceID,
+            quantity,
+            amount?.toString(),
+          ]),
+        ),
+      )
+      .bytes;
+  return base64Url.encode(digest.sublist(0, 16)).replaceAll('=', '');
+}
+
+SealBinding checkBinding(Map<String, Object?>? opened, String expected) {
+  if (opened == null || !opened.containsKey(boundField)) {
+    return SealBinding.unbound;
+  }
+  return opened[boundField] == expected
+      ? SealBinding.intact
+      : SealBinding.altered;
+}
 
 /// Opens the sealed fields of the documents one listener receives. It never
 /// throws, and reports each document it cannot open once.

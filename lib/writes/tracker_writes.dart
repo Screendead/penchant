@@ -7,6 +7,7 @@ import 'package:tracker/data/category.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 
 enum WriteOp { create, update, delete }
 
@@ -49,12 +50,18 @@ class TrackerWrites {
     this._firestore, {
     void Function()? onWrite,
     FieldSealer? sealer,
+    bool bindActivities = false,
   }) : _onWrite = onWrite,
-       _sealer = sealer;
+       _sealer = sealer,
+       _bindActivities = bindActivities;
 
   final FirebaseFirestore _firestore;
   final void Function()? _onWrite;
   final FieldSealer? _sealer;
+
+  // Prototype switch, off everywhere: an activity's envelope also carries
+  // [activityBinding] of the plaintext fields written beside it.
+  final bool _bindActivities;
 
   // The SDK sees the write only once the envelope exists, so an offline
   // write still queues, a moment later.
@@ -213,7 +220,16 @@ class TrackerWrites {
         _sealing(
           sealer,
           activity,
-          <String, Object?>{triggersField: writeTriggers(triggers)},
+          <String, Object?>{
+            triggersField: writeTriggers(triggers),
+            if (_bindActivities)
+              boundField: activityBinding(
+                createdAtMicros: createdAt.microsecondsSinceEpoch,
+                viceID: viceID,
+                quantity: quantity,
+                amount: amount,
+              ),
+          },
           (Blob envelope) => activity.set({
             'amount': ?amount,
             'createdAt': createdAt,
@@ -235,12 +251,16 @@ class TrackerWrites {
   // sealed activity field (the quantity, amount and time stay plaintext,
   // Jack 2026-11-06), so new triggers replace the whole envelope, and
   // [triggers] must be null for an entry whose envelope would not open.
+  // While binding, [current] (the entry as last read, opened) makes every
+  // edit reseal, so the binding follows the new time and quantity; without
+  // it, or for a locked entry, the edit leaves the old binding behind.
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
     double? amount,
     DateTime? createdAt,
     List<String>? triggers,
+    ViceActivity? current,
   }) {
     final Map<String, Object> plaintext = <String, Object>{
       'amount': ?amount,
@@ -248,7 +268,11 @@ class TrackerWrites {
       'quantity': ?quantity,
     };
     final FieldSealer? sealer = _sealer;
-    if (sealer == null || triggers == null) {
+    final ViceActivity? bound = _bindActivities && !(current?.locked ?? true)
+        ? current
+        : null;
+    final List<String>? sealedTriggers = triggers ?? bound?.triggers;
+    if (sealer == null || sealedTriggers == null) {
       return _update(_activities, activityID, {
         ...plaintext,
         if (triggers != null) triggersField: writeTriggers(triggers),
@@ -262,7 +286,17 @@ class TrackerWrites {
         _sealing(
           sealer,
           doc,
-          <String, Object?>{triggersField: writeTriggers(triggers)},
+          <String, Object?>{
+            triggersField: writeTriggers(sealedTriggers),
+            if (bound != null)
+              boundField: activityBinding(
+                createdAtMicros: (createdAt ?? bound.createdAt.toDate())
+                    .microsecondsSinceEpoch,
+                viceID: bound.viceID,
+                quantity: quantity ?? bound.quantity,
+                amount: amount ?? bound.amount,
+              ),
+          },
           (Blob envelope) => doc.update({
             ...plaintext,
             sealedField: envelope,

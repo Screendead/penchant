@@ -27,6 +27,7 @@ class ViceActivity {
     this.triggers = const <String>[],
     this.pending = false,
     this.locked = false,
+    this.binding = SealBinding.unbound,
   });
 
   final String id;
@@ -45,6 +46,9 @@ class ViceActivity {
   // Sealed fields this device could not open, which must never be written
   // back. The quantity stays plaintext (Jack, 2026-11-06), so it is real.
   final bool locked;
+  // Altered when the time, habit, quantity or amount stored beside the
+  // envelope is not what the envelope was sealed with.
+  final SealBinding binding;
 
   // What charts, totals and labels count. Every write of an amount sets
   // quantity to storedMeasure's rounding of it, so a quantity that disagrees
@@ -63,16 +67,32 @@ class ViceActivity {
     Map<String, Object?>? opened,
   }) {
     final bool locked = isSealed(json) && opened == null;
+    final String viceID = readString(json['viceID']);
+    final int quantity = readInt(json['quantity']);
+    final double? amount = readAmount(json['amount']);
+    final Timestamp createdAt = readTimestamp(
+      json['createdAt'],
+      pending: pending,
+    );
     return ViceActivity(
       id: id,
-      viceID: readString(json['viceID']),
-      quantity: readInt(json['quantity']),
-      amount: readAmount(json['amount']),
+      viceID: viceID,
+      quantity: quantity,
+      amount: amount,
       ownerID: readString(json['ownerID']),
-      createdAt: readTimestamp(json['createdAt'], pending: pending),
+      createdAt: createdAt,
       triggers: readTriggers(contentOf(json, opened)[triggersField]),
       pending: pending,
       locked: locked,
+      binding: checkBinding(
+        isSealed(json) ? opened : null,
+        activityBinding(
+          createdAtMicros: createdAt.microsecondsSinceEpoch,
+          viceID: viceID,
+          quantity: quantity,
+          amount: amount,
+        ),
+      ),
     );
   }
 
