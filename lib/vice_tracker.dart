@@ -21,6 +21,7 @@ import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
@@ -91,6 +92,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<bool>(
       pendingNudgeLogProvider,
       (bool? _, bool pending) => _openNudgeLog(pending),
+      fireImmediately: true,
+    );
+    ref.listenManual<bool>(
+      pendingWeeklyReviewProvider,
+      (bool? _, bool pending) => _openWeeklyReview(pending),
       fireImmediately: true,
     );
     ref.listenManual<int?>(
@@ -179,6 +185,22 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       ref.read(pendingNudgeLogProvider.notifier).clear();
       Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
       _record(null);
+    });
+  }
+
+  // The weekly review notification's tap: back to Today, then the review.
+  void _openWeeklyReview(bool pending) {
+    if (!pending) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(pendingWeeklyReviewProvider)) {
+        return;
+      }
+      ref.read(pendingWeeklyReviewProvider.notifier).clear();
+      Navigator.of(context)
+        ..popUntil((Route<dynamic> r) => r.isFirst)
+        ..pushNamed(WeeklyReviewPage.route);
     });
   }
 

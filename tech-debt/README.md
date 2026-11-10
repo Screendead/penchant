@@ -16,7 +16,7 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**5 issues: 0 critical, 0 high, 0 medium, 5 low.**
+**4 issues: 0 critical, 0 high, 0 medium, 4 low.**
 
 ## Firebase Data Layer (2)
 
@@ -35,11 +35,10 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 
-## Offline and Write Reliability (1)
+## Offline and Write Reliability (0)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
-- **low** — [A late Undo made offline from a widget reaches the server only when Penchant next starts](offline-and-write-reliability/late-undo-offline-waits-for-the-app.md)
 
 ## Accessibility and Localization (0)
 
