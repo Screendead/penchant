@@ -158,9 +158,9 @@ class RecoveryKeyCard extends ConsumerWidget {
                       child: const Text(RecoveryKeyCopy.notNow),
                     ),
                     TextButton(
-                      onPressed: () =>
-                          Navigator.of(context)
-                              .pushNamed(RecoveryKeyPage.route),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(RecoveryKeyPage.route),
                       child: const Text(RecoveryKeyCopy.saveKey),
                     ),
                   ],
