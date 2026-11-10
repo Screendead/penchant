@@ -11,6 +11,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/rejected_writes.dart';
+import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 const String widgetLogWhat = 'a log from a widget or Shortcut';
@@ -29,9 +30,10 @@ typedef FlushLeft = ({DateTime? next, bool refused, bool unacknowledged});
 /// the server refuses stays for the app's next flush to show in its banner,
 /// since a background engine has no banner. So does a log the server has not
 /// acknowledged, for the next flush to write again: the SDK's queue of an
-/// exited process sends it only when Penchant next starts. A delete leaves
-/// anyway, because the SDK's queued copy reaches the server first and the
-/// rules refuse a repeat delete.
+/// exited process sends it only when Penchant next starts. So does a delete,
+/// which a background flush sends only once it has seen the entry still on
+/// the server, after the SDK's queued writes (an earlier run's copy of it
+/// included) have drained: the rules refuse a repeat delete.
 ///
 /// Without the journal key [writes] cannot create, so every log stays queued
 /// for a flush that has it, and counts as unacknowledged.
@@ -82,6 +84,16 @@ Future<_Written> _write(
   RejectedWrites rejected, {
   required bool inBackground,
 }) async {
+  if (inBackground && log.op == QueuedLogOp.delete) {
+    switch (await _stillOnServer(log, writes)) {
+      case false:
+        return _Written.done;
+      case null:
+        return _Written.unacknowledged;
+      case true:
+        break;
+    }
+  }
   final SentWrite write = switch (log.op) {
     QueuedLogOp.log => writes.recordActivity(
       log.id,
@@ -98,7 +110,7 @@ Future<_Written> _write(
       : 'Not undone: $widgetLogWhat';
   try {
     final bool acknowledged = await rejected.settle(write, what);
-    return acknowledged || !inBackground || !creates
+    return acknowledged || !inBackground
         ? _Written.done
         : _Written.unacknowledged;
   } on FirebaseException catch (e, stack) {
@@ -114,6 +126,20 @@ Future<_Written> _write(
       changes: creates ? null : log.id,
     )(e);
     return _Written.done;
+  }
+}
+
+// Whether the entry a queued delete names is on the server, or null when
+// that cannot be learnt in time (offline, say).
+Future<bool?> _stillOnServer(QueuedLog log, TrackerWrites writes) async {
+  try {
+    await writes.waitForPendingWrites().timeout(writeTimeout);
+    return await writes
+            .serverDocument('activities', log.id, ownerID: log.uid)
+            .timeout(writeTimeout) !=
+        null;
+  } on Object {
+    return null;
   }
 }
 

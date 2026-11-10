@@ -31,16 +31,10 @@ import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
-  const RecordNewActivityDialog({
-    super.key,
-    this.initialViceID,
-    this.bottomClearance = 0,
-  });
+  const RecordNewActivityDialog({super.key, this.initialViceID});
 
   // The habit chosen when the dialog opens, as from a held Log-fan wedge.
   final String? initialViceID;
-  // Lifts the bar it shows over a floating button, as Today's Log button.
-  final double bottomClearance;
 
   static const Duration undoDuration = undo_bar.undoDuration;
   static const Key submitKey = ValueKey<String>('amount-sheet-submit');
@@ -49,31 +43,23 @@ class RecordNewActivityDialog extends ConsumerStatefulWidget {
   static const String submitLabel = 'Record';
 
   // Opens the sheet over [context]'s route.
-  static Future<void> show(
-    BuildContext context, {
-    String? initialViceID,
-    double bottomClearance = 0,
-  }) => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => RecordNewActivityDialog(
-      initialViceID: initialViceID,
-      bottomClearance: bottomClearance,
-    ),
-  );
+  static Future<void> show(BuildContext context, {String? initialViceID}) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => RecordNewActivityDialog(initialViceID: initialViceID),
+      );
   static const String recordedMessage = 'Activity recorded';
 
   static void showRecorded(
     ScaffoldMessengerState messenger, {
     required bool synced,
     required VoidCallback onUndo,
-    double bottomClearance = 0,
   }) => undo_bar.showUndoBar(
     messenger,
     TextSpan(text: synced ? recordedMessage : queuedMessage),
     onUndo: onUndo,
-    bottomClearance: bottomClearance,
   );
 
   @override
@@ -185,20 +171,11 @@ class _RecordNewActivityDialogState
     }
 
     final String written = activityID;
-    final double clearance = widget.bottomClearance;
     Navigator.of(context).pop();
     RecordNewActivityDialog.showRecorded(
       messenger,
       synced: synced,
-      bottomClearance: clearance,
-      onUndo: () => undoLog(
-        messenger,
-        writes,
-        rejected,
-        written,
-        entry,
-        bottomClearance: clearance,
-      ),
+      onUndo: () => undoLog(messenger, writes, rejected, written, entry),
     );
   }
 

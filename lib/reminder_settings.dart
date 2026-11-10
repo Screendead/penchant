@@ -13,7 +13,7 @@ String nudgeTimeLabel(BuildContext context, TimeOfDay time) =>
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
 
-/// Settings › Reminder: one optional notification a day.
+/// Settings › Reminder: one optional notification a day, and one a week.
 class ReminderSettings extends ConsumerStatefulWidget {
   const ReminderSettings({super.key});
 
@@ -23,6 +23,10 @@ class ReminderSettings extends ConsumerStatefulWidget {
   static const String foot =
       'One quiet notification a day. Press and hold it to log something or '
       'to mark a clean day. Saved on this device only.';
+  static const String reviewLabel = 'Weekly review';
+  static const String reviewFoot =
+      'Monday at 9:00, a note that last week’s review is ready. It says '
+      'nothing about your journal. Saved on this device only.';
 
   @override
   ConsumerState<ReminderSettings> createState() => _ReminderSettingsState();
@@ -31,6 +35,7 @@ class ReminderSettings extends ConsumerStatefulWidget {
 class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
   bool _asking = false;
   bool _refused = false;
+  bool _reviewRefused = false;
   // Null until known. Checked on opening and on return from the system
   // Settings, where the user can withdraw it without the app hearing.
   bool? _permitted;
@@ -80,6 +85,26 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
     }
   }
 
+  Future<void> _toggleReview(bool on) async {
+    final WeeklyReviewReminder review = ref.read(
+      weeklyReviewReminderProvider.notifier,
+    );
+    if (!on) {
+      setState(() => _reviewRefused = false);
+      await review.turnOff();
+      return;
+    }
+    setState(() => _asking = true);
+    final bool granted = await review.turnOn();
+    if (mounted) {
+      setState(() {
+        _asking = false;
+        _reviewRefused = !granted;
+        _permitted = granted;
+      });
+    }
+  }
+
   Future<void> _pickTime(TimeOfDay current) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -96,6 +121,8 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
     final String time = nudgeTimeLabel(context, settings.time);
     final bool withdrawn = settings.enabled && _permitted == false;
     final bool on = settings.enabled && !withdrawn;
+    final bool reviewOn =
+        ref.watch(weeklyReviewReminderProvider) && _permitted != false;
     return CardPage(
       title: 'Reminder',
       children: <Widget>[
@@ -133,6 +160,27 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
               : withdrawn
               ? NudgeCopy.permissionWithdrawn
               : ReminderSettings.foot,
+        ),
+        DialCard(
+          children: <Widget>[
+            MergeSemantics(
+              child: CardRow(
+                label: ReminderSettings.reviewLabel,
+                enabled: !_asking,
+                onTap: () => _toggleReview(!reviewOn),
+                trailing: Switch.adaptive(
+                  value: reviewOn,
+                  activeTrackColor: Theme.of(context).colorScheme.primary,
+                  onChanged: _asking ? null : _toggleReview,
+                ),
+              ),
+            ),
+          ],
+        ),
+        CardFoot(
+          _reviewRefused
+              ? NudgeCopy.permissionDenied
+              : ReminderSettings.reviewFoot,
         ),
       ],
     );

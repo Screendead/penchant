@@ -21,6 +21,7 @@ import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
@@ -76,9 +77,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   // Null follows today, so the tab moves on at midnight.
   DateTime? pinnedDay;
 
-  // Whether the last layout was the split view.
-  bool _split = false;
-
   final DraggableScrollableController _sheet = DraggableScrollableController();
   late final SheetPosition _position = SheetPosition(_sheet);
 
@@ -94,6 +92,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<bool>(
       pendingNudgeLogProvider,
       (bool? _, bool pending) => _openNudgeLog(pending),
+      fireImmediately: true,
+    );
+    ref.listenManual<bool>(
+      pendingWeeklyReviewProvider,
+      (bool? _, bool pending) => _openWeeklyReview(pending),
       fireImmediately: true,
     );
     ref.listenManual<int?>(
@@ -159,7 +162,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       vice,
       from: from,
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-      bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
   }
 
@@ -167,11 +169,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void _logNow(Vice vice) => _log(vice, null);
 
   void _record(Vice? vice) {
-    RecordNewActivityDialog.show(
-      context,
-      initialViceID: vice?.id,
-      bottomClearance: ViceTracker.logClearance(context, split: _split),
-    );
+    RecordNewActivityDialog.show(context, initialViceID: vice?.id);
   }
 
   // The notification's "Log something": back to Today, then the Log, as if
@@ -187,6 +185,22 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       ref.read(pendingNudgeLogProvider.notifier).clear();
       Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
       _record(null);
+    });
+  }
+
+  // The weekly review notification's tap: back to Today, then the review.
+  void _openWeeklyReview(bool pending) {
+    if (!pending) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(pendingWeeklyReviewProvider)) {
+        return;
+      }
+      ref.read(pendingWeeklyReviewProvider.notifier).clear();
+      Navigator.of(context)
+        ..popUntil((Route<dynamic> r) => r.isFirst)
+        ..pushNamed(WeeklyReviewPage.route);
     });
   }
 
@@ -271,7 +285,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool split = constraints.maxWidth >= ViceTracker.splitWidth;
-        _split = split;
         final double column = split
             ? ViceTracker.splitColumnWidth(constraints.maxWidth)
             : constraints.maxWidth;

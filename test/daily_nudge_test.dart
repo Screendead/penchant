@@ -46,6 +46,15 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancel() async => cancels++;
+
+  int reviewSchedules = 0;
+  int reviewCancels = 0;
+
+  @override
+  Future<void> scheduleWeeklyReview() async => reviewSchedules++;
+
+  @override
+  Future<void> cancelWeeklyReview() async => reviewCancels++;
 }
 
 Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>
@@ -128,10 +137,10 @@ void main() {
     await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(Switch).first);
     await tester.pumpAndSettle();
 
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
     expect(find.text(NudgeCopy.permissionDenied), findsOneWidget);
     expect(scheduler.scheduled, isEmpty);
   });
@@ -215,7 +224,7 @@ void main() {
     await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
     expect(find.text(NudgeCopy.permissionWithdrawn), findsOneWidget);
 
     // Back from the system Settings with notifications on again.
@@ -224,7 +233,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
 
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
     expect(find.text(ReminderSettings.foot), findsOneWidget);
   });
 
@@ -260,6 +269,77 @@ void main() {
     expect(nudgeActionFor('log'), NudgeAction.log);
     expect(nudgeActionFor('clean'), NudgeAction.clean);
     expect(nudgeActionFor(null), isNull);
+    expect(nudgeActionFor(null, payload: 'weekly-review'), NudgeAction.review);
+    expect(nudgeActionFor('log', payload: 'weekly-review'), NudgeAction.log);
+  });
+
+  testWidgets('the weekly review notification is off until turned on', (
+    WidgetTester tester,
+  ) async {
+    final _FakeScheduler scheduler = _FakeScheduler();
+    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch).last).value, isFalse);
+    expect(scheduler.reviewSchedules, 0);
+
+    await tester.tap(find.text(ReminderSettings.reviewLabel));
+    await tester.pumpAndSettle();
+    expect(scheduler.permissionRequests, 1);
+    expect(scheduler.reviewSchedules, 1);
+    expect(scheduler.scheduled, isEmpty);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(WeeklyReviewReminder.enabledKey), isTrue);
+
+    await tester.tap(find.text(ReminderSettings.reviewLabel));
+    await tester.pumpAndSettle();
+    expect(scheduler.reviewCancels, 1);
+    expect(scheduler.cancels, 0);
+    expect(prefs.getBool(WeeklyReviewReminder.enabledKey), isFalse);
+  });
+
+  test('a saved review notification is scheduled again at launch', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      WeeklyReviewReminder.enabledKey: true,
+    });
+    final _FakeScheduler scheduler = _FakeScheduler();
+    final ProviderContainer container = ProviderContainer(
+      overrides: [nudgeSchedulerProvider.overrideWithValue(scheduler)],
+    );
+    addTearDown(container.dispose);
+    await container.read(dailyNudgeStartupProvider.future);
+    await pumpEventQueue();
+    expect(container.read(weeklyReviewReminderProvider), isTrue);
+    expect(scheduler.reviewSchedules, 1);
+
+    scheduler.onAction!(NudgeAction.review);
+    expect(container.read(pendingWeeklyReviewProvider), isTrue);
+    expect(container.read(pendingNudgeLogProvider), isFalse);
+  });
+
+  group('nextWeekday', () {
+    setUpAll(tz_data.initializeTimeZones);
+
+    test('is the next Monday at the time, or today before it', () {
+      final tz.Location london = tz.getLocation('Europe/London');
+      // Tuesday 10 November 2026.
+      final tz.TZDateTime tuesday = tz.TZDateTime(london, 2026, 11, 10, 8);
+      expect(
+        nextWeekday(tuesday, DateTime.monday, reviewTime),
+        tz.TZDateTime(london, 2026, 11, 16, 9),
+      );
+      final tz.TZDateTime mondayEarly = tz.TZDateTime(london, 2026, 11, 16, 8);
+      expect(
+        nextWeekday(mondayEarly, DateTime.monday, reviewTime),
+        tz.TZDateTime(london, 2026, 11, 16, 9),
+      );
+      final tz.TZDateTime mondayLate = tz.TZDateTime(london, 2026, 11, 16, 10);
+      expect(
+        nextWeekday(mondayLate, DateTime.monday, reviewTime),
+        tz.TZDateTime(london, 2026, 11, 23, 9),
+      );
+    });
   });
 
   group('nextOccurrence', () {

@@ -354,42 +354,117 @@ void main() {
     expect(left.refused, isTrue);
   });
 
-  // The process that queued it in the SDK exits soon after, so the queue must
-  // keep the log for the next flush; a repeat delete would be refused.
-  testWidgets('flushQueuedLogs in the background keeps a log the server has '
-      'not acknowledged, and lets a delete go', (tester) async {
-    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
-      _log('a', DateTime(2026, 11, 8, 9)),
-      _log('b', DateTime(2026, 11, 8, 9), op: QueuedLogOp.delete),
-    ]);
-    final FakeTrackerWrites writes = FakeTrackerWrites()
-      ..respond = (Write w) => Completer<void>().future;
-    final ProviderContainer container = ProviderContainer(
-      overrides: [
-        userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
-        memoryJournal(),
-      ],
-    );
-    addTearDown(container.dispose);
-    container.listen(userProvider, (_, _) {});
-    await tester.pump();
-    FlushLeft? left;
-    unawaited(
-      flushQueuedLogs(
-        bridge: bridge,
-        writes: writes,
-        rejected: container.read(rejectedWritesProvider.notifier),
-        uid: 'u1',
-        now: DateTime(2026, 11, 8, 10),
-        inBackground: true,
-      ).then((FlushLeft l) => left = l),
-    );
-    await tester.pump(writeTimeout + const Duration(seconds: 1));
-    expect(left?.unacknowledged, isTrue);
-    expect(left?.refused, isFalse);
-    expect(bridge.queue.map((QueuedLog l) => '${l.op.name}:${l.id}'), <String>[
-      'log:a',
-    ]);
+  group('flushQueuedLogs in the background', () {
+    Future<(FlushLeft, _QueueBridge)> flushOnce(
+      WidgetTester tester,
+      FakeTrackerWrites writes,
+    ) async {
+      final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+        _log('a', DateTime(2026, 11, 8, 9)),
+        _log('b', DateTime(2026, 11, 8, 9), op: QueuedLogOp.delete),
+      ]);
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(FakeUser('u1'))),
+          memoryJournal(),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(userProvider, (_, _) {});
+      await tester.pump();
+      FlushLeft? left;
+      unawaited(
+        flushQueuedLogs(
+          bridge: bridge,
+          writes: writes,
+          rejected: container.read(rejectedWritesProvider.notifier),
+          uid: 'u1',
+          now: DateTime(2026, 11, 8, 10),
+          inBackground: true,
+        ).then((FlushLeft l) => left = l),
+      );
+      await tester.pump(writeTimeout * 3);
+      return (left!, bridge);
+    }
+
+    List<String> ops(Iterable<Write> writes) => <String>[
+      for (final Write w in writes) '${w.op}:${w.id}',
+    ];
+
+    // The process that queued them in the SDK exits soon after, so the queue
+    // keeps them for the next flush.
+    testWidgets('keeps a log and a delete the server has not acknowledged', (
+      tester,
+    ) async {
+      final FakeTrackerWrites writes = FakeTrackerWrites()
+        ..respond = ((Write w) => Completer<void>().future)
+        ..server['activities/b'] = <String, Object?>{'ownerID': 'u1'};
+      final (FlushLeft left, _QueueBridge bridge) = await flushOnce(
+        tester,
+        writes,
+      );
+      expect(ops(writes.writes), <String>[
+        'recordActivity:a',
+        'deleteActivity:b',
+      ]);
+      expect(left.unacknowledged, isTrue);
+      expect(left.refused, isFalse);
+      expect(
+        bridge.queue.map((QueuedLog l) => '${l.op.name}:${l.id}'),
+        <String>['log:a', 'delete:b'],
+      );
+    });
+
+    // An earlier run's copy, sent from the SDK's queue at start, got there
+    // first; a repeat would be refused.
+    testWidgets('drops a delete whose entry the server no longer has, '
+        'without sending it', (tester) async {
+      final FakeTrackerWrites writes = FakeTrackerWrites();
+      final (FlushLeft left, _QueueBridge bridge) = await flushOnce(
+        tester,
+        writes,
+      );
+      expect(ops(writes.writes), <String>['recordActivity:a']);
+      expect(writes.checked, <String>['activities/b']);
+      expect(left.unacknowledged, isFalse);
+      expect(bridge.queue, isEmpty);
+    });
+
+    testWidgets('keeps a delete unsent while the server cannot be asked', (
+      tester,
+    ) async {
+      final FakeTrackerWrites writes = FakeTrackerWrites()
+        ..serverError = FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'unavailable',
+        );
+      final (FlushLeft left, _QueueBridge bridge) = await flushOnce(
+        tester,
+        writes,
+      );
+      expect(ops(writes.writes), <String>['recordActivity:a']);
+      expect(left.unacknowledged, isTrue);
+      expect(
+        bridge.queue.map((QueuedLog l) => '${l.op.name}:${l.id}'),
+        <String>['delete:b'],
+      );
+    });
+
+    testWidgets('keeps a delete unsent while earlier writes have not drained', (
+      tester,
+    ) async {
+      final FakeTrackerWrites writes = FakeTrackerWrites()
+        ..pendingWrites = Completer<void>().future
+        ..server['activities/b'] = <String, Object?>{'ownerID': 'u1'};
+      final (FlushLeft left, _QueueBridge bridge) = await flushOnce(
+        tester,
+        writes,
+      );
+      expect(ops(writes.writes), <String>['recordActivity:a']);
+      expect(writes.checked, isEmpty);
+      expect(left.unacknowledged, isTrue);
+      expect(bridge.queue.map((QueuedLog l) => l.id), <String>['b']);
+    });
   });
 
   group('runBackgroundFlush', () {

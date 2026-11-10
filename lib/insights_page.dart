@@ -29,6 +29,7 @@ import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
+import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 /// What follows each habit, from the whole journal and Apple Health, worked
@@ -102,6 +103,9 @@ class InsightsPage extends ConsumerStatefulWidget {
 
   static const String hoursAfterPending =
       'Still reading heart rate around your uses from Apple Health.';
+
+  static const String weekSubtitle =
+      'Totals, hours and triggers, and what changed';
 
   static String span(DateTime firstDay) =>
       'From ${formatDate(firstDay)} to today';
@@ -210,6 +214,17 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             const _MessageCard(InsightsPage.loadingLabel, busy: true),
           ],
         },
+        DialCard(
+          children: <Widget>[
+            CardRow(
+              label: WeeklyReviewPage.title,
+              subtitle: InsightsPage.weekSubtitle,
+              glyph: DialGlyph.right,
+              onTap: () =>
+                  Navigator.of(context).pushNamed(WeeklyReviewPage.route),
+            ),
+          ],
+        ),
         const CardFoot(InsightsPage.foot),
       ],
     );
@@ -584,7 +599,7 @@ String insightsText({
       ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
       ..write(bedtime == null ? '' : '$bedtime\n')
       ..write('${findingRange(f, locale)}\n')
-      ..write('${findingBasis(f, habit)}\n');
+      ..write('${findingBasis(f, habit, locale: locale, unit: unit)}\n');
     if (findingEvidence(f) case final String evidence) {
       out.write('$evidence\n');
     }
@@ -828,7 +843,10 @@ class _FindingCard extends StatelessWidget {
               ),
               const SizedBox(height: DialSpace.xs),
               Text(findingRange(finding, locale), style: small),
-              Text(findingBasis(finding, habit), style: small),
+              Text(
+                findingBasis(finding, habit, locale: locale, unit: unit),
+                style: small,
+              ),
               if (findingEvidence(finding) case final String evidence)
                 Text(evidence, style: small),
               if (card.others.isNotEmpty) const SizedBox(height: DialSpace.s),

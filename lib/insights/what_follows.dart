@@ -24,6 +24,7 @@ class InsightGates {
     this.falseDiscoveryRate = 0.1,
     this.minAmountSpread = 0.1,
     this.minTimingSpreadMinutes = 30,
+    this.maxCuts = 5,
   });
 
   final int minDays;
@@ -58,6 +59,10 @@ class InsightGates {
   /// The days an hour or more from its median must also number
   /// [minExposedDays].
   final int minTimingSpreadMinutes;
+
+  /// For a line in the amount or a cut-off time: the most places it is looked
+  /// for. The result is judged as that many comparisons.
+  final int maxCuts;
 }
 
 /// What a result compares.
@@ -75,7 +80,22 @@ enum InsightKind {
   /// A Health sample measure in [HabitInsight.window] after each use, against
   /// the hour before it, beyond the same change at that time on other days.
   hoursAfter,
+
+  /// Among days with the habit, those whose total amount is at or over
+  /// [HabitInsight.cut] against those under it.
+  doseLine,
+
+  /// Among days with the habit, those whose last use is at or after
+  /// [HabitInsight.cut] against those where it is earlier.
+  lastUseLine,
 }
+
+// The kinds whose column is 0 or 1, so an effect is one side's days against
+// the other's.
+bool _sides(InsightKind kind) =>
+    kind == InsightKind.use ||
+    kind == InsightKind.doseLine ||
+    kind == InsightKind.lastUseLine;
 
 /// Minutes after a use, from [start] up to [end].
 typedef HourWindow = ({int start, int end});
@@ -192,6 +212,7 @@ sealed class HabitInsight {
     this.kind = InsightKind.use,
     this.step = 1,
     this.window,
+    this.cut,
   });
 
   final String habitId;
@@ -200,7 +221,7 @@ sealed class HabitInsight {
   final int usableDays;
 
   /// Of [usableDays], the days the habit was used: all of them for a dose or
-  /// a time of use.
+  /// a time of use; for a line or a cut-off, the days at or over [cut].
   final int exposedDays;
 
   /// Null when either side has fewer than two days, and for a dose or a time
@@ -215,6 +236,11 @@ sealed class HabitInsight {
 
   /// Set for [InsightKind.hoursAfter] alone.
   final HourWindow? window;
+
+  /// For [InsightKind.doseLine], the amount in the habit's unit, and for
+  /// [InsightKind.lastUseLine], the minutes after midnight (past 1440 after
+  /// the next one), that splits the days of use. Null while none was chosen.
+  final double? cut;
 }
 
 class HabitFinding extends HabitInsight {
@@ -228,6 +254,7 @@ class HabitFinding extends HabitInsight {
     super.kind,
     super.step,
     super.window,
+    super.cut,
     required this.effect,
     required this.interval,
     required this.standardized,
@@ -278,6 +305,7 @@ class HabitRefusal extends HabitInsight {
     super.kind,
     super.step,
     super.window,
+    super.cut,
     required this.reason,
     this.entangledWith,
     this.effect,
@@ -395,6 +423,7 @@ class _Judged {
     required this.exposed,
     required this.raw,
     this.step = 1,
+    this.cut,
   });
 
   final String id;
@@ -409,6 +438,7 @@ class _Judged {
   final int exposed;
   final Comparison? raw;
   double step;
+  final double? cut;
 
   HabitRefusal refuse(
     RefusalReason reason, {
@@ -425,6 +455,7 @@ class _Judged {
     raw: raw,
     kind: kind,
     step: step,
+    cut: cut,
     reason: reason,
     entangledWith: entangledWith,
     effect: effect,
@@ -639,6 +670,82 @@ List<HabitInsight> lastUseFollows({
   ];
 }
 
+/// For each habit, where the line is in its amount: among the days of its
+/// span it was used (as [doseFollows], on the day [lateDayOf] gives), the days
+/// whose total is at or over [HabitInsight.cut] against those under it, as the
+/// habit's 0/1 column of the same model. The effect is the difference between
+/// the two sides, not a claim that nothing changes under the line.
+///
+/// The cut is looked for on a grid fixed by the amounts alone: every multiple
+/// of [doseFollows]' step with [InsightGates.minExposedDays] days at or over
+/// it and [InsightGates.minUnexposedDays] under, thinned evenly to
+/// [InsightGates.maxCuts]. The one that explains most of the outcome is
+/// reported, and judged as if every cut on the grid had been tested
+/// (Bonferroni): its interval is at 1 - (1 - [InsightGates.level]) / cuts and
+/// its p-value is multiplied by the cuts, so picking the best-looking cut
+/// buys no findings on noise.
+///
+/// Refused as [RefusalReason.steadyAmount] when no cut leaves enough days on
+/// each side. For the minutes of sleep, a finding carries the part left at
+/// the same bedtime, at the same cut.
+List<HabitInsight> doseLineFollows({
+  required DailyHabitSeries habits,
+  required OutcomeSeries outcomes,
+  required String metricId,
+  int lagDays = 1,
+  DateTime? from,
+  DateTime? through,
+  InsightGates gates = const InsightGates(),
+}) {
+  final List<String> habitIds = habits.habitIds.toList()..sort();
+  return <HabitInsight>[
+    for (final String id in habitIds)
+      _amongDaysOfUse(
+        id,
+        kind: InsightKind.doseLine,
+        habitIds: habitIds,
+        habits: habits,
+        outcomes: outcomes,
+        metricId: metricId,
+        lagDays: lagDays,
+        from: from,
+        through: through,
+        gates: gates,
+      ),
+  ];
+}
+
+/// As [doseLineFollows], for the clock time of the day's last use (as
+/// [lastUseFollows], with the day's amount held fixed): the days it comes at
+/// or after [HabitInsight.cut] against the days it comes earlier, the cut
+/// looked for on the whole hours.
+List<HabitInsight> lastUseLineFollows({
+  required DailyHabitSeries habits,
+  required OutcomeSeries outcomes,
+  required String metricId,
+  int lagDays = 1,
+  DateTime? from,
+  DateTime? through,
+  InsightGates gates = const InsightGates(),
+}) {
+  final List<String> habitIds = habits.habitIds.toList()..sort();
+  return <HabitInsight>[
+    for (final String id in habitIds)
+      _amongDaysOfUse(
+        id,
+        kind: InsightKind.lastUseLine,
+        habitIds: habitIds,
+        habits: habits,
+        outcomes: outcomes,
+        metricId: metricId,
+        lagDays: lagDays,
+        from: from,
+        through: through,
+        gates: gates,
+      ),
+  ];
+}
+
 HabitInsight _amongDaysOfUse(
   String id, {
   required InsightKind kind,
@@ -651,7 +758,8 @@ HabitInsight _amongDaysOfUse(
   required DateTime? through,
   required InsightGates gates,
 }) {
-  final bool timing = kind == InsightKind.lastUse;
+  final bool timing =
+      kind == InsightKind.lastUse || kind == InsightKind.lastUseLine;
   final List<DateTime> useDays = habits.lateDays(id).toList()..sort();
   final (:DateTime? start, :DateTime? end) = _span(
     useDays.firstOrNull,
@@ -692,12 +800,12 @@ HabitInsight _amongDaysOfUse(
   );
   final List<int> all = <int>[for (int r = 0; r < days.length; r++) r];
   final HabitInsight total = _amongDaysJudged(
-    judgedOn(all, timing ? 60 : 1),
+    judgedOn(all, kind == InsightKind.lastUse ? 60 : 1),
     amount: amount,
     habitIds: habitIds,
     habits: habits,
     gates: gates,
-    pickStep: !timing,
+    pickStep: kind == InsightKind.dose,
   );
   if (!bedtime || total is! HabitFinding) return total;
   final List<int> usual = _usualOnsets(onset);
@@ -709,6 +817,7 @@ HabitInsight _amongDaysOfUse(
     habits: habits,
     gates: gates,
     pickStep: false,
+    cut: total.cut,
   );
   return HabitFinding(
     habitId: total.habitId,
@@ -719,6 +828,7 @@ HabitInsight _amongDaysOfUse(
     raw: total.raw,
     kind: total.kind,
     step: total.step,
+    cut: total.cut,
     effect: total.effect,
     interval: total.interval,
     standardized: total.standardized,
@@ -748,7 +858,8 @@ List<int> _usualOnsets(List<double?> onset) {
 
 // The gates and the model for an amount or a time over [judged]'s days, with
 // [amount] (for a time) and [onset] held fixed when they vary. With
-// [pickStep], an amount's step is chosen from its spread here.
+// [pickStep], an amount's step is chosen from its spread here. A line or a
+// cut-off is looked for unless [cut] gives it.
 HabitInsight _amongDaysJudged(
   _Judged judged, {
   required List<double> amount,
@@ -757,8 +868,11 @@ HabitInsight _amongDaysJudged(
   required DailyHabitSeries habits,
   required InsightGates gates,
   required bool pickStep,
+  double? cut,
 }) {
-  final bool timing = judged.kind == InsightKind.lastUse;
+  final bool timing =
+      judged.kind == InsightKind.lastUse ||
+      judged.kind == InsightKind.lastUseLine;
   final List<DateTime> days = judged.days;
   final List<double> x = judged.x;
   if (days.length < gates.minDays) {
@@ -787,21 +901,158 @@ HabitInsight _amongDaysJudged(
     }
   }
   final List<int> period = periodsOf(days, gates.minPeriodDays);
-  if (period.last > 0 && _varyingPeriods(x, period) < gates.minMixedPeriods) {
-    return judged.refuse(RefusalReason.uneven);
+  final List<_Own> own = <_Own>[
+    if (timing && sampleVariance(amount) > 0)
+      (column: amount, reason: RefusalReason.followsAmount),
+    if (onset != null && sampleVariance(onset) > 0)
+      (column: onset, reason: RefusalReason.followsBedtime),
+  ];
+  if (!_sides(judged.kind)) {
+    if (period.last > 0 && _varyingPeriods(x, period) < gates.minMixedPeriods) {
+      return judged.refuse(RefusalReason.uneven);
+    }
+    return _attribute(
+      judged,
+      period: period,
+      others: _otherHabits(judged.id, habitIds, habits, days, gates),
+      own: own,
+      gates: gates,
+    );
+  }
+  final List<double> cuts = cut != null
+      ? <double>[cut]
+      : _cuts(
+          x,
+          timing
+              ? 60
+              : doseStep(sd, whole: x.every((v) => v == v.roundToDouble())),
+          gates,
+        );
+  if (cuts.isEmpty) {
+    return judged.refuse(
+      timing ? RefusalReason.steadyTiming : RefusalReason.steadyAmount,
+    );
+  }
+  final double at = cuts.length == 1
+      ? cuts.single
+      : _clearestCut(cuts, x, judged.y, _timeTerms(days, period), own);
+  final List<double> over = <double>[for (final double v in x) v >= at ? 1 : 0];
+  final _Judged sides = _Judged(
+    id: judged.id,
+    metricId: judged.metricId,
+    lagDays: judged.lagDays,
+    kind: judged.kind,
+    days: days,
+    y: judged.y,
+    x: over,
+    exposed: over.where((v) => v == 1).length,
+    raw: null,
+    cut: at,
+  );
+  // Only a cut handed in can fail this: the grid's all pass.
+  if (!_clearsSampleGates(over, gates)) {
+    return sides.refuse(RefusalReason.tooFewDays);
+  }
+  if (period.last > 0 && _mixedPeriods(over, period) < gates.minMixedPeriods) {
+    return sides.refuse(RefusalReason.uneven);
   }
   return _attribute(
-    judged,
+    sides,
     period: period,
     others: _otherHabits(judged.id, habitIds, habits, days, gates),
-    own: <_Own>[
-      if (timing && sampleVariance(amount) > 0)
-        (column: amount, reason: RefusalReason.followsAmount),
-      if (onset != null && sampleVariance(onset) > 0)
-        (column: onset, reason: RefusalReason.followsBedtime),
-    ],
+    own: own,
     gates: gates,
+    searched: cuts.length,
   );
+}
+
+// Where a line may be drawn through [x]: the multiples of [grid] with enough
+// days on each side, thinned evenly to [InsightGates.maxCuts]. From [x]
+// alone, never the outcome, so their number is fixed before any is tried.
+List<double> _cuts(List<double> x, double grid, InsightGates gates) {
+  final List<double> sorted = x.toList()..sort();
+  final int under = gates.minUnexposedDays, over = gates.minExposedDays;
+  if (sorted.length < under + over || under < 1 || over < 1) {
+    return const <double>[];
+  }
+  // Rounded so a multiple of 0.1 is the amount logged, not a digit past it.
+  double multiple(double k) => (k * grid * 1e9).roundToDouble() / 1e9;
+  final List<double> cuts = <double>[];
+  for (
+    double k = (sorted[under - 1] / grid).floorToDouble();
+    multiple(k) <= sorted[sorted.length - over];
+    k++
+  ) {
+    if (multiple(k) > sorted[under - 1]) cuts.add(multiple(k));
+  }
+  final int keep = gates.maxCuts;
+  if (cuts.length <= keep) return cuts;
+  if (keep == 1) return <double>[cuts[cuts.length ~/ 2]];
+  return <double>[
+    for (int i = 0; i < keep; i++)
+      cuts[(i * (cuts.length - 1) / (keep - 1)).round()],
+  ];
+}
+
+// The cut of [cuts] whose 0/1 column explains most of [y] once the intercept,
+// [time] and [own] are taken out of both (the largest squared correlation of
+// the residuals); the middle one when those columns cannot be solved.
+double _clearestCut(
+  List<double> cuts,
+  List<double> x,
+  List<double> y,
+  List<List<double>> time,
+  List<_Own> own,
+) {
+  final List<List<double>> rows = <List<double>>[
+    for (int r = 0; r < x.length; r++)
+      <double>[1, ...time[r], for (final _Own o in own) o.column[r]],
+  ];
+  final List<List<double>>? inverse = invert(gram(rows));
+  if (inverse == null) return cuts[cuts.length ~/ 2];
+  final int p = rows.first.length;
+  List<double> residual(List<double> v) {
+    final List<double> xtv = List<double>.filled(p, 0);
+    for (int r = 0; r < rows.length; r++) {
+      for (int j = 0; j < p; j++) {
+        xtv[j] += rows[r][j] * v[r];
+      }
+    }
+    final List<double> beta = List<double>.filled(p, 0);
+    for (int i = 0; i < p; i++) {
+      for (int j = 0; j < p; j++) {
+        beta[i] += inverse[i][j] * xtv[j];
+      }
+    }
+    return <double>[
+      for (int r = 0; r < rows.length; r++)
+        () {
+          double fitted = 0;
+          for (int j = 0; j < p; j++) {
+            fitted += rows[r][j] * beta[j];
+          }
+          return v[r] - fitted;
+        }(),
+    ];
+  }
+
+  final List<double> ry = residual(y);
+  double best = cuts[cuts.length ~/ 2], most = 0;
+  for (final double cut in cuts) {
+    final List<double> rx = residual(<double>[
+      for (final double v in x) v >= cut ? 1 : 0,
+    ]);
+    double xy = 0, xx = 0;
+    for (int r = 0; r < rx.length; r++) {
+      xy += rx[r] * ry[r];
+      xx += rx[r] * rx[r];
+    }
+    if (xx > 1e-9 && xy * xy / xx > most) {
+      most = xy * xy / xx;
+      best = cut;
+    }
+  }
+  return best;
 }
 
 // A fraction of a whole-number unit is an amount nobody logged.
@@ -878,22 +1129,14 @@ HabitInsight _attribute(
   required Map<String, List<double>> others,
   List<_Own> own = const <_Own>[],
   required InsightGates gates,
+  int searched = 1,
 }) {
   final List<DateTime> days = judged.days;
   final List<double> x = judged.x, y = judged.y;
-  final int periods = period.last + 1;
-  final int half = days.length ~/ 2;
-  final int span = max(1, daysBetween(days.first, days.last));
-  final List<List<double>> time = <List<double>>[
-    for (int r = 0; r < days.length; r++)
-      <double>[
-        daysBetween(days.first, days[r]) / span - 0.5,
-        if (periods == 1)
-          r < half ? 0 : 1
-        else
-          for (int k = 1; k < periods; k++) period[r] == k ? 1 : 0,
-      ],
-  ];
+  final List<List<double>> time = _timeTerms(days, period);
+  // Bonferroni over the cuts tried, for the interval and so for every gate
+  // that reads it.
+  final double level = 1 - (1 - gates.level) / searched;
 
   int exposedCount(String other) => others[other]!.where((v) => v == 1).length;
   final List<String> covariates = others.keys.toList()
@@ -984,9 +1227,9 @@ HabitInsight _attribute(
   const int column = 1;
   final double step = judged.step;
   final double effect = fit.coefficients[column] * step;
-  final Interval perUnit = fit.interval(column, level: gates.level);
+  final Interval perUnit = fit.interval(column, level: level);
   final Interval interval = Interval(perUnit.low * step, perUnit.high * step);
-  final double pValue = fit.pValue(column);
+  final double pValue = min(1.0, searched * fit.pValue(column));
   if (fit.inverseGram[column][column] * ss > gates.maxVarianceInflation) {
     return judged.refuse(
       RefusalReason.entangled,
@@ -1007,7 +1250,7 @@ HabitInsight _attribute(
   // A use comparison has a week of days on each side; an amount or a time
   // can hang on one extreme day.
   if (judged.kind != InsightKind.use &&
-      withoutMostTelling(rows, y, fit, column, gates.level)) {
+      withoutMostTelling(rows, y, fit, column, level)) {
     return judged.refuse(
       RefusalReason.oneDay,
       effect: effect,
@@ -1016,7 +1259,7 @@ HabitInsight _attribute(
     );
   }
   final double sd = sqrt(sampleVariance(y));
-  final double perDeviation = judged.kind == InsightKind.use
+  final double perDeviation = _sides(judged.kind)
       ? fit.coefficients[column]
       : fit.coefficients[column] * sqrt(sampleVariance(x));
   return HabitFinding(
@@ -1028,11 +1271,12 @@ HabitInsight _attribute(
     raw: judged.raw,
     kind: judged.kind,
     step: step,
+    cut: judged.cut,
     effect: effect,
     interval: interval,
     standardized: sd == 0 ? 0 : perDeviation / sd,
     pValue: pValue,
-    spread: judged.kind == InsightKind.use ? null : interquartileRange(x),
+    spread: _sides(judged.kind) ? null : interquartileRange(x),
   );
 }
 
@@ -1042,6 +1286,24 @@ double? insightPValue(HabitInsight insight) => switch (insight) {
   HabitFinding(:final double pValue) => pValue,
   HabitRefusal(:final double? pValue) => pValue,
 };
+
+// A linear trend over the span, then a level for each period after the first,
+// or for the second half of a span of one period.
+List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
+  final int periods = period.last + 1;
+  final int half = days.length ~/ 2;
+  final int span = max(1, daysBetween(days.first, days.last));
+  return <List<double>>[
+    for (int r = 0; r < days.length; r++)
+      <double>[
+        daysBetween(days.first, days[r]) / span - 0.5,
+        if (periods == 1)
+          r < half ? 0 : 1
+        else
+          for (int k = 1; k < periods; k++) period[r] == k ? 1 : 0,
+      ],
+  ];
+}
 
 /// [insights] with every finding that fails Benjamini-Hochberg at
 /// [InsightGates.falseDiscoveryRate] refused as [RefusalReason.chance]. The
@@ -1079,6 +1341,7 @@ List<HabitInsight> controlFalseDiscoveries(
           kind: f.kind,
           step: f.step,
           window: f.window,
+          cut: f.cut,
           reason: RefusalReason.chance,
           effect: f.effect,
           interval: f.interval,

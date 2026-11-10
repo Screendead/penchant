@@ -27,7 +27,9 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/trends/weekday_grid.dart';
 import 'package:tracker/widgets/log_fan.dart';
+import 'package:tracker/widgets/pill_toggle.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -174,9 +176,12 @@ void main() {
           ('trends', _busy),
           ('trends-day', _busy),
           ('trends-large', _busy),
+          ('trends-compare', _busy),
+          ('trends-week', _busy),
           ('split-900', _busy),
           ('split-1200', _busy),
           ('split-1600', _busy),
+          ('split-1200-compare', _busy),
           ('split-900-large', _busy),
         ]) {
       testWidgets('renders Today, $scene, ${brightness.name}', (
@@ -262,6 +267,29 @@ void main() {
         }
         if (scene.startsWith('trends')) {
           await tester.tap(find.text(TrendsSheet.title));
+          await tester.pumpAndSettle();
+        }
+        if (scene.endsWith('-compare')) {
+          await tester.ensureVisible(find.text(TrendsSheet.compareLabel));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(TrendsSheet.compareLabel));
+          await tester.pumpAndSettle();
+          for (final Vice v in <Vice>[_habits[1], _habits[2]]) {
+            final Finder chip = find.byWidgetPredicate(
+              (Widget w) =>
+                  w is PillToggle &&
+                  w.semanticsLabel == TrendsSheet.compareChipLabel(v),
+            );
+            await tester.ensureVisible(chip);
+            await tester.pumpAndSettle();
+            await tester.tap(chip);
+            await tester.pumpAndSettle();
+          }
+          await tester.ensureVisible(find.text(TrendsSheet.title).last);
+          await tester.pumpAndSettle();
+        }
+        if (scene == 'trends-week') {
+          await tester.ensureVisible(find.byType(WeekdayGrid));
           await tester.pumpAndSettle();
         }
         if (scene == 'trends-day') {
