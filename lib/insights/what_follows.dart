@@ -535,10 +535,10 @@ HabitInsight _whatFollowsOne(
   if (days.length < gates.minDays || !_clearsSampleGates(x, gates)) {
     return judged.refuse(RefusalReason.tooFewDays);
   }
-  final List<int> period = _periods(days, gates.minPeriodDays);
+  final List<int> period = periodsOf(days, gates.minPeriodDays);
   // Halves by usable days, so each holds at least half of minDays.
   if (period.last == 0
-      ? _unevenHalves(x, days.length ~/ 2, gates)
+      ? unevenHalves(x, days.length ~/ 2, gates)
       : _mixedPeriods(x, period) < gates.minMixedPeriods) {
     return judged.refuse(RefusalReason.uneven);
   }
@@ -897,13 +897,10 @@ HabitInsight _amongDaysJudged(
       return judged.refuse(RefusalReason.steadyAmount);
     }
     if (pickStep) {
-      judged.step = _doseStep(
-        sd,
-        whole: x.every((v) => v == v.roundToDouble()),
-      );
+      judged.step = doseStep(sd, whole: x.every((v) => v == v.roundToDouble()));
     }
   }
-  final List<int> period = _periods(days, gates.minPeriodDays);
+  final List<int> period = periodsOf(days, gates.minPeriodDays);
   final List<_Own> own = <_Own>[
     if (timing && sampleVariance(amount) > 0)
       (column: amount, reason: RefusalReason.followsAmount),
@@ -928,7 +925,7 @@ HabitInsight _amongDaysJudged(
           x,
           timing
               ? 60
-              : _doseStep(sd, whole: x.every((v) => v == v.roundToDouble())),
+              : doseStep(sd, whole: x.every((v) => v == v.roundToDouble())),
           gates,
         );
   if (cuts.isEmpty) {
@@ -1059,7 +1056,7 @@ double _clearestCut(
 }
 
 // A fraction of a whole-number unit is an amount nobody logged.
-double _doseStep(double sd, {required bool whole}) {
+double doseStep(double sd, {required bool whole}) {
   if (sd >= 0.5 && sd <= 3 || whole && sd < 0.5) return 1;
   double step = pow(10, (log(sd) / ln10).floor()).toDouble();
   for (final int m in <int>[5, 2]) {
@@ -1071,7 +1068,7 @@ double _doseStep(double sd, {required bool whole}) {
 // Whether [fit]'s interval for [column] crosses zero once the day that pulls
 // it furthest from zero is left out, by its DFBETA, (X'X)^-1 x_i e_i /
 // (1 - h_i), the change that day makes to the coefficients.
-bool _withoutMostTelling(
+bool withoutMostTelling(
   List<List<double>> rows,
   List<double> y,
   LinearFit fit,
@@ -1253,7 +1250,7 @@ HabitInsight _attribute(
   // A use comparison has a week of days on each side; an amount or a time
   // can hang on one extreme day.
   if (judged.kind != InsightKind.use &&
-      _withoutMostTelling(rows, y, fit, column, level)) {
+      withoutMostTelling(rows, y, fit, column, level)) {
     return judged.refuse(
       RefusalReason.oneDay,
       effect: effect,
@@ -1283,6 +1280,13 @@ HabitInsight _attribute(
   );
 }
 
+/// The p-value [insight] brings to the report's family; null when nothing was
+/// fitted.
+double? insightPValue(HabitInsight insight) => switch (insight) {
+  HabitFinding(:final double pValue) => pValue,
+  HabitRefusal(:final double? pValue) => pValue,
+};
+
 // A linear trend over the span, then a level for each period after the first,
 // or for the second half of a span of one period.
 List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
@@ -1304,21 +1308,21 @@ List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
 /// [insights] with every finding that fails Benjamini-Hochberg at
 /// [InsightGates.falseDiscoveryRate] refused as [RefusalReason.chance]. The
 /// family is every result with a p-value, so a fitted habit refused for its
-/// entanglement or its noise still counts as a comparison made.
+/// entanglement or its noise still counts as a comparison made. The
+/// p-values in [alongside] are comparisons judged elsewhere that belong to
+/// the same family.
 List<HabitInsight> controlFalseDiscoveries(
   List<HabitInsight> insights, {
   InsightGates gates = const InsightGates(),
+  List<double> alongside = const <double>[],
 }) {
-  double? pValueOf(HabitInsight insight) => switch (insight) {
-    HabitFinding(:final double pValue) => pValue,
-    HabitRefusal(:final double? pValue) => pValue,
-  };
   final List<int> tested = <int>[
     for (int i = 0; i < insights.length; i++)
-      if (pValueOf(insights[i]) != null) i,
+      if (insightPValue(insights[i]) != null) i,
   ];
   final List<bool> kept = benjaminiHochberg(<double>[
-    for (final int i in tested) pValueOf(insights[i])!,
+    for (final int i in tested) insightPValue(insights[i])!,
+    ...alongside,
   ], gates.falseDiscoveryRate);
   final Set<int> rejected = <int>{
     for (int k = 0; k < tested.length; k++)
@@ -1351,7 +1355,7 @@ List<HabitInsight> controlFalseDiscoveries(
 // Which period each of [days] falls in, numbered from 0: one per calendar
 // month, a month with fewer than [minDays] usable days merged into the next,
 // and a short last one into the one before.
-List<int> _periods(List<DateTime> days, int minDays) {
+List<int> periodsOf(List<DateTime> days, int minDays) {
   final List<int> period = List<int>.filled(days.length, 0);
   int current = 0, inCurrent = 0, monthStart = 0;
   for (int r = 0; r <= days.length; r++) {
@@ -1406,7 +1410,7 @@ int _mixedPeriods(List<double> x, List<int> period) {
 // makes the halves' rates differ more than independent days would, so the
 // standard error is widened by the runs' lag-1 autocorrelation within each
 // half.
-bool _unevenHalves(List<double> x, int half, InsightGates gates) {
+bool unevenHalves(List<double> x, int half, InsightGates gates) {
   final List<double> a = x.sublist(0, half), b = x.sublist(half);
   final double ra = mean(a), rb = mean(b);
   bool lopsided(double p, double q) =>

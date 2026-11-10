@@ -13,6 +13,8 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/before_use_copy.dart';
+import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -24,6 +26,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/bead_painter.dart';
+import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/weekly_review_page.dart';
@@ -72,8 +75,8 @@ class InsightsPage extends ConsumerStatefulWidget {
       'Each habit needs $need days with both your journal and Apple Health. '
       'You have $have.';
 
-  // Engines p, q and k (HANDOVER item 7) fill these; until then they say
-  // what will be here, never a count nothing computes.
+  // Engines p and q (HANDOVER item 7) fill the first; until a section has a
+  // finding it says what will be there, never a count nothing computes.
   static const String cuttingDownTitle = 'Nothing to show yet';
   static const String cuttingDownBody =
       'When a habit stays lower for a few weeks, this will show what moved '
@@ -331,10 +334,20 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         body: InsightsPage.cuttingDownBody,
       ),
       const CardSectionLabel(InsightsPage.setsOffHeading),
-      const NotYetBox(
-        InsightsPage.setsOffTitle,
-        body: InsightsPage.setsOffBody,
-      ),
+      if (costs.before.isEmpty)
+        const NotYetBox(
+          InsightsPage.setsOffTitle,
+          body: InsightsPage.setsOffBody,
+        ),
+      for (final (int i, BeforeUseCard card) in costs.before.indexed)
+        BeforeUseCardView(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          unit: costs.unitOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top: i == 0 ? 0 : DialSpace.xs,
+        ),
       DialCard(
         children: <Widget>[
           CardRow(
@@ -464,6 +477,10 @@ class _Costs {
       for (final HabitRefusal r in report.refused)
         if (_names.containsKey(r.habitId)) r,
     ]..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
+    before = beforeUseCards(<BeforeUse>[
+      for (final BeforeUse b in report.beforeUse)
+        if (_names.containsKey(b.habitId)) b,
+    ], floors: report.floors);
     // A legacy entry of a vice that is gone would date the span from a habit
     // the page doesn't show.
     firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
@@ -475,6 +492,7 @@ class _Costs {
   final Map<String, Unit> _units;
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
+  late final List<BeforeUseCard> before;
   late final DateTime? firstDay;
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';
@@ -533,6 +551,15 @@ class _Costs {
       lastNight: lastNight,
       emptyTitle: empty.title,
       emptyBody: empty.body,
+      setsOff: <List<String>>[
+        for (final BeforeUseCard card in before)
+          beforeUseText(
+            card,
+            nameOf(card.habitId),
+            formatLocale,
+            unit: unitOf(card.habitId),
+          ),
+      ],
     );
   }
 }
@@ -550,6 +577,7 @@ String insightsText({
   List<String> lastNight = const <String>[],
   String emptyTitle = InsightsPage.nothingClear,
   String emptyBody = InsightsPage.nothingClearBody,
+  List<List<String>> setsOff = const <List<String>>[],
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
   if (firstDay != null) out.write('\n${InsightsPage.span(firstDay)}');
@@ -585,6 +613,12 @@ String insightsText({
       out.write(
         '${nameOf(r.habitId)}: ${refusalReason(r, nameOf, floors: floors)}\n',
       );
+    }
+  }
+  if (setsOff.isNotEmpty) {
+    out.write('\n${InsightsPage.setsOffHeading}\n');
+    for (final List<String> card in setsOff) {
+      out.write('\n${card.join('\n')}\n');
     }
   }
   out.write('\n${InsightsPage.foot}\n');
