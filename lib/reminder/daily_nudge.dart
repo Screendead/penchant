@@ -21,22 +21,31 @@ class NudgeCopy {
   static const String permissionWithdrawn =
       'Notifications are off for Penchant, so the reminder won\'t arrive. '
       'Turn them on in the system Settings and it will start again.';
+  static const String reviewBody = 'Last week’s review is ready.';
 }
 
 /// What a press on the notification asks of the app.
-enum NudgeAction { log, clean }
+enum NudgeAction { log, clean, review }
 
-NudgeAction? nudgeActionFor(String? actionId) => switch (actionId) {
-  _logActionId => NudgeAction.log,
-  _cleanActionId => NudgeAction.clean,
-  _ => null,
-};
+NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
+    switch (actionId) {
+      _logActionId => NudgeAction.log,
+      _cleanActionId => NudgeAction.clean,
+      _ when payload == _reviewPayload => NudgeAction.review,
+      _ => null,
+    };
 
 const String _category = 'daily-nudge';
 const String _logActionId = 'log';
 const String _cleanActionId = 'clean';
 // One notification, so a reschedule replaces it rather than adding another.
 const int _notificationId = 1;
+const int _reviewNotificationId = 2;
+const String _reviewPayload = 'weekly-review';
+
+/// When the weekly review notification comes: Monday morning.
+const int reviewWeekday = DateTime.monday;
+const TimeOfDay reviewTime = TimeOfDay(hour: 9, minute: 0);
 
 /// The platform side of the nudge, faked in tests.
 abstract class NudgeScheduler {
@@ -56,6 +65,11 @@ abstract class NudgeScheduler {
   Future<void> scheduleDaily(TimeOfDay time);
 
   Future<void> cancel();
+
+  /// Every [reviewWeekday] at [reviewTime], a tap opening the weekly review.
+  Future<void> scheduleWeeklyReview();
+
+  Future<void> cancelWeeklyReview();
 }
 
 class LocalNudgeScheduler implements NudgeScheduler {
@@ -96,7 +110,10 @@ class LocalNudgeScheduler implements NudgeScheduler {
     await _plugin.initialize(
       settings: InitializationSettings(iOS: darwin, macOS: darwin),
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        final NudgeAction? action = nudgeActionFor(response.actionId);
+        final NudgeAction? action = nudgeActionFor(
+          response.actionId,
+          payload: response.payload,
+        );
         if (action != null) {
           onAction(action);
         }
@@ -111,7 +128,10 @@ class LocalNudgeScheduler implements NudgeScheduler {
     if (details == null || !details.didNotificationLaunchApp) {
       return null;
     }
-    return nudgeActionFor(details.notificationResponse?.actionId);
+    return nudgeActionFor(
+      details.notificationResponse?.actionId,
+      payload: details.notificationResponse?.payload,
+    );
   }
 
   @override
@@ -150,9 +170,7 @@ class LocalNudgeScheduler implements NudgeScheduler {
   // again on every launch to follow a change of zone.
   @override
   Future<void> scheduleDaily(TimeOfDay time) async {
-    tz_data.initializeTimeZones();
-    final String zone = (await FlutterTimezone.getLocalTimezone()).identifier;
-    tz.setLocalLocation(tz.getLocation(zone));
+    await _setLocalZone();
     const DarwinNotificationDetails darwin = DarwinNotificationDetails(
       categoryIdentifier: _category,
       presentBadge: false,
@@ -172,6 +190,40 @@ class LocalNudgeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancel() => _plugin.cancel(id: _notificationId);
+
+  @override
+  Future<void> scheduleWeeklyReview() async {
+    await _setLocalZone();
+    const DarwinNotificationDetails darwin = DarwinNotificationDetails(
+      presentBadge: false,
+    );
+    await _plugin.zonedSchedule(
+      id: _reviewNotificationId,
+      body: NudgeCopy.reviewBody,
+      payload: _reviewPayload,
+      scheduledDate: nextWeekday(
+        tz.TZDateTime.now(tz.local),
+        reviewWeekday,
+        reviewTime,
+      ),
+      notificationDetails: const NotificationDetails(
+        iOS: darwin,
+        macOS: darwin,
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
+  }
+
+  @override
+  Future<void> cancelWeeklyReview() =>
+      _plugin.cancel(id: _reviewNotificationId);
+
+  Future<void> _setLocalZone() async {
+    tz_data.initializeTimeZones();
+    final String zone = (await FlutterTimezone.getLocalTimezone()).identifier;
+    tz.setLocalLocation(tz.getLocation(zone));
+  }
 }
 
 /// The first [time] after [now], in [now]'s zone.
@@ -194,6 +246,22 @@ tz.TZDateTime nextOccurrence(tz.TZDateTime now, TimeOfDay time) {
           time.hour,
           time.minute,
         );
+}
+
+/// The first [time] on a [weekday] after [now], in [now]'s zone.
+tz.TZDateTime nextWeekday(tz.TZDateTime now, int weekday, TimeOfDay time) {
+  tz.TZDateTime next = nextOccurrence(now, time);
+  while (next.weekday != weekday) {
+    next = tz.TZDateTime(
+      next.location,
+      next.year,
+      next.month,
+      next.day + 1,
+      time.hour,
+      time.minute,
+    );
+  }
+  return next;
 }
 
 final nudgeSchedulerProvider = Provider<NudgeScheduler>(
@@ -324,6 +392,95 @@ class DailyNudge extends Notifier<NudgeSettings> {
   }
 }
 
+/// Settings › Reminder's weekly review notification: off by default, kept on
+/// this device only.
+final weeklyReviewReminderProvider =
+    NotifierProvider<WeeklyReviewReminder, bool>(WeeklyReviewReminder.new);
+
+class WeeklyReviewReminder extends Notifier<bool> {
+  static const String enabledKey = 'review.enabled';
+
+  late Future<void> _loaded;
+
+  @override
+  bool build() {
+    _loaded = _load();
+    return false;
+  }
+
+  Future<void> _load() async {
+    final bool saved;
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      saved = prefs.getBool(enabledKey) ?? false;
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while reading the review setting');
+      return;
+    }
+    state = saved;
+    if (saved) await _schedule();
+  }
+
+  /// Turns it on, asking for permission first. False if refused.
+  Future<bool> turnOn() async {
+    await _loaded;
+    final bool granted;
+    try {
+      granted = await ref.read(nudgeSchedulerProvider).requestPermission();
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while asking to send notifications');
+      return false;
+    }
+    if (!granted) return false;
+    state = true;
+    await _save();
+    await _schedule();
+    return true;
+  }
+
+  Future<void> turnOff() async {
+    await _loaded;
+    state = false;
+    await _save();
+    try {
+      await ref.read(nudgeSchedulerProvider).cancelWeeklyReview();
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while cancelling the review');
+    }
+  }
+
+  Future<void> _schedule() async {
+    try {
+      await ref.read(nudgeSchedulerProvider).scheduleWeeklyReview();
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while scheduling the review');
+    }
+  }
+
+  Future<void> _save() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(enabledKey, state);
+    } catch (e, stack) {
+      reportError(e, stack, context: 'while saving the review setting');
+    }
+  }
+}
+
+/// A tap on the weekly review notification waiting for Today to open it.
+final pendingWeeklyReviewProvider = NotifierProvider<PendingWeeklyReview, bool>(
+  PendingWeeklyReview.new,
+);
+
+class PendingWeeklyReview extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void request() => state = true;
+
+  void clear() => state = false;
+}
+
 /// A "Log something" press waiting for Today to open the Log. It waits through
 /// sign-in, so a press made while signed out opens it once Today shows.
 final pendingNudgeLogProvider = NotifierProvider<PendingNudgeLog, bool>(
@@ -348,8 +505,13 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
   }
   final NudgeScheduler scheduler = ref.read(nudgeSchedulerProvider);
   void onAction(NudgeAction action) {
-    if (action == NudgeAction.log) {
-      ref.read(pendingNudgeLogProvider.notifier).request();
+    switch (action) {
+      case NudgeAction.log:
+        ref.read(pendingNudgeLogProvider.notifier).request();
+      case NudgeAction.review:
+        ref.read(pendingWeeklyReviewProvider.notifier).request();
+      case NudgeAction.clean:
+        break;
     }
   }
 
@@ -364,4 +526,5 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
   }
   // Reads the saved setting, which schedules again if it is on.
   ref.read(dailyNudgeProvider);
+  ref.read(weeklyReviewReminderProvider);
 });

@@ -19,6 +19,10 @@ import 'package:tracker/writes/tracker_writes.dart';
 class ViceForm extends ConsumerStatefulWidget {
   const ViceForm({super.key, this.vice});
 
+  static const String lockedMessage =
+      'Not saved. This habit did not open with your journal key, so its '
+      'name and unit cannot be changed here.';
+
   final Vice? vice;
 
   @override
@@ -50,9 +54,13 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
   Future<void> _save(User user) async {
     // A locked vice's name and unit are placeholders, never to be saved.
-    if (!formKey.currentState!.validate() ||
-        unit == null ||
-        (opened?.locked ?? false)) {
+    if (opened?.locked ?? false) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(ViceForm.lockedMessage)));
+      return;
+    }
+    if (!formKey.currentState!.validate() || unit == null) {
       return;
     }
 

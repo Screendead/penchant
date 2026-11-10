@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/health_source.dart' show HealthMetric;
 import 'package:tracker/insights/insights_report.dart';
@@ -107,9 +108,18 @@ void main() {
       if (seed < 20 || found > 0) {
         expect(
           pairs(computeInsights(input).findings),
+          // The page's family also holds what came before each use.
           pairs(
             controlFalseDiscoveries(
               raw,
+              alongside: <double>[
+                for (final BeforeUse b in beforeUse(
+                  uses: input.uses,
+                  outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+                  through: addDays(input.through, -1),
+                ))
+                  ?b.pValue,
+              ],
             ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
           ),
         );

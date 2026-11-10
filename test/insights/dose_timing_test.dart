@@ -128,6 +128,12 @@ List<HabitInsight> everyComparison(InsightsInput input) {
       ...whatFollows(habits: habits, outcomes: outcomes, metricId: metric),
       ...doseFollows(habits: habits, outcomes: outcomes, metricId: metric),
       ...lastUseFollows(habits: habits, outcomes: outcomes, metricId: metric),
+      ...doseLineFollows(habits: habits, outcomes: outcomes, metricId: metric),
+      ...lastUseLineFollows(
+        habits: habits,
+        outcomes: outcomes,
+        metricId: metric,
+      ),
     ],
   ];
 }
@@ -161,10 +167,11 @@ void main() {
       if (seed < 10) {
         expect(
           computeInsights(input).findings.length,
-          controlFalseDiscoveries(all)
-              .whereType<HabitFinding>()
-              .where((f) => practicalSize(f) >= 1)
-              .length,
+          oneOfSlopeAndLine(<HabitFinding>[
+            ...controlFalseDiscoveries(
+              all,
+            ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
+          ]).length,
         );
       }
       after += kept;
@@ -176,8 +183,12 @@ void main() {
       'after=$after reports=$reports',
     );
     // 2 x 9 days-with-and-without (Water has no days without), 3 x 9 each of
-    // amount and time.
-    expect(checks, seeds * (18 + 27 + 27));
+    // amount and time, and of a line in each; a few lines are refused
+    // unfitted.
+    expect(
+      checks,
+      inInclusiveRange(seeds * 126 - 20, seeds * (18 + 27 + 27 + 27 + 27)),
+    );
     expect(raw / checks, inInclusiveRange(0.03, 0.07));
     expect(after / checks, lessThan(0.005));
     expect(reports / seeds, lessThan(0.15));

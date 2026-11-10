@@ -100,10 +100,32 @@ enum HealthChannel {
             if let error {
               result(FlutterError(code: "authorization-failed", message: error.localizedDescription, details: nil))
             } else {
+              if success { Sync.reset() }
               result(success)
             }
           }
         }
+      case "changes":
+        guard let args = call.arguments as? [String: Any], let metrics = args["metrics"] as? [String] else {
+          result(FlutterError(code: "bad-arguments", message: "changes takes metrics", details: nil))
+          return
+        }
+        Sync.changes(metrics: metrics) { outcome in
+          DispatchQueue.main.async {
+            switch outcome {
+            case .success(let changes): result(changes)
+            case .failure(let error): result(flutterError(error))
+            }
+          }
+        }
+      case "changesHandled":
+        guard let args = call.arguments as? [String: Any], let generation = (args["generation"] as? NSNumber)?.intValue
+        else {
+          result(FlutterError(code: "bad-arguments", message: "changesHandled takes generation", details: nil))
+          return
+        }
+        Sync.handled(generation: generation)
+        result(nil)
       case "requestStatus":
         // .shouldRequest once readTypes holds a type the person was never
         // asked about; the sheet then shows only those types.
@@ -384,5 +406,195 @@ enum HealthChannel {
         ]))
     }
     store.execute(query)
+  }
+}
+
+// Anchored sync: which days of which metrics changed since Dart last read
+// them, kept in Caches (not backed up, so no Health-derived state reaches
+// iCloud) with each type's anchor. Observer queries with background delivery
+// mark changes while the app is closed, so an open of Insights reads only
+// those days. Work runs one job at a time on the queue, each loading and
+// saving the state, so an observer's job and Dart's call never interleave.
+extension HealthChannel {
+  enum Sync {
+    private static let queue = DispatchQueue(label: "com.screendead.penchant.health-sync", qos: .utility)
+    // Touched on queue only.
+    private static var observed: Set<String> = []
+    private static let pageLimit = 10_000
+    // A first anchor comes from the samples of this many recent days, so the
+    // first sync does not read a type's whole history to find where it ends.
+    private static let seedDays = 7.0
+
+    private static var stateURL: URL? {
+      FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+        .appendingPathComponent("health-sync.json")
+    }
+
+    private static func load() -> HealthDays.SyncState {
+      guard let url = stateURL, let data = try? Data(contentsOf: url),
+        let state = try? JSONDecoder().decode(HealthDays.SyncState.self, from: data)
+      else { return HealthDays.SyncState() }
+      return state
+    }
+
+    private static func save(_ state: HealthDays.SyncState) {
+      guard let url = stateURL, let data = try? JSONEncoder().encode(state) else { return }
+      try? data.write(to: url, options: .atomic)
+    }
+
+    private static func types(for metric: String) -> [HKSampleType] {
+      if let s = HealthChannel.statistic(metric) { return [s.type] }
+      let sleep = HKCategoryType(.sleepAnalysis)
+      if metric == HealthChannel.sleepingHeartRate { return [sleep, HKQuantityType(.heartRate)] }
+      if HealthDays.sleepMetrics.contains(where: { $0.id == metric }) || HealthDays.sleepTimingMetrics.contains(metric) {
+        return [sleep]
+      }
+      return []
+    }
+
+    private static func typesByID(_ metrics: [String]) -> [String: (type: HKSampleType, metrics: [String])] {
+      var out: [String: (type: HKSampleType, metrics: [String])] = [:]
+      for metric in metrics {
+        for type in types(for: metric) {
+          out[type.identifier, default: (type: type, metrics: [])].metrics.append(metric)
+        }
+      }
+      return out
+    }
+
+    private static func anchored(
+      _ type: HKSampleType, predicate: NSPredicate?, anchor: HKQueryAnchor?, limit: Int
+    ) -> (samples: [HKSample], deleted: Int, anchor: HKQueryAnchor?, error: Error?) {
+      let done = DispatchSemaphore(value: 0)
+      var out: (samples: [HKSample], deleted: Int, anchor: HKQueryAnchor?, error: Error?) = ([], 0, nil, nil)
+      let query = HKAnchoredObjectQuery(type: type, predicate: predicate, anchor: anchor, limit: limit) {
+        _, samples, deleted, newAnchor, error in
+        out = (samples ?? [], deleted?.count ?? 0, newAnchor, error)
+        done.signal()
+      }
+      HealthChannel.store.execute(query)
+      done.wait()
+      return out
+    }
+
+    // Reads every change to type since its anchor into state, page by page,
+    // each page's marks saved with its anchor. A deletion names no day, so it
+    // marks the metrics whole. With no anchor yet the metrics are read whole
+    // and the anchor comes from recent samples: changes after it are seen,
+    // and an older one seen twice only rereads a day.
+    private static func catchUp(_ type: HKSampleType, metrics: [String], _ state: inout HealthDays.SyncState)
+      -> Error?
+    {
+      let id = type.identifier
+      var anchor = state.anchors[id].flatMap {
+        try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0)
+      }
+      if anchor == nil {
+        let since = Date().addingTimeInterval(-seedDays * 24 * 60 * 60)
+        let seed = anchored(
+          type, predicate: HKQuery.predicateForSamples(withStart: since, end: nil), anchor: nil,
+          limit: HKObjectQueryNoLimit)
+        if let error = seed.error, !HealthChannel.isNoData(error) { return error }
+        state.markWhole(metrics)
+        if let next = seed.anchor,
+          let data = try? NSKeyedArchiver.archivedData(withRootObject: next, requiringSecureCoding: true)
+        {
+          state.anchors[id] = data
+        }
+        return nil
+      }
+      while true {
+        let page = anchored(type, predicate: nil, anchor: anchor, limit: pageLimit)
+        if let error = page.error { return HealthChannel.isNoData(error) ? nil : error }
+        if page.deleted > 0 { state.markWhole(metrics) }
+        var keys = Set<String>()
+        for sample in page.samples {
+          keys.formUnion(HealthDays.touchedKeys(start: sample.startDate, end: sample.endDate, HealthChannel.calendar))
+        }
+        if !keys.isEmpty { state.mark(metrics, keys: keys.sorted()) }
+        if let next = page.anchor,
+          let data = try? NSKeyedArchiver.archivedData(withRootObject: next, requiringSecureCoding: true)
+        {
+          state.anchors[id] = data
+          anchor = next
+        }
+        save(state)
+        if page.samples.count + page.deleted < pageLimit || page.anchor == nil { return nil }
+      }
+    }
+
+    // ["generation": Int, "days": [metric: [day key]], "whole": [metric]]:
+    // what changed since the last handled generation, for the metrics asked.
+    static func changes(metrics: [String], completion: @escaping (Result<[String: Any], Error>) -> Void) {
+      queue.async {
+        var state = load()
+        let wanted = Array(Set(metrics)).sorted()
+        state.metrics = wanted
+        var failure: Error?
+        for (_, entry) in typesByID(wanted).sorted(by: { $0.key < $1.key }) {
+          if let error = catchUp(entry.type, metrics: entry.metrics, &state) {
+            failure = error
+            break
+          }
+        }
+        save(state)
+        observe(state)
+        if let failure {
+          completion(.failure(failure))
+          return
+        }
+        let pending = state.pending(wanted)
+        completion(.success(["generation": state.generation, "days": pending.days, "whole": pending.whole]))
+      }
+    }
+
+    static func handled(generation: Int) {
+      queue.async {
+        var state = load()
+        state.handled(through: generation)
+        save(state)
+      }
+    }
+
+    // After the Health sheet: a type just allowed holds history the anchor
+    // has passed, so every metric is read whole again.
+    static func reset() {
+      queue.async {
+        var state = load()
+        state.anchors = [:]
+        state.markWhole(state.metrics)
+        save(state)
+      }
+    }
+
+    // From application(_:didFinishLaunchingWithOptions:), as background
+    // delivery requires; nothing until Dart has asked for changes once.
+    static func start() {
+      guard HKHealthStore.isHealthDataAvailable() else { return }
+      queue.async { observe(load()) }
+    }
+
+    // Hourly at most: stepCount is capped there anyway, and a sleep or a
+    // morning reading lands well before the page is next opened.
+    private static func observe(_ state: HealthDays.SyncState) {
+      for (id, entry) in typesByID(state.metrics) where !observed.contains(id) {
+        observed.insert(id)
+        let query = HKObserverQuery(sampleType: entry.type, predicate: nil) { _, done, error in
+          guard error == nil else {
+            done()
+            return
+          }
+          queue.async {
+            var state = load()
+            let metrics = typesByID(state.metrics)[id]?.metrics ?? []
+            if !metrics.isEmpty { _ = catchUp(entry.type, metrics: metrics, &state) }
+            save(state)
+            done()
+          }
+        }
+        HealthChannel.store.execute(query)
+        HealthChannel.store.enableBackgroundDelivery(for: entry.type, frequency: .hourly) { _, _ in }
+      }
+    }
   }
 }
