@@ -141,8 +141,10 @@ void main() {
       final PayoffDays coffee = payoffDays(6, shift: 1.5);
       final PayoffDays both = (
         uses: <HabitUse>[
-          ...coffee.uses,
-          ...payoffDays(7, habit: 'Tea', fallAt: 95).uses,
+          ...steady('Coffee', 0, 91, 4),
+          ...steady('Coffee', 91, 182, 2),
+          ...steady('Tea', 0, 95, 3),
+          ...steady('Tea', 95, 182, 1),
         ],
         outcomes: coffee.outcomes,
         through: coffee.through,

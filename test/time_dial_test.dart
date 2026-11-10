@@ -373,7 +373,7 @@ void main() {
 
       await tester.tapAt(_at(tester, 9 * 60));
       await tester.pump();
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(writes.writes.single.op, 'updateActivity');
       expect(writes.writes.single.fields, <String, Object?>{
@@ -391,7 +391,7 @@ void main() {
       );
       await tester.tap(find.byTooltip('More'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(writes.writes.single.fields, <String, Object?>{'quantity': 4});
     });

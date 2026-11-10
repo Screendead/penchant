@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -99,9 +98,12 @@ void main() {
       expect(deletedBar, findsNothing);
 
       await tap(tester, historyEntry(1).first);
-      await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+      await pumpUntilRouteSettled(
+        tester,
+        find.byKey(ViceActivityEditorPage.saveKey),
+      );
       await enterText(tester, 'Quantity', '3');
-      await tap(tester, find.widgetWithText(TextButton, 'Save'));
+      await tap(tester, find.byKey(ViceActivityEditorPage.saveKey));
       await pumpUntil(
         tester,
         find.byType(ViceActivityEditorPage),
@@ -111,15 +113,12 @@ void main() {
       await pumpUntil(tester, historyEntry(3));
 
       await tap(tester, historyEntry(1));
-      await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
-      await tap(
+      await pumpUntilRouteSettled(
         tester,
-        find.descendant(
-          of: find.byType(ViceActivityEditorPage),
-          matching: find.byTooltip('Delete'),
-        ),
+        find.byKey(ViceActivityEditorPage.saveKey),
       );
-      // The history page is off stage until the editor has popped.
+      await tap(tester, find.byKey(ViceActivityEditorPage.deleteKey));
+      // The history page is behind the sheet's barrier until it has popped.
       await pumpUntil(tester, historyTitle('Coffee').hitTestable());
       await pumpUntil(
         tester,

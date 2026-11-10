@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/main.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -41,11 +42,12 @@ Future<void> _open(
   FakeTrackerWrites writes, {
   String? initialViceID,
   Widget? page,
+  Map<String, double> storedTypicals = const <String, double>{},
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        ...habitOverrides(<Vice>[_coffee]),
+        ...habitOverrides(<Vice>[_coffee], storedTypicals: storedTypicals),
         trackerWritesProvider.overrideWithValue(writes),
         memoryJournal(),
         userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
@@ -200,12 +202,123 @@ void main() {
     await tester.tap(find.byTooltip(AmountFields.moreTooltip));
     await tester.pump();
     expect(_shownQuantity(tester), '4');
-    await tester.tap(find.widgetWithText(TextButton, 'Save'));
+    await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
     await tester.pumpAndSettle();
 
     expect(writes.writes.single.op, 'updateActivity');
     expect(writes.writes.single.id, id);
     expect(writes.writes.single.fields['quantity'], 4);
+  });
+
+  test('a habit typically logged in tens steps by fives', () {
+    expect(AmountFields.stepFor(null), 1);
+    expect(AmountFields.stepFor(9.5), 1);
+    expect(AmountFields.stepFor(10), 5);
+    expect(AmountFields.stepFor(250), 5);
+  });
+
+  testWidgets('a step of five lands on multiples of five and stops at one', (
+    tester,
+  ) async {
+    await withClock(Clock.fixed(_now), () async {
+      await _open(
+        tester,
+        writes,
+        initialViceID: _coffee.id,
+        storedTypicals: <String, double>{_coffee.id: 20},
+      );
+      final Finder less = find.byTooltip(AmountFields.lessTooltip);
+      final Finder more = find.byTooltip(AmountFields.moreTooltip);
+
+      await tester.tap(more);
+      await tester.pump();
+      expect(_shownQuantity(tester), '5');
+      await tester.tap(more);
+      await tester.pump();
+      expect(_shownQuantity(tester), '10');
+      await tester.enterText(_quantity, '12');
+      await tester.tap(less);
+      await tester.pump();
+      expect(_shownQuantity(tester), '10');
+      await tester.tap(less);
+      await tester.tap(less);
+      await tester.pump();
+      expect(_shownQuantity(tester), '1');
+      await tester.enterText(_quantity, '12');
+      await tester.tap(more);
+      await tester.pump();
+      expect(_shownQuantity(tester), '15');
+    });
+  });
+
+  testWidgets('the editor steps by five for a habit typically logged in tens', (
+    tester,
+  ) async {
+    final String id = fakeActivity('coffee', 3, _now).id;
+    await _open(
+      tester,
+      writes,
+      page: ViceActivityEditorPage(viceID: 'coffee', activityID: id),
+      storedTypicals: <String, double>{_coffee.id: 12},
+    );
+
+    await tester.tap(find.byTooltip(AmountFields.moreTooltip));
+    await tester.pump();
+    expect(_shownQuantity(tester), '5');
+  });
+
+  testWidgets("an entry's route opens the editor as the amount sheet, with "
+      'its habit and Delete', (tester) async {
+    final String id = fakeActivity('coffee', 3, _now).id;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...habitOverrides(<Vice>[_coffee]),
+          trackerWritesProvider.overrideWithValue(writes),
+          memoryJournal(),
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          viceActivityProvider.overrideWith(
+            (ref, String id) => AsyncData(fakeActivity('coffee', 3, _now)),
+          ),
+        ],
+        child: MaterialApp(
+          onGenerateRoute: generateRoute,
+          home: Scaffold(
+            body: Consumer(
+              builder: (BuildContext context, WidgetRef ref, _) {
+                ref.watch(userProvider);
+                return TextButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushNamed('/vices/coffee/activities/$id'),
+                  child: const Text('open'),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.ancestor(
+        of: find.byType(ViceActivityEditorPage),
+        matching: find.byType(BottomSheet),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Coffee'), findsOneWidget);
+    expect(_shownQuantity(tester), '3');
+
+    await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(ViceActivityEditorPage), findsNothing);
+    expect(writes.writes.single.op, 'deleteActivity');
+    expect(writes.writes.single.id, id);
+    await tester.pump(const Duration(seconds: 10));
   });
 }
 

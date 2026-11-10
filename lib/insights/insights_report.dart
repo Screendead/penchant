@@ -8,6 +8,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
+import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/payoff.dart';
@@ -155,13 +156,20 @@ class InsightsReport {
     required this.refused,
     this.hoursAfterChecks = 0,
     this.floors = const <String, double>{},
+    this.follows = const <HabitFollows>[],
     this.beforeUse = const <BeforeUse>[],
     this.payoffs = const <Payoff>[],
   });
 
+<<<<<<< HEAD
   /// Each measure since a habit fell and stayed lower, findings and
   /// refusals, judged in the same family as [findings].
   final List<Payoff> payoffs;
+=======
+  /// Every pair of habits shown, one following the other within minutes,
+  /// each with its verdict, judged in the same family as [findings].
+  final List<HabitFollows> follows;
+>>>>>>> origin/master
 
   /// What came before each habit's use, findings and refusals, judged in the
   /// same family as [findings].
@@ -249,7 +257,8 @@ InsightsReport computeInsights(InsightsInput input) {
     for (final HabitInsight result in hours)
       if (!input.archived.contains(result.habitId)) result,
   ];
-  // Today's use is not over, so the last whole day is yesterday.
+  // Today's use is not over, and may yet be followed, so the last whole day
+  // is yesterday.
   final List<BeforeUse> before = <BeforeUse>[
     ...beforeUse(
       uses: input.uses,
@@ -265,6 +274,7 @@ InsightsReport computeInsights(InsightsInput input) {
         skip: input.archived,
       ),
   ];
+<<<<<<< HEAD
   final List<Payoff> payoffs = payoff(
     uses: input.uses,
     outcomes: outcomes,
@@ -288,6 +298,25 @@ InsightsReport computeInsights(InsightsInput input) {
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
     alongside: <double>[...beforeP, ...payoffP],
+=======
+  final List<HabitFollows> follows = habitFollows(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<double> afterPs = <double>[
+    for (final HabitInsight i in after) ?insightPValue(i),
+  ];
+  final List<double> beforePs = <double>[
+    for (final BeforeUse b in before) ?b.pValue,
+  ];
+  final List<double> followsPs = <double>[
+    for (final HabitFollows f in follows) ?f.pValue,
+  ];
+  for (final HabitInsight insight in controlFalseDiscoveries(
+    after,
+    alongside: <double>[...beforePs, ...followsPs],
+>>>>>>> origin/master
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -309,9 +338,17 @@ InsightsReport computeInsights(InsightsInput input) {
   return InsightsReport(
     hoursAfterChecks: hours.length,
     floors: floors,
+    follows: judgeHabitFollows(
+      follows,
+      alongside: <double>[...afterPs, ...beforePs],
+    ),
     beforeUse: judgeBeforeUse(
       before,
+<<<<<<< HEAD
       alongside: <double>[...afterP, ...payoffP],
+=======
+      alongside: <double>[...afterPs, ...followsPs],
+>>>>>>> origin/master
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     payoffs: judgePayoffs(

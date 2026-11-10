@@ -293,8 +293,8 @@ class _DayDialState extends ConsumerState<DayDial>
   Map<String, DateTime> _shownAt = const <String, DateTime>{};
   Map<String, BeadPlacement> _shownLayout = const <String, BeadPlacement>{};
   // Beads travelling round the rim to an edited time, from where they were.
-  // A travel starts on the first frame the dial draws, since an edit is made
-  // on a page covering the dial, whose ticker is muted until it pops.
+  // A travel starts on the first frame the dial draws, since a page covering
+  // the dial mutes its ticker until it pops.
   final Map<String, ({BeadPlacement from, Duration? start})> _travels =
       <String, ({BeadPlacement from, Duration? start})>{};
   Set<String> _pending = <String>{};

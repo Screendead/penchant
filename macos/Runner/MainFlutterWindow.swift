@@ -50,9 +50,10 @@ class MainFlutterWindow: NSWindow {
 }
 
 // The Dart side is lib/journal_key/secret_clipboard.dart. macOS has no
-// local-only pasteboard item; the nspasteboard.org markers ask clipboard
-// managers and Universal Clipboard to skip it, and it is cleared after the
-// delay unless something else has been copied since.
+// local-only pasteboard item, so Universal Clipboard still carries the copy
+// to the user's other devices. The nspasteboard.org markers ask clipboard
+// managers to skip it, and it is cleared after the delay unless something
+// else has been copied since.
 enum SecretPasteboard {
   static let concealed = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
   static let transient = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")

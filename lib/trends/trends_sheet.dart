@@ -96,6 +96,8 @@ class SheetPosition extends ChangeNotifier {
 // their selection in the same page storage, so a resize across the split
 // keeps it.
 class TrendsSheet extends ConsumerStatefulWidget {
+  static const Key dayGrowKey = ValueKey<String>('trendsDayGrow');
+
   const TrendsSheet({
     super.key,
     required DraggableScrollableController this.controller,
@@ -262,6 +264,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   int? cursor;
   // A day opened from the chart.
   DateTime? openDay;
+  // Where in the panel the opened day grows from: its point's place on the
+  // chart's x axis, near the chart's height.
+  Alignment _dayOrigin = Alignment.center;
 
   List<ViceActivity>? _bucketed;
   UsageRange? _bucketedRange;
@@ -439,6 +444,33 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     return out;
   }
 
+  // A day opens as a container transform from its chart point; under Reduce
+  // motion, and for the panel coming back, it is a plain fade.
+  Widget _dayTransition(Widget child, Animation<double> animation) {
+    if (child is! TrendsDay || MediaQuery.disableAnimationsOf(context)) {
+      return FadeTransition(opacity: animation, child: child);
+    }
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (BuildContext context, Widget? child) {
+        final double t = animation.value;
+        return Opacity(
+          opacity: const Interval(0, 0.3).transform(t),
+          child: Transform.scale(
+            key: TrendsSheet.dayGrowKey,
+            scale: 0.2 + 0.8 * t,
+            alignment: _dayOrigin,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(DialRadius.card),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Vice vice = _selected();
@@ -563,11 +595,14 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                       ),
                     );
                   }
-                : (int index) => _handOver(
-                    _chartFocus,
-                    _backFocus,
-                    () => openDay = shown.bucketStart(index),
-                  ),
+                : (int index) => _handOver(_chartFocus, _backFocus, () {
+                    final int last = shown.bucketCount - 1;
+                    _dayOrigin = Alignment(
+                      last <= 0 ? 0 : -1 + 2 * index / last,
+                      -0.4,
+                    );
+                    openDay = shown.bucketStart(index);
+                  }),
             onRetry: () => ref.invalidate(
               viceActivityGraphForUserProvider,
               asReload: true,
@@ -678,7 +713,10 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
                           child: AnimatedSwitcher(
                             duration: MediaQuery.disableAnimationsOf(context)
                                 ? DialMotion.reducedFade
-                                : DialMotion.fadeThrough,
+                                : DialMotion.containerTransform,
+                            switchInCurve: DialMotion.travel,
+                            switchOutCurve: DialMotion.travel,
+                            transitionBuilder: _dayTransition,
                             child: content(),
                           ),
                         ),

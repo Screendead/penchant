@@ -134,7 +134,10 @@ void main() {
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, historyTitle('Coffee'));
     await tap(tester, historyEntry(1.5));
-    await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
+    await pumpUntilRouteSettled(
+      tester,
+      find.byKey(ViceActivityEditorPage.saveKey),
+    );
     expect(
       tester
           .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
@@ -148,7 +151,7 @@ void main() {
     ).add(const Duration(hours: 9));
     await setEntryTime(tester, moved);
     await enterText(tester, 'Quantity', formatAmount(2.25));
-    await tap(tester, find.widgetWithText(TextButton, 'Save'));
+    await tap(tester, find.byKey(ViceActivityEditorPage.saveKey));
     await pumpUntil(
       tester,
       find.byType(ViceActivityEditorPage),

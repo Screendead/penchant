@@ -474,7 +474,9 @@ void main() {
           expect(tester.takeException(), isNull);
           expect(find.textContaining(shows), findsWidgets);
           expect(
-            Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
+            Theme.of(
+              tester.element(find.textContaining(shows).first),
+            ).brightness,
             brightness,
           );
         });

@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 
 // The amount sheet's fields: a stepper over a typed amount, the entry's time
-// on the mini dial, and its triggers. A new entry's sheet and the entry editor both
-// build them, inside their own Form.
-class AmountFields extends StatelessWidget {
+// on the mini dial, and its triggers. A new entry's sheet and the entry editor
+// both build them, inside their own Form.
+class AmountFields extends ConsumerWidget {
   const AmountFields({
     super.key,
     required this.quantityController,
@@ -30,7 +32,10 @@ class AmountFields extends StatelessWidget {
   static const String quantityLabel = 'Quantity';
   static const String lessTooltip = 'Less';
   static const String moreTooltip = 'More';
-  static const int step = 1;
+  // A habit typically logged in tens steps by fives, from its stored typical
+  // entry.
+  static int stepFor(double? typical) =>
+      typical != null && typical >= 10 ? 5 : 1;
 
   final TextEditingController quantityController;
   final Unit unit;
@@ -48,13 +53,20 @@ class AmountFields extends StatelessWidget {
 
   num get _typed => parseAmount(quantityController.text) ?? 0;
 
-  void _stepBy(int delta) {
-    final num next = _typed + delta;
-    quantityController.text = formatAmount(next < step ? step : next);
+  // A step of one keeps a typed fraction; a larger one lands on its multiples.
+  void _stepBy(int step, int direction) {
+    final num typed = _typed;
+    final num next = step == 1
+        ? typed + direction
+        : direction > 0
+        ? ((typed / step).floor() + 1) * step
+        : ((typed / step).ceil() - 1) * step;
+    quantityController.text = formatAmount(next < 1 ? 1 : next);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final int step = stepFor(ref.watch(storedTypicalsProvider)[viceID]);
     final DialColors colors = DialColors.of(context);
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
@@ -69,8 +81,8 @@ class AmountFields extends StatelessWidget {
               _StepButton(
                 glyph: DialGlyph.minus,
                 tooltip: lessTooltip,
-                onPressed: enabled && _typed > step
-                    ? () => _stepBy(-step)
+                onPressed: enabled && _typed > 1
+                    ? () => _stepBy(step, -1)
                     : null,
               ),
               Expanded(
@@ -115,7 +127,7 @@ class AmountFields extends StatelessWidget {
               _StepButton(
                 glyph: DialGlyph.plus,
                 tooltip: moreTooltip,
-                onPressed: enabled ? () => _stepBy(step) : null,
+                onPressed: enabled ? () => _stepBy(step, 1) : null,
               ),
             ],
           ),
