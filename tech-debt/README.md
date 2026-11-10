@@ -16,7 +16,7 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**9 issues: 0 critical, 0 high, 0 medium, 9 low.**
+**8 issues: 0 critical, 0 high, 0 medium, 8 low.**
 
 ## Firebase Data Layer (2)
 
@@ -36,12 +36,11 @@ Riverpod provider semantics and lifecycle, resource disposal, build-phase side e
 Swallowed failure states, unguarded bootstrap, inconsistent exception surfacing, and the absence of logging or telemetry.
 
 
-## Offline and Write Reliability (2)
+## Offline and Write Reliability (1)
 
 Firestore persistence configuration, write timeouts and in-flight UI state, destructive-action safety, and connectivity feedback.
 
 - **low** — [A dense hour's arc does not show which of its entries are unsynced](offline-and-write-reliability/dense-hour-arc-shows-no-pending-entries.md)
-- **low** — [A late Undo made offline from a widget reaches the server only when Penchant next starts](offline-and-write-reliability/late-undo-offline-waits-for-the-app.md)
 
 ## Accessibility and Localization (1)
 
