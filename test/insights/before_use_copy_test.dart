@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Interval;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -90,7 +90,10 @@ void main() {
       'In the hour before Coffee, your heart rate averages 10 bpm higher '
       'than in the same hour after waking on nearby days without it.',
     );
-    expect(beforeUseBasis(whether, 'Coffee'), 'From 64 days, 22 of them with Coffee');
+    expect(
+      beforeUseBasis(whether, 'Coffee'),
+      'From 64 days, 22 of them with Coffee',
+    );
     expect(
       beforeUseBasis(hour, 'Coffee'),
       'From 30 days with Coffee, against 20 days at the same time after '
@@ -121,7 +124,10 @@ void main() {
   });
 
   test('Copy as text carries the section under its heading', () {
-    final BeforeUseCard card = beforeUseCards(<BeforeUse>[whether, hour]).single;
+    final BeforeUseCard card = beforeUseCards(<BeforeUse>[
+      whether,
+      hour,
+    ]).single;
     final String text = insightsText(
       cards: const [],
       refused: const [],
@@ -173,9 +179,7 @@ void main() {
     expect(find.text('Range: 4 to 16 bpm higher'), findsOneWidget);
     expect(find.text(beforeUseBasis(hour, 'Coffee')), findsOneWidget);
     expect(
-      find.text(
-        'The night before a day with it: time asleep 24 min less',
-      ),
+      find.text('The night before a day with it: time asleep 24 min less'),
       findsOneWidget,
     );
   });

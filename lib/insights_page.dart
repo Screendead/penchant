@@ -121,9 +121,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     // sign that Health may now have data to give.
     _lifecycle = AppLifecycleListener(
       onResume: () {
-        if (ref.read(healthStateProvider).value case HealthReady(
-          :final values,
-        ) when values.isEmpty) {
+        if (ref.read(healthStateProvider).value case HealthReady(:final values)
+            when values.isEmpty) {
           _retryHealth();
         }
       },

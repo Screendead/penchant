@@ -199,11 +199,14 @@ void main() {
     expect(b.kind, BeforeUseKind.hourBefore);
     expect(b.refusal, RefusalReason.tooFewDays);
     expect(b.pValue, isNull);
-    expect(hourBefore(
-      plan: plan,
-      uses: s.uses,
-      samples: s.samples,
-      skip: <String>{'Coffee'},
-    ), isEmpty);
+    expect(
+      hourBefore(
+        plan: plan,
+        uses: s.uses,
+        samples: s.samples,
+        skip: <String>{'Coffee'},
+      ),
+      isEmpty,
+    );
   });
 }

@@ -783,10 +783,7 @@ HabitInsight _amongDaysJudged(
       return judged.refuse(RefusalReason.steadyAmount);
     }
     if (pickStep) {
-      judged.step = doseStep(
-        sd,
-        whole: x.every((v) => v == v.roundToDouble()),
-      );
+      judged.step = doseStep(sd, whole: x.every((v) => v == v.roundToDouble()));
     }
   }
   final List<int> period = periodsOf(days, gates.minPeriodDays);

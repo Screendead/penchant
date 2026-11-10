@@ -115,7 +115,7 @@ void main() {
     );
     daily(
       'use costs 1 sd that night and day, in runs, AR(1) 0.6: nothing comes '
-          'before',
+      'before',
       (seed) => beforeDays(seed, ar: 0.6, runs: true, forward: 1),
     );
     daily(
@@ -125,9 +125,10 @@ void main() {
   });
 
   test('the night or day before: power on sleep', () {
-    daily('a night 1 sd short: 25 points more use, 1 more, 1 h earlier', (
-      seed,
-    ) => beforeDays(seed, reverse: 1));
+    daily(
+      'a night 1 sd short: 25 points more use, 1 more, 1 h earlier',
+      (seed) => beforeDays(seed, reverse: 1),
+    );
     daily('half of that', (seed) => beforeDays(seed, reverse: 0.5));
     daily(
       'half of that, 60 days',
@@ -183,20 +184,25 @@ void main() {
         use('Coffee', 0.6);
         use('Tea', 0.5);
         use('Water', 1);
-        for (final (String id, double mid, double sd) in <(String, double, double)>[
-          ('sleepAsleep', 420, 40),
-          ('sleepDeep', 70, 15),
-          ('sleepREM', 90, 20),
-          ('sleepCore', 240, 30),
-          ('sleepEnd', 19 * 60, 30),
-          ('heartRateVariabilitySDNN', 45, 8),
-          ('restingHeartRate', 58, 2),
-          ('respiratoryRate', 14, 0.6),
-          ('stepCount', 8000, 2500),
-          ('activeEnergyBurned', 500, 150),
-        ]) {
+        for (final (String id, double mid, double sd)
+            in <(String, double, double)>[
+              ('sleepAsleep', 420, 40),
+              ('sleepDeep', 70, 15),
+              ('sleepREM', 90, 20),
+              ('sleepCore', 240, 30),
+              ('sleepEnd', 19 * 60, 30),
+              ('heartRateVariabilitySDNN', 45, 8),
+              ('restingHeartRate', 58, 2),
+              ('respiratoryRate', 14, 0.6),
+              ('stepCount', 8000, 2500),
+              ('activeEnergyBurned', 500, 150),
+            ]) {
           outcomes.add(
-            DailyOutcome(date: day, metricId: id, value: mid + sd * gaussian(r)),
+            DailyOutcome(
+              date: day,
+              metricId: id,
+              value: mid + sd * gaussian(r),
+            ),
           );
         }
       }

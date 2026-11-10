@@ -344,18 +344,19 @@ BeforeUse _daily(
     if (sampleVariance(amountsBefore.where((v) => v > 0).toList()) > 1e-12)
       amountsBefore,
   ];
-  final List<List<double>> others = <List<double>>[
-    for (final String other in ids)
-      if (other != id)
-        <double>[
-          for (final DateTime d in days)
-            habits.lateDayTotal(other, addDays(d, -1)) > 0 ? 1 : 0,
-        ],
-  ]..removeWhere((c) {
-    final int on = c.where((v) => v == 1).length;
-    return on < gates.minExposedDays ||
-        c.length - on < gates.minUnexposedDays;
-  });
+  final List<List<double>> others =
+      <List<double>>[
+        for (final String other in ids)
+          if (other != id)
+            <double>[
+              for (final DateTime d in days)
+                habits.lateDayTotal(other, addDays(d, -1)) > 0 ? 1 : 0,
+            ],
+      ]..removeWhere((c) {
+        final int on = c.where((v) => v == 1).length;
+        return on < gates.minExposedDays ||
+            c.length - on < gates.minUnexposedDays;
+      });
   List<List<double>> rows(List<List<double>> columns) {
     final List<List<double>> kept = <List<double>>[
       for (final List<double> c in columns)

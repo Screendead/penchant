@@ -185,16 +185,15 @@ class InsightsReport {
 /// sleep and night metrics, the next day's value for the rest.
 const int insightsLagDays = 1;
 
-typedef _Comparison =
-    List<HabitInsight> Function({
-      required DailyHabitSeries habits,
-      required OutcomeSeries outcomes,
-      required String metricId,
-      int lagDays,
-      DateTime? from,
-      DateTime? through,
-      InsightGates gates,
-    });
+typedef _Comparison = List<HabitInsight> Function({
+  required DailyHabitSeries habits,
+  required OutcomeSeries outcomes,
+  required String metricId,
+  int lagDays,
+  DateTime? from,
+  DateTime? through,
+  InsightGates gates,
+});
 
 const List<_Comparison> _comparisons = <_Comparison>[
   whatFollows,
@@ -258,9 +257,7 @@ InsightsReport computeInsights(InsightsInput input) {
   ];
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[
-      for (final BeforeUse b in before) ?b.pValue,
-    ],
+    alongside: <double>[for (final BeforeUse b in before) ?b.pValue],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -992,8 +989,7 @@ String _useRefusal(
   RefusalReason.tooFewDays =>
     'Too few days with it yet: ${refusal.exposedDays} of '
         '${gates.minExposedDays}',
-  RefusalReason.uneven =>
-    'Used far more at some times than others, so it can’t be told apart from other changes',
+  RefusalReason.uneven => 'Used far more at some times than others, so it can’t be told apart from other changes',
   RefusalReason.entangled => switch (refusal.entangledWith) {
     final String other =>
       'Used together with ${nameOf(other)}, so the two can’t be told apart',

@@ -51,7 +51,11 @@ BeforeDays beforeDays(
     resting = ar * resting + fresh * gaussian(r);
     outcomes
       ..add(
-        DailyOutcome(date: day, metricId: 'sleepAsleep', value: 420 + 40 * night),
+        DailyOutcome(
+          date: day,
+          metricId: 'sleepAsleep',
+          value: 420 + 40 * night,
+        ),
       )
       ..add(
         DailyOutcome(date: day, metricId: 'sleepEnd', value: 19 * 60 + wake),
@@ -71,13 +75,11 @@ BeforeDays beforeDays(
         ),
       );
     if (used) {
-      final int amount = max(
-        1,
-        (1 + r.nextInt(4) - reverse * night).round(),
-      );
-      final int first = (7 * 60 + wake + 30 + r.nextInt(240) + 60 * reverse * night)
-          .round()
-          .clamp(5 * 60 + 1, 20 * 60);
+      final int amount = max(1, (1 + r.nextInt(4) - reverse * night).round());
+      final int first =
+          (7 * 60 + wake + 30 + r.nextInt(240) + 60 * reverse * night)
+              .round()
+              .clamp(5 * 60 + 1, 20 * 60);
       for (int k = 0; k < amount; k++) {
         uses.add(
           HabitUse(

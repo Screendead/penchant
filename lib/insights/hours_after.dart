@@ -317,7 +317,11 @@ int _firstFrom(List<HealthSample> samples, DateTime t) {
 }
 
 // Instant readings, so a sample counts where it starts.
-List<double> readingsIn(List<HealthSample> samples, DateTime from, DateTime to) {
+List<double> readingsIn(
+  List<HealthSample> samples,
+  DateTime from,
+  DateTime to,
+) {
   final List<double> out = <double>[];
   for (int i = _firstFrom(samples, from); i < samples.length; i++) {
     if (!samples[i].start.isBefore(to)) break;
