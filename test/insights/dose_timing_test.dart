@@ -168,9 +168,9 @@ void main() {
         expect(
           computeInsights(input).findings.length,
           oneOfSlopeAndLine(<HabitFinding>[
-            ...controlFalseDiscoveries(all)
-                .whereType<HabitFinding>()
-                .where((f) => practicalSize(f) >= 1),
+            ...controlFalseDiscoveries(
+              all,
+            ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
           ]).length,
         );
       }

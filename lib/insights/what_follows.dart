@@ -911,8 +911,7 @@ HabitInsight _amongDaysJudged(
       (column: onset, reason: RefusalReason.followsBedtime),
   ];
   if (!_sides(judged.kind)) {
-    if (period.last > 0 &&
-        _varyingPeriods(x, period) < gates.minMixedPeriods) {
+    if (period.last > 0 && _varyingPeriods(x, period) < gates.minMixedPeriods) {
       return judged.refuse(RefusalReason.uneven);
     }
     return _attribute(

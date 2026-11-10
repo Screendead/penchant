@@ -131,10 +131,13 @@ void main() {
         expect(line.interval.high, lessThan(0));
         expect(line.usableDays, days);
         final DailyHabitSeries habits = DailyHabitSeries.fromUses(input.uses);
-        expect(line.exposedDays, <int>[
-          for (int i = 0; i < days; i++)
-            if (habits.lateDayTotal('Coffee', addDays(start, i)) >= 3) i,
-        ].length);
+        expect(
+          line.exposedDays,
+          <int>[
+            for (int i = 0; i < days; i++)
+              if (habits.lateDayTotal('Coffee', addDays(start, i)) >= 3) i,
+          ].length,
+        );
         // The two sides as they are, so the floor is not scaled by a spread.
         expect(line.spread, isNull);
       }
