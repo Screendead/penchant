@@ -62,8 +62,10 @@ merged, #128 (keychain probe draft) is the only open PR, and the e2e speed-up (#
 
 **DECIDED, in order.** The main session merges and ticks items here; workers stop at a green, clean PR.
 
-- **F1. Flutter 3.47.9 (Dart 3.13.7) and riverpod_lint 3.1.9** (D11; unblocks D9, the universal macOS release build
-  on this Mac). Alone, before anything else builds. Branch `chore/flutter-3.47`.
+- **F1. DONE (this PR): Flutter 3.47.9 (Dart 3.13.7) and riverpod_lint 3.1.9** (D11). No Xcode project migration
+  and no `Package.resolved` change; 11 `Semantics(header: true)` gained `headingLevel: 1`, since 3.47 makes `header` a
+  no-op on iOS. This Mac's Homebrew Flutter moves to 3.47.9 with it, which also settles D9 (the universal macOS
+  release build here needed 3.44.8 or later).
 - **Lane A, insights engine, one PR per step, in series** (all share `lib/insights/`, `insights_provider.dart`,
   `insights_page.dart`): n where's the line, o recovery time, p payoff from cutting down, q replacement, k before a
   use, l one habit after another, m step changes; then the autocorrelation-corrected sample size and block-bootstrap
@@ -406,8 +408,7 @@ To build: `usual-range` B (10th to 90th percentile of the last 28 nights), `toda
 writes no plaintext create), `orphan-entries` B (a "Deleted habit" row in Habits to see, export or delete entries
 whose habit is gone). `api-key` A: already set, checked by Jack 2026-11-09. `live-indexes`: removed by a forced indexes deploy, 2026-11-09.
 
-**Blocked:** D9 (switching this Mac's Flutter while agents build), D11 (Flutter 3.47 not yet pinned), B1 to B6, the
-branch deletions above.
+**Blocked:** B1 to B6, the branch deletions above. D9 and D11: done 2026-11-10 (fourth run).
 
 ### Overnight run (`/finish-and-pitch`, 2026-11-08)
 

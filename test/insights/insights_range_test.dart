@@ -16,17 +16,13 @@ void main() {
       expect(insightsRange(today.add(const Duration(hours: 23))), range);
     });
 
-    test(
-      'ends at the next local midnight on a DST change day',
-      () {
-        final ({DateTime start, DateTime end}) range = insightsRange(
-          transition!.add(const Duration(hours: 12)),
-        );
-        expect(range.end, addDays(transition!, 1));
-        expect(range.end.hour, 0);
-      },
-      skip: transition == null ? noDstSkipReason : false,
-    );
+    test('ends at the next local midnight on a DST change day', () {
+      final ({DateTime start, DateTime end}) range = insightsRange(
+        transition!.add(const Duration(hours: 12)),
+      );
+      expect(range.end, addDays(transition!, 1));
+      expect(range.end.hour, 0);
+    }, skip: transition == null ? noDstSkipReason : false);
   });
 
   group('insightsHealthChunks', () {

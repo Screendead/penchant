@@ -92,6 +92,7 @@ class GuestExpirySheet extends StatelessWidget {
         children: <Widget>[
           Semantics(
             header: true,
+            headingLevel: 1,
             child: Text(
               AccountCopy.guestExpiryTitle,
               style: theme.textTheme.titleLarge,

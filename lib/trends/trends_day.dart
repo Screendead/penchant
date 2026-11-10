@@ -111,6 +111,7 @@ class TrendsDay extends ConsumerWidget {
             children: <Widget>[
               Semantics(
                 header: true,
+                headingLevel: 1,
                 child: Text(title(day, today), style: type.displayL),
               ),
               if (entries != null)

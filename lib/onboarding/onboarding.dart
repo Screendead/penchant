@@ -352,6 +352,7 @@ class _Intro extends StatelessWidget {
         const SizedBox(height: 28),
         Semantics(
           header: true,
+          headingLevel: 1,
           child: Text(
             OnboardingCopy.introHeadline,
             style: DialTypeScale.displayXL.copyWith(color: scheme.onSurface),
@@ -408,6 +409,7 @@ class _Picker extends StatelessWidget {
           children: <Widget>[
             Semantics(
               header: true,
+              headingLevel: 1,
               child: Text(OnboardingCopy.question, style: _heading(context)),
             ),
             const SizedBox(height: DialSpace.xs),
@@ -544,6 +546,7 @@ class _Disclaimer extends StatelessWidget {
         const SizedBox(height: DialSpace.l),
         Semantics(
           header: true,
+          headingLevel: 1,
           child: Text(OnboardingCopy.disclaimerTitle, style: _heading(context)),
         ),
         const SizedBox(height: DialSpace.m),
@@ -584,6 +587,7 @@ class _FirstLog extends StatelessWidget {
       children: <Widget>[
         Semantics(
           header: true,
+          headingLevel: 1,
           child: Text(OnboardingCopy.firstLogTitle, style: _heading(context)),
         ),
         const SizedBox(height: DialSpace.xs),

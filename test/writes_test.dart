@@ -837,17 +837,12 @@ void main() {
     final DateTime at = DateTime(2026, 11, 2, 9, 30, 15);
     final ViceActivity activity = fakeActivity(coffee.id, 2, at, amount: 1.5);
 
-    Future<void> open(WidgetTester tester) => _pumpOpened(
-      tester,
-      writes,
-      [
-        viceListProvider.overrideWithValue(AsyncData([coffee])),
-        viceActivityProvider.overrideWith(
-          (ref, String activityID) => AsyncData(activity),
-        ),
-      ],
-      ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
-    );
+    Future<void> open(WidgetTester tester) => _pumpOpened(tester, writes, [
+      viceListProvider.overrideWithValue(AsyncData([coffee])),
+      viceActivityProvider.overrideWith(
+        (ref, String activityID) => AsyncData(activity),
+      ),
+    ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
 
     String quantityText(WidgetTester tester) => tester
         .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
@@ -1069,17 +1064,12 @@ void main() {
     );
 
     Future<void> open(WidgetTester tester, ViceActivity activity) =>
-        _pumpOpened(
-          tester,
-          writes,
-          [
-            viceListProvider.overrideWithValue(AsyncData([coffee])),
-            viceActivityProvider.overrideWith(
-              (ref, String activityID) => AsyncData(activity),
-            ),
-          ],
-          ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
-        );
+        _pumpOpened(tester, writes, [
+          viceListProvider.overrideWithValue(AsyncData([coffee])),
+          viceActivityProvider.overrideWith(
+            (ref, String activityID) => AsyncData(activity),
+          ),
+        ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
 
     Future<void> save(WidgetTester tester) async {
       await tester.tap(find.widgetWithText(TextButton, 'Save'));
@@ -1480,17 +1470,12 @@ void main() {
         3,
         DateTime(2026, 11, 2, 9, 30),
       );
-      await _pumpOpened(
-        tester,
-        writes,
-        [
-          viceListProvider.overrideWithValue(AsyncData([coffee])),
-          viceActivityProvider.overrideWith(
-            (ref, String activityID) => AsyncData(activity),
-          ),
-        ],
-        ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
-      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(activity),
+        ),
+      ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
@@ -1522,17 +1507,12 @@ void main() {
         3,
         DateTime(2026, 11, 2, 9, 30),
       );
-      await _pumpOpened(
-        tester,
-        writes,
-        [
-          viceListProvider.overrideWithValue(AsyncData([coffee])),
-          viceActivityProvider.overrideWith(
-            (ref, String activityID) => AsyncData(activity),
-          ),
-        ],
-        ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
-      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWithValue(AsyncData([coffee])),
+        viceActivityProvider.overrideWith(
+          (ref, String activityID) => AsyncData(activity),
+        ),
+      ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
@@ -1636,24 +1616,17 @@ void main() {
       final StreamController<User?> users = StreamController<User?>();
       addTearDown(() => unawaited(users.close()));
       users.add(FakeUser(ownerID));
-      await _pumpOpened(
-        tester,
-        writes,
-        users: users.stream,
-        [
-          viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
-          activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
-          viceActivityCountProvider.overrideWith(
-            (ref, String viceID) =>
-                const AsyncData((count: 0, source: CountSource.server)),
-          ),
-          viceActivityHistoryProvider.overrideWith(
-            (ref, ViceActivityHistoryQuery query) =>
-                AsyncData(<ViceActivity>[]),
-          ),
-        ],
-        const ViceActivityHistoryPage(viceID: 'coffee'),
-      );
+      await _pumpOpened(tester, writes, users: users.stream, [
+        viceListProvider.overrideWithValue(AsyncData([fakeVice('coffee')])),
+        activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
+        viceActivityCountProvider.overrideWith(
+          (ref, String viceID) =>
+              const AsyncData((count: 0, source: CountSource.server)),
+        ),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, ViceActivityHistoryQuery query) => AsyncData(<ViceActivity>[]),
+        ),
+      ], const ViceActivityHistoryPage(viceID: 'coffee'));
       await tester.tap(find.byTooltip('Archive'));
       await tester.pump();
       await waitOutTimeout(tester);

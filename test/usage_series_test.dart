@@ -65,24 +65,20 @@ void main() {
       );
     });
 
-    test(
-      'keeps calendar days across a daylight-saving change',
-      () {
-        // Each 365-day range spans a year, so it crosses every transition.
-        for (final DateTime today in [
-          DateTime(2026, 11, 4),
-          DateTime(2026, 4, 2),
-        ]) {
-          final UsageRange range = usageRange(today, 365, 1);
-          for (int i = 0; i < range.bucketCount; i++) {
-            final DateTime start = range.bucketStart(i);
-            expect(start, startOfDay(start));
-          }
-          expect(range.bucketStart(range.bucketCount - 1), today);
+    test('keeps calendar days across a daylight-saving change', () {
+      // Each 365-day range spans a year, so it crosses every transition.
+      for (final DateTime today in [
+        DateTime(2026, 11, 4),
+        DateTime(2026, 4, 2),
+      ]) {
+        final UsageRange range = usageRange(today, 365, 1);
+        for (int i = 0; i < range.bucketCount; i++) {
+          final DateTime start = range.bucketStart(i);
+          expect(start, startOfDay(start));
         }
-      },
-      skip: firstDstTransitionDay(2026) == null ? noDstSkipReason : false,
-    );
+        expect(range.bucketStart(range.bucketCount - 1), today);
+      }
+    }, skip: firstDstTransitionDay(2026) == null ? noDstSkipReason : false);
   });
 
   group('bucketTotals', () {

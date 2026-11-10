@@ -66,6 +66,7 @@ class _AuthenticateState extends State<Authenticate> {
                               const SizedBox(height: 22),
                               Semantics(
                                 header: true,
+                                headingLevel: 1,
                                 child: Text(
                                   'Penchant',
                                   style: DialTypeScale.displayXL.copyWith(

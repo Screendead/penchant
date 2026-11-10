@@ -59,7 +59,7 @@ dart format --output=none --set-exit-if-changed lib test integration_test  # CI'
 flutter test
 flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>  # Today as PNGs, light and dark, 390x844
 flutter build macos --debug      # needs the Mac development profile (below); CI builds it unsigned
-flutter build macos --release    # universal; needs Flutter 3.44.8 or later under Xcode 27 (flutter/flutter#188346)
+flutter build macos --release    # universal
 FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO flutter build macos --debug  # compile check without signing
 dart run flutter_launcher_icons  # macOS icons, after changing assets/icon-macos.png (rendered from the .svg beside it)
 cp assets/icon.png ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon.png  # the single-size iOS icon; a test checks the copy
@@ -159,10 +159,10 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
 
 Nothing builds an iOS release or deploys either app. Flutter is pinned in `.github/actions/setup-flutter/action.yml`;
 bump it when the local `flutter --version` changes. CI uses `dart analyze` because riverpod_lint, an analyzer plugin
-(top-level `plugins:` in `analysis_options.yaml`, not a `pubspec.yaml` dependency) pinned to 3.1.4, fails
-`dart analyze` and shows in the IDE, but `flutter analyze` prints none of its warnings on this pin. 3.1.6 to 3.1.8
-resolve an `analysis_server_plugin` whose protocol the Dart 3.12 server does not speak, so the plugin never starts
-and `dart analyze` hangs; move to 3.1.9 when the Flutter pin ships Dart 3.13 (Flutter 3.47; queue item D11).
+(top-level `plugins:` in `analysis_options.yaml`, not a `pubspec.yaml` dependency) pinned to 3.1.9, fails
+`dart analyze` and shows in the IDE, but `flutter analyze` prints none of its warnings on this pin. Move it only with
+the Flutter pin: a plugin whose `analysis_server_plugin` speaks another protocol than the pinned Dart's analysis server
+never starts, and `dart analyze` hangs (3.1.6 to 3.1.8 under Dart 3.12).
 
 ## Architecture
 

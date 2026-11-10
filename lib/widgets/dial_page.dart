@@ -67,6 +67,7 @@ class DialPage extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
                       child: Semantics(
                         header: true,
+                        headingLevel: 1,
                         child: Row(
                           children: <Widget>[
                             if (leading != null) ...<Widget>[

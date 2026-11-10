@@ -274,16 +274,12 @@ void main() {
       expect(find.text('Form'), findsOneWidget);
     }, variant: iOS);
 
-    testWidgets(
-      'macOS has no edge swipe',
-      (WidgetTester tester) async {
-        await pushed(tester, page('Habits'));
-        await tester.dragFrom(const Offset(5, 300), const Offset(600, 0));
-        await tester.pumpAndSettle();
-        expect(find.text('Habits'), findsOneWidget);
-      },
-      variant: TargetPlatformVariant.only(TargetPlatform.macOS),
-    );
+    testWidgets('macOS has no edge swipe', (WidgetTester tester) async {
+      await pushed(tester, page('Habits'));
+      await tester.dragFrom(const Offset(5, 300), const Offset(600, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Habits'), findsOneWidget);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
     testWidgets('the back button still fades through, with no slide', (
       WidgetTester tester,
