@@ -34,6 +34,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Penchant reads when your calendar events start and end, to see which habits tend to follow them. It never reads or keeps their titles, never writes to your calendar, and nothing leaves this device.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Penchant reads when your calendar events start and end, to see which habits tend to follow them. It never reads or keeps their titles, never writes to your calendar, and nothing leaves this device.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Penchant reads sleep, heart and activity data from Health to compare with your journal. It stays on this device.</string>
 	<key>UIApplicationSceneManifest</key>

@@ -13,8 +13,11 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/page_transitions.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/after_event_copy.dart';
 import 'package:tracker/insights/before_use_copy.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_source.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/hours_after.dart';
@@ -22,11 +25,13 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/what_follows.dart';
+import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/after_event_card.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
@@ -97,6 +102,18 @@ class InsightsPage extends ConsumerStatefulWidget {
       'This will show what tends to come before each habit, such as a short '
       'night or another habit.';
 
+  static const String calendarLabel = 'Connect Calendar';
+  static const String calendarBody =
+      'See which habits follow your events. Penchant reads only when each '
+      'event starts and ends, on this iPhone, never writes to your calendar, '
+      'and sends none of it anywhere.';
+  static const String calendarOffLabel = 'Calendar';
+  static const String calendarOffValue = 'Off';
+  static const String calendarOffBody =
+      'To see which habits follow your events, give Penchant full access to '
+      'Calendars in Settings.';
+  static const String calendarFailed = 'The calendar couldn’t be opened.';
+
   static const String copied = 'Insights copied';
   static const String foot =
       'Worked out on this device from your journal and Apple Health; '
@@ -126,6 +143,7 @@ class InsightsPage extends ConsumerStatefulWidget {
 
 class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connecting = false;
+  bool _connectingCalendar = false;
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -135,6 +153,11 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     // sign that Health may now have data to give.
     _lifecycle = AppLifecycleListener(
       onResume: () {
+        // Access allowed in Settings shows no prompt either. Once full,
+        // asking again would read the calendar and run the engine anew.
+        if (ref.read(calendarAccessProvider).value != CalendarAccess.full) {
+          ref.invalidate(calendarAccessProvider);
+        }
         if (ref.read(healthStateProvider).value case HealthReady(
           :final values,
         ) when values.isEmpty) {
@@ -167,6 +190,25 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
   }
 
+  Future<void> _connectCalendar() async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    setState(() => _connectingCalendar = true);
+    final bool granted = await connectCalendar(container);
+    if (!mounted) return;
+    setState(() => _connectingCalendar = false);
+    if (!granted &&
+        await container.read(calendarAccessProvider.future) ==
+            CalendarAccess.notDetermined) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(InsightsPage.calendarFailed)),
+      );
+    }
+  }
+
   // A new read gives new values, so the engine runs again too.
   void _retryHealth() => ref.invalidate(healthStateProvider);
 
@@ -183,6 +225,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     final HealthState? health =
         view.value?.health ?? ref.watch(healthStateProvider).value;
     final bool askAgain = ref.watch(healthAskAgainProvider).value ?? false;
+    final CalendarAccess? calendar = ref.watch(calendarAccessProvider).value;
 
     return CardPage(
       title: InsightsPage.title,
@@ -195,6 +238,12 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             askAgain: askAgain,
             connecting: _connecting,
             onConnect: _connect,
+          ),
+        if (calendar != null && calendar != CalendarAccess.full)
+          _CalendarCard(
+            access: calendar,
+            connecting: _connectingCalendar,
+            onConnect: _connectCalendar,
           ),
         ...switch (view) {
           AsyncError() => <Widget>[
@@ -344,7 +393,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         body: InsightsPage.cuttingDownBody,
       ),
       const CardSectionLabel(InsightsPage.setsOffHeading),
-      if (costs.before.isEmpty && costs.follows.isEmpty)
+      if (costs.before.isEmpty &&
+          costs.follows.isEmpty &&
+          costs.calendar.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -364,6 +415,16 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           nameOf: costs.nameOf,
           mark: costs.marks[card.habitId] ?? const HabitMark(0),
           top: i == 0 && costs.before.isEmpty ? 0 : DialSpace.xs,
+        ),
+      for (final (int i, AfterEvent finding) in costs.calendar.indexed)
+        AfterEventCardView(
+          finding: finding,
+          habit: costs.nameOf(finding.habitId),
+          mark: costs.marks[finding.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top: i == 0 && costs.before.isEmpty && costs.follows.isEmpty
+              ? 0
+              : DialSpace.xs,
         ),
       if (costs.shifts.isNotEmpty)
         const CardSectionLabel(InsightsPage.shiftsHeading),
@@ -512,6 +573,10 @@ class _Costs {
       for (final BeforeUse b in report.beforeUse)
         if (_names.containsKey(b.habitId)) b,
     ], floors: report.floors);
+    calendar = afterEventCards(<AfterEvent>[
+      for (final AfterEvent a in report.afterEvent)
+        if (_names.containsKey(a.habitId)) a,
+    ]);
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -536,6 +601,7 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
+  late final List<AfterEvent> calendar;
   late final List<FollowsCard> follows;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
@@ -605,6 +671,8 @@ class _Costs {
             unit: unitOf(card.habitId),
           ),
         for (final FollowsCard card in follows) followsText(card, nameOf),
+        for (final AfterEvent a in calendar)
+          afterEventText(a, nameOf(a.habitId), formatLocale),
       ],
       shifts: <List<String>>[
         for (final MeasureShift s in shifts)
@@ -760,6 +828,45 @@ class _HealthCard extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Asks for calendar access, or says where to allow it once refused.
+class _CalendarCard extends StatelessWidget {
+  const _CalendarCard({
+    required this.access,
+    required this.connecting,
+    required this.onConnect,
+  });
+
+  final CalendarAccess access;
+  final bool connecting;
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) => DialCard(
+    children: <Widget>[
+      if (access == CalendarAccess.notDetermined)
+        CardRow(
+          label: InsightsPage.calendarLabel,
+          subtitle: InsightsPage.calendarBody,
+          enabled: !connecting,
+          glyph: connecting ? null : DialGlyph.right,
+          trailing: connecting
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : null,
+          onTap: onConnect,
+        )
+      else
+        const CardRow(
+          label: InsightsPage.calendarOffLabel,
+          subtitle: InsightsPage.calendarOffBody,
+          value: Text(InsightsPage.calendarOffValue),
+        ),
+    ],
+  );
 }
 
 class _MessageCard extends StatelessWidget {

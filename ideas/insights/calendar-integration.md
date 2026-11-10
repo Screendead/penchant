@@ -4,14 +4,17 @@
 
 ## What
 
-With full calendar access, the [insights engine](insights-engine.md) reads past and upcoming events and derives
-features per entry and per day: minutes in meetings that day, the number of events, whether an event ended within the
-hour or two before an entry, back-to-back blocks, events with many attendees, and events the user tags (for example
-"1:1s with my manager"). It answers "you log coffee within an hour after 64% of meetings longer than 45 minutes" and
-feeds "Work → Meeting" suggestions to the trigger picker when an entry follows an event.
+Built on iOS: `ios/Runner/CalendarChannel.swift` reads timed events' starts and ends after full access is granted
+from Insights, and `lib/insights/after_event.dart` judges whether each habit is used in the hour after an event ends
+more often than at the same time on nearby days clear of events. Left:
 
-Event titles, attendees and notes are read on the device and never stored outside it. At most, the entry stores the
-trigger path the user accepted.
+- The macOS runner's channel, so the Mac gets the same comparison.
+- The other features per entry and per day: minutes in meetings that day, the number of events, back-to-back
+  blocks, events with many attendees, long meetings (over 45 minutes) on their own, and events the user tags (for
+  example "1:1s with my manager").
+- "Work → Meeting" suggestions in the trigger picker when an entry follows an event; at most the entry stores the
+  trigger path the user accepted.
+- Calendar findings without Health: Insights computes nothing until Health has values.
 
 ## Why
 
