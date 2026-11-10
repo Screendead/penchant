@@ -25,6 +25,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # As e2e.yml, so the restored build database matches the checkout.
+      - name: Content mtimes
+        run: tools/ci-content-mtimes.py
       - uses: ./.github/actions/setup-flutter
       # e2e.yml's key, which needs the runner's image (not in the env context).
       - name: Image version
