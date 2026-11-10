@@ -242,6 +242,63 @@ void main() {
     expect(find.text(InsightsPage.manageLabel), findsOneWidget);
   });
 
+  testWidgets('a line in the amount and a cut-off time read as one side of '
+      'the line against the other', (WidgetTester tester) async {
+    _connected();
+    HabitFinding finding(
+      InsightKind kind,
+      String metricId,
+      double cut,
+      double effect,
+    ) => HabitFinding(
+      habitId: 'coffee',
+      metricId: metricId,
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 41,
+      raw: null,
+      kind: kind,
+      cut: cut,
+      effect: effect,
+      interval: stats.Interval(effect * 1.5, effect / 2),
+      standardized: -0.5,
+      pValue: 0.001,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('coffee', name: 'Coffee', unit: Unit.drink),
+        ]),
+        runner: (_) async => InsightsReport(
+          findings: <HabitFinding>[
+            finding(InsightKind.doseLine, 'sleepDeep', 3, -14),
+            finding(InsightKind.lastUseLine, 'sleepAsleep', 900, -20),
+          ],
+          refused: const <HabitRefusal>[],
+        ),
+      ),
+    );
+
+    expect(find.text('Coffee · sleep'), findsOneWidget);
+    expect(
+      find.text(
+        'On days with 3 drinks or more logged for Coffee, your deep sleep '
+        'that night averages 14 min less than on days with fewer.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('From 120 days with Coffee, 41 of them with 3 drinks or more'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Last use at 15:00 or later: time asleep 20 min less'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('a time of last use on sleep shows its whole effect, then the '
       'part at the same bedtime, then what that size has been shown to do', (
     WidgetTester tester,

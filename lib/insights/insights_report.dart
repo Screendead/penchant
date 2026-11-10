@@ -756,7 +756,7 @@ String findingSentence(
     InsightKind.doseLine =>
       'On days with ${_cutAmount(finding.cut!, unit, locale)} or more logged '
           'for $habit, your ${copy.name} $then averages $amount $direction '
-          'than on days with less.',
+          'than on days with fewer.',
     InsightKind.lastUseLine =>
       'On days your last use of $habit is at ${_cutClock(finding.cut!)} or '
           'later, your ${copy.name} $then averages $amount $direction than on '
