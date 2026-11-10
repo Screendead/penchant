@@ -95,12 +95,24 @@ jobs:
       - name: Toolchain
         run: xcodebuild -version
       - name: End to end (iOS Simulator)
+        # Two cold-cache runs hung after "Xcode build done" with no output (42716618867, 42733532556); stop early so
+        # the step below can say where.
+        timeout-minutes: 25
         env:
           # Every write the tests leave unacknowledged (offline, refused) waits out the timeout; 10 s in the app.
           E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=5000
         run: |
           set -o pipefail
           tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
+      - name: Where a hung run stopped
+        if: failure() || cancelled()
+        run: |
+          ps -axo pid,etime,command | grep -E 'flutter|xcrun|simctl|xcodebuild|Runner|devicectl' | grep -v grep || true
+          xcrun simctl listapps "$E2E_DEVICE" 2>/dev/null | grep -A3 penchant || true
+          xcrun simctl spawn "$E2E_DEVICE" log show --last 30m --style compact \
+            --predicate 'process == "Runner" OR (process == "SpringBoard" AND eventMessage CONTAINS "penchant")' \
+            > "$RUNNER_TEMP/simulator.log" 2>&1 || true
+          tail -60 "$RUNNER_TEMP/simulator.log"
       - name: Cache sizes
         if: always()
         run: du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.pub-cache build/ios 2>/dev/null || true
@@ -112,6 +124,7 @@ jobs:
           path: |
             ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog
             ${{ runner.temp }}/e2e-ios.log
+            ${{ runner.temp }}/simulator.log
           if-no-files-found: ignore
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
