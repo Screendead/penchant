@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
-import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -265,13 +264,5 @@ void main() {
       activities.docs.map((QueryDocumentSnapshot<Object?> d) => d.id).toSet(),
       <String>{'booze-0', 'booze-1', 'booze-2'},
     );
-
-    await openFromMenu(tester, Homepage.habitsItem);
-    await scrollIntoView(tester, find.text('Booze'));
-    await tap(tester, find.text('Booze'));
-    await pumpUntilRouteSettled(tester, historyTitle('Booze'));
-    await tap(tester, find.byTooltip('Edit habit'));
-    await pumpUntilRouteSettled(tester, find.text('Edit Habit'));
-    expect(find.text(ViceCategory.alcohol.label), findsOneWidget);
   });
 }

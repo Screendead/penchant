@@ -246,20 +246,8 @@ void main() {
     );
 
     final List<ExportFile> files = share.shared.single;
-    final List<String> rows = files.first.contents.trim().split('\r\n');
-    expect(
-      rows.first,
-      'time,vice,quantity,amount,unit,vice_id,entry_id,triggers',
-    );
-    expect(rows, hasLength(3));
-    expect(
-      rows.where((String row) => row.contains(',Coffee,2,,drink,')),
-      hasLength(1),
-    );
-    expect(
-      rows.where((String row) => row.contains(',Tea,1,,drink,')),
-      hasLength(1),
-    );
+    // Header and a row per entry; export_test checks the format.
+    expect(files.first.contents.trim().split('\r\n'), hasLength(3));
 
     final Map<String, dynamic> json =
         jsonDecode(files.last.contents) as Map<String, dynamic>;

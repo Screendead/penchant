@@ -22,6 +22,8 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
+import 'package:tracker/widgets/time_dial.dart';
+import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -691,6 +693,37 @@ void main() {
       expect(writes.writes.single.fields.containsKey('amount'), isFalse);
     });
 
+    testWidgets('records a trigger picked from the tree by its node path', (
+      WidgetTester tester,
+    ) async {
+      // A phone, so the sheet shows the whole first level.
+      tester.view
+        ..physicalSize = const Size(1179, 2556)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await fill(tester);
+      await tester.tap(find.text('What was going on? (optional)'));
+      await tester.pumpAndSettle();
+      final Finder sheet = find.byType(TriggerPickerSheet);
+      for (final String label in <String>['Work', 'Meeting']) {
+        final Finder target = find.descendant(
+          of: sheet,
+          matching: find.text(label),
+        );
+        await tester.ensureVisible(target);
+        await tester.tap(target);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.descendant(of: sheet, matching: find.text('Done')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(record);
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      expectRecorded(writes.writes.single, 'activity-1');
+      expect(writes.writes.single.fields['triggers'], <String>['work/meeting']);
+    });
+
     testWidgets('a second press after a failure writes the same document', (
       WidgetTester tester,
     ) async {
@@ -1009,6 +1042,106 @@ void main() {
         find.text('Could not delete this activity. $_offline'),
         findsOneWidget,
       );
+    });
+  });
+
+  // Stored before the rules checked types; the parsers' defaults must never be
+  // written back for a field the user left alone.
+  group('the activity editor on a legacy entry', () {
+    final Vice coffee = fakeVice('coffee');
+    final ViceActivity stringDate = ViceActivity.fromJson(
+      id: 'legacy-date',
+      json: <String, dynamic>{
+        'viceID': coffee.id,
+        'ownerID': ownerID,
+        'quantity': 4,
+        'createdAt': '2024-01-01',
+      },
+    );
+    final ViceActivity doubleQuantity = ViceActivity.fromJson(
+      id: 'legacy-quantity',
+      json: <String, dynamic>{
+        'viceID': coffee.id,
+        'ownerID': ownerID,
+        'quantity': 2.5,
+        'createdAt': Timestamp.fromDate(DateTime(2026, 11, 2, 12)),
+      },
+    );
+
+    Future<void> open(WidgetTester tester, ViceActivity activity) =>
+        _pumpOpened(
+          tester,
+          writes,
+          [
+            viceListProvider.overrideWithValue(AsyncData([coffee])),
+            viceActivityProvider.overrideWith(
+              (ref, String activityID) => AsyncData(activity),
+            ),
+          ],
+          ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id),
+        );
+
+    Future<void> save(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ViceActivityEditorPage), findsNothing);
+    }
+
+    EntryTimeController time(WidgetTester tester) =>
+        tester.widget<EntryTimeField>(find.byType(EntryTimeField)).controller;
+
+    testWidgets('a string createdAt opens as the epoch and a new quantity '
+        'writes only the quantity', (WidgetTester tester) async {
+      await open(tester, stringDate);
+      expect(time(tester).at, Timestamp(0, 0).toDate());
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Quantity'),
+        '5',
+      );
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateActivity', 'legacy-date', <String, Object?>{
+          'quantity': 5,
+        }),
+      ]);
+    });
+
+    testWidgets('a quantity of 2.5 opens as 3 and a new time writes only the '
+        'time', (WidgetTester tester) async {
+      await open(tester, doubleQuantity);
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.widgetWithText(TextFormField, 'Quantity'),
+            )
+            .controller!
+            .text,
+        '3',
+      );
+
+      final DateTime moved = DateTime(2026, 11, 1, 9);
+      time(tester).at = moved;
+      await tester.pump();
+      await save(tester);
+
+      expect(writes.writes, [
+        Write('updateActivity', 'legacy-quantity', <String, Object?>{
+          'createdAt': moved,
+        }),
+      ]);
+    });
+
+    testWidgets('an untouched save writes nothing', (
+      WidgetTester tester,
+    ) async {
+      for (final ViceActivity activity in [stringDate, doubleQuantity]) {
+        await open(tester, activity);
+        await save(tester);
+      }
+
+      expect(writes.writes, isEmpty);
     });
   });
 

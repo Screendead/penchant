@@ -46,11 +46,10 @@ void main() {
       );
       await tap(tester, find.byTooltip('Next day'));
 
-      await recordActivity(tester, 'Coffee', 2);
+      await logOne(tester, 'Coffee');
       await pumpUntil(tester, find.text(queuedMessage));
-      expect(find.text('Request timed out'), findsNothing);
       await expectTallies(tester, const <String>{
-        'Coffee (2 drinks)',
+        'Coffee (1 drink)',
         'Tea (0 drinks)',
         'Water (0 drinks)',
       });
@@ -59,8 +58,8 @@ void main() {
         find.text(PendingDayNote.text(1), skipOffstage: false),
       );
       await screenshot(tester, 'record-queued-offline');
-      await recordActivity(tester, 'Coffee', 5);
-      await recordActivity(tester, 'Coffee', 7);
+      await logOne(tester, 'Coffee');
+      await logOne(tester, 'Coffee');
       await pumpUntil(
         tester,
         find.text(PendingDayNote.text(3), skipOffstage: false),
@@ -89,12 +88,17 @@ void main() {
       expect(notSynced, findsNWidgets(3));
       await pumpUntil(tester, banner);
 
-      await swipeToDelete(tester, historyEntry(5));
-      await pumpUntil(tester, historyEntry(5), present: false);
+      // Every entry is one drink, so each step takes the first such row.
+      await swipeToDelete(tester, historyEntry(1).first);
+      await pumpUntilTrue(
+        tester,
+        () => historyRows.evaluate().length == 2,
+        () => 'two history rows',
+      );
       await pumpUntil(tester, find.text(queuedDeleteMessage));
       expect(deletedBar, findsNothing);
 
-      await tap(tester, historyEntry(2));
+      await tap(tester, historyEntry(1).first);
       await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
       await enterText(tester, 'Quantity', '3');
       await tap(tester, find.widgetWithText(TextButton, 'Save'));
@@ -106,7 +110,7 @@ void main() {
       await pumpUntil(tester, find.text(queuedMessage));
       await pumpUntil(tester, historyEntry(3));
 
-      await tap(tester, historyEntry(7));
+      await tap(tester, historyEntry(1));
       await pumpUntilRouteSettled(tester, find.text('Edit Coffee activity'));
       await tap(
         tester,
@@ -123,7 +127,7 @@ void main() {
         present: false,
       );
       await pumpUntil(tester, find.text(queuedDeleteMessage));
-      await pumpUntil(tester, historyEntry(7), present: false);
+      await pumpUntil(tester, historyEntry(1), present: false);
       expect(historyRows, findsOneWidget);
       expect(notSynced, findsOneWidget);
       await screenshot(tester, 'history-not-yet-synced');

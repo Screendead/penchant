@@ -165,6 +165,64 @@ void main() {
     });
   });
 
+  testWidgets('a session that ends under pushed pages returns to sign-in '
+      'with nothing above it', (WidgetTester tester) async {
+    final StreamController<User?> auth = StreamController<User?>();
+    addTearDown(auth.close);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userProvider.overrideWith((ref) => auth.stream),
+          accountProvider.overrideWithValue(FakeAccount()),
+          offlineProvider.overrideWithValue(const AsyncData(false)),
+          memoryJournal(),
+          ...habitOverrides(<Vice>[coffee]),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+          viceActivityGraphProvider.overrideWith(
+            (ref, ViceActivityGraphQuery query) =>
+                const AsyncData(<ViceActivity>[]),
+          ),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, ViceActivityHistoryQuery query) =>
+                const AsyncData(<ViceActivity>[]),
+          ),
+          viceActivityCountProvider.overrideWith(
+            (ref, String viceID) =>
+                const AsyncData((count: 0, source: CountSource.server)),
+          ),
+          activityTotalCountProvider.overrideWithValue(
+            const AsyncData((count: 0, source: CountSource.server)),
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    auth.add(FakeUser(ownerID));
+    await tester.pump();
+    expect(find.byType(Homepage), findsOneWidget);
+
+    final NavigatorState navigator = tester.state<NavigatorState>(
+      find.byType(Navigator).first,
+    );
+    navigator.pushNamed('/manage-data');
+    await tester.pumpAndSettle();
+    navigator.pushNamed('/vices/${coffee.id}/activities');
+    await tester.pumpAndSettle();
+    expect(find.byType(ViceActivityHistoryPage), findsOneWidget);
+
+    auth.add(null);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Authenticate), findsOneWidget);
+    expect(find.byType(ManageData, skipOffstage: false), findsNothing);
+    expect(
+      find.byType(ViceActivityHistoryPage, skipOffstage: false),
+      findsNothing,
+    );
+  });
+
   group('past midnight', () {
     late List<DateTime> requestedDays;
 
