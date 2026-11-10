@@ -10,6 +10,7 @@ import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
+import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -155,7 +156,12 @@ class InsightsReport {
     this.hoursAfterChecks = 0,
     this.floors = const <String, double>{},
     this.beforeUse = const <BeforeUse>[],
+    this.recovery = const <Recovery>[],
   });
+
+  /// Each habit's measures over the nights after its heavy days, findings
+  /// and refusals, judged in the same family as [findings].
+  final List<Recovery> recovery;
 
   /// What came before each habit's use, findings and refusals, judged in the
   /// same family as [findings].
@@ -225,7 +231,8 @@ InsightsReport computeInsights(InsightsInput input) {
       <String, List<HabitRefusal>>{};
   // The family for false-discovery control is the whole page: every habit it
   // shows against every outcome, by use, amount and time and a line in each,
-  // not one at a time.
+  // what came before each use and each night after a heavy day, not one at a
+  // time.
   // An archived habit's comparisons are never shown, so they are not counted.
   final List<HabitInsight> after = <HabitInsight>[
     for (final String metricId in outcomes.metricIds)
@@ -259,9 +266,23 @@ InsightsReport computeInsights(InsightsInput input) {
         skip: input.archived,
       ),
   ];
+  final List<Recovery> recovering = recoveryAfterHeavyDays(
+    uses: input.uses,
+    outcomes: outcomes,
+    through: input.through,
+    floors: floors,
+    skip: input.archived,
+  );
+  final List<double> afterP = <double>[
+    for (final HabitInsight i in after) ?insightPValue(i),
+  ];
+  final List<double> beforeP = <double>[
+    for (final BeforeUse b in before) ?b.pValue,
+  ];
+  final List<double> recoveryP = recoveryPValues(recovering);
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[for (final BeforeUse b in before) ?b.pValue],
+    alongside: <double>[...beforeP, ...recoveryP],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -285,10 +306,12 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[
-        for (final HabitInsight i in after) ?insightPValue(i),
-      ],
+      alongside: <double>[...afterP, ...recoveryP],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
+    ),
+    recovery: judgeRecovery(
+      recovering,
+      alongside: <double>[...afterP, ...beforeP],
     ),
     findings: shown,
     refused: <HabitRefusal>[
@@ -786,7 +809,7 @@ String findingSentence(
           'against the hour before, averages $amount $direction than at the '
           'same time after waking without it.',
     InsightKind.doseLine =>
-      'On days with ${_cutAmount(finding.cut!, unit, locale)} or more logged '
+      'On days with ${cutAmount(finding.cut!, unit, locale)} or more logged '
           'for $habit, your ${copy.name} $then averages $amount $direction '
           'than on days with fewer.',
     InsightKind.lastUseLine =>
@@ -816,7 +839,7 @@ String findingLine(
     InsightKind.lastUse => 'Later last use: $change per hour',
     InsightKind.hoursAfter => '${_windowWords(finding.window!)} it: $change',
     InsightKind.doseLine =>
-      'From ${_cutAmount(finding.cut!, unit, locale)} a day: $change',
+      'From ${cutAmount(finding.cut!, unit, locale)} a day: $change',
     InsightKind.lastUseLine =>
       'Last use at ${_cutClock(finding.cut!)} or later: $change',
   };
@@ -841,7 +864,7 @@ String? bedtimeLine(
   final String per = switch (finding.kind) {
     InsightKind.lastUse => 'per hour later',
     InsightKind.doseLine =>
-      'from ${_cutAmount(finding.cut!, unit, locale)} a day',
+      'from ${cutAmount(finding.cut!, unit, locale)} a day',
     InsightKind.lastUseLine =>
       'with the last use at ${_cutClock(finding.cut!)} or later',
     _ => 'per extra ${stepWords(finding.step, unit, locale)}',
@@ -879,7 +902,7 @@ String? _bedtimePart(HabitFinding finding, MetricCopy copy, String locale) {
 }
 
 // "3 drinks", "250 millilitres"; a count of times reads as uses.
-String _cutAmount(double cut, Unit unit, String locale) {
+String cutAmount(double cut, Unit unit, String locale) {
   final String word = unit == Unit.time
       ? pluralWord(cut, one: 'use', other: 'uses')
       : unit.nameFor(cut);
@@ -953,7 +976,7 @@ String findingBasis(
   if (finding.kind == InsightKind.doseLine) {
     return 'From ${finding.usableDays} days with $habit, '
         '${finding.exposedDays} of them with '
-        '${_cutAmount(finding.cut!, unit, locale)} or more';
+        '${cutAmount(finding.cut!, unit, locale)} or more';
   }
   if (finding.kind == InsightKind.lastUseLine) {
     return 'From ${finding.usableDays} days with $habit, '

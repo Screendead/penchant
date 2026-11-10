@@ -19,6 +19,8 @@ import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/insights/recovery.dart';
+import 'package:tracker/insights/recovery_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
@@ -29,6 +31,7 @@ import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
+import 'package:tracker/widgets/recovery_card.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -310,9 +313,14 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       if (view.hoursPending) const CardFoot(InsightsPage.hoursAfterPending),
       _LastNightSection(vices: vices, marks: costs.marks),
       const CardSectionLabel(InsightsPage.costsHeading),
-      if (cards.isEmpty) costs.emptyBox(),
+      if (cards.isEmpty && costs.recovery.isEmpty) costs.emptyBox(),
       for (int i = 0; i < cards.length - hidden; i++)
         costs.card(cards[i], top: i == 0 ? 0 : DialSpace.xs),
+      for (final (int i, RecoveryCard card) in costs.recovery.indexed)
+        costs.recoveryCard(
+          card,
+          top: i == 0 && cards.isEmpty ? 0 : DialSpace.xs,
+        ),
       // Always there: the drill-in also holds the refusals, the hours-after
       // note and, once settled, the Health card.
       DialCard(
@@ -434,13 +442,18 @@ class InsightsCostsPage extends ConsumerWidget {
       const CardFoot(InsightsPage.hoursAfterPending)
     else if (costs.report.hoursAfterChecks > 0)
       const CardFoot(InsightsPage.hoursAfterNote),
-    if (costs.cards.isEmpty)
+    if (costs.cards.isEmpty && costs.recovery.isEmpty)
       Padding(
         padding: const EdgeInsets.only(top: DialSpace.l),
         child: costs.emptyBox(),
       ),
     for (final (int i, InsightCard card) in costs.cards.indexed)
       costs.card(card, top: i == 0 ? DialSpace.l : DialSpace.xs),
+    for (final (int i, RecoveryCard card) in costs.recovery.indexed)
+      costs.recoveryCard(
+        card,
+        top: i == 0 && costs.cards.isEmpty ? DialSpace.l : DialSpace.xs,
+      ),
     if (costs.refused.isNotEmpty) ...<Widget>[
       const CardSectionLabel(InsightsPage.refusedHeading),
       DialCard(
@@ -481,6 +494,10 @@ class _Costs {
       for (final BeforeUse b in report.beforeUse)
         if (_names.containsKey(b.habitId)) b,
     ], floors: report.floors);
+    recovery = recoveryCards(<Recovery>[
+      for (final Recovery r in report.recovery)
+        if (_names.containsKey(r.habitId)) r,
+    ]);
     // A legacy entry of a vice that is gone would date the span from a habit
     // the page doesn't show.
     firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
@@ -493,6 +510,7 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
+  late final List<RecoveryCard> recovery;
   late final DateTime? firstDay;
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';
@@ -506,6 +524,16 @@ class _Costs {
     locale: formatLocale,
     top: top,
   );
+
+  Widget recoveryCard(RecoveryCard card, {required double top}) =>
+      RecoveryCardView(
+        card: card,
+        habit: nameOf(card.habitId),
+        unit: unitOf(card.habitId),
+        mark: marks[card.habitId] ?? const HabitMark(0),
+        locale: formatLocale,
+        top: top,
+      );
 
   // With no card: every habit still short of the days a comparison needs
   // says how far the furthest along has come; otherwise nothing is clear.
@@ -551,6 +579,15 @@ class _Costs {
       lastNight: lastNight,
       emptyTitle: empty.title,
       emptyBody: empty.body,
+      recovery: <List<String>>[
+        for (final RecoveryCard card in recovery)
+          recoveryText(
+            card,
+            nameOf(card.habitId),
+            formatLocale,
+            unit: unitOf(card.habitId),
+          ),
+      ],
       setsOff: <List<String>>[
         for (final BeforeUseCard card in before)
           beforeUseText(
@@ -577,6 +614,7 @@ String insightsText({
   List<String> lastNight = const <String>[],
   String emptyTitle = InsightsPage.nothingClear,
   String emptyBody = InsightsPage.nothingClearBody,
+  List<List<String>> recovery = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
@@ -588,7 +626,9 @@ String insightsText({
     }
   }
   out.write('\n\n${InsightsPage.costsHeading}\n');
-  if (cards.isEmpty) out.write('$emptyTitle: $emptyBody\n');
+  if (cards.isEmpty && recovery.isEmpty) {
+    out.write('$emptyTitle: $emptyBody\n');
+  }
   for (final InsightCard card in cards) {
     final HabitFinding f = card.headline;
     final String habit = nameOf(f.habitId);
@@ -606,6 +646,9 @@ String insightsText({
     for (final HabitFinding other in card.others) {
       out.write('${findingLine(other, locale, unit: unit)}\n');
     }
+  }
+  for (final List<String> card in recovery) {
+    out.write('\n${card.join('\n')}\n');
   }
   if (refused.isNotEmpty) {
     out.write('\n${InsightsPage.refusedHeading}\n');
