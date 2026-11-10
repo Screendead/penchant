@@ -16,7 +16,7 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**8 issues: 0 critical, 0 high, 0 medium, 8 low.**
+**7 issues: 0 critical, 0 high, 0 medium, 7 low.**
 
 ## Firebase Data Layer (2)
 
