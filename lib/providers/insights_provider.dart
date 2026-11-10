@@ -339,8 +339,9 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   if (state == null) return const AsyncLoading<InsightsView>();
   // The whole journal is read once per open, billed per document, so it is
   // read only when there is Health data to compare it with.
-  if (state case HealthReady(:final List<DailyOutcome> values)
-      when values.isNotEmpty) {
+  if (state case HealthReady(
+    :final List<DailyOutcome> values,
+  ) when values.isNotEmpty) {
     final DateTime today = ref.watch(todayProvider);
     final AsyncValue<List<ViceActivity>> activities = ref.watch(
       viceActivityRangeProvider(insightsRange(today)),
