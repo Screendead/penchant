@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/usage_series.dart';
@@ -743,7 +743,7 @@ void main() {
       expect(chip(TrendsSheet.compareChipLabel(_sweets)), findsNothing);
       expect(_chart(tester).lineBarsData, hasLength(2));
 
-      await _tapText(tester, TrendsSheet.compareLabel);
+      await press(tester, inTrends(find.text(TrendsSheet.compareLabel)));
       expect(chip(TrendsSheet.compareChipLabel(_coffee)), findsNothing);
       await press(tester, chip(TrendsSheet.compareChipLabel(_sweets)));
 
@@ -770,7 +770,7 @@ void main() {
       // Compare off draws nothing over the chosen habit.
       await press(tester, chip(TrendsSheet.compareChipLabel(_coffee)));
       expect(_chart(tester).lineBarsData, hasLength(3));
-      await _tapText(tester, TrendsSheet.compareLabel);
+      await press(tester, inTrends(find.text(TrendsSheet.compareLabel)));
       expect(_chart(tester).lineBarsData, hasLength(2));
       semantics.dispose();
     });
@@ -783,7 +783,7 @@ void main() {
         for (int i = 1; i <= 5; i++) _habit('Habit $i', i),
       ];
       await _pump(tester, <ViceActivity>[], vices: five);
-      await _tapText(tester, TrendsSheet.compareLabel);
+      await press(tester, inTrends(find.text(TrendsSheet.compareLabel)));
       for (int i = 2; i <= 4; i++) {
         await press(tester, chip(TrendsSheet.compareChipLabel(five[i - 1])));
       }

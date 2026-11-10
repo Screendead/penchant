@@ -270,6 +270,8 @@ void main() {
           await tester.pumpAndSettle();
         }
         if (scene.endsWith('-compare')) {
+          await tester.ensureVisible(find.text(TrendsSheet.compareLabel));
+          await tester.pumpAndSettle();
           await tester.tap(find.text(TrendsSheet.compareLabel));
           await tester.pumpAndSettle();
           for (final Vice v in <Vice>[_habits[1], _habits[2]]) {
@@ -283,6 +285,8 @@ void main() {
             await tester.tap(chip);
             await tester.pumpAndSettle();
           }
+          await tester.ensureVisible(find.text(TrendsSheet.title).last);
+          await tester.pumpAndSettle();
         }
         if (scene == 'trends-week') {
           await tester.ensureVisible(find.byType(WeekdayGrid));

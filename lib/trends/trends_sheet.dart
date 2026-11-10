@@ -231,7 +231,8 @@ class TrendsSheet extends ConsumerStatefulWidget {
   // Each compared habit is another range query.
   static const int maxCompared = 3;
 
-  static String compareChipLabel(Vice vice) => 'Compare with ${chipLabel(vice)}';
+  static String compareChipLabel(Vice vice) =>
+      'Compare with ${chipLabel(vice)}';
 
   static String weekTitle(WeekdayHours w) =>
       'Most on ${DateFormat.EEEE(formatLocale).format(DateTime(2024, 1, 1 + w.busiestDay))}s';
@@ -268,8 +269,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   // The last series shown, kept on screen while another range of the same
   // habit loads: a new range is a new query, which starts with no value, and
   // a spinner in the chart's place would end the morph into it.
-  ({String viceID, TrendsSeries series, List<TrendsOverlay> overlays})?
-  _shown;
+  ({String viceID, TrendsSeries series, List<TrendsOverlay> overlays})? _shown;
   final Map<
     String,
     ({List<ViceActivity> activities, UsageRange range, List<double> totals})
@@ -304,9 +304,8 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       comparing: comparing,
       compared: compared,
     );
-    PageStorage.maybeOf(
-      context,
-    )?.writeState(context, selection, identifier: _storageID);
+    PageStorage.maybeOf(context)
+        ?.writeState(context, selection, identifier: _storageID);
   }
 
   // Keyboard focus follows the sheet: from the peek to Close as it opens, and
@@ -1614,9 +1613,7 @@ class _WeekCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 TrendsSheet.weekBody(vice, range),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.muted,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: colors.muted),
               ),
               const SizedBox(height: DialSpace.s),
               WeekdayGrid(cells: week.cells, mark: mark),

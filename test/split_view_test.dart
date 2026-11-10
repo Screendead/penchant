@@ -245,7 +245,10 @@ void main() {
 
     await _resize(tester, 800);
     await openTrends(tester);
-    expect(_chipSelected(tester, TrendsSheet.compareChipLabel(_sweets)), isTrue);
+    expect(
+      _chipSelected(tester, TrendsSheet.compareChipLabel(_sweets)),
+      isTrue,
+    );
     expect(bars(), 3);
     semantics.dispose();
   });
