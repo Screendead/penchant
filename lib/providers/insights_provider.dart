@@ -7,11 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -293,6 +295,7 @@ typedef _EngineKey = ({
   Map<String, List<HealthSample>> samples,
   DateTime today,
   String archived,
+  List<CalendarEvent> events,
 });
 
 // A Firestore document ID never holds a '/', so it parts the IDs.
@@ -308,6 +311,7 @@ final _engineProvider = FutureProvider.autoDispose
               health: key.health,
               today: key.today,
               samples: key.samples,
+              events: key.events,
               archived: <String>{
                 if (key.archived.isNotEmpty)
                   ...key.archived.split(_archivedSeparator),
@@ -365,6 +369,19 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     final Map<String, List<HealthSample>>? samples = ref
         .watch(_samplesProvider((activities: journal, today: today)))
         .value;
+    // Until the calendar answers, the report goes without it.
+    final DateTime? firstDay = insightsFirstDay(
+      insightsFirstDays(journal),
+      (_) => true,
+    );
+    final List<CalendarEvent> events = firstDay == null
+        ? noCalendarEvents
+        : ref
+                  .watch(
+                    calendarEventsProvider((from: firstDay, today: today)),
+                  )
+                  .value ??
+              noCalendarEvents;
     InsightsResult? report(Map<String, List<HealthSample>> read) => ref
         .watch(
           _engineProvider((
@@ -373,6 +390,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
             samples: read,
             today: today,
             archived: archived,
+            events: events,
           )),
         )
         .value;
