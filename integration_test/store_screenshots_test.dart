@@ -5,7 +5,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
@@ -72,7 +72,13 @@ Future<void> _pumpUntilLong(
   final DateTime deadline = DateTime.now().add(const Duration(minutes: 3));
   while (!condition()) {
     if (DateTime.now().isAfter(deadline)) {
-      throw TestFailure('Timed out waiting for $what');
+      final String shown = find
+          .byType(Text)
+          .evaluate()
+          .map((Element e) => (e.widget as Text).data)
+          .whereType<String>()
+          .join(' | ');
+      throw TestFailure('Timed out waiting for $what. Text on screen: $shown');
     }
     await tester.pump(const Duration(milliseconds: 200));
   }
@@ -88,6 +94,8 @@ void main() {
   });
 
   testWidgets('store screenshots', (WidgetTester tester) async {
+    WidgetsApp.debugAllowBannerOverride = false;
+    addTearDown(() => WidgetsApp.debugAllowBannerOverride = true);
     final DateTime now = DateTime.now();
     final journal = storeJournal(now);
     await tester.pumpWidget(
@@ -130,14 +138,15 @@ void main() {
     }
 
     // An empty today shows the day before, so the dial has beads.
-    if (!journal.entries.any((StoreEntry e) => !e.at.isBefore(startOfDay(now)))) {
+    if (!journal.entries.any(
+      (StoreEntry e) => !e.at.isBefore(startOfDay(now)),
+    )) {
       await tap(tester, find.byTooltip('Previous day'));
     }
     await _pumpUntilLong(
       tester,
       () =>
-          dialSummary(tester)?.contains(RegExp(r' (First|One) entry')) ??
-          false,
+          dialSummary(tester)?.contains(RegExp(r' (First|One) entry')) ?? false,
       'entries on the dial',
     );
     await pumpFor(tester, const Duration(seconds: 3));
@@ -156,6 +165,12 @@ void main() {
           find.text(InsightsPage.loadingLabel).evaluate().isEmpty &&
           find.text(InsightsPage.hoursAfterPending).evaluate().isEmpty,
       'the insight cards',
+    );
+    expect(
+      find.byWidgetPredicate(
+        (Widget w) => w.runtimeType.toString() == '_FindingCard',
+      ),
+      findsWidgets,
     );
     await Scrollable.ensureVisible(
       tester.element(find.text(InsightsPage.costsHeading)),

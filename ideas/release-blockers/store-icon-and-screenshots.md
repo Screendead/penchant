@@ -1,14 +1,16 @@
-# Generate store screenshots from the e2e harness
+# Frame the store screenshots and add the Mac set
 
 **Priority:** release blocker
 
 ## What
 
-The icon is done: Jack picked candidate 38 (the Today radar's coloured segments with its spokes, on a light
-background) on 2026-11-05 from the `mockup/icon-sheet` sheet (tag `archive/mockup/icon-sheet`), and it ships from `assets/icon.svg` and
-`assets/icon-macos.svg`. What is left: capture store screenshots automatically with an `integration_test` run on iOS Simulators and on macOS, against the emulators (`--project
-demo-*`), seeded with a realistic demo journal (several vices, triggers, a few weeks of entries, and insight cards),
-at each required device size.
+The icon ships (candidate 38, picked 2026-11-05, from `assets/icon.svg` and `assets/icon-macos.svg`). The iPhone
+screenshots are generated: `integration_test/store_screenshots_test.dart` seeds a demo journal (`test/store_journal.dart`:
+Coffee, Tea, Chocolate, Fizzy drink, 120 days with triggers, and Health values that give Insights cards) and captures
+Today, Trends, Insights and the Log fan at 1320x2868 (iPhone 18 Pro Max, 6.9"), committed under
+`docs/pitch/round-14/store-screenshots/`. What is left: a Mac listing's screenshots (`tools/e2e-screenshots.sh` needs a
+simulator; the Mac app would need a window capture and has no Health, so Insights shows "Available on iPhone"), and
+framing and captions (Option B's frameit or similar).
 
 ## Why
 
@@ -28,7 +30,7 @@ at each required device size.
 Claude's recommendation: **B.** Seed demo data that is
 obviously illustrative (round numbers, neutral vices like coffee) so screenshots do not read as encouraging (1.4.3).
 
-**Effort:** M
+**Effort:** S
 
 **Revenue impact:** Direct, through store conversion.
 

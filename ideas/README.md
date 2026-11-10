@@ -36,7 +36,7 @@ Each list is in the recommended build order.
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, waits on the paid team; bounded activity queries and App Check wiring built in #55
 - [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M. No policy for now (`r2-privacy`)
 - [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S. Waits on a release
-- [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M
+- [Frame the store screenshots and add the Mac set](release-blockers/store-icon-and-screenshots.md). S
 - [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6, `r2-testflight`); blocked on the paid team
 
 ## v1 must-haves (3)
