@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
@@ -99,7 +98,10 @@ void main() {
       expect(deletedBar, findsNothing);
 
       await tap(tester, historyEntry(1).first);
-      await pumpUntilRouteSettled(tester, find.byKey(ViceActivityEditorPage.saveKey));
+      await pumpUntilRouteSettled(
+        tester,
+        find.byKey(ViceActivityEditorPage.saveKey),
+      );
       await enterText(tester, 'Quantity', '3');
       await tap(tester, find.byKey(ViceActivityEditorPage.saveKey));
       await pumpUntil(
@@ -111,7 +113,10 @@ void main() {
       await pumpUntil(tester, historyEntry(3));
 
       await tap(tester, historyEntry(1));
-      await pumpUntilRouteSettled(tester, find.byKey(ViceActivityEditorPage.saveKey));
+      await pumpUntilRouteSettled(
+        tester,
+        find.byKey(ViceActivityEditorPage.saveKey),
+      );
       await tap(tester, find.byKey(ViceActivityEditorPage.deleteKey));
       // The history page is behind the sheet's barrier until it has popped.
       await pumpUntil(tester, historyTitle('Coffee').hitTestable());

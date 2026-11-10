@@ -60,7 +60,11 @@ class AmountSheetFrame extends StatelessWidget {
 
 // The sheet's title row for a known habit: its mark, its name and Close.
 class SheetHabitHeader extends ConsumerWidget {
-  const SheetHabitHeader({super.key, required this.vice, required this.onClose});
+  const SheetHabitHeader({
+    super.key,
+    required this.vice,
+    required this.onClose,
+  });
 
   final Vice vice;
   final VoidCallback? onClose;

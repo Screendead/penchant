@@ -55,9 +55,7 @@ void main() {
             name,
       };
       expect(modal, <String>{'/vices/add', '/vices/v1/edit'});
-      final Route<void> sheet = generateRoute(
-        const RouteSettings(name: entry),
-      );
+      final Route<void> sheet = generateRoute(const RouteSettings(name: entry));
       expect(sheet, isA<ModalBottomSheetRoute<void>>());
       expect(sheet.settings.name, entry);
     });

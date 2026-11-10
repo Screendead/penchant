@@ -309,7 +309,10 @@ class _ViceActivityEditorPageState
       return _message(
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 24),
-          child: Text(notFoundMessage, textAlign: TextAlign.center),
+          child: Text(
+            ViceActivityEditorPage.notFoundMessage,
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -367,7 +370,9 @@ class _ViceActivityEditorPageState
                             onPressed: loading || activity.locked
                                 ? null
                                 : () => _deleteActivity(vice, activity),
-                            child: const Text(ViceActivityEditorPage.deleteLabel),
+                            child: const Text(
+                              ViceActivityEditorPage.deleteLabel,
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(

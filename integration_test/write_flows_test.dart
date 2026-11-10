@@ -134,7 +134,10 @@ void main() {
     await tap(tester, find.text('Coffee'));
     await pumpUntil(tester, historyTitle('Coffee'));
     await tap(tester, historyEntry(1.5));
-    await pumpUntilRouteSettled(tester, find.byKey(ViceActivityEditorPage.saveKey));
+    await pumpUntilRouteSettled(
+      tester,
+      find.byKey(ViceActivityEditorPage.saveKey),
+    );
     expect(
       tester
           .widget<TextFormField>(find.widgetWithText(TextFormField, 'Quantity'))
