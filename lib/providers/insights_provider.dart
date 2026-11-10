@@ -369,17 +369,17 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     final Map<String, List<HealthSample>>? samples = ref
         .watch(_samplesProvider((activities: journal, today: today)))
         .value;
-    // Until the calendar answers, the report goes without it.
-    final DateTime? firstDay = insightsFirstDay(
-      insightsFirstDays(journal),
-      (_) => true,
-    );
-    final List<CalendarEvent> events = firstDay == null
+    // Waiting for the calendar spares a run of the engine without it; it
+    // answers at once without access.
+    final DateTime? firstDay = ref.watch(calendarSourceProvider) == null
+        ? null
+        : insightsFirstDay(insightsFirstDays(journal), (_) => true);
+    final List<CalendarEvent>? events = firstDay == null
         ? noCalendarEvents
         : ref
-                  .watch(calendarEventsProvider((from: firstDay, today: today)))
-                  .value ??
-              noCalendarEvents;
+              .watch(calendarEventsProvider((from: firstDay, today: today)))
+              .value;
+    if (events == null) return const AsyncLoading<InsightsView>();
     InsightsResult? report(Map<String, List<HealthSample>> read) => ref
         .watch(
           _engineProvider((

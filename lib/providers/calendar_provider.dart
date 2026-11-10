@@ -31,6 +31,9 @@ final calendarAccessProvider = FutureProvider.autoDispose<CalendarAccess?>((
 /// What [calendarEventsProvider] gives without access or after a failure.
 const List<CalendarEvent> noCalendarEvents = <CalendarEvent>[];
 
+/// How long the calendar read may hold up Insights before it is left out.
+const Duration calendarReadTimeout = Duration(seconds: 30);
+
 typedef CalendarSpan = ({DateTime from, DateTime today});
 
 /// The calendar's timed events from [CalendarSpan.from] to the end of
@@ -44,7 +47,7 @@ final calendarEventsProvider = FutureProvider.autoDispose
       if (source == null || access != CalendarAccess.full) {
         return noCalendarEvents;
       }
-      try {
+      Future<List<CalendarEvent>> readAll() async {
         final List<CalendarEvent> all = <CalendarEvent>[];
         for (final ({DateTime start, DateTime end}) chunk in calendarChunks(
           span.from,
@@ -54,6 +57,10 @@ final calendarEventsProvider = FutureProvider.autoDispose
           if (!ref.mounted) return noCalendarEvents;
         }
         return all;
+      }
+
+      try {
+        return await readAll().timeout(calendarReadTimeout);
       } catch (_) {
         return noCalendarEvents;
       }

@@ -143,8 +143,11 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     // sign that Health may now have data to give.
     _lifecycle = AppLifecycleListener(
       onResume: () {
-        // Calendar access changed in Settings shows no prompt either.
-        ref.invalidate(calendarAccessProvider);
+        // Access allowed in Settings shows no prompt either. Once full,
+        // asking again would read the calendar and run the engine anew.
+        if (ref.read(calendarAccessProvider).value != CalendarAccess.full) {
+          ref.invalidate(calendarAccessProvider);
+        }
         if (ref.read(healthStateProvider).value case HealthReady(
           :final values,
         ) when values.isEmpty) {

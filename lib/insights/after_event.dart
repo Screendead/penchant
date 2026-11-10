@@ -64,10 +64,12 @@ class AfterEvent {
   /// Days holding at least one of those control moments.
   final int controlDays;
 
-  /// Of the matched windows after an event, the share holding a use.
+  /// Over [eventDays], the mean share of a day's windows after an event
+  /// holding a use.
   final double eventRate;
 
-  /// Of their control windows, the share holding a use.
+  /// Over [controlDays], the mean share of a day's control windows holding a
+  /// use.
   final double controlRate;
 
   /// The mean share of a day's windows after an event holding a use, less
@@ -201,7 +203,6 @@ AfterEvent _judge(
     sums[1] += 1;
   }
 
-  int pairs = 0, onEvent = 0, onControl = 0;
   for (final CalendarEvent b in blocks) {
     final DateTime day = startOfDay(b.end);
     if (!inSpan(day)) continue;
@@ -224,9 +225,6 @@ AfterEvent _judge(
     }
     if (control == null) continue;
     final bool e = usedIn(b.end), c = usedIn(control);
-    pairs++;
-    if (e) onEvent++;
-    if (c) onControl++;
     add(day, false, e);
     add(startOfDay(control), true, c);
   }
@@ -237,6 +235,14 @@ AfterEvent _judge(
     side.add(e.key.$2 ? 0 : 1);
   }
   final int exposed = side.where((v) => v == 1).length;
+  double sideMean(double s) {
+    final List<double> on = <double>[
+      for (int r = 0; r < y.length; r++)
+        if (side[r] == s) y[r],
+    ];
+    return on.isEmpty ? 0 : mean(on);
+  }
+
   AfterEvent result({
     RefusalReason? refusal,
     double? effect,
@@ -246,8 +252,8 @@ AfterEvent _judge(
     habitId: id,
     eventDays: exposed,
     controlDays: y.length - exposed,
-    eventRate: pairs == 0 ? 0 : onEvent / pairs,
-    controlRate: pairs == 0 ? 0 : onControl / pairs,
+    eventRate: sideMean(1),
+    controlRate: sideMean(0),
     effect: effect,
     interval: interval,
     pValue: pValue,

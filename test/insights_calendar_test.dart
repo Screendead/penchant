@@ -7,6 +7,7 @@ import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/calendar_source.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -37,7 +38,11 @@ class _FakeCalendar implements CalendarSource {
   }
 }
 
-Future<void> _pump(WidgetTester tester, _FakeCalendar calendar) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _FakeCalendar calendar, {
+  void Function()? onRun,
+}) async {
   SharedPreferences.setMockInitialValues(<String, Object>{
     healthConnectedKey: true,
   });
@@ -51,6 +56,10 @@ Future<void> _pump(WidgetTester tester, _FakeCalendar calendar) async {
           health: FakeHealthSource(
             read: HealthValues(insightsJournal().health),
           ),
+          runner: (InsightsInput input) async {
+            onRun?.call();
+            return computeInsights(input);
+          },
         ),
         calendarSourceProvider.overrideWithValue(calendar),
       ],
@@ -91,5 +100,22 @@ void main() {
     expect(find.text(InsightsPage.calendarLabel), findsNothing);
     expect(find.text(InsightsPage.calendarOffBody), findsOneWidget);
     expect(calendar.reads, 0);
+  });
+
+  testWidgets('with access, coming back to the app reads nothing again', (
+    WidgetTester tester,
+  ) async {
+    final _FakeCalendar calendar = _FakeCalendar(CalendarAccess.full);
+    int runs = 0;
+    await _pump(tester, calendar, onRun: () => runs++);
+    final int reads = calendar.reads, before = runs;
+    expect(reads, greaterThan(0));
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(calendar.reads, reads);
+    expect(runs, before);
   });
 }
