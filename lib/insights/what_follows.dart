@@ -348,8 +348,10 @@ class HabitRefusal extends HabitInsight {
 /// days; a span of one period gets a level for its second half instead. With
 /// period levels, the habit's coefficient comes from days with and without it
 /// within the same period, so a change in use between months, a cut-down or
-/// faded logging, is not read as an effect. A change in use and in the
-/// outcome within one month still can be.
+/// faded logging, is not read as an effect. A lasting shift in the outcome
+/// inside a month ([OutcomeSeries.shifts]) is a level of its own from its day
+/// on, so a change in use at the same time is not read as one either; a shift
+/// too small or too brief to find still can be.
 /// Another habit counts as not used on the days outside its own span: that can
 /// make its coefficient a proxy for time, but its coefficient is never the one
 /// reported here.

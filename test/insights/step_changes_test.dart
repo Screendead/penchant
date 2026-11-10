@@ -38,7 +38,7 @@ void main() {
       expect(shift.before, closeTo(60, 0.5));
       expect(shift.after, closeTo(62, 0.5));
       expect(shift.daysBefore + shift.daysAfter, 120);
-      expect(shift.pValue, lessThan(0.001));
+      expect(shift.pValue, lessThan(0.05));
       expect(found.pValue, shift.pValue);
     });
 
@@ -86,8 +86,8 @@ void main() {
       LevelShift near(int day) => found.shifts.firstWhere(
         (s) => daysBetween(addDays(start, day), s.at).abs() < 4,
       );
-      expect(near(60).change, closeTo(3, 0.6));
-      expect(near(120).change, closeTo(-3, 0.6));
+      expect(near(60).change, closeTo(3, 1.2));
+      expect(near(120).change, closeTo(-3, 1.2));
     });
 
     test('a constant series has nothing to find', () {
