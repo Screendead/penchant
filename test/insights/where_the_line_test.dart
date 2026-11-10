@@ -195,6 +195,40 @@ void main() {
       expect(time, lessThanOrEqualTo(10));
     });
 
+    test('on sleep, carries the part at the same bedtime, at the same '
+        'line', () {
+      final InsightsInput input = dailyCoffee(
+        4,
+        (d) => 80.0 - (d.amount >= 3 ? 20 : 0),
+      );
+      final Random random = Random(4);
+      final HabitInsight line = judged(
+        doseLineFollows,
+        InsightsInput(
+          uses: input.uses,
+          outcomes: <DailyOutcome>[
+            ...input.outcomes,
+            // Asleep between 23:00 and midnight whatever the amount, in
+            // minutes after noon.
+            for (int i = 0; i < days; i++)
+              DailyOutcome(
+                date: addDays(start, i + 1),
+                metricId: sleepOnsetId,
+                value: 11 * 60.0 + random.nextInt(60),
+              ),
+          ],
+          from: input.from,
+          through: input.through,
+        ),
+      );
+      final HabitInsight? part = (line as HabitFinding).sameBedtime;
+      expect(part, isA<HabitFinding>());
+      expect(part!.kind, InsightKind.doseLine);
+      expect(part.cut, line.cut);
+      expect(part.cut, 3);
+      expect((part as HabitFinding).effect, closeTo(line.effect, 3));
+    });
+
     test('has nowhere to go in an amount that barely varies', () {
       final HabitInsight line = judged(
         doseLineFollows,

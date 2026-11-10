@@ -275,8 +275,8 @@ void main() {
     );
     for (final double effect in <double>[0.6, 0.8]) {
       scenario(
-        'time: $effect sd from 18:00 (not on the grid of 13, 15, 18, 20, 22 '
-        'unless 13:00 has its days: nearest is found)',
+        'time: $effect sd from 18:00 (on the grid of 13, 15, 18, 20, 22 while '
+        '13:00 has its 7 days)',
         lastUseLineFollows,
         200,
         cuts: 5,
