@@ -304,8 +304,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       comparing: comparing,
       compared: compared,
     );
-    PageStorage.maybeOf(context)
-        ?.writeState(context, selection, identifier: _storageID);
+    PageStorage.maybeOf(
+      context,
+    )?.writeState(context, selection, identifier: _storageID);
   }
 
   // Keyboard focus follows the sheet: from the peek to Close as it opens, and

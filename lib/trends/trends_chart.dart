@@ -445,10 +445,10 @@ class TrendsChart extends StatelessWidget {
                             color: ink,
                             barWidth: 1.5,
                             dotData: FlDotData(
-                              checkToShowDot: (
-                                FlSpot spot,
-                                LineChartBarData _,
-                              ) => morph == null && (dots || spot.x == shown),
+                              checkToShowDot:
+                                  (FlSpot spot, LineChartBarData _) =>
+                                      morph == null &&
+                                      (dots || spot.x == shown),
                               getDotPainter:
                                   (
                                     FlSpot spot,
@@ -489,10 +489,9 @@ class TrendsChart extends StatelessWidget {
                                     .withValues(alpha: 0.10),
                               ),
                               dotData: FlDotData(
-                                checkToShowDot: (
-                                  FlSpot spot,
-                                  LineChartBarData _,
-                                ) => morph == null && spot.x == shown,
+                                checkToShowDot:
+                                    (FlSpot spot, LineChartBarData _) =>
+                                        morph == null && spot.x == shown,
                                 getDotPainter:
                                     (
                                       FlSpot spot,
