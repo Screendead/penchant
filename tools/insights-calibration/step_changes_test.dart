@@ -9,6 +9,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/step_changes.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -190,5 +191,58 @@ void main() {
       amount: (r, i) => (i < 50 ? 1 : 3) + r.nextInt(2),
       value: (_, a) => -0.5 * a,
     );
+  });
+
+  // A 2 sd shift at day 60 of 120 in resting heart rate, beside habits whose
+  // use has nothing to do with it: how often the card would name each.
+  test('habits named beside a shift they have nothing to do with', () {
+    const int seeds = 500;
+    final Map<String, int> named = <String, int>{};
+    int shifts = 0;
+    for (int seed = 0; seed < seeds; seed++) {
+      final Random r = Random(seed);
+      final List<HabitUse> uses = <HabitUse>[];
+      final List<DailyOutcome> outcomes = <DailyOutcome>[];
+      int run = 0;
+      for (int i = 0; i < 120; i++) {
+        final DateTime day = addDays(january5, i);
+        void log(String habit, int amount) {
+          for (int k = 0; k < amount; k++) {
+            uses.add(
+              HabitUse(
+                habitId: habit,
+                at: day.add(Duration(hours: 9, minutes: 30 * k)),
+                amount: 1,
+              ),
+            );
+          }
+        }
+
+        if (i == 0 || r.nextBool()) log('coin', 1);
+        log('daily 1-4', 1 + r.nextInt(4));
+        if (r.nextDouble() < 0.05) run = 4;
+        if (run-- > 0) log('4-day runs', 1);
+        if (r.nextDouble() < 0.1) log('1 day in 10', 1 + r.nextInt(3));
+        outcomes.add(
+          DailyOutcome(
+            date: addDays(day, 1),
+            metricId: 'restingHeartRate',
+            value: 60 + (i < 60 ? 0 : 2) + gaussian(r),
+          ),
+        );
+      }
+      final found = measureShifts(
+        outcomes: OutcomeSeries.fromOutcomes(outcomes),
+        habits: DailyHabitSeries.fromUses(uses),
+        through: addDays(january5, 119),
+      );
+      for (final MeasureShift s in found.shifts) {
+        shifts++;
+        for (final HabitChange c in s.habits) {
+          named[c.habitId] = (named[c.habitId] ?? 0) + 1;
+        }
+      }
+    }
+    stdout.writeln('habits named beside $shifts shifts (n=$seeds): $named');
   });
 }

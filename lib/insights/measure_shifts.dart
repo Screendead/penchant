@@ -138,20 +138,32 @@ List<HabitChange> _habitChanges(
   ];
 }
 
+// Days of use come in runs, so each side's days are not independent: the
+// standard error is widened by their lag-1 autocorrelation within the sides,
+// as in unevenHalves.
 (double, double)? _changed(List<double> before, List<double> after) {
   final double a = mean(before), b = mean(after);
   if (max(a, b) <= 0 || max(a, b) < habitChangeRatio * min(a, b)) return null;
   final double va = sampleVariance(before) / before.length;
   final double vb = sampleVariance(after) / after.length;
   if (va + vb > 0) {
+    double lagged = 0, squares = 0;
+    for (final (List<double> side, double m) in <(List<double>, double)>[
+      (before, a),
+      (after, b),
+    ]) {
+      for (int i = 0; i < side.length; i++) {
+        squares += (side[i] - m) * (side[i] - m);
+        if (i > 0) lagged += (side[i] - m) * (side[i - 1] - m);
+      }
+    }
+    final double rho = (lagged / squares).clamp(0.0, 0.9);
     final double df =
         (va + vb) *
         (va + vb) /
         (va * va / (before.length - 1) + vb * vb / (after.length - 1));
-    if (studentTTwoSided((a - b) / sqrt(va + vb), df) >=
-        habitChangeSignificance) {
-      return null;
-    }
+    final double t = (a - b) / sqrt((va + vb) * (1 + rho) / (1 - rho));
+    if (studentTTwoSided(t, df) >= habitChangeSignificance) return null;
   }
   return (a, b);
 }
