@@ -149,7 +149,7 @@ ul{margin:0;padding-left:20px;display:grid;gap:4px}
 
 <section>
   <h2>Whole-suite audit (next PR, <code>test/audit</code>)</h2>
-  <p>21 Sonnet agents audited all 1,241 tests, and an Opus agent checked each flagged one. Of 91 flagged, 15 tests go (each duplicate checked by hand) and 34 are sharpened so they can actually fail. 1,457 tests pass.</p>
+  <p>21 Sonnet agents audited all 1,241 tests, and an Opus agent checked each flagged one. Of 91 flagged, about 15 tests go (each duplicate checked by hand) and 34 are sharpened so they can actually fail. 1,457 tests pass.</p>
   <ul>
     <li><b>Kept against the audit:</b> all 22 rules tests it called duplicates (the gate before every production rules deploy), three crypto tests (a NIST AES case, recovery-key round trip, no write without a sealer), the HealthKit sleeping-heart-rate id (the Swift side matches that exact string), and the Settings no-placeholder-rows check (the moved e2e coverage).</li>
     <li><b>Deleted, your call:</b> <code>mac_fullscreen_render_test.dart</code>, as you said.</li>
