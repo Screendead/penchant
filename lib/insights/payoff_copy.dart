@@ -86,8 +86,8 @@ String _rates(HabitFall fall, Unit unit, String locale) {
 }
 
 /// "Your logged amount of Coffee fell from about 4 drinks a day to 1.5
-/// around Mar 3, 2026."; with no entry since, "No entries for Coffee since
-/// Mar 3, 2026, from about 4 drinks a day before.", since the journal cannot
+/// around March 3, 2026."; with no entry since, "No entries for Coffee since
+/// March 3, 2026, from about 4 drinks a day before.", since the journal cannot
 /// tell a habit given up from one no longer logged. The habit's name only
 /// ever follows "of" or "for", as in [findingSentence].
 String fallSentence(
@@ -96,7 +96,7 @@ String fallSentence(
   String locale, {
   Unit unit = Unit.fallback,
 }) {
-  final String date = DateFormat.yMMMd(locale).format(fall.day);
+  final String date = formatDate(fall.day);
   final String rates = _rates(fall, unit, locale);
   return fall.stopped
       ? 'No entries for $habit since $date, from about $rates before.'

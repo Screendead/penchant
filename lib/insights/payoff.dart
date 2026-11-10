@@ -296,7 +296,8 @@ Map<String, HabitFall> findFalls(
 /// and whether the day is a weekend day. The trend is what a drift or a
 /// season's slope over those months would otherwise lend the step. The
 /// errors are taken to carry over from each day to the next (AR(1), fitted
-/// by Prais-Winsten on runs of next-door days), since a step is as
+/// by generalised least squares, a gap of days carrying over that much
+/// less), since a step is as
 /// persistent a column as there is and independent errors would understate
 /// its standard error several times over.
 ///
@@ -481,20 +482,27 @@ Payoff _judge(
       estimate = (pairs * estimate + columns) / (pairs - columns - 2);
     }
     phi = estimate.clamp(0.0, gates.maxAutocorrelation);
-    final double start = sqrt(1 - phi * phi);
+    // Each row less what the row before it predicts, across however many
+    // days lie between them, scaled so every row's error has one variance.
+    final List<double> carry = <double>[
+      for (int r = 0; r < days.length; r++)
+        r == 0 ? 0 : pow(phi, daysBetween(days[r - 1], days[r])).toDouble(),
+    ];
+    final List<double> weight = <double>[
+      for (final double c in carry) sqrt((1 - phi * phi) / (1 - c * c)),
+    ];
     fit = fitLeastSquares(
       <List<double>>[
         for (int r = 0; r < days.length; r++)
           <double>[
             for (int j = 0; j < columns; j++)
-              follows[r]
-                  ? design[r][j] - phi * design[r - 1][j]
-                  : start * design[r][j],
+              weight[r] *
+                  (design[r][j] - (r == 0 ? 0 : carry[r] * design[r - 1][j])),
           ],
       ],
       <double>[
         for (int r = 0; r < y.length; r++)
-          follows[r] ? y[r] - phi * y[r - 1] : start * y[r],
+          weight[r] * (y[r] - (r == 0 ? 0 : carry[r] * y[r - 1])),
       ],
     );
   }

@@ -52,7 +52,7 @@ void main() {
     expect(
       fallSentence(fall('coffee'), 'Coffee', 'en', unit: Unit.drink),
       'Your logged amount of Coffee fell from about 3.6 drinks a day to 1.5 '
-      'around Mar 3, 2026.',
+      'around March 3, 2026.',
     );
     expect(
       fallSentence(
@@ -62,7 +62,7 @@ void main() {
         unit: Unit.time,
       ),
       'Your logged amount of Coffee fell from about 3.5 uses a week to 0.7 '
-      'around Mar 3, 2026.',
+      'around March 3, 2026.',
     );
     expect(
       fallSentence(
@@ -71,7 +71,7 @@ void main() {
         'en',
         unit: Unit.puff,
       ),
-      'No entries for Coffee since Mar 3, 2026, from about 12 puffs a day '
+      'No entries for Coffee since March 3, 2026, from about 12 puffs a day '
       'before.',
     );
   });

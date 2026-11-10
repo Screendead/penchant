@@ -961,7 +961,7 @@ void main() {
     expect(
       find.text(
         'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
-        'around Mar 3, 2026.',
+        'around March 3, 2026.',
       ),
       findsOneWidget,
     );
@@ -976,7 +976,7 @@ void main() {
     expect(find.text('From 88 nights before and 41 since'), findsOneWidget);
     expect(
       find.text(
-        'No entries for Tea since Mar 3, 2026, from about 3 items a day '
+        'No entries for Tea since March 3, 2026, from about 3 items a day '
         'before. No clear difference in your sleep, heart or activity '
         'since: within the noise.',
       ),

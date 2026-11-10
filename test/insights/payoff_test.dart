@@ -121,10 +121,14 @@ void main() {
 
     test('too few days of the measure on either side is refused unfitted', () {
       final PayoffDays d = payoffDays(5, shift: 1.5);
+      final DateTime fell = findFalls(
+        DailyHabitSeries.fromUses(d.uses),
+        d.through,
+      )['Coffee']!.day;
       final List<Payoff> results = payoff(
         uses: d.uses,
         outcomes: OutcomeSeries.fromOutcomes(
-          d.outcomes.where((o) => !o.date.isBefore(addDays(d.fallDay!, -10))),
+          d.outcomes.where((o) => !o.date.isBefore(addDays(fell, -10))),
         ),
         metricIds: payoffMetrics,
         through: d.through,
