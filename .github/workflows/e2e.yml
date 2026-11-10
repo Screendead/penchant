@@ -83,6 +83,12 @@ jobs:
           key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'tools/ci-content-mtimes.py', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             deriveddata-${{ env.IMAGE }}-
+      # firebase-tools and the rules suite's other packages, installed; npm ci under the simulator's boot took 4 min.
+      - id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: tests/firestore-rules/node_modules
+          key: rules-node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/firestore-rules/package-lock.json') }}
       # A first boot takes about three minutes; it carries on under the steps below, and tools/e2e.sh waits for it.
       # Started after the cache restores: booting during them slowed setup-flutter from about 1 minute to 5.
       - name: Boot the simulator
@@ -90,7 +96,7 @@ jobs:
       # The firebase-tools the rules tests run with, pinned by that lockfile; tools/e2e.sh calls `firebase`.
       - name: Install firebase-tools
         run: |
-          npm --prefix tests/firestore-rules ci
+          if [ "${{ steps.node-modules.outputs.cache-hit }}" != true ]; then npm --prefix tests/firestore-rules ci; fi
           echo "$PWD/tests/firestore-rules/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Toolchain
         run: xcodebuild -version
