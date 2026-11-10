@@ -556,7 +556,7 @@ String insightsText({
       ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
       ..write(bedtime == null ? '' : '$bedtime\n')
       ..write('${findingRange(f, locale)}\n')
-      ..write('${findingBasis(f, habit)}\n');
+      ..write('${findingBasis(f, habit, locale: locale, unit: unit)}\n');
     if (findingEvidence(f) case final String evidence) {
       out.write('$evidence\n');
     }
@@ -794,7 +794,10 @@ class _FindingCard extends StatelessWidget {
               ),
               const SizedBox(height: DialSpace.xs),
               Text(findingRange(finding, locale), style: small),
-              Text(findingBasis(finding, habit), style: small),
+              Text(
+                findingBasis(finding, habit, locale: locale, unit: unit),
+                style: small,
+              ),
               if (findingEvidence(finding) case final String evidence)
                 Text(evidence, style: small),
               if (card.others.isNotEmpty) const SizedBox(height: DialSpace.s),
