@@ -21,12 +21,15 @@ jobs:
   ios:
     runs-on: macos-26
     # 74 minutes when flutter rebuilt the app for each file; all_test.dart builds it once.
-    timeout-minutes: 120
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # The image has no "iPhone 18 Pro": take an iPhone on the newest iOS runtime, and start booting it.
+      # Xcode's build database compares mtimes; a checkout's are all new (tools/ci-content-mtimes.py).
+      - name: Content mtimes
+        run: tools/ci-content-mtimes.py
+      # The image has no "iPhone 18 Pro": take an iPhone on the newest iOS runtime.
       - name: Pick a simulator
         run: |
           udid=$(xcrun simctl list devices available -j | jq -r '
@@ -42,8 +45,6 @@ jobs:
           fi
           xcrun simctl list devices available | grep "$udid"
           echo "E2E_DEVICE=$udid" >> "$GITHUB_ENV"
-          # A first boot takes about three minutes; it carries on while the steps below run, and tools/e2e.sh waits for it.
-          xcrun simctl boot "$udid"
       # The runner's image, which the env context does not carry, for the Xcode cache key.
       - name: Image version
         run: echo "IMAGE=$ImageOS-$ImageVersion" >> "$GITHUB_ENV"
@@ -82,6 +83,10 @@ jobs:
           key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             deriveddata-${{ env.IMAGE }}-
+      # A first boot takes about three minutes; it carries on under the steps below, and tools/e2e.sh waits for it.
+      # Started after the cache restores: booting during them slowed setup-flutter from about 1 minute to 5.
+      - name: Boot the simulator
+        run: xcrun simctl boot "$E2E_DEVICE"
       # The firebase-tools the rules tests run with, pinned by that lockfile; tools/e2e.sh calls `firebase`.
       - name: Install firebase-tools
         run: |
@@ -92,7 +97,7 @@ jobs:
       - name: End to end (iOS Simulator)
         env:
           # Every write the tests leave unacknowledged (offline, refused) waits out the timeout; 10 s in the app.
-          E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=5000 -v
+          E2E_FLUTTER_ARGS: --dart-define=WRITE_TIMEOUT_MS=5000
         run: |
           set -o pipefail
           tools/e2e.sh integration_test/all_test.dart 2>&1 | tee "$RUNNER_TEMP/e2e-ios.log"
@@ -123,6 +128,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Content mtimes
+        run: tools/ci-content-mtimes.py
       - name: Image version
         run: echo "IMAGE=$ImageOS-$ImageVersion" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-flutter
