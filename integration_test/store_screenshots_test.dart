@@ -43,16 +43,6 @@ class _StoreHealth implements HealthSource {
   Future<bool> requestAuthorization() async => true;
 
   @override
-  Future<HealthChanges?> changes(Set<HealthMetric> metrics) async =>
-      HealthChanges(
-        generation: 1,
-        whole: <String>{for (final HealthMetric m in metrics) m.id},
-      );
-
-  @override
-  Future<void> changesHandled(int generation) async {}
-
-  @override
   Future<HealthRead> dailyValues(
     Set<HealthMetric> metrics,
     DateTime start,
