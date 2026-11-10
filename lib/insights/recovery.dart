@@ -179,9 +179,9 @@ class Recovery {
 /// Its day-to-day persistence goes into the errors instead: the fit is
 /// generalised least squares for errors that are first-order autoregressive
 /// across the days present, their correlation estimated from the residuals
-/// (twice over). That also keeps a bad night that led to the heavy day from
-/// reading as the heavy day's cost, since each transformed row sets the
-/// night against what the night before left unexplained.
+/// (twice over). Each transformed row sets the night against what the night
+/// before left unexplained, so a bad night that led to the heavy day reads
+/// as its cost only as far as that correlation is underestimated.
 ///
 /// The first night must be clear on its own (and not rest on one night);
 /// each later night is "still off" only when its own interval excludes zero,
