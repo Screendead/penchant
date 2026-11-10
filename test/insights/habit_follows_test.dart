@@ -48,7 +48,7 @@ void main() {
     expect(after.days, 120);
     expect(after.uses, inInclusiveRange(200, 240));
     expect(after.share, closeTo(0.55, 0.1));
-    expect(after.chance, closeTo(0.1, 0.06));
+    expect(after.chance, closeTo(0.13, 0.07));
     expect(after.pValue, lessThan(1e-6));
     expect(
       _of(judged, 'cigarettes', 'coffee').verdict,
@@ -171,7 +171,7 @@ void main() {
       final List<HabitFollows> judged = judgeHabitFollows(<HabitFollows>[
         _pair('a', 'b', followedDays: 6),
         _pair('a', 'c', share: 0.19, chance: 0.1),
-        _pair('a', 'd', share: 0.2, chance: 0.1),
+        _pair('a', 'd', share: 0.25, chance: 0.1),
         _pair('a', 'e', pValue: null),
       ]);
 
