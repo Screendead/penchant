@@ -47,12 +47,13 @@ void main() {
   final Vice tea = fakeVice('tea', archived: true);
   final DateTime now = DateTime.now();
   final List<ViceActivity> orphans = <ViceActivity>[
-    fakeActivity('gone', 2, now.subtract(const Duration(minutes: 5))),
-    fakeActivity('gone', 1, now.subtract(const Duration(days: 1, hours: 1))),
+    // Calendar days, not durations, so a run just after midnight still has a yesterday.
+    fakeActivity('gone', 2, DateTime(now.year, now.month, now.day)),
+    fakeActivity('gone', 1, DateTime(now.year, now.month, now.day - 1, 12)),
     fakeActivity(
       'foreign',
       3,
-      now.subtract(const Duration(days: 3)),
+      DateTime(now.year, now.month, now.day - 3, 12),
       triggers: <String>['work/meeting'],
     ),
   ];

@@ -1,0 +1,172 @@
+<title>Faster e2e</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column; a timing strip, then the call, then the test lists as tables. */
+:root{
+  --bg:#f6f7f9; --fg:#16191f; --muted:#5b6472; --rule:#d9dde4; --panel:#ffffff;
+  --accent:#2f5bd3; --good:#1d7a46; --warn:#a15c00;
+  --seg-a:#8aa4e8; --seg-b:#c7b2f0; --seg-c:#f0c48a; --seg-d:#9fd3b4; --seg-e:#2f5bd3;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111419; --fg:#e7eaf0; --muted:#9aa3b2; --rule:#2a303a; --panel:#181c23;
+  --accent:#8ca8ff; --good:#5fd08f; --warn:#f0b35a;
+  --seg-a:#4d64a8; --seg-b:#6e5a9c; --seg-c:#a07a45; --seg-d:#3f8a62; --seg-e:#8ca8ff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111419; --fg:#e7eaf0; --muted:#9aa3b2; --rule:#2a303a; --panel:#181c23;
+  --accent:#8ca8ff; --good:#5fd08f; --warn:#f0b35a;
+  --seg-a:#4d64a8; --seg-b:#6e5a9c; --seg-c:#a07a45; --seg-d:#3f8a62; --seg-e:#8ca8ff; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+main{max-width:860px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:30px} h2{font-size:21px}
+p{margin:0;max-width:68ch} .muted{color:var(--muted)}
+section{display:grid;gap:14px;min-width:0}
+.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.num{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:grid;gap:4px}
+.num b{font-family:var(--display);font-size:26px;font-variant-numeric:tabular-nums}
+.num span{color:var(--muted);font-size:13px}
+.num .was{color:var(--muted);text-decoration:line-through;font-size:15px;font-weight:400;margin-right:6px}
+.strip{display:flex;height:30px;border-radius:5px;overflow:hidden;font-size:12px;font-family:var(--mono)}
+.strip div{display:flex;align-items:center;justify-content:center;color:var(--fg);white-space:nowrap;overflow:hidden;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.opts{display:grid;gap:10px}
+.opt{border:1px solid var(--rule);background:var(--panel);border-radius:8px;padding:14px 16px;display:grid;gap:6px}
+.opt.rec{border-color:var(--accent);border-width:2px}
+.opt h3{margin:0;font-family:var(--display);font-size:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.tag{font-family:var(--body);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.facts{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--muted)}
+.facts b{color:var(--fg);font-weight:600}
+.wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+tr:last-child td{border-bottom:0}
+td.k{white-space:nowrap;font-weight:600;font-size:12px}
+.k.move{color:var(--accent)} .k.del{color:var(--warn)} .k.keep{color:var(--good)}
+code{font-family:var(--mono);font-size:12.5px}
+ul{margin:0;padding-left:20px;display:grid;gap:4px}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono&display=swap">
+<main>
+<header style="display:grid;gap:10px">
+  <h1>Faster e2e after a merge</h1>
+  <p class="muted">PR #218. Times come from real CI runs: before is run 42690070034; after is runs 42739107480, 42741719417 and 42744276730.</p>
+</header>
+
+<section>
+  <div class="nums">
+    <div class="num"><b><span class="was">31.5</span>20–26 min</b><span>iPhone result after a merge (no 2 min wait any more)</span></div>
+    <div class="num"><b><span class="was">100</span>6–9 min</b><span>Mac job (smoke test only)</span></div>
+    <div class="num"><b><span class="was">47</span>24 tests</b><span>e2e tests; test time 12.7 → 5 min</span></div>
+  </div>
+  <p>The 10 min goal is <b>not met</b>. On GitHub's standard Mac runner, 13–18 min goes by before the first test runs. The tests now take 5 min.</p>
+</section>
+
+<section>
+  <h2>Where a run's 20–26 min go now</h2>
+  <div class="strip" role="img" aria-label="About 3 minutes setup, 3 minutes simulator first boot, 2 to 5 minutes Flutter prep, 2.5 to 4.5 minutes Xcode build, 5 minutes tests, 1 minute teardown">
+    <div style="flex:3;background:var(--seg-a)">setup 3</div>
+    <div style="flex:3;background:var(--seg-b)">boot 3</div>
+    <div style="flex:3.5;background:var(--seg-c)">Flutter 2–5</div>
+    <div style="flex:3.5;background:var(--seg-d)">Xcode 2.5–4.5</div>
+    <div style="flex:5;background:var(--seg-e);color:var(--bg)">tests 5</div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--seg-a)"></i>job, Flutter SDK and caches</span>
+    <span><i style="background:var(--seg-b)"></i>simulator's first boot (heavy disk use; slows whatever runs beside it)</span>
+    <span><i style="background:var(--seg-c)"></i>Flutter's work before Xcode</span>
+    <span><i style="background:var(--seg-d)"></i>Xcode build, cached</span>
+    <span><i style="background:var(--seg-e)"></i>24 tests</span>
+  </div>
+  <p class="muted">What this PR fixed: the iOS build cache missed <code>build/ios</code>, so every run cloned firebase-ios-sdk again (8.5 min). Booting the simulator during the cache downloads made them up to 5× slower. A fresh checkout made Xcode treat every file as changed. Runner speed alone moves a run by ±3 min.</p>
+</section>
+
+<section>
+  <h2>Call: how far to go for 10 minutes</h2>
+  <div class="opts">
+    <div class="opt rec">
+      <h3>A. Merge #218 and stop here <span class="tag">Recommended</span></h3>
+      <p>The result arrives in about 23 min, not 31.5, and the Mac job stops taking 100 min. It's free and already built.</p>
+      <div class="facts"><span>Cost <b>none</b></span><span>Risk <b>low</b></span><span>Effort <b>done</b></span></div>
+    </div>
+    <div class="opt">
+      <h3>B. Split the tests over two runners</h3>
+      <p>Each runner still pays the full setup, so this saves about 2.5 min (to roughly 18–23). It uses twice the runner time, which is free while the repo is public.</p>
+      <div class="facts"><span>Cost <b>free</b></span><span>Risk <b>low</b></span><span>Effort <b>~1 h</b></span></div>
+    </div>
+    <div class="opt">
+      <h3>C. GitHub's larger paid Mac runners</h3>
+      <p>More cores and faster disks. My guess is 30–40% faster, but that is unmeasured, so 10 min isn't certain. Billed per minute; it needs a payment method on the account.</p>
+      <div class="facts"><span>Cost <b>per run, paid</b></span><span>Risk <b>unmeasured</b></span><span>Effort <b>~1 h + billing</b></span></div>
+    </div>
+    <div class="opt">
+      <h3>D. A dedicated Mac as a self-hosted runner (not your Mac)</h3>
+      <p>The simulator stays booted and the build stays warm, so a run would probably take 7–9 min (inferred: build about 1 min plus 5 min of tests). It needs hardware and upkeep. e2e never runs on PRs, which limits the risk of a self-hosted runner on a public repo.</p>
+      <div class="facts"><span>Cost <b>a Mac mini</b></span><span>Risk <b>upkeep</b></span><span>Effort <b>half a day</b></span></div>
+    </div>
+  </div>
+  <p><b>Why A:</b> the 10 min target needs money or hardware. B is cheap but saves only about 2 min. If 10 min matters, D is the one option likely to reach it.</p>
+</section>
+
+<section>
+  <h2>Moved to widget tests (9)</h2>
+  <p class="muted">Each new widget test was run against a version without the behaviour it checks, and failed.</p>
+  <div class="wrap"><table>
+    <tr><th>e2e test</th><th>Now covered by</th></tr>
+    <tr><td>accessibility: screen readers hear the dial, beads, tallies, graph</td><td>accessibility, vice_tracker and trends_sheet tests; new check: Log leaves the semantics tree under the open sheet</td></tr>
+    <tr><td>account_switch: a new account never sees the first one's data</td><td>the leak lives in the provider chain; activity_providers_test now covers graph, history, single-entry and count</td></tr>
+    <tr><td>activity_flows: a picked trigger is stored and shown</td><td>writes_test (dialog sends triggers), history_page_test (row label); sealed_fields e2e records with triggers</td></tr>
+    <tr><td>activity_flows: editing a legacy entry writes only the changed field</td><td>writes_test with legacy fakes; the rules side stays in rules.test.js</td></tr>
+    <tr><td>archive: an archived habit leaves recording and Today</td><td>widget_state and trends_sheet tests; new: no wedge for an archived habit</td></tr>
+    <tr><td>log_fan: drag onto a wedge logs one on release</td><td>vice_tracker_test; new: release above the fan logs nothing</td></tr>
+    <tr><td>log_fan: a screen reader logs from Log and a wedge</td><td>vice_tracker_test; new: custom action, semantics tap and long-press</td></tr>
+    <tr><td>navigation: Settings shows only real pages</td><td>navigation_test: no Notifications or Privacy rows; sign-out stays in account and guest e2e</td></tr>
+    <tr><td>navigation: a session ending under pushed pages returns to sign-in</td><td>widget_state_test: routes pop on a user change</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>Deleted from e2e (11)</h2>
+  <p class="muted">Deleted only where every query, write and rules path the test ran is still run by a kept e2e test.</p>
+  <div class="wrap"><table>
+    <tr><th>e2e test</th><th>Why it can go</th></tr>
+    <tr><td>accessibility: recording at the largest text size</td><td>widget test at text scale 3.0; its write is the smoke test's</td></tr>
+    <tr><td>activity_flows: arrows and calendar change the day</td><td>three vice_tracker widget tests; no Firestore difference</td></tr>
+    <tr><td>activity_flows: Undo on the record snackbar</td><td>widget tests; the real delete is offline_test's</td></tr>
+    <tr><td>activity_flows: a tally's + and a wedge log one</td><td>widget tests; the real one-tap write is guest_test's</td></tr>
+    <tr><td>activity_flows: delete from history and from the editor</td><td>offline_test does both and checks the server</td></tr>
+    <tr><td>navigation: Edit renames a habit and changes its unit</td><td>sealed_fields_test makes the same edit and checks the sealed copy</td></tr>
+    <tr><td>navigation: Trends opens over Today</td><td>trends_sheet widget test; no Firestore difference</td></tr>
+    <tr><td>onboarding: a new account picks two presets</td><td>onboarding widget tests; startApp and the key are the smoke test's</td></tr>
+    <tr><td>split_view: Trends as a pane from 900 pt</td><td>split_view widget test covers 900, 1200 and 1600 pt; the e2e set its own window size</td></tr>
+    <tr><td>write_flows: archive and unarchive</td><td>the next test makes the real archive write</td></tr>
+    <tr><td>write_flows: the editor saves a quantity</td><td>offline_test edits a quantity and checks the server</td></tr>
+  </table></div>
+  <p class="muted">Folded, not lost: about_version and key_service moved into the smoke test (the Mac job's one test); rejected_write's first test moved into its Undo test. Trimmed in place: activity_flows, trends, category_migration, export, offline. Full table: <code>docs/pitch/e2e-fast/triage.md</code>.</p>
+</section>
+
+<section>
+  <h2>Whole-suite audit (next PR, <code>test/audit</code>)</h2>
+  <p>21 Sonnet agents audited all 1,241 tests, and an Opus agent checked each flagged one. Of 91 flagged, about 15 tests go (each duplicate checked by hand) and 34 are sharpened so they can actually fail. 1,457 tests pass.</p>
+  <ul>
+    <li><b>Kept against the audit:</b> all 22 rules tests it called duplicates (the gate before every production rules deploy), three crypto tests (a NIST AES case, recovery-key round trip, no write without a sealer), the HealthKit sleeping-heart-rate id (the Swift side matches that exact string), and the Settings no-placeholder-rows check (the moved e2e coverage).</li>
+    <li><b>Deleted, your call:</b> <code>mac_fullscreen_render_test.dart</code>, as you said.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Found on the way</h2>
+  <ul>
+    <li>The Add/Edit Habit form overflowed above the keyboard on a short screen. It now scrolls (#217, merged).</li>
+    <li><code>deleted_habit_test</code> failed every night between 00:00 and 01:00. Fixed in #217.</li>
+    <li>Two cold-cache runs hung after the Xcode build with no output (one on master, cancelled at 2 h). The e2e step now stops at 25 min and records where.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Unsure tests</h2>
+  <p>None left. The audit's one UNSURE, the Mac fullscreen render tool, was your call and is deleted.</p>
+</section>
+</main>
