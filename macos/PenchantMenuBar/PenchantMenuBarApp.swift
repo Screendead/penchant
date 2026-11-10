@@ -19,7 +19,11 @@ struct PenchantMenuBarApp: App {
   }
 
   var body: some Scene {
-    MenuBarExtra(isInserted: $model.shown) {
+    // MenuBarExtra writes isInserted back on every update, and an equal value
+    // still publishes, so a plain $model.shown loops on the main thread.
+    MenuBarExtra(
+      isInserted: Binding(get: { model.shown }, set: { if model.shown != $0 { model.shown = $0 } })
+    ) {
       MenuContent(model: model)
     } label: {
       Image(systemName: "circle.dashed.inset.filled")
@@ -151,7 +155,7 @@ struct MenuContent: View {
     .padding(14)
     .frame(width: 300)
     .background(Palette.bg)
-    .onAppear { model.start() }
+    .onAppear { DispatchQueue.main.async { model.start() } }
     .onDisappear { model.stop() }
   }
 
