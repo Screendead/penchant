@@ -137,10 +137,10 @@ String recoveryBasis(
 /// "Range that night: 12 to 50 min less".
 String recoveryRange(Recovery finding, String locale) {
   final bool ofNight = metricCopy(finding.metricId)!.night;
-  return findingRange(finding.nightFinding(1), locale).replaceFirst(
-    'Range:',
-    'Range ${_when(1, ofNight: ofNight)}:',
-  );
+  return findingRange(
+    finding.nightFinding(1),
+    locale,
+  ).replaceFirst('Range:', 'Range ${_when(1, ofNight: ofNight)}:');
 }
 
 /// [card] as the lines "Copy as text" writes.

@@ -259,9 +259,7 @@ Recovery _recovery(
   final int n = days.length;
   final List<List<double>> lags = <List<double>>[
     for (int k = 1; k <= recoveryNights; k++)
-      <double>[
-        for (final DateTime d in days) heavy(addDays(d, -k)) ? 1 : 0,
-      ],
+      <double>[for (final DateTime d in days) heavy(addDays(d, -k)) ? 1 : 0],
   ];
   final List<double> after = lags.first;
   final int heavyDays = after.where((v) => v == 1).length;

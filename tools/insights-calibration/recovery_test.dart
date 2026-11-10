@@ -140,10 +140,7 @@ void main() {
       '1 sd for two nights, AR(1) 0.6, in runs',
       (s) => recoveryDays(s, costs: <double>[1, 1], ar: 0.6, runs: true),
     );
-    rates(
-      '0.5 sd for one night',
-      (s) => recoveryDays(s, costs: <double>[0.5]),
-    );
+    rates('0.5 sd for one night', (s) => recoveryDays(s, costs: <double>[0.5]));
     rates(
       '1 sd for one night, 60 days',
       (s) => recoveryDays(s, days: 60, costs: <double>[1]),

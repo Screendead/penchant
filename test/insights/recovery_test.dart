@@ -165,7 +165,10 @@ void main() {
           u.at.minute == 1
               ? HabitUse(
                   habitId: u.habitId,
-                  at: addDays(startOfDay(u.at), 1).add(const Duration(hours: 1)),
+                  at: addDays(
+                    startOfDay(u.at),
+                    1,
+                  ).add(const Duration(hours: 1)),
                   amount: 1,
                 )
               : u,
