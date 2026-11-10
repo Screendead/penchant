@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tracker/account/sign_out.dart';
@@ -12,6 +11,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
+import 'package:tracker/journal_key/secret_clipboard.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -32,7 +32,10 @@ class RecoveryKeyCopy {
       'This device has no recovery key yet. One is made with your journal key '
       'and shows here.';
   static const String copy = 'Copy';
-  static const String copied = 'Recovery key copied';
+  static const String copied =
+      'Recovery key copied to this device only. It clears in 2 minutes.';
+  static const String copyFailed =
+      "Couldn't copy the recovery key. Write it down or use Share.";
   static const String share = 'Share';
   static const String shareSubject = 'Penchant recovery key';
   static const String savedIt = "I've saved it";
@@ -314,9 +317,14 @@ class _RecoveryKeyPageState extends ConsumerState<RecoveryKeyPage> {
                   final ScaffoldMessengerState messenger = ScaffoldMessenger.of(
                     context,
                   );
-                  await Clipboard.setData(
-                    ClipboardData(text: status.formatted),
-                  );
+                  try {
+                    await const SecretClipboard().copy(status.formatted);
+                  } on SecretClipboardException {
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text(RecoveryKeyCopy.copyFailed)),
+                    );
+                    return;
+                  }
                   messenger.showSnackBar(
                     const SnackBar(content: Text(RecoveryKeyCopy.copied)),
                   );
