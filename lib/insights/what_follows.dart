@@ -507,7 +507,7 @@ HabitInsight _whatFollowsOne(
   final List<int> period = periodsOf(days, gates.minPeriodDays);
   // Halves by usable days, so each holds at least half of minDays.
   if (period.last == 0
-      ? _unevenHalves(x, days.length ~/ 2, gates)
+      ? unevenHalves(x, days.length ~/ 2, gates)
       : _mixedPeriods(x, period) < gates.minMixedPeriods) {
     return judged.refuse(RefusalReason.uneven);
   }
@@ -783,7 +783,7 @@ HabitInsight _amongDaysJudged(
       return judged.refuse(RefusalReason.steadyAmount);
     }
     if (pickStep) {
-      judged.step = _doseStep(
+      judged.step = doseStep(
         sd,
         whole: x.every((v) => v == v.roundToDouble()),
       );
@@ -808,7 +808,7 @@ HabitInsight _amongDaysJudged(
 }
 
 // A fraction of a whole-number unit is an amount nobody logged.
-double _doseStep(double sd, {required bool whole}) {
+double doseStep(double sd, {required bool whole}) {
   if (sd >= 0.5 && sd <= 3 || whole && sd < 0.5) return 1;
   double step = pow(10, (log(sd) / ln10).floor()).toDouble();
   for (final int m in <int>[5, 2]) {
@@ -820,7 +820,7 @@ double _doseStep(double sd, {required bool whole}) {
 // Whether [fit]'s interval for [column] crosses zero once the day that pulls
 // it furthest from zero is left out, by its DFBETA, (X'X)^-1 x_i e_i /
 // (1 - h_i), the change that day makes to the coefficients.
-bool _withoutMostTelling(
+bool withoutMostTelling(
   List<List<double>> rows,
   List<double> y,
   LinearFit fit,
@@ -1010,7 +1010,7 @@ HabitInsight _attribute(
   // A use comparison has a week of days on each side; an amount or a time
   // can hang on one extreme day.
   if (judged.kind != InsightKind.use &&
-      _withoutMostTelling(rows, y, fit, column, gates.level)) {
+      withoutMostTelling(rows, y, fit, column, gates.level)) {
     return judged.refuse(
       RefusalReason.oneDay,
       effect: effect,
@@ -1150,7 +1150,7 @@ int _mixedPeriods(List<double> x, List<int> period) {
 // makes the halves' rates differ more than independent days would, so the
 // standard error is widened by the runs' lag-1 autocorrelation within each
 // half.
-bool _unevenHalves(List<double> x, int half, InsightGates gates) {
+bool unevenHalves(List<double> x, int half, InsightGates gates) {
   final List<double> a = x.sublist(0, half), b = x.sublist(half);
   final double ra = mean(a), rb = mean(b);
   bool lopsided(double p, double q) =>
