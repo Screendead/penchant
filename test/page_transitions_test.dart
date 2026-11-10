@@ -452,4 +452,36 @@ void main() {
       );
     }
   });
+
+  testWidgets('under reduce motion the page below a Back pop takes taps at '
+      'once', (WidgetTester tester) async {
+    int taps = 0;
+    final GlobalKey<NavigatorState> navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(
+          navigatorKey: navigator,
+          theme: appTheme(Brightness.light),
+          home: Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => taps++,
+                child: const Text('Today'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    push(navigator.currentState!);
+    await tester.pumpAndSettle();
+    navigator.currentState!.pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 160));
+    await tester.tap(find.text('Today'), warnIfMissed: false);
+    await tester.pump();
+    expect(taps, 1);
+    await tester.pumpAndSettle();
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 }

@@ -76,9 +76,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   // Null follows today, so the tab moves on at midnight.
   DateTime? pinnedDay;
 
-  // Whether the last layout was the split view.
-  bool _split = false;
-
   final DraggableScrollableController _sheet = DraggableScrollableController();
   late final SheetPosition _position = SheetPosition(_sheet);
 
@@ -159,7 +156,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       vice,
       from: from,
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-      bottomClearance: ViceTracker.logClearance(context, split: _split),
     );
   }
 
@@ -167,11 +163,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void _logNow(Vice vice) => _log(vice, null);
 
   void _record(Vice? vice) {
-    RecordNewActivityDialog.show(
-      context,
-      initialViceID: vice?.id,
-      bottomClearance: ViceTracker.logClearance(context, split: _split),
-    );
+    RecordNewActivityDialog.show(context, initialViceID: vice?.id);
   }
 
   // The notification's "Log something": back to Today, then the Log, as if
@@ -271,7 +263,6 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool split = constraints.maxWidth >= ViceTracker.splitWidth;
-        _split = split;
         final double column = split
             ? ViceTracker.splitColumnWidth(constraints.maxWidth)
             : constraints.maxWidth;

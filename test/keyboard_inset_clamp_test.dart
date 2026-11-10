@@ -27,6 +27,10 @@ void main() {
         builder: (BuildContext _, Widget? child) =>
             clamped ? KeyboardInsetClamp(child: child!) : child!,
         home: Scaffold(
+          floatingActionButton: SnackBarLift(
+            height: (BuildContext c, double _) => ViceTracker.logClearance(c),
+          ),
+          floatingActionButtonLocation: SnackBarLift.location,
           body: Builder(
             builder: (BuildContext c) {
               context = c;
@@ -47,9 +51,6 @@ void main() {
     WidgetTester tester,
     ScaffoldMessengerState messenger,
   ) async {
-    final double lift = ViceTracker.logClearance(
-      tester.element(find.byType(Scaffold)),
-    );
     messenger.showSnackBar(const SnackBar(content: Text('Not saved')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -63,7 +64,6 @@ void main() {
       messenger,
       const TextSpan(text: 'Activity recorded'),
       onUndo: () {},
-      bottomClearance: lift,
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
