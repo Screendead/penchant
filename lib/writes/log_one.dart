@@ -56,7 +56,6 @@ Future<void> logOne(
   Vice vice, {
   Offset? from,
   required bool alwaysUse24HourFormat,
-  double bottomClearance = 0,
   void Function(VoidCallback undo)? offerUndo,
 }) async {
   final User? user = ref.read(userProvider).value;
@@ -70,7 +69,6 @@ Future<void> logOne(
     showUndoBar(
       messenger,
       const TextSpan(text: 'Not logged. $noJournalKeyMessage'),
-      bottomClearance: bottomClearance,
     );
     return;
   }
@@ -90,22 +88,11 @@ Future<void> logOne(
 
   void undo() {
     undone = true;
-    undoLog(
-      messenger,
-      writes,
-      rejected,
-      activityID,
-      entry,
-      bottomClearance: bottomClearance,
-    );
+    undoLog(messenger, writes, rejected, activityID, entry);
   }
 
-  void showBar(InlineSpan message) => showUndoBar(
-    messenger,
-    message,
-    bottomClearance: bottomClearance,
-    onUndo: offerUndo == null ? undo : null,
-  );
+  void showBar(InlineSpan message) =>
+      showUndoBar(messenger, message, onUndo: offerUndo == null ? undo : null);
 
   if (from != null) {
     ref.read(beadArrivalsProvider).launch(activityID, from);
@@ -151,7 +138,6 @@ Future<void> logOne(
               ? 'That habit no longer exists'
               : 'Not logged. ${firestoreErrorMessage(e)}',
         ),
-        bottomClearance: bottomClearance,
       );
     }
   }
@@ -164,7 +150,6 @@ Future<void> undoLog(
   RejectedWrites rejected,
   String activityID,
   String entry, {
-  double bottomClearance = 0,
   void Function(VoidCallback undo)? offerUndo,
 }) async {
   String? message;
@@ -186,10 +171,6 @@ Future<void> undoLog(
   }
 
   if (message != null && messenger.mounted) {
-    showUndoBar(
-      messenger,
-      TextSpan(text: message),
-      bottomClearance: bottomClearance,
-    );
+    showUndoBar(messenger, TextSpan(text: message));
   }
 }

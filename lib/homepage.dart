@@ -14,6 +14,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/penchant_mark.dart';
 import 'package:tracker/widgets/sync_status.dart';
+import 'package:tracker/widgets/undo_bar.dart';
 
 class Homepage extends ConsumerStatefulWidget {
   const Homepage({super.key});
@@ -65,6 +66,15 @@ class _HomepageState extends ConsumerState<Homepage> {
     final double top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
+      floatingActionButton: SnackBarLift(
+        height: (BuildContext context, double width) =>
+            ViceTracker.logClearance(
+              context,
+              split: width >= ViceTracker.splitWidth,
+            ),
+      ),
+      floatingActionButtonLocation: SnackBarLift.location,
+      floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
       body: Column(
         children: [
           // The mock-up's bar: 44 pt, 7 pt under the status bar.

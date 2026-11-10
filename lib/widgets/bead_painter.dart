@@ -84,16 +84,43 @@ void paintHabitMark(
 
 // A habit's mark drawn over a shape rather than a circle, for its share of a
 // dense hour's arc: filled with the bead's rim or glow, or the ring's or the
-// dotted ring's outline, each kept inside the shape.
+// dotted ring's outline, each kept inside the shape. A [pending] share is
+// hollow with a dashed rim, as a pending bead, its dashes moved along by
+// [rotation].
 void paintHabitBand(
   Canvas canvas,
   Path shape,
   HabitMark mark,
-  DialColors colors,
-) {
+  DialColors colors, {
+  bool pending = false,
+  double rotation = 0,
+}) {
   final Color hue = colors.habit(mark);
   final Color ink = colors.habitInk(mark);
   final BeadTreatment bead = colors.bead;
+  if (pending) {
+    const double dash = 3.2;
+    const double period = dash + 2.6;
+    final double phase = (rotation / (2 * pi) * period * 4) % period;
+    final Path dashes = Path();
+    for (final PathMetric metric in shape.computeMetrics()) {
+      for (double d = phase - period; d < metric.length; d += period) {
+        dashes.addPath(
+          metric.extractPath(max(0, d), min(metric.length, d + dash)),
+          Offset.zero,
+        );
+      }
+    }
+    _strokeInside(
+      canvas,
+      shape,
+      Paint()
+        ..strokeWidth = 2 * 2
+        ..color = ink,
+      dashes,
+    );
+    return;
+  }
   switch (mark.style) {
     case HabitMarkStyle.filled:
       if (bead.glowAlpha > 0) {
@@ -142,11 +169,11 @@ void paintHabitBand(
   }
 }
 
-void _strokeInside(Canvas canvas, Path shape, Paint paint) {
+void _strokeInside(Canvas canvas, Path shape, Paint paint, [Path? stroke]) {
   canvas
     ..save()
     ..clipPath(shape)
-    ..drawPath(shape, paint..style = PaintingStyle.stroke)
+    ..drawPath(stroke ?? shape, paint..style = PaintingStyle.stroke)
     ..restore();
 }
 

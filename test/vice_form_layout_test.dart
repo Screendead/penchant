@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/vice_form.dart';
@@ -38,5 +39,33 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Save on a locked habit says why it cannot save', (tester) async {
+    final Vice v = fakeVice('v');
+    final Vice locked = Vice(
+      id: v.id,
+      name: v.name,
+      unit: v.unit,
+      ownerID: v.ownerID,
+      createdAt: v.createdAt,
+      archived: false,
+      locked: true,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
+        ],
+        child: MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: ViceForm(vice: locked),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    expect(find.text(ViceForm.lockedMessage), findsOneWidget);
   });
 }
