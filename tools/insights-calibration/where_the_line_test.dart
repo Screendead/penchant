@@ -33,7 +33,14 @@ List<HabitUse> dayOfUse(
   for (int k = 0; k < amount; k++)
     HabitUse(
       habitId: habit,
-      at: day.add(Duration(minutes: lastMinutes - 90 * (amount - 1 - k))),
+      // By the wall clock, so a daylight-saving day moves no use.
+      at: DateTime(
+        day.year,
+        day.month,
+        day.day,
+        0,
+        lastMinutes - 90 * (amount - 1 - k),
+      ),
       amount: 1,
     ),
 ];

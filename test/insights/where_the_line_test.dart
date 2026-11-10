@@ -38,7 +38,14 @@ InsightsInput dailyCoffee(
       uses.add(
         HabitUse(
           habitId: 'Coffee',
-          at: day.add(Duration(minutes: last - 90 * (amount - 1 - k))),
+          // By the wall clock, so a daylight-saving day moves no use.
+          at: DateTime(
+            day.year,
+            day.month,
+            day.day,
+            0,
+            last - 90 * (amount - 1 - k),
+          ),
           amount: 1,
         ),
       );

@@ -183,8 +183,12 @@ void main() {
       'after=$after reports=$reports',
     );
     // 2 x 9 days-with-and-without (Water has no days without), 3 x 9 each of
-    // amount and time, and of a line in each.
-    expect(checks, seeds * (18 + 27 + 27 + 27 + 27));
+    // amount and time, and of a line in each; a few lines are refused unfitted
+    // (a habit's days over the cut all in one month).
+    expect(
+      checks,
+      inInclusiveRange(seeds * 126 - 20, seeds * (18 + 27 + 27 + 27 + 27)),
+    );
     expect(raw / checks, inInclusiveRange(0.03, 0.07));
     expect(after / checks, lessThan(0.005));
     expect(reports / seeds, lessThan(0.15));
