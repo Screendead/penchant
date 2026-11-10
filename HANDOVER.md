@@ -699,13 +699,14 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
   Cut-downs with a real effect are found (80% to 25%: 198/200); the cost is a change in use and a step in the outcome
   inside one month (34/200 false findings against A's 13 on the bench). The measured table is in #183's PR body.
 
+- **e2e-10min** (Jack, 2026-11-10: **A**, as recommended). Keep #218's e2e as merged on standard `macos-26`
+  runners and stop: no sharding, larger runners or self-hosted Mac. Standard runners spend 13 to 18 minutes before
+  the first test, so a merge gets its e2e result in about 20 to 27 minutes (iOS), macOS smoke in about 6 to 12
+  (pitch: `docs/pitch/e2e-fast/pitch.html`).
+
 ## Calls waiting on Jack (UNDECIDED)
 
-- **e2e-10min.** Standard `macos-26` runners spend 13 to 18 minutes on setup, simulator first boot and the build
-  before any test runs, so the 10-minute goal needs more than this PR: larger paid runners, sharding, or a
-  self-hosted Mac. On the e2e-fast pitch page.
-
-Otherwise none on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
+None on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
 `r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
 
