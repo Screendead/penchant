@@ -74,6 +74,7 @@ E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pr
 E2E_DEVICE=macos tools/e2e.sh     # all_test.dart as a macOS app; never on this Mac (Hard rules)
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
 tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each screenshot(tester, name) call; needs a simulator
+E2E_DEVICE=<iPhone 18 Pro Max udid> tools/e2e-screenshots.sh docs/pitch/round-14/store-screenshots integration_test/store_screenshots_test.dart  # App Store shots, 1320x2868; not in all_test.dart (seeding takes minutes)
 ```
 
 Both boot the simulator by UDID (found by name unless `E2E_DEVICE` is set; `macos` runs on the Mac), refuse to
