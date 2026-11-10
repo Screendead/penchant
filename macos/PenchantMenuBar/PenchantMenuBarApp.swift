@@ -41,12 +41,16 @@ final class MenuModel: ObservableObject {
   private var timer: Timer?
 
   init() {
+    _ = Staleness.build
     CFNotificationCenterAddObserver(
       CFNotificationCenterGetDarwinNotifyCenter(), Unmanaged.passUnretained(self).toOpaque(),
       { _, observer, _, _, _ in
         guard let observer else { return }
         let model = Unmanaged<MenuModel>.fromOpaque(observer).takeUnretainedValue()
-        DispatchQueue.main.async { model.shown = true }
+        DispatchQueue.main.async {
+          Staleness.exitIfReplaced()
+          model.shown = true
+        }
       },
       showMenuBarNotification as CFString, nil, .deliverImmediately)
   }
@@ -204,6 +208,22 @@ struct MenuContent: View {
     } else if model.pending > 0 && !model.appRunning {
       Text(Self.waiting(model.waiting)).font(Typeface.text(12)).foregroundStyle(Palette.muted)
     }
+  }
+}
+
+// Installing or updating Penchant replaces the bundle under a running helper,
+// and the app's registration leaves that process running the old code from
+// wherever the old bundle went, the Trash included. Penchant
+// posts showMenuBarNotification at each launch; a helper whose bundle on disk
+// is gone or another build then exits, and launchd starts the registered one.
+// The exit status is non-zero so a KeepAlive limited to failures restarts it.
+enum Staleness {
+  static let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+
+  static func exitIfReplaced() {
+    let info = NSDictionary(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
+    guard info?["CFBundleVersion"] as? String != build else { return }
+    exit(1)
   }
 }
 
