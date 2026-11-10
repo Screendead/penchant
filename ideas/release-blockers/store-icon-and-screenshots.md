@@ -6,7 +6,7 @@
 
 The icon ships (candidate 38, picked 2026-11-05, from `assets/icon.svg` and `assets/icon-macos.svg`). The iPhone
 screenshots are generated: `integration_test/store_screenshots_test.dart` seeds a demo journal (`test/store_journal.dart`:
-Coffee, Tea, Chocolate, Fizzy drink, 120 days with triggers, and Health values that give Insights cards) and captures
+Coffee, Tea, Chocolate, Juice, 120 days with triggers, and Health values that give Insights cards) and captures
 Today, Trends, Insights and the Log fan at 1320x2868 (iPhone 18 Pro Max, 6.9"), committed under
 `docs/pitch/round-14/store-screenshots/`. What is left: a Mac listing's screenshots (`tools/e2e-screenshots.sh` needs a
 simulator; the Mac app would need a window capture and has no Health, so Insights shows "Available on iPhone"), and

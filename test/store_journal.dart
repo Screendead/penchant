@@ -21,7 +21,7 @@ const List<StoreHabit> storeHabits = <StoreHabit>[
   (name: 'Coffee', unit: Unit.drink, category: ViceCategory.caffeine),
   (name: 'Tea', unit: Unit.drink, category: ViceCategory.caffeine),
   (name: 'Chocolate', unit: Unit.item, category: ViceCategory.food),
-  (name: 'Fizzy drink', unit: Unit.drink, category: ViceCategory.other),
+  (name: 'Juice', unit: Unit.drink, category: ViceCategory.other),
 ];
 
 const int storeJournalDays = 120;
@@ -36,7 +36,7 @@ const LastNight storeLastNight = LastNight(
 /// [storeJournalDays] of entries up to [now], and the Health values that
 /// follow them: the night after a Coffee day has less deep sleep and the next
 /// day a higher resting heart rate, more so the more cups; a Chocolate
-/// evening costs some sleep. Nothing follows Tea or Fizzy drink.
+/// evening costs some sleep. Nothing follows Tea or Juice.
 ({List<StoreEntry> entries, List<DailyOutcome> health}) storeJournal(
   DateTime now, {
   int seed = 14,

@@ -137,11 +137,20 @@ void main() {
       ]);
     }
 
-    // An empty today shows the day before, so the dial has beads.
-    if (!journal.entries.any(
-      (StoreEntry e) => !e.at.isBefore(startOfDay(now)),
-    )) {
+    // The busiest of the last week, so the dial is full whatever the time.
+    int daysBack(StoreEntry e) =>
+        startOfDay(now).difference(startOfDay(e.at)).inDays;
+    int busiest = 0;
+    for (int back = 1; back < 7; back++) {
+      int count(int b) =>
+          journal.entries.where((StoreEntry e) => daysBack(e) == b).length;
+      if (count(back) > count(busiest)) {
+        busiest = back;
+      }
+    }
+    for (int back = 0; back < busiest; back++) {
       await tap(tester, find.byTooltip('Previous day'));
+      await tester.pump(const Duration(milliseconds: 300));
     }
     await _pumpUntilLong(
       tester,
@@ -173,8 +182,7 @@ void main() {
       findsWidgets,
     );
     await Scrollable.ensureVisible(
-      tester.element(find.text(InsightsPage.costsHeading)),
-      alignment: 0.15,
+      tester.element(find.text(InsightsPage.lastNightHeading)),
     );
     await screenshot(tester, '3-insights');
     await closeMenuPage(tester);
