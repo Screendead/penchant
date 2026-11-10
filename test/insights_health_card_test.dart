@@ -139,10 +139,12 @@ void main() {
     await _pump(tester, insightsOverrides(health: health));
 
     expect(find.text(InsightsPage.onIPhone), findsOneWidget);
+    expect(find.text(InsightsPage.connectLabel), findsNothing);
     expect(find.text(InsightsPage.askAgainLabel), findsNothing);
     expect(find.text(InsightsPage.manageLabel), findsNothing);
     expect(health.statusChecks, 0);
     expect(health.authorizationRequests, 0);
+    expect(health.reads, 0);
     debugDefaultTargetPlatformOverride = null;
   });
 }

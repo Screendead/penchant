@@ -167,8 +167,20 @@ void main() {
     ) async {
       await pump(tester, route: DeletedHabitPage.route);
       expect(find.text('3 entries'), findsOne);
+      final Finder earlier = find.text(
+        formatShortDay(DateTime(now.year, now.month, now.day - 3)),
+      );
       expect(find.text('Today'), findsOne);
       expect(find.text('Yesterday'), findsOne);
+      expect(earlier, findsOne);
+      expect(
+        tester.getTopLeft(find.text('Today')).dy,
+        lessThan(tester.getTopLeft(find.text('Yesterday')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Yesterday')).dy,
+        lessThan(tester.getTopLeft(earlier).dy),
+      );
       expect(find.byTooltip(DeletedHabitPage.deleteEntry), findsNWidgets(3));
       for (final Element button
           in find.byTooltip(DeletedHabitPage.deleteEntry).evaluate()) {

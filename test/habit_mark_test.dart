@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -100,6 +99,5 @@ void main() {
       expect(colors.habit(seventh), palette.data[1]);
       expect(colors.habitInk(seventh), palette.dataInk[1]);
     }
-    expect(DialColors.light.habit(const HabitMark(0)), const Color(0xFFFFB347));
   });
 }

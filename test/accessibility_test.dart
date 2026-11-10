@@ -10,6 +10,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
@@ -21,6 +22,7 @@ import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 
+import 'fake_writes.dart';
 import 'fakes.dart';
 import 'trends_harness.dart';
 
@@ -183,33 +185,56 @@ void main() {
         WidgetTester tester,
       ) async {
         _usePhone(tester, textScale: textScale);
+        final FakeTrackerWrites writes = FakeTrackerWrites();
         await _pump(tester, [
           userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
           unarchivedViceListProvider.overrideWith((ref) => AsyncData(_three)),
+          trackerWritesProvider.overrideWithValue(writes),
+          memoryJournal(),
         ], const RecordNewActivityDialog());
 
         expect(tester.takeException(), isNull);
-        expect(find.byType(Scrollable), findsWidgets);
+
+        Future<void> submit() async {
+          // A focused field scrolls itself back into view on each frame.
+          FocusManager.instance.primaryFocus?.unfocus();
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(
+            find.byKey(RecordNewActivityDialog.submitKey),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
+          await tester.pumpAndSettle();
+        }
 
         final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
         await tester.ensureVisible(quantity);
         await tester.pumpAndSettle();
         await tester.enterText(quantity, '0');
-        // No vice is selected, so validation runs but nothing is written.
-        // A focused field scrolls itself back into view on each frame.
-        FocusManager.instance.primaryFocus?.unfocus();
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(
-          find.byKey(RecordNewActivityDialog.submitKey),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
-        await tester.pumpAndSettle();
+        await submit();
 
         expect(tester.takeException(), isNull);
         await tester.ensureVisible(find.text('Please select a habit'));
         expect(find.text('Please select a habit'), findsOneWidget);
         expect(find.text('Please enter more than 0'), findsOneWidget);
+        expect(writes.writes, isEmpty);
+
+        await tester.ensureVisible(find.text('Select Habit'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Select Habit'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('beer').last);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(quantity);
+        await tester.pumpAndSettle();
+        await tester.enterText(quantity, '2');
+        await submit();
+
+        expect(tester.takeException(), isNull);
+        expect(writes.writes, hasLength(1));
+        expect(writes.writes.single.op, 'recordActivity');
+        expect(writes.writes.single.fields['viceID'], 'beer');
+        expect(writes.writes.single.fields['quantity'], 2);
       });
 
       testWidgets('the home screen opens the record dialog without '

@@ -19,7 +19,8 @@ double gaussian(Random random) =>
 
 // [days] evenings of Coffee, its one use at [last] (minutes after midnight),
 // bed at [bed] given that time, waking at 07:00; core sleep is 0.55 of the
-// minutes in bed plus [direct] per hour later of the use, plus noise of sd 10.
+// minutes in bed plus [direct] per hour later of the use, plus noise of sd 10;
+// HRV is 50 plus [hrvPerHour] per hour later of the use, plus noise of sd 1.
 // [onset] puts the night's sleep onset in the outcomes, [misread] minutes
 // off on day i.
 ({DailyHabitSeries habits, OutcomeSeries outcomes}) evenings(
@@ -28,6 +29,7 @@ double gaussian(Random random) =>
   required int Function(Random random) last,
   required int Function(Random random, int last, int amount) bed,
   double direct = 0,
+  double hrvPerHour = 0,
   bool onset = true,
   int Function(Random random)? amount,
   double Function(int i)? misread,
@@ -60,7 +62,11 @@ double gaussian(Random random) =>
         ),
       )
       ..add(
-        DailyOutcome(date: night, metricId: hrv, value: 50 + gaussian(random)),
+        DailyOutcome(
+          date: night,
+          metricId: hrv,
+          value: 50 + hrvPerHour * l / 60 + gaussian(random),
+        ),
       );
     if (onset) {
       outcomes.add(
@@ -468,14 +474,24 @@ void main() {
   });
 
   test('outcomes other than minutes of sleep keep their model', () {
+    int findings = 0;
     for (int seed = 0; seed < 5; seed++) {
       HabitInsight r(bool onset) => timing(
-        evenings(seed, last: evening, bed: halfway, onset: onset),
+        evenings(
+          seed,
+          last: evening,
+          bed: halfway,
+          onset: onset,
+          hrvPerHour: 3,
+        ),
         hrv,
       );
       final HabitInsight a = r(true), b = r(false);
       expect(a.runtimeType, b.runtimeType);
-      if (a is HabitFinding) expect(a.sameBedtime, isNull);
+      if (a is HabitFinding) {
+        findings++;
+        expect(a.sameBedtime, isNull);
+      }
       if (a is HabitRefusal && b is HabitRefusal) {
         expect(a.reason, b.reason);
         expect(a.effect, b.effect);
@@ -483,6 +499,8 @@ void main() {
         expect((a as HabitFinding).effect, (b as HabitFinding).effect);
       }
     }
+    // The comparison has something to find, so the check on a finding runs.
+    expect(findings, greaterThan(0));
   });
 
   test('the night that ended today keeps its onset', () {

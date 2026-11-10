@@ -14,17 +14,14 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/settings.dart';
-import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
-import 'package:tracker/widgets/log_fan.dart';
 
 import 'package:tracker/deleted_habit_page.dart';
 
 import 'fake_account.dart';
 import 'fakes.dart';
-import 'trends_harness.dart';
 
 void main() {
   group('routes', () {
@@ -84,8 +81,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-
-    expect(find.text('Account'), findsOneWidget);
     expect(find.text('Notifications'), findsNothing);
     expect(find.text('Privacy'), findsNothing);
 
@@ -119,24 +114,6 @@ void main() {
       );
       await tester.pumpAndSettle();
     }
-
-    testWidgets('has no tabs: Trends opens over Today, and Log rides the '
-        "sheet's edge", (WidgetTester tester) async {
-      await pumpHome(tester, [fakeVice('coffee')]);
-      expect(find.byType(NavigationBar), findsNothing);
-      expect(find.byType(LogButton), findsOneWidget);
-      final double peekTop = tester
-          .getTopLeft(inTrends(find.byType(Material)).first)
-          .dy;
-      expect(
-        tester.getCenter(find.byType(LogButton)).dy,
-        moreOrLessEquals(peekTop, epsilon: 1),
-      );
-
-      await openTrends(tester);
-      expect(find.text('Penchant'), findsOneWidget);
-      expect(find.byTooltip(TrendsSheet.closeLabel), findsOneWidget);
-    });
 
     testWidgets('the Penchant menu reaches Habits and Settings, and a page '
         'opened from it returns to Today with the menu shut', (

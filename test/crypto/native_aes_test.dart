@@ -40,6 +40,7 @@ void main() {
       final NativeAesReport report = await checkNativeAesGcm(
         nativeAesGcm(secretKeyLength: 32),
       );
+      expect(report.knownAnswer, isFalse);
       expect(report.native, isFalse);
     },
   );

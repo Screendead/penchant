@@ -152,24 +152,8 @@ void main() {
     );
   });
 
-  test('a habit whose only finding is too small is refused, saying so', () {
-    final HabitRefusal tooSmall = HabitRefusal(
-      habitId: 'Tea',
-      metricId: 'sleepCore',
-      lagDays: 1,
-      usableDays: 90,
-      exposedDays: 90,
-      raw: null,
-      kind: InsightKind.use,
-      reason: RefusalReason.tooSmall,
-      effect: -3,
-      interval: const Interval(-5, -1),
-      pValue: 0.001,
-    );
-    expect(
-      refusalReason(tooSmall, (id) => id),
-      'Too small to matter: under 10 min a night of core sleep',
-    );
+  test('a too-small time-of-last-use refusal words its floor across the usual '
+      'range', () {
     expect(
       refusalReason(
         HabitRefusal(

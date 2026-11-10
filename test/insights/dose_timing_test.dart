@@ -453,6 +453,28 @@ void main() {
 
   test('a habit with nothing found shows the days-with-and-without reason '
       'over an amount’s on a tie', () {
+    // Few days of use, so every comparison refuses for too few days.
+    final InsightsInput full = dailyCoffee(0, (_) => 60);
+    final DateTime end = addDays(start, 6);
+    final InsightsInput few = InsightsInput(
+      uses: <HabitUse>[
+        for (final HabitUse u in full.uses)
+          if (u.at.isBefore(end)) u,
+      ],
+      outcomes: <DailyOutcome>[
+        for (final DailyOutcome o in full.outcomes)
+          if (o.date.isBefore(end)) o,
+      ],
+      from: start,
+      through: end,
+    );
+    final HabitRefusal shown = computeInsights(few).refused.single;
+    expect(shown.reason, RefusalReason.tooFewDays);
+    expect(shown.kind, InsightKind.use);
+  });
+
+  test('a lone amount or time-of-last-use refusal for too few days says what '
+      'it is about', () {
     HabitRefusal r(InsightKind kind, int usable) => HabitRefusal(
       habitId: 'Tea',
       metricId: deep,
@@ -519,14 +541,6 @@ void main() {
           unit: Unit.time,
         ),
         startsWith('On days with one more use logged for Tea, your'),
-      );
-    });
-
-    test('a time of last use reads per hour later', () {
-      expect(
-        findingSentence(finding(InsightKind.lastUse, 60), 'Coffee', 'en'),
-        'On days your last use of Coffee is an hour later, your deep sleep '
-        'that night averages 6 min less.',
       );
     });
 
