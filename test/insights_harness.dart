@@ -136,11 +136,12 @@ class FakeHealthSource implements HealthSource {
     dailyCalls.add((metrics: metrics, start: start, end: end));
     if (failure case final PlatformException e) throw e;
     return switch (read) {
-      HealthValues(:final List<DailyOutcome> values) =>
-        HealthValues(<DailyOutcome>[
+      HealthValues(:final List<DailyOutcome> values) => HealthValues(
+        <DailyOutcome>[
           for (final DailyOutcome v in values)
             if (!v.date.isBefore(start) && v.date.isBefore(end)) v,
-        ]),
+        ],
+      ),
       final HealthRead other => other,
       null => const HealthValues(<DailyOutcome>[]),
     };

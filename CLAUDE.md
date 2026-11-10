@@ -457,6 +457,16 @@ through `Account`, so fakes cover every write path: `test/fake_writes.dart` reco
 that way; `integration_test/` drives the real app on an iOS Simulator against the emulators instead (Commands covers
 it and the rules suite).
 
+**Health** (iOS only; `ios/Runner/HealthChannel.swift`, `lib/insights/health_source.dart`). Nothing read from
+Health leaves the device: not Firestore, analytics or crash reports. Insights' daily values live in
+`health-daily.json` in Caches (not backed up; `lib/insights/health_sync.dart`); each open asks the channel's
+`changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
+`HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
+by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
+acknowledges the generation once the store is written. `HKObserverQuery`s with hourly background delivery
+(`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
+closed. The Health sheet resets the anchors; a store over 30 days old is read again in full.
+
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
 writes, above). `ViceActivity.pending` carries `hasPendingWrites`; the day and history providers listen with

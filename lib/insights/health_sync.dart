@@ -156,7 +156,7 @@ Future<HealthRead?> syncHealthDaily({
   required HealthSource source,
   required HealthStoreFile file,
   required Set<HealthMetric> metrics,
-  required _Span range,
+  required ({DateTime start, DateTime end}) range,
   required DateTime today,
   bool Function()? alive,
 }) async {
@@ -181,6 +181,7 @@ Future<HealthRead?> syncHealthDaily({
 
   final Map<_Span, Set<String>> reads = <_Span, Set<String>>{};
   void add(Iterable<_Span> spans, Iterable<String> metricIds) {
+    if (metricIds.isEmpty) return;
     for (final _Span span in spans) {
       (reads[span] ??= <String>{}).addAll(metricIds);
     }
@@ -204,9 +205,7 @@ Future<HealthRead?> syncHealthDaily({
     for (final String id in ids.difference(whole)) {
       final List<DateTime> days =
           (changes.days[id] ?? const <DateTime>{})
-              .where(
-                (d) => !d.isBefore(range.start) && d.isBefore(through),
-              )
+              .where((d) => !d.isBefore(range.start) && d.isBefore(through))
               .toList()
             ..sort();
       if (days.isEmpty) continue;
@@ -252,7 +251,9 @@ Future<HealthRead?> syncHealthDaily({
           );
         }
         for (final DailyOutcome v in got) {
-          if (wanted.contains(v.metricId)) values[v.metricId]![v.date] = v.value;
+          if (wanted.contains(v.metricId)) {
+            values[v.metricId]![v.date] = v.value;
+          }
         }
     }
   }

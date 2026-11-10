@@ -52,18 +52,28 @@ void main() {
   };
 
   test('the first sync reads every year and keeps it', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     final List<DailyOutcome> got = await sync(source, file);
-    expect(source.dailyCalls, hasLength(insightsHealthChunks(insightsRange(today)).length));
-    expect(source.dailyCalls.every((c) => setEquals(c.metrics, metrics)), isTrue);
+    expect(
+      source.dailyCalls,
+      hasLength(insightsHealthChunks(insightsRange(today)).length),
+    );
+    expect(
+      source.dailyCalls.every((c) => setEquals(c.metrics, metrics)),
+      isTrue,
+    );
     expect(byKey(got), byKey(health));
     expect(file.writes, 1);
     expect(source.handled, [1]);
   });
 
   test('later syncs read only the changed days', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(source, file);
     source.dailyCalls.clear();
@@ -83,7 +93,9 @@ void main() {
   });
 
   test('nothing changed reads nothing', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(source, file);
     source.dailyCalls.clear();
@@ -93,7 +105,9 @@ void main() {
   });
 
   test('a changed night rereads its calendar year of sleep', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(source, file);
     source.dailyCalls.clear();
@@ -110,7 +124,9 @@ void main() {
   });
 
   test('a metric marked whole is read in full, alone', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(source, file);
     source.dailyCalls.clear();
@@ -134,24 +150,28 @@ void main() {
   test('a value gone from Health on a reread leaves the store', () async {
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(FakeHealthSource(read: HealthValues(health)), file);
-    final FakeHealthSource source = FakeHealthSource(
-      read: HealthValues(<DailyOutcome>[
-        for (final DailyOutcome v in health)
-          if (!(v.date == nov8 && v.metricId == 'stepCount')) v,
-      ]),
-    )..nextChanges = HealthChanges(
-        generation: 2,
-        days: <String, Set<DateTime>>{
-          'stepCount': <DateTime>{nov8},
-        },
-      );
+    final FakeHealthSource source =
+        FakeHealthSource(
+            read: HealthValues(<DailyOutcome>[
+              for (final DailyOutcome v in health)
+                if (!(v.date == nov8 && v.metricId == 'stepCount')) v,
+            ]),
+          )
+          ..nextChanges = HealthChanges(
+            generation: 2,
+            days: <String, Set<DateTime>>{
+              'stepCount': <DateTime>{nov8},
+            },
+          );
     final Map<String, double> got = byKey(await sync(source, file));
     expect(got.containsKey('2026-11-08 stepCount'), isFalse);
     expect(got['2026-11-08 sleepAsleep'], 420);
   });
 
   test('a new day is read for every metric', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(source, file);
     source.dailyCalls.clear();
@@ -165,7 +185,9 @@ void main() {
   });
 
   test('an old store is read again in full', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     final MemoryHealthStoreFile file = MemoryHealthStoreFile();
     await sync(source, file);
     source.dailyCalls.clear();
@@ -179,7 +201,9 @@ void main() {
   });
 
   test('a store that cannot be written is not acknowledged', () async {
-    final FakeHealthSource source = FakeHealthSource(read: HealthValues(health));
+    final FakeHealthSource source = FakeHealthSource(
+      read: HealthValues(health),
+    );
     expect(byKey(await sync(source, _FailingFile())), byKey(health));
     expect(source.handled, isEmpty);
   });
