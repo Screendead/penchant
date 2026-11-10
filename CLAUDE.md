@@ -130,9 +130,13 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
 
 - `e2e.yml`, never on a PR: on a non-prose push to `master` (or `gh workflow run e2e.yml`) it runs `tools/e2e.sh`
   over `integration_test/all_test.dart` on an iPhone simulator of a `macos-26` runner (one build for all files), with
-  `WRITE_TIMEOUT_MS=5000`, and uploads the log on failure. It boots the simulator before setup and caches Swift
-  packages, Xcode's DerivedData and `build/ios` together: Flutter clones the packages into `build/ios/SourcePackages`
-  and Xcode writes products there, so without it every run re-cloned firebase-ios-sdk and rebuilt it. With
+  `WRITE_TIMEOUT_MS=5000`, and uploads the log (with the simulator's, when the 25-minute step timeout stops a hung
+  run) on failure. It caches Swift packages, Xcode's DerivedData and `build/ios` together: Flutter clones the packages
+  into `build/ios/SourcePackages` and Xcode writes products there, so without it every run re-cloned firebase-ios-sdk
+  and rebuilt it. `tools/ci-content-mtimes.py` first sets each tracked file's mtime from its content, since Xcode's
+  restored build database compares mtimes and a checkout's are all new; the cache keys include it. The simulator boots
+  after the cache restores (booting during them slowed each restore several-fold), and installed firebase-tools are
+  cached on the rules lockfile. With
   `cancel-in-progress` in one concurrency group, a newer merge cancels the older run, so a burst of merges tests only
   its last commit. A second `macos` job runs `E2E_DEVICE=macos tools/e2e.sh integration_test/smoke_test.dart`
   unsigned on a cached `build/macos`; the other files cover nothing macOS-specific (the harness forces Flutter auth
