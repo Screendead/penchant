@@ -62,6 +62,16 @@ class _StoreHealth implements HealthSource {
     DateTime end, {
     int limit = maxHealthSamplesPerCall,
   }) async => const HealthSamples(<HealthSample>[]);
+
+  @override
+  Future<HealthChanges?> changes(Set<HealthMetric> metrics) async =>
+      HealthChanges(
+        generation: 0,
+        whole: <String>{for (final HealthMetric m in metrics) m.id},
+      );
+
+  @override
+  Future<void> changesHandled(int generation) async {}
 }
 
 Future<void> _pumpUntilLong(

@@ -5,6 +5,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
@@ -155,11 +156,16 @@ class InsightsReport {
     this.hoursAfterChecks = 0,
     this.floors = const <String, double>{},
     this.follows = const <HabitFollows>[],
+    this.beforeUse = const <BeforeUse>[],
   });
 
   /// Every pair of habits shown, one following the other within minutes,
   /// each with its verdict, judged in the same family as [findings].
   final List<HabitFollows> follows;
+
+  /// What came before each habit's use, findings and refusals, judged in the
+  /// same family as [findings].
+  final List<BeforeUse> beforeUse;
 
   /// Each outcome's floor for this person, from [resolveFloors]; an outcome
   /// missing here falls back to [metricFloors]' own.
@@ -206,19 +212,18 @@ const List<_Comparison> _comparisons = <_Comparison>[
 
 InsightsReport computeInsights(InsightsInput input) {
   final DailyHabitSeries habits = DailyHabitSeries.fromUses(input.uses);
-  final List<HabitInsight> hours = input.samples.isEmpty
-      ? const <HabitInsight>[]
-      : hoursAfter(
-          plan: insightsHoursAfterPlan(
-            input.uses,
-            input.through,
-            bed:
-                input.samples[hs.HealthSampleMetric.bed.id] ??
-                const <hs.HealthSample>[],
-          ),
-          uses: input.uses,
-          samples: input.samples,
+  final HoursAfterPlan? plan = input.samples.isEmpty
+      ? null
+      : insightsHoursAfterPlan(
+          input.uses,
+          input.through,
+          bed:
+              input.samples[hs.HealthSampleMetric.bed.id] ??
+              const <hs.HealthSample>[],
         );
+  final List<HabitInsight> hours = plan == null
+      ? const <HabitInsight>[]
+      : hoursAfter(plan: plan, uses: input.uses, samples: input.samples);
   final OutcomeSeries outcomes = OutcomeSeries.fromOutcomes(input.outcomes);
   final Map<String, double> floors = resolveFloors(outcomes);
   final List<HabitFinding> findings = <HabitFinding>[];
@@ -244,15 +249,40 @@ InsightsReport computeInsights(InsightsInput input) {
     for (final HabitInsight result in hours)
       if (!input.archived.contains(result.habitId)) result,
   ];
-  // Today's uses may yet be followed, so the last whole day is yesterday.
+  // Today's use is not over, and may yet be followed, so the last whole day
+  // is yesterday.
+  final List<BeforeUse> before = <BeforeUse>[
+    ...beforeUse(
+      uses: input.uses,
+      outcomes: outcomes,
+      through: addDays(input.through, -1),
+      skip: input.archived,
+    ),
+    if (plan != null)
+      ...hourBefore(
+        plan: plan,
+        uses: input.uses,
+        samples: input.samples,
+        skip: input.archived,
+      ),
+  ];
   final List<HabitFollows> follows = habitFollows(
     uses: input.uses,
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<double> afterPs = <double>[
+    for (final HabitInsight i in after) ?insightPValue(i),
+  ];
+  final List<double> beforePs = <double>[
+    for (final BeforeUse b in before) ?b.pValue,
+  ];
+  final List<double> followsPs = <double>[
+    for (final HabitFollows f in follows) ?f.pValue,
+  ];
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[for (final HabitFollows f in follows) ?f.pValue],
+    alongside: <double>[...beforePs, ...followsPs],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -276,9 +306,12 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     follows: judgeHabitFollows(
       follows,
-      alongside: <double>[
-        for (final HabitInsight i in after) ?insightPValue(i),
-      ],
+      alongside: <double>[...afterPs, ...beforePs],
+    ),
+    beforeUse: judgeBeforeUse(
+      before,
+      alongside: <double>[...afterPs, ...followsPs],
+      sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     findings: shown,
     refused: <HabitRefusal>[
@@ -766,7 +799,7 @@ String findingSentence(
       'On ${copy.night ? 'nights' : 'days'} after $habit, your ${copy.name} '
           'averages $amount $direction.',
     InsightKind.dose =>
-      'On days with ${_stepWords(finding.step, unit, locale, more: true)} logged for '
+      'On days with ${stepWords(finding.step, unit, locale, more: true)} logged for '
           '$habit, your ${copy.name} $then averages $amount $direction.',
     InsightKind.lastUse =>
       'On days your last use of $habit is an hour later, your ${copy.name} '
@@ -802,7 +835,7 @@ String findingLine(
   final String line = switch (finding.kind) {
     InsightKind.use => 'On ${copy.night ? 'nights' : 'days'} after it: $change',
     InsightKind.dose =>
-      'More per extra ${_stepWords(finding.step, unit, locale)}: $change',
+      'More per extra ${stepWords(finding.step, unit, locale)}: $change',
     InsightKind.lastUse => 'Later last use: $change per hour',
     InsightKind.hoursAfter => '${_windowWords(finding.window!)} it: $change',
     InsightKind.doseLine =>
@@ -834,7 +867,7 @@ String? bedtimeLine(
       'from ${_cutAmount(finding.cut!, unit, locale)} a day',
     InsightKind.lastUseLine =>
       'with the last use at ${_cutClock(finding.cut!)} or later',
-    _ => 'per extra ${_stepWords(finding.step, unit, locale)}',
+    _ => 'per extra ${stepWords(finding.step, unit, locale)}',
   };
   return '${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
       '${copy.direction(finding.effect)} $per, $part';
@@ -897,13 +930,20 @@ String _windowWords(HourWindow w) => switch ((w.start, w.end)) {
 
 // "drink", "10 minutes"; with [more], "one more drink", "10 more minutes". A
 // count of times reads as uses.
-String _stepWords(double step, Unit unit, String locale, {bool more = false}) {
+String stepWords(double step, Unit unit, String locale, {bool more = false}) {
   final String one = unit == Unit.time ? 'use' : unit.singular;
   final String other = unit == Unit.time ? 'uses' : unit.plural;
   final String word = more ? 'more ' : '';
   if (step == 1) return more ? 'one more $one' : one;
   final String number = NumberFormat.decimalPattern(locale).format(step);
   return '$number $word${pluralWord(step, one: one, other: other)}';
+}
+
+/// "18 min less": [finding]'s effect in its outcome's units and words.
+String findingChange(HabitFinding finding, String locale) {
+  final MetricCopy copy = metricCopy(finding.metricId)!;
+  return '${_amount(finding.effect, copy, _digits(finding, copy), locale)} '
+      '${copy.direction(finding.effect)}';
 }
 
 /// "Range: 7 to 29 min less"; both ends share a sign, so one word serves.
