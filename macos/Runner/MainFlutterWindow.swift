@@ -45,5 +45,41 @@ class MainFlutterWindow: NSWindow {
     RegisterGeneratedPlugins(registry: flutterViewController)
     AuthFieldsFactory.register(with: flutterViewController)
     QueueListener.start(WidgetBridge.register(with: flutterViewController.registrar(forPlugin: "WidgetBridge")))
+    SecretPasteboard.register(with: flutterViewController.registrar(forPlugin: "SecretPasteboard").messenger)
+  }
+}
+
+// The Dart side is lib/journal_key/secret_clipboard.dart. macOS has no
+// local-only pasteboard item; the nspasteboard.org markers ask clipboard
+// managers and Universal Clipboard to skip it, and it is cleared after the
+// delay unless something else has been copied since.
+enum SecretPasteboard {
+  static let concealed = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
+  static let transient = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
+
+  static func register(with messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "com.screendead.penchant/secret_clipboard", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "copy", let args = call.arguments as? [String: Any],
+        let text = args["text"] as? String, let seconds = args["seconds"] as? Int
+      else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      let pasteboard = NSPasteboard.general
+      pasteboard.clearContents()
+      pasteboard.declareTypes([.string, concealed, transient], owner: nil)
+      pasteboard.setString(text, forType: .string)
+      pasteboard.setData(Data(), forType: concealed)
+      pasteboard.setData(Data(), forType: transient)
+      let written = pasteboard.changeCount
+      DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds)) {
+        if pasteboard.changeCount == written {
+          pasteboard.clearContents()
+        }
+      }
+      result(nil)
+    }
   }
 }

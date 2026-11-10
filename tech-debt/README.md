@@ -48,11 +48,10 @@ Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, 
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 
-## Auth and Account Lifecycle (1)
+## Auth and Account Lifecycle (0)
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
-- **low** — [The recovery key is copied with a plain clipboard write](auth-and-account-lifecycle/recovery-key-copy-reaches-universal-clipboard.md)
 
 ## Dependency and Tooling Drift (0)
 
