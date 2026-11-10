@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
@@ -23,6 +24,7 @@ import 'package:tracker/trends/hour_ring.dart';
 import 'package:tracker/trends/pane_fill.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
+import 'package:tracker/trends/weekday_grid.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/circle_button.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -33,6 +35,8 @@ typedef TrendsSelection = ({
   int rangeDays,
   int stepDays,
   int pickedWindow,
+  bool comparing,
+  List<String> compared,
 });
 
 // What the chart shows for one habit and range, once its entries are in.
@@ -44,6 +48,7 @@ typedef TrendsSeries = ({
   int window,
   UsageStats stats,
   HourProfile hours,
+  WeekdayHours week,
 });
 
 // A sheet controller's moves, passed on outside a build. The sheet resets its
@@ -222,6 +227,19 @@ class TrendsSheet extends ConsumerStatefulWidget {
         'days. ${p.beforeNoonPercent}% of it before noon.';
   }
 
+  static const String compareLabel = 'Compare';
+  // Each compared habit is another range query.
+  static const int maxCompared = 3;
+
+  static String compareChipLabel(Vice vice) => 'Compare with ${chipLabel(vice)}';
+
+  static String weekTitle(WeekdayHours w) =>
+      'Most on ${DateFormat.EEEE(formatLocale).format(DateTime(2024, 1, 1 + w.busiestDay))}s';
+
+  static String weekBody(Vice vice, UsageRange range) =>
+      'An average week of ${vice.name}, by day and hour, over the last '
+      '${formatCount(min(range.days, hourProfileMaxDays))} days.';
+
   static const String whenEmptyTitle = 'Nothing in this range';
   static const String whenEmptyBody = 'Entries show here by hour of day.';
 
@@ -236,6 +254,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   int rangeDays = 30;
   int stepDays = 1;
   int pickedWindow = defaultWindow(1);
+  bool comparing = false;
+  // Habits drawn over the chosen one, in the order picked.
+  List<String> compared = const <String>[];
   // The bucket the readout describes; null is the newest.
   int? cursor;
   // A day opened from the chart.
@@ -247,7 +268,17 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   // The last series shown, kept on screen while another range of the same
   // habit loads: a new range is a new query, which starts with no value, and
   // a spinner in the chart's place would end the morph into it.
-  ({String viceID, TrendsSeries series})? _shown;
+  ({String viceID, TrendsSeries series, List<TrendsOverlay> overlays})?
+  _shown;
+  final Map<
+    String,
+    ({List<ViceActivity> activities, UsageRange range, List<double> totals})
+  >
+  _overlayTotals =
+      <
+        String,
+        ({List<ViceActivity> activities, UsageRange range, List<double> totals})
+      >{};
 
   @override
   void initState() {
@@ -258,6 +289,8 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       rangeDays = saved.rangeDays;
       stepDays = saved.stepDays;
       pickedWindow = saved.pickedWindow;
+      comparing = saved.comparing;
+      compared = saved.compared;
     }
   }
 
@@ -268,6 +301,8 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       rangeDays: rangeDays,
       stepDays: stepDays,
       pickedWindow: pickedWindow,
+      comparing: comparing,
+      compared: compared,
     );
     PageStorage.maybeOf(
       context,
@@ -353,7 +388,55 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       window: window,
       stats: usageStats(range, _totals),
       hours: hourProfile(range, activities),
+      week: weekdayHours(range, activities),
     );
+  }
+
+  // The compared habits whose entries for [series]' range are in.
+  List<TrendsOverlay> _overlays(Vice vice, TrendsSeries series) {
+    final UsageRange range = series.range;
+    final List<TrendsOverlay> out = <TrendsOverlay>[];
+    if (!comparing) {
+      return out;
+    }
+    for (final String id in compared) {
+      final Vice? other = widget.habits
+          .where((Vice v) => v.id == id && id != vice.id)
+          .firstOrNull;
+      if (other == null) {
+        continue;
+      }
+      final List<ViceActivity>? activities = ref
+          .watch(
+            viceActivityGraphProvider((
+              viceID: id,
+              start: range.start,
+              end: range.end,
+            )),
+          )
+          .value;
+      if (activities == null) {
+        continue;
+      }
+      var cached = _overlayTotals[id];
+      if (cached == null ||
+          !identical(cached.activities, activities) ||
+          cached.range != range) {
+        cached = (
+          activities: activities,
+          range: range,
+          totals: bucketTotals(range, activities),
+        );
+        _overlayTotals[id] = cached;
+      }
+      out.add((
+        vice: other,
+        mark: widget.marks[id] ?? const HabitMark(0),
+        totals: cached.totals,
+        line: movingAverage(cached.totals, series.window),
+      ));
+    }
+    return out;
   }
 
   @override
@@ -369,15 +452,30 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
         end: range.end,
       )),
     );
+    // The compared habits load alongside the chosen one.
+    if (comparing) {
+      for (final String id in compared) {
+        ref.watch(
+          viceActivityGraphProvider((
+            viceID: id,
+            start: range.start,
+            end: range.end,
+          )),
+        );
+      }
+    }
     final Object? error = value.error;
     final List<ViceActivity>? activities = error == null ? value.value : null;
     TrendsSeries? series = activities == null
         ? null
         : _series(range, activities);
+    List<TrendsOverlay> overlays = const <TrendsOverlay>[];
     if (series != null) {
-      _shown = (viceID: vice.id, series: series);
+      overlays = _overlays(vice, series);
+      _shown = (viceID: vice.id, series: series, overlays: overlays);
     } else if (error == null && _shown?.viceID == vice.id) {
       series = _shown!.series;
+      overlays = comparing ? _shown!.overlays : const <TrendsOverlay>[];
     }
     // The range the series on screen covers.
     final UsageRange shown = series?.range ?? range;
@@ -413,6 +511,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             stepDays: stepDays,
             range: shown,
             series: series,
+            overlays: overlays,
+            comparing: comparing,
+            compared: compared,
             error: error,
             cursor: cursor,
             onClose: controller == null ? null : _close,
@@ -420,8 +521,21 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             chartFocus: _chartFocus,
             onHabit: (Vice v) => _update(() {
               viceID = v.id;
+              compared = <String>[
+                for (final String id in compared)
+                  if (id != v.id) id,
+              ];
               cursor = null;
             }),
+            onCompare: () => _update(() => comparing = !comparing),
+            onCompared: (Vice v) => _update(
+              () => compared = compared.contains(v.id)
+                  ? <String>[
+                      for (final String id in compared)
+                        if (id != v.id) id,
+                    ]
+                  : <String>[...compared, v.id],
+            ),
             onRange: (int days) => _update(() {
               rangeDays = days;
               cursor = null;
@@ -858,12 +972,17 @@ class _TrendsPanel extends StatelessWidget {
     required this.stepDays,
     required this.range,
     required this.series,
+    required this.overlays,
+    required this.comparing,
+    required this.compared,
     required this.error,
     required this.cursor,
     required this.onClose,
     required this.closeFocus,
     required this.chartFocus,
     required this.onHabit,
+    required this.onCompare,
+    required this.onCompared,
     required this.onRange,
     required this.onStep,
     required this.onWindow,
@@ -885,6 +1004,9 @@ class _TrendsPanel extends StatelessWidget {
   // The range [series] covers, which trails the one picked while it loads.
   final UsageRange range;
   final TrendsSeries? series;
+  final List<TrendsOverlay> overlays;
+  final bool comparing;
+  final List<String> compared;
   final Object? error;
   final int? cursor;
   // Null in the pane, which has no Close.
@@ -892,6 +1014,8 @@ class _TrendsPanel extends StatelessWidget {
   final FocusNode closeFocus;
   final FocusNode chartFocus;
   final ValueChanged<Vice> onHabit;
+  final VoidCallback onCompare;
+  final ValueChanged<Vice> onCompared;
   final ValueChanged<int> onRange;
   final ValueChanged<int> onStep;
   final ValueChanged<int> onWindow;
@@ -905,6 +1029,25 @@ class _TrendsPanel extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final ThemeData theme = Theme.of(context);
     final TrendsSeries? s = series;
+    // The pane wraps its chips; the sheet scrolls them sideways.
+    Widget chips(List<Widget> children) => onClose == null
+        ? Wrap(
+            spacing: DialSpace.xs,
+            runSpacing: DialSpace.xs,
+            children: children,
+          )
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: <Widget>[
+                for (int i = 0; i < children.length; i++) ...<Widget>[
+                  if (i > 0) const SizedBox(width: DialSpace.xs),
+                  children[i],
+                ],
+              ],
+            ),
+          );
     Widget chartBox(Widget child) => fill
         ? Expanded(child: PaneFillSlot(child: child))
         : SizedBox(height: TrendsChart.plotHeight, child: child);
@@ -939,6 +1082,7 @@ class _TrendsPanel extends StatelessWidget {
         onOpenBucket: onOpenDay,
         focusNode: chartFocus,
         fill: fill,
+        overlays: overlays,
       );
       body = <Widget>[
         const SizedBox(height: DialSpace.s),
@@ -965,6 +1109,10 @@ class _TrendsPanel extends StatelessWidget {
         ),
         const SizedBox(height: DialSpace.s),
         _WhenCard(vice: vice, mark: mark, range: range, profile: s.hours),
+        if (s.week.total > 0) ...<Widget>[
+          const SizedBox(height: DialSpace.s),
+          _WeekCard(vice: vice, mark: mark, range: range, week: s.week),
+        ],
         const SizedBox(height: DialSpace.s),
         Text(
           TrendsSheet.hint(range.stepDays, pane: onClose == null),
@@ -997,38 +1145,35 @@ class _TrendsPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DialSpace.s),
-        if (onClose == null)
-          Wrap(
-            spacing: DialSpace.xs,
-            runSpacing: DialSpace.xs,
-            children: <Widget>[
-              for (final Vice v in habits)
+        chips(<Widget>[
+          for (final Vice v in habits)
+            _HabitChip(
+              vice: v,
+              mark: marks[v.id] ?? const HabitMark(0),
+              selected: v.id == vice.id,
+              onPressed: () => onHabit(v),
+            ),
+          if (habits.length > 1)
+            _CompareToggle(selected: comparing, onPressed: onCompare),
+        ]),
+        if (comparing && habits.length > 1) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          chips(<Widget>[
+            for (final Vice v in habits)
+              if (v.id != vice.id)
                 _HabitChip(
                   vice: v,
                   mark: marks[v.id] ?? const HabitMark(0),
-                  selected: v.id == vice.id,
-                  onPressed: () => onHabit(v),
+                  selected: compared.contains(v.id),
+                  compare: true,
+                  onPressed:
+                      compared.contains(v.id) ||
+                          compared.length < TrendsSheet.maxCompared
+                      ? () => onCompared(v)
+                      : null,
                 ),
-            ],
-          )
-        else
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            child: Row(
-              children: <Widget>[
-                for (final Vice v in habits) ...<Widget>[
-                  if (v != habits.first) const SizedBox(width: DialSpace.xs),
-                  _HabitChip(
-                    vice: v,
-                    mark: marks[v.id] ?? const HabitMark(0),
-                    selected: v.id == vice.id,
-                    onPressed: () => onHabit(v),
-                  ),
-                ],
-              ],
-            ),
-          ),
+          ]),
+        ],
         const SizedBox(height: DialSpace.s),
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -1069,12 +1214,16 @@ class _HabitChip extends StatelessWidget {
     required this.mark,
     required this.selected,
     required this.onPressed,
+    this.compare = false,
   });
 
   final Vice vice;
   final HabitMark mark;
   final bool selected;
-  final VoidCallback onPressed;
+  // Null when no more habits can be compared.
+  final VoidCallback? onPressed;
+  // One of several drawn over the chosen habit, rather than the one chosen.
+  final bool compare;
 
   @override
   Widget build(BuildContext context) {
@@ -1092,7 +1241,10 @@ class _HabitChip extends StatelessWidget {
       ),
       selectedSide: BorderSide(color: colors.habitInk(mark), width: 1.5),
       restForeground: scheme.onSurface,
-      semanticsLabel: TrendsSheet.chipLabel(vice),
+      exclusive: !compare,
+      semanticsLabel: compare
+          ? TrendsSheet.compareChipLabel(vice)
+          : TrendsSheet.chipLabel(vice),
       padding: const EdgeInsetsDirectional.only(start: 11, end: 14),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1383,6 +1535,91 @@ class _WhenCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompareToggle extends StatelessWidget {
+  const _CompareToggle({required this.selected, required this.onPressed});
+
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
+    return PillToggle(
+      selected: selected,
+      onPressed: onPressed,
+      exclusive: false,
+      color: colors.surface2,
+      selectedColor: colors.surface2,
+      selectedSide: BorderSide(color: scheme.onSurface, width: 1.5),
+      restForeground: scheme.onSurface,
+      padding: const EdgeInsetsDirectional.only(start: 11, end: 14),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(selected ? Icons.remove : Icons.add, size: 16),
+          const SizedBox(width: 5),
+          const Text(TrendsSheet.compareLabel),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekCard extends StatelessWidget {
+  const _WeekCard({
+    required this.vice,
+    required this.mark,
+    required this.range,
+    required this.week,
+  });
+
+  final Vice vice;
+  final HabitMark mark;
+  final UsageRange range;
+  final WeekdayHours week;
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ThemeData theme = Theme.of(context);
+
+    return MergeSemantics(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface2,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                TrendsSheet.weekTitle(week),
+                style: DialTypeScale.label.copyWith(
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                TrendsSheet.weekBody(vice, range),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.muted,
+                ),
+              ),
+              const SizedBox(height: DialSpace.s),
+              WeekdayGrid(cells: week.cells, mark: mark),
             ],
           ),
         ),

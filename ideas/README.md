@@ -48,7 +48,7 @@ Each list is in the recommended build order.
 ## Insights (7)
 
 - [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount`, `category` and `triggers` shipped
-- [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
+- [Show the journal's trends: Health under the habit lines, triggers and spend over time](insights/trend-views.md). M, 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
 - [Read Apple Health, including years of history, to see what follows each vice](insights/apple-health-correlation.md). L, 1.1 Pro
 - [Read the calendar on the device to see which events come before use](insights/calendar-integration.md). M, 1.1 Pro
