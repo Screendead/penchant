@@ -289,6 +289,38 @@ void main() {
     });
   });
 
+  group('weekdayHours', () {
+    test('averages each weekday over how often it falls in the window', () {
+      // 4 November 2026 is a Wednesday; its 30 days hold five Tuesdays and
+      // five Wednesdays, and four of every other weekday.
+      final WeekdayHours week = weekdayHours(usageRange(_today, 30, 1), [
+        _at(0, 5, hour: 9),
+        _at(1, 4, hour: 20),
+        _at(2, 4, hour: 9),
+      ]);
+      expect(week.cells[2][9], 1);
+      expect(week.cells[1][20], 0.8);
+      expect(week.cells[0][9], 1);
+      expect(week.days, [1, 0.8, 1, 0, 0, 0, 0]);
+      expect(week.total, 13);
+      expect(week.busiestDay, 0);
+    });
+
+    test('covers the days the hour profile does', () {
+      final UsageRange year = usageRange(_today, 365, 1);
+      final WeekdayHours week = weekdayHours(year, [
+        _at(89, 1, hour: 6),
+        _at(90, 5, hour: 6),
+        _at(-1, 5, hour: 6),
+      ]);
+      expect(week.total, 1);
+      expect(
+        weekdayHours(usageRange(_today, 7, 1), []).days,
+        List<double>.filled(7, 0),
+      );
+    });
+  });
+
   group('movingAverage', () {
     test('a window of one is the totals', () {
       expect(movingAverage([1, 2, 3], 1), [1, 2, 3]);
