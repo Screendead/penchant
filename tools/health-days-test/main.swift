@@ -671,5 +671,34 @@ do {
   }
 }
 
+// A sample touches its days and the day after each.
+check(
+  "touched keys", HealthDays.touchedKeys(start: at(2026, 11, 7, 23), end: at(2026, 11, 8, 7), calendar)
+    == ["2026-11-07", "2026-11-08", "2026-11-09"])
+check(
+  "touched keys, instant", HealthDays.touchedKeys(start: at(2026, 11, 8, 9), end: at(2026, 11, 8, 9), calendar)
+    == ["2026-11-08", "2026-11-09"])
+
+do {
+  var state = HealthDays.SyncState()
+  state.markWhole(["stepCount"])
+  state.mark(["stepCount", "sleepAsleep"], keys: ["2026-11-08"])
+  var pending = state.pending(["stepCount", "sleepAsleep", "restingHeartRate"])
+  check("whole stays whole", pending.whole == ["stepCount"] && pending.days["stepCount"] == nil, "\(pending)")
+  check("day marked", pending.days["sleepAsleep"] == ["2026-11-08"], "\(pending)")
+  let read = state.generation
+  state.mark(["sleepAsleep"], keys: ["2026-11-09"])
+  state.mark(["stepCount"], keys: ["2026-11-09"])
+  state.handled(through: read)
+  pending = state.pending(["stepCount", "sleepAsleep"])
+  check("a mark after the read survives it", pending.days["sleepAsleep"] == ["2026-11-09"], "\(pending)")
+  check("a mark under whole after the read keeps it whole", pending.whole == ["stepCount"], "\(pending)")
+  state.handled(through: state.generation)
+  pending = state.pending(["stepCount", "sleepAsleep"])
+  check("all handled", pending.days.isEmpty && pending.whole.isEmpty, "\(pending)")
+  let encoded = try! JSONEncoder().encode(state)
+  check("state round-trips", (try? JSONDecoder().decode(HealthDays.SyncState.self, from: encoded)) == state)
+}
+
 if failures > 0 { exit(1) }
 print("ok")

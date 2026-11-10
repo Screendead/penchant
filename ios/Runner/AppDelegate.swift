@@ -12,6 +12,7 @@ import UserNotifications
     // the app delegate, which FlutterAppDelegate forwards to plugins.
     UNUserNotificationCenter.current().delegate = self
     BackgroundFlush.register()
+    HealthChannel.Sync.start()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
