@@ -859,7 +859,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '3',
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
       expect(writes.writes, [
@@ -874,7 +874,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(find.textContaining('Deleted 1.5'), findsOneWidget);
@@ -922,7 +922,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
       expect(writes.writes, [
@@ -939,7 +939,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '0.25',
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
       expect(writes.writes, [
@@ -958,7 +958,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump(writeTimeout - const Duration(seconds: 1));
       expect(editor, findsOneWidget);
 
@@ -973,7 +973,7 @@ void main() {
     testWidgets('deletes the activity, closes, and Undo writes it back, '
         'triggers included', (WidgetTester tester) async {
       await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
@@ -997,7 +997,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       writes.canCreate = false;
@@ -1014,7 +1014,7 @@ void main() {
     ) async {
       writes.respond = _never;
       await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pumpAndSettle();
       expect(editor, findsNothing);
 
@@ -1030,7 +1030,7 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
       await open(tester);
-      await tester.tap(find.byTooltip('Delete'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pumpAndSettle();
 
       expect(
@@ -1072,7 +1072,7 @@ void main() {
         ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
 
     Future<void> save(WidgetTester tester) async {
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(find.byType(ViceActivityEditorPage), findsNothing);
     }
@@ -1480,7 +1480,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump();
 
       ProviderScope.containerOf(
@@ -1517,7 +1517,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump();
       await waitOutTimeout(tester);
       await refusal.refuse(tester, 'unavailable');

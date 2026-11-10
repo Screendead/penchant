@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,12 +7,9 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
-import 'package:tracker/design/dial_icons.dart';
-import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/widgets/amount_fields.dart';
-import 'package:tracker/widgets/bead_painter.dart';
-import 'package:tracker/widgets/circle_button.dart';
+import 'package:tracker/widgets/amount_sheet_frame.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
@@ -214,31 +209,11 @@ class _RecordNewActivityDialogState
   }
 
   Widget _header(BuildContext context, List<Vice> vices, Vice? chosen) {
-    final List<Vice> all = ref.watch(viceListProvider).value ?? vices;
-    final Widget close = CircleButton(
-      flat: true,
-      icon: DialGlyph.close,
-      tooltip: 'Close',
-      onPressed: loading ? null : () => Navigator.of(context).pop(),
-    );
+    final VoidCallback? close = loading
+        ? null
+        : () => Navigator.of(context).pop();
     if (widget.initialViceID != null && chosen != null) {
-      final HabitMark? mark = habitMarks(all)[chosen.id];
-      return Row(
-        children: [
-          if (mark != null) ...[
-            HabitPip(mark: mark, size: 12),
-            const SizedBox(width: 10),
-          ],
-          Expanded(
-            child: Text(
-              chosen.name,
-              style: DialTypeScale.displayM.copyWith(fontSize: 20),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          close,
-        ],
-      );
+      return SheetHabitHeader(vice: chosen, onClose: close);
     }
     return Row(
       children: [
@@ -267,7 +242,7 @@ class _RecordNewActivityDialogState
           ),
         ),
         const SizedBox(width: 10),
-        close,
+        SheetCloseButton(onPressed: close),
       ],
     );
   }
@@ -280,7 +255,7 @@ class _RecordNewActivityDialogState
     final List<Vice>? vices = vicesValue.value;
 
     if (vicesValue.error case final Object loadError when vices == null) {
-      return _SheetFrame(
+      return AmountSheetFrame(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -302,7 +277,7 @@ class _RecordNewActivityDialogState
     }
 
     if (vices == null) {
-      return const _SheetFrame(
+      return const AmountSheetFrame(
         child: SizedBox(
           height: 200,
           child: Center(child: CircularProgressIndicator()),
@@ -332,7 +307,7 @@ class _RecordNewActivityDialogState
             // The scrim below stops pointers but not a screen reader.
             ExcludeSemantics(
               excluding: loading,
-              child: _SheetFrame(
+              child: AmountSheetFrame(
                 child: Form(
                   key: formKey,
                   child: Column(
@@ -420,52 +395,5 @@ class _RecordNewActivityDialogState
     timeController.dispose();
     quantityController.dispose();
     super.dispose();
-  }
-}
-
-// The sheet's padding, its grab bar, and room for the keyboard.
-class _SheetFrame extends StatelessWidget {
-  const _SheetFrame({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color ink = Theme.of(context).colorScheme.onSurface;
-    // Its own Material, so it also renders outside a sheet's.
-    return Material(
-      type: MaterialType.transparency,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          22,
-          12,
-          22,
-          // Clear of the home indicator, as the mock-up's sheet is, or of
-          // the keyboard while it is up (the padding drops to 0 then).
-          math.max(
-            MediaQuery.viewInsetsOf(context).bottom + 22,
-            math.max(MediaQuery.paddingOf(context).bottom, 22),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: ink.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            child,
-          ],
-        ),
-      ),
-    );
   }
 }

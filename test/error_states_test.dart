@@ -389,7 +389,7 @@ void main() {
 
       await _tapRetry(tester);
 
-      expect(find.text('Edit coffee activity'), findsOneWidget);
+      expect(find.byKey(ViceActivityEditorPage.saveKey), findsOneWidget);
     });
 
     testWidgets('an activity read that fails for another reason than a '
