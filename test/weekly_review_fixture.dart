@@ -23,6 +23,7 @@ Vice _vice(String id, String name, Unit unit, int order) => Vice(
   unit: unit,
   ownerID: ownerID,
   createdAt: Timestamp.fromDate(DateTime(2026, 1, order)),
+  archived: false,
 );
 
 final List<Vice> reviewVices = <Vice>[

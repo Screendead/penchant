@@ -56,9 +56,9 @@ void main() {
     WidgetTester tester,
   ) async {
     await _pump(tester);
-    expect(find.text('8:00 AM to 9:00 AM'), findsOneWidget);
-    expect(find.text('10:00 PM to 11:00 PM'), findsOneWidget);
-    expect(find.text('8:00 PM to 9:00 PM'), findsOneWidget);
+    expect(find.text('8:00\u202fAM to 9:00\u202fAM'), findsOneWidget);
+    expect(find.text('10:00\u202fPM to 11:00\u202fPM'), findsOneWidget);
+    expect(find.text('8:00\u202fPM to 9:00\u202fPM'), findsOneWidget);
     expect(find.text('7 entries'), findsNWidgets(2));
     expect(find.text('with friends'), findsOneWidget);
     expect(find.text('Work › Meeting'), findsOneWidget);

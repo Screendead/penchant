@@ -468,8 +468,9 @@ class WeeklyReviewReminder extends Notifier<bool> {
 }
 
 /// A tap on the weekly review notification waiting for Today to open it.
-final pendingWeeklyReviewProvider =
-    NotifierProvider<PendingWeeklyReview, bool>(PendingWeeklyReview.new);
+final pendingWeeklyReviewProvider = NotifierProvider<PendingWeeklyReview, bool>(
+  PendingWeeklyReview.new,
+);
 
 class PendingWeeklyReview extends Notifier<bool> {
   @override

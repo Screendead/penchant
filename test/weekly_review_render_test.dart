@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -69,6 +70,7 @@ void main() {
             '$_dir/weekly-review-$scene-${brightness.name}.png',
           ).writeAsBytes(png!.buffer.asUint8List());
         });
+        debugDisableShadows = true;
       }, skip: _dir.isEmpty);
     }
   }

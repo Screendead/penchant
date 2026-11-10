@@ -61,13 +61,14 @@ class WeeklyReview {
 
   /// The [n] hours with most entries, most first, earlier first on a tie.
   List<HourCount> busiest(int n) {
-    final List<HourCount> all = <HourCount>[
-      for (int h = 0; h < 24; h++)
-        if (hours[h] > 0) (hour: h, entries: hours[h]),
-    ]..sort((a, b) {
-        final int byCount = b.entries.compareTo(a.entries);
-        return byCount != 0 ? byCount : a.hour.compareTo(b.hour);
-      });
+    final List<HourCount> all =
+        <HourCount>[
+          for (int h = 0; h < 24; h++)
+            if (hours[h] > 0) (hour: h, entries: hours[h]),
+        ]..sort((a, b) {
+          final int byCount = b.entries.compareTo(a.entries);
+          return byCount != 0 ? byCount : a.hour.compareTo(b.hour);
+        });
     return all.take(n).toList();
   }
 }
@@ -113,13 +114,14 @@ WeeklyReview buildWeeklyReview({
     week: week,
     habits: habits,
     hours: hours,
-    triggers: <TriggerCount>[
-      for (final MapEntry<String, int> e in triggers.entries)
-        (label: e.key, entries: e.value),
-    ]..sort((a, b) {
-        final int byCount = b.entries.compareTo(a.entries);
-        return byCount != 0 ? byCount : a.label.compareTo(b.label);
-      }),
+    triggers:
+        <TriggerCount>[
+          for (final MapEntry<String, int> e in triggers.entries)
+            (label: e.key, entries: e.value),
+        ]..sort((a, b) {
+          final int byCount = b.entries.compareTo(a.entries);
+          return byCount != 0 ? byCount : a.label.compareTo(b.label);
+        }),
   );
 }
 

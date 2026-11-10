@@ -5,6 +5,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/weekly_review.dart';
+import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -98,10 +99,7 @@ final _weeklyEngineProvider = FutureProvider.autoDispose
       );
       try {
         final List<InsightsReport> reports = await Future.wait(
-          <Future<InsightsReport>>[
-            asOf(addDays(key.end, -7)),
-            asOf(key.end),
-          ],
+          <Future<InsightsReport>>[asOf(addDays(key.end, -7)), asOf(key.end)],
         );
         return WeeklyInsightsComputed(
           changes: insightChanges(reports[0], reports[1]),

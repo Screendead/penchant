@@ -50,10 +50,11 @@ void main() {
     expect(coffee.total, 11);
     expect(coffee.entries, 11);
     expect(coffee.usual, 10.5);
-    expect(
-      review.habits.map((HabitWeek h) => h.vice.id),
-      <String>['coffee', 'alcohol', 'scroll'],
-    );
+    expect(review.habits.map((HabitWeek h) => h.vice.id), <String>[
+      'coffee',
+      'alcohol',
+      'scroll',
+    ]);
   });
 
   test('busiest hours break a tie by the earlier hour', () {
@@ -90,6 +91,7 @@ void main() {
       unit: Unit.item,
       ownerID: ownerID,
       createdAt: Timestamp.fromDate(week.start),
+      archived: false,
     );
     final Vice archived = fakeVice('gone', archived: true);
     final WeeklyReview review = buildWeeklyReview(
@@ -141,9 +143,7 @@ void main() {
     final ProviderContainer container = ProviderContainer(
       overrides: [
         todayProvider.overrideWith(() => FixedToday(reviewToday)),
-        viceListProvider.overrideWithValue(
-          AsyncData<List<Vice>>(reviewVices),
-        ),
+        viceListProvider.overrideWithValue(AsyncData<List<Vice>>(reviewVices)),
         viceActivityRangeProvider.overrideWith((ref, ActivityRange range) {
           asked.add(range);
           return AsyncData<List<ViceActivity>>(reviewJournal());

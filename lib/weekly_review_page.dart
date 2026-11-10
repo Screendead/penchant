@@ -91,13 +91,12 @@ class WeeklyReviewPage extends ConsumerWidget {
       title: title,
       children: <Widget>[
         ...switch (review) {
-          AsyncData(:final WeeklyReview value) when vices != null =>
-            <Widget>[
-              CardFoot(span(value.week)),
-              ..._journal(context, value, habitMarks(vices)),
-              const CardSectionLabel(foundHeading),
-              _Findings(vices: vices),
-            ],
+          AsyncData(:final WeeklyReview value) when vices != null => <Widget>[
+            CardFoot(span(value.week)),
+            ..._journal(context, value, habitMarks(vices)),
+            const CardSectionLabel(foundHeading),
+            _Findings(vices: vices),
+          ],
           AsyncError() => <Widget>[
             const SizedBox(height: DialSpace.l),
             InfoBox(
