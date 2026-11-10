@@ -16,7 +16,7 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**7 issues: 0 critical, 0 high, 0 medium, 7 low.**
+**8 issues: 0 critical, 0 high, 0 medium, 8 low.**
 
 ## Firebase Data Layer (2)
 
@@ -48,10 +48,11 @@ Screen-reader semantics, text-scale and overflow behaviour, theme colour roles, 
 
 - **low** — [English only: every UI string is a literal, with no translation pipeline](accessibility-and-localization/no-localizations-delegates-or-supported-locales.md)
 
-## Auth and Account Lifecycle (0)
+## Auth and Account Lifecycle (1)
 
 Password reset, email verification, re-authentication, account deletion and export, and sign-out semantics.
 
+- **low** — [On the Mac, a copied recovery key still reaches Universal Clipboard](auth-and-account-lifecycle/mac-recovery-key-copy-reaches-universal-clipboard.md)
 
 ## Dependency and Tooling Drift (0)
 
