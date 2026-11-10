@@ -19,6 +19,8 @@ import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/payoff_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
@@ -29,6 +31,7 @@ import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
+import 'package:tracker/widgets/payoff_card.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -329,10 +332,36 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         ],
       ),
       const CardSectionLabel(InsightsPage.cuttingDownHeading),
-      const NotYetBox(
-        InsightsPage.cuttingDownTitle,
-        body: InsightsPage.cuttingDownBody,
-      ),
+      if (costs.payoffs.isEmpty)
+        const NotYetBox(
+          InsightsPage.cuttingDownTitle,
+          body: InsightsPage.cuttingDownBody,
+        ),
+      for (final (int i, PayoffCard card) in costs.payoffs.indexed)
+        if (card.findings.isNotEmpty)
+          PayoffCardView(
+            card: card,
+            habit: costs.nameOf(card.habitId),
+            unit: costs.unitOf(card.habitId),
+            mark: costs.marks[card.habitId] ?? const HabitMark(0),
+            locale: formatLocale,
+            top: i == 0 ? 0 : DialSpace.xs,
+          ),
+      // A fall with nothing clear since stays a row, not a card.
+      if (costs.payoffs.any((PayoffCard c) => c.findings.isEmpty))
+        DialCard(
+          top: costs.payoffs.first.findings.isEmpty ? 0 : DialSpace.xs,
+          children: <Widget>[
+            for (final PayoffCard card in costs.payoffs)
+              if (card.refusal case final Payoff refused)
+                CardRow(
+                  label: costs.nameOf(card.habitId),
+                  subtitle:
+                      '${fallSentence(card.fall, costs.nameOf(card.habitId), formatLocale, unit: costs.unitOf(card.habitId))} '
+                      '${payoffRefusal(refused, costs.nameOf)}',
+                ),
+          ],
+        ),
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty)
         const NotYetBox(
@@ -481,6 +510,10 @@ class _Costs {
       for (final BeforeUse b in report.beforeUse)
         if (_names.containsKey(b.habitId)) b,
     ], floors: report.floors);
+    payoffs = payoffCards(<Payoff>[
+      for (final Payoff p in report.payoffs)
+        if (_names.containsKey(p.habitId)) p,
+    ], floors: report.floors);
     // A legacy entry of a vice that is gone would date the span from a habit
     // the page doesn't show.
     firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
@@ -493,6 +526,7 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
+  late final List<PayoffCard> payoffs;
   late final DateTime? firstDay;
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';
@@ -551,6 +585,16 @@ class _Costs {
       lastNight: lastNight,
       emptyTitle: empty.title,
       emptyBody: empty.body,
+      cuttingDown: <List<String>>[
+        for (final PayoffCard card in payoffs)
+          payoffText(
+            card,
+            nameOf(card.habitId),
+            formatLocale,
+            unit: unitOf(card.habitId),
+            nameOf: nameOf,
+          ),
+      ],
       setsOff: <List<String>>[
         for (final BeforeUseCard card in before)
           beforeUseText(
@@ -577,6 +621,7 @@ String insightsText({
   List<String> lastNight = const <String>[],
   String emptyTitle = InsightsPage.nothingClear,
   String emptyBody = InsightsPage.nothingClearBody,
+  List<List<String>> cuttingDown = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
@@ -613,6 +658,12 @@ String insightsText({
       out.write(
         '${nameOf(r.habitId)}: ${refusalReason(r, nameOf, floors: floors)}\n',
       );
+    }
+  }
+  if (cuttingDown.isNotEmpty) {
+    out.write('\n${InsightsPage.cuttingDownHeading}\n');
+    for (final List<String> card in cuttingDown) {
+      out.write('\n${card.join('\n')}\n');
     }
   }
   if (setsOff.isNotEmpty) {

@@ -10,6 +10,7 @@ import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
+import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -155,7 +156,12 @@ class InsightsReport {
     this.hoursAfterChecks = 0,
     this.floors = const <String, double>{},
     this.beforeUse = const <BeforeUse>[],
+    this.payoffs = const <Payoff>[],
   });
+
+  /// Each measure since a habit fell and stayed lower, findings and
+  /// refusals, judged in the same family as [findings].
+  final List<Payoff> payoffs;
 
   /// What came before each habit's use, findings and refusals, judged in the
   /// same family as [findings].
@@ -259,9 +265,29 @@ InsightsReport computeInsights(InsightsInput input) {
         skip: input.archived,
       ),
   ];
+  final List<Payoff> payoffs = payoff(
+    uses: input.uses,
+    outcomes: outcomes,
+    metricIds: <String>[
+      for (final String metricId in outcomes.metricIds)
+        if (metricCopy(metricId) != null && metricFloors.containsKey(metricId))
+          metricId,
+    ]..sort(),
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<double> beforeP = <double>[
+    for (final BeforeUse b in before) ?b.pValue,
+  ];
+  final List<double> payoffP = <double>[
+    for (final Payoff p in payoffs) ?p.pValue,
+  ];
+  final List<double> afterP = <double>[
+    for (final HabitInsight i in after) ?insightPValue(i),
+  ];
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[for (final BeforeUse b in before) ?b.pValue],
+    alongside: <double>[...beforeP, ...payoffP],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -285,10 +311,13 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[
-        for (final HabitInsight i in after) ?insightPValue(i),
-      ],
+      alongside: <double>[...afterP, ...payoffP],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
+    ),
+    payoffs: judgePayoffs(
+      payoffs,
+      alongside: <double>[...afterP, ...beforeP],
+      sizeOf: (Payoff p) => practicalSize(p.asFinding, floors: floors),
     ),
     findings: shown,
     refused: <HabitRefusal>[
