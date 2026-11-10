@@ -138,25 +138,24 @@ String payoffBasis(Payoff finding) {
       '${finding.sinceValues} since';
 }
 
-/// Why a fall has no finding, in plain words.
-String payoffRefusal(Payoff refused, String Function(String habitId) nameOf) =>
-    switch (refused.refusal!) {
-      PayoffRefusal.tooFewDays =>
-        'Too few days of Apple Health on each side of it to compare yet.',
-      PayoffRefusal.otherFall =>
-        'Your logged amount of ${nameOf(refused.otherHabitId!)} fell within '
-            'two weeks of it, so what moved since can’t be put down to '
-            'either.',
-      PayoffRefusal.withinNoise =>
-        'No clear difference in your sleep, heart or activity since: within '
-            'the noise.',
-      PayoffRefusal.alreadyMoving =>
-        'Your ${metricCopy(refused.metricId)!.name} was already shifting '
-            'before it, so the change since can’t be told apart from that.',
-      PayoffRefusal.chance =>
-        'What moved since could be chance: one of many comparisons.',
-      PayoffRefusal.tooSmall => 'What moved since is too small to matter.',
-    };
+/// Why a fall has no finding, in plain words. The other habit of
+/// [PayoffRefusal.otherFall] goes unnamed: it may be archived.
+String payoffRefusal(Payoff refused) => switch (refused.refusal!) {
+  PayoffRefusal.tooFewDays =>
+    'Too few days of Apple Health on each side of it to compare yet.',
+  PayoffRefusal.otherFall =>
+    'Another habit’s logged amount fell within two weeks of it, so what '
+        'moved since can’t be put down to either.',
+  PayoffRefusal.withinNoise =>
+    'No clear difference in your sleep, heart or activity since: within '
+        'the noise.',
+  PayoffRefusal.alreadyMoving =>
+    'Your ${metricCopy(refused.metricId)!.name} was already shifting '
+        'before it, so the change since can’t be told apart from that.',
+  PayoffRefusal.chance =>
+    'What moved since could be chance: one of many comparisons.',
+  PayoffRefusal.tooSmall => 'What moved since is too small to matter.',
+};
 
 /// [card] as the lines "Copy as text" writes.
 List<String> payoffText(
@@ -164,11 +163,10 @@ List<String> payoffText(
   String habit,
   String locale, {
   Unit unit = Unit.fallback,
-  required String Function(String habitId) nameOf,
 }) => <String>[
   habit,
   fallSentence(card.fall, habit, locale, unit: unit),
-  if (card.refusal case final Payoff refused) payoffRefusal(refused, nameOf),
+  if (card.refusal case final Payoff refused) payoffRefusal(refused),
   if (card.findings.isNotEmpty) ...<String>[
     payoffSentence(card.findings.first, locale),
     findingRange(card.findings.first.asFinding, locale),

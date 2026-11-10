@@ -98,18 +98,16 @@ void main() {
   });
 
   test('each refusal says why in plain words', () {
-    String why(PayoffRefusal reason) => payoffRefusal(
-      result('sleepAsleep', 24, refusal: reason, other: 'tea'),
-      (String id) => id == 'tea' ? 'Tea' : id,
-    );
+    String why(PayoffRefusal reason) =>
+        payoffRefusal(result('sleepAsleep', 24, refusal: reason, other: 'tea'));
     expect(
       why(PayoffRefusal.tooFewDays),
       'Too few days of Apple Health on each side of it to compare yet.',
     );
     expect(
       why(PayoffRefusal.otherFall),
-      'Your logged amount of Tea fell within two weeks of it, so what moved '
-      'since can’t be put down to either.',
+      'Another habit’s logged amount fell within two weeks of it, so what '
+      'moved since can’t be put down to either.',
     );
     expect(
       why(PayoffRefusal.withinNoise),
@@ -172,7 +170,7 @@ void main() {
       locale: 'en',
       cuttingDown: <List<String>>[
         for (final PayoffCard card in cards)
-          payoffText(card, name(card.habitId), 'en', nameOf: name),
+          payoffText(card, name(card.habitId), 'en'),
       ],
     );
     expect(

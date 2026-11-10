@@ -360,7 +360,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   label: costs.nameOf(card.habitId),
                   subtitle:
                       '${fallSentence(card.fall, costs.nameOf(card.habitId), formatLocale, unit: costs.unitOf(card.habitId))} '
-                      '${payoffRefusal(refused, costs.nameOf)}',
+                      '${payoffRefusal(refused)}',
                 ),
           ],
         ),
@@ -606,7 +606,6 @@ class _Costs {
             nameOf(card.habitId),
             formatLocale,
             unit: unitOf(card.habitId),
-            nameOf: nameOf,
           ),
       ],
       setsOff: <List<String>>[
