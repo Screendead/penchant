@@ -1,5 +1,5 @@
 import 'package:tracker/data/day.dart';
-import 'package:tracker/data/trigger_tree.dart';
+import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -64,7 +64,10 @@ class WeeklyReview {
     final List<HourCount> all = <HourCount>[
       for (int h = 0; h < 24; h++)
         if (hours[h] > 0) (hour: h, entries: hours[h]),
-    ]..sort((a, b) => b.entries.compareTo(a.entries));
+    ]..sort((a, b) {
+        final int byCount = b.entries.compareTo(a.entries);
+        return byCount != 0 ? byCount : a.hour.compareTo(b.hour);
+      });
     return all.take(n).toList();
   }
 }
@@ -96,8 +99,7 @@ WeeklyReview buildWeeklyReview({
     entries[a.viceID] = (entries[a.viceID] ?? 0) + 1;
     hours[at.hour]++;
     for (final String path in a.triggers) {
-      final String label =
-          triggerLabels(path)?.join(' › ') ?? path.trim();
+      final String label = triggerDisplay(path).trim();
       if (label.isEmpty) continue;
       triggers[label] = (triggers[label] ?? 0) + 1;
     }

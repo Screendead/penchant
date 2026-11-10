@@ -28,7 +28,7 @@ subscriptions, and a tip jar.
 
 - **A. Pro is the analysis layer:** the [insights engine](../insights/insights-engine.md),
   [Apple Health](../insights/apple-health-correlation.md), [calendar](../insights/calendar-integration.md), the
-  [weekly review](../insights/weekly-review.md), trend overlays, and later widgets and import. Free forever: unlimited
+  weekly review, trend overlays, and later widgets and import. Free forever: unlimited
   vices, every logging field and trigger, all history, the basic trends, export, deletion, the Mac app.
 - **B.** A, but also history beyond 90 days in Pro.
 - **C.** A, but Health correlation free as a hook, with calendar, multi-vice separation and the weekly review Pro.
