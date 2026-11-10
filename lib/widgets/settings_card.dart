@@ -39,6 +39,7 @@ class CardPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: DialSpace.xxs),
             child: Semantics(
               header: true,
+              headingLevel: 1,
               child: Text(title, style: CardStyles.heading(context)),
             ),
           ),
@@ -112,6 +113,7 @@ class CardSectionLabel extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(6, DialSpace.xl, 6, 10),
     child: Semantics(
       header: true,
+      headingLevel: 1,
       child: Text(
         text,
         style: TextStyle(

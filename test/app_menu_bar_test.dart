@@ -119,20 +119,18 @@ void main() {
     variant: TargetPlatformVariant.only(TargetPlatform.macOS),
   );
 
-  testWidgets(
-    'with Today gone, a Log item does nothing',
-    (WidgetTester tester) async {
-      final FakeTrackerWrites writes = await _pump(
-        tester,
-        _habits.take(1).toList(),
-        withToday: false,
-      );
-      _logMenu(tester)!.menus.single.onSelected!();
-      await tester.pump();
-      expect(writes.writes, isEmpty);
-    },
-    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
-  );
+  testWidgets('with Today gone, a Log item does nothing', (
+    WidgetTester tester,
+  ) async {
+    final FakeTrackerWrites writes = await _pump(
+      tester,
+      _habits.take(1).toList(),
+      withToday: false,
+    );
+    _logMenu(tester)!.menus.single.onSelected!();
+    await tester.pump();
+    expect(writes.writes, isEmpty);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets(
     'a held Cmd-1 logs once, and its repeats stop short of the native menu',

@@ -982,6 +982,7 @@ class _TrendsPanel extends StatelessWidget {
             Expanded(
               child: Semantics(
                 header: true,
+                headingLevel: 1,
                 child: Text(TrendsSheet.title, style: type.displayL),
               ),
             ),

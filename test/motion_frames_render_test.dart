@@ -291,39 +291,37 @@ void main() {
   }, skip: _dir.isEmpty);
 
   for (final Brightness brightness in Brightness.values) {
-    testWidgets(
-      'refused-write pill under a status bar, ${brightness.name}',
-      (WidgetTester tester) async {
-        final GlobalKey frame = await _pumpToday(
-          tester,
-          reduced: false,
-          brightness: brightness,
-          statusBar: true,
-          overrides: <Override>[
-            rejectedWritesProvider.overrideWith(_Rejected.new),
-          ],
-        );
-        final Future<void> Function() capture = _recorder(
-          tester,
-          frame,
-          'rejected-${brightness.name}',
-        );
-        await capture();
-        (ProviderScope.containerOf(
-                  tester.element(find.byType(ViceTracker)),
-                ).read(rejectedWritesProvider.notifier)
-                as _Rejected)
-            .show(const <RejectedWrite>[
-              RejectedWrite('Not saved: Coffee, 1 cup, today 09:10', null),
-            ]);
-        await tester.pump();
-        await _run(tester, capture, 30);
-        debugDisableShadows = false;
-        await tester.tap(find.text(RejectedWritesBanner.dismissLabel));
-        await tester.pump();
-        await _run(tester, capture, 20);
-      },
-      skip: _dir.isEmpty,
-    );
+    testWidgets('refused-write pill under a status bar, ${brightness.name}', (
+      WidgetTester tester,
+    ) async {
+      final GlobalKey frame = await _pumpToday(
+        tester,
+        reduced: false,
+        brightness: brightness,
+        statusBar: true,
+        overrides: <Override>[
+          rejectedWritesProvider.overrideWith(_Rejected.new),
+        ],
+      );
+      final Future<void> Function() capture = _recorder(
+        tester,
+        frame,
+        'rejected-${brightness.name}',
+      );
+      await capture();
+      (ProviderScope.containerOf(
+                tester.element(find.byType(ViceTracker)),
+              ).read(rejectedWritesProvider.notifier)
+              as _Rejected)
+          .show(const <RejectedWrite>[
+            RejectedWrite('Not saved: Coffee, 1 cup, today 09:10', null),
+          ]);
+      await tester.pump();
+      await _run(tester, capture, 30);
+      debugDisableShadows = false;
+      await tester.tap(find.text(RejectedWritesBanner.dismissLabel));
+      await tester.pump();
+      await _run(tester, capture, 20);
+    }, skip: _dir.isEmpty);
   }
 }

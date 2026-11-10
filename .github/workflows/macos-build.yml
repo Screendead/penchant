@@ -64,8 +64,7 @@ jobs:
         env:
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
         run: flutter build macos --debug
-      # Universal (arm64 and x86_64), unlike a debug build; Flutter before
-      # 3.44.8 fails it under Xcode 27 (flutter/flutter#188346). By hand only.
+      # Universal (arm64 and x86_64), unlike a debug build. By hand only.
       - name: Build (release, unsigned)
         if: github.event_name == 'workflow_dispatch'
         env:
