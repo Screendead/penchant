@@ -23,5 +23,8 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthChannel") {
       HealthChannel.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CalendarChannel") {
+      CalendarChannel.register(with: registrar)
+    }
   }
 }
