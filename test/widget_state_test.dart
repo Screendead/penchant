@@ -548,6 +548,7 @@ void main() {
         expect(_fieldText(tester, 'Quantity'), '7');
 
         writes.respond = null;
+        await tester.ensureVisible(find.text('Save'));
         await tester.tap(find.text('Save'));
         await tester.pump();
         expect(writes.writes, <Write>[

@@ -59,9 +59,7 @@ void main() {
 
     expect(
       tester
-          .widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.delete_outline),
-          )
+          .widget<TextButton>(find.byKey(ViceActivityEditorPage.deleteKey))
           .onPressed,
       isNull,
     );
