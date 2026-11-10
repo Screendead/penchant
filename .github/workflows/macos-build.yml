@@ -41,7 +41,7 @@ jobs:
           path: |
             ~/Library/Developer/Xcode/DerivedData
             build/ios
-          key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'tools/ci-content-mtimes.py', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             deriveddata-${{ env.IMAGE }}-
       # The Simulator debug build the e2e run makes.

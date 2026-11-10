@@ -80,7 +80,7 @@ jobs:
           path: |
             ~/Library/Developer/Xcode/DerivedData
             build/ios
-          key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'tools/ci-content-mtimes.py', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             deriveddata-${{ env.IMAGE }}-
       # A first boot takes about three minutes; it carries on under the steps below, and tools/e2e.sh waits for it.
@@ -153,7 +153,7 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
             ~/Library/Developer/Xcode/DerivedData
             build/macos
-          key: deriveddata-macos-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'pubspec.lock', 'macos/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          key: deriveddata-macos-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'tools/ci-content-mtimes.py', 'pubspec.lock', 'macos/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             deriveddata-macos-${{ env.IMAGE }}-
       - name: Install firebase-tools
