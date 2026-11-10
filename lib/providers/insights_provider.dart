@@ -377,9 +377,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     final List<CalendarEvent> events = firstDay == null
         ? noCalendarEvents
         : ref
-                  .watch(
-                    calendarEventsProvider((from: firstDay, today: today)),
-                  )
+                  .watch(calendarEventsProvider((from: firstDay, today: today)))
                   .value ??
               noCalendarEvents;
     InsightsResult? report(Map<String, List<HealthSample>> read) => ref

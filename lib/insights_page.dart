@@ -100,8 +100,8 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String calendarOffLabel = 'Calendar';
   static const String calendarOffValue = 'Off';
   static const String calendarOffBody =
-      'To see which habits follow your events, allow full access in Settings '
-      '> Apps > Penchant > Calendars.';
+      'To see which habits follow your events, give Penchant full access to '
+      'Calendars in Settings.';
   static const String calendarFailed = 'The calendar couldn’t be opened.';
 
   static const String copied = 'Insights copied';

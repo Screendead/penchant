@@ -47,6 +47,7 @@ class AfterEvent {
   const AfterEvent({
     required this.habitId,
     required this.eventDays,
+    required this.controlDays,
     required this.eventRate,
     required this.controlRate,
     this.effect,
@@ -60,14 +61,17 @@ class AfterEvent {
   /// Days with at least one event matched to a control moment.
   final int eventDays;
 
+  /// Days holding at least one of those control moments.
+  final int controlDays;
+
   /// Of the matched windows after an event, the share holding a use.
   final double eventRate;
 
   /// Of their control windows, the share holding a use.
   final double controlRate;
 
-  /// The mean over [eventDays] of the day's difference in that share, as a
-  /// fraction.
+  /// The mean share of a day's windows after an event holding a use, less
+  /// the mean share of a control day's windows, as a fraction.
   final double? effect;
   final Interval? interval;
 
@@ -80,6 +84,7 @@ class AfterEvent {
   AfterEvent refused(RefusalReason reason) => AfterEvent(
     habitId: habitId,
     eventDays: eventDays,
+    controlDays: controlDays,
     eventRate: eventRate,
     controlRate: controlRate,
     effect: effect,
@@ -140,10 +145,12 @@ bool _anyBlockIn(List<CalendarEvent> blocks, DateTime from, DateTime to) {
 /// within [afterEventControlReachDays] that is also a weekend day or also a
 /// weekday, lies in the span, and holds no block in the
 /// [afterEventQuietMinutes] before that time or the window after it. The
-/// unit is the day: each day's mean difference between its windows after an
-/// event and their controls, tested against zero. The same clock time and
-/// kind of day hold fixed the habit's own rhythm, which work hours share
-/// with meetings.
+/// unit is the day, on each side: the share of a day's windows after an
+/// event holding a use against the share of a control day's windows, on an
+/// intercept and a side indicator. A control day nearby events share counts
+/// once, since counting it per event would make those events' days move
+/// together. The same clock time and kind of day hold fixed the habit's own
+/// rhythm, which work hours share with meetings.
 List<AfterEvent> afterEvent({
   required List<HabitUse> uses,
   required List<CalendarEvent> events,
@@ -162,13 +169,7 @@ List<AfterEvent> afterEvent({
       usesOf.keys.where((id) => !skip.contains(id)).toList()..sort();
   return <AfterEvent>[
     for (final String id in ids)
-      _judge(
-        id,
-        usesOf[id]!..sort(),
-        blocks,
-        last,
-        gates,
-      ),
+      _judge(id, usesOf[id]!..sort(), blocks, last, gates),
   ];
 }
 
@@ -188,7 +189,18 @@ AfterEvent _judge(
   bool weekend(DateTime day) => day.weekday >= 6;
   bool usedIn(DateTime from) => anyTimeIn(times, from, from.add(window));
 
-  final Map<DateTime, List<double>> byDay = <DateTime, List<double>>{};
+  // Per day and side: uses in the windows, and the windows.
+  final Map<(DateTime, bool), List<double>> byDay =
+      <(DateTime, bool), List<double>>{};
+  void add(DateTime day, bool control, bool used) {
+    final List<double> sums = byDay.putIfAbsent((
+      day,
+      control,
+    ), () => <double>[0, 0]);
+    sums[0] += used ? 1 : 0;
+    sums[1] += 1;
+  }
+
   int pairs = 0, onEvent = 0, onControl = 0;
   for (final CalendarEvent b in blocks) {
     final DateTime day = startOfDay(b.end);
@@ -215,13 +227,16 @@ AfterEvent _judge(
     pairs++;
     if (e) onEvent++;
     if (c) onControl++;
-    final List<double> sums = byDay.putIfAbsent(day, () => <double>[0, 0]);
-    sums[0] += (e ? 1 : 0) - (c ? 1 : 0);
-    sums[1] += 1;
+    add(day, false, e);
+    add(startOfDay(control), true, c);
   }
-  final List<double> d = <double>[
-    for (final List<double> s in byDay.values) s[0] / s[1],
-  ];
+  final List<double> y = <double>[];
+  final List<double> side = <double>[];
+  for (final MapEntry<(DateTime, bool), List<double>> e in byDay.entries) {
+    y.add(e.value[0] / e.value[1]);
+    side.add(e.key.$2 ? 0 : 1);
+  }
+  final int exposed = side.where((v) => v == 1).length;
   AfterEvent result({
     RefusalReason? refusal,
     double? effect,
@@ -229,7 +244,8 @@ AfterEvent _judge(
     double? pValue,
   }) => AfterEvent(
     habitId: id,
-    eventDays: d.length,
+    eventDays: exposed,
+    controlDays: y.length - exposed,
     eventRate: pairs == 0 ? 0 : onEvent / pairs,
     controlRate: pairs == 0 ? 0 : onControl / pairs,
     effect: effect,
@@ -237,23 +253,24 @@ AfterEvent _judge(
     pValue: pValue,
     refusal: refusal,
   );
-  if (d.length < max(afterEventMinDays, gates.minExposedDays)) {
+  final int least = max(afterEventMinDays, gates.minExposedDays);
+  if (exposed < least || y.length - exposed < least) {
     return result(refusal: RefusalReason.tooFewDays);
   }
-  // Every day the same difference: no spread to judge it against.
-  if (sampleVariance(d) < 1e-12) {
+  // Every day the same share: no spread to judge a difference against.
+  if (sampleVariance(y) < 1e-12) {
     return result(refusal: RefusalReason.withinNoise);
   }
   final LinearFit? fit = fitLeastSquares(<List<double>>[
-    for (int r = 0; r < d.length; r++) const <double>[1],
-  ], d);
+    for (int r = 0; r < y.length; r++) <double>[1, side[r]],
+  ], y);
   if (fit == null) return result(refusal: RefusalReason.tooFewDays);
-  final Interval interval = fit.interval(0, level: gates.level);
+  final Interval interval = fit.interval(1, level: gates.level);
   return result(
     refusal: interval.crossesZero ? RefusalReason.withinNoise : null,
-    effect: fit.coefficients[0],
+    effect: fit.coefficients[1],
     interval: interval,
-    pValue: fit.pValue(0),
+    pValue: fit.pValue(1),
   );
 }
 

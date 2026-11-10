@@ -31,11 +31,11 @@ String afterEventRange(AfterEvent finding, String locale) {
       '${more ? 'more' : 'less'} often';
 }
 
-/// "From 42 days with events, against the same times on nearby days with
-/// none".
+/// "From 42 days with calendar events, against the same times on 38 nearby
+/// days with none".
 String afterEventBasis(AfterEvent finding) =>
     'From ${finding.eventDays} days with calendar events, against the same '
-    'times on nearby days with none';
+    'times on ${finding.controlDays} nearby days clear of events';
 
 /// [finding] as the lines "Copy as text" writes.
 List<String> afterEventText(AfterEvent finding, String habit, String locale) =>
