@@ -1410,8 +1410,19 @@ class _BeadsPainter extends CustomPainter {
         radius: HourArc.track * a.contract,
         width: HourArc.half * a.scale * a.contract,
       );
+      final Set<String> pending = <String>{
+        for (final DialEntry e in a.entries)
+          if (e.pending) e.vice.id,
+      };
       for (int i = 0; i < shares.length; i++) {
-        paintHabitBand(canvas, pieces[i], shares[i].mark, colors);
+        paintHabitBand(
+          canvas,
+          pieces[i],
+          shares[i].mark,
+          colors,
+          pending: pending.contains(shares[i].vice.id),
+          rotation: spin.value,
+        );
       }
       if (a.opacity < 1) {
         canvas.restore();

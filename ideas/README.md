@@ -24,7 +24,7 @@ the counts. The evidence behind the market and platform claims is in [market-sca
 
 Effort runs S, M, L, XL.
 
-**23 ideas: 7 release blockers, 3 v1 must-haves, 7 insights, 3 monetisation, 3 growth/later. None needs a call from
+**22 ideas: 7 release blockers, 3 v1 must-haves, 6 insights, 3 monetisation, 3 growth/later. None needs a call from
 Jack.** What this rework removed is under "Set aside, with reasons" in `HANDOVER.md`.
 
 Each list is in the recommended build order.
@@ -36,7 +36,7 @@ Each list is in the recommended build order.
 - [Harden the backend before strangers can install the app](release-blockers/backend-hardening.md). M, waits on the paid team; bounded activity queries and App Check wiring built in #55
 - [Publish a privacy policy, App Privacy labels and the Health and Calendar disclosures](release-blockers/privacy-policy-and-labels.md). M. No policy for now (`r2-privacy`)
 - [Build the Support, About and legal pages the listing and Settings point to](release-blockers/support-about-and-legal-pages.md). S. Waits on a release
-- [Generate store screenshots from the e2e harness](release-blockers/store-icon-and-screenshots.md). M
+- [Frame the store screenshots and add the Mac set](release-blockers/store-icon-and-screenshots.md). S
 - [Ship a signed iOS build through TestFlight, then the store](release-blockers/ios-release-pipeline-and-testflight.md). L. Decided (C6, `r2-testflight`); blocked on the paid team
 
 ## v1 must-haves (3)
@@ -45,14 +45,13 @@ Each list is in the recommended build order.
 - [Add Sign in with Apple to the guest start](v1-must-haves/guest-mode-and-sign-in.md). S. Guest start shipped; waits on the paid team
 - [Ship macOS as a full target on the same App Store record](v1-must-haves/macos-target.md). L. Decided (C6, `r2-mac`)
 
-## Insights (7)
+## Insights (6)
 
 - [Log each entry at maximum granularity, and grow the data model without breaking old clients](insights/granular-logging-and-data-model.md). M, 1.0. Decided (B, 2026-11-06); `amount`, `category` and `triggers` shipped
-- [Show the journal's trends: time of day, weekday, and vices side by side](insights/trend-views.md). M, 1.0 free, overlays 1.1 Pro
+- [Show the journal's trends: Health under the habit lines, triggers and spend over time](insights/trend-views.md). M, 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
 - [Read Apple Health, including years of history, to see what follows each vice](insights/apple-health-correlation.md). L, 1.1 Pro
 - [Read the calendar on the device to see which events come before use](insights/calendar-integration.md). M, 1.1 Pro
-- [Close each week with a review of what the journal found](insights/weekly-review.md). M, 1.1 Pro
 - [Feed the insights engine from more sources on the device](insights/more-data-sources.md). M each. Jack: add them all (2026-11-08)
 
 ## Monetisation (3)

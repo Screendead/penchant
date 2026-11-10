@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:tracker/design/tokens.dart';
 
@@ -9,12 +11,10 @@ const TextStyle undoBarBold = TextStyle(fontWeight: FontWeight.w600);
 // The bar that confirms a change, with Undo for eight seconds when it can be
 // undone. A new bar replaces the last rather than queueing behind it: an
 // earlier bar's Undo left on screen would undo the wrong change.
-// [bottomClearance] lifts it over a floating button below it.
 void showUndoBar(
   ScaffoldMessengerState messenger,
   InlineSpan message, {
   VoidCallback? onUndo,
-  double bottomClearance = 0,
 }) {
   messenger.clearSnackBars();
   messenger.showSnackBar(
@@ -22,14 +22,6 @@ void showUndoBar(
       persist: false,
       behavior: SnackBarBehavior.floating,
       duration: onUndo == null ? noticeDuration : undoDuration,
-      margin: bottomClearance == 0
-          ? null
-          : EdgeInsets.fromLTRB(
-              DialSpace.m,
-              0,
-              DialSpace.m,
-              DialSpace.m + bottomClearance,
-            ),
       padding: EdgeInsets.fromLTRB(18, 6, onUndo == null ? 18 : 6, 6),
       content: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
@@ -137,5 +129,42 @@ class _UndoCountdownButtonState extends State<UndoCountdownButton>
         ),
       ),
     );
+  }
+}
+
+// Sits in a Scaffold's floating-action-button slot, so that Scaffold alone
+// lays its floating bars [height] higher, re-measured on every layout. It
+// takes no taps, so the button it clears stays usable.
+class SnackBarLift extends StatelessWidget {
+  const SnackBarLift({super.key, required this.height});
+
+  final double Function(BuildContext context, double width) height;
+
+  static const FloatingActionButtonLocation location = _LiftLocation();
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints constraints) =>
+        IgnorePointer(
+          child: SizedBox(
+            width: 1,
+            height: height(context, constraints.maxWidth),
+          ),
+        ),
+  );
+}
+
+class _LiftLocation extends FloatingActionButtonLocation {
+  const _LiftLocation();
+
+  // Measured from where an unlifted floating bar would sit, and never above
+  // half of it, so a tall keyboard leaves the bar on screen.
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry g) {
+    final double base = min(
+      g.contentBottom,
+      g.scaffoldSize.height - g.minViewPadding.bottom,
+    );
+    return Offset(0, max(base - g.floatingActionButtonSize.height, base / 2));
   }
 }

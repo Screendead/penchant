@@ -412,4 +412,73 @@ enum HealthDays {
   static func flatten(_ samples: [QuantitySample]) -> [Double] {
     samples.flatMap { [Double(micros($0.start)), Double(micros($0.end)), $0.value] }
   }
+
+  // The day keys a sample from start to end can change: every day it touches,
+  // and the day after each, since a noon-to-noon night or a sleep that crosses
+  // noon counts towards the next day. Marking too many costs a reread of a day;
+  // too few would leave a stale value.
+  static func touchedKeys(start: Date, end: Date, _ calendar: Calendar) -> [String] {
+    var keys: [String] = []
+    var day = calendar.startOfDay(for: start)
+    let last = adding(days: 1, to: calendar.startOfDay(for: max(start, end)), calendar)
+    while day <= last {
+      keys.append(key(day, calendar))
+      day = adding(days: 1, to: day, calendar)
+    }
+    return keys
+  }
+
+  // What HealthSync keeps between launches: each sample type's anchor, and
+  // the days of each metric changed since Dart last took them. A change
+  // carries the generation it was marked in, so Dart's acknowledgement of
+  // what it read clears nothing marked after the read began.
+  struct SyncState: Codable, Equatable {
+    var anchors: [String: Data] = [:]
+    // The metrics Dart last asked about, which the observers watch.
+    var metrics: [String] = []
+    var generation = 0
+    // Metric to day key to generation.
+    var days: [String: [String: Int]] = [:]
+    // Metrics to read whole (no anchor yet, or a deletion, whose day HealthKit
+    // does not say), to generation.
+    var whole: [String: Int] = [:]
+
+    mutating func mark(_ metrics: [String], keys: [String]) {
+      generation += 1
+      for metric in metrics {
+        if whole[metric] != nil {
+          whole[metric] = generation
+        } else {
+          for key in keys { days[metric, default: [:]][key] = generation }
+        }
+      }
+    }
+
+    mutating func markWhole(_ metrics: [String]) {
+      generation += 1
+      for metric in metrics {
+        whole[metric] = generation
+        days[metric] = nil
+      }
+    }
+
+    // A metric marked whole stays whole until handled; a day mark under it
+    // moves its generation on instead, so a read begun before that mark does
+    // not clear it.
+    func pending(_ wanted: [String]) -> (days: [String: [String]], whole: [String]) {
+      var out: [String: [String]] = [:]
+      for metric in wanted where whole[metric] == nil {
+        if let marked = days[metric], !marked.isEmpty { out[metric] = marked.keys.sorted() }
+      }
+      return (out, wanted.filter { whole[$0] != nil }.sorted())
+    }
+
+    mutating func handled(through handledGeneration: Int) {
+      whole = whole.filter { $0.value > handledGeneration }
+      days = days.compactMapValues { marked in
+        let left = marked.filter { $0.value > handledGeneration }
+        return left.isEmpty ? nil : left
+      }
+    }
+  }
 }

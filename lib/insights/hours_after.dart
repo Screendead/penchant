@@ -182,7 +182,7 @@ HoursAfterPlan planHoursAfter(
   for (final String id in ids) {
     final List<DateTime> times = byHabit[id]!..sort();
     bool clearAround(DateTime at, Duration before, Duration after) =>
-        !_anyIn(times, at.subtract(before), at.add(after));
+        !anyTimeIn(times, at.subtract(before), at.add(after));
     final Map<(HoursAfterShortfall, bool), int> drops = dropped[id] =
         <(HoursAfterShortfall, bool), int>{};
     void drop(HoursAfterShortfall why, {required bool control}) =>
@@ -289,7 +289,7 @@ List<({DateTime start, DateTime end})> _reads(List<HoursAfterPoint> points) {
 }
 
 // Whether sorted [times] holds one from [from] up to [to].
-bool _anyIn(List<DateTime> times, DateTime from, DateTime to) {
+bool anyTimeIn(List<DateTime> times, DateTime from, DateTime to) {
   int low = 0, high = times.length;
   while (low < high) {
     final int mid = (low + high) >> 1;
@@ -317,7 +317,11 @@ int _firstFrom(List<HealthSample> samples, DateTime t) {
 }
 
 // Instant readings, so a sample counts where it starts.
-List<double> _values(List<HealthSample> samples, DateTime from, DateTime to) {
+List<double> readingsIn(
+  List<HealthSample> samples,
+  DateTime from,
+  DateTime to,
+) {
   final List<double> out = <double>[];
   for (int i = _firstFrom(samples, from); i < samples.length; i++) {
     if (!samples[i].start.isBefore(to)) break;
@@ -332,7 +336,7 @@ const Duration _bin = Duration(minutes: 10);
 // Watch both record steps and raw samples are not merged, so a span both
 // carried counts twice: too high, never too low, which errs towards leaving a
 // window out.
-double _stepsPerMinute(
+double stepsPerMinute(
   List<HealthSample> steps,
   DateTime from,
   DateTime to, {
@@ -416,7 +420,7 @@ List<HabitInsight> hoursAfter({
     for (final String id in ids) {
       bool otherUseIn(DateTime from, DateTime to) {
         for (final MapEntry<String, List<DateTime>> e in usesOf.entries) {
-          if (e.key != id && _anyIn(e.value, from, to)) return true;
+          if (e.key != id && anyTimeIn(e.value, from, to)) return true;
         }
         return false;
       }
@@ -441,24 +445,24 @@ List<HabitInsight> hoursAfter({
             drop(HoursAfterShortfall.otherHabit, p);
             continue;
           }
-          if (_anyIn(own, p.at.add(const Duration(microseconds: 1)), to)) {
+          if (anyTimeIn(own, p.at.add(const Duration(microseconds: 1)), to)) {
             drop(HoursAfterShortfall.sameHabit, p);
             continue;
           }
-          final List<double> before = _values(readings, baseFrom, p.at);
-          final List<double> after = _values(readings, from, to);
+          final List<double> before = readingsIn(readings, baseFrom, p.at);
+          final List<double> after = readingsIn(readings, from, to);
           if (before.length < gates.minSamples ||
               after.length < gates.minSamples) {
             drop(HoursAfterShortfall.readings, p);
             continue;
           }
-          final double stepsBefore = _stepsPerMinute(
+          final double stepsBefore = stepsPerMinute(
             steps,
             baseFrom,
             p.at,
             longestMinutes: longestStep,
           );
-          final double stepsAfter = _stepsPerMinute(
+          final double stepsAfter = stepsPerMinute(
             steps,
             from,
             to,
@@ -470,7 +474,7 @@ List<HabitInsight> hoursAfter({
           bool walked(DateTime a, DateTime b) {
             for (DateTime t = a; t.isBefore(b); t = t.add(_bin)) {
               final DateTime end = t.add(_bin).isBefore(b) ? t.add(_bin) : b;
-              if (_stepsPerMinute(steps, t, end, longestMinutes: longestStep) >
+              if (stepsPerMinute(steps, t, end, longestMinutes: longestStep) >
                   gates.maxStepsPerMinute) {
                 return true;
               }

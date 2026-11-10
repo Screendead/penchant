@@ -74,6 +74,7 @@ E2E_DEVICE=<udid> tools/e2e.sh    # another simulator, or where no "iPhone 18 Pr
 E2E_DEVICE=macos tools/e2e.sh     # all_test.dart as a macOS app; never on this Mac (Hard rules)
 tools/run-emulated.sh             # flutter run against fresh emulators; Emulator UI on http://localhost:4000
 tools/e2e-screenshots.sh <dir> [file]  # e2e.sh plus a PNG in <dir> for each screenshot(tester, name) call; needs a simulator
+E2E_DEVICE=<iPhone 18 Pro Max udid> tools/e2e-screenshots.sh docs/pitch/round-14/store-screenshots integration_test/store_screenshots_test.dart  # App Store shots, 1320x2868; not in all_test.dart (seeding takes minutes)
 ```
 
 Both boot the simulator by UDID (found by name unless `E2E_DEVICE` is set; `macos` runs on the Mac), refuse to
@@ -409,11 +410,14 @@ The Trends sheet (`TrendsSheet`, `lib/trends/`), a `DraggableScrollableSheet` ov
 peek below the tallies is the chosen habit's sparkline; opened over the dial, it shows that habit over 7, 30 or 90
 days or a year, by day or by week (counted back from today, range rounded down to whole weeks: `r4-weekly` B, so 30
 days shows 28 and no week is short), a moving average (stepper up to 30 buckets, starting at 7 days or 4 weeks), the
-range's total, average and peak, and when in the day it happens. That arithmetic and the chart's axis scale and label
-spacing are pure functions in `lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Chips list habits in use
-oldest first, then archived ones marked "· archived", so the default is never archived. It reads the range through the
-graph query alone (hour profile and stats come from the same entries), builds its panel only once out of the peek, and
-a tap on a day point opens that day's dial and read-only tallies in the sheet (`TrendsDay`). The chart is one
+range's total, average and peak, when in the day it happens, and an average week as a weekday-by-hour grid
+(`weekdayHours`: each weekday averaged over how often it falls in the window). That arithmetic and the chart's axis
+scale and label spacing are pure functions in `lib/data/usage_series.dart` and `lib/data/chart_scale.dart`. Chips list
+habits in use oldest first, then archived ones marked "· archived", so the default is never archived. Compare, after
+them, adds a row of chips to draw up to `TrendsSheet.maxCompared` (3) other habits over the chosen one: thin lines of
+their totals under the same average, on one count axis whatever their units, named in the chart's summary, readout and
+legend, kept in page storage with the habit. It reads the range through the graph query alone, one per habit drawn
+(hour profile, week and stats come from the same entries), builds its panel only once out of the peek, and a tap on a day point opens that day's dial and read-only tallies in the sheet (`TrendsDay`). The chart is one
 `Semantics` node labelled `TrendsChart.summary`, valued with the cursor's readout; arrow keys and a screen reader's
 adjust move the cursor, Enter or activate opens its day. fl_chart paints titles outside the widget tree, so tests read
 them from the chart's data. Today's list ends at the peek; the Log button rides the sheet's edge and shrinks away as
@@ -459,6 +463,16 @@ through `Account`, so fakes cover every write path: `test/fake_writes.dart` reco
 `exportShareProvider`. Code calling `FirebaseFirestore.instance` or `FirebaseAuth.instance` directly is untestable
 that way; `integration_test/` drives the real app on an iOS Simulator against the emulators instead (Commands covers
 it and the rules suite).
+
+**Health** (iOS only; `ios/Runner/HealthChannel.swift`, `lib/insights/health_source.dart`). Nothing read from
+Health leaves the device: not Firestore, analytics or crash reports. Insights' daily values live in
+`health-daily.json` in Caches (not backed up; `lib/insights/health_sync.dart`); each open asks the channel's
+`changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
+`HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
+by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
+acknowledges the generation once the store is written. `HKObserverQuery`s with hourly background delivery
+(`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
+closed. The Health sheet resets the anchors; a store over 30 days old is read again in full.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and

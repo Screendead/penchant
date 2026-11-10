@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/usage_series.dart';
@@ -22,6 +23,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
 import 'package:tracker/trends/trends_sheet.dart';
+import 'package:tracker/trends/weekday_grid.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/log_fan.dart';
@@ -714,6 +716,113 @@ void main() {
       await _pump(tester, const <ViceActivity>[]);
       expect(find.text(TrendsSheet.whenEmptyTitle), findsOneWidget);
       expect(find.text('No entries for Coffee in this range'), findsOneWidget);
+    });
+  });
+
+  group('comparing', () {
+    Finder chip(String label) => find.byWidgetPredicate(
+      (Widget w) => w is PillToggle && w.semanticsLabel == label,
+    );
+
+    Future<void> press(WidgetTester tester, Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('draws other habits over the chosen one on one axis, and a '
+        'screen reader hears them', (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[
+        _daysAgo(0, 2),
+        _daysAgo(0, 6, vice: _sweets),
+        _daysAgo(1, 3, vice: _sweets),
+      ]);
+      expect(chip(TrendsSheet.compareChipLabel(_sweets)), findsNothing);
+      expect(_chart(tester).lineBarsData, hasLength(2));
+
+      await press(tester, inTrends(find.text(TrendsSheet.compareLabel)));
+      expect(chip(TrendsSheet.compareChipLabel(_coffee)), findsNothing);
+      await press(tester, chip(TrendsSheet.compareChipLabel(_sweets)));
+
+      final LineChartData data = _chart(tester);
+      expect(data.lineBarsData, hasLength(3));
+      expect(_totals(tester).last, 2);
+      expect(data.lineBarsData.last.spots.last.y, closeTo(9 / 7, 1e-9));
+      expect(data.maxY, greaterThanOrEqualTo(6));
+
+      final SemanticsData chart = find.semantics
+          .byLabel(RegExp('^Daily totals of Coffee'))
+          .evaluate()
+          .single
+          .getSemanticsData();
+      expect(chart.label, endsWith(' Compared with Sweets, 9 drinks in all.'));
+      expect(chart.value, startsWith('Today, 2 drinks'));
+      expect(chart.value, contains('; Sweets 6 drinks, average 1.3'));
+
+      // Choosing a compared habit takes it out of the comparison.
+      await press(tester, chip(TrendsSheet.chipLabel(_sweets)));
+      expect(_chart(tester).lineBarsData, hasLength(2));
+      expect(chip(TrendsSheet.compareChipLabel(_coffee)), findsOneWidget);
+
+      // Compare off draws nothing over the chosen habit.
+      await press(tester, chip(TrendsSheet.compareChipLabel(_coffee)));
+      expect(_chart(tester).lineBarsData, hasLength(3));
+      await press(tester, inTrends(find.text(TrendsSheet.compareLabel)));
+      expect(_chart(tester).lineBarsData, hasLength(2));
+      semantics.dispose();
+    });
+
+    testWidgets('stops at ${TrendsSheet.maxCompared} habits', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester);
+      final List<Vice> five = <Vice>[
+        for (int i = 1; i <= 5; i++) _habit('Habit $i', i),
+      ];
+      await _pump(tester, <ViceActivity>[], vices: five);
+      await press(tester, inTrends(find.text(TrendsSheet.compareLabel)));
+      for (int i = 2; i <= 4; i++) {
+        await press(tester, chip(TrendsSheet.compareChipLabel(five[i - 1])));
+      }
+      expect(
+        tester
+            .widget<PillToggle>(chip(TrendsSheet.compareChipLabel(five[4])))
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<PillToggle>(chip(TrendsSheet.compareChipLabel(five[1])))
+            .onPressed,
+        isNotNull,
+      );
+    });
+  });
+
+  group('the week', () {
+    testWidgets('names the busiest weekday', (WidgetTester tester) async {
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 2), _daysAgo(1, 1)]);
+      expect(
+        find.text('Most on ${DateFormat.EEEE(formatLocale).format(_today)}s'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'An average week of Coffee, by day and hour, over the last 30 days.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(WeekdayGrid), findsOneWidget);
+    });
+
+    testWidgets('is left out of an empty range', (WidgetTester tester) async {
+      _usePhone(tester);
+      await _pump(tester, const <ViceActivity>[]);
+      expect(find.byType(WeekdayGrid), findsNothing);
     });
   });
 

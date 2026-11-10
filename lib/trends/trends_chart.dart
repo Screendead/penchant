@@ -13,7 +13,17 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/trends/pane_fill.dart';
+import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/chart_text.dart';
+
+// Another habit drawn over the chosen one's chart, on the same axis:
+// [line] is its totals under the chart's moving average.
+typedef TrendsOverlay = ({
+  Vice vice,
+  HabitMark mark,
+  List<double> totals,
+  List<double> line,
+});
 
 // One habit's totals over a range as a line, its moving average as a curve
 // over a tint, and a cursor with a readout on one bucket. Dragging, the arrow
@@ -33,6 +43,7 @@ class TrendsChart extends StatelessWidget {
     this.onOpenBucket,
     this.focusNode,
     this.fill = false,
+    this.overlays = const <TrendsOverlay>[],
   });
 
   final Vice vice;
@@ -49,6 +60,8 @@ class TrendsChart extends StatelessWidget {
   // The plot takes the height a [PaneFill] gives it, rather than
   // [plotHeight]; the chart then sits under an [Expanded].
   final bool fill;
+  // Each the length of [totals].
+  final List<TrendsOverlay> overlays;
 
   static const String focusLabel = 'Trends chart';
   static const double plotHeight = 220;
@@ -68,6 +81,7 @@ class TrendsChart extends StatelessWidget {
     required UsageRange range,
     required List<double> totals,
     required int smoothingWindow,
+    List<TrendsOverlay> overlays = const <TrendsOverlay>[],
   }) {
     final int stepDays = range.stepDays;
     final UsageStats stats = usageStats(range, totals);
@@ -76,11 +90,17 @@ class TrendsChart extends StatelessWidget {
     final String average = smoothingWindow > 1
         ? ' Shown with a ${averageName(stepDays, smoothingWindow)}.'
         : '';
+    final String compared = overlays.isEmpty
+        ? ''
+        : ' Compared with ${overlays.map((TrendsOverlay o) {
+            final double sum = o.totals.fold<double>(0, (a, b) => a + b);
+            return '${o.vice.name}, ${o.vice.unit.label(sum)} in all';
+          }).join('; ')}.';
 
     return '${seriesName(stepDays)}s of ${vice.name} over the last '
         '${formatCount(range.days)} days: ${vice.unit.label(total)} in all. The most was '
         '${vice.unit.label(totals[stats.peakIndex])} '
-        '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average';
+        '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average$compared';
   }
 
   // The date under bucket [index], and in the readout.
@@ -114,12 +134,21 @@ class TrendsChart extends StatelessWidget {
     required List<double> smoothed,
     required int window,
     required int index,
+    List<TrendsOverlay> overlays = const <TrendsOverlay>[],
   }) {
     final String date = readoutLabel(range, index, addDays(range.end, -1));
-    final String amount = vice.unit.label(totals[index]);
-    return window > 1
-        ? '$date, $amount, average ${formatAverage(smoothed[index])}'
-        : '$date, $amount';
+    String one(Vice v, List<double> totals, List<double> line) {
+      final String amount = v.unit.label(totals[index]);
+      return window > 1
+          ? '$amount, average ${formatAverage(line[index])}'
+          : amount;
+    }
+
+    return <String>[
+      '$date, ${one(vice, totals, smoothed)}',
+      for (final TrendsOverlay o in overlays)
+        '${o.vice.name} ${one(o.vice, o.totals, o.line)}',
+    ].join('; ');
   }
 
   // The widest date the axis can print: every month's 28th, and Today.
@@ -160,6 +189,7 @@ class TrendsChart extends StatelessWidget {
       smoothed: smoothed,
       window: window,
       index: index,
+      overlays: overlays,
     );
 
     KeyEventResult onKey(FocusNode node, KeyEvent event) {
@@ -193,6 +223,7 @@ class TrendsChart extends StatelessWidget {
         range: range,
         totals: totals,
         smoothingWindow: window,
+        overlays: overlays,
       ),
       value: spoken(shown),
       decreasedValue: earlier == null ? null : spoken(shown - 1),
@@ -246,7 +277,14 @@ class TrendsChart extends StatelessWidget {
     final double dateWidth = widestDateLabel(context, axisStyle);
     final double numberHeight = chartLabelSize(context, '0', axisStyle).height;
     final double bottomTitlesHeight = max(24, numberHeight + labelGap);
-    final int largest = max(1, (totals.reduce(max) * 1.15).ceil());
+    final double highest = <double>[
+      totals.reduce(max),
+      for (final TrendsOverlay o in overlays) ...<double>[
+        o.totals.reduce(max),
+        o.line.reduce(max),
+      ],
+    ].reduce(max);
+    final int largest = max(1, (highest * 1.15).ceil());
     final ({int top, int step}) yScale = roundScale(
       largest,
       min(
@@ -468,14 +506,102 @@ class TrendsChart extends StatelessWidget {
                                     ),
                               ),
                             ),
+                          // A morph resamples only the chosen habit's series.
+                          if (morph == null)
+                            for (final TrendsOverlay o in overlays)
+                              _overlayBar(o, shown, colors, surface),
                         ],
                       ),
                     ),
               ),
             ),
+            if (overlays.isNotEmpty) ...<Widget>[
+              const SizedBox(height: DialSpace.xs),
+              _legend(context, shown, colors, type),
+            ],
           ],
         );
       },
+    );
+  }
+
+  // Habits sharing a hue (the 1st and 6th) tell apart by their mark's style.
+  static List<int>? _dashes(HabitMark mark) => switch (mark.style) {
+    HabitMarkStyle.filled => null,
+    HabitMarkStyle.ring => const <int>[7, 4],
+    HabitMarkStyle.dotted => const <int>[2, 3],
+  };
+
+  LineChartBarData _overlayBar(
+    TrendsOverlay o,
+    int shown,
+    DialColors colors,
+    Color surface,
+  ) {
+    final Color ink = colors.habitInk(o.mark);
+    return LineChartBarData(
+      spots: <FlSpot>[
+        for (int i = 0; i < o.line.length; i++) FlSpot(i.toDouble(), o.line[i]),
+      ],
+      isCurved: window > 1,
+      preventCurveOverShooting: true,
+      isStrokeCapRound: true,
+      color: ink,
+      barWidth: 2,
+      dashArray: _dashes(o.mark),
+      dotData: FlDotData(
+        checkToShowDot: (FlSpot spot, LineChartBarData _) => spot.x == shown,
+        getDotPainter: (FlSpot spot, double _, LineChartBarData _, int _) =>
+            FlDotCirclePainter(
+              radius: 3.5,
+              color: surface,
+              strokeWidth: 2,
+              strokeColor: ink,
+            ),
+      ),
+    );
+  }
+
+  // The value under the cursor of each line drawn, the chosen habit first.
+  Widget _legend(
+    BuildContext context,
+    int index,
+    DialColors colors,
+    DialType type,
+  ) {
+    final TextStyle words = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    final TextStyle number = type.monoM.copyWith(
+      fontSize: 13,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+    Widget entry(Vice v, HabitMark m, List<double> line) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        HabitPip(mark: m, size: 8),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            v.name,
+            style: words,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          window > 1 ? formatAverage(line[index]) : formatCount(line[index]),
+          style: number,
+        ),
+      ],
+    );
+
+    return Wrap(
+      spacing: DialSpace.m,
+      runSpacing: DialSpace.xxs,
+      children: <Widget>[
+        entry(vice, mark, window > 1 ? smoothed : totals),
+        for (final TrendsOverlay o in overlays) entry(o.vice, o.mark, o.line),
+      ],
     );
   }
 
