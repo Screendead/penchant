@@ -13,6 +13,7 @@ import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -554,6 +555,39 @@ void main() {
       expect(find.byType(TrendsDay), findsNothing);
       expect(find.byType(LineChart), findsOneWidget);
       semantics.dispose();
+    });
+
+    testWidgets('a tapped day grows from its point; under Reduce motion it '
+        'fades in place', (WidgetTester tester) async {
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 2)]);
+      Rect chart = tester.getRect(find.byType(LineChart));
+      await tester.tapAt(Offset(chart.left + 40, chart.center.dy));
+      await tester.pump();
+      await tester.pump(DialMotion.containerTransform ~/ 3);
+      final Matrix4 grow = tester
+          .widget<Transform>(find.byKey(TrendsSheet.dayGrowKey))
+          .transform;
+      expect(grow.entry(0, 0), inExclusiveRange(0.2, 1));
+      await tester.pumpAndSettle();
+      expect(find.byType(LineChart), findsNothing);
+      await tester.tap(find.byTooltip(TrendsDay.backLabel));
+      await tester.pumpAndSettle();
+
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pumpAndSettle();
+      chart = tester.getRect(find.byType(LineChart));
+      await tester.tapAt(Offset(chart.left + 40, chart.center.dy));
+      await tester.pump();
+      await tester.pump(DialMotion.reducedFade ~/ 2);
+      expect(find.byKey(TrendsSheet.dayGrowKey), findsNothing);
+      await tester.pump(DialMotion.reducedFade);
+      expect(find.byType(LineChart), findsNothing);
+      expect(find.byType(TrendsDay), findsOneWidget);
     });
 
     testWidgets("a screen reader hears the cursor's day, moves it and opens "
