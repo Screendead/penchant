@@ -539,11 +539,8 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
-<<<<<<< HEAD
   late final List<PayoffCard> payoffs;
-=======
   late final List<FollowsCard> follows;
->>>>>>> origin/master
   late final DateTime? firstDay;
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';

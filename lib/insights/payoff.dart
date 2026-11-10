@@ -261,9 +261,7 @@ Map<String, HabitFall> findFalls(
       final double b = sampleVariance(weeksSince) / weeksSince.length;
       final double difference = mean(weeksBefore) - mean(weeksSince);
       if (difference <= 0) continue;
-      final double t = a + b == 0
-          ? double.infinity
-          : difference / sqrt(a + b);
+      final double t = a + b == 0 ? double.infinity : difference / sqrt(a + b);
       if (t <= best) continue;
       if (a + b > 0) {
         final double df =

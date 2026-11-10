@@ -136,10 +136,7 @@ void main() {
         (s) => payoffDays(s, days: 91 + 7 * weeks),
       );
     }
-    run(
-      '3 a day to 2, 13 weeks ago',
-      (s) => payoffDays(s, rateAfter: 2),
-    );
+    run('3 a day to 2, 13 weeks ago', (s) => payoffDays(s, rateAfter: 2));
     run(
       'every other day to one in four, 13 weeks ago',
       (s) => payoffDays(s, rateBefore: 0.5, rateAfter: 0.25),
