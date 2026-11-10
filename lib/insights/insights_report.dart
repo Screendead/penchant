@@ -7,6 +7,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
+import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/stats.dart';
@@ -153,7 +154,12 @@ class InsightsReport {
     required this.refused,
     this.hoursAfterChecks = 0,
     this.floors = const <String, double>{},
+    this.follows = const <HabitFollows>[],
   });
+
+  /// Every pair of habits shown, one following the other within minutes,
+  /// each with its verdict, judged in the same family as [findings].
+  final List<HabitFollows> follows;
 
   /// Each outcome's floor for this person, from [resolveFloors]; an outcome
   /// missing here falls back to [metricFloors]' own.
@@ -222,7 +228,7 @@ InsightsReport computeInsights(InsightsInput input) {
   // shows against every outcome, by use, amount and time and a line in each,
   // not one at a time.
   // An archived habit's comparisons are never shown, so they are not counted.
-  for (final HabitInsight insight in controlFalseDiscoveries(<HabitInsight>[
+  final List<HabitInsight> after = <HabitInsight>[
     for (final String metricId in outcomes.metricIds)
       if (metricCopy(metricId) != null)
         for (final _Comparison comparison in _comparisons)
@@ -237,7 +243,17 @@ InsightsReport computeInsights(InsightsInput input) {
             if (!input.archived.contains(result.habitId)) result,
     for (final HabitInsight result in hours)
       if (!input.archived.contains(result.habitId)) result,
-  ])) {
+  ];
+  // Today's uses may yet be followed, so the last whole day is yesterday.
+  final List<HabitFollows> follows = habitFollows(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  for (final HabitInsight insight in controlFalseDiscoveries(
+    after,
+    alongside: <double>[for (final HabitFollows f in follows) ?f.pValue],
+  )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
         refusals.putIfAbsent(insight.habitId, () => []).add(_tooSmall(insight));
@@ -258,6 +274,12 @@ InsightsReport computeInsights(InsightsInput input) {
   return InsightsReport(
     hoursAfterChecks: hours.length,
     floors: floors,
+    follows: judgeHabitFollows(
+      follows,
+      alongside: <double>[
+        for (final HabitInsight i in after) ?insightPValue(i),
+      ],
+    ),
     findings: shown,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),

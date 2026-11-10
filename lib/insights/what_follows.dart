@@ -1301,24 +1301,31 @@ List<List<double>> _timeTerms(List<DateTime> days, List<int> period) {
   ];
 }
 
+/// The p-value [insight] brings to the report's family; null when nothing was
+/// fitted.
+double? insightPValue(HabitInsight insight) => switch (insight) {
+  HabitFinding(:final double pValue) => pValue,
+  HabitRefusal(:final double? pValue) => pValue,
+};
+
 /// [insights] with every finding that fails Benjamini-Hochberg at
 /// [InsightGates.falseDiscoveryRate] refused as [RefusalReason.chance]. The
 /// family is every result with a p-value, so a fitted habit refused for its
-/// entanglement or its noise still counts as a comparison made.
+/// entanglement or its noise still counts as a comparison made. The
+/// p-values in [alongside] are comparisons judged elsewhere that belong to
+/// the same family.
 List<HabitInsight> controlFalseDiscoveries(
   List<HabitInsight> insights, {
   InsightGates gates = const InsightGates(),
+  List<double> alongside = const <double>[],
 }) {
-  double? pValueOf(HabitInsight insight) => switch (insight) {
-    HabitFinding(:final double pValue) => pValue,
-    HabitRefusal(:final double? pValue) => pValue,
-  };
   final List<int> tested = <int>[
     for (int i = 0; i < insights.length; i++)
-      if (pValueOf(insights[i]) != null) i,
+      if (insightPValue(insights[i]) != null) i,
   ];
   final List<bool> kept = benjaminiHochberg(<double>[
-    for (final int i in tested) pValueOf(insights[i])!,
+    for (final int i in tested) insightPValue(insights[i])!,
+    ...alongside,
   ], gates.falseDiscoveryRate);
   final Set<int> rejected = <int>{
     for (int k = 0; k < tested.length; k++)
