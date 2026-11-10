@@ -443,9 +443,9 @@ extension HealthChannel {
     }
 
     private static func types(for metric: String) -> [HKSampleType] {
-      if let s = statistic(metric) { return [s.type] }
+      if let s = HealthChannel.statistic(metric) { return [s.type] }
       let sleep = HKCategoryType(.sleepAnalysis)
-      if metric == sleepingHeartRate { return [sleep, HKQuantityType(.heartRate)] }
+      if metric == HealthChannel.sleepingHeartRate { return [sleep, HKQuantityType(.heartRate)] }
       if HealthDays.sleepMetrics.contains(where: { $0.id == metric }) || HealthDays.sleepTimingMetrics.contains(metric) {
         return [sleep]
       }
@@ -456,7 +456,7 @@ extension HealthChannel {
       var out: [String: (type: HKSampleType, metrics: [String])] = [:]
       for metric in metrics {
         for type in types(for: metric) {
-          out[type.identifier, default: (type, [])].metrics.append(metric)
+          out[type.identifier, default: (type: type, metrics: [])].metrics.append(metric)
         }
       }
       return out
@@ -472,7 +472,7 @@ extension HealthChannel {
         out = (samples ?? [], deleted?.count ?? 0, newAnchor, error)
         done.signal()
       }
-      store.execute(query)
+      HealthChannel.store.execute(query)
       done.wait()
       return out
     }
@@ -494,7 +494,7 @@ extension HealthChannel {
         let seed = anchored(
           type, predicate: HKQuery.predicateForSamples(withStart: since, end: nil), anchor: nil,
           limit: HKObjectQueryNoLimit)
-        if let error = seed.error, !isNoData(error) { return error }
+        if let error = seed.error, !HealthChannel.isNoData(error) { return error }
         state.markWhole(metrics)
         if let next = seed.anchor,
           let data = try? NSKeyedArchiver.archivedData(withRootObject: next, requiringSecureCoding: true)
@@ -505,11 +505,11 @@ extension HealthChannel {
       }
       while true {
         let page = anchored(type, predicate: nil, anchor: anchor, limit: pageLimit)
-        if let error = page.error { return isNoData(error) ? nil : error }
+        if let error = page.error { return HealthChannel.isNoData(error) ? nil : error }
         if page.deleted > 0 { state.markWhole(metrics) }
         var keys = Set<String>()
         for sample in page.samples {
-          keys.formUnion(HealthDays.touchedKeys(start: sample.startDate, end: sample.endDate, calendar))
+          keys.formUnion(HealthDays.touchedKeys(start: sample.startDate, end: sample.endDate, HealthChannel.calendar))
         }
         if !keys.isEmpty { state.mark(metrics, keys: keys.sorted()) }
         if let next = page.anchor,
@@ -592,8 +592,8 @@ extension HealthChannel {
             done()
           }
         }
-        store.execute(query)
-        store.enableBackgroundDelivery(for: entry.type, frequency: .hourly) { _, _ in }
+        HealthChannel.store.execute(query)
+        HealthChannel.store.enableBackgroundDelivery(for: entry.type, frequency: .hourly) { _, _ in }
       }
     }
   }
