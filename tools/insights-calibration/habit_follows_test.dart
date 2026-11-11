@@ -218,7 +218,11 @@ void main() {
 
   test('a shared anchor', () {
     run(sharedWaking, bothAfterWaking);
-    run('$sharedWaking; Health 10 min off (sd)', bothAfterWaking, wakeError: 10);
+    run(
+      '$sharedWaking; Health 10 min off (sd)',
+      bothAfterWaking,
+      wakeError: 10,
+    );
     run(
       '$sharedWaking; Health 20 min off (sd)',
       bothAfterWaking,

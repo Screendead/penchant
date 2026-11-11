@@ -65,9 +65,7 @@ List<HabitUse> bothAfterWaking(
     uses.add(useAt('coffee', day, wake + 5 + r.nextDouble() * 15));
     uses.add(useAt('cigarettes', day, wake + 5 + r.nextDouble() * 35));
     for (int k = 0; k < 6; k++) {
-      uses.add(
-        useAt('cigarettes', day, wake + 60 + r.nextDouble() * 15 * 60),
-      );
+      uses.add(useAt('cigarettes', day, wake + 60 + r.nextDouble() * 15 * 60));
     }
   }
   return uses;
