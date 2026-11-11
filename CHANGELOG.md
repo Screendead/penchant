@@ -9,6 +9,7 @@ pull request titles (`gh pr list --state merged`).
 
 ### Added
 
+- The Recovery key page says where this device keeps your journal key: in iCloud Keychain, or on this device only.
 - Insights, from the Penchant menu: connect Apple Health on iPhone, then see what follows each habit over the last
   year ("On nights after Coffee, your deep sleep averages 18 min less", with its range), and which habits have too
   little to say and why. Worked out on the device; Health data never leaves it (#173).
