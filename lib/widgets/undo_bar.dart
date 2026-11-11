@@ -10,24 +10,48 @@ const TextStyle undoBarBold = TextStyle(fontWeight: FontWeight.w600);
 
 // The bar that confirms a change, with Undo for eight seconds when it can be
 // undone. A new bar replaces the last rather than queueing behind it: an
-// earlier bar's Undo left on screen would undo the wrong change.
+// earlier bar's Undo left on screen would undo the wrong change. [action],
+// under the message, is a second step on the same change; it closes the bar.
 void showUndoBar(
   ScaffoldMessengerState messenger,
   InlineSpan message, {
   VoidCallback? onUndo,
+  ({String label, VoidCallback onPressed})? action,
 }) {
   messenger.clearSnackBars();
   messenger.showSnackBar(
     SnackBar(
       persist: false,
       behavior: SnackBarBehavior.floating,
-      duration: onUndo == null ? noticeDuration : undoDuration,
+      duration: onUndo == null && action == null
+          ? noticeDuration
+          : undoDuration,
       padding: EdgeInsets.fromLTRB(18, 6, onUndo == null ? 18 : 6, 6),
       content: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
         child: Row(
           children: <Widget>[
-            Expanded(child: Text.rich(message)),
+            Expanded(
+              child: action == null
+                  ? Text.rich(message)
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text.rich(message),
+                        ),
+                        _BarAction(
+                          label: action.label,
+                          onPressed: () {
+                            messenger.hideCurrentSnackBar();
+                            action.onPressed();
+                          },
+                        ),
+                      ],
+                    ),
+            ),
             if (onUndo != null) ...<Widget>[
               const SizedBox(width: 10),
               UndoCountdownButton(
@@ -43,6 +67,33 @@ void showUndoBar(
       ),
     ),
   );
+}
+
+// A text button in the snack bar's action colour, as tall as a tap target.
+class _BarAction extends StatelessWidget {
+  const _BarAction({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color ink =
+        Theme.of(context).snackBarTheme.actionTextColor ??
+        Theme.of(context).colorScheme.onInverseSurface;
+
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: ink,
+        minimumSize: const Size(DialSize.minTapTarget, DialSize.minTapTarget),
+        padding: EdgeInsets.zero,
+        alignment: AlignmentDirectional.centerStart,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+      child: Text(label),
+    );
+  }
 }
 
 /// Undo, with a ring that empties over [window]. [ink] defaults to the

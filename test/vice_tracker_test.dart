@@ -8,7 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/dial_layout.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -38,6 +40,7 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/settle_write.dart';
+import 'package:tracker/writes/what_was_going_on.dart';
 
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -1071,6 +1074,71 @@ void main() {
       expect(find.text(removedMessage), findsOneWidget);
       await tester.pumpAndSettle();
     });
+
+    testWidgets('the bar asks what was going on, and saves the picked '
+        'triggers to the entry just logged', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      await _pumpApp(tester, <Override>[
+        ...overrides(),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, query) => const AsyncData(<ViceActivity>[]),
+        ),
+      ], const ViceTracker());
+
+      await tester.tap(_button(logOneLabel(tea)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final String logged = writes.writes.single.id;
+      final Finder ask = find.widgetWithText(TextButton, whatWasGoingOnLabel);
+      expect(ask, findsOneWidget);
+      expect(find.text('Undo'), findsOneWidget);
+      expect(
+        tester.getSize(ask).height,
+        greaterThanOrEqualTo(DialSize.minTapTarget),
+      );
+
+      await tester.tap(ask);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Your own words'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'In your own words'),
+        'Pitch review',
+      );
+      await tester.tap(find.byTooltip('Add'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      final Write update = writes.writes.last;
+      expect((update.op, update.id), ('updateActivity', logged));
+      expect(update.fields, <String, Object?>{
+        'triggers': <String>['Pitch review'],
+      });
+      expect(writes.writes, hasLength(2));
+      expect(await const FreeTextTriggers().uses(ownerID), <String, int>{
+        'Pitch review': 1,
+      });
+    });
+
+    testWidgets(
+      'after Undo, the question is gone and nothing more is written',
+      (WidgetTester tester) async {
+        await _pumpApp(tester, overrides(), const ViceTracker());
+
+        await tester.tap(_button(logOneLabel(tea)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(find.text('Undo'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(whatWasGoingOnLabel), findsNothing);
+        expect(
+          <String>[for (final Write w in writes.writes) w.op],
+          <String>['recordActivity', 'deleteActivity'],
+        );
+      },
+    );
 
     testWidgets('Cmd-1 and Cmd-2 log one of the first and second habit', (
       WidgetTester tester,

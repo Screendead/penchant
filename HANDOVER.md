@@ -918,6 +918,15 @@ Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/
 
 Round 14's seven were picked on 2026-11-11; every earlier call is picked.
 
+Not yet on a page:
+
+- `quick-log-prompt`: Jack, 2026-11-11: "can you have the app prompt me to record what was going on in the journal
+  when i quick-record a habit usage?" Built in the app (`lib/writes/what_was_going_on.dart`): a quick log's bar
+  (tally `+`, Log-fan wedge, Cmd-1…9) carries "What was going on?" under the message, beside Undo; it opens the
+  trigger picker for that entry and saves what is picked. Non-blocking, rather than a picker that opens by itself.
+  Tapping it closes the bar, so Undo for that entry goes with it (the editor's Delete still works). Open: keep this
+  form, or open the picker on every quick log.
+
 ## For Jack to do (not decisions)
 
 - **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; read the
