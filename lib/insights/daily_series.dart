@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:tracker/data/day.dart';
+import 'package:tracker/insights/step_changes.dart';
 
 /// One logged use of a habit, at a local time.
 class HabitUse {
@@ -164,8 +165,15 @@ class OutcomeSeries {
   }
 
   final Map<String, Map<DateTime, double>> _values;
+  final Map<String, LevelShifts> _shifts = <String, LevelShifts>{};
 
   Iterable<String> get metricIds => _values.keys;
+
+  /// [metricId]'s lasting changes of level over every day it has a value.
+  LevelShifts shifts(String metricId) => _shifts.putIfAbsent(
+    metricId,
+    () => levelShifts(_values[metricId] ?? const <DateTime, double>{}),
+  );
 
   double? value(String metricId, DateTime day) =>
       _values[metricId]?[startOfDay(day)];

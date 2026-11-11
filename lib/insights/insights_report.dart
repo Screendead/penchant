@@ -5,11 +5,14 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
+import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
+import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
@@ -83,6 +86,7 @@ class InsightsInput {
     required this.through,
     this.samples = const <String, List<hs.HealthSample>>{},
     this.archived = const <String>{},
+    this.events = const <CalendarEvent>[],
   });
 
   factory InsightsInput.from({
@@ -92,6 +96,7 @@ class InsightsInput {
     Map<String, List<hs.HealthSample>> samples =
         const <String, List<hs.HealthSample>>{},
     Set<String> archived = const <String>{},
+    List<CalendarEvent> events = const <CalendarEvent>[],
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -111,6 +116,7 @@ class InsightsInput {
       through: addDays(range.end, -1),
       samples: samples,
       archived: archived,
+      events: events,
     );
   }
 
@@ -126,6 +132,10 @@ class InsightsInput {
   /// Habits the report says nothing about. Their uses stay in [uses], so they
   /// are still held constant when judging the others.
   final Set<String> archived;
+
+  /// The calendar's timed events over the journal's span; empty without
+  /// calendar access.
+  final List<CalendarEvent> events;
 }
 
 /// The moments around uses whose samples Insights reads, with every window
@@ -155,13 +165,28 @@ class InsightsReport {
     required this.refused,
     this.hoursAfterChecks = 0,
     this.floors = const <String, double>{},
+    this.follows = const <HabitFollows>[],
     this.beforeUse = const <BeforeUse>[],
+    this.shifts = const <MeasureShift>[],
+    this.afterEvent = const <AfterEvent>[],
     this.recovery = const <Recovery>[],
   });
 
   /// Each habit's measures over the nights after its heavy days, findings
   /// and refusals, judged in the same family as [findings].
   final List<Recovery> recovery;
+
+  /// The measures whose level changed and stayed changed, by date, judged in
+  /// the same family as [findings]; only those found.
+  final List<MeasureShift> shifts;
+
+  /// Whether each habit follows calendar events, findings and refusals,
+  /// judged in the same family as [findings].
+  final List<AfterEvent> afterEvent;
+
+  /// Every pair of habits shown, one following the other within minutes,
+  /// each with its verdict, judged in the same family as [findings].
+  final List<HabitFollows> follows;
 
   /// What came before each habit's use, findings and refusals, judged in the
   /// same family as [findings].
@@ -250,7 +275,8 @@ InsightsReport computeInsights(InsightsInput input) {
     for (final HabitInsight result in hours)
       if (!input.archived.contains(result.habitId)) result,
   ];
-  // Today's use is not over, so the last whole day is yesterday.
+  // Today's use is not over, and may yet be followed, so the last whole day
+  // is yesterday.
   final List<BeforeUse> before = <BeforeUse>[
     ...beforeUse(
       uses: input.uses,
@@ -273,16 +299,50 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     skip: input.archived,
   );
-  final List<double> afterP = <double>[
+  final List<AfterEvent> calendar = afterEvent(
+    uses: input.uses,
+    events: input.events,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<HabitFollows> follows = habitFollows(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<double> afterPs = <double>[
     for (final HabitInsight i in after) ?insightPValue(i),
   ];
-  final List<double> beforeP = <double>[
+  final List<double> beforePs = <double>[
     for (final BeforeUse b in before) ?b.pValue,
   ];
-  final List<double> recoveryP = recoveryPValues(recovering);
+  final List<double> followsPs = <double>[
+    for (final HabitFollows f in follows) ?f.pValue,
+  ];
+  final List<double> calendarPs = <double>[
+    for (final AfterEvent a in calendar) ?a.pValue,
+  ];
+  final ({List<MeasureShift> shifts, List<double> searched}) shifted =
+      measureShifts(
+        outcomes: outcomes,
+        habits: habits,
+        through: input.through,
+        skip: input.archived,
+      );
+  final List<double> shiftPs = <double>[
+    for (final MeasureShift s in shifted.shifts) s.shift.pValue,
+    ...shifted.searched,
+  ];
+  final List<double> recoveryPs = recoveryPValues(recovering);
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[...beforeP, ...recoveryP],
+    alongside: <double>[
+      ...beforePs,
+      ...followsPs,
+      ...calendarPs,
+      ...shiftPs,
+      ...recoveryPs,
+    ],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -304,15 +364,62 @@ InsightsReport computeInsights(InsightsInput input) {
   return InsightsReport(
     hoursAfterChecks: hours.length,
     floors: floors,
+    follows: judgeHabitFollows(
+      follows,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...calendarPs,
+        ...shiftPs,
+        ...recoveryPs,
+      ],
+    ),
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[...afterP, ...recoveryP],
+      alongside: <double>[
+        ...afterPs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...recoveryPs,
+      ],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     recovery: judgeRecovery(
       recovering,
-      alongside: <double>[...afterP, ...beforeP],
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+      ],
     ),
+    afterEvent: judgeAfterEvent(
+      calendar,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...shiftPs,
+        ...recoveryPs,
+      ],
+    ),
+    shifts:
+        judgeMeasureShifts(
+            shifted.shifts,
+            alongside: <double>[
+              ...shifted.searched,
+              ...afterPs,
+              ...beforePs,
+              ...followsPs,
+              ...calendarPs,
+              ...recoveryPs,
+            ],
+            floors: floors,
+            q: const InsightGates().falseDiscoveryRate,
+          ).where((MeasureShift s) => s.found).toList()
+          ..sort((a, b) => a.shift.at.compareTo(b.shift.at)),
     findings: shown,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),

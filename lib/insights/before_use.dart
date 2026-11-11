@@ -6,6 +6,7 @@ import 'package:tracker/insights/health_source.dart'
     show HealthSample, HealthSampleMetric;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/stats.dart';
+import 'package:tracker/insights/step_changes.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 // Health values stay on the device: nothing here is logged or reported.
@@ -368,6 +369,21 @@ BeforeUse _daily(
     ];
   }
 
+  // A shift in the measure's level is held fixed, as in what_follows.dart: one
+  // with a week of these days on each side, unless it repeats a period's
+  // level.
+  for (final LevelShift shift in outcomes.shifts(metricId).shifts) {
+    final List<double> after = <double>[
+      for (final DateTime d in days)
+        addDays(d, -back).isBefore(shift.at) ? 0 : 1,
+    ];
+    final int on = after.where((v) => v == 1).length;
+    if (on >= gates.minExposedDays &&
+        days.length - on >= gates.minExposedDays &&
+        fitLeastSquares(rows(<List<double>>[...fixed, after]), y) != null) {
+      fixed.add(after);
+    }
+  }
   // Two habits used on the same days give one column twice: the fit then
   // goes without the other habits.
   List<List<double>> design = rows(<List<double>>[...fixed, ...others]);

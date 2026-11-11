@@ -45,18 +45,19 @@ void main() {
       expect(routePage('/settings/privacy'), isA<NotFound>());
     });
 
-    test('only the forms open as modals', () {
+    test('only the vice forms open as modals, and an entry as the sheet', () {
+      const String entry = '/vices/v1/activities/a1';
       final Set<String> modal = <String>{
         for (final String name in pages.keys)
-          if ((generateRoute(RouteSettings(name: name)) as PageRoute<void>)
-              .fullscreenDialog)
+          if (name != entry &&
+              (generateRoute(RouteSettings(name: name)) as PageRoute<void>)
+                  .fullscreenDialog)
             name,
       };
-      expect(modal, <String>{
-        '/vices/add',
-        '/vices/v1/edit',
-        '/vices/v1/activities/a1',
-      });
+      expect(modal, <String>{'/vices/add', '/vices/v1/edit'});
+      final Route<void> sheet = generateRoute(const RouteSettings(name: entry));
+      expect(sheet, isA<ModalBottomSheetRoute<void>>());
+      expect(sheet.settings.name, entry);
     });
 
     test('the edit route passes the vice id through', () {

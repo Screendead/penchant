@@ -216,7 +216,9 @@ rules deny a get of a missing document), and names in the banner each write that
 check keeps its writes for the next launch; sign-out and account deletion clear the journal with the cache.
 
 The amount sheet (`RecordNewActivityDialog`, `lib/widgets/record_new_activity_dialog.dart`, a modal bottom sheet)
-takes one `newActivityID()` per sheet, so a retry after a failed save writes the same document. One-tap "log one"
+takes one `newActivityID()` per sheet, so a retry after a failed save writes the same document. The entry editor
+(`ViceActivityEditorPage`) is the same sheet over the stored entry, with Delete. Their stepper (`AmountFields`) steps
+by 5 for a habit whose stored typical is 10 or more (`storedTypicalsProvider`), landing on multiples of 5, else by 1. One-tap "log one"
 (`logOne`, `lib/writes/log_one.dart`: a tally's `+`, a Log-fan wedge tap) logs the habit's default quantity now with a
 new id per tap, so two taps are two entries. Its Undo bar (`showUndoBar`, `lib/widgets/undo_bar.dart`;
 `undo-duration`: 8 seconds) shows at once, since the entry is on the device when written, and says queued after 10 s
@@ -376,8 +378,9 @@ lacks, when a `where` with a Firestore filter argument or an `orderBy` sits outs
 **Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error → `AuthStateFailure`, no event yet
 → `AuthStateLoading` (so a restored session never shows sign-in first), a null user → `Authenticate`. `generateRoute`
 maps path segments to a page through `routePage`, a pattern `switch` (`/vices/:viceID/edit`,
-`/vices/:viceID/activities[/:activityID]`, ...); anything else is `NotFound`. Only the forms (add or edit a vice, edit
-an activity) open as fullscreen dialogs. On a user change `MyApp` pops every pushed route, since swapping `home` alone
+`/vices/:viceID/activities[/:activityID]`, ...); anything else is `NotFound`. Only the vice forms (add or edit) open as
+fullscreen dialogs; an entry's route opens its editor as the amount sheet (`ViceActivityEditorPage.route`, a
+`ModalBottomSheetRoute`), so deep links and bead taps both reach it by name. On a user change `MyApp` pops every pushed route, since swapping `home` alone
 leaves the old session's pages on the stack.
 
 **Today and Trends.** `ViceTracker` is Today: one day as the Day Dial (`DayDial`, `lib/widgets/day_dial.dart`), a
@@ -396,7 +399,7 @@ button naming the hour and each habit's total that opens the hour's latest entry
 The dial is one `Semantics` node labelled `DayDial.summary` (day, each total, first and last entry times). Motion
 follows `DialMotion`: a day change contracts the beads, then a hand sweeps round and each bead springs in as it
 passes; a logged bead flies in from the `+` or wedge via `beadArrivalsProvider`; an edited one travels round the rim to its
-new time, starting on the first frame the dial draws (the editor covers it, muting its ticker); a pending bead's dashed rim turns
+new time, starting on the first frame the dial draws (the editor sheet leaves it ticking, so behind the sheet); a pending bead's dashed rim turns
 until it syncs; under `MediaQuery.disableAnimations` all of it is a 150 ms fade and the clock ticks once a minute, so
 widget tests of pending entries cannot `pumpAndSettle` with animations on. Day navigation is `DayPicker`
 (`lib/widgets/day_picker.dart`): arrows, a sideways swipe on the dial, and the date pill's `CalendarSheet`; no oldest
@@ -428,7 +431,8 @@ share one `PageStorage` entry: a resize across 900 pt keeps day and habit (the c
 step Today's day (`_stepDay`, from state, so presses within one frame each count) via a `CallbackShortcuts` around the
 whole split view, or around Today alone under the sheet; the chart's own `Focus` takes them first. The Mac window
 opens at 1200×780 (`r8-mac-window` B) to show the split view, minimum 390×600, frame saved as `MainWindow`
-(`macos/Runner/MainFlutterWindow.swift`). Widget tests run at 800×600 (phone layout); `test/split_view_test.dart`
+(`macos/Runner/MainFlutterWindow.swift`). On Quit the app delegate hides every window at once and exits a second later
+if Flutter's and Firebase's shutdown has not finished (it took seconds). Widget tests run at 800×600 (phone layout); `test/split_view_test.dart`
 resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
 (`splitLayout`, `integration_test/support.dart`).
 

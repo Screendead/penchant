@@ -51,7 +51,7 @@ Each list is in the recommended build order.
 - [Show the journal's trends: Health under the habit lines, triggers and spend over time](insights/trend-views.md). M, 1.1 Pro
 - [Build an on-device insights engine that separates vices and refuses to report noise](insights/insights-engine.md). XL, 1.1 Pro
 - [Read Apple Health, including years of history, to see what follows each vice](insights/apple-health-correlation.md). L, 1.1 Pro
-- [Read the calendar on the device to see which events come before use](insights/calendar-integration.md). M, 1.1 Pro
+- [Read the calendar on the device to see which events come before use](insights/calendar-integration.md): iOS and its first comparison built; macOS, the other features and trigger suggestions left. M, 1.1 Pro
 - [Feed the insights engine from more sources on the device](insights/more-data-sources.md). M each. Jack: add them all (2026-11-08)
 
 ## Monetisation (3)

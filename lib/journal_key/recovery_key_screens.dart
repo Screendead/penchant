@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -34,6 +35,11 @@ class RecoveryKeyCopy {
   static const String copy = 'Copy';
   static const String copied =
       'Recovery key copied to this device only. It clears in 2 minutes.';
+  // macOS has no local-only pasteboard item: Universal Clipboard carries the
+  // copy to the user's other Apple devices.
+  static const String copiedOnMac =
+      'Recovery key copied. Your other Apple devices can paste it too. It '
+      'clears from this Mac in 2 minutes.';
   static const String copyFailed =
       "Couldn't copy the recovery key. Write it down or use Share.";
   static const String share = 'Share';
@@ -326,7 +332,13 @@ class _RecoveryKeyPageState extends ConsumerState<RecoveryKeyPage> {
                     return;
                   }
                   messenger.showSnackBar(
-                    const SnackBar(content: Text(RecoveryKeyCopy.copied)),
+                    SnackBar(
+                      content: Text(
+                        defaultTargetPlatform == TargetPlatform.macOS
+                            ? RecoveryKeyCopy.copiedOnMac
+                            : RecoveryKeyCopy.copied,
+                      ),
+                    ),
                   );
                 },
               ),

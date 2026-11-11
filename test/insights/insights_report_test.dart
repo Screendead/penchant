@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' show HealthMetric;
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 final DateTime start = DateTime(2026, 1, 5);
@@ -84,6 +86,19 @@ List<HabitInsight> everyComparison(InsightsInput input) {
   ];
 }
 
+// The search of each measure for a lasting shift, part of the page's family.
+List<double> shiftPs(InsightsInput input) {
+  final found = measureShifts(
+    outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+    habits: DailyHabitSeries.fromUses(input.uses),
+    through: input.through,
+  );
+  return <double>[
+    for (final MeasureShift s in found.shifts) s.shift.pValue,
+    ...found.searched,
+  ];
+}
+
 Set<(String, String)> pairs(Iterable<HabitFinding> findings) =>
     <(String, String)>{for (final f in findings) (f.habitId, f.metricId)};
 
@@ -108,7 +123,8 @@ void main() {
       if (seed < 20 || found > 0) {
         expect(
           pairs(computeInsights(input).findings),
-          // The page's family also holds what came before each use.
+          // The page's family also holds what came before each use and
+          // each pair of habits.
           pairs(
             controlFalseDiscoveries(
               raw,
@@ -119,6 +135,12 @@ void main() {
                   through: addDays(input.through, -1),
                 ))
                   ?b.pValue,
+                for (final HabitFollows f in habitFollows(
+                  uses: input.uses,
+                  through: addDays(input.through, -1),
+                ))
+                  ?f.pValue,
+                ...shiftPs(input),
               ],
             ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
           ),
@@ -223,10 +245,13 @@ void main() {
         final InsightsInput input = noiseInput(seed, effect: -12);
         final List<HabitInsight> raw = everyComparison(input);
         final Set<(String, String)> shown = pairs(
-          controlFalseDiscoveries(<HabitInsight>[
-            for (final HabitInsight r in raw)
-              if (!archived.contains(r.habitId)) r,
-          ]).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
+          controlFalseDiscoveries(
+            <HabitInsight>[
+              for (final HabitInsight r in raw)
+                if (!archived.contains(r.habitId)) r,
+            ],
+            alongside: shiftPs(input),
+          ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
         );
         final InsightsReport report = computeInsights(
           InsightsInput(
@@ -241,7 +266,10 @@ void main() {
         // Kept only once the archived habits' comparisons are out of the
         // family: proof they were not counted.
         final Set<(String, String)> withAll = pairs(
-          controlFalseDiscoveries(raw).whereType<HabitFinding>(),
+          controlFalseDiscoveries(
+            raw,
+            alongside: shiftPs(input),
+          ).whereType<HabitFinding>(),
         );
         if (shown.difference(withAll).isNotEmpty) return;
       }
