@@ -325,7 +325,9 @@ field joins both `contentFields` (`lib/data/sealed.dart`) and the rules' `sealed
 Rules refuse a create without `sealed` or with content beside it (Jack, 2026-11-09, `plaintext-creates` C), bound
 `sealed` to 30 to 4125 bytes, refuse removing it, still let legacy plaintext documents be read and edited, and let an
 update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They
-cannot read sealed content, so there `lib/data/limits.dart` is the only guard.
+cannot read sealed content, so there `lib/data/limits.dart` is the only guard. The envelope binds the
+document path only: an entry's plaintext time, quantity and habit, a vice's `archived`, and a roll-back to an older
+`sealed` value are not detected, an accepted limit (Jack, 2026-11-11, round 14 `tamper` A).
 
 `lib/data/sealed.dart` holds `FieldSealer` (sole implementation `lib/crypto/journal_field_sealer.dart`),
 `sealerProvider` (null while no key exists: `TrackerWrites.canCreate` is false and `addVice`/`recordActivity` throw, so
@@ -431,8 +433,9 @@ share one `PageStorage` entry: a resize across 900 pt keeps day and habit (the c
 step Today's day (`_stepDay`, from state, so presses within one frame each count) via a `CallbackShortcuts` around the
 whole split view, or around Today alone under the sheet; the chart's own `Focus` takes them first. The Mac window
 opens at 1200×780 (`r8-mac-window` B) to show the split view, minimum 390×600, frame saved as `MainWindow`
-(`macos/Runner/MainFlutterWindow.swift`). On Quit the app delegate hides every window at once and exits a second later
-if Flutter's and Firebase's shutdown has not finished (it took seconds). Widget tests run at 800×600 (phone layout); `test/split_view_test.dart`
+(`macos/Runner/MainFlutterWindow.swift`). On Quit the app delegate hides every window at once; Dart answers the exit request once every write
+is acknowledged or after 3 s (`lib/writes/quit_when_synced.dart`), and the process exits half a second after that
+rather than wait out Flutter's and Firebase's shutdown (it took seconds). Widget tests run at 800×600 (phone layout); `test/split_view_test.dart`
 resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
 (`splitLayout`, `integration_test/support.dart`).
 
