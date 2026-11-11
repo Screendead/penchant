@@ -37,6 +37,8 @@ typedef FlushLeft = ({DateTime? next, bool refused, bool unacknowledged});
 ///
 /// Without the journal key [writes] cannot create, so every log stays queued
 /// for a flush that has it, and counts as unacknowledged.
+///
+/// [writeNow] names logs to write inside their Undo hold (readyLogs).
 Future<FlushLeft> flushQueuedLogs({
   required WidgetBridge bridge,
   required TrackerWrites writes,
@@ -44,9 +46,15 @@ Future<FlushLeft> flushQueuedLogs({
   required String uid,
   required DateTime now,
   bool inBackground = false,
+  Set<String> writeNow = const <String>{},
 }) async {
   final ({List<QueuedLog> ready, List<QueuedLog> cancelled, DateTime? next})
-  batch = readyLogs(await bridge.pendingLogs(), uid: uid, now: now);
+  batch = readyLogs(
+    await bridge.pendingLogs(),
+    uid: uid,
+    now: now,
+    writeNow: writeNow,
+  );
   final List<QueuedLog> done = <QueuedLog>[...batch.cancelled];
   final List<QueuedLog> writable = <QueuedLog>[
     for (final QueuedLog log in batch.ready)
@@ -143,35 +151,72 @@ Future<bool?> _stillOnServer(QueuedLog log, TrackerWrites writes) async {
   }
 }
 
+/// Runs the app's flushes of the widget queue one at a time.
+class WidgetLogFlusher {
+  WidgetLogFlusher._(this._run);
+
+  final Future<void> Function(Set<String> writeNow) _run;
+  bool _disposed = false;
+  Future<void>? _inFlight;
+
+  /// A request during a flush waits for that one rather than starting another.
+  Future<void> flush() {
+    if (_disposed) {
+      return Future<void>.value();
+    }
+    return _inFlight ??= _start(const <String>{});
+  }
+
+  /// Writes the log [activityID] now, inside its Undo hold, after any flush
+  /// already running (which may have read the queue before it was there).
+  /// Once this completes the log is off the queue, written, or still queued
+  /// because it could not be: no later flush creates it again, so nothing
+  /// can overwrite a change made to the entry after this.
+  Future<void> writeNow(String activityID) async {
+    while (_inFlight != null) {
+      await _inFlight;
+    }
+    if (_disposed) {
+      return;
+    }
+    return _inFlight = _start(<String>{activityID});
+  }
+
+  Future<void> _start(Set<String> writeNow) =>
+      _run(writeNow).whenComplete(() => _inFlight = null);
+
+  void _dispose() => _disposed = true;
+}
+
 /// Writes the widgets' queued logs while someone is signed in with the journal
 /// key loaded: at once, on every resume, when a held-back log comes due, and
 /// when native asks (a log queued while the app runs, or a background
 /// refresh). Nothing polls: native hears each enqueue from the extension.
-final widgetLogFlushProvider = Provider<void>((ref) {
+/// Null while it cannot write.
+final widgetLogFlushProvider = Provider<WidgetLogFlusher?>((ref) {
   if (!widgetsSupported) {
-    return;
+    return null;
   }
   final String? uid = ref.watch(
     userProvider.select((AsyncValue<User?> u) => u.value?.uid),
   );
   if (uid == null) {
-    return;
+    return null;
   }
   // Until the key loads (or while it is missing or locked) TrackerWrites has
   // no sealer and cannot create. The queue keeps the logs, and the sealer
   // arriving rebuilds this provider.
   if (ref.watch(sealerProvider) == null) {
-    return;
+    return null;
   }
   final WidgetBridge bridge = ref.watch(widgetBridgeProvider);
   final TrackerWrites writes = ref.watch(trackerWritesProvider);
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
 
   bool disposed = false;
-  Future<void>? inFlight;
   Timer? due;
-  late final Future<void> Function() flush;
-  Future<void> run() async {
+  late final WidgetLogFlusher flusher;
+  Future<void> run(Set<String> writeNow) async {
     try {
       final DateTime? next = (await flushQueuedLogs(
         bridge: bridge,
@@ -179,31 +224,29 @@ final widgetLogFlushProvider = Provider<void>((ref) {
         rejected: rejected,
         uid: uid,
         now: DateTime.now(),
+        writeNow: writeNow,
       )).next;
       due?.cancel();
       if (next != null && !disposed) {
-        due = Timer(next.difference(DateTime.now()), flush);
+        due = Timer(next.difference(DateTime.now()), flusher.flush);
       }
     } on Object catch (e, stack) {
       reportError(e, stack, context: 'while flushing $widgetLogWhat');
     }
   }
 
-  // A request during a flush waits for that one rather than starting another.
-  flush = () {
-    if (disposed) {
-      return Future<void>.value();
-    }
-    return inFlight ??= run().whenComplete(() => inFlight = null);
-  };
-
-  final AppLifecycleListener lifecycle = AppLifecycleListener(onResume: flush);
-  bridge.onFlushRequest(flush);
+  flusher = WidgetLogFlusher._(run);
+  final AppLifecycleListener lifecycle = AppLifecycleListener(
+    onResume: flusher.flush,
+  );
+  bridge.onFlushRequest(flusher.flush);
   ref.onDispose(() {
     disposed = true;
+    flusher._dispose();
     due?.cancel();
     bridge.onFlushRequest(null);
     lifecycle.dispose();
   });
-  unawaited(flush());
+  unawaited(flusher.flush());
+  return flusher;
 });
