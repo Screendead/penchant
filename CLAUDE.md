@@ -358,7 +358,15 @@ devices the loser adopts the winner's record and asks for its recovery key. A `k
 gate, nothing creatable; each recheck (every 5 s and on resume) reads the keychain and asks the server again.
 `StoredKey.location` and `syncRefusal` (the keychain's status code alone, for a refused synced lookup or write)
 reach the Recovery key page through `RecoveryKeyStatus`, which says where this device keeps the key; a this-device
-key stays one. `deleteAccount` deletes the record. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
+key stays one. `deleteAccount` deletes the record. Device files holding journal content, findings or
+Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/sealed/<uid>/`, each file through
+`Sealer.sealFile` (a 4-byte length prefix, padded to a power of two from 4096; the field envelope is unchanged) with
+`device-file/v1/<uid length>:<uid>/<name>` as associated data. `sealedFilesProvider` is null while nobody is signed in or no key is
+loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
+use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
+it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
+`lib/insights/health_sample_cache.dart`; random names, since spans follow use times). The Swift-written
+`Caches/health-sync.json` (anchors and changed days, no values) stays plaintext. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
 `startApp` (`smoke_test.dart`) seal with the real key. `storedContent` and `storedViceID` open sealed
