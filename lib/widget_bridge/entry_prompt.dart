@@ -1,12 +1,18 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/queued_log.dart';
 import 'package:tracker/data/sealed.dart';
+import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
+import 'package:tracker/widgets/undo_bar.dart';
+import 'package:tracker/writes/what_was_going_on.dart';
 
 /// An entry logged by a widget or the menu bar whose "What was going on?" was
 /// tapped. Ids only: what is picked is journal content, sealed in the app.
@@ -147,4 +153,53 @@ Future<EntryPromptState> prepareEntryPrompt({
   return queued(after, QueuedLogOp.log)
       ? EntryPromptState.unsaved
       : EntryPromptState.ready;
+}
+
+const String entryUndoneNotice = 'That entry was undone.';
+const String entryUnsavedNotice =
+    'That entry is not saved yet. Penchant will save it, then you can add '
+    'what was going on from Today.';
+
+/// Today's handling of a widget's or the menu bar's "What was going on?":
+/// the entry is written first if still queued, then the picker opens on it.
+Future<void> openEntryPrompt(
+  BuildContext context,
+  WidgetRef ref,
+  EntryPrompt prompt,
+) async {
+  final String? uid = ref.read(userProvider).value?.uid;
+  if (uid == null) {
+    return;
+  }
+  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+  final EntryPromptState state = await prepareEntryPrompt(
+    bridge: ref.read(widgetBridgeProvider),
+    flusher: ref.read(widgetLogFlushProvider),
+    uid: uid,
+    activityID: prompt.activityID,
+  );
+  if (!context.mounted || !messenger.mounted) {
+    return;
+  }
+  switch (state) {
+    case EntryPromptState.undone:
+      showUndoBar(messenger, const TextSpan(text: entryUndoneNotice));
+    case EntryPromptState.unsaved:
+      showUndoBar(messenger, const TextSpan(text: entryUnsavedNotice));
+    case EntryPromptState.ready:
+      final Vice? vice = ref
+          .read(viceListProvider)
+          .value
+          ?.where((Vice v) => v.id == prompt.viceID && !v.locked)
+          .firstOrNull;
+      if (vice == null) {
+        return;
+      }
+      await askWhatWasGoingOn(
+        context,
+        ref,
+        activityID: prompt.activityID,
+        vice: vice,
+      );
+  }
 }

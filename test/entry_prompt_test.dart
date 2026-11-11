@@ -12,46 +12,9 @@ import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 
 import 'fake_sealer.dart';
+import 'fake_widget_bridge.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
-
-class _QueueBridge implements WidgetBridge {
-  _QueueBridge(this.queue);
-
-  List<QueuedLog> queue;
-
-  @override
-  Future<void> save(String snapshot) async {}
-
-  @override
-  Future<void> clear() async {}
-
-  @override
-  Future<List<QueuedLog>> pendingLogs() async => List<QueuedLog>.of(queue);
-
-  @override
-  Future<void> removeLogs(List<QueuedLog> done) async {
-    queue = <QueuedLog>[
-      for (final QueuedLog l in queue)
-        if (!done.any((QueuedLog d) => d.id == l.id && d.op == l.op)) l,
-    ];
-  }
-
-  @override
-  void onFlushRequest(Future<void> Function()? flush) {}
-
-  @override
-  Future<void> backgroundDone(BackgroundFlushOutcome outcome) async {}
-}
-
-QueuedLog _log(String id, DateTime at, {QueuedLogOp op = QueuedLogOp.log}) =>
-    QueuedLog(
-      op: op,
-      id: id,
-      uid: 'u1',
-      viceID: 'coffee',
-      createdAtMs: at.millisecondsSinceEpoch.toDouble(),
-    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -60,7 +23,7 @@ void main() {
   tearDown(() => debugDefaultTargetPlatformOverride = null);
 
   Future<WidgetLogFlusher?> flusher(
-    _QueueBridge bridge,
+    FakeWidgetBridge bridge,
     FakeTrackerWrites writes, {
     bool keyLoaded = true,
   }) async {
@@ -86,7 +49,10 @@ void main() {
 
   test('readyLogs takes a log named to write now inside its hold', () {
     final DateTime now = DateTime(2026, 11, 11, 9);
-    final List<QueuedLog> logs = <QueuedLog>[_log('a', now), _log('b', now)];
+    final List<QueuedLog> logs = <QueuedLog>[
+      queuedLog('a', now),
+      queuedLog('b', now),
+    ];
     final ready = readyLogs(logs, uid: 'u1', now: now, writeNow: {'a'});
     expect(ready.ready.map((QueuedLog l) => l.id), <String>['a']);
     expect(ready.next, now.add(queuedLogHold));
@@ -95,8 +61,8 @@ void main() {
   test('a log inside its Undo hold is written at once, before the ask, and '
       'no later flush creates it again', () async {
     final FakeTrackerWrites writes = FakeTrackerWrites();
-    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
-      _log('a', DateTime.now().subtract(const Duration(seconds: 1))),
+    final FakeWidgetBridge bridge = FakeWidgetBridge(<QueuedLog>[
+      queuedLog('a', DateTime.now().subtract(const Duration(seconds: 1))),
     ]);
     final WidgetLogFlusher? flush = await flusher(bridge, writes);
     expect(written(writes), isEmpty, reason: 'held back by the Undo hold');
@@ -118,10 +84,10 @@ void main() {
 
   test('waits for a flush already running before writing the log', () async {
     final FakeTrackerWrites writes = FakeTrackerWrites();
-    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[]);
+    final FakeWidgetBridge bridge = FakeWidgetBridge(<QueuedLog>[]);
     final WidgetLogFlusher? flush = await flusher(bridge, writes);
     bridge.queue = <QueuedLog>[
-      _log('a', DateTime.now().subtract(const Duration(minutes: 1))),
+      queuedLog('a', DateTime.now().subtract(const Duration(minutes: 1))),
     ];
     final Future<void> running = flush!.flush();
 
@@ -140,11 +106,11 @@ void main() {
   test('an entry undone since (its delete queued) writes nothing', () async {
     final FakeTrackerWrites writes = FakeTrackerWrites();
     final DateTime tapped = DateTime.now().subtract(const Duration(seconds: 2));
-    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[]);
+    final FakeWidgetBridge bridge = FakeWidgetBridge(<QueuedLog>[]);
     final WidgetLogFlusher? flush = await flusher(bridge, writes);
     bridge.queue = <QueuedLog>[
-      _log('a', tapped),
-      _log('a', tapped, op: QueuedLogOp.delete),
+      queuedLog('a', tapped),
+      queuedLog('a', tapped, op: QueuedLogOp.delete),
     ];
 
     final EntryPromptState state = await prepareEntryPrompt(
@@ -160,7 +126,7 @@ void main() {
 
   test('an entry no longer queued was written: ask, writing nothing', () async {
     final FakeTrackerWrites writes = FakeTrackerWrites();
-    final _QueueBridge bridge = _QueueBridge(<QueuedLog>[]);
+    final FakeWidgetBridge bridge = FakeWidgetBridge(<QueuedLog>[]);
     final WidgetLogFlusher? flush = await flusher(bridge, writes);
 
     expect(
@@ -179,8 +145,8 @@ void main() {
     'without the journal key the log stays queued and nothing is asked',
     () async {
       final FakeTrackerWrites writes = FakeTrackerWrites();
-      final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
-        _log('a', DateTime.now().subtract(const Duration(seconds: 1))),
+      final FakeWidgetBridge bridge = FakeWidgetBridge(<QueuedLog>[
+        queuedLog('a', DateTime.now().subtract(const Duration(seconds: 1))),
       ]);
       final WidgetLogFlusher? flush = await flusher(
         bridge,
