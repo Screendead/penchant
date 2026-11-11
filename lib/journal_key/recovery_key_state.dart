@@ -98,6 +98,10 @@ final recoveryKeyActionsProvider = Provider<RecoveryKeyActions>(
 /// opens until the recovery key is entered.
 final journalNeedsRecoveryKeyProvider = Provider<bool>((ref) => false);
 
+/// True while the journal needs its key and this device holds none, so the
+/// gate waits for iCloud Keychain before asking for the recovery key.
+final journalKeyAwaitingSyncProvider = Provider<bool>((ref) => false);
+
 /// True while whether this device holds the journal's key is not yet known,
 /// so nothing is written until it is.
 final journalKeyPendingProvider = Provider<bool>((ref) => false);

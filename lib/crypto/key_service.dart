@@ -142,9 +142,13 @@ class KeyReady extends JournalKeyState {
 
 /// The server holds a key this device lacks, or another one than it holds.
 class KeyNeedsRecovery extends JournalKeyState {
-  const KeyNeedsRecovery(this.record);
+  const KeyNeedsRecovery(this.record, {this.otherKeyHere = false});
 
   final KeyRecord record;
+
+  /// This device holds a key, but not [record]'s. When false it holds none,
+  /// and iCloud Keychain may still be on its way with the right one.
+  final bool otherKeyHere;
 }
 
 /// No key on this device and no answer from the server, so whether one
@@ -276,7 +280,7 @@ class KeyService {
   JournalKeyState _against(StoredKey? stored, KeyRecord record) =>
       stored != null && keyIDOf(stored.journalKey) == record.keyID
       ? KeyReady(stored, record, aes256)
-      : KeyNeedsRecovery(record);
+      : KeyNeedsRecovery(record, otherKeyHere: stored != null);
 
   // The keychain is written before the server, so a key the server names is
   // always on some device; a key saved here whose record never landed is
