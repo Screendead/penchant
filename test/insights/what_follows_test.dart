@@ -5,6 +5,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
+import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 import '../fakes.dart';
@@ -650,5 +651,88 @@ void main() {
     expect(uses.map((u) => u.habitId), <String>['Coffee', 'Tea']);
     expect(uses.first.at, at);
     expect(uses.map((u) => u.amount), <num>[2, 0.5]);
+  });
+  test('use in runs against noise that carries over is judged on fewer '
+      'days', () {
+    final Random random = Random(21);
+    double carried = 0;
+    final List<HabitUse> uses = <HabitUse>[];
+    final List<DailyOutcome> outcomes = <DailyOutcome>[];
+    for (int i = 0; i < 120; i++) {
+      final DateTime day = addDays(start, i);
+      if ((i ~/ 5).isEven) {
+        uses.add(
+          HabitUse(
+            habitId: 'Coffee',
+            at: day.add(const Duration(hours: 15)),
+            amount: 1,
+          ),
+        );
+      }
+      carried = 0.8 * carried + 20 * gaussian(random);
+      outcomes.add(
+        DailyOutcome(date: addDays(day, 1), metricId: sleep, value: carried),
+      );
+    }
+    HabitInsight judged(InsightGates gates) => whatFollows(
+      habits: DailyHabitSeries.fromUses(uses),
+      outcomes: OutcomeSeries.fromOutcomes(outcomes),
+      metricId: sleep,
+      gates: gates,
+    ).single;
+    double width(HabitInsight insight) {
+      final Interval interval = switch (insight) {
+        HabitFinding(:final Interval interval) => interval,
+        HabitRefusal(:final Interval? interval) => interval!,
+      };
+      return interval.high - interval.low;
+    }
+
+    // Too many pairs asked for: no widening.
+    final HabitInsight plain = judged(
+      const InsightGates(minSerialPairs: 1000, bootstrapReplicates: 0),
+    );
+    final HabitInsight widened = judged(
+      const InsightGates(bootstrapReplicates: 0),
+    );
+    expect(width(widened), greaterThan(1.2 * width(plain)));
+    expect(insightPValue(widened)!, greaterThan(insightPValue(plain)!));
+  });
+
+  test('a difference that rests on one week is refused by the block '
+      'bootstrap', () {
+    // Coffee on a quarter of days; on four days of one week it comes with a
+    // night 300 minutes longer, and with nothing on any other day.
+    const Set<int> spiked = <int>{40, 42, 44, 46};
+    final data = journal(
+      seed: 22,
+      usedOn: (random, day) => <String>{
+        if (day >= 40 && day <= 46
+            ? spiked.contains(day)
+            : random.nextDouble() < 0.25) ...<String>[
+          'Coffee',
+          if (spiked.contains(day)) 'Spike',
+        ],
+      },
+      effectOf: (used) => used.contains('Spike') ? 300 : 0,
+    );
+    HabitInsight judged(InsightGates gates) => forHabit(
+      whatFollows(
+        habits: data.habits,
+        outcomes: data.outcomes,
+        metricId: sleep,
+        gates: gates,
+      ),
+      'Coffee',
+    );
+    expect(
+      judged(const InsightGates(bootstrapReplicates: 0)),
+      isA<HabitFinding>(),
+    );
+    final HabitInsight gated = judged(const InsightGates());
+    expect(gated, isA<HabitRefusal>());
+    gated as HabitRefusal;
+    expect(gated.reason, RefusalReason.withinNoise);
+    expect(gated.interval!.crossesZero, isTrue);
   });
 }
