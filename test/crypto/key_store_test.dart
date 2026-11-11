@@ -74,7 +74,11 @@ class FakeKeychain extends Fake implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    items.remove((key, _synced(iOptions, mOptions)));
+    // The plugin deletes the synced and the this-device item of a name
+    // together, whichever the options name.
+    items
+      ..remove((key, true))
+      ..remove((key, false));
   }
 }
 
@@ -193,6 +197,22 @@ void main() {
       FakeKeychain()..items.addAll(keychain.items),
     ).save('u1', journalKey: key, recoveryKey: recovery);
     expect(saved.location, KeyLocation.thisDevice);
+  });
+
+  test('a first key kept on this device says the keychain refused', () async {
+    final StoredKey writeRefused = await KeyStore(
+      FakeKeychain(refuseSynced: true),
+    ).save('u1', journalKey: key);
+    expect(writeRefused.syncRefusal!.status, -34018);
+
+    final KeyStore store = KeyStore(
+      FakeKeychain(refuseSynced: true, refuseSyncedReads: true),
+    );
+    expect(
+      (await store.save('u1', journalKey: key)).syncRefusal!.status,
+      -34018,
+    );
+    expect((await store.read('u1'))!.syncRefusal!.status, -34018);
   });
 
   test('deletes both kinds of item', () async {

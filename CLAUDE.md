@@ -367,7 +367,9 @@ devices the loser adopts the winner's record and asks for its recovery key. A `k
 (or no key here) locks the journal behind `RecoveryKeyGate`, which also holds every route while
 `journalKeyPendingProvider` says no key is here and the server has not answered. Offline with no key: `KeyUnknown`, no
 gate, nothing creatable; each recheck (every 5 s and on resume) reads the keychain and asks the server again.
-`deleteAccount` deletes the record. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
+`StoredKey.location` and `syncRefusal` (the keychain's status code alone, for a refused synced lookup or write)
+reach the Recovery key page through `RecoveryKeyStatus`, which says where this device keeps the key; a this-device
+key stays one. `deleteAccount` deletes the record. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
 `startApp` (`smoke_test.dart`) seal with the real key. `storedContent` and `storedViceID` open sealed
