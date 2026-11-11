@@ -41,9 +41,17 @@ class AppDelegate: FlutterAppDelegate {
     }
   }
 
-  // The headless flush engine never answers a termination request.
+  // The headless flush engine never answers a termination request. Otherwise
+  // FlutterAppDelegate asks Dart first and the engine and Firebase then shut
+  // down, which took seconds with the window still up: the windows go at once
+  // and the process is given a second. Every write is in Firestore's local
+  // queue and the device journal from the moment it is made, so a cut-short
+  // shutdown loses none.
   override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-    FlushMode.active ? .terminateNow : super.applicationShouldTerminate(sender)
+    if FlushMode.active { return .terminateNow }
+    for window in NSApp.windows { window.orderOut(nil) }
+    DispatchQueue.global().asyncAfter(deadline: .now() + 1) { exit(0) }
+    return super.applicationShouldTerminate(sender)
   }
 
   // The user opened Penchant while it ran to flush: it becomes the normal app.
