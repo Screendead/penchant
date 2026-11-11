@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/calendar_source.dart';
+import 'package:tracker/insights/insights_timing.dart';
 
 // Calendar events stay on the device: ReportProviderErrors sends every
 // provider failure to Crashlytics, so nothing here may fail. Each failure is
@@ -60,7 +61,10 @@ final calendarEventsProvider = FutureProvider.autoDispose
       }
 
       try {
-        return await readAll().timeout(calendarReadTimeout);
+        return await timedInsightsStage(
+          'calendar read',
+          () => readAll().timeout(calendarReadTimeout),
+        );
       } catch (_) {
         return noCalendarEvents;
       }
