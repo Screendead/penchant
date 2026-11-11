@@ -89,11 +89,14 @@ const Duration queuedLogHold = Duration(seconds: 7);
 
 /// [uid]'s logs that are old enough to write at [now], in queue order, and
 /// when the next one held back will be. A log and its own delete are both
-/// returned as `cancelled`: the queue drops them, nothing is written.
+/// returned as `cancelled`: the queue drops them, nothing is written. A log
+/// whose id is in [writeNow] is ready inside its hold: its entry was opened
+/// to say what was going on, which needs it written first.
 ({List<QueuedLog> ready, List<QueuedLog> cancelled, DateTime? next}) readyLogs(
   List<QueuedLog> logs, {
   required String uid,
   required DateTime now,
+  Set<String> writeNow = const <String>{},
 }) {
   final List<QueuedLog> ready = <QueuedLog>[];
   DateTime? next;
@@ -102,7 +105,9 @@ const Duration queuedLogHold = Duration(seconds: 7);
       continue;
     }
     final DateTime due = log.createdAt.add(queuedLogHold);
-    if (log.op == QueuedLogOp.delete || !due.isAfter(now)) {
+    if (log.op == QueuedLogOp.delete ||
+        !due.isAfter(now) ||
+        writeNow.contains(log.id)) {
       ready.add(log);
     } else if (next == null || due.isBefore(next)) {
       next = due;

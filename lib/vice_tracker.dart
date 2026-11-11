@@ -22,6 +22,7 @@ import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/weekly_review_page.dart';
+import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/day_picker.dart';
@@ -97,6 +98,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<bool>(
       pendingWeeklyReviewProvider,
       (bool? _, bool pending) => _openWeeklyReview(pending),
+      fireImmediately: true,
+    );
+    ref.listenManual<EntryPrompt?>(
+      entryPromptReadyProvider,
+      (EntryPrompt? _, EntryPrompt? prompt) => _openEntryPrompt(prompt),
       fireImmediately: true,
     );
     ref.listenManual<int?>(
@@ -195,6 +201,22 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       Navigator.of(context)
         ..popUntil((Route<dynamic> r) => r.isFirst)
         ..pushNamed(WeeklyReviewPage.route);
+    });
+  }
+
+  // A widget's or the menu bar's "What was going on?": back to Today, then
+  // the picker on that entry.
+  void _openEntryPrompt(EntryPrompt? prompt) {
+    if (prompt == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ref.read(entryPromptReadyProvider) != prompt) {
+        return;
+      }
+      ref.read(pendingEntryPromptProvider.notifier).clear();
+      Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+      unawaited(openEntryPrompt(context, ref, prompt));
     });
   }
 
