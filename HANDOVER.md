@@ -82,6 +82,8 @@ Jack went to sleep with "treat this as a /finish-and-pitch". Round 15's page hol
   `last-report` under the sealed folder) and shown at a cold open with "Updating…". Unmeasured on a device.
 - #261 version 0.2.0 cut (`r10-release` B done).
 
+Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack reopens the Mac app himself.
+
 **Open pull requests:**
 
 - #254 (draft) the fall test. `sparse-fell` B (more time for occasional habits) was built, measured and dropped: false
@@ -104,6 +106,10 @@ Jack went to sleep with "treat this as a /finish-and-pitch". Round 15's page hol
 
 **Left:**
 
+- The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
+  findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
+  or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
+- `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
 - The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
 - The Mac recovery key on Universal Clipboard (register).
