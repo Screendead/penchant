@@ -1055,10 +1055,13 @@ void main() {
         'around March 3, 2026.';
     const String rose =
         'Around the same time, your logged amount of Tea rose from about 1 '
-        'item a day to 2.5, allowing for the trend it was already on.';
+        'item a day to 2.5.';
+    const String range =
+        'Range: 0.8 to 2 more a day, allowing for the trend it was already '
+        'on';
     expect(find.text(fell), findsOneWidget);
     expect(find.text(rose), findsOneWidget);
-    expect(find.text('Range: 0.8 to 2 more a day'), findsOneWidget);
+    expect(find.text(range), findsOneWidget);
     expect(find.text('From 91 days before and 60 since'), findsOneWidget);
     expect(find.text(replacementCaveat), findsOneWidget);
     expect(find.textContaining('Your logged amount of Tea fell'), findsNothing);
@@ -1088,7 +1091,7 @@ void main() {
       copied,
       contains(
         '\n${InsightsPage.cuttingDownHeading}\n\nCoffee\n$fell\n$rose\n'
-        'Range: 0.8 to 2 more a day\nFrom 91 days before and 60 since\n'
+        '$range\nFrom 91 days before and 60 since\n'
         '$replacementCaveat\n',
       ),
     );

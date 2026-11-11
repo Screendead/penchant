@@ -55,6 +55,7 @@ class Replacement {
     this.interval,
     this.pValue,
     this.refusal,
+    this.began = false,
   });
 
   /// The habit that fell, and when.
@@ -82,9 +83,12 @@ class Replacement {
   String get habitId => fall.habitId;
   bool get found => refusal == null;
 
-  /// No entry in the baseline: the journal cannot tell a habit taken up from
-  /// one newly logged.
-  bool get began => before == 0;
+  /// No entry at all before the fall: the journal cannot tell a habit taken
+  /// up from one newly logged.
+  final bool began;
+
+  /// Entries before the baseline, none in it.
+  bool get resumed => before == 0 && !began;
 
   Replacement refused(ReplacementRefusal reason) => Replacement(
     fall: fall,
@@ -97,6 +101,7 @@ class Replacement {
     interval: interval,
     pValue: pValue,
     refusal: reason,
+    began: began,
   );
 }
 
@@ -168,6 +173,7 @@ List<Replacement> replacement({
             interval: fitted?.interval,
             pValue: fitted?.pValue,
             refusal: refusal,
+            began: !habits.firstUse(riser)!.isBefore(fall.day),
           );
       if (shared) {
         out.add(result(refusal: ReplacementRefusal.otherFall));

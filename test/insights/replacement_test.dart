@@ -89,6 +89,26 @@ void main() {
     expect(r.interval!.low.isNaN || r.interval!.high.isNaN, isFalse);
   });
 
+  test('a habit with entries long before, none in the baseline and some '
+      'since reads as resumed, not begun', () {
+    final Replacement r = replacement(
+      uses: <HabitUse>[
+        ...usesOf('Cigarettes', <int>[
+          for (int i = 0; i < 250; i++) i < 160 ? 3 : 1,
+        ]),
+        ...usesOf('Vape', <int>[
+          for (int i = 0; i < 250; i++) i < 30 || i >= 160 ? 2 : 0,
+        ]),
+      ],
+      through: addDays(syntheticStart, 249),
+    ).single;
+    expect(r.fall.day, addDays(syntheticStart, 160));
+    expect(r.refusal, isNull);
+    expect(r.before, 0);
+    expect(r.began, isFalse);
+    expect(r.resumed, isTrue);
+  });
+
   test('a steady habit, and one that rose six weeks after the fall, are '
       'refused', () {
     final Replacement steady = judge(

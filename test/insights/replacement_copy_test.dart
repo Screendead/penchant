@@ -26,6 +26,7 @@ Replacement rise(
   double since = 5,
   double p = 0.001,
   double fallSince = 1.5,
+  bool began = false,
 }) => Replacement(
   fall: fall(since: fallSince),
   riserId: riser,
@@ -36,6 +37,7 @@ Replacement rise(
   effect: since - before,
   interval: Interval((since - before) / 2, (since - before) * 1.5),
   pValue: p,
+  began: began,
 );
 
 String name(String id) => switch (id) {
@@ -52,16 +54,26 @@ Unit unit(String id) => switch (id) {
 
 void main() {
   final Replacement vape = rise('vape');
-  final Replacement tea = rise('tea', before: 0, since: 0.4, p: 0.01);
+  final Replacement tea = rise(
+    'tea',
+    before: 0,
+    since: 0.4,
+    p: 0.01,
+    began: true,
+  );
 
   test('a rise reads as what the journal holds, around the same time, and '
       'never as one habit taking the place of another', () {
     expect(
       replacementSentence(vape, 'Vape', 'en', unit: Unit.puff),
       'Around the same time, your logged amount of Vape rose from about 2 '
-      'puffs a day to 5, allowing for the trend it was already on.',
+      'puffs a day to 5.',
     );
-    expect(replacementRange(vape, 'en'), 'Range: 1.5 to 4.5 more a day');
+    expect(
+      replacementRange(vape, 'en'),
+      'Range: 1.5 to 4.5 more a day, allowing for the trend it was '
+      'already on',
+    );
     expect(replacementBasis(vape), 'From 91 days before and 60 since');
     expect(
       replacementLine(vape, 'Vape', 'en', unit: Unit.puff),
@@ -91,7 +103,11 @@ void main() {
       'Also around then: first entries for Tea, about 2.8 drinks a week '
       'since',
     );
-    expect(replacementRange(tea, 'en'), 'Range: 1.4 to 4.2 more a week');
+    expect(
+      replacementRange(tea, 'en'),
+      'Range: 1.4 to 4.2 more a week, allowing for the trend it was already '
+      'on',
+    );
     expect(
       replacementSentence(
         rise('tea', before: 0.2, since: 0.5),
@@ -100,7 +116,17 @@ void main() {
         unit: Unit.drink,
       ),
       'Around the same time, your logged amount of Tea rose from about 1.4 '
-      'drinks a week to 3.5, allowing for the trend it was already on.',
+      'drinks a week to 3.5.',
+    );
+    final Replacement again = rise('tea', before: 0, since: 2);
+    expect(
+      replacementSentence(again, 'Tea', 'en', unit: Unit.drink),
+      'Around the same time, your entries for Tea start again after none in '
+      'the 13 weeks before: about 2 drinks a day since.',
+    );
+    expect(
+      replacementLine(again, 'Tea', 'en', unit: Unit.drink),
+      'Also around then: entries for Tea again, about 2 drinks a day since',
     );
   });
 
@@ -127,8 +153,9 @@ void main() {
         'Your logged amount of Cigarettes fell from about 12 items a day to '
         '1.5 around March 3, 2026.\n'
         'Around the same time, your logged amount of Vape rose from about 2 '
-        'puffs a day to 5, allowing for the trend it was already on.\n'
-        'Range: 1.5 to 4.5 more a day\n'
+        'puffs a day to 5.\n'
+        'Range: 1.5 to 4.5 more a day, allowing for the trend it was '
+        'already on\n'
         'From 91 days before and 60 since\n'
         'Also around then: first entries for Tea, about 2.8 drinks a week '
         'since\n'
@@ -149,7 +176,14 @@ void main() {
           body: SingleChildScrollView(
             child: ReplacementCardView(
               card: replacementCards(<Replacement>[
-                rise('tea', before: 0, since: 0.4, p: 0.01, fallSince: 0),
+                rise(
+                  'tea',
+                  before: 0,
+                  since: 0.4,
+                  p: 0.01,
+                  fallSince: 0,
+                  began: true,
+                ),
                 stoppedVape,
               ]).single,
               nameOf: name,
@@ -179,11 +213,17 @@ void main() {
     expect(
       find.text(
         'Around the same time, your logged amount of Vape rose from about 2 '
-        'puffs a day to 5, allowing for the trend it was already on.',
+        'puffs a day to 5.',
       ),
       findsOneWidget,
     );
-    expect(find.text('Range: 1.5 to 4.5 more a day'), findsOneWidget);
+    expect(
+      find.text(
+        'Range: 1.5 to 4.5 more a day, allowing for the trend it was '
+        'already on',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('From 91 days before and 60 since'), findsOneWidget);
     expect(
       find.text(

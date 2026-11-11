@@ -102,7 +102,7 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String cuttingDownBody =
       'When a habit stays lower for a few weeks, this will show what moved '
       'with it: your sleep and heart against before, and any habit that rose '
-      'in its place.';
+      'around the same time.';
   static const String setsOffTitle = 'Nothing to show yet';
   static const String setsOffBody =
       'This will show what tends to come before each habit, such as a short '
