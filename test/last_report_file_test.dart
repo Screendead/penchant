@@ -99,7 +99,9 @@ void main() {
     final ProviderContainer c = ProviderContainer(
       overrides: <Override>[
         ...insightsOverrides(
-          health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
           runner: (InsightsInput input) async {
             if (gate != null) await gate;
             return computeInsights(input);
@@ -150,8 +152,10 @@ void main() {
       return listEquals(kept, expected);
     }, 'the fresh report was never kept');
     for (final File f in await filesOnDisk()) {
-      expect(utf8.decode(await f.readAsBytes(), allowMalformed: true),
-          isNot(contains('sleepDeep')));
+      expect(
+        utf8.decode(await f.readAsBytes(), allowMalformed: true),
+        isNot(contains('sleepDeep')),
+      );
     }
   });
 

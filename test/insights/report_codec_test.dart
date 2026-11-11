@@ -411,9 +411,8 @@ void main() {
       ...good['report']! as Map<String, Object?>,
     };
     final List<Object?> findings = <Object?>[...report['findings']! as List];
-    findings[0] = <String, Object?>{
-      ...findings[0]! as Map<String, Object?>,
-    }..remove('standardized');
+    findings[0] = <String, Object?>{...findings[0]! as Map<String, Object?>}
+      ..remove('standardized');
     expect(
       decodeInsightsView(
         bytes(<String, Object?>{

@@ -60,7 +60,9 @@ InsightsView? decodeInsightsView(List<int> bytes) {
     });
     if (values.isEmpty) return null;
     final Map<String, DateTime> firstDays = <String, DateTime>{
-      for (final MapEntry<String, Object?> e in _map(_req(m, 'firstDays')).entries)
+      for (final MapEntry<String, Object?> e in _map(
+        _req(m, 'firstDays'),
+      ).entries)
         e.key: _at(_asInt(e.value)),
     };
     return (
@@ -112,8 +114,10 @@ Object? _req(Map<String, Object?> m, String key) =>
 
 int _asInt(Object? v) => v is int ? v : throw const _Bad();
 
-String _str(Map<String, Object?> m, String key) =>
-    switch (_req(m, key)) { final String s => s, _ => throw const _Bad() };
+String _str(Map<String, Object?> m, String key) => switch (_req(m, key)) {
+  final String s => s,
+  _ => throw const _Bad(),
+};
 
 String? _ostr(Map<String, Object?> m, String key) => switch (_req(m, key)) {
   null => null,
@@ -123,8 +127,10 @@ String? _ostr(Map<String, Object?> m, String key) => switch (_req(m, key)) {
 
 int _int(Map<String, Object?> m, String key) => _asInt(_req(m, key));
 
-bool _bool(Map<String, Object?> m, String key) =>
-    switch (_req(m, key)) { final bool b => b, _ => throw const _Bad() };
+bool _bool(Map<String, Object?> m, String key) => switch (_req(m, key)) {
+  final bool b => b,
+  _ => throw const _Bad(),
+};
 
 double _dbl(Map<String, Object?> m, String key) => _toDouble(_req(m, key));
 
@@ -141,11 +147,8 @@ T _enum<T extends Enum>(List<T> values, Map<String, Object?> m, String key) {
   throw const _Bad();
 }
 
-T? _oenum<T extends Enum>(
-  List<T> values,
-  Map<String, Object?> m,
-  String key,
-) => _req(m, key) == null ? null : _enum(values, m, key);
+T? _oenum<T extends Enum>(List<T> values, Map<String, Object?> m, String key) =>
+    _req(m, key) == null ? null : _enum(values, m, key);
 
 List<T> _list<T>(
   Map<String, Object?> m,
@@ -168,7 +171,8 @@ T? _opt<T>(
 T Function(Object?) _each<T>(T Function(Map<String, Object?> m) read) =>
     (Object? v) => read(_map(v));
 
-Map<String, Object?>? _ointerval(Interval? i) => i == null ? null : _interval(i);
+Map<String, Object?>? _ointerval(Interval? i) =>
+    i == null ? null : _interval(i);
 
 Map<String, Object?> _interval(Interval i) => <String, Object?>{
   'low': _d(i.low),
