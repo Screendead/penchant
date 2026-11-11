@@ -12,6 +12,7 @@ import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/providers/insights_provider.dart';
+import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/providers/last_night_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -224,11 +225,15 @@ final List<Vice> insightsVices = <Vice>[
 List<Override> insightsOverrides({
   required HealthSource health,
   AsyncValue<List<ViceActivity>>? activities,
+  List<ViceActivity> Function()? readActivities,
   AsyncValue<List<Vice>>? vices,
   void Function()? onJournalOpened,
   InsightsRunner? runner,
   LastNight? lastNight,
+  String? Function(Ref ref)? uid,
 }) => <Override>[
+  // No uid keeps nothing between opens; insights_session_test.dart signs in.
+  insightsUidProvider.overrideWith(uid ?? (Ref ref) => null),
   // Its own reads are tested in last_night_test.dart; here they would join
   // the counts of the engine's.
   lastNightProvider.overrideWith((Ref ref) async => lastNight),
@@ -243,6 +248,9 @@ List<Override> insightsOverrides({
   ),
   viceActivityRangeProvider.overrideWith((Ref ref, ActivityRange range) {
     onJournalOpened?.call();
+    if (readActivities != null) {
+      return AsyncData<List<ViceActivity>>(readActivities());
+    }
     return activities ??
         AsyncData<List<ViceActivity>>(insightsJournal().activities);
   }),

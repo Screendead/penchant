@@ -270,11 +270,12 @@ Future<HealthRead?> syncHealthDaily({
   } catch (_) {
     // Named again next time.
   }
+  // In one order for the same values, so an unchanged read reuses the report.
   return HealthValues(<DailyOutcome>[
-    for (final MapEntry<String, Map<DateTime, double>> m in values.entries)
-      for (final MapEntry<DateTime, double> d in m.value.entries)
-        if (!d.key.isBefore(range.start) && d.key.isBefore(range.end))
-          DailyOutcome(d.key, m.key, d.value),
+    for (final String id in ids.toList()..sort())
+      for (final DateTime day in values[id]!.keys.toList()..sort())
+        if (!day.isBefore(range.start) && day.isBefore(range.end))
+          DailyOutcome(day, id, values[id]![day]!),
   ]);
 }
 

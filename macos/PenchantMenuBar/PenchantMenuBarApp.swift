@@ -233,7 +233,7 @@ enum Staleness {
 // A log queued with Penchant closed (here or in a widget, which posts the same
 // Darwin notification) launches Penchant once it is past its Undo hold, with
 // no window or Dock icon, to write it (FlushMode in ios/Runner/WidgetBridge.swift).
-// Nothing runs while the queue is empty. A run that leaves logs for a retry
+// Only the heartbeat runs while the queue is empty. A run that leaves logs for a retry
 // (offline, or the session or key slow to load) is tried again when the
 // network comes back, when the Mac wakes, and on a backoff that gives up after
 // about an hour; one that needs the app (the key needs recovery, a refused
@@ -249,6 +249,7 @@ enum FlushLauncher {
   private static let backoffMinutes: [Double] = [1, 4, 15, 40]
   private static let path = NWPathMonitor()
   private static var online: Bool?
+  private static var heartbeat: Timer?
 
   static private(set) var waiting = Waiting.briefly
 
@@ -261,9 +262,20 @@ enum FlushLauncher {
   }
 
   static func start() {
+    beat(reloadingWidgets: true)
+    let timer = Timer.scheduledTimer(withTimeInterval: HelperHeartbeat.interval, repeats: true) { _ in
+      beat(reloadingWidgets: false)
+    }
+    timer.tolerance = HelperHeartbeat.interval / 2
+    heartbeat = timer
     CFNotificationCenterAddObserver(
       CFNotificationCenterGetDarwinNotifyCenter(), nil,
-      { _, _, _, _, _ in DispatchQueue.main.async { FlushLauncher.schedule() } },
+      { _, _, _, _, _ in
+        DispatchQueue.main.async {
+          FlushLauncher.beat(reloadingWidgets: false)
+          FlushLauncher.schedule()
+        }
+      },
       queueChangedNotification as CFString, nil, .deliverImmediately)
     NSWorkspace.shared.notificationCenter.addObserver(
       forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
@@ -274,7 +286,10 @@ enum FlushLauncher {
     }
     NSWorkspace.shared.notificationCenter.addObserver(
       forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
-    ) { _ in retryNow() }
+    ) { _ in
+      beat(reloadingWidgets: true)
+      retryNow()
+    }
     // A trigger only: launches never wait on it, so a monitor that misreports
     // in the sandbox costs this trigger and nothing else.
     path.pathUpdateHandler = { update in
@@ -286,6 +301,16 @@ enum FlushLauncher {
     }
     path.start(queue: .main)
     schedule()
+  }
+
+  // A widget that judged this helper gone while logs wait (QueuedWait) is
+  // told when it is back: at launch, and on wake, when a widget may have
+  // asked before the first beat.
+  static func beat(reloadingWidgets: Bool) {
+    HelperHeartbeat.beat()
+    if reloadingWidgets && !LogQueue.pending().isEmpty {
+      WidgetCenter.shared.reloadAllTimelines()
+    }
   }
 
   // A new log: its own launch, once past its hold.
