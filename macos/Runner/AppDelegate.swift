@@ -34,7 +34,8 @@ class AppDelegate: FlutterAppDelegate {
     return super.applicationShouldTerminate(sender)
   }
 
-  private func activate() {
+  private func showMainWindow() {
+    mainFlutterWindow?.makeKeyAndOrderFront(nil)
     if #available(macOS 14.0, *) {
       NSApp.activate()
     } else {
@@ -98,10 +99,27 @@ class AppDelegate: FlutterAppDelegate {
     -> Bool
   {
     if !flag {
-      mainFlutterWindow?.makeKeyAndOrderFront(nil)
-      activate()
+      showMainWindow()
     }
     return true
+  }
+
+  // A widget's or the menu bar's "What was going on?" (EntryLink). It is not
+  // a reopen, so a flush-mode run becomes the normal app here. After this
+  // turn of the run loop: at launch it can come before
+  // applicationDidFinishLaunching.
+  override func application(_ application: NSApplication, open urls: [URL]) {
+    let others = urls.filter { !EntryPrompt.open($0) }
+    if others.count < urls.count {
+      DispatchQueue.main.async {
+        self.showMainWindow()
+      }
+    }
+    if !others.isEmpty,
+      FlutterAppDelegate.instancesRespond(to: #selector(NSApplicationDelegate.application(_:open:)))
+    {
+      super.application(application, open: others)
+    }
   }
 
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {

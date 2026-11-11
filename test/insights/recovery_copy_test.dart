@@ -60,13 +60,14 @@ void main() {
     expect(
       recoverySentence(sleep, 'Beer', 'en', unit: Unit.drink),
       'After a day with 4 drinks or more logged for Beer, your time asleep '
-      'averages 31 min less that night and 16 min less the second night. By '
+      'averages 31 min less than your usual that night and 16 min less the '
+      'second night. By '
       'the third night it is back within 21 min of your usual.',
     );
     expect(
       recoverySentence(resting, 'Beer', 'en', unit: Unit.drink),
       'After a day with 4 drinks or more logged for Beer, your resting '
-      'heart rate averages 3.0 bpm higher the next day. By the second day '
+      'heart rate averages 3.0 bpm higher than your usual the next day. By the second day '
       'after it is back within 1.0 bpm of your usual.',
     );
   });
@@ -75,7 +76,8 @@ void main() {
     expect(
       recoverySentence(unclear, 'Beer', 'en', unit: Unit.drink),
       'After a day with 4 drinks or more logged for Beer, your heart rate '
-      'variability averages 9 ms lower the next day. When it comes back to '
+      'variability averages 9 ms lower than your usual the next day. When it '
+      'comes back to '
       'your usual isn’t clear yet.',
     );
   });
@@ -102,6 +104,10 @@ void main() {
 
   test('the range and basis are the first night\'s', () {
     expect(recoveryRange(sleep, 'en'), 'Range that night: 12 to 50 min less');
+    expect(
+      recoveryRange(sleep, 'en', joined: true),
+      'Range against your usual that night: 12 to 50 min less',
+    );
     expect(
       recoveryRange(resting, 'en'),
       'Range the next day: 1.2 to 4.8 bpm higher',
@@ -267,7 +273,8 @@ void main() {
         ),
         'On days with 4 drinks or more logged for Beer, your time asleep that '
         'night averages 25 min less than on days with fewer; after such a day '
-        'it averages 31 min less that night and 16 min less the second night. '
+        'it averages 31 min less than your usual that night and 16 min less the '
+        'second night. '
         'By the third night it is back within 21 min of your usual.',
       );
       expect(

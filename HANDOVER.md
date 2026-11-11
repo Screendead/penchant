@@ -53,7 +53,75 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
-## Pick up here: after the fourth run (2026-11-11)
+## Pick up here: after the night of 2026-11-11
+
+Jack went to sleep with "treat this as a /finish-and-pitch". Round 15's page holds the calls open now
+(source `docs/pitch/round-15/index.html`, `picks` collection; link in "Calls waiting on Jack").
+
+**Merged that night:**
+
+- #246 Quit on the Mac waits up to 3 s for sync (`lib/writes/quit_when_synced.dart`); unproven on a device that
+  AppKit asks the delegate a second time.
+- #250 Mac widgets say "Saved. Open Penchant to sync" (helper heartbeat in the App Group).
+- #253 Insights keeps its report for the session (`lib/providers/insights_session.dart`); stage timings log as
+  "Insights …".
+- #255 read-only line under Account Settings › Recovery key: where this device keeps the journal key, plus the
+  keychain's refusal status.
+- #251 `crowding` C done: level changes behind More, a rise joined to its fall's payoff card, recovery inside the cap
+  and joined to the where's-the-line card. #258 names the baseline ("than your usual"; "Range against your usual that
+  night" on the joined card).
+- #257 Health caches sealed with the journal key (`lib/crypto/sealed_files.dart`, `Caches/sealed/<uid>/`;
+  `Sealer.sealFile`): `health-daily`, and one randomly named file per settled hours-after span. The plaintext
+  `health-daily.json` is deleted at launch. Jack: "encrypt it with the same key."; "seal the health-daily file too".
+  `Caches/health-sync.json` (anchors, no values) stays plaintext. Unmeasured: the cold-open cost of opening one file
+  per span.
+- #259 `follows` B done: pairs "tend to come together", judged against time since waking (shared-waking false rate
+  100% to 0.3%). Split out of #254. Known: a waking time 10 min off brings the pair back in 67.5% of synthetic
+  journals; a pair card can show from a clock-only report and be withdrawn when bed times arrive.
+- #260 the last Insights report kept sealed (`lib/insights/last_report_file.dart`, `report_codec.dart`, file
+  `last-report` under the sealed folder) and shown at a cold open with "Updating…". Unmeasured on a device.
+- #261 version 0.2.0 cut (`r10-release` B done).
+
+Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack reopens the Mac app himself.
+
+**Open pull requests:**
+
+- #254 the fall test, ready (round 15 `fall-test` A, as built: Jack, 2026-11-11 11:01 UTC). `sparse-fell` B was
+  built, measured and dropped; a fall's clearest split must stand out among the clearest splits of 499 week-block
+  reorderings (`PayoffGates.searchSignificance` 0.02, 1 restores the old rule). Measured (400 seeds; 3 / 1 / 0.5 a
+  day): steady false 1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); halving at 8 weeks 98.5 / 67 / 35% (was 99 / 93 /
+  76). `master` merged in (#259's pairs half already there).
+- #256 closed: round 15 `key-promotion` C (Jack, 2026-11-11 11:05 UTC), the Mac gate waiting for the synced key, no
+  keychain write; being built in a separate PR. #128 (old keychain probe) closed.
+- #252 (draft) `mac-background` C part 2: PenchantSync.app, a background-only nested app
+  (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
+  memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
+  CI. Before any signed build from it: a Mac development profile for the new bundle id, and that id added to the
+  client API key's allowed apps (both Jack's). Then his signed checks (PR body). The app is no longer an
+  `LSUIElement` (fix/mac-open-in-front): flush mode turns accessory in `AppDelegate.main()`.
+
+Jack on 0.2.0 on the iPhone, 2026-11-11, asked to time Insights after a fresh launch: "yeah it's instant". How long
+"Updating…" then stays, and which stage dominates, are still unmeasured; packing the per-span sample files is not
+needed unless that wait proves long.
+
+**Left:**
+
+- The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
+  findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
+  or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
+- A save of the last report in flight at sign-out can write the sealed file back after the folder is cleared; it
+  stays sealed and goes at another user's first use (the sample cache has the same exposure).
+- `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
+- Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
+- The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
+- The Mac recovery key on Universal Clipboard (register).
+- Process: at most about five workers, each verifying once at the end on only the tests it touched; never
+  `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
+
+## After the fourth run (2026-11-11)
+
+Superseded on state by the section above: devices are on 0.2.0, #240 recovery time merged, #227 is closed, 0.2.0 is
+cut. Kept for the defaults, measurements and device checks below.
 
 The fourth run (`/finish-and-pitch`, 2026-11-10) merged #223 to #245 except as listed. Devices have build 1300
 (`master` at the instant-quit merge #244), which lacks payoff, replacement and the sample-size gates (#242, #243, #245,
@@ -836,14 +904,36 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
   the first test, so a merge gets its e2e result in about 20 to 27 minutes (iOS), macOS smoke in about 6 to 12
   (pitch: `docs/pitch/e2e-fast/pitch.html`).
 
+- `quick-log-prompt`: Jack, 2026-11-11: "can you have the app prompt me to record what was going on in the journal
+  when i quick-record a habit usage?" Built in the app (`lib/writes/what_was_going_on.dart`): a quick log's bar
+  (tally `+`, Log-fan wedge, Cmd-1…9) carries "What was going on?" under the message, beside Undo; it opens the
+  trigger picker for that entry and saves what is picked. Non-blocking, rather than a picker that opens by itself.
+  Tapping it closes the bar; the picker it opens (and the widget and menu bar one) has "Undo log" beside Done, for as
+  long as it is open, deleting the entry through the bar's `undoLog` (Jack, 2026-11-11). The widget's own LastLog is
+  not cleared by it: Dart has no call for that (its Undo window is 5 s anyway). Decided (Jack, 2026-11-11,
+  "i agree with your plan"): this form, not a picker on every quick log.
+  Widgets and menu bar ("same for the menu bar and widgets if possible"): the Log widget (iOS and Mac) shows a
+  "What was going on?" `Link` for 5 minutes after a tap (`LastLog.askWindow`; Jack, 2026-11-11: "5 minutes is fine"), the menu
+  bar helper a button under its last-logged row. Both open `com.screendead.penchant://what-was-going-on/<id>` (ids
+  only); the app writes the still-queued log at once, then opens the picker (`lib/widget_bridge/entry_prompt.dart`);
+  an undone entry gets "That entry was undone." Not built: Control Centre, Siri and Shortcuts have no prompt (a
+  control can only open the app on every press, via `OpenIntent`; a local notification after each such log is the
+  other option; Jack, 2026-11-11: "skip control centre"). Not proven on a device: the URL reaching the app cold and
+  warm on both platforms (build 1398 installed on both; post-merge e2e on 7eb482a green).
+
 ## Calls waiting on Jack (UNDECIDED)
 
-None: round 14's seven were picked on 2026-11-11 (Pick up here, above). Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
-round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
-`r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
+None open.
+
+Round 15's two (`fall-test` A, `key-promotion` C) and round 14's seven were picked on 2026-11-11; every earlier
+call is picked.
 
 ## For Jack to do (not decisions)
 
+- **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; for the
+  Mac background app (#252), create the development profile for `com.screendead.penchant.sync`
+  (`xcodebuild -allowProvisioningUpdates`) and add that bundle id to the client API key's allowed apps; test Quit
+  on the Mac (log, Cmd+Q, reopen) and the second Insights open.
 - **Orphaned guest data cleanup runs as a dry run** (`dailyOrphanCleanup` in `functions/index.js`, 04:30 UTC;
   deployed 2026-11-07, first run 2026-11-08; overnight list B1). It logs "Orphan cleanup would delete" with each uid
   and its document counts once two runs a day apart find the account gone. Jack reads those logs for a few days

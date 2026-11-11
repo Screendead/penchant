@@ -79,6 +79,25 @@ void main() {
       );
     });
 
+    test('the clearest of many candidate days must stand out among '
+        'reorderings of the same weeks', () {
+      int found(PayoffGates gates) => <int>[
+        for (int seed = 0; seed < 40; seed++)
+          findFalls(
+            DailyHabitSeries.fromUses(
+              payoffDays(seed, fallAt: null, rateBefore: 1, rateAfter: 1).uses,
+            ),
+            through,
+            gates: gates,
+          ).length,
+      ].fold<int>(0, (a, b) => a + b);
+
+      final int unjudged = found(const PayoffGates(searchSignificance: 1));
+      expect(unjudged, greaterThanOrEqualTo(2));
+      expect(found(const PayoffGates()), lessThan(unjudged));
+      expect(found(const PayoffGates()), lessThanOrEqualTo(1));
+    });
+
     test('a fall of under a quarter is no fall', () {
       expect(
         findFalls(

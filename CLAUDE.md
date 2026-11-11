@@ -235,7 +235,9 @@ takes one `newActivityID()` per sheet, so a retry after a failed save writes the
 by 5 for a habit whose stored typical is 10 or more (`storedTypicalsProvider`), landing on multiples of 5, else by 1. One-tap "log one"
 (`logOne`, `lib/writes/log_one.dart`: a tally's `+`, a Log-fan wedge tap) logs the habit's default quantity now with a
 new id per tap, so two taps are two entries. Its Undo bar (`showUndoBar`, `lib/widgets/undo_bar.dart`;
-`undo-duration`: 8 seconds) shows at once, since the entry is on the device when written, and says queued after 10 s
+`undo-duration`: 8 seconds) also asks "What was going on?" (`askWhatWasGoingOn`, `lib/writes/what_was_going_on.dart`:
+the trigger picker for that entry, its pick saved by `updateActivity`, nothing after Undo; opening it closes the bar,
+so the picker offers Undo log while open, which the record sheet's and editor's pickers do not), and shows at once, since the entry is on the device when written, and says queued after 10 s
 unanswered. Both Undo through `undoLog`.
 
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
@@ -379,7 +381,10 @@ Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/s
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
 use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
 it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
-`lib/insights/health_sample_cache.dart`; random names, since spans follow use times). The Swift-written
+`lib/insights/health_sample_cache.dart`; random names, since spans follow use times), and `last-report` (the last
+Insights view with a computed report, `lib/insights/last_report_file.dart` over `report_codec.dart`; a cold open with
+no view in the session shows it, updating, until the fresh one lands; raise `insightsViewFormat` with any change to
+the report's types). The Swift-written
 `Caches/health-sync.json` (anchors and changed days, no values) stays plaintext. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through

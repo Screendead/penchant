@@ -22,13 +22,17 @@ WidgetStateBorderSide _focusSide(BuildContext context) {
   );
 }
 
+const String undoLogLabel = 'Undo log';
+
 /// Opens the picker for an entry of [viceID] and returns the chosen
-/// triggers, or null when it is dismissed without Done.
+/// triggers, or null when it is dismissed without Done. With [onUndoLog] the
+/// sheet also offers Undo log, which closes it with null and calls that.
 Future<List<String>?> showTriggerPicker(
   BuildContext context, {
   required String viceID,
   required String viceName,
   required List<String> initial,
+  VoidCallback? onUndoLog,
 }) => showModalBottomSheet<List<String>>(
   context: context,
   isScrollControlled: true,
@@ -37,6 +41,7 @@ Future<List<String>?> showTriggerPicker(
     viceID: viceID,
     viceName: viceName,
     initial: initial,
+    onUndoLog: onUndoLog,
   ),
 );
 
@@ -47,11 +52,13 @@ class _TriggerPickerLoader extends ConsumerStatefulWidget {
     required this.viceID,
     required this.viceName,
     required this.initial,
+    this.onUndoLog,
   });
 
   final String viceID;
   final String viceName;
   final List<String> initial;
+  final VoidCallback? onUndoLog;
 
   @override
   ConsumerState<_TriggerPickerLoader> createState() =>
@@ -91,6 +98,12 @@ class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
       promoted: promoted,
       initial: widget.initial,
       onDone: (List<String> picked) => Navigator.of(context).pop(picked),
+      onUndoLog: widget.onUndoLog == null
+          ? null
+          : () {
+              Navigator.of(context).pop();
+              widget.onUndoLog!();
+            },
     );
   }
 }
@@ -107,6 +120,7 @@ class TriggerPickerSheet extends StatefulWidget {
     this.promoted = const <String>[],
     this.initial = const <String>[],
     this.roots = triggerTree,
+    this.onUndoLog,
   });
 
   final String viceName;
@@ -115,6 +129,7 @@ class TriggerPickerSheet extends StatefulWidget {
   final List<String> initial;
   final List<TriggerNode> roots;
   final ValueChanged<List<String>> onDone;
+  final VoidCallback? onUndoLog;
 
   @override
   State<TriggerPickerSheet> createState() => _TriggerPickerSheetState();
@@ -428,9 +443,33 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
                 ),
               const SizedBox(height: DialSpace.s),
             ],
-            FilledButton(
-              onPressed: () => widget.onDone(List<String>.of(selected)),
-              child: const Text('Done'),
+            Row(
+              children: <Widget>[
+                if (widget.onUndoLog case final VoidCallback undo) ...<Widget>[
+                  Semantics(
+                    button: true,
+                    label: 'Undo log, removing this entry',
+                    excludeSemantics: true,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(44, 44),
+                      ),
+                      onPressed: undo,
+                      child: const Text(undoLogLabel),
+                    ),
+                  ),
+                  const SizedBox(width: DialSpace.s),
+                ],
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(44, 44),
+                    ),
+                    onPressed: () => widget.onDone(List<String>.of(selected)),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

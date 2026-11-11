@@ -14,6 +14,7 @@ import 'package:tracker/widgets/undo_bar.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
+import 'package:tracker/writes/what_was_going_on.dart';
 
 // What a tally's + and a tap on a Log-fan wedge record.
 const int defaultQuantity = 1;
@@ -48,16 +49,21 @@ int _latestLog = 0;
 /// entry is on the device as soon as it is written, and says it is queued if
 /// the server has not answered by [writeTimeout]. Each call takes its own id,
 /// so two taps are two entries. [from], in global coordinates, is where the
-/// dial's bead flies in from. Given [offerUndo], the caller shows the Undo
-/// where the log was made, and the bar carries notices only.
+/// dial's bead flies in from. Beside Undo, the bar asks what was going on,
+/// which opens the trigger picker for the entry over [context]. Given
+/// [offerUndo], the caller shows both where the log was made, and the bar
+/// carries notices only.
 Future<void> logOne(
   WidgetRef ref,
-  ScaffoldMessengerState messenger,
+  BuildContext context,
   Vice vice, {
   Offset? from,
-  required bool alwaysUse24HourFormat,
-  void Function(VoidCallback undo)? offerUndo,
+  void Function(VoidCallback undo, VoidCallback whatWasGoingOn)? offerUndo,
 }) async {
+  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+  final bool alwaysUse24HourFormat = MediaQuery.alwaysUse24HourFormatOf(
+    context,
+  );
   final User? user = ref.read(userProvider).value;
   if (user == null) {
     showUndoBar(messenger, const TextSpan(text: 'You are signed out'));
@@ -85,14 +91,38 @@ Future<void> logOne(
   );
   final int log = ++_latestLog;
   bool undone = false;
+  // Once asked, a later bar leaves the question out: the picker has had it.
+  bool asked = false;
 
   void undo() {
     undone = true;
     undoLog(messenger, writes, rejected, activityID, entry);
   }
 
-  void showBar(InlineSpan message) =>
-      showUndoBar(messenger, message, onUndo: offerUndo == null ? undo : null);
+  void ask() {
+    if (undone || asked || !context.mounted) {
+      return;
+    }
+    asked = true;
+    askWhatWasGoingOn(
+      context,
+      ref,
+      activityID: activityID,
+      vice: vice,
+      cancelled: () => undone,
+      entry: entry,
+      onUndone: () => undone = true,
+    );
+  }
+
+  void showBar(InlineSpan message) => showUndoBar(
+    messenger,
+    message,
+    onUndo: offerUndo == null ? undo : null,
+    action: offerUndo == null && !asked
+        ? (label: whatWasGoingOnLabel, onPressed: ask)
+        : null,
+  );
 
   if (from != null) {
     ref.read(beadArrivalsProvider).launch(activityID, from);
@@ -116,7 +146,7 @@ Future<void> logOne(
             ),
     );
   } else {
-    offerUndo(undo);
+    offerUndo(undo, ask);
     if (offline) {
       showBar(const TextSpan(text: queuedMessage));
     }

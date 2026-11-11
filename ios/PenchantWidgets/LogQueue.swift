@@ -30,17 +30,30 @@ struct QueuedLog: Codable, Equatable {
   var date: Date { Date(timeIntervalSince1970: createdAt / 1000) }
 }
 
-// The one log a widget offers to undo, and until when.
+// The one log a widget offers to undo, and until when; and to say what was
+// going on, for longer.
 struct LastLog: Codable, Equatable {
   static let undoWindow: TimeInterval = 5
+  // Long enough to notice the link after the tap; the Undo is long gone.
+  static let askWindow: TimeInterval = 5 * 60
   private static let key = "widgets.lastLog"
 
   let id: String
   let viceID: String
   let at: Double
+  // Its "What was going on?" has been opened, so it is offered no more.
+  var asked: Bool?
 
   var date: Date { Date(timeIntervalSince1970: at / 1000) }
   var undoUntil: Date { date.addingTimeInterval(Self.undoWindow) }
+  var askUntil: Date { date.addingTimeInterval(Self.askWindow) }
+
+  func askable(at now: Date) -> Bool { asked != true && now < askUntil }
+
+  // Still to undo or to ask about at now.
+  static func current(at now: Date = Date()) -> LastLog? {
+    load().flatMap { now < $0.undoUntil || $0.askable(at: now) ? $0 : nil }
+  }
 
   static func load() -> LastLog? {
     guard let data = UserDefaults(suiteName: appGroup)?.data(forKey: key) else { return nil }
@@ -54,6 +67,27 @@ struct LastLog: Codable, Equatable {
     } else {
       defaults?.removeObject(forKey: key)
     }
+  }
+}
+
+// Opens Penchant at a log made outside it, to say what was going on: the
+// widgets' Link, and the menu bar helper. It carries the entry's id only:
+// what is picked is journal content, sealed in the app, which also writes the
+// queued log first (lib/widget_bridge/entry_prompt.dart). Registered in each
+// Runner's Info.plist (CFBundleURLTypes).
+enum EntryLink {
+  static let scheme = "com.screendead.penchant"
+  static let host = "what-was-going-on"
+
+  static func url(_ log: LastLog) -> URL? { URL(string: "\(scheme)://\(host)/\(log.id)") }
+
+  static func activityID(_ url: URL) -> String? {
+    guard url.scheme?.lowercased() == scheme, url.host?.lowercased() == host else { return nil }
+    let id = url.lastPathComponent
+    guard (1...64).contains(id.count), id.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }) else {
+      return nil
+    }
+    return id
   }
 }
 

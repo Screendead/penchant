@@ -16,6 +16,7 @@ import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
+import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
@@ -386,7 +387,8 @@ final _engineProvider = FutureProvider.autoDispose
 /// is still going, and the report is computed again once it lands, so a
 /// daily finding can then move into the many-comparisons correction's
 /// "could be chance". While [updating], the view is the one this session
-/// last showed, kept up while every read is made again.
+/// last showed, or at a cold open the one the last launch kept sealed, kept
+/// up while every read is made again.
 typedef InsightsView = ({
   HealthState health,
   InsightsResult? result,
@@ -394,8 +396,21 @@ typedef InsightsView = ({
   bool updating,
 });
 
+/// Puts the view the last launch kept into [session] while it has none yet,
+/// so a view computed meanwhile is never replaced. Never fails.
+final _savedViewProvider = FutureProvider.autoDispose
+    .family<void, InsightsSession>((ref, session) async {
+      final LastReportFile? file = ref.watch(lastReportFileProvider);
+      if (file == null || file.uid != session.uid) return;
+      final InsightsView? saved = await file.load();
+      if (saved != null) session.lastView ??= saved;
+    });
+
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   final InsightsSession? session = ref.watch(insightsSessionProvider);
+  if (session != null && session.lastView == null) {
+    ref.watch(_savedViewProvider(session));
+  }
   AsyncValue<InsightsView> waiting() => switch (session?.lastView) {
     final InsightsView last => AsyncData<InsightsView>((
       health: last.health,
@@ -407,6 +422,17 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   };
   AsyncValue<InsightsView> shown(InsightsView view) {
     session?.lastView = view;
+    final InsightsView? saved = session?.savedView;
+    if (session != null &&
+        view.result is InsightsComputed &&
+        !(identical(saved?.result, view.result) &&
+            saved?.hoursPending == view.hoursPending)) {
+      final LastReportFile? file = ref.read(lastReportFileProvider);
+      if (file != null && file.uid == session.uid) {
+        session.savedView = view;
+        unawaited(file.save(view));
+      }
+    }
     return AsyncData<InsightsView>(view);
   }
 

@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/habit_follows.dart';
+import 'package:tracker/insights/health_source.dart';
 
 import 'habit_follows_synthetic.dart';
 
@@ -137,6 +140,83 @@ void main() {
     expect(pair.share, 1);
   });
 
+  group('waking, from the time in bed', () {
+    final List<HealthSample> bed = <HealthSample>[];
+    final List<HabitUse> uses = bothAfterWaking(
+      Random(1),
+      120,
+      (DateTime day, double minutes) => bed.add(nightEnding(day, minutes)),
+    );
+    HabitFollows pair(List<HealthSample> bed) => _of(
+      judgeHabitFollows(habitFollows(uses: uses, through: through, bed: bed)),
+      'coffee',
+      'cigarettes',
+    );
+
+    test('two habits that each come soon after waking are found by the '
+        'clock, and not once the waking is known', () {
+      final HabitFollows byClock = pair(const <HealthSample>[]);
+      expect(byClock.verdict, FollowsVerdict.found);
+      expect(byClock.excess, greaterThan(0.2));
+
+      final HabitFollows sinceWaking = pair(bed);
+      expect(sinceWaking.verdict, isNot(FollowsVerdict.found));
+      expect(sinceWaking.share, byClock.share);
+      expect(sinceWaking.chance, closeTo(byClock.share, 0.1));
+      expect(sinceWaking.pValue, greaterThan(byClock.pValue!));
+    });
+
+    test('with every other night missing, the nights there are still '
+        'explain the pair', () {
+      final HabitFollows half = pair(<HealthSample>[
+        for (int i = 0; i < bed.length; i += 2) bed[i],
+      ]);
+      expect(half.verdict, isNot(FollowsVerdict.found));
+      expect(half.chance, closeTo(half.share, 0.15));
+    });
+
+    test('a real following is still found with the waking known', () {
+      final List<HealthSample> nights = <HealthSample>[
+        for (int d = 0; d < 120; d++)
+          nightEnding(addDays(followsStart, d), 6 * 60 + 7 * (d % 9)),
+      ];
+      final HabitFollows after = _of(
+        judgeHabitFollows(
+          habitFollows(
+            uses: coffeeThenCigarettes(3, follow: 0.5),
+            through: through,
+            bed: nights,
+          ),
+        ),
+        'coffee',
+        'cigarettes',
+      );
+      expect(after.verdict, FollowsVerdict.found);
+      expect(after.share, closeTo(0.55, 0.1));
+    });
+
+    test('days without a night recorded are judged by the clock: with too '
+        'few nights to compare, nothing changes', () {
+      final HabitFollows byClock = pair(const <HealthSample>[]);
+      for (final List<HealthSample> few in <List<HealthSample>>[
+        bed.sublist(0, 3),
+        <HealthSample>[
+          for (final HealthSample night in bed)
+            HealthSample(
+              night.start.subtract(const Duration(days: 400)),
+              night.end.subtract(const Duration(days: 400)),
+              0,
+            ),
+        ],
+      ]) {
+        final HabitFollows same = pair(few);
+        expect(same.pValue, byClock.pValue);
+        expect(same.chance, byClock.chance);
+        expect(same.verdict, byClock.verdict);
+      }
+    });
+  });
+
   test('a zero-quantity entry is not a use', () {
     final List<HabitFollows> pairs = habitFollows(
       uses: <HabitUse>[
@@ -211,8 +291,9 @@ void main() {
 
         expect(
           followsSentence(pair, 'Coffee', 'Cigarettes'),
-          'After Coffee, you log Cigarettes within 15 minutes 62% of the time. '
-          'Your usual timing of each would give 20%.',
+          'Coffee and Cigarettes tend to come together: you log Cigarettes in '
+          'the 15 minutes after Coffee 62% of the time. Your usual timing of '
+          'each would give 20%.',
         );
         expect(
           followsBasis(pair, 'Coffee'),
@@ -220,7 +301,7 @@ void main() {
         );
         expect(
           followsLine(pair, 'Coffee'),
-          'After Coffee: 62% of the time, against 20% by your usual timing',
+          'With Coffee: 62% of the time, against 20% by your usual timing',
         );
       },
     );

@@ -156,6 +156,54 @@ enum QueueListener {
   }
 }
 
+// A widget's or the menu bar's "What was going on?" (EntryLink in
+// ios/PenchantWidgets/LogQueue.swift) reaches Dart here, as ids: the app
+// writes the queued log, then asks (lib/widget_bridge/entry_prompt.dart).
+// Only the last log counts: an Undo clears it, so an undone entry is never
+// handed over, and it is offered once.
+enum EntryPrompt {
+  static let channelName = "com.screendead.penchant/entry_prompt"
+  private static var channel: FlutterMethodChannel?
+  // Kept until Dart takes it: a launch's URL arrives before the engine runs.
+  private static var pending: LastLog?
+
+  static func register(with registrar: FlutterPluginRegistrar) {
+    #if os(macOS)
+      let messenger = registrar.messenger
+    #else
+      let messenger = registrar.messenger()
+    #endif
+    let appChannel = FlutterMethodChannel(name: channelName, binaryMessenger: messenger)
+    appChannel.setMethodCallHandler { call, result in
+      guard call.method == "take" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      guard let taken = pending else {
+        result(nil)
+        return
+      }
+      pending = nil
+      result(["id": taken.id, "viceID": taken.viceID])
+    }
+    channel = appChannel
+  }
+
+  // Whether the URL was an EntryLink; it is handled whether or not it names
+  // the last log.
+  @discardableResult
+  static func open(_ url: URL) -> Bool {
+    guard let id = EntryLink.activityID(url) else { return false }
+    guard var last = LastLog.load(), last.id == id, last.asked != true else { return true }
+    last.asked = true
+    LastLog.save(last)
+    WidgetCenter.shared.reloadAllTimelines()
+    pending = last
+    channel?.invokeMethod("changed", arguments: nil)
+    return true
+  }
+}
+
 #if os(macOS)
   // A widget click while the app runs reaches it through QueueListener. This
   // only retries a flush that left the user's logs queued (the key not yet

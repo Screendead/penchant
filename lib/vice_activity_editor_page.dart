@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/limits.dart';
-import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -22,6 +21,7 @@ import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
+import 'package:tracker/writes/what_was_going_on.dart';
 
 class ViceActivityEditorPage extends ConsumerStatefulWidget {
   const ViceActivityEditorPage({
@@ -198,20 +198,12 @@ class _ViceActivityEditorPageState
         'Change not saved: ${_describe(vice, activity)}',
       );
       if (triggers case final List<String> picked) {
-        freeText
-            .recordUses(
-              activity.ownerID,
-              picked.where(
-                (t) => isFreeTextTrigger(t) && !activity.triggers.contains(t),
-              ),
-            )
-            .catchError((Object e, StackTrace stack) {
-              reportError(
-                e,
-                stack,
-                context: 'while counting free-text triggers',
-              );
-            });
+        countFreeTextUses(
+          freeText,
+          activity.ownerID,
+          picked,
+          already: activity.triggers,
+        );
       }
       if (!synced) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));

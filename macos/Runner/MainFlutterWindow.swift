@@ -35,6 +35,7 @@ class MainFlutterWindow: NSWindow {
     AuthFieldsFactory.register(with: flutterViewController)
     QueueListener.start(WidgetBridge.register(with: flutterViewController.registrar(forPlugin: "WidgetBridge")))
     SecretPasteboard.register(with: flutterViewController.registrar(forPlugin: "SecretPasteboard").messenger)
+    EntryPrompt.register(with: flutterViewController.registrar(forPlugin: "EntryPrompt"))
     super.awakeFromNib()
   }
 }

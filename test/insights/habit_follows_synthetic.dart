@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/health_source.dart';
 
 final DateTime followsStart = DateTime(2026, 1, 5);
 
@@ -33,6 +34,38 @@ List<HabitUse> coffeeThenCigarettes(
     }
     for (int k = 0; k < 6; k++) {
       uses.add(useAt('cigarettes', day, 7 * 60 + r.nextDouble() * 960));
+    }
+  }
+  return uses;
+}
+
+double gaussian(Random r) =>
+    sqrt(-2 * log(1 - r.nextDouble())) * cos(2 * pi * r.nextDouble());
+
+/// Eight hours in bed ending [minutes] after [day]'s midnight.
+HealthSample nightEnding(DateTime day, num minutes) {
+  final DateTime end = useAt('', day, minutes).at;
+  return HealthSample(end.subtract(const Duration(hours: 8)), end, 0);
+}
+
+/// [days] days from [followsStart], waking at 07:30 give or take an hour
+/// (sd): Coffee 5 to 20 minutes after waking, a Cigarette 5 to 40 minutes
+/// after, each on its own, and six more Cigarettes through the rest of the
+/// 16 hours awake. [woke] is told each day's waking, in minutes.
+List<HabitUse> bothAfterWaking(
+  Random r,
+  int days,
+  void Function(DateTime day, double minutes) woke,
+) {
+  final List<HabitUse> uses = <HabitUse>[];
+  for (int d = 0; d < days; d++) {
+    final DateTime day = addDays(followsStart, d);
+    final double wake = 7.5 * 60 + 60 * gaussian(r);
+    woke(day, wake);
+    uses.add(useAt('coffee', day, wake + 5 + r.nextDouble() * 15));
+    uses.add(useAt('cigarettes', day, wake + 5 + r.nextDouble() * 35));
+    for (int k = 0; k < 6; k++) {
+      uses.add(useAt('cigarettes', day, wake + 60 + r.nextDouble() * 15 * 60));
     }
   }
   return uses;

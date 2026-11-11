@@ -33,6 +33,10 @@ class InsightsSession {
   /// What the page last showed, kept up while the next open re-reads.
   InsightsView? lastView;
 
+  /// The view last handed to the sealed last-report file, so a rebuild that
+  /// shows the same report writes nothing.
+  InsightsView? savedView;
+
   final List<(EngineInputs, InsightsResult)> _results =
       <(EngineInputs, InsightsResult)>[];
 

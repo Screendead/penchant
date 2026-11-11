@@ -1,0 +1,150 @@
+<title>Penchant Round 15</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of call cards; each card = question, what exists, option buttons (tap to pick), recommendation, what happens if nothing is picked. */
+:root{
+  --paper:#f6f5f2; --card:#ffffff; --ink:#1b1c1f; --muted:#5d606a; --rule:#dcdbd6;
+  --pick:#1b1c1f; --pickInk:#f6f5f2; --rec:#2f6b4f; --warn:#8a5a12;
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0}
+.lede{color:var(--muted)}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.call{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:12px;min-width:0}
+.block{display:grid;gap:4px}
+.opts{display:grid;gap:8px}
+.opt{all:unset;box-sizing:border-box;display:grid;gap:3px;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.opt b{font-weight:600}
+.opt .why{font-size:14px}
+.opt .cost{color:var(--muted);font-size:13px}
+.opt .rec{color:var(--rec);font-size:12px;font-family:var(--mono)}
+.opt[aria-pressed="true"]{background:var(--pick);color:var(--pickInk);border-color:var(--pick)}
+.opt[aria-pressed="true"] .cost,.opt[aria-pressed="true"] .rec{color:var(--pickInk)}
+.recline{border-left:3px solid var(--rec);padding-left:10px}
+.nothing{color:var(--muted);font-size:14px}
+ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.saved{font-family:var(--mono);font-size:12px;color:var(--rec);min-height:1em}
+#calls{display:grid;gap:18px}
+@media (prefers-reduced-motion:no-preference){.opt{transition:background .12s,color .12s}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Round 15: two calls</h1>
+    <p class="lede">From the night of 11 November. Everything described as finished is on your iPhone and Mac unless it says otherwise. Tap an option to pick it; your picks save here and I read them back.</p>
+    <p class="status" id="status">Loading saved picks…</p>
+  </header>
+
+  <section class="call" style="gap:8px">
+    <h2>What finished overnight</h2>
+    <ul>
+      <li><b>Insights is three sections again.</b> Lasting changes of level sit behind More in "What it costs". A habit that rose as another fell is stated on the card for the fall. A heavy-day recovery finding joins the "N or more" card for the same habit and measure, and says which baseline each number uses ("31 min less than your usual that night").</li>
+      <li><b>Pairs of habits.</b> The card now says two habits "tend to come together", and a pair is dropped when both simply follow waking. In test journals built that way, false pairs went from 100% to 0.3%; real pairs are found as often as before.</li>
+      <li><b>Health data on the device is encrypted with your journal key</b>, as you asked: the daily Health numbers and the heart-rate samples Insights keeps between launches. The old unencrypted file is deleted at launch. Sign-out and account deletion remove all of it.</li>
+      <li><b>Settings › Account Settings › Recovery key</b> has a new line saying where this device keeps its journal key. It only reads; it changes nothing.</li>
+      <li><b>Quit on the Mac</b> hides the window at once and waits up to 3 seconds for unsynced entries before exiting.</li>
+      <li><b>Mac widgets</b> say "Saved. Open Penchant to sync" when they hold logs and the menu bar helper is not running.</li>
+      <li><b>Insights after a fresh launch</b> shows the last report at once, marked "Updating…", while the new one is worked out. The saved report is encrypted with your journal key and cleared at sign-out.</li>
+      <li><b>Version 0.2.0</b> is cut: the first tagged release, with release notes on GitHub.</li>
+    </ul>
+  </section>
+
+  <div id="calls"></div>
+
+  <section class="call" style="gap:8px">
+    <h2>For you to do</h2>
+    <ul>
+      <li><b>Reopen Penchant on the Mac.</b> I can install it but not launch it.</li>
+      <li><b>Read the journal key line on the iPhone</b> (Settings › Account Settings › Recovery key). The second call above needs what it says.</li>
+      <li><b>Quit on the Mac.</b> Log an entry, press Cmd+Q straight away, reopen: the entry should be there and marked synced. I could not prove on a device that macOS lets the app finish the sync before exiting.</li>
+      <li><b>Insights on the iPhone.</b> Open it, go back, open it again: the second open should be immediate. Read the cards for anything plainly wrong on your real data.</li>
+      <li><b>The Mac background sync app</b> (your pick last round: Penchant never comes to the front unless you open it). It is built as a small hidden app inside Penchant and compiles in CI, but it cannot be signed or tested without two things from you:
+        <ul>
+          <li>In Terminal, in the repo, run the macOS <code>xcodebuild -allowProvisioningUpdates</code> command once so Xcode creates a development profile for <code>com.screendead.penchant.sync</code>. Tell me when it is done and I will give you the exact line for that branch.</li>
+          <li>In the Google Cloud console, add <code>com.screendead.penchant.sync</code> to the Firebase client key's allowed iOS apps. Without it, sync from the hidden app will probably start failing an hour after Penchant was last open.</li>
+        </ul>
+        Then I install a test build and give you a short checklist. Until then your Mac keeps today's behaviour.</li>
+      <li><b>Still open from before:</b> paste the recovery key from the Mac on your iPhone (expected to arrive; gone from the Mac's clipboard after 2 minutes). Tap Connect Calendar on Insights (the prompt should appear only then). Tap a bead and check Save, Delete and Undo in the amount sheet.</li>
+      <li><b>Orphaned guest data.</b> Read a few days of the clean-up job's "would delete" logs in the Firebase console; then I bring you the call to turn deletion on.</li>
+      <li><b>The old Tracker app.</b> Delete it from your iPhone, then its two iOS registrations in the Firebase console.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const CALLS = [
+ {id:'fall-test', q:'How sure must Penchant be before it says a habit "fell"?',
+  today:'"How cutting down is going" looks through your journal for the day a habit dropped by at least a quarter and stayed down for 4 weeks, then compares your health measures before and since. Because it tries every possible day, chance alone often supplies one. In 400 test journals with no change at all, a "fell" row appeared for 1.8% of habits logged three times a day, 11.3% at once a day and 11.8% at every other day. Last round you chose to make occasional habits wait longer. I built and measured that: it only took 11.8% down to 9.0%, and cut real halvings found from 76% to 46%, so I dropped it. A different fix is built and measured, not merged: the best split must also beat the best split of the same journal with its weeks shuffled. It has a strictness setting, and it trades false rows against how soon a real cut shows.',
+  now:'Your pick from last round did not do what either of us expected, and the replacement makes a trade only you should make. The fix is finished and waiting (pull request #254, the fall test).',
+  opts:[
+   ['a','Strict','False "fell" rows on unchanged habits: 1.0% / 2.8% / 2.0% (three a day / one a day / every other day). A real halving 8 weeks ago is found 98.5% / 67% / 35% of the time. A full stop 8 weeks ago: 99 to 100%.','Ready to merge. A halving of a once-a-day habit shows later than today (67% at 8 weeks against 93%); every-other-day habits mostly need to stop, not halve, to show, and even a full stop 4 weeks ago is found 70% of the time against 100% today. Habits whose heavy and light weeks come in runs still read as fallen 10 to 19% of the time (28 to 35% today).',true],
+   ['b','Strict, tuned for habits that come in runs','False rows 0.8% / 3.0% / 1.5%; on habits with runs of heavy and light weeks 7 to 10%. A real halving 8 weeks ago found 95% / 53% / 27%.','A small change on top of A. Best on false rows, worst at finding small real cuts.'],
+   ['c','Looser','False rows 1.8% / 5.3% / 4.3%; with runs 16 to 27%. A real halving 8 weeks ago found 99% / 84% / 57%.','A one-number change on top of A. Keeps most of today\'s speed and halves the false rows.'],
+   ['d','Leave it as it is today','False rows 1.8% / 11.3% / 11.8%; with runs 28 to 35%. A real halving found 99% / 93% / 76%.','No cost. About one unchanged small habit in nine shows a "fell" row about nothing.']],
+  rec:'Strict. Everywhere else Insights stays silent unless it is sure, and a row saying you cut down when you did not is the worst thing this section can say. A real cut still appears, a few weeks later. All figures are from synthetic journals; your real use comes in runs, so expect the true false rate nearer the "runs" figures than 2%.',
+  nothing:'It stays as it is today (option D), and the fix stays unmerged.'},
+
+ {id:'key-promotion', q:'Your journal key did not reach the Mac through iCloud Keychain. What does the iPhone\'s new line say, and should I move the key?',
+  today:'Your journal is encrypted with a key made on the iPhone. It is meant to be stored in iCloud Keychain so your other devices receive it; if that storage is refused at the moment the key is made, the app keeps it on that device only and carries on. The Mac asked you for your recovery key, which means the key was not there when it looked. I checked signing and keychain settings on both apps: they are identical and correct, so the remaining explanations are that the iPhone holds the key on this device only, or that it is in iCloud Keychain and the Mac asked before it arrived. The new line tells them apart. On the iPhone open Settings › Account Settings › Recovery key and read it: "Journal key kept in iCloud Keychain." or "Journal key kept on this device only." (The Mac\'s line cannot tell us: you typed the key in there.)',
+  now:'A new device will keep asking for the recovery key until this is fixed, and the fix differs by which line you see. The promotion writes to the keychain item that holds your journal key, which I do not ship without your yes.',
+  opts:[
+   ['a','It says "this device only": move the key into iCloud Keychain','On the next launch the iPhone copies its key into iCloud Keychain, reads it back, and uses the synced copy only if it matches the key the server names. The device-only copy is never deleted. On any failure it carries on as today and the line shows the refusal code.','Built and tested against a fake keychain (pull request #256); not yet run on a device. One narrow way to lose the key from this device\'s keychain: the storage plugin can remove both copies if its write fails midway, and my restoring write would also have to fail or the app be killed in that instant. The journal would then open only with your saved recovery key. Have the recovery key to hand before the first launch.',true],
+   ['b','It says "this device only": leave it','Nothing changes. Each new device or reinstall asks for the recovery key once.','No cost, no risk. The recovery key stays the only way onto another device.'],
+   ['c','It says "in iCloud Keychain"','No key is moved. I change the Mac\'s first-launch screen to wait for the key from iCloud Keychain, with the recovery key as a fallback, instead of asking for it at once.','About half a day. No keychain writes.']],
+  rec:'If the line says "this device only", move the key (A): the copy is checked before use and the original stays, and you hold the recovery key for the one bad case. If it says "in iCloud Keychain", pick C.',
+  nothing:'Nothing changes: the key stays where it is and new devices ask for the recovery key.'},
+];
+
+const picks = {};
+const host = document.getElementById('calls');
+function el(tag, cls, text){const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e;}
+function block(label, text){const d=el('div','block'); d.append(el('h3',null,label), el('p',null,text)); return d;}
+function render(){
+  host.replaceChildren(...CALLS.map(c=>{
+    const s=el('section','call');
+    s.append(el('h2',null,c.q), block('Today',c.today), block('Why now',c.now));
+    const o=el('div','opts'); o.setAttribute('role','group'); o.setAttribute('aria-label',c.q);
+    c.opts.forEach(([k,label,see,cost,isRec])=>{
+      const b=el('button','opt'); b.id=`${c.id}-${k}`;
+      b.setAttribute('aria-pressed', picks[c.id]===k?'true':'false');
+      b.append(el('b',null,`${k.toUpperCase()}. ${label}`), el('span','why',see), el('span','cost',cost));
+      if(isRec) b.append(el('span','rec','Recommended'));
+      b.onclick=()=>pick(c.id,k);
+      o.append(b);
+    });
+    s.append(o, el('p','recline',c.rec), el('p','nothing','If you pick nothing: '+c.nothing));
+    const sv=el('p','saved', picks[c.id]?'Saved':''); sv.id=`saved-${c.id}`;
+    s.append(sv);
+    return s;
+  }));
+  const n=Object.keys(picks).length;
+  document.getElementById('status').textContent = db ? `${n} of ${CALLS.length} picked` : (dbTried ? 'Picks cannot save in this view' : 'Loading saved picks…');
+}
+let db=null, dbTried=false;
+async function pick(id,k){
+  picks[id]=k; render();
+  if(!db) return;
+  try{ await db.doc(`picks/${id}`).set({option:k, at:new Date().toISOString()}); }
+  catch(e){ const s=document.getElementById(`saved-${id}`); if(s) s.textContent='Not saved: '+(e&&e.message||'error'); }
+}
+render();
+(async()=>{
+  const timer=setTimeout(()=>{dbTried=true; render();},10000);
+  try{
+    db = window.claude ? await window.claude.use('db') : null;
+    if(db){ const snap=await db.collection('picks').get();
+      (snap.docs||snap).forEach(d=>{const v=d.data?d.data():d; if(v&&v.option) picks[d.id]=v.option;}); }
+  }catch(e){ db=null; }
+  clearTimeout(timer); dbTried=true; render();
+})();
+</script>

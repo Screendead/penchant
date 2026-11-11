@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/free_text_triggers.dart';
-import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -24,6 +23,7 @@ import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
+import 'package:tracker/writes/what_was_going_on.dart';
 
 class RecordNewActivityDialog extends ConsumerStatefulWidget {
   const RecordNewActivityDialog({super.key, this.initialViceID});
@@ -140,7 +140,7 @@ class _RecordNewActivityDialogState
         ),
         'Not saved: $entry',
       );
-      _countFreeText(freeText, user.uid, triggers);
+      countFreeTextUses(freeText, user.uid, triggers);
     } on FirebaseException catch (e, stack) {
       reportError(e, stack, context: 'while recording an activity');
       if (mounted) {
@@ -172,16 +172,6 @@ class _RecordNewActivityDialogState
       synced: synced,
       onUndo: () => undoLog(messenger, writes, rejected, written, entry),
     );
-  }
-
-  // Runs after the save, when this dialog may be gone, so it takes no ref.
-  void _countFreeText(FreeTextTriggers store, String uid, List<String> saved) {
-    store.recordUses(uid, saved.where(isFreeTextTrigger)).catchError((
-      Object e,
-      StackTrace stack,
-    ) {
-      reportError(e, stack, context: 'while counting free-text triggers');
-    });
   }
 
   // The button's label in runs; the numbers in a run marked true set in Mono.

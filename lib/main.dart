@@ -33,6 +33,7 @@ import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widget_bridge/background_flush.dart';
+import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
@@ -131,6 +132,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.listen(plaintextMigrationProvider, (_, _) {});
     ref.listen(widgetSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
+    ref.listen(entryPromptListenerProvider, (_, _) {});
     ref.listen(dailyNudgeStartupProvider, (_, _) {});
     ref.listen(quitWhenSyncedProvider, (_, _) {});
 

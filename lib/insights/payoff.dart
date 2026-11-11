@@ -20,6 +20,8 @@ class PayoffGates {
     this.recentDays = 14,
     this.minFall = 0.25,
     this.fallSignificance = 0.01,
+    this.searchSignificance = 0.02,
+    this.searchShuffles = 499,
     this.sameFallDays = 14,
     this.minBaselineValues = 21,
     this.minSinceValues = 14,
@@ -53,6 +55,14 @@ class PayoffGates {
 
   /// One-sided, for the weekly totals since against the baseline's.
   final double fallSignificance;
+
+  /// For the clearest split of a fall against the clearest split of the
+  /// same days with their weeks in another order, over [searchShuffles]
+  /// orders: the Welch test reads the best of every candidate day as if it
+  /// were the only one tried. 1 leaves the search unjudged. A journal of
+  /// few weeks has few orders, so its fall may not pass however clean.
+  final double searchSignificance;
+  final int searchShuffles;
 
   /// Two habits whose falls are this many days apart or fewer cannot be told
   /// apart.
@@ -222,7 +232,9 @@ class Payoff {
 /// weeks by a one-sided Welch test at [PayoffGates.fallSignificance]. Weeks
 /// rather than days, since use differs by weekday and comes in runs. Among
 /// the days that qualify, the one with the largest test statistic, the
-/// earliest on a tie.
+/// earliest on a tie; it is a fall when that statistic also stands out, at
+/// [PayoffGates.searchSignificance], among the largest each reordering of
+/// the journal's weeks gives.
 Map<String, HabitFall> findFalls(
   DailyHabitSeries habits,
   DateTime through, {
@@ -257,18 +269,62 @@ typedef ShiftSplit = ({int at, int from, double before, double since});
 /// The split of [totals], one a day, that [findFalls] describes; with
 /// [rising], its mirror: the mean since, and over the latest
 /// [PayoffGates.recentDays], above zero and at least [PayoffGates.minFall]
-/// over the baseline's, which may be zero. Null when no day qualifies.
+/// over the baseline's, which may be zero, and no judging of the search.
+/// Null when no day qualifies.
 ShiftSplit? bestShift(
   List<double> totals,
   PayoffGates gates, {
   bool rising = false,
 }) {
+  final _Clearest? found = _clearestShift(totals, gates, rising);
+  if (found == null || rising || gates.searchSignificance >= 1) {
+    return found?.split;
+  }
+  // Whole weeks counted back from the last day change places, so the days
+  // of a week, and whatever runs through them, stay together.
+  final int n = totals.length;
+  final int lead = n % 7;
+  final List<int> order = <int>[for (int w = 0; w < n ~/ 7; w++) w];
+  final List<double> shuffled = List<double>.of(totals);
+  // Fixed, so the same journal gives the same answer each time it is read.
+  final Random random = Random(_shuffleSeed);
+  int asClear = 0;
+  for (int pass = 0; pass < gates.searchShuffles; pass++) {
+    order.shuffle(random);
+    for (int w = 0; w < order.length; w++) {
+      for (int d = 0; d < 7; d++) {
+        shuffled[lead + 7 * w + d] = totals[lead + 7 * order[w] + d];
+      }
+    }
+    final _Clearest? other = _clearestShift(shuffled, gates, false);
+    if (other == null || other.statistic < found.statistic) continue;
+    asClear++;
+    if ((1 + asClear) / (1 + gates.searchShuffles) >=
+        gates.searchSignificance) {
+      return null;
+    }
+  }
+  return (1 + asClear) / (1 + gates.searchShuffles) < gates.searchSignificance
+      ? found.split
+      : null;
+}
+
+const int _shuffleSeed = 20261111;
+
+// [statistic] is the largest, over the days whose means qualify, of the
+// difference in daily means over the standard error it would have were every
+// day's variance one: a scale every order of the same days shares, where the
+// Welch statistic's own variances, from a few small weekly totals, do not.
+typedef _Clearest = ({ShiftSplit split, double statistic});
+
+_Clearest? _clearestShift(List<double> totals, PayoffGates gates, bool rising) {
   final int n = totals.length;
   final List<double> sums = List<double>.filled(n + 1, 0);
   for (int i = 0; i < n; i++) {
     sums[i + 1] = sums[i] + totals[i];
   }
   double best = 0;
+  double statistic = 0;
   ShiftSplit? split;
   for (int c = gates.minBaselineDays; c <= n - gates.minSinceDays; c++) {
     final int from = max(0, c - gates.baselineDays);
@@ -298,6 +354,11 @@ ShiftSplit? bestShift(
     final double difference =
         (rising ? -1 : 1) * (mean(weeksBefore) - mean(weeksSince));
     if (difference <= 0) continue;
+    statistic = max(
+      statistic,
+      (rising ? since - before : before - since) /
+          sqrt(1 / (c - from) + 1 / (n - c)),
+    );
     final double t = a + b == 0 ? double.infinity : difference / sqrt(a + b);
     if (t <= best) continue;
     if (a + b > 0) {
@@ -310,7 +371,7 @@ ShiftSplit? bestShift(
     best = t;
     split = (at: c, from: from, before: before, since: since);
   }
-  return split;
+  return split == null ? null : (split: split, statistic: statistic);
 }
 
 /// For each habit not in [skip] that [findFalls] gives a fall, each of
