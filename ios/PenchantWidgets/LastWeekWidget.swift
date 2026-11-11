@@ -4,20 +4,26 @@ import WidgetKit
 struct LastWeekEntry: TimelineEntry {
   let date: Date
   let snapshot: Snapshot?
+  var waiting = false
 
   var week: Week? { snapshot.map { Week(snapshot: $0, endingOn: date) } }
 }
 
 // The app reloads the timelines whenever it writes a snapshot. Between those,
 // one entry per midnight moves the week on, so a day the app has not seen
-// shows as no data rather than last week's numbers under the wrong day.
+// shows as no data rather than last week's numbers under the wrong day. On
+// the Mac, logs no helper will write say so once past their hold.
 struct LastWeekProvider: TimelineProvider {
   func placeholder(in context: Context) -> LastWeekEntry {
     LastWeekEntry(date: Date(), snapshot: .preview)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (LastWeekEntry) -> Void) {
-    completion(LastWeekEntry(date: Date(), snapshot: Snapshot.load() ?? (context.isPreview ? .preview : nil)))
+    let now = Date()
+    completion(
+      LastWeekEntry(
+        date: now, snapshot: Snapshot.load() ?? (context.isPreview ? .preview : nil),
+        waiting: !context.isPreview && QueuedWait.current(now: now).waiting(at: now)))
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<LastWeekEntry>) -> Void) {
@@ -26,9 +32,12 @@ struct LastWeekProvider: TimelineProvider {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: now)
     let midnights = (1...Week.length).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
-    let entries = [LastWeekEntry(date: now, snapshot: snapshot)]
-      + midnights.map { LastWeekEntry(date: $0, snapshot: snapshot) }
-    completion(Timeline(entries: entries, policy: .atEnd))
+    let wait = QueuedWait.current(now: now)
+    let entries = wait.dates([now] + midnights, now: now).map {
+      LastWeekEntry(date: $0, snapshot: snapshot, waiting: wait.waiting(at: $0))
+    }
+    let policy: TimelineReloadPolicy = wait.recheck.map { .after($0) } ?? .atEnd
+    completion(Timeline(entries: entries, policy: policy))
   }
 }
 
@@ -63,7 +72,14 @@ struct LastWeekView: View {
 
   var body: some View {
     if let week = entry.week, let snapshot = entry.snapshot {
-      content(week, snapshot)
+      if entry.waiting {
+        VStack(alignment: .leading, spacing: 6) {
+          content(week, snapshot)
+          WaitingNotice()
+        }
+      } else {
+        content(week, snapshot)
+      }
     } else {
       empty
     }
@@ -85,7 +101,7 @@ struct LastWeekView: View {
     case .systemMedium:
       HStack(spacing: 14) {
         WeekDial(week: week).aspectRatio(1, contentMode: .fit)
-        HabitList(week: week, rows: 4, strips: false)
+        HabitList(week: week, rows: entry.waiting ? 3 : 4, strips: false)
       }
     case .systemLarge:
       VStack(alignment: .leading, spacing: 10) {
@@ -216,6 +232,28 @@ private struct DayStrip: View {
         .frame(width: 10, height: 10)
       }
     }
+  }
+}
+
+// Logs queued on this Mac that no running menu bar helper will launch
+// Penchant to write (QueuedWait). A tap on the widget opens Penchant.
+struct WaitingNotice: View {
+  static let text = "Saved. Open Penchant to sync"
+
+  var body: some View {
+    HStack(spacing: 4) {
+      Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 10, weight: .semibold))
+      ViewThatFits(in: .horizontal) {
+        Text(Self.text)
+        Text("Open Penchant to sync")
+        Text("Open to sync")
+      }
+      .font(Typeface.text(11, .medium))
+      .lineLimit(1)
+    }
+    .foregroundStyle(Palette.muted)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Self.text)
   }
 }
 

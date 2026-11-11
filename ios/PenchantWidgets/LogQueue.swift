@@ -73,7 +73,74 @@ let queueChangedNotification = "com.screendead.penchant.log-queue-changed"
   // Penchant posts it at each launch, to bring back a menu bar item the user
   // hid with its Quit (the helper keeps running, to go on flushing).
   let showMenuBarNotification = "com.screendead.penchant.menubar.show"
+
+  // The menu bar helper's last sign of life, in seconds since 1970. Only a
+  // running helper launches Penchant to write what the widgets queue, and a
+  // killed one says nothing, so the widgets judge it by this. A napped
+  // helper's timer can fire late, so a beat counts for several intervals.
+  enum HelperHeartbeat {
+    static let key = "menubar.heartbeat"
+    static let interval: TimeInterval = 60
+    static let staleAfter: TimeInterval = 10 * 60
+
+    static func beat(now: Date = Date()) {
+      UserDefaults(suiteName: appGroup)?.set(now.timeIntervalSince1970, forKey: key)
+    }
+
+    static func last() -> Date? {
+      let seconds = UserDefaults(suiteName: appGroup)?.double(forKey: key) ?? 0
+      return seconds > 0 ? Date(timeIntervalSince1970: seconds) : nil
+    }
+  }
 #endif
+
+// What a widget says about its queued logs: on the Mac, that they wait for
+// Penchant while no helper is alive to launch it. iOS writes them from the
+// app's own process (LogIntents.swift), so there it says nothing.
+struct QueuedWait: Equatable {
+  // Past a log's hold, a live helper or a running app writes it within
+  // seconds; this much later it is waiting.
+  static let grace: TimeInterval = 30
+  // A helper alive now may be killed before it launches Penchant, and nothing
+  // reloads the widgets then. Each reload counts against WidgetKit's budget.
+  static let recheckEvery: TimeInterval = 15 * 60
+
+  static let none = QueuedWait(from: nil, recheck: nil)
+
+  // From when the widget says so; nil, it does not.
+  let from: Date?
+  // When the widget should ask again.
+  let recheck: Date?
+
+  func waiting(at date: Date) -> Bool { from.map { date >= $0 } ?? false }
+
+  // Adds the moment the notice starts to a timeline's entry dates.
+  func dates(_ dates: [Date], now: Date) -> [Date] {
+    guard let from, from > now, !dates.contains(from) else { return dates }
+    return (dates + [from]).sorted()
+  }
+
+  static func current(now: Date = Date()) -> QueuedWait {
+    #if os(macOS)
+      return judge(pending: LogQueue.pending(), heartbeat: HelperHeartbeat.last(), now: now)
+    #else
+      return .none
+    #endif
+  }
+
+  #if os(macOS)
+    // A stale helper that comes back reloads the widgets (FlushLauncher.beat),
+    // so only a fresh one needs a recheck.
+    static func judge(pending: [QueuedLog], heartbeat: Date?, now: Date) -> QueuedWait {
+      guard let oldest = pending.map(\.date).min() else { return .none }
+      // abs: a clock set back must not keep a dead helper's last beat fresh.
+      if let heartbeat, abs(now.timeIntervalSince(heartbeat)) <= HelperHeartbeat.staleAfter {
+        return QueuedWait(from: nil, recheck: now.addingTimeInterval(recheckEvery))
+      }
+      return QueuedWait(from: max(now, oldest.addingTimeInterval(queuedLogHold + grace)), recheck: nil)
+    }
+  #endif
+}
 
 // queuedLogHold in lib/data/queued_log.dart: the app writes a log only once it
 // is this old, past the widget's Undo window.
