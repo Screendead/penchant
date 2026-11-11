@@ -12,6 +12,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/undo_bar.dart';
 import 'package:tracker/writes/rejected_writes.dart';
+import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
@@ -20,7 +21,9 @@ const String whatWasGoingOnLabel = 'What was going on?';
 /// Opens the trigger picker for the saved entry [activityID] of [vice] and
 /// writes what is picked to it; dismissing the picker writes nothing.
 /// [cancelled], asked once the picker closes, stops the write (an entry undone
-/// meanwhile). [entry] names the entry if the server refuses the change.
+/// meanwhile). [entry] names the entry if the server refuses the change. The
+/// picker's Undo log deletes the entry through [undoLog], then calls
+/// [onUndone].
 Future<void> askWhatWasGoingOn(
   BuildContext context,
   WidgetRef ref, {
@@ -29,6 +32,7 @@ Future<void> askWhatWasGoingOn(
   List<String> initial = const <String>[],
   bool Function()? cancelled,
   String? entry,
+  VoidCallback? onUndone,
 }) async {
   final String? uid = ref.read(userProvider).value?.uid;
   if (uid == null) {
@@ -45,6 +49,18 @@ Future<void> askWhatWasGoingOn(
     viceID: vice.id,
     viceName: vice.name,
     initial: initial,
+    onUndoLog: messenger == null
+        ? null
+        : () {
+            onUndone?.call();
+            undoLog(
+              messenger,
+              writes,
+              rejected,
+              activityID,
+              entry ?? vice.name,
+            );
+          },
   );
   if (picked == null ||
       listEquals(picked, initial) ||

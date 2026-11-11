@@ -912,7 +912,9 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
   when i quick-record a habit usage?" Built in the app (`lib/writes/what_was_going_on.dart`): a quick log's bar
   (tally `+`, Log-fan wedge, Cmd-1…9) carries "What was going on?" under the message, beside Undo; it opens the
   trigger picker for that entry and saves what is picked. Non-blocking, rather than a picker that opens by itself.
-  Tapping it closes the bar, so Undo for that entry goes with it (the editor's Delete still works). Decided (Jack, 2026-11-11,
+  Tapping it closes the bar; the picker it opens (and the widget and menu bar one) has "Undo log" beside Done, for as
+  long as it is open, deleting the entry through the bar's `undoLog` (Jack, 2026-11-11). The widget's own LastLog is
+  not cleared by it: Dart has no call for that (its Undo window is 5 s anyway). Decided (Jack, 2026-11-11,
   "i agree with your plan"): this form, not a picker on every quick log.
   Widgets and menu bar ("same for the menu bar and widgets if possible"): the Log widget (iOS and Mac) shows a
   "What was going on?" `Link` for 5 minutes after a tap (`LastLog.askWindow`, a default, not Jack's pick), the menu

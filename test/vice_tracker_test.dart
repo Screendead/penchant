@@ -1161,6 +1161,45 @@ void main() {
       },
     );
 
+    testWidgets(
+      "the picker's Undo log removes the entry and writes no triggers",
+      (WidgetTester tester) async {
+        await _pumpApp(tester, <Override>[
+          ...overrides(),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, query) => const AsyncData(<ViceActivity>[]),
+          ),
+        ], const ViceTracker());
+
+        await tester.tap(_button(logOneLabel(tea)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        final String logged = writes.writes.single.id;
+        await tester.tap(find.text(whatWasGoingOnLabel));
+        await tester.pumpAndSettle();
+        final Finder undo = find.bySemanticsLabel(
+          'Undo log, removing this entry',
+        );
+        expect(undo, findsOneWidget);
+        expect(
+          tester.getSize(undo).height,
+          greaterThanOrEqualTo(DialSize.minTapTarget),
+        );
+
+        await tester.tap(find.text(undoLogLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(undoLogLabel), findsNothing);
+        expect(
+          <(String, String)>[for (final Write w in writes.writes) (w.op, w.id)],
+          <(String, String)>[
+            ('recordActivity', logged),
+            ('deleteActivity', logged),
+          ],
+        );
+      },
+    );
+
     group("a widget's What was going on?", () {
       late FakeWidgetBridge bridge;
       List<Override> widgetOverrides() => <Override>[
