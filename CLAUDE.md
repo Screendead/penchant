@@ -221,7 +221,9 @@ takes one `newActivityID()` per sheet, so a retry after a failed save writes the
 by 5 for a habit whose stored typical is 10 or more (`storedTypicalsProvider`), landing on multiples of 5, else by 1. One-tap "log one"
 (`logOne`, `lib/writes/log_one.dart`: a tally's `+`, a Log-fan wedge tap) logs the habit's default quantity now with a
 new id per tap, so two taps are two entries. Its Undo bar (`showUndoBar`, `lib/widgets/undo_bar.dart`;
-`undo-duration`: 8 seconds) shows at once, since the entry is on the device when written, and says queued after 10 s
+`undo-duration`: 8 seconds) also asks "What was going on?" (`askWhatWasGoingOn`, `lib/writes/what_was_going_on.dart`:
+the trigger picker for that entry, its pick saved by `updateActivity`, nothing after Undo; opening it closes the bar,
+so the picker offers Undo log while open, which the record sheet's and editor's pickers do not), and shows at once, since the entry is on the device when written, and says queued after 10 s
 unanswered. Both Undo through `undoLog`.
 
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):

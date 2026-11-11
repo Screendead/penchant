@@ -20,6 +20,8 @@ struct LogEntry: TimelineEntry {
   // The log this entry offers to undo; nil once its window has passed.
   let undo: LastLog?
   var waiting = false
+  // The log this entry offers to say what was going on about, for longer.
+  var ask: LastLog?
 }
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -36,21 +38,23 @@ struct LogProvider: AppIntentTimelineProvider {
       waiting: !context.isPreview && QueuedWait.current(now: now).waiting(at: now))
   }
 
-  // Undo shows until its window closes, then a second entry takes it away.
-  // Midnight moves today's counts on. On the Mac, logs no helper will write
-  // say so once past their hold.
+  // Undo shows until its window closes, then a second entry takes it away;
+  // "What was going on?" stays until its own window closes. Midnight moves
+  // today's counts on. On the Mac, logs no helper will write say so once past
+  // their hold.
   func timeline(for configuration: LogWidgetIntent, in context: Context) async -> Timeline<LogEntry> {
     let now = Date()
     let snapshot = Snapshot.load()
     let chosen = ids(configuration)
     let wait = QueuedWait.current(now: now)
-    let last = LastLog.load().flatMap { $0.undoUntil > now ? $0 : nil }
+    let last = LastLog.current(at: now)
     let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))!
-    let dates = [now] + (last.map { [$0.undoUntil] } ?? []) + [midnight]
+    let ends = last.map { [$0.undoUntil, $0.askUntil].filter { $0 > now && $0 < midnight } } ?? []
+    let dates = [now] + ends + [midnight]
     let entries = wait.dates(dates, now: now).map { date in
       LogEntry(
         date: date, snapshot: snapshot, chosen: chosen, undo: last.flatMap { date < $0.undoUntil ? $0 : nil },
-        waiting: wait.waiting(at: date))
+        waiting: wait.waiting(at: date), ask: last.flatMap { $0.askable(at: date) ? $0 : nil })
     }
     let policy: TimelineReloadPolicy = wait.recheck.map { .after($0) } ?? .atEnd
     return Timeline(entries: entries, policy: policy)
@@ -97,7 +101,8 @@ struct LogView: View {
       } else {
         LogFace(
           family: family, habits: habits.map { habit in today.habits.first { $0.id == habit.id }! },
-          undo: entry.undo, waiting: entry.waiting)
+          undo: entry.undo, waiting: entry.waiting,
+          ask: entry.ask.flatMap { log in habits.contains { $0.id == log.viceID } ? log : nil })
       }
     } else {
       message("Open Penchant to log from here.")
@@ -119,6 +124,8 @@ struct LogFace: View {
   let habits: [HabitWeek]
   let undo: LastLog?
   var waiting = false
+  // Only a log of a habit this widget shows.
+  var ask: LastLog?
 
   var body: some View {
     let hero = habits[0]
@@ -128,6 +135,7 @@ struct LogFace: View {
         Text(hero.habit.name).font(Typeface.display(13, .bold)).foregroundStyle(Palette.text).lineLimit(1)
         HeroDial(habit: hero, undo: undo(for: hero), badge: 28)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if let ask { AskLink(log: ask) }
         if waiting { WaitingNotice() }
       }
     case .systemMedium:
@@ -136,6 +144,7 @@ struct LogFace: View {
         VStack(alignment: .leading, spacing: 8) {
           Text(hero.habit.name).font(Typeface.display(17, .bold)).foregroundStyle(Palette.text).lineLimit(1)
           ForEach(habits.dropFirst().prefix(2)) { HabitPill(habit: $0, undo: undo(for: $0)) }
+          if let ask { AskLink(log: ask) }
           if waiting { WaitingNotice() }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -156,6 +165,7 @@ struct LogFace: View {
           ForEach(habits.dropFirst()) { HabitPill(habit: $0, undo: undo(for: $0)) }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        if let ask { AskLink(log: ask).frame(maxWidth: .infinity, alignment: .leading) }
         if waiting { WaitingNotice().frame(maxWidth: .infinity, alignment: .leading) }
       }
     }
@@ -193,6 +203,29 @@ private struct LogButton<Label: View>: View {
       Button(intent: LogOneIntent(habit: HabitEntity(habit.habit)), label: label)
         .buttonStyle(.plain)
         .accessibilityLabel("Log 1 \(habit.habit.unitOne) of \(habit.habit.name). \(habit.today) today.")
+    }
+  }
+}
+
+// Opens Penchant at the entry to say what was going on. A widget cannot show
+// the picker, and a button's intent should do more than open the app, so it
+// is a Link ("Linking to specific app scenes from your widget or Live
+// Activity", developer.apple.com), beside the log buttons, not inside one.
+@available(iOS 17.0, macOS 14.0, *)
+private struct AskLink: View {
+  let log: LastLog
+
+  var body: some View {
+    if let url = EntryLink.url(log) {
+      Link(destination: url) {
+        HStack(spacing: 4) {
+          Image(systemName: "text.bubble").font(.system(size: 10, weight: .semibold))
+          Text("What was going on?").font(Typeface.text(12, .semibold)).lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
+        .foregroundStyle(Palette.text)
+      }
+      .accessibilityLabel("Say what was going on, in Penchant")
     }
   }
 }

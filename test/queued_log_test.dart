@@ -148,6 +148,21 @@ void main() {
       );
       expect(result.cancelled.length, 2);
     });
+
+    test('a delete cancels its log while the log is still in its hold', () {
+      final DateTime tap = now.subtract(const Duration(seconds: 6));
+      final result = readyLogs(
+        <QueuedLog>[_log('a', tap), _log('a', now, op: QueuedLogOp.delete)],
+        uid: 'u1',
+        now: now,
+      );
+      expect(result.ready, isEmpty);
+      expect(
+        result.cancelled.map((QueuedLog l) => '${l.op.name}:${l.id}'),
+        <String>['log:a', 'delete:a'],
+      );
+      expect(result.next, isNull);
+    });
   });
 
   group('flushQueuedLogs', () {

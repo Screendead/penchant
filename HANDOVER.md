@@ -101,14 +101,20 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
   memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
   CI. Before any signed build from it: a Mac development profile for the new bundle id, and that id added to the
-  client API key's allowed apps (both Jack's). Then his signed checks (PR body), then delete
-  `tech-debt/platform-and-delivery-config/background-launches-take-focus-on-the-mac.md`.
+  client API key's allowed apps (both Jack's). Then his signed checks (PR body). The app is no longer an
+  `LSUIElement` (fix/mac-open-in-front): flush mode turns accessory in `AppDelegate.main()`.
+
+Jack on 0.2.0 on the iPhone, 2026-11-11, asked to time Insights after a fresh launch: "yeah it's instant". How long
+"Updating…" then stays, and which stage dominates, are still unmeasured; packing the per-span sample files is not
+needed unless that wait proves long.
 
 **Left:**
 
 - The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
   findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
   or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
+- A save of the last report in flight at sign-out can write the sealed file back after the folder is cleared; it
+  stays sealed and goes at another user's first use (the sample cache has the same exposure).
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
 - The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
@@ -117,6 +123,9 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
 
 ## After the fourth run (2026-11-11)
+
+Superseded on state by the section above: devices are on 0.2.0, #240 recovery time merged, #227 is closed, 0.2.0 is
+cut. Kept for the defaults, measurements and device checks below.
 
 The fourth run (`/finish-and-pitch`, 2026-11-10) merged #223 to #245 except as listed. Devices have build 1300
 (`master` at the instant-quit merge #244), which lacks payoff, replacement and the sample-size gates (#242, #243, #245,
@@ -899,6 +908,23 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
   the first test, so a merge gets its e2e result in about 20 to 27 minutes (iOS), macOS smoke in about 6 to 12
   (pitch: `docs/pitch/e2e-fast/pitch.html`).
 
+- `quick-log-prompt`: Jack, 2026-11-11: "can you have the app prompt me to record what was going on in the journal
+  when i quick-record a habit usage?" Built in the app (`lib/writes/what_was_going_on.dart`): a quick log's bar
+  (tally `+`, Log-fan wedge, Cmd-1…9) carries "What was going on?" under the message, beside Undo; it opens the
+  trigger picker for that entry and saves what is picked. Non-blocking, rather than a picker that opens by itself.
+  Tapping it closes the bar; the picker it opens (and the widget and menu bar one) has "Undo log" beside Done, for as
+  long as it is open, deleting the entry through the bar's `undoLog` (Jack, 2026-11-11). The widget's own LastLog is
+  not cleared by it: Dart has no call for that (its Undo window is 5 s anyway). Decided (Jack, 2026-11-11,
+  "i agree with your plan"): this form, not a picker on every quick log.
+  Widgets and menu bar ("same for the menu bar and widgets if possible"): the Log widget (iOS and Mac) shows a
+  "What was going on?" `Link` for 5 minutes after a tap (`LastLog.askWindow`; Jack, 2026-11-11: "5 minutes is fine"), the menu
+  bar helper a button under its last-logged row. Both open `com.screendead.penchant://what-was-going-on/<id>` (ids
+  only); the app writes the still-queued log at once, then opens the picker (`lib/widget_bridge/entry_prompt.dart`);
+  an undone entry gets "That entry was undone." Not built: Control Centre, Siri and Shortcuts have no prompt (a
+  control can only open the app on every press, via `OpenIntent`; a local notification after each such log is the
+  other option; Jack, 2026-11-11: "skip control centre"). Not proven on a device: the URL reaching the app cold and
+  warm on both platforms (build 1398 installed on both; post-merge e2e on 7eb482a green).
+
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), two calls:
@@ -911,6 +937,11 @@ Round 14's seven were picked on 2026-11-11; every earlier call is picked.
 
 ## For Jack to do (not decisions)
 
+- **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; read the
+  journal key line on the iPhone (Settings › Account Settings › Recovery key) for the `key-promotion` call; for the
+  Mac background app (#252), create the development profile for `com.screendead.penchant.sync`
+  (`xcodebuild -allowProvisioningUpdates`) and add that bundle id to the client API key's allowed apps; test Quit
+  on the Mac (log, Cmd+Q, reopen) and the second Insights open.
 - **Orphaned guest data cleanup runs as a dry run** (`dailyOrphanCleanup` in `functions/index.js`, 04:30 UTC;
   deployed 2026-11-07, first run 2026-11-08; overnight list B1). It logs "Orphan cleanup would delete" with each uid
   and its document counts once two runs a day apart find the account gone. Jack reads those logs for a few days

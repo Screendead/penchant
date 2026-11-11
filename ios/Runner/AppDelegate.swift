@@ -21,6 +21,9 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetBridge") {
       QueueListener.start(WidgetBridge.register(with: registrar), registrar: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "EntryPrompt") {
+      EntryPrompt.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthChannel") {
       HealthChannel.register(with: registrar)
     }
@@ -29,6 +32,32 @@ import UserNotifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "SecretPasteboard") {
       SecretPasteboard.register(with: registrar.messenger())
+    }
+  }
+}
+
+// Info.plist names it as the scene delegate. A widget's "What was going on?"
+// link opens the app with an EntryLink URL: at launch in the connection
+// options, after in openURLContexts. FlutterDeepLinkingEnabled is false in
+// Info.plist, so Flutter never pushes one as a route.
+class SceneDelegate: FlutterSceneDelegate {
+  override func scene(
+    _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    if FlutterSceneDelegate.instancesRespond(to: #selector(UISceneDelegate.scene(_:willConnectTo:options:))) {
+      super.scene(scene, willConnectTo: session, options: connectionOptions)
+    }
+    for context in connectionOptions.urlContexts {
+      EntryPrompt.open(context.url)
+    }
+  }
+
+  override func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    let others = URLContexts.filter { !EntryPrompt.open($0.url) }
+    if !others.isEmpty,
+      FlutterSceneDelegate.instancesRespond(to: #selector(UISceneDelegate.scene(_:openURLContexts:)))
+    {
+      super.scene(scene, openURLContexts: others)
     }
   }
 }

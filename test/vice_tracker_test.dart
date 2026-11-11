@@ -8,7 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/dial_layout.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -21,6 +23,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -36,9 +39,18 @@ import 'package:tracker/widgets/last_night_line.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/tally_row.dart';
+import 'package:tracker/widget_bridge/entry_prompt.dart';
+import 'package:tracker/widget_bridge/log_queue.dart';
+import 'package:tracker/widget_bridge/widget_bridge.dart';
+import 'package:tracker/data/queued_log.dart';
+import 'package:tracker/data/sealed.dart';
+import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/settle_write.dart';
+import 'package:tracker/writes/what_was_going_on.dart';
 
+import 'fake_sealer.dart';
+import 'fake_widget_bridge.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
 import 'last_night_fakes.dart';
@@ -107,6 +119,18 @@ void _useTallView(WidgetTester tester) {
   );
   addTearDown(tester.view.resetPhysicalSize);
 }
+
+// The habit list, loading until a test loads it.
+class _VicesSlot extends Notifier<AsyncValue<List<Vice>>> {
+  @override
+  AsyncValue<List<Vice>> build() => const AsyncLoading<List<Vice>>();
+
+  void load(List<Vice> vices) => state = AsyncData<List<Vice>>(vices);
+}
+
+final _vicesSlot = NotifierProvider<_VicesSlot, AsyncValue<List<Vice>>>(
+  _VicesSlot.new,
+);
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -1070,6 +1094,241 @@ void main() {
       expect(writes.writes.last, Write('deleteActivity', write.id));
       expect(find.text(removedMessage), findsOneWidget);
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('the bar asks what was going on, and saves the picked '
+        'triggers to the entry just logged', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      await _pumpApp(tester, <Override>[
+        ...overrides(),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, query) => const AsyncData(<ViceActivity>[]),
+        ),
+      ], const ViceTracker());
+
+      await tester.tap(_button(logOneLabel(tea)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final String logged = writes.writes.single.id;
+      final Finder ask = find.widgetWithText(TextButton, whatWasGoingOnLabel);
+      expect(ask, findsOneWidget);
+      expect(find.text('Undo'), findsOneWidget);
+      expect(
+        tester.getSize(ask).height,
+        greaterThanOrEqualTo(DialSize.minTapTarget),
+      );
+
+      await tester.tap(ask);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Your own words'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'In your own words'),
+        'Pitch review',
+      );
+      await tester.tap(find.byTooltip('Add'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      final Write update = writes.writes.last;
+      expect((update.op, update.id), ('updateActivity', logged));
+      expect(update.fields, <String, Object?>{
+        'triggers': <String>['Pitch review'],
+      });
+      expect(writes.writes, hasLength(2));
+      expect(await const FreeTextTriggers().uses(ownerID), <String, int>{
+        'Pitch review': 1,
+      });
+    });
+
+    testWidgets(
+      'after Undo, the question is gone and nothing more is written',
+      (WidgetTester tester) async {
+        await _pumpApp(tester, overrides(), const ViceTracker());
+
+        await tester.tap(_button(logOneLabel(tea)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(find.text('Undo'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(whatWasGoingOnLabel), findsNothing);
+        expect(
+          <String>[for (final Write w in writes.writes) w.op],
+          <String>['recordActivity', 'deleteActivity'],
+        );
+      },
+    );
+
+    testWidgets(
+      "the picker's Undo log removes the entry and writes no triggers",
+      (WidgetTester tester) async {
+        await _pumpApp(tester, <Override>[
+          ...overrides(),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, query) => const AsyncData(<ViceActivity>[]),
+          ),
+        ], const ViceTracker());
+
+        await tester.tap(_button(logOneLabel(tea)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        final String logged = writes.writes.single.id;
+        await tester.tap(find.text(whatWasGoingOnLabel));
+        await tester.pumpAndSettle();
+        final Finder undo = find.bySemanticsLabel(
+          'Undo log, removing this entry',
+        );
+        expect(undo, findsOneWidget);
+        expect(
+          tester.getSize(undo).height,
+          greaterThanOrEqualTo(DialSize.minTapTarget),
+        );
+
+        await tester.tap(find.text(undoLogLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(undoLogLabel), findsNothing);
+        expect(
+          <(String, String)>[for (final Write w in writes.writes) (w.op, w.id)],
+          <(String, String)>[
+            ('recordActivity', logged),
+            ('deleteActivity', logged),
+          ],
+        );
+      },
+    );
+
+    group("a widget's What was going on?", () {
+      late FakeWidgetBridge bridge;
+      List<Override> widgetOverrides() => <Override>[
+        ...overrides(),
+        sealerProvider.overrideWith((ref) => FakeSealer()),
+        widgetBridgeProvider.overrideWithValue(bridge),
+        viceActivityHistoryProvider.overrideWith(
+          (ref, query) => const AsyncData(<ViceActivity>[]),
+        ),
+      ];
+      void ask(WidgetTester tester, String activityID) =>
+          ProviderScope.containerOf(tester.element(find.byType(ViceTracker)))
+              .read(pendingEntryPromptProvider.notifier)
+              .request((activityID: activityID, viceID: tea.id));
+
+      testWidgets('writes the queued log first, then saves the pick to it', (
+        WidgetTester tester,
+      ) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        bridge = FakeWidgetBridge(<QueuedLog>[
+          queuedLog(
+            'w1',
+            DateTime.now().subtract(const Duration(seconds: 1)),
+            uid: ownerID,
+            viceID: tea.id,
+          ),
+        ]);
+        await _pumpApp(tester, widgetOverrides(), const ViceTracker());
+        expect(writes.writes, isEmpty, reason: 'inside the Undo hold');
+
+        ask(tester, 'w1');
+        await tester.pumpAndSettle();
+        expect(find.byType(TriggerPickerSheet), findsOneWidget);
+        expect(
+          <String>[for (final Write w in writes.writes) '${w.op}:${w.id}'],
+          <String>['recordActivity:w1'],
+        );
+        expect(bridge.queue, isEmpty);
+
+        await tester.tap(find.text('Your own words'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextField, 'In your own words'),
+          'Pitch review',
+        );
+        await tester.tap(find.byTooltip('Add'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+
+        expect(
+          <String>[for (final Write w in writes.writes) '${w.op}:${w.id}'],
+          <String>['recordActivity:w1', 'updateActivity:w1'],
+        );
+        expect(writes.writes.last.fields, <String, Object?>{
+          'triggers': <String>['Pitch review'],
+        });
+      }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+      testWidgets('waits for the habits to load before asking', (
+        WidgetTester tester,
+      ) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        bridge = FakeWidgetBridge();
+        await _pumpApp(tester, <Override>[
+          storedTypicalsProvider.overrideWithValue(const <String, double>{}),
+          viceListProvider.overrideWith((ref) => ref.watch(_vicesSlot)),
+          unarchivedViceListProvider.overrideWithValue(
+            AsyncData<List<Vice>>(<Vice>[coffee, tea]),
+          ),
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          offlineProvider.overrideWith((ref) => Stream.value(false)),
+          trackerWritesProvider.overrideWithValue(writes),
+          memoryJournal(),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+          sealerProvider.overrideWith((ref) => FakeSealer()),
+          widgetBridgeProvider.overrideWithValue(bridge),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, query) => const AsyncData(<ViceActivity>[]),
+          ),
+        ], const ViceTracker());
+
+        ask(tester, 'w1');
+        await tester.pumpAndSettle();
+        expect(find.byType(TriggerPickerSheet), findsNothing);
+
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).read(_vicesSlot.notifier).load(<Vice>[coffee, tea]);
+        await tester.pumpAndSettle();
+        expect(find.byType(TriggerPickerSheet), findsOneWidget);
+        expect(writes.writes, isEmpty, reason: 'already written');
+      }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+      testWidgets('an entry undone since says so and writes nothing', (
+        WidgetTester tester,
+      ) async {
+        final DateTime tapped = DateTime.now().subtract(
+          const Duration(seconds: 6),
+        );
+        bridge = FakeWidgetBridge();
+        await _pumpApp(tester, widgetOverrides(), const ViceTracker());
+        // Running already, as MyApp keeps it, so its first flush has passed.
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).listen(widgetLogFlushProvider, (_, _) {});
+        await tester.pump();
+        bridge.queue = <QueuedLog>[
+          queuedLog('w1', tapped, uid: ownerID, viceID: tea.id),
+          queuedLog(
+            'w1',
+            tapped,
+            op: QueuedLogOp.delete,
+            uid: ownerID,
+            viceID: tea.id,
+          ),
+        ];
+
+        ask(tester, 'w1');
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text(entryUndoneNotice), findsOneWidget);
+        expect(find.byType(TriggerPickerSheet), findsNothing);
+        expect(writes.writes, isEmpty);
+        await tester.pumpAndSettle(const Duration(seconds: 5));
+      }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
     });
 
     testWidgets('Cmd-1 and Cmd-2 log one of the first and second habit', (
