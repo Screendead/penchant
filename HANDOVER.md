@@ -1,7 +1,7 @@
 # Handover — Tracker
 
-*Updated 2026-11-10 (fourth run inventory). Audience: the next agent, or Jack. The current task; `CLAUDE.md` says what this
-file holds and how to keep it.*
+*Updated 2026-11-11 (after the fourth run). Audience: the next agent, or Jack. The current task; `CLAUDE.md` says what
+this file holds and how to keep it.*
 
 ## The goal
 
@@ -53,52 +53,150 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
-## Pick up here: fourth run (`/finish-and-pitch`, 2026-11-10)
+## Pick up here: after the fourth run (2026-11-11)
 
-Jack: "Do the Flutter bump first. Then as much as you can in parallel using a workflow if appropriate." Inventory
-checked against the code on `master` at a075650 (not against this file, which was a day stale): #178 to #222 are all
-merged, #128 (keychain probe draft) is the only open PR, and the e2e speed-up (#218), the test audit (#219) and
-`e2e-10min` A (#220) are done. The checkpoint lists under queue item 7 below are history.
+The fourth run (`/finish-and-pitch`, 2026-11-10) merged #223 to #245 except as listed. Devices have build 1300
+(`master` at the instant-quit merge #244), which lacks payoff, replacement and the sample-size gates (#242, #243, #245,
+merged after it) and recovery time. This Mac's Flutter is 3.47.9 (Homebrew checkout upgraded; its generated
+`pubspec.lock` change is stashed there); a staged copy of the SDK at `~/development/tracker-tools/flutter-3.47.9` can
+go. Open: #240 recovery time (draft; a worker is settling one calibration scenario), #227 sealed-binding prototype
+(draft, waits on a call), #128 keychain probe.
 
-**DECIDED, in order.** The main session merges and ticks items here; workers stop at a green, clean PR.
+**Done this run** (merged):
 
-- **F1. DONE (this PR): Flutter 3.47.9 (Dart 3.13.7) and riverpod_lint 3.1.9** (D11). No Xcode project migration
-  and no `Package.resolved` change; 11 `Semantics(header: true)` gained `headingLevel: 1`, since 3.47 makes `header` a
-  no-op on iOS. This Mac's Homebrew Flutter moves to 3.47.9 with it, which also settles D9 (the universal macOS
-  release build here needed 3.44.8 or later).
-- **Lane A, insights engine, one PR per step, in series** (all share `lib/insights/`, `insights_provider.dart`,
-  `insights_page.dart`): n where's the line, o recovery time, p payoff from cutting down, q replacement, k before a
-  use, l one habit after another, m step changes; then the autocorrelation-corrected sample size and block-bootstrap
-  interval (gates 2 and 4), and the steps-based waking fallback for hours-after. None has code today.
-- **Lane B, native iOS sources, in series** (share `Info.plist`, the `pbxproj`, entitlements, `AppDelegate.swift`):
-  Health history backfill and incremental sync (7d: anchored queries, then background delivery; no
-  `HKAnchoredObjectQuery` or `enableBackgroundDelivery` exists), then Calendar reading (7e, EventKit; none exists).
-- **Lane C, Dart screens:** the weekly review (7f), then trend overlays (7g), then the D2 and D1 leftovers: a Trends
-  day point opening by container transform, the entry editor as the sheet rather than a page, a stepper step of 5 for
-  habits whose typical entry is 10 or more (`AmountFields.step` is 1).
-- **Lane D, small fixes, one PR per class:** Save on a locked habit says why instead of returning silently
-  (`lib/vice_form.dart`); under Reduce motion the page below a Back pop takes taps at once; register items
-  `undo-bar-lift-is-fixed-at-show-time`, `dense-hour-arc-shows-no-pending-entries`,
-  `recovery-key-copy-reaches-universal-clipboard`, `background-launches-take-focus-on-the-mac`,
-  `mac-widget-logs-need-the-helper`, `late-undo-offline-waits-for-the-app`; delete
-  `no-localizations-delegates-or-supported-locales` (English only: `r10-languages` A).
-- **Lane E:** store screenshots from the e2e harness (`ideas/release-blockers/store-icon-and-screenshots.md`). Uses
-  the simulator, so it runs when no other agent holds it.
-- **Last: cut 0.2.0** (`r10-release` B: its two gates, the Mac fullscreen layout #155 and AutoFill #133, are merged;
-  `pubspec.yaml` is still 0.1.0), with the `release` skill, then install on both devices.
+- #224 Flutter 3.47.9 and riverpod_lint 3.1.9 (D9, D11 done).
+- #225, #235 recovery key copy: iOS local-only pasteboard item, 2 min; the Mac says other Apple devices can paste, and
+  the register keeps the Mac half.
+- #226 widget Undo: a background flush sends a late queued delete only after earlier writes went out and the entry is
+  still on the server.
+- #228 five small fixes: locked-habit Save says why, Reduce-motion pop takes taps, `SnackBarLift`, pending arc share
+  hollow, three debt files gone.
+- #229 store screenshots: iPhone 6.9-inch set from the e2e harness (`docs/pitch/round-14/store-screenshots/`).
+- #230 Health anchored sync and hourly background delivery; daily values and anchors in Caches.
+- #231 weekly review (`/insights/week`, optional Monday 09:00 notification).
+- #232 where's the line (amount line and last-use cut-off).
+- #233 before a use (sleep, HRV, resting heart rate the day before; hour-before heart rate).
+- #234 trend overlays.
+- #236 one habit after another (within 15 min, against chance).
+- #237 Trends day point opens by container transform.
+- #238 entry editor as the amount sheet, with Delete; stepper steps by 5 for a stored typical of 10 or more.
+- #239 Calendar (iOS, EventKit: use in the hour after an event ends).
+- #241 step changes (level shifts held fixed; "What else changed" cards).
+- #242 payoff from cutting down.
+- #243 replacement (a habit rising as another falls).
+- #245 effective sample size and block bootstrap (gates 2 and 4) on the day-level comparisons.
+- #244 Mac quit hides windows at once and exits within a second (cause of the slow quit unmeasured).
 
-**UNDECIDED, to build out and pitch:** whether a sealed entry should be bound against being moved in time or rolled
-back (`sealed-blobs-bind-neither-time-nor-state`: a crypto and rules design change); any default a new engine step
-introduces (thresholds, windows, copy); anything a lane finds that is Jack's to call.
+**Calls waiting on Jack** on the round 14 page https://claude.ai/artifact/MVqL7vGeqoyrLnVDxW5pb6 (source
+`docs/pitch/round-14/index.html`; picks in its `picks` collection). These are Claude's recommendations, not decisions:
 
-**For Jack, not calls:** read the orphan-cleanup dry-run logs (B1); run on a device what never has (widgets, Control
-Centre controls, the menu bar helper's background sync, Insights on real Health data, `sleepingHeartRate`'s read
-cost); delete the old `com.screendead.tracker.tracker` install (B5); where the iPhone-to-Mac journal key sync
-investigation (P2) got to, since its branch is not on the remote and #128 waits on it; deleting the archived remote
-branches and their local worktrees (the permission check refused Claude).
+- `tamper`: A, leave as is and reword `sealed-blobs-bind-neither-time-nor-state` as an accepted limit (B fingerprint
+  prototyped in #227; C breaks older builds; D rollback detection a week or more).
+- `crowding`: B, hold Insights to three sections (level-change cards out of a fourth section; recovery cards count
+  toward the What it costs cap).
+- `follows`: B, reword the pair card now ("tend to come together"), with Health's waking as a control next.
+- `early-recovery`: A, show a recovery card once the first night is off, even before a return is shown.
+- `sparse-fell`: B, require more time since a fall for habits used less than once a day.
+- `no-health`: A, leave Insights computing nothing without Health.
+- `mac-background`: A, accept both Mac gaps (silent widget logs with the helper off; launches that take focus).
 
-**Blocked:** the paid Apple team's items (B2), what waits on a release (B3), more sources that need an approval or
-entitlement (`ideas/insights/more-data-sources.md`).
+**Claude's defaults; Jack may overturn** (as built):
+
+- Small fixes (#228): the long locked-habit message ("… did not open with your journal key …"); the undo bar's lift
+  capped at half the space above it; a pending arc share hollow with a dashed rim.
+- Recovery key copy (#225): 2-minute lifetime; a failed secure copy copies nothing, with no plain-clipboard fallback.
+- Weekly review (#231): last whole Monday-to-Sunday week; findings compared without hours-after samples (may differ
+  from Insights); Monday 09:00 fixed, neutral text, off by default, toggle in Settings › Reminder; entry row at the
+  foot of Insights only; free.
+- Health sync (#230): hourly background delivery; full re-read of stored days every 30 days; files in Caches.
+- Before a use (#233): HRV and resting heart rate from the previous day; existing floors reused (5 bpm resting heart
+  rate hides nearly every precursor; revisit with the literature floors); empty-state text unchanged (still mentions
+  "another habit"); first use against sleep at the same waking time; hour before is heart rate only on the
+  hours-after plan.
+- Where's the line (#232): contrast only, never "up to 2, no difference"; days of use only; one of slope and line by
+  the smaller search-corrected p; "at 15:00 or later" on the 24-hour clock; whole hours or amount steps, at most 5
+  cuts, 7 days a side; refusal wording "A line in the amount: …" / "A cut-off time for the last use: …"; one family.
+- Trends day transform (#237): grows from the point's horizontal place at a fixed height; a 20%-to-full scale with
+  clip and fade, not an `OpenContainer`; back is a plain fade.
+- One habit after another (#236): one family at q = 0.1; 15-minute window, 21 days with both, 7 followed, 10 points
+  over chance; "more often" only, stronger direction only; refused pairs not listed.
+- Recovery time (#240): heavy day against the usual mix of nights; heavy = at or over the upper quartile and over the
+  median of use days; a rebound night is not mentioned; three measures, three nights.
+- Editor as a sheet (#238): new-entry layout with red text Delete and full-width Save, no delete confirmation (Undo);
+  step of 5 lands on multiples of 5; the edited bead travels behind the sheet while it is up.
+- Calendar (#239): hour after an event ends against nearby event-free days; 60-min window, events under 15 min out,
+  gaps under 10 min merged, controls clear 2 h before and 1 h after within 14 days, 14 days a side, 10 points;
+  weekday/weekend matching only; iOS only; footer does not mention the calendar.
+- Step changes (#241): shift cards use the habit-effect floors; 14 days a side, at most 3 per measure; a habit named
+  beside a shift at 1.5x and p < 0.01 over 28 days a side, outside the family; power cost accepted (185 to 123 of 200
+  on one-day amount jumps); the existing "uneven" refusal reused; card wording "From March 12, 2026, your resting heart
+  rate averaged 6.0 bpm higher than before."
+- Payoff (#242): a fall is 25% under baseline overall and over the latest 14 days, 4 weeks a side, weekly totals lower
+  at one-sided p < 0.01, windows capped at 13 weeks; "No entries for X since …", not "quit"; the clearest fall in the
+  whole history; falls within 14 days of each other both refused, the other habit unnamed; no slow-wander note.
+- Replacement (#243): first entries after a fall count as a rise; no rise reported for two falls in one fortnight;
+  25% over its own 13-week level, held over 14 days; never "replaced" or "instead"; empty text "rose around the same
+  time"; only findings show, in a card of its own.
+- Sample-size gates (#245): a bootstrap refusal reuses "within noise"; cards show the widened t interval, bootstrap
+  pass/fail only; the redraw holds other terms fixed (no refit); day-level comparisons only; widening only, skipped
+  under 14 pairs, capped at 0.9, a week is 7 calendar days.
+- Store screenshots (#229): Coffee, Tea, Chocolate, Juice ("Fizzy drink" clipped in the Log fan); Today, Trends,
+  Insights, Log fan; Today shows the busiest of the last seven days (a weekday, not "Today"); status bar 9:41 while the
+  dial shows the run's time.
+
+**Measured** (synthetic sd-1 noise, 400 seeds, 120 days, per check before the family unless stated; every new
+comparison joins the one page-wide family, so earlier per-page rates here predate it):
+
+- Before a use (#233): noise 2.5 to 6.3%; power 99.8 to 100% (1 sd short night), 75 to 79% (half), 40 to 44% (half,
+  60 days); hour before 0.3 to 2.5%; page 4.9% raw, 0.1% after, 1.5% of reports. Weekday structure uncalibrated.
+- Where's the line (#232): noise 3.6 to 5.4% (uncorrected best cut 11.7 to 19.4%); power 0.8 sd 99% amount, 97% time;
+  page 0.10% of checks, 8.0% of reports. A straight-line effect also yields a line.
+- One habit after another (#236): noise found 0 to 0.3%; 20% following found 83% (30 days) and 99% (120); 10% mostly
+  refused. Shared waking anchor: 100% found.
+- Recovery time (#240, draft): reverse cause with AR(1) 0.6 averages 6.7% (other AR lines about 5.2%), to rerun and
+  fix; power 1 sd one night 95 to 97%, 0.5 sd 52 to 53%; page 0.1% of checks, 0.8% of reports.
+- Step changes (#241): day-50 step case 19.2% to 4.0%; card check on noise 0.2 to 1.8%; planted 1 sd 50% by card (97%
+  held fixed); short spans still 23%; a two-week illness caught 5.5%.
+- Payoff (#242): noise 4.0 to 5.8% raw, page 0.1% after; halving found 96.5% at 4 weeks; 1 sd 69%; false "fell" rows
+  11.8% every other day. Limits: slow wander 21.7%, 1 sd season 9.6%, reverse cause unhandled.
+- Replacement (#243): noise 0 to 3.8%, page 0%; first entries 92.7%, 1 to 2 a day 53.5%, 2 to 3 a day 24.5%; an
+  unrelated rise in the same fortnight 16.9%.
+- Sample-size gates (#245): runs of use with carried-over noise 13 to 21% to 5.5 to 7% (about 7% at 60 days); report
+  time 429-586 ms to 663-786 ms on a busy Mac.
+- Calendar has a 30 s read timeout; Health sync, weekly review and the editor carry no rates.
+
+**For Jack on a device:**
+
+- Small fixes: Reduce motion on, Back takes taps at once; the undo bar clears the keyboard at large text; the hollow
+  pending arc in both themes.
+- Recovery key: on iPhone a copy does not reach another device and is gone after 2 min; on the Mac with Handoff,
+  whether it reaches the iPhone (unknown); the Mac clears after 2 min unless something else was copied.
+- Weekly review: opens in reasonable time on a multi-year journal; the Monday notification arrives at 09:00 across a
+  clock change and its tap opens the review from quit and running.
+- Health sync: the permission sheet and reads still work with the background-delivery entitlement; a second Insights
+  open is near-instant; findings match before and after; overnight Watch sleep is there without opening the app;
+  allowing a new type reads once in full.
+- Insights (before a use, line, pairs, step changes, payoff, replacement, recovery, gates): plausible cards and page
+  time on real data; rerun the private engine comparison after merge.
+- Trends: a day point grows open; Reduce motion fades.
+- Editor sheet: dark mode with the keyboard up, Save, Delete and Undo; a deep link opens the sheet from cold.
+- Calendar: the prompt only after Connect Calendar; events read without relaunch; deny then allow clears "Off";
+  all-day, cancelled and declined left out; years of events within 30 s.
+- Store screenshots: App Store Connect accepts 1320x2868 for the 6.9-inch slot.
+- Mac widget Undo: a late offline Undo with Penchant closed reaches the server once online, without opening the app.
+
+**Left:**
+
+- Recovery time #240 (draft): rerun the reverse-cause AR(1) 0.6 line beside an AR(1)-alone control; fix the method if
+  it holds near 7%.
+- The steps-based waking fallback for hours-after: not built (#241's report), and the page still does not say why a
+  day with no night recorded gives nothing.
+- "Why not" lines under What sets it off.
+- Cut 0.2.0 (`r10-release` B: gates met; not cut this run).
+- The Mac recovery key on Universal Clipboard (register).
+- Process for the next run: a ten-worker fan-out drove this Mac to load 189 and Jack stopped it. Cap at about five
+  workers, verify once at the end, never `xcrun simctl shutdown all` (it shut down another project's simulators), and
+  remember a stacked PR merges into its base branch, not `master`.
 
 Minor calls made as built (Claude's, recommended; Jack may overturn): deleting an entry while the key is missing makes
 Undo say "Not restored"; keep the `e2eeEnabled` constant; no Undo on Deleted-habit deletes; the same-bedtime part sits
@@ -734,7 +832,7 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None on the pitch page. Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
+Seven on the round 14 page (Pick up here, above). Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
 `r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
 
