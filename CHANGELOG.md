@@ -7,7 +7,28 @@ pull request titles (`gh pr list --state merged`).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-11
+
 ### Added
+
+- Insights finds where the line is: "On days with 4 drinks or more logged for Beer, your time asleep that night
+  averages 25 min less than on days with fewer", and a cut-off hour for the last use (#232).
+- Insights looks at what comes before a use: your sleep, heart rate variability and resting heart rate the day
+  before, and your heart rate in the hour before (#233).
+- Insights notices two habits that tend to come together within 15 minutes, well above chance, and leaves out pairs
+  that both simply follow waking (#236, #259).
+- Insights keeps a lasting change of level in a Health measure from being blamed on a habit, and lists it behind
+  More in "What it costs" (#241, #251).
+- "How cutting down is going": when a habit falls by a quarter and stays down, Insights compares your Health measures
+  before and since, and says when another habit rose around the same time (#242, #243).
+- Insights says how long a heavy day takes to wear off: how far the next nights are from your usual, and the first
+  night back (#240, #258).
+- On iPhone, Insights can read your calendar (only after you tap Connect Calendar) and compare use in the hour after
+  an event ends with nearby days without one (#239).
+- A "Last week" review from Insights, with an optional Monday 09:00 notification under Settings › Reminder (#231).
+- Trends can draw other habits over the chosen one (#234).
+- Mac widgets say "Saved. Open Penchant to sync" when they hold logs and the menu bar helper is not running (#250).
+- Undo on a widget log made offline reaches the server once online (#226).
 
 - The Recovery key page says where this device keeps your journal key: in iCloud Keychain, or on this device only.
 - Insights, from the Penchant menu: connect Apple Health on iPhone, then see what follows each habit over the last
@@ -208,6 +229,17 @@ pull request titles (`gh pr list --state merged`).
 
 ### Changed
 
+- Insights reads from Apple Health only what changed since the last open and stays current in the background; a
+  second open in one session shows the report at once (#230, #253).
+- The Health numbers Penchant keeps on the device between launches are encrypted with your journal key, and removed
+  when you sign out or delete your account (#257).
+- Insights is stricter about days that resemble their neighbours, so a run of similar days counts for less (#245).
+- Tapping an entry opens it in the amount sheet, with Delete and Undo; the stepper moves by 5 for habits usually
+  logged in tens (#238).
+- A day in Trends opens from its point on the chart (#237).
+- Copying the recovery key on iPhone stays off your other devices and clears after 2 minutes; the Mac says other
+  Apple devices can paste it (#225, #235).
+- Quitting on the Mac hides the window at once and waits up to 3 seconds for unsynced entries (#244, #246).
 - The Log widget is redrawn to match the Dial widgets: your top habit is a dial with a + button, and the others are
   pills with today's count and a + button, each lit with a soft glow of its colour.
 - Holding a habit in the Log fan opens an amount sheet instead of the record dialog: the habit's name at the top, a
