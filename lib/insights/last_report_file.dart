@@ -39,4 +39,9 @@ class LastReportFile {
         if (bytes != null) await _files.write(name, bytes);
       })
       .catchError((Object _) {});
+
+  /// Removes the kept view, once Health is gone. Never throws.
+  Future<void> clear() => _queue = _queue
+      .then((_) => _files.delete(name))
+      .catchError((Object _) {});
 }

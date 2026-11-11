@@ -95,6 +95,7 @@ void main() {
     String uid = 'alice',
     FieldSealer? sealer,
     Future<void>? gate,
+    bool connected = true,
   }) {
     final ProviderContainer c = ProviderContainer(
       overrides: <Override>[
@@ -108,7 +109,7 @@ void main() {
           },
           uid: (Ref ref) => uid,
         ),
-        healthConnectedProvider.overrideWith((ref) async => true),
+        healthConnectedProvider.overrideWith((ref) async => connected),
         calendarSourceProvider.overrideWithValue(null),
         sealerProvider.overrideWithValue(sealer),
         deviceFilesProvider.overrideWithValue(device),
@@ -240,4 +241,52 @@ void main() {
     expect(await device.forUser('bob', sealer).names(), isEmpty);
     expect(await filesOnDisk(), isEmpty);
   });
+
+  test('Health disconnected removes the kept report', () async {
+    final JournalFieldSealer sealer = _sealer();
+    await LastReportFile(device.forUser('alice', sealer)).save(_saved);
+    final ProviderContainer c = container(sealer: sealer, connected: false);
+    int? left;
+    c.listen(insightsProvider, (_, _) {});
+    await _until(
+      () => c.read(insightsProvider).value?.health is HealthNotConnected,
+      'not connected never showed',
+    );
+    await _until(() {
+      unawaited(filesOnDisk().then((List<File> f) => left = f.length));
+      return left == 0;
+    }, 'the kept report was never removed');
+  });
+
+  test('a write in flight at sign-out leaves nothing behind', () async {
+    final Completer<void> sealing = Completer<void>();
+    final SealedFiles files = device.forUser(
+      'alice',
+      _GatedSealer(_sealer(), sealing.future),
+    );
+    final Future<void> write = files.write(LastReportFile.name, <int>[1, 2]);
+    final Future<void> cleared = device.clearAll();
+    sealing.complete();
+    await expectLater(write, throwsStateError);
+    await cleared;
+    expect(await filesOnDisk(), isEmpty);
+    await expectLater(files.write(LastReportFile.name, <int>[1, 2]), completes);
+  });
+}
+
+class _GatedSealer implements FileSealer {
+  _GatedSealer(this._inner, this._gate);
+
+  final FileSealer _inner;
+  final Future<void> _gate;
+
+  @override
+  Future<Uint8List> sealFile(List<int> bytes, {required String context}) async {
+    await _gate;
+    return _inner.sealFile(bytes, context: context);
+  }
+
+  @override
+  Future<Uint8List> openFile(List<int> envelope, {required String context}) =>
+      _inner.openFile(envelope, context: context);
 }
