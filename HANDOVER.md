@@ -917,12 +917,13 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
   not cleared by it: Dart has no call for that (its Undo window is 5 s anyway). Decided (Jack, 2026-11-11,
   "i agree with your plan"): this form, not a picker on every quick log.
   Widgets and menu bar ("same for the menu bar and widgets if possible"): the Log widget (iOS and Mac) shows a
-  "What was going on?" `Link` for 5 minutes after a tap (`LastLog.askWindow`, a default, not Jack's pick), the menu
+  "What was going on?" `Link` for 5 minutes after a tap (`LastLog.askWindow`; Jack, 2026-11-11: "5 minutes is fine"), the menu
   bar helper a button under its last-logged row. Both open `com.screendead.penchant://what-was-going-on/<id>` (ids
   only); the app writes the still-queued log at once, then opens the picker (`lib/widget_bridge/entry_prompt.dart`);
   an undone entry gets "That entry was undone." Not built: Control Centre, Siri and Shortcuts have no prompt (a
   control can only open the app on every press, via `OpenIntent`; a local notification after each such log is the
-  other option). Not proven on a device: the URL reaching the app cold and warm on both platforms.
+  other option; Jack, 2026-11-11: "skip control centre"). Not proven on a device: the URL reaching the app cold and
+  warm on both platforms (build 1398 installed on both; post-merge e2e on 7eb482a green).
 
 ## Calls waiting on Jack (UNDECIDED)
 
