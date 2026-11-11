@@ -1,0 +1,192 @@
+<title>Penchant Round 14</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of call cards; each card = question, what exists, option buttons (tap to pick), recommendation, what happens if nothing is picked. */
+:root{
+  --paper:#f6f5f2; --card:#ffffff; --ink:#1b1c1f; --muted:#5d606a; --rule:#dcdbd6;
+  --pick:#1b1c1f; --pickInk:#f6f5f2; --rec:#2f6b4f; --warn:#8a5a12;
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0}
+.lede{color:var(--muted)}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.call{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:12px;min-width:0}
+.block{display:grid;gap:4px}
+.opts{display:grid;gap:8px}
+.opt{all:unset;box-sizing:border-box;display:grid;gap:3px;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.opt b{font-weight:600}
+.opt .why{font-size:14px}
+.opt .cost{color:var(--muted);font-size:13px}
+.opt .rec{color:var(--rec);font-size:12px;font-family:var(--mono)}
+.opt[aria-pressed="true"]{background:var(--pick);color:var(--pickInk);border-color:var(--pick)}
+.opt[aria-pressed="true"] .cost,.opt[aria-pressed="true"] .rec{color:var(--pickInk)}
+.recline{border-left:3px solid var(--rec);padding-left:10px}
+.nothing{color:var(--muted);font-size:14px}
+ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.saved{font-family:var(--mono);font-size:12px;color:var(--rec);min-height:1em}
+#calls{display:grid;gap:18px}
+@media (prefers-reduced-motion:no-preference){.opt{transition:background .12s,color .12s}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Round 14: seven calls</h1>
+    <p class="lede">From the run of 10 and 11 November. Everything described as built is on your iPhone and Mac or about to be. Tap an option to pick it; your picks save here and I read them back.</p>
+    <p class="status" id="status">Loading saved picks…</p>
+  </header>
+
+  <section class="call" style="gap:8px">
+    <h2>What finished</h2>
+    <ul>
+      <li><b>Flutter 3.47.9</b> in CI and on this Mac.</li>
+      <li><b>Insights:</b> where the line is in an amount and a cut-off hour for the last use; what comes before a use; one habit after another; lasting changes of level in a health measure kept from being blamed on a habit; calendar events (iPhone); a stricter count of days that resemble their neighbours.</li>
+      <li><b>Health:</b> Insights reads only what changed since the last open, and stays current in the background.</li>
+      <li><b>Screens:</b> a "Last week" review with an optional Monday notification; comparing habits on one Trends chart; editing an entry in the amount sheet; a day in Trends opening from its point.</li>
+      <li><b>Fixes:</b> the Mac app quits at once; the recovery key copy expires after 2 minutes and stays off your other devices on iPhone; five small fixes; the debt register is down from 9 items to 5.</li>
+      <li><b>Store screenshots</b> generated from the test harness.</li>
+    </ul>
+  </section>
+
+  <div id="calls"></div>
+
+  <section class="call" style="gap:8px">
+    <h2>For you to do</h2>
+    <ul>
+      <li><b>Health sync on the iPhone.</b> Open Insights, close it, open it again: the second open should be almost immediate. Compare three recent nights with the Health app. Tomorrow morning, check last night is there.</li>
+      <li><b>Quit on the Mac.</b> Press Cmd+Q: the window should go at once.</li>
+      <li><b>Recovery key on the Mac.</b> Copy it, then try to paste on your iPhone. It is expected to arrive, and the app now says so. After 2 minutes the Mac's clipboard should be empty.</li>
+      <li><b>Calendar on the iPhone.</b> Tap Connect Calendar on Insights. The permission prompt should appear only then.</li>
+      <li><b>Editing an entry.</b> Tap a bead: the amount sheet should open, Save and Delete should work, and Undo should restore a deleted entry.</li>
+      <li><b>Insights on your real data.</b> Read the new cards for anything plainly wrong, and note how long the page takes to load.</li>
+      <li><b>Orphaned guest data.</b> The server job that would delete data left by expired guest accounts has only logged what it would delete since 8 November. Read a few days of its logs in the Firebase console; then I bring you the call to turn deletion on.</li>
+      <li><b>The old Tracker app.</b> Delete it from your iPhone, then its two iOS registrations in the Firebase console.</li>
+      <li><b>Journal key from iPhone to Mac.</b> The investigation into why it did not sync through iCloud Keychain was on a branch I cannot find. Tell me where it got to, or to start it again.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const CALLS = [
+ {id:'tamper', q:'Should Penchant detect someone changing an entry\'s time, amount or habit behind your back?',
+  today:'Each entry\'s private part (its triggers) and each habit\'s name are encrypted. An entry\'s time, quantity and habit sit beside it unencrypted, by your earlier decision, so the monthly server job can sum quantities. Someone with write access to your account (Firebase staff, or a stolen sign-in) could move an entry to another day, change its quantity, point it at another habit, or put back an older encrypted copy, and the app would show the result as normal. None of that lets them read anything private. They could also delete entries or add invented ones, and no option here stops that.',
+  now:'It is the largest item left in the debt register, and a prototype of the cheapest fix is built.',
+  opts:[
+   ['a','Leave it, and record it as an accepted limit','You see no change.','No cost. The promise the encryption makes, that the server cannot read your journal, holds. Anyone able to tamper can already delete or invent entries, and nobody gains from moving your coffee by a day.',true],
+   ['b','A fingerprint of time, quantity and habit inside the encrypted part','A small "changed outside the app" mark on an entry whose fields no longer match. It can never block or hide an entry, because honest events trip it too: an edit from an older build, or two devices editing one entry at once.','2 to 3 more days on top of the prototype (a draft pull request, #227, switched off, no interface). No new stored field. Does not detect a whole entry restored to an earlier state, deletions or invented entries.'],
+   ['c','Make the encryption itself cover those fields','A changed entry refuses to open: its triggers become unreadable.','3 to 4 days and a new encrypted format. Any time or quantity edit from an older build locks that entry on every device, and two devices editing at once can do the same, so a harmless sync race destroys triggers. Breaks your rule that stored data stays compatible.'],
+   ['d','Option B plus detecting a restored older version','As B, plus an "older version restored" mark.','A week or more. A new or reinstalled device notices nothing, and a device syncing late raises false alarms.']],
+  rec:'Leave it. The threat you chose to defend against is covered, and the other options close a narrow part of a hole that deletion and invention leave open. If you want tamper evidence anyway, B is the only one that keeps old data and old builds working.',
+  nothing:'Same as leaving it, except the prototype pull request stays open.'},
+
+ {id:'crowding', q:'How crowded should Insights get?',
+  today:'You chose three question sections: what it costs, what sets it off, how cutting down is going. This run added five kinds of card and each took its own place. "What sets it off" now lists a card per habit for what comes before a use, then habit-after-habit cards, then calendar cards, none capped. Recovery cards (how long a heavy day takes to wear off, not merged yet) sit in "What it costs" outside its two-cards-then-More limit and can repeat a "3 or more" card for the same habit. A fourth section, "What else changed", appears when a health measure shifts level for good.',
+  now:'The page shape was your decision, and the fourth section departs from it.',
+  opts:[
+   ['a','Keep as built','The most cards and the most detail; four sections at times.','No cost. The page gets long for anyone with several habits.'],
+   ['b','Hold to three sections','Level-change cards move to the foot of "What it costs", behind More. Recovery cards count toward that section\'s limit.','Small: under a day.',true],
+   ['c','Three sections and fold the repeats','As B, and a recovery sentence joins the "3 or more" card for the same habit; a habit rising as another falls joins the cutting-down card, so each fall is stated once.','About two days. Fewer, denser cards.']],
+  rec:'Hold to three sections. It keeps the shape you chose for under a day of work. Folding repeats is worth doing only if the page still feels long on your real data.',
+  nothing:'It stays as built, with four sections.'},
+
+ {id:'follows', q:'"One habit after another" calls two morning habits linked when both simply follow waking. Ship it like that?',
+  today:'Merged and on your devices: cards such as "After Coffee, you log Cigarettes within 15 minutes 62% of the time", shown only when that is well above chance. The journal holds no waking time, so two habits that each follow waking on their own were reported as linked in every one of 400 test journals. In every other no-effect test it reported nothing or almost nothing (0 to 0.3%).',
+  now:'It is live, and this is the one case where the card says more than the data shows.',
+  opts:[
+   ['a','Leave it','The card as it reads now.','No cost. The sentence is literally true: it claims order and timing, not cause.'],
+   ['b','Reword now, add a waking check next','The card says the two tend to come together. Then Apple Health\'s waking time, already used elsewhere in Insights, is used to drop pairs that waking explains.','Wording: an hour. The waking check: about a day, and it only helps on days Health recorded sleep.',true],
+   ['c','Hide the cards until the waking check exists','No habit-after-habit cards for now.','An hour to hide, about a day to bring back.']],
+  rec:'Reword now and add the waking check. Insights refuses to report what it cannot support everywhere else, and "after" reads as "because of" however carefully it is worded.',
+  nothing:'The card stays as it is.'},
+
+ {id:'early-recovery', q:'Should a "heavy day" card appear before it can say how long recovery takes?',
+  today:'Not merged yet: for each habit, a card on how far your sleep, heart rate variability or resting heart rate is off on the nights after an unusually heavy day, and the first night shown to be back to your usual. As built it appears once the first night is clearly off, even when no night is yet shown to be back, and then ends "When it comes back to your usual isn\'t clear yet." In tests with a real one-night effect, about 45% of sleep cards ended that way after 120 days of data, and nearly all after 60.',
+  now:'It decides how the card behaves in its first months, before it merges.',
+  opts:[
+   ['a','Show it early','A card sooner, often ending "isn\'t clear yet".','As built.',true],
+   ['b','Wait until it can say something about recovery','No card until a night is shown back, or a second night is clearly off.','A few lines. Far fewer cards in the first months.']],
+  rec:'Show it early. "The night after a heavy day costs you 30 minutes of sleep" is worth knowing by itself, and the ending is honest.',
+  nothing:'It ships showing early.'},
+
+ {id:'sparse-fell', q:'A habit used about every other day sometimes shows as "fell" when nothing changed. Tighten it?',
+  today:'Built, merging now: "How cutting down is going" finds a fall from your journal alone (at least 25% lower, held for 4 weeks) and compares your health measures since. For a habit logged about every other day with no real change, 11.8% of test journals showed a "fell" row; for a habit logged three times a day, 1.8%. The row is true of what was logged, but it describes chance, not a change.',
+  now:'One test journal in nine is a lot for a section about progress.',
+  opts:[
+   ['a','Leave it','More rows, some of them about nothing.','No cost.'],
+   ['b','Ask for more time before calling a fall on an occasional habit','A habit used less than once a day must stay lower for longer before the row appears.','About half a day including re-measuring. Real falls on occasional habits show later.',true],
+   ['c','Tighten the test for every habit','Fewer false rows everywhere.','About half a day. Every real fall shows later.']],
+  rec:'More time for occasional habits only. That is where the false rows come from, and daily habits keep their speed.',
+  nothing:'It ships as built.'},
+
+ {id:'no-health', q:'Should the Insights that need no Apple Health work without it?',
+  today:'Insights computes nothing until Apple Health has values; without Health it shows only a message asking to connect it. Three kinds of finding read only the journal or the calendar: one habit after another, a habit rising as another falls, and habits after calendar events. You have Health connected, so nothing changes for you today.',
+  now:'It matters only if someone without Health, or a Mac without it, should see those three.',
+  opts:[
+   ['a','Leave it','No change.','No cost.',true],
+   ['b','Show the journal-only findings without Health','On a device with no Health data, Insights shows those three kinds of card. That includes your Mac, which has no Health.','Unsized by the workers; it changes how the page loads. My estimate: two to three days.']],
+  rec:'Leave it while the app is yours alone. It becomes worth doing if you want Insights on the Mac.',
+  nothing:'It stays as it is.'},
+
+ {id:'mac-background', q:'Two known gaps in how the Mac handles background logging. Fix either?',
+  today:'First: if the menu bar helper is switched off in Login Items or has been quit, a log made from a Mac widget waits, with no sign, until you next open Penchant. Second: when Penchant is launched in the background by Shortcuts, Siri or a session restore, it may come to the front.',
+  now:'Both are recorded as known debt, and each fix is a design choice.',
+  opts:[
+   ['a','Accept both','No change. Penchant already restarts the helper every time it opens.','No cost.',true],
+   ['b','The Mac widgets say when logs are waiting','A widget shows "Saved. Open Penchant to sync" when it holds logs and the helper is not running.','About a day: new widget wording and layout.'],
+   ['c','Also move background syncing into its own background-only helper','Penchant never comes to the front unless you open it.','Large: a new app target, signing and a hand-off between processes, for a case nobody has measured.']],
+  rec:'Accept both. If the silent wait ever bites, B is the cheap fix.',
+  nothing:'Both stay.'},
+];
+
+const picks = {};
+const host = document.getElementById('calls');
+function el(tag, cls, text){const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e;}
+function block(label, text){const d=el('div','block'); d.append(el('h3',null,label), el('p',null,text)); return d;}
+function render(){
+  host.replaceChildren(...CALLS.map(c=>{
+    const s=el('section','call');
+    s.append(el('h2',null,c.q), block('Today',c.today), block('Why now',c.now));
+    const o=el('div','opts'); o.setAttribute('role','group'); o.setAttribute('aria-label',c.q);
+    c.opts.forEach(([k,label,see,cost,isRec])=>{
+      const b=el('button','opt'); b.id=`${c.id}-${k}`;
+      b.setAttribute('aria-pressed', picks[c.id]===k?'true':'false');
+      b.append(el('b',null,`${k.toUpperCase()}. ${label}`), el('span','why',see), el('span','cost',cost));
+      if(isRec) b.append(el('span','rec','Recommended'));
+      b.onclick=()=>pick(c.id,k);
+      o.append(b);
+    });
+    s.append(o, el('p','recline',c.rec), el('p','nothing','If you pick nothing: '+c.nothing));
+    const sv=el('p','saved', picks[c.id]?'Saved':''); sv.id=`saved-${c.id}`;
+    s.append(sv);
+    return s;
+  }));
+  const n=Object.keys(picks).length;
+  document.getElementById('status').textContent = db ? `${n} of ${CALLS.length} picked` : (dbTried ? 'Picks cannot save in this view' : 'Loading saved picks…');
+}
+let db=null, dbTried=false;
+async function pick(id,k){
+  picks[id]=k; render();
+  if(!db) return;
+  try{ await db.doc(`picks/${id}`).set({option:k, at:new Date().toISOString()}); }
+  catch(e){ const s=document.getElementById(`saved-${id}`); if(s) s.textContent='Not saved: '+(e&&e.message||'error'); }
+}
+render();
+(async()=>{
+  const timer=setTimeout(()=>{dbTried=true; render();},10000);
+  try{
+    db = window.claude ? await window.claude.use('db') : null;
+    if(db){ const snap=await db.collection('picks').get();
+      (snap.docs||snap).forEach(d=>{const v=d.data?d.data():d; if(v&&v.option) picks[d.id]=v.option;}); }
+  }catch(e){ db=null; }
+  clearTimeout(timer); dbTried=true; render();
+})();
+</script>
