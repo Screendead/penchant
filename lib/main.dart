@@ -39,6 +39,7 @@ import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/writes/category_migration.dart';
+import 'package:tracker/writes/quit_when_synced.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,6 +114,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.listen(widgetSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
     ref.listen(dailyNudgeStartupProvider, (_, _) {});
+    ref.listen(quitWhenSyncedProvider, (_, _) {});
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
