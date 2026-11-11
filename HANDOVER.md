@@ -104,6 +104,10 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   client API key's allowed apps (both Jack's). Then his signed checks (PR body), then delete
   `tech-debt/platform-and-delivery-config/background-launches-take-focus-on-the-mac.md`.
 
+Jack on 0.2.0 on the iPhone, 2026-11-11, asked to time Insights after a fresh launch: "yeah it's instant". How long
+"Updating…" then stays, and which stage dominates, are still unmeasured; packing the per-span sample files is not
+needed unless that wait proves long.
+
 **Left:**
 
 - The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
