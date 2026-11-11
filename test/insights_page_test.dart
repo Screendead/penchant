@@ -15,6 +15,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/stats.dart' as stats;
@@ -243,6 +244,94 @@ void main() {
     await _openCosts(tester);
     expect(find.text('Connected'), findsOneWidget);
     expect(find.text(InsightsPage.manageLabel), findsOneWidget);
+  });
+
+  testWidgets('recovery after a heavy day reads night by night under What '
+      'it costs, and is copied', (WidgetTester tester) async {
+    _connected();
+    final List<String?> copied = <String?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text'] as String?,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    RecoveryNight night(double effect, {bool off = false, bool back = false}) =>
+        RecoveryNight(
+          effect: effect,
+          interval: stats.Interval(effect - 10, effect + 10),
+          pValue: 0.001,
+          off: off,
+          back: back,
+        );
+    Recovery recovery(String habit) => Recovery(
+      habitId: habit,
+      metricId: 'sleepAsleep',
+      usableDays: 118,
+      heavyDays: 14,
+      cut: 4,
+      floor: 21,
+      nights: <RecoveryNight>[
+        night(-31, off: true),
+        night(-3, back: true),
+        night(1, back: true),
+      ],
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        vices: AsyncData<List<Vice>>(<Vice>[
+          fakeVice('beer', name: 'Beer', unit: Unit.drink),
+        ]),
+        runner: (_) async => InsightsReport(
+          findings: const <HabitFinding>[],
+          refused: const <HabitRefusal>[],
+          // A habit the page does not list gets no card.
+          recovery: <Recovery>[recovery('beer'), recovery('gone')],
+        ),
+      ),
+    );
+
+    const String sentence =
+        'After a day with 4 drinks or more logged for Beer, your time asleep '
+        'averages 31 min less that night. By the second night it is back '
+        'within 21 min of your usual.';
+    expect(find.text('Beer · after a heavy day'), findsOneWidget);
+    expect(find.text(sentence), findsOneWidget);
+    expect(find.text('Range that night: 21 to 41 min less'), findsOneWidget);
+    expect(
+      find.text(
+        'From 118 nights, 14 of them straight after a day with 4 drinks or '
+        'more',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(InsightsPage.nothingClear), findsNothing);
+
+    await tester.tap(find.text(InsightsPage.copyLabel));
+    await tester.pump();
+    final List<String> lines = copied.single!.split('\n');
+    final int at = lines.indexOf('Beer · after a heavy day');
+    expect(at, greaterThan(lines.indexOf(InsightsPage.costsHeading)));
+    expect(lines.sublist(at + 1, at + 4), <String>[
+      sentence,
+      'Range that night: 21 to 41 min less',
+      'From 118 nights, 14 of them straight after a day with 4 drinks or more',
+    ]);
+    expect(lines.where((String l) => l.contains('heavy day')), hasLength(1));
+    expect(copied.single, isNot(contains(InsightsPage.nothingClear)));
   });
 
   testWidgets('a line in the amount and a cut-off time read as one side of '
