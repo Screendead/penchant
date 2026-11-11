@@ -250,6 +250,58 @@ void main() {
     );
   });
 
+  // The outcome's noise carries over from one day to the next (each day
+  // keeps [carry] of the day before's), and the habit comes in runs of days,
+  // so neighbouring days are not separate evidence.
+  test('false findings: runs of use, no effect, noise that carries over', () {
+    for (final double carry in <double>[0, 0.4, 0.7]) {
+      for (final int days in <int>[60, 120, 365]) {
+        final Map<String, int> counts = <String, int>{};
+        int n = 0, under = 0;
+        for (int seed = 0; seed < 1000; seed++) {
+          final Random random = Random(seed);
+          final Set<int> used = <int>{
+            0,
+            days - 1,
+            ...episodes(random, days - 4, 0.08, 4),
+          };
+          if (used.length < 8 || days - used.length < 8) continue;
+          n++;
+          double carried = 0;
+          final HabitInsight r = whatFollows(
+            habits: DailyHabitSeries.fromUses(<HabitUse>[
+              for (final int d in used)
+                HabitUse(
+                  habitId: 'Coffee',
+                  at: addDays(january5, d).add(const Duration(hours: 9)),
+                  amount: 1,
+                ),
+            ]),
+            outcomes: OutcomeSeries.fromOutcomes(<DailyOutcome>[
+              for (int i = 0; i < days; i++)
+                DailyOutcome(
+                  date: addDays(january5, i + 1),
+                  metricId: metric,
+                  value: carried = carry * carried + gaussian(random),
+                ),
+            ]),
+            metricId: metric,
+          ).single;
+          final String key = switch (r) {
+            HabitFinding() => 'finding',
+            HabitRefusal(:final RefusalReason reason) => reason.name,
+          };
+          counts[key] = (counts[key] ?? 0) + 1;
+          if ((insightPValue(r) ?? 1) < 0.05) under++;
+        }
+        stdout.writeln(
+          'runs of 4 days, carry $carry, $days days (n=$n): $counts; '
+          'p under 0.05: $under',
+        );
+      }
+    }
+  });
+
   test('power: even 50% over 60 days, effect -0.5 sd', () {
     scenario(
       'power',
