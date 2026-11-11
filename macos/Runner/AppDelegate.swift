@@ -41,16 +41,21 @@ class AppDelegate: FlutterAppDelegate {
     }
   }
 
+  private var quitAsked = false
+
   // The headless flush engine never answers a termination request. Otherwise
-  // FlutterAppDelegate asks Dart first and the engine and Firebase then shut
-  // down, which took seconds with the window still up: the windows go at once
-  // and the process is given a second. Every write is in Firestore's local
-  // queue and the device journal from the moment it is made, so a cut-short
-  // shutdown loses none.
+  // the windows go at once, and FlutterAppDelegate asks Dart, which answers
+  // when the server has acknowledged every write or after 3 seconds
+  // (lib/writes/quit_when_synced.dart); AppKit then asks here a second time.
+  // The engine's and Firebase's own shutdown took seconds, so the process
+  // exits half a second after that second ask, or 4.5 seconds after the first
+  // if Dart never answers. A write unsent by then is in Firestore's queue on
+  // disk and goes on the next launch.
   override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     if FlushMode.active { return .terminateNow }
     for window in NSApp.windows { window.orderOut(nil) }
-    DispatchQueue.global().asyncAfter(deadline: .now() + 1) { exit(0) }
+    DispatchQueue.global().asyncAfter(deadline: .now() + (quitAsked ? 0.5 : 4.5)) { exit(0) }
+    quitAsked = true
     return super.applicationShouldTerminate(sender)
   }
 
