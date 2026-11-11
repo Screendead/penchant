@@ -16,7 +16,7 @@ correctness or velocity, or breaks the next routine action. **medium**: drift, f
 Evidence line numbers refer to the working tree at `master` on 2026-11-04 (refreshed after waves A and B); citations
 drift as code moves.
 
-**4 issues: 0 critical, 0 high, 0 medium, 4 low.**
+**3 issues: 0 critical, 0 high, 0 medium, 3 low.**
 
 ## Firebase Data Layer (2)
 
@@ -56,11 +56,10 @@ Password reset, email verification, re-authentication, account deletion and expo
 Version lag and resolver locks across Dart, Node and Gradle, dead or incompatible lint tooling, and unmaintained local scripts.
 
 
-## Platform and Delivery Config (1)
+## Platform and Delivery Config (0)
 
 The iOS and macOS platform trees, scaffold leftovers, signing and icons.
 
-- **low** — [A Mac launch nobody asked to bring forward still takes focus](platform-and-delivery-config/background-launches-take-focus-on-the-mac.md)
 
 ## CI and Quality Gates (0)
 
