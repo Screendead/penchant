@@ -6,7 +6,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/calendar_source.dart';
-import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
@@ -37,7 +37,7 @@ class _ChangingHealth extends FakeHealthSource {
 }
 
 class _Calendar implements CalendarSource {
-  List<CalendarEvent> events = const <CalendarEvent>[];
+  List<CalendarEvent> held = const <CalendarEvent>[];
 
   @override
   Future<CalendarAccess> access() async => CalendarAccess.full;
@@ -47,7 +47,7 @@ class _Calendar implements CalendarSource {
 
   @override
   Future<List<CalendarEvent>> events(DateTime start, DateTime end) async => [
-    for (final CalendarEvent e in events)
+    for (final CalendarEvent e in held)
       if (!e.start.isBefore(start) && e.start.isBefore(end)) e,
   ];
 }
@@ -127,23 +127,26 @@ void main() {
   setUp(() => insightsTimingLog = (_) {});
   tearDown(() => insightsTimingLog = debugPrint);
 
-  test('a second open shows the last report at once and reruns nothing', () async {
-    final _Harness h = _Harness();
-    expect(h.open(), isA<AsyncLoading<InsightsView>>());
-    final InsightsView first = await h.settled();
-    final int runs = h.runs;
-    final int changeChecks = h.health.changeChecks;
-    await h.close();
+  test(
+    'a second open shows the last report at once and reruns nothing',
+    () async {
+      final _Harness h = _Harness();
+      expect(h.open(), isA<AsyncLoading<InsightsView>>());
+      final InsightsView first = await h.settled();
+      final int runs = h.runs;
+      final int changeChecks = h.health.changeChecks;
+      await h.close();
 
-    final AsyncValue<InsightsView> reopened = h.open();
-    expect(reopened.value?.updating, isTrue);
-    expect(identical(reopened.value!.result, first.result), isTrue);
-    final InsightsView second = await h.settled();
-    // Health and the journal were asked again, behind the shown report.
-    expect(h.health.changeChecks, greaterThan(changeChecks));
-    expect(h.runs, runs);
-    expect(identical(second.result, first.result), isTrue);
-  });
+      final AsyncValue<InsightsView> reopened = h.open();
+      expect(reopened.value?.updating, isTrue);
+      expect(identical(reopened.value!.result, first.result), isTrue);
+      final InsightsView second = await h.settled();
+      // Health and the journal were asked again, behind the shown report.
+      expect(h.health.changeChecks, greaterThan(changeChecks));
+      expect(h.runs, runs);
+      expect(identical(second.result, first.result), isTrue);
+    },
+  );
 
   test('a new journal entry runs the engine again', () async {
     final _Harness h = _Harness();
@@ -220,7 +223,7 @@ void main() {
       insightsToday,
       -3,
     ).add(const Duration(hours: 8));
-    calendar.events = <CalendarEvent>[
+    calendar.held = <CalendarEvent>[
       CalendarEvent(start, start.add(const Duration(hours: 1))),
     ];
     h.open();
