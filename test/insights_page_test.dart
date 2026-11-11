@@ -336,6 +336,145 @@ void main() {
     expect(copied.single, isNot(contains(InsightsPage.nothingClear)));
   });
 
+  group('recovery beside the other costs', () {
+    RecoveryNight night(double effect, {bool off = false, bool back = false}) =>
+        RecoveryNight(
+          effect: effect,
+          interval: stats.Interval(effect - 10, effect + 10),
+          pValue: 0.001,
+          off: off,
+          back: back,
+        );
+    Recovery fitted() => Recovery(
+      habitId: 'beer',
+      metricId: 'sleepAsleep',
+      usableDays: 118,
+      heavyDays: 14,
+      cut: 4,
+      floor: 21,
+      nights: <RecoveryNight>[
+        night(-31, off: true),
+        night(-3, back: true),
+        night(1, back: true),
+      ],
+    );
+    HabitFinding finding(
+      String habit,
+      InsightKind kind,
+      String metricId,
+      double effect, {
+      double? cut,
+    }) => HabitFinding(
+      habitId: habit,
+      metricId: metricId,
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 41,
+      raw: null,
+      kind: kind,
+      cut: cut,
+      effect: effect,
+      interval: stats.Interval(effect * 1.5, effect / 2),
+      standardized: -0.5,
+      pValue: 0.001,
+    );
+    AsyncData<List<Vice>> habits() => AsyncData<List<Vice>>(<Vice>[
+      fakeVice('beer', name: 'Beer', unit: Unit.drink),
+      fakeVice('coffee', name: 'Coffee', unit: Unit.drink),
+    ]);
+
+    testWidgets('joins the line in the amount on the same habit and measure, '
+        'saying the heavy day once, and is copied so', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      final List<String?> copied = <String?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              (call.arguments as Map<Object?, Object?>)['text'] as String?,
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          vices: habits(),
+          runner: (_) async => InsightsReport(
+            findings: <HabitFinding>[
+              finding('beer', InsightKind.doseLine, 'sleepAsleep', -25, cut: 4),
+            ],
+            refused: const <HabitRefusal>[],
+            recovery: <Recovery>[fitted()],
+          ),
+        ),
+      );
+
+      const String sentence =
+          'On days with 4 drinks or more logged for Beer, your time asleep '
+          'that night averages 25 min less than on days with fewer; after '
+          'such a day it averages 31 min less that night. By the second '
+          'night it is back within 21 min of your usual.';
+      const String basis =
+          'From 118 nights, 14 of them straight after such a day';
+      expect(find.text('Beer · sleep'), findsOneWidget);
+      expect(find.text(sentence), findsOneWidget);
+      expect(find.text('Range that night: 21 to 41 min less'), findsOneWidget);
+      expect(find.text(basis), findsOneWidget);
+      expect(find.text('Beer · after a heavy day'), findsNothing);
+      expect(find.text(InsightsPage.more(1)), findsNothing);
+
+      await tester.tap(find.text(InsightsPage.copyLabel));
+      await tester.pump();
+      final String text = copied.single!;
+      expect(text, contains('$sentence\n'));
+      expect(text, contains('Range that night: 21 to 41 min less\n$basis\n'));
+      expect(text, isNot(contains('after a heavy day')));
+      expect(text, isNot(contains('After a day with')));
+    });
+
+    testWidgets('counts toward the two cards before More', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          vices: habits(),
+          runner: (_) async => InsightsReport(
+            findings: <HabitFinding>[
+              finding('coffee', InsightKind.use, 'sleepDeep', -18),
+              finding('coffee', InsightKind.use, 'restingHeartRate', 4),
+            ],
+            refused: const <HabitRefusal>[],
+            recovery: <Recovery>[fitted()],
+          ),
+        ),
+      );
+
+      expect(find.text('Beer · after a heavy day'), findsNothing);
+      expect(find.text(InsightsPage.more(1)), findsOneWidget);
+      await _openCosts(tester);
+      expect(find.text('Beer · after a heavy day'), findsOneWidget);
+    });
+  });
+
   testWidgets('a line in the amount and a cut-off time read as one side of '
       'the line against the other', (WidgetTester tester) async {
     _connected();

@@ -376,9 +376,15 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       ];
     }
     final _Costs costs = _Costs(result as InsightsComputed, vices);
-    final List<InsightCard> cards = costs.cards;
-    final int shown = min(cards.length, InsightsPage.previewCards);
-    final int hidden = cards.length - shown + costs.shifts.length;
+    final List<Widget Function(double top)> costCards =
+        <Widget Function(double top)>[
+          for (final InsightCard card in costs.cards)
+            (double top) => costs.card(card, top: top),
+          for (final RecoveryCard card in costs.recovery)
+            (double top) => costs.recoveryCard(card, top: top),
+        ];
+    final int shown = min(costCards.length, InsightsPage.previewCards);
+    final int hidden = costCards.length - shown + costs.shifts.length;
     final List<Widget Function(double top)>
     cuttingDown = <Widget Function(double top)>[
       for (final PayoffCard card in costs.fallCards)
@@ -426,14 +432,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         const CardFoot(InsightsPage.hoursAfterPending),
       _LastNightSection(vices: vices, marks: costs.marks),
       const CardSectionLabel(InsightsPage.costsHeading),
-      if (cards.isEmpty && costs.recovery.isEmpty) costs.emptyBox(),
-      for (int i = 0; i < shown; i++)
-        costs.card(cards[i], top: i == 0 ? 0 : DialSpace.xs),
-      for (final (int i, RecoveryCard card) in costs.recovery.indexed)
-        costs.recoveryCard(
-          card,
-          top: i == 0 && cards.isEmpty ? 0 : DialSpace.xs,
-        ),
+      if (costCards.isEmpty) costs.emptyBox(),
+      for (int i = 0; i < shown; i++) costCards[i](i == 0 ? 0 : DialSpace.xs),
       // Always there: the drill-in also holds the refusals, the hours-after
       // note and, once settled, the Health card.
       DialCard(
@@ -645,10 +645,13 @@ class _Costs {
       for (final BeforeUse b in report.beforeUse)
         if (_names.containsKey(b.habitId)) b,
     ], floors: report.floors);
-    recovery = recoveryCards(<Recovery>[
+    final ({Map<(String, String), Recovery> joined, List<Recovery> rest})
+    split = joinRecovery(cards, <Recovery>[
       for (final Recovery r in report.recovery)
         if (_names.containsKey(r.habitId)) r,
     ]);
+    joined = split.joined;
+    recovery = recoveryCards(split.rest);
     final List<PayoffCard> payoffs = payoffCards(<Payoff>[
       for (final Payoff p in report.payoffs)
         if (_names.containsKey(p.habitId)) p,
@@ -708,6 +711,12 @@ class _Costs {
   late final List<BeforeUseCard> before;
   late final List<RecoveryCard> recovery;
 
+  /// Recovery joined to the line in the amount on its habit and measure.
+  late final Map<(String, String), Recovery> joined;
+
+  Recovery? recoveryOf(HabitFinding f) =>
+      f.kind == InsightKind.doseLine ? joined[(f.habitId, f.metricId)] : null;
+
   /// Falls shown as cards, in order, and the rest as rows after them.
   late final List<PayoffCard> fallCards;
   late final List<PayoffCard> payoffRows;
@@ -732,6 +741,7 @@ class _Costs {
     mark: marks[card.habitId] ?? const HabitMark(0),
     locale: formatLocale,
     top: top,
+    recoveryOf: recoveryOf,
   );
 
   Widget recoveryCard(RecoveryCard card, {required double top}) =>
@@ -788,6 +798,7 @@ class _Costs {
       lastNight: lastNight,
       emptyTitle: empty.title,
       emptyBody: empty.body,
+      recoveryOf: recoveryOf,
       recovery: <List<String>>[
         for (final RecoveryCard card in recovery)
           recoveryText(
@@ -845,6 +856,7 @@ String insightsText({
   List<String> lastNight = const <String>[],
   String emptyTitle = InsightsPage.nothingClear,
   String emptyBody = InsightsPage.nothingClearBody,
+  Recovery? Function(HabitFinding line) recoveryOf = _noRecovery,
   List<List<String>> recovery = const <List<String>>[],
   List<List<String>> cuttingDown = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
@@ -867,17 +879,33 @@ String insightsText({
     final String habit = nameOf(f.habitId);
     final Unit unit = unitOf(f.habitId);
     final String? bedtime = bedtimeLine(f, locale, unit: unit);
+    final Recovery? after = recoveryOf(f);
     out
       ..write('\n$habit · ${card.family.label}\n')
-      ..write('${findingSentence(f, habit, locale, unit: unit)}\n')
+      ..write(
+        after == null
+            ? '${findingSentence(f, habit, locale, unit: unit)}\n'
+            : '${recoveryJoinedSentence(f, after, habit, locale, unit: unit)}\n',
+      )
       ..write(bedtime == null ? '' : '$bedtime\n')
       ..write('${findingRange(f, locale)}\n')
       ..write('${findingBasis(f, habit, locale: locale, unit: unit)}\n');
     if (findingEvidence(f) case final String evidence) {
       out.write('$evidence\n');
     }
+    if (after != null) {
+      out
+        ..write('${recoveryRange(after, locale)}\n')
+        ..write(
+          '${recoveryJoinedBasis(f, after, locale: locale, unit: unit)}\n',
+        );
+    }
     for (final HabitFinding other in card.others) {
-      out.write('${findingLine(other, locale, unit: unit)}\n');
+      out.write(switch (recoveryOf(other)) {
+        final Recovery r =>
+          '${recoveryJoinedLine(other, r, locale, unit: unit)}\n',
+        null => '${findingLine(other, locale, unit: unit)}\n',
+      });
     }
   }
   for (final List<String> card in recovery) {
@@ -915,6 +943,8 @@ String insightsText({
 }
 
 Unit _anyUnit(String _) => Unit.fallback;
+
+Recovery? _noRecovery(HabitFinding _) => null;
 
 class _HealthCard extends StatelessWidget {
   const _HealthCard({
@@ -1105,6 +1135,7 @@ class _FindingCard extends StatelessWidget {
     required this.mark,
     required this.locale,
     required this.top,
+    this.recoveryOf = _noRecovery,
   });
 
   final InsightCard card;
@@ -1113,6 +1144,7 @@ class _FindingCard extends StatelessWidget {
   final HabitMark mark;
   final String locale;
   final double top;
+  final Recovery? Function(HabitFinding line) recoveryOf;
 
   @override
   Widget build(BuildContext context) {
@@ -1121,6 +1153,7 @@ class _FindingCard extends StatelessWidget {
     final HabitFinding finding = card.headline;
     final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
     final String? bedtime = bedtimeLine(finding, locale, unit: unit);
+    final Recovery? after = recoveryOf(finding);
     return DialCard(
       top: top,
       children: <Widget>[
@@ -1143,7 +1176,15 @@ class _FindingCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                findingSentence(finding, habit, locale, unit: unit),
+                after == null
+                    ? findingSentence(finding, habit, locale, unit: unit)
+                    : recoveryJoinedSentence(
+                        finding,
+                        after,
+                        habit,
+                        locale,
+                        unit: unit,
+                      ),
                 style: DialTypeScale.bodyL.copyWith(color: scheme.onSurface),
               ),
               if (bedtime != null) ...<Widget>[
@@ -1177,10 +1218,30 @@ class _FindingCard extends StatelessWidget {
               ),
               if (findingEvidence(finding) case final String evidence)
                 Text(evidence, style: small),
+              if (after != null) ...<Widget>[
+                Text(recoveryRange(after, locale), style: small),
+                Text(
+                  recoveryJoinedBasis(
+                    finding,
+                    after,
+                    locale: locale,
+                    unit: unit,
+                  ),
+                  style: small,
+                ),
+              ],
               if (card.others.isNotEmpty) const SizedBox(height: DialSpace.s),
               for (final HabitFinding other in card.others)
                 Text(
-                  findingLine(other, locale, unit: unit),
+                  switch (recoveryOf(other)) {
+                    final Recovery r => recoveryJoinedLine(
+                      other,
+                      r,
+                      locale,
+                      unit: unit,
+                    ),
+                    null => findingLine(other, locale, unit: unit),
+                  },
                   style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
                 ),
             ],
