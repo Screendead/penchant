@@ -38,9 +38,11 @@ enum WidgetBridge {
           return
         }
         defaults.set(snapshot, forKey: snapshotKey)
-        if #available(iOS 17.0, macOS 14.0, *) {
-          PenchantShortcuts.updateAppShortcutParameters()
-        }
+        #if !PENCHANT_SYNC
+          if #available(iOS 17.0, macOS 14.0, *) {
+            PenchantShortcuts.updateAppShortcutParameters()
+          }
+        #endif
       case "clear":
         defaults.removeObject(forKey: snapshotKey)
         LastLog.save(nil)
@@ -52,13 +54,9 @@ enum WidgetBridge {
         result(nil)
         // After the reply: ending the run destroys the engine that called.
         let outcome = call.arguments as? String
-        #if os(iOS)
-          if let onBackgroundDone {
-            DispatchQueue.main.async { onBackgroundDone(outcome) }
-          }
-        #else
-          DispatchQueue.main.async { FlushMode.finish(outcome: outcome) }
-        #endif
+        if let onBackgroundDone {
+          DispatchQueue.main.async { onBackgroundDone(outcome) }
+        }
         return
       case "removeLogs":
         guard let json = call.arguments as? String,
@@ -231,7 +229,9 @@ enum QueueListener {
       }
       let headless = FlutterEngine(name: "background-flush", project: nil, allowHeadlessExecution: true)
       RegisterGeneratedPlugins(registry: headless)
-      WidgetBridge.register(with: headless.registrar(forPlugin: "WidgetBridge"))
+      WidgetBridge.register(with: headless.registrar(forPlugin: "WidgetBridge")) { outcome in
+        finish(outcome: outcome)
+      }
       engine = headless
       if !headless.run(withEntrypoint: "backgroundFlushMain") {
         quit(outcome: "retry")

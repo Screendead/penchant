@@ -1,17 +1,13 @@
 import Cocoa
 import FlutterMacOS
 
-// Penchant's background sync, at Contents/Library/LoginItems/PenchantSync.app
-// inside Penchant.app. The menu bar helper launches it to write what the
-// widgets queued while Penchant is closed. LSBackgroundOnly and a prohibited
-// activation policy: no window, Dock icon or menu bar, and nothing can
-// activate it. It runs Penchant's own Dart (the enclosing app's
-// App.framework) headless on backgroundFlushMain in lib/main.dart, which
-// seals and writes through TrackerWrites, and quits once the flush ends,
-// leaving the outcome in the App Group (FlushHandoff.outcome) for the helper.
-// Its keychain access group is the app's first, so Firebase Auth's session
-// and the journal key are the app's; its sandbox container, and so its
-// Firestore cache, is its own.
+// The menu bar helper launches this to write what the widgets queued while
+// Penchant is closed. It has no window, Dock icon or menu bar, and nothing can
+// activate it. It runs the enclosing app's Dart (backgroundFlushMain in
+// lib/main.dart) and leaves the outcome in the App Group for the helper. Its
+// first keychain access group is the app's, so Firebase Auth's session and the
+// journal key are the app's; its sandbox container, and with it the Firestore
+// cache, is its own.
 @main
 final class SyncDelegate: NSObject, NSApplicationDelegate {
   static func main() {
