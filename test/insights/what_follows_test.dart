@@ -701,20 +701,23 @@ void main() {
 
   test('a difference that rests on one week is refused by the block '
       'bootstrap', () {
-    // Coffee on a quarter of days; on four days of one week it comes with a
-    // night 300 minutes longer, and with nothing on any other day.
-    const Set<int> spiked = <int>{40, 42, 44, 46};
+    // Coffee on a quarter of days. In one week its four days come with a
+    // night 300 minutes longer and the three days between with one 400
+    // shorter, so the week's average, and with it the month's, is as ever;
+    // nothing follows Coffee on any other day.
     final data = journal(
       seed: 22,
       usedOn: (random, day) => <String>{
-        if (day >= 40 && day <= 46
-            ? spiked.contains(day)
-            : random.nextDouble() < 0.25) ...<String>[
-          'Coffee',
-          if (spiked.contains(day)) 'Spike',
-        ],
+        if (day < 40 || day > 46)
+          if (random.nextDouble() < 0.25) 'Coffee',
+        if (day >= 40 && day <= 46)
+          if (day.isEven) ...<String>['Coffee', 'Spike'] else 'Dip',
       },
-      effectOf: (used) => used.contains('Spike') ? 300 : 0,
+      effectOf: (used) => used.contains('Spike')
+          ? 300
+          : used.contains('Dip')
+          ? -400
+          : 0,
     );
     HabitInsight judged(InsightGates gates) => forHabit(
       whatFollows(
