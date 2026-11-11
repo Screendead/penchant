@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/hours_after.dart' show wakingOn;
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart' show InsightGates;
 
@@ -72,12 +74,13 @@ class HabitFollows {
   final double share;
 
   /// The largest share the follower's own timing gives: at the same clock
-  /// times on nearby days with both habits, or on the same days a while
-  /// before or a while after each use.
+  /// times on nearby days with both habits, as long after waking on them
+  /// where Health gives the waking, or on the same days a while before or a
+  /// while after each use.
   final double chance;
 
   /// One-sided, for following more often than every measure of chance: the
-  /// largest of the three. Null when there were too few days to test.
+  /// largest of the four. Null when there were too few days to test.
   final double? pValue;
 
   /// Null until [judgeHabitFollows] has run.
@@ -102,15 +105,23 @@ class HabitFollows {
 /// and including [through]. Unjudged: pass the result to [judgeHabitFollows].
 ///
 /// A use counts on the day its evening belongs to ([lateDayOf]). Chance is
-/// measured three ways, and a pair must beat all three: the same clock times
+/// measured four ways, and a pair must beat all four: the same clock times
 /// on other days with both habits (which a shared rhythm, or days both are
-/// used, cannot beat), and the same day a while before and a while after
-/// each use (which waking, bedtime or a late day cannot beat both of). Days
-/// are the unit, so a run of uses in one day counts once.
+/// used, cannot beat), the same day a while before and a while after each
+/// use (which bedtime or a late day cannot beat both of), and as long after
+/// waking on those other days (which two habits that each come soon after
+/// waking, whenever that is, cannot beat). Days are the unit, so a run of
+/// uses in one day counts once.
+///
+/// Waking is [wakingOn] over [bed] ([HealthSampleMetric.bed]). A use on a
+/// day without one, before it, or with fewer than [minFollowControls] other
+/// days that have one, takes its clock-time share as its since-waking share:
+/// with no [bed] the fourth measure is the first, and nothing changes.
 List<HabitFollows> habitFollows({
   required Iterable<HabitUse> uses,
   required DateTime through,
   Set<String> skip = const <String>{},
+  List<HealthSample> bed = const <HealthSample>[],
   InsightGates gates = const InsightGates(),
 }) {
   final DateTime last = startOfDay(through);
@@ -133,6 +144,13 @@ List<HabitFollows> habitFollows({
     for (final String id in times.keys)
       if (!skip.contains(id)) id,
   ]..sort();
+  final Map<DateTime, DateTime> wakes = <DateTime, DateTime>{
+    if (bed.isNotEmpty)
+      for (final DateTime day in <DateTime>{
+        for (final String id in ids) ...usedDays[id]!,
+      })
+        day: ?wakingOn(bed, day),
+  };
   return <HabitFollows>[
     for (final String lead in ids)
       for (final String follower in ids)
@@ -143,6 +161,7 @@ List<HabitFollows> habitFollows({
             times[lead]!,
             times[follower]!,
             usedDays[lead]!.intersection(usedDays[follower]!),
+            wakes,
             gates,
           ),
   ];
@@ -174,6 +193,7 @@ HabitFollows _pair(
   List<DateTime> leadTimes,
   List<DateTime> followerTimes,
   Set<DateTime> bothDays,
+  Map<DateTime, DateTime> wakes,
   InsightGates gates,
 ) {
   final List<DateTime> days = bothDays.toList()..sort();
@@ -194,10 +214,11 @@ HabitFollows _pair(
       starts.length;
 
   final List<double> overOther = <double>[];
+  final List<double> overWaking = <double>[];
   final List<double> overEarlier = <double>[];
   final List<double> overLater = <double>[];
   int judgedUses = 0, followedDays = 0;
-  double hits = 0, other = 0, earlier = 0, later = 0;
+  double hits = 0, other = 0, waking = 0, earlier = 0, later = 0;
   for (int i = 0; i < days.length; i++) {
     final List<DateTime>? atDay = anchors[days[i]];
     if (atDay == null) continue;
@@ -209,12 +230,18 @@ HabitFollows _pair(
           days[j],
     ];
     if (controls.length < minFollowControls) continue;
-    double dayHits = 0, dayOther = 0, dayEarlier = 0, dayLater = 0;
+    final DateTime? woke = wakes[days[i]];
+    final List<DateTime> wakings = <DateTime>[
+      if (woke != null)
+        for (final DateTime c in controls) ?wakes[c],
+    ];
+    double dayHits = 0, dayOther = 0, dayWaking = 0;
+    double dayEarlier = 0, dayLater = 0;
     for (final DateTime at in atDay) {
       // A use before the cutoff hour sits on the calendar day after its own.
       final int ahead = _dayNumber(at) - numbers[i];
       dayHits += followed(at) ? 1 : 0;
-      dayOther +=
+      final double atClock =
           controls
               .where(
                 (DateTime c) => followed(
@@ -230,6 +257,17 @@ HabitFollows _pair(
               )
               .length /
           controls.length;
+      dayOther += atClock;
+      if (woke == null ||
+          at.isBefore(woke) ||
+          wakings.length < minFollowControls) {
+        dayWaking += atClock;
+      } else {
+        final Duration awake = at.difference(woke);
+        dayWaking +=
+            wakings.where((DateTime w) => followed(w.add(awake))).length /
+            wakings.length;
+      }
       dayEarlier += sameDay(at, _earlier);
       dayLater += sameDay(at, _later);
     }
@@ -238,9 +276,11 @@ HabitFollows _pair(
     if (dayHits > 0) followedDays++;
     hits += dayHits;
     other += dayOther;
+    waking += dayWaking;
     earlier += dayEarlier;
     later += dayLater;
     overOther.add((dayHits - dayOther) / n);
+    overWaking.add((dayHits - dayWaking) / n);
     overEarlier.add((dayHits - dayEarlier) / n);
     overLater.add((dayHits - dayLater) / n);
   }
@@ -252,11 +292,14 @@ HabitFollows _pair(
     followedDays: followedDays,
     uses: judgedUses,
     share: judgedUses == 0 ? 0 : hits / judgedUses,
-    chance: judgedUses == 0 ? 0 : max(other, max(earlier, later)) / judgedUses,
+    chance: judgedUses == 0
+        ? 0
+        : <double>[other, waking, earlier, later].reduce(max) / judgedUses,
     pValue: judged < gates.minDays
         ? null
         : <double>[
             _aboveZero(overOther),
+            _aboveZero(overWaking),
             _aboveZero(overEarlier),
             _aboveZero(overLater),
           ].reduce(max),
@@ -306,7 +349,8 @@ List<HabitFollows> judgeHabitFollows(
   ];
 }
 
-/// What comes before one habit: the habits it follows, strongest first.
+/// The habits one habit tends to come within [followWindow] after, strongest
+/// first.
 class FollowsCard {
   const FollowsCard({required this.headline, required this.others});
 
@@ -367,16 +411,18 @@ List<FollowsCard> followsCards(List<HabitFollows> judged) {
 
 String _percent(double share) => '${(share * 100).round()}%';
 
-/// "After Coffee, you log Cigarettes within 15 minutes 62% of the time. Your
-/// usual timing of each would give 18%."
+/// "Coffee and Cigarettes tend to come together: you log Cigarettes in the
+/// 15 minutes after Coffee 62% of the time. Your usual timing of each would
+/// give 18%." Says when, never why: which sets off which, or what sets off
+/// both, is not measured.
 String followsSentence(HabitFollows f, String lead, String follower) =>
-    'After $lead, you log $follower within ${followWindow.inMinutes} minutes '
-    '${_percent(f.share)} of the time. Your usual timing of each would give '
-    '${_percent(f.chance)}.';
+    '$lead and $follower tend to come together: you log $follower in the '
+    '${followWindow.inMinutes} minutes after $lead ${_percent(f.share)} of '
+    'the time. Your usual timing of each would give ${_percent(f.chance)}.';
 
-/// "After Tea: 31% of the time, against 12% by your usual timing".
+/// "With Tea: 31% of the time, against 12% by your usual timing".
 String followsLine(HabitFollows f, String lead) =>
-    'After $lead: ${_percent(f.share)} of the time, against '
+    'With $lead: ${_percent(f.share)} of the time, against '
     '${_percent(f.chance)} by your usual timing';
 
 /// "From 84 uses of Coffee on 61 days with both".

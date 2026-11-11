@@ -18,6 +18,7 @@ class PayoffGates {
     this.sinceDays = 91,
     this.minSinceDays = 28,
     this.recentDays = 14,
+    this.occasionalPower = 1,
     this.minFall = 0.25,
     this.fallSignificance = 0.01,
     this.sameFallDays = 14,
@@ -47,6 +48,15 @@ class PayoffGates {
   /// The latest days, which must be as far under the baseline as the whole
   /// time since.
   final int recentDays;
+
+  /// How much longer a fall of a habit used less than once a day must have
+  /// lasted: [minSinceDays] and [recentDays] are each divided by the
+  /// baseline's entries a day raised to this, up to [sinceDays] and the same
+  /// share of [recentDays]. Entries a day are taken from the share of
+  /// baseline days with any, so an amount's unit does not matter. Zero asks
+  /// no more of such a habit. A few entries a week swing by more than
+  /// [minFall] on their own.
+  final double occasionalPower;
 
   /// The smallest fall, as a share of the baseline's daily mean.
   final double minFall;
@@ -222,7 +232,10 @@ class Payoff {
 /// weeks by a one-sided Welch test at [PayoffGates.fallSignificance]. Weeks
 /// rather than days, since use differs by weekday and comes in runs. Among
 /// the days that qualify, the one with the largest test statistic, the
-/// earliest on a tie.
+/// earliest on a tie; when its baseline is under one entry a day, it is a
+/// fall only once it has lasted the longer time
+/// [PayoffGates.occasionalPower] asks, with the latest stretch as much
+/// longer.
 Map<String, HabitFall> findFalls(
   DailyHabitSeries habits,
   DateTime through, {
@@ -265,17 +278,31 @@ ShiftSplit? bestShift(
 }) {
   final int n = totals.length;
   final List<double> sums = List<double>.filled(n + 1, 0);
+  final List<int> used = List<int>.filled(n + 1, 0);
   for (int i = 0; i < n; i++) {
     sums[i + 1] = sums[i] + totals[i];
+    used[i + 1] = used[i] + (totals[i] > 0 ? 1 : 0);
   }
   double best = 0;
   ShiftSplit? split;
+  // Judged on the clearest split alone: an earlier, weaker one that had
+  // lasted would place a recent fall weeks before it happened.
+  bool lasted = false;
   for (int c = gates.minBaselineDays; c <= n - gates.minSinceDays; c++) {
     final int from = max(0, c - gates.baselineDays);
     final double before = (sums[c] - sums[from]) / (c - from);
     final double since = (sums[n] - sums[c]) / (n - c);
-    final double recent =
-        (sums[n] - sums[n - gates.recentDays]) / gates.recentDays;
+    final double unused = 1 - (used[c] - used[from]) / (c - from);
+    // Entries a day, were they to fall on days independently of each other.
+    final double rate = unused <= 0 ? double.infinity : -log(unused);
+    final double stretch = rising || rate <= 0 || rate >= 1
+        ? 1
+        : min(
+            pow(rate, -gates.occasionalPower).toDouble(),
+            gates.sinceDays / gates.minSinceDays,
+          );
+    final int recentDays = min(n - c, (gates.recentDays * stretch).round());
+    final double recent = (sums[n] - sums[n - recentDays]) / recentDays;
     if (rising) {
       final double limit = (1 + gates.minFall) * before;
       if (since <= 0 || recent <= 0 || since < limit || recent < limit) {
@@ -309,8 +336,9 @@ ShiftSplit? bestShift(
     }
     best = t;
     split = (at: c, from: from, before: before, since: since);
+    lasted = n - c >= (gates.minSinceDays * stretch).ceil();
   }
-  return split;
+  return lasted ? split : null;
 }
 
 /// For each habit not in [skip] that [findFalls] gives a fall, each of

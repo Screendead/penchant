@@ -79,6 +79,34 @@ void main() {
       );
     });
 
+    test('a habit used every third day must have stopped for longer than '
+        'one used daily', () {
+      Map<String, HabitFall> falls(int stoppedAt, {double power = 1}) =>
+          findFalls(
+            DailyHabitSeries.fromUses(<HabitUse>[
+              for (int i = 0; i < stoppedAt; i += 3)
+                ...steady('Wine', i, i + 1, 1),
+              ...steady('Tea', 0, 182, 1),
+            ]),
+            through,
+            gates: PayoffGates(occasionalPower: power),
+          );
+
+      expect(falls(140), isEmpty);
+      expect(falls(140, power: 0).keys, <String>['Wine']);
+      expect(falls(105).keys, <String>['Wine']);
+      expect(
+        findFalls(
+          DailyHabitSeries.fromUses(<HabitUse>[
+            ...steady('Coffee', 0, 140, 1),
+            ...steady('Tea', 0, 182, 1),
+          ]),
+          through,
+        ).keys,
+        <String>['Coffee'],
+      );
+    });
+
     test('a fall of under a quarter is no fall', () {
       expect(
         findFalls(

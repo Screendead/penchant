@@ -67,7 +67,74 @@ void run(
   );
 }
 
+// The share of seeds with a fall found, the entries alone, at each
+// [PayoffGates.occasionalPower]; zero is the rule before it existed.
+void fallsFound(String name, PayoffDays Function(int seed) make) {
+  final List<String> rates = <String>[];
+  for (final double power in <double>[0, 1, 2]) {
+    final PayoffGates gates = PayoffGates(occasionalPower: power);
+    int falls = 0;
+    for (int seed = 0; seed < seeds; seed++) {
+      final PayoffDays d = make(seed);
+      if (findFalls(
+        DailyHabitSeries.fromUses(d.uses),
+        d.through,
+        gates: gates,
+      ).isNotEmpty) {
+        falls++;
+      }
+    }
+    rates.add('power ${power.round()} ${pct(falls, seeds)}');
+  }
+  stdout.writeln('$name ($seeds seeds): fall found ${rates.join(', ')}');
+}
+
 void main() {
+  test('an occasional habit: how long a fall must have lasted', () {
+    for (final double rate in <double>[3, 1, 0.5, 0.25]) {
+      fallsFound(
+        '$rate a day, steady',
+        (s) => payoffDays(s, fallAt: null, rateBefore: rate, rateAfter: rate),
+      );
+    }
+    fallsFound(
+      '0.5 a day, steady, a year',
+      (s) => payoffDays(
+        s,
+        days: 365,
+        fallAt: null,
+        rateBefore: 0.5,
+        rateAfter: 0.5,
+      ),
+    );
+    for (final int weeks in <int>[4, 6, 8, 10, 13]) {
+      fallsFound(
+        '0.5 a day to 0.25, $weeks weeks ago',
+        (s) => payoffDays(
+          s,
+          days: 91 + 7 * weeks,
+          rateBefore: 0.5,
+          rateAfter: 0.25,
+        ),
+      );
+    }
+    fallsFound(
+      '0.5 a day to none, 8 weeks ago',
+      (s) => payoffDays(s, days: 147, rateBefore: 0.5, rateAfter: 0),
+    );
+    for (final int weeks in <int>[4, 6]) {
+      fallsFound(
+        '1 a day to 0.5, $weeks weeks ago',
+        (s) =>
+            payoffDays(s, days: 91 + 7 * weeks, rateBefore: 1, rateAfter: 0.5),
+      );
+      fallsFound(
+        '3 a day to 1.5, $weeks weeks ago',
+        (s) => payoffDays(s, days: 91 + 7 * weeks),
+      );
+    }
+  });
+
   test('a fall with nothing behind it: noise', () {
     run('independent days', (s) => payoffDays(s));
     run('AR(1) 0.6', (s) => payoffDays(s, ar: 0.6));
