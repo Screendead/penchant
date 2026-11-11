@@ -78,7 +78,9 @@ Jack went to sleep with "treat this as a /finish-and-pitch". Round 15's page hol
 - #259 `follows` B done: pairs "tend to come together", judged against time since waking (shared-waking false rate
   100% to 0.3%). Split out of #254. Known: a waking time 10 min off brings the pair back in 67.5% of synthetic
   journals; a pair card can show from a clock-only report and be withdrawn when bed times arrive.
-COLDOPEN
+- #260 the last Insights report kept sealed (`lib/insights/last_report_file.dart`, `report_codec.dart`, file
+  `last-report` under the sealed folder) and shown at a cold open with "Updating…". Unmeasured on a device.
+- #261 version 0.2.0 cut (`r10-release` B done).
 
 **Open pull requests:**
 
@@ -893,7 +895,7 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 15 (PITCHLINK, source `docs/pitch/round-15/index.html`), two calls:
+Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), two calls:
 
 - `fall-test`: how strict the test for a "fell" row is (#254). Recommended A, as built.
 - `key-promotion`: what the iPhone's journal key line says, and whether to copy a this-device key into iCloud
