@@ -101,6 +101,23 @@ class HoursAfterPlan {
   final Map<String, Map<(HoursAfterShortfall, bool), int>> dropped;
 }
 
+/// When the person woke on [day], from [bed] ([HealthSampleMetric.bed]): the
+/// end of the longest span ending from 18:00 the evening before up to 15:00
+/// on it, the main sleep and not a nap. Null with no such span.
+DateTime? wakingOn(Iterable<HealthSample> bed, DateTime day) {
+  final DateTime from = DateTime(day.year, day.month, day.day - 1, 18);
+  final DateTime to = DateTime(day.year, day.month, day.day, 15);
+  HealthSample? main;
+  for (final HealthSample s in bed) {
+    if (!s.end.isAfter(from) || s.end.isAfter(to)) continue;
+    if (main == null ||
+        s.end.difference(s.start) > main.end.difference(main.start)) {
+      main = s;
+    }
+  }
+  return main?.end;
+}
+
 /// When the person was in bed, from [HealthSampleMetric.bed].
 class _Bed {
   _Bed(List<HealthSample> spans)
@@ -109,21 +126,7 @@ class _Bed {
 
   final List<HealthSample> _spans;
 
-  /// The end of the longest span ending from 18:00 the evening before [day]
-  /// up to 15:00 on it: the main sleep, not a nap.
-  DateTime? wake(DateTime day) {
-    final DateTime from = DateTime(day.year, day.month, day.day - 1, 18);
-    final DateTime to = DateTime(day.year, day.month, day.day, 15);
-    HealthSample? main;
-    for (final HealthSample s in _spans) {
-      if (!s.end.isAfter(from) || s.end.isAfter(to)) continue;
-      if (main == null ||
-          s.end.difference(s.start) > main.end.difference(main.start)) {
-        main = s;
-      }
-    }
-    return main?.end;
-  }
+  DateTime? wake(DateTime day) => wakingOn(_spans, day);
 
   /// Null when [at]'s hour before and every window fall after [wake] and
   /// clear of bed.

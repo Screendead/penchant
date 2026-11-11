@@ -62,11 +62,12 @@ Future<void> _pump(WidgetTester tester, List<HabitFollows> follows) async {
 
 void main() {
   const String sentence =
-      'After Coffee, you log Tea within 15 minutes 62% of the time. Your '
-      'usual timing of each would give 18%.';
+      'Coffee and Tea tend to come together: you log Tea in the 15 minutes '
+      'after Coffee 62% of the time. Your usual timing of each would give '
+      '18%.';
   const String basis = 'From 84 uses of Coffee on 61 days with both';
   const String line =
-      'After Water: 40% of the time, against 18% by your usual timing';
+      'With Water: 40% of the time, against 18% by your usual timing';
 
   testWidgets('a habit that follows another within minutes gets a card '
       'under What sets it off, in plain words', (WidgetTester tester) async {
