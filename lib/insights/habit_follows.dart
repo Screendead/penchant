@@ -75,12 +75,12 @@ class HabitFollows {
 
   /// The largest share the follower's own timing gives: at the same clock
   /// times on nearby days with both habits, as long after waking on them
-  /// where Health gives the waking, or on the same days a while before or a
-  /// while after each use.
+  /// (over the days Health gives a waking, when there are enough), or on the
+  /// same days a while before or a while after each use.
   final double chance;
 
   /// One-sided, for following more often than every measure of chance: the
-  /// largest of the four. Null when there were too few days to test.
+  /// largest of them. Null when there were too few days to test.
   final double? pValue;
 
   /// Null until [judgeHabitFollows] has run.
@@ -113,10 +113,12 @@ class HabitFollows {
 /// waking, whenever that is, cannot beat). Days are the unit, so a run of
 /// uses in one day counts once.
 ///
-/// Waking is [wakingOn] over [bed] ([HealthSampleMetric.bed]). A use on a
-/// day without one, before it, or with fewer than [minFollowControls] other
-/// days that have one, takes its clock-time share as its since-waking share:
-/// with no [bed] the fourth measure is the first, and nothing changes.
+/// Waking is [wakingOn] over [bed] ([HealthSampleMetric.bed]). The fourth
+/// measure is taken over the days that have one and at least
+/// [minFollowControls] other days with one to be judged against, a use
+/// before that day's waking keeping its clock-time share; the other days
+/// stay in the first three alone. With under [InsightGates.minDays] such
+/// days there is no fourth measure, so with no [bed] nothing changes.
 List<HabitFollows> habitFollows({
   required Iterable<HabitUse> uses,
   required DateTime through,
@@ -217,7 +219,7 @@ HabitFollows _pair(
   final List<double> overWaking = <double>[];
   final List<double> overEarlier = <double>[];
   final List<double> overLater = <double>[];
-  int judgedUses = 0, followedDays = 0;
+  int judgedUses = 0, wakingUses = 0, followedDays = 0;
   double hits = 0, other = 0, waking = 0, earlier = 0, later = 0;
   for (int i = 0; i < days.length; i++) {
     final List<DateTime>? atDay = anchors[days[i]];
@@ -235,6 +237,7 @@ HabitFollows _pair(
       if (woke != null)
         for (final DateTime c in controls) ?wakes[c],
     ];
+    final bool sinceWaking = wakings.length >= minFollowControls;
     double dayHits = 0, dayOther = 0, dayWaking = 0;
     double dayEarlier = 0, dayLater = 0;
     for (final DateTime at in atDay) {
@@ -258,15 +261,12 @@ HabitFollows _pair(
               .length /
           controls.length;
       dayOther += atClock;
-      if (woke == null ||
-          at.isBefore(woke) ||
-          wakings.length < minFollowControls) {
-        dayWaking += atClock;
-      } else {
+      if (woke != null && sinceWaking) {
         final Duration awake = at.difference(woke);
-        dayWaking +=
-            wakings.where((DateTime w) => followed(w.add(awake))).length /
-            wakings.length;
+        dayWaking += awake.isNegative
+            ? atClock
+            : wakings.where((DateTime w) => followed(w.add(awake))).length /
+                  wakings.length;
       }
       dayEarlier += sameDay(at, _earlier);
       dayLater += sameDay(at, _later);
@@ -276,15 +276,19 @@ HabitFollows _pair(
     if (dayHits > 0) followedDays++;
     hits += dayHits;
     other += dayOther;
-    waking += dayWaking;
+    if (sinceWaking) {
+      wakingUses += n;
+      waking += dayWaking;
+      overWaking.add((dayHits - dayWaking) / n);
+    }
     earlier += dayEarlier;
     later += dayLater;
     overOther.add((dayHits - dayOther) / n);
-    overWaking.add((dayHits - dayWaking) / n);
     overEarlier.add((dayHits - dayEarlier) / n);
     overLater.add((dayHits - dayLater) / n);
   }
   final int judged = overOther.length;
+  final bool byWaking = overWaking.length >= gates.minDays;
   return HabitFollows(
     leadId: lead,
     followerId: follower,
@@ -294,12 +298,17 @@ HabitFollows _pair(
     share: judgedUses == 0 ? 0 : hits / judgedUses,
     chance: judgedUses == 0
         ? 0
-        : <double>[other, waking, earlier, later].reduce(max) / judgedUses,
+        : <double>[
+            other / judgedUses,
+            if (byWaking) waking / wakingUses,
+            earlier / judgedUses,
+            later / judgedUses,
+          ].reduce(max),
     pValue: judged < gates.minDays
         ? null
         : <double>[
             _aboveZero(overOther),
-            _aboveZero(overWaking),
+            if (byWaking) _aboveZero(overWaking),
             _aboveZero(overEarlier),
             _aboveZero(overLater),
           ].reduce(max),

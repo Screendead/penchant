@@ -166,6 +166,15 @@ void main() {
       expect(sinceWaking.pValue, greaterThan(byClock.pValue!));
     });
 
+    test('with every other night missing, the nights there are still '
+        'explain the pair', () {
+      final HabitFollows half = pair(<HealthSample>[
+        for (int i = 0; i < bed.length; i += 2) bed[i],
+      ]);
+      expect(half.verdict, isNot(FollowsVerdict.found));
+      expect(half.chance, closeTo(half.share, 0.15));
+    });
+
     test('a real following is still found with the waking known', () {
       final List<HealthSample> nights = <HealthSample>[
         for (int d = 0; d < 120; d++)
