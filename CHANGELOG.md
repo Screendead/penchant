@@ -231,6 +231,8 @@ pull request titles (`gh pr list --state merged`).
 
 - Insights reads from Apple Health only what changed since the last open and stays current in the background; a
   second open in one session shows the report at once (#230, #253).
+- Opening Insights after a fresh launch shows the last report at once, marked "Updating…", while the new one is
+  worked out. The saved report is encrypted with your journal key (#260).
 - The Health numbers Penchant keeps on the device between launches are encrypted with your journal key, and removed
   when you sign out or delete your account (#257).
 - Insights is stricter about days that resemble their neighbours, so a run of similar days counts for less (#245).
