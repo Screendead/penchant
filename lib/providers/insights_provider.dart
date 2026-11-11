@@ -432,6 +432,15 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         session.savedView = view;
         unawaited(file.save(view));
       }
+    } else if (session != null &&
+        (view.health is HealthNotConnected ||
+            view.health is HealthUnsupported) &&
+        saved?.health.runtimeType != view.health.runtimeType) {
+      final LastReportFile? file = ref.read(lastReportFileProvider);
+      if (file != null && file.uid == session.uid) {
+        session.savedView = view;
+        unawaited(file.clear());
+      }
     }
     return AsyncData<InsightsView>(view);
   }

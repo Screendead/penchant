@@ -86,13 +86,11 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
 
 **Open pull requests:**
 
-- #254 (draft) the fall test. `sparse-fell` B (more time for occasional habits) was built, measured and dropped: false
-  "fell" 11.8% to 9.0%, real halving at 8 weeks 76% to 46%. The replacement: a fall's clearest split must stand out
-  among the clearest splits of 499 week-block reorderings (`PayoffGates.searchSignificance` 0.02, 1 restores the old
-  rule; `searchShuffles`). Rises are not judged this way. Measured (400 seeds; 3 / 1 / 0.5 a day): steady false
-  1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); weeks in runs 19.3 / 11.5 / 10.5% (was 35 / 32 / 28); halving at 8 weeks
-  98.5 / 67 / 35% (was 99 / 93 / 76). Waits on round 15 `fall-test` (A as built, B Welch-form comparison, C level
-  0.05, D leave). After #259 its pairs half is already on `master`: merge `master` in before merging.
+- #254 the fall test, ready (round 15 `fall-test` A, as built: Jack, 2026-11-11 11:01 UTC). `sparse-fell` B was
+  built, measured and dropped; a fall's clearest split must stand out among the clearest splits of 499 week-block
+  reorderings (`PayoffGates.searchSignificance` 0.02, 1 restores the old rule). Measured (400 seeds; 3 / 1 / 0.5 a
+  day): steady false 1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); halving at 8 weeks 98.5 / 67 / 35% (was 99 / 93 /
+  76). `master` merged in (#259's pairs half already there).
 - #273 built for round 15 `key-promotion` C (Jack, 2026-11-11: the iPhone's key is in iCloud
   Keychain; the Mac looked before it arrived). A device with no key, where `keys/{uid}` exists, shows "Waiting for
   your journal key from iCloud Keychain…" and keeps reading the keychain (every 5 s and on resume), opening the
@@ -100,9 +98,8 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   says it can take a while. A different key here still goes straight to recovery entry. iOS and macOS alike. No new
   keychain writes. Key change: Jack is asked before it is installed. Not proven on a device: the Mac app seeing the
   synced item without a relaunch, and how long iCloud Keychain takes.
-- #256 (draft) promote a this-device journal key to iCloud Keychain, written for `key-promotion` A; C (#273) writes
-  nothing to the keychain and does not use it. Signing and access groups are identical on both apps. Close #128 (old
-  probe) once this settles.
+- #256 closed: round 15 `key-promotion` C (Jack, 2026-11-11 11:05 UTC), the Mac gate waiting for the synced key, no
+  keychain write; built in #273. #128 (old keychain probe) closed.
 - #252 (draft) `mac-background` C part 2: PenchantSync.app, a background-only nested app
   (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
   memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
@@ -116,11 +113,7 @@ needed unless that wait proves long.
 
 **Left:**
 
-- The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
-  findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
-  or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
-- A save of the last report in flight at sign-out can write the sealed file back after the folder is cleared; it
-  stays sealed and goes at another user's first use (the sample cache has the same exposure).
+- Unproven: stutter when a multi-year Insights view is encoded and sealed on the UI isolate.
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
 - The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
@@ -933,12 +926,10 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), one call
-open (`key-promotion` picked C on 2026-11-11):
+None open.
 
-- `fall-test`: how strict the test for a "fell" row is (#254). Recommended A, as built.
-
-Round 14's seven were picked on 2026-11-11; every earlier call is picked.
+Round 15's two (`fall-test` A, `key-promotion` C) and round 14's seven were picked on 2026-11-11; every earlier
+call is picked.
 
 ## For Jack to do (not decisions)
 

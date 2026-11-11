@@ -33,6 +33,10 @@ class DeviceFiles {
 
   static const String folder = 'sealed';
 
+  int _cleared = 0;
+  int _clearing = 0;
+  final Set<Future<void>> _writing = <Future<void>>{};
+
   /// The plaintext store builds before sealing wrote; deleted, never read.
   static const List<String> legacy = <String>[
     'health-daily.json',
@@ -41,13 +45,21 @@ class DeviceFiles {
 
   /// Sign-out and account deletion. Never throws.
   Future<void> clearAll() async {
+    _cleared++;
+    _clearing++;
     try {
+      // A rename landing mid-delete would survive it.
+      await Future.wait(<Future<void>>[
+        for (final Future<void> w in _writing) w.catchError((Object _) {}),
+      ]);
       final Directory caches = await _caches();
       final Directory sealed = Directory('${caches.path}/$folder');
       if (await sealed.exists()) await sealed.delete(recursive: true);
       await _deleteLegacy(caches);
     } catch (_) {
       // Left for the next sign-in's first use, which removes other users'.
+    } finally {
+      _clearing--;
     }
   }
 
@@ -129,8 +141,19 @@ class SealedFiles {
     }
   }
 
-  /// Replaces [name] whole or not at all. Throws when it cannot.
-  Future<void> write(String name, List<int> bytes) async {
+  /// Replaces [name] whole or not at all. Throws when it cannot. A write
+  /// that a [DeviceFiles.clearAll] overtakes leaves nothing behind.
+  Future<void> write(String name, List<int> bytes) {
+    if (_files._clearing > 0) {
+      return Future<void>.error(StateError('device files are being cleared'));
+    }
+    final Future<void> w = _write(name, bytes);
+    _files._writing.add(w);
+    return w.whenComplete(() => _files._writing.remove(w));
+  }
+
+  Future<void> _write(String name, List<int> bytes) async {
+    final int cleared = _files._cleared;
     final Uint8List sealed = await _sealer.sealFile(
       bytes,
       context: deviceFileContext(uid, name),
@@ -140,6 +163,10 @@ class SealedFiles {
     final File file = _file(dir, name);
     final File next = File('${file.path}.next');
     await next.writeAsBytes(sealed, flush: true);
+    if (_files._cleared != cleared) {
+      await next.delete();
+      throw StateError('device files cleared during the write');
+    }
     await next.rename(file.path);
   }
 
