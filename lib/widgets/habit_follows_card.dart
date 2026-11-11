@@ -6,8 +6,8 @@ import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
-/// The habits one habit follows within minutes: the strongest in a sentence,
-/// then the rest as lines.
+/// The habits one habit tends to come within minutes of: the strongest in a
+/// sentence, then the rest as lines.
 class HabitFollowsCard extends StatelessWidget {
   const HabitFollowsCard({
     super.key,

@@ -337,6 +337,9 @@ InsightsReport computeInsights(InsightsInput input) {
     uses: input.uses,
     through: addDays(input.through, -1),
     skip: input.archived,
+    bed:
+        input.samples[hs.HealthSampleMetric.bed.id] ??
+        const <hs.HealthSample>[],
   );
   final List<double> afterPs = <double>[
     for (final HabitInsight i in after) ?insightPValue(i),
