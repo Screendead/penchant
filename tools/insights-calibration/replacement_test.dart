@@ -168,17 +168,11 @@ void main() {
         ),
       );
     }
-    run(
-      'a step of Vape\'s own (1 a day to 2.5) on a day of its own (known '
-      'limit: it lands within the fortnight by coincidence)',
-      (s) {
-        final int at = 28 + Random(s + 5000).nextInt(182 - 56);
-        return replacementDays(
-          s,
-          riser: (i, r) => poisson(r, i < at ? 1 : 2.5),
-        );
-      },
-    );
+    run('a step of Vape\'s own (1 a day to 2.5) on a day of its own (known '
+        'limit: it lands within the fortnight by coincidence)', (s) {
+      final int at = 28 + Random(s + 5000).nextInt(182 - 56);
+      return replacementDays(s, riser: (i, r) => poisson(r, i < at ? 1 : 2.5));
+    });
   });
 
   test('a planted rise: power', () {
@@ -233,7 +227,9 @@ void main() {
           for (int i = 0; i < 182; i++)
             r.nextDouble() < 0.5 ? 1 + r.nextInt(4) : 0,
         ]),
-        ...usesOf('Water', <int>[for (int i = 0; i < 182; i++) 1 + r.nextInt(4)]),
+        ...usesOf('Water', <int>[
+          for (int i = 0; i < 182; i++) 1 + r.nextInt(4),
+        ]),
       ];
       final List<DailyOutcome> outcomes = <DailyOutcome>[
         for (int i = 0; i < 182; i++)

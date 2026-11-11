@@ -27,10 +27,8 @@ String replacementSentence(
 /// where [replacementSentence] reads by the week.
 String replacementRange(Replacement r, String locale) {
   final bool weekly = max(r.before, r.since) < 1;
-  String number(double v) => NumberFormat(
-    v >= 10 ? '0' : '0.#',
-    locale,
-  ).format(v * (weekly ? 7 : 1));
+  String number(double v) =>
+      NumberFormat(v >= 10 ? '0' : '0.#', locale).format(v * (weekly ? 7 : 1));
   return 'Range: ${number(r.interval!.low)} to ${number(r.interval!.high)} '
       'more a ${weekly ? 'week' : 'day'}';
 }

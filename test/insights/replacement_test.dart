@@ -51,7 +51,7 @@ void main() {
   test('a habit that rises as another falls is found, with its level on '
       'each side', () {
     final Replacement r = judge(
-      replacementDays(1, riser: (i, r) => poisson(r, i < 91 ? 1 : 3)),
+      replacementDays(0, riser: (i, r) => poisson(r, i < 91 ? 1 : 3)),
     ).single;
     expect(r.habitId, 'Cigarettes');
     expect(r.riserId, 'Vape');
@@ -61,9 +61,11 @@ void main() {
     expect(r.since, closeTo(3, 0.5));
     expect(r.effect, greaterThan(0));
     expect(r.interval!.low, greaterThan(0));
-    expect(r.baselineDays, 91);
-    expect(daysBetween(addDays(syntheticStart, 91), r.fall.day).abs(), 
-        lessThanOrEqualTo(7));
+    expect(r.baselineDays, daysBetween(syntheticStart, r.fall.day));
+    expect(
+      daysBetween(addDays(syntheticStart, 91), r.fall.day).abs(),
+      lessThanOrEqualTo(7),
+    );
   });
 
   test('a habit with no entry before the fall reads as begun, and a '
@@ -105,7 +107,7 @@ void main() {
   test('a habit with under $minRiserDays days of entries since the fall is '
       'not tested', () {
     final Replacement r = judge(
-      replacementDays(1, riser: (i, _) => i == 100 || i == 120 ? 5 : 0),
+      replacementDays(0, riser: (i, _) => i == 100 || i == 120 ? 5 : 0),
     ).single;
     expect(r.refusal, ReplacementRefusal.tooFewDays);
     expect(r.pValue, isNull);
@@ -134,7 +136,7 @@ void main() {
 
   test('nothing is said of an archived habit, fallen or rising', () {
     final ReplacementDays d = replacementDays(
-      1,
+      0,
       riser: (i, r) => poisson(r, i < 91 ? 1 : 3),
     );
     expect(judge(d, skip: <String>{'Vape'}), isEmpty);
@@ -203,7 +205,7 @@ void main() {
   test('the report carries it with no Health data at all, and leaves an '
       'archived habit out', () {
     final ReplacementDays d = replacementDays(
-      1,
+      0,
       riser: (i, r) => poisson(r, i < 91 ? 1 : 3),
     );
     InsightsReport report(Set<String> archived) => computeInsights(

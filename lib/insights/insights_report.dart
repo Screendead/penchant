@@ -386,16 +386,37 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     follows: judgeHabitFollows(
       follows,
-      alongside: <double>[...afterPs, ...beforePs, ...calendarPs, ...shiftPs, ...payoffPs, ...replacementPs],
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+      ],
     ),
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[...afterPs, ...followsPs, ...calendarPs, ...shiftPs, ...payoffPs, ...replacementPs],
+      alongside: <double>[
+        ...afterPs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+      ],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     payoffs: judgePayoffs(
       payoffs,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...calendarPs, ...shiftPs, ...replacementPs],
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...replacementPs,
+      ],
       sizeOf: (Payoff p) => practicalSize(p.asFinding, floors: floors),
     ),
     replacements: judgeReplacements(
@@ -411,7 +432,14 @@ InsightsReport computeInsights(InsightsInput input) {
     ),
     afterEvent: judgeAfterEvent(
       calendar,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...shiftPs, ...payoffPs, ...replacementPs],
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+      ],
     ),
     shifts:
         judgeMeasureShifts(

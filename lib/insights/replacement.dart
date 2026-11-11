@@ -156,21 +156,19 @@ List<Replacement> replacement({
         for (final DateTime day in daysFrom(fall.day, windowEnd))
           habits.total(riser, day),
       ];
-      Replacement result({
-        ReplacementRefusal? refusal,
-        Payoff? fitted,
-      }) => Replacement(
-        fall: fall,
-        riserId: riser,
-        before: mean(baseline),
-        since: mean(after),
-        baselineDays: baseline.length,
-        sinceDays: after.length,
-        effect: fitted?.effect,
-        interval: fitted?.interval,
-        pValue: fitted?.pValue,
-        refusal: refusal,
-      );
+      Replacement result({ReplacementRefusal? refusal, Payoff? fitted}) =>
+          Replacement(
+            fall: fall,
+            riserId: riser,
+            before: mean(baseline),
+            since: mean(after),
+            baselineDays: baseline.length,
+            sinceDays: after.length,
+            effect: fitted?.effect,
+            interval: fitted?.interval,
+            pValue: fitted?.pValue,
+            refusal: refusal,
+          );
       if (shared) {
         out.add(result(refusal: ReplacementRefusal.otherFall));
         continue;
