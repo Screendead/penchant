@@ -131,6 +131,36 @@ void main() {
       expect(recoveryPValues(<Recovery>[r]), hasLength(recoveryNights));
     });
 
+    test('the first night of sleep rests only on nights whose night before '
+        'the heavy day is known', () {
+      final RecoveryDays d = recoveryDays(1, costs: <double>[1]);
+      final Map<DateTime, int> beers = <DateTime, int>{};
+      for (final HabitUse use in d.uses) {
+        final DateTime day = startOfDay(use.at);
+        beers[day] = (beers[day] ?? 0) + 1;
+      }
+      final List<Recovery> results = run((
+        uses: d.uses,
+        outcomes: <DailyOutcome>[
+          for (final DailyOutcome o in d.outcomes)
+            if ((beers[o.date] ?? 0) < syntheticHeavyFrom) o,
+        ],
+        through: d.through,
+      ));
+
+      final Recovery sleep = sleepOf(results);
+      expect(sleep.cut, syntheticHeavyFrom);
+      expect(sleep.heavyDays, greaterThanOrEqualTo(7));
+      expect(sleep.refusal, RefusalReason.tooFewDays);
+      expect(sleep.nights, isEmpty);
+      expect(
+        results
+            .singleWhere((Recovery r) => r.metricId == 'restingHeartRate')
+            .nights,
+        hasLength(recoveryNights),
+      );
+    });
+
     test('too few days are refused unfitted', () {
       final Recovery r = sleepOf(run(recoveryDays(5, days: 15)));
 
