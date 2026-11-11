@@ -22,7 +22,7 @@ drift as code moves.
 
 Firestore security rules, index and query shapes, the document schema contract, and project-level Firebase configuration.
 
-- **low** — [A sealed entry can be moved in time or rolled back without the client noticing](firebase-data-layer/sealed-blobs-bind-neither-time-nor-state.md)
+- **low** — [A new recovery key does not revoke the old one](firebase-data-layer/a-new-recovery-key-does-not-revoke-the-old-one.md)
 - **low** — [Nothing checks the rules and index files against the live project](firebase-data-layer/rules-and-indexes-are-never-deployed-or-tested.md)
 
 ## Widget State and View Logic (0)

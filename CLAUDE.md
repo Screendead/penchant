@@ -325,7 +325,7 @@ field joins both `contentFields` (`lib/data/sealed.dart`) and the rules' `sealed
 Rules refuse a create without `sealed` or with content beside it (Jack, 2026-11-09, `plaintext-creates` C), bound
 `sealed` to 30 to 4125 bytes, refuse removing it, still let legacy plaintext documents be read and edited, and let an
 update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They
-cannot read sealed content, so there `lib/data/limits.dart` is the only guard.
+cannot read sealed content, so there `lib/data/limits.dart` is the only guard. The envelope binds the\ndocument path only: an entry's plaintext time, quantity and habit, a vice's `archived`, and a roll-back to an older\n`sealed` value are not detected, an accepted limit (Jack, 2026-11-11, round 14 `tamper` A).
 
 `lib/data/sealed.dart` holds `FieldSealer` (sole implementation `lib/crypto/journal_field_sealer.dart`),
 `sealerProvider` (null while no key exists: `TrackerWrites.canCreate` is false and `addVice`/`recordActivity` throw, so
