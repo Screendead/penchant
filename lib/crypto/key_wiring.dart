@@ -136,11 +136,18 @@ final List<Override> keyServiceOverrides = <Override>[
   recoveryKeyStatusProvider.overrideWith(
     (ref) => switch (_enabledState(ref)) {
       KeyReady(
-        stored: StoredKey(recoveryKey: final Uint8List recovery),
+        stored: StoredKey(
+          recoveryKey: final Uint8List recovery,
+          :final KeyLocation location,
+          :final SyncRefusal? syncRefusal,
+        ),
         record: final KeyRecord record,
       ) =>
         RecoveryKeyStatus(
           formatted: RecoveryKey.format(recovery),
+          location: location,
+          syncRefused: syncRefusal != null,
+          syncRefusalStatus: syncRefusal?.status,
           keyCreatedAt: record.createdAt,
           saved: record.saved,
           cardDismissed: record.cardDismissed,
