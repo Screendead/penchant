@@ -311,6 +311,10 @@ ShiftSplit? bestShift(
 
 const int _shuffleSeed = 20261111;
 
+// [statistic] is the largest, over the days whose means qualify, of the
+// difference in daily means over the standard error it would have were every
+// day's variance one: a scale every order of the same days shares, where the
+// Welch statistic's own variances, from a few small weekly totals, do not.
 typedef _Clearest = ({ShiftSplit split, double statistic});
 
 _Clearest? _clearestShift(List<double> totals, PayoffGates gates, bool rising) {
@@ -320,6 +324,7 @@ _Clearest? _clearestShift(List<double> totals, PayoffGates gates, bool rising) {
     sums[i + 1] = sums[i] + totals[i];
   }
   double best = 0;
+  double statistic = 0;
   ShiftSplit? split;
   for (int c = gates.minBaselineDays; c <= n - gates.minSinceDays; c++) {
     final int from = max(0, c - gates.baselineDays);
@@ -349,6 +354,11 @@ _Clearest? _clearestShift(List<double> totals, PayoffGates gates, bool rising) {
     final double difference =
         (rising ? -1 : 1) * (mean(weeksBefore) - mean(weeksSince));
     if (difference <= 0) continue;
+    statistic = max(
+      statistic,
+      (rising ? since - before : before - since) /
+          sqrt(1 / (c - from) + 1 / (n - c)),
+    );
     final double t = a + b == 0 ? double.infinity : difference / sqrt(a + b);
     if (t <= best) continue;
     if (a + b > 0) {
@@ -361,7 +371,7 @@ _Clearest? _clearestShift(List<double> totals, PayoffGates gates, bool rising) {
     best = t;
     split = (at: c, from: from, before: before, since: since);
   }
-  return split == null ? null : (split: split, statistic: best);
+  return split == null ? null : (split: split, statistic: statistic);
 }
 
 /// For each habit not in [skip] that [findFalls] gives a fall, each of
