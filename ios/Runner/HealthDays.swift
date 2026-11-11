@@ -303,6 +303,26 @@ enum HealthDays {
     merged(intervals).reduce(0) { $0 + $1.1.timeIntervalSince($1.0) } / 60
   }
 
+  // Sessions (workouts, mindful sessions) as minutes a day: merged across
+  // sources so an overlap counts once, then cut at local midnights and at
+  // [start, end). A day no session touches has no row.
+  static func sessionMinuteRows(
+    _ sessions: [(Date, Date)], metric: String, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    var minutes: [String: Double] = [:]
+    for (from, to) in merged(sessions.filter { $0.1 > $0.0 }) {
+      var day = calendar.startOfDay(for: from)
+      while day < to {
+        let next = adding(days: 1, to: day, calendar)
+        let lower = max(from, day, start)
+        let upper = min(to, next, end)
+        if lower < upper { minutes[key(day, calendar), default: 0] += upper.timeIntervalSince(lower) / 60 }
+        day = next
+      }
+    }
+    return minutes.keys.sorted().map { ["date": $0, "metric": metric, "value": minutes[$0]!] }
+  }
+
   // Each night's asleep time (no in bed, no awake), from the night's one source.
   static func asleepIntervals(_ byNight: [String: [SleepSample]]) -> [String: [(Date, Date)]] {
     var result: [String: [(Date, Date)]] = [:]

@@ -700,5 +700,28 @@ do {
   check("state round-trips", (try? JSONDecoder().decode(HealthDays.SyncState.self, from: encoded)) == state)
 }
 
+// sessionMinuteRows: merged across sources, cut at midnight and the window.
+do {
+  let rows = HealthDays.sessionMinuteRows(
+    [
+      (at(2026, 11, 7, 23, 30), at(2026, 11, 8, 0, 30)),
+      (at(2026, 11, 8, 0, 0), at(2026, 11, 8, 0, 45)),
+      (at(2026, 11, 8, 18), at(2026, 11, 8, 18, 20)),
+      (at(2026, 11, 9, 7), at(2026, 11, 9, 7)),
+      (at(2026, 11, 10, 23), at(2026, 11, 11, 1)),
+    ], metric: "workoutMinutes", start: at(2026, 11, 8), end: at(2026, 11, 11), calendar)
+  let got = values(rows)
+  check("a session over midnight is cut at the window's start", got["2026-11-07 workoutMinutes"] == nil, "\(got)")
+  check("overlapping sessions count once", got["2026-11-08 workoutMinutes"] == 65, "\(got)")
+  check("an empty session is no day", got["2026-11-09 workoutMinutes"] == nil, "\(got)")
+  check("a session is cut at the window's end", got["2026-11-10 workoutMinutes"] == 60, "\(got)")
+  check("only touched days have rows", rows.count == 2, "\(got)")
+  let dst = values(
+    HealthDays.sessionMinuteRows(
+      [(at(2026, 10, 24, 23, 30), at(2026, 10, 25, 1, 30))], metric: "m", start: at(2026, 10, 20),
+      end: at(2026, 10, 30), calendar))
+  check("cut at local midnight", dst["2026-10-24 m"] == 30 && dst["2026-10-25 m"] == 90, "\(dst)")
+}
+
 if failures > 0 { exit(1) }
 print("ok")
