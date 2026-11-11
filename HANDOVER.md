@@ -101,8 +101,8 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
   memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
   CI. Before any signed build from it: a Mac development profile for the new bundle id, and that id added to the
-  client API key's allowed apps (both Jack's). Then his signed checks (PR body), then delete
-  `tech-debt/platform-and-delivery-config/background-launches-take-focus-on-the-mac.md`.
+  client API key's allowed apps (both Jack's). Then his signed checks (PR body). The app is no longer an
+  `LSUIElement` (fix/mac-open-in-front): flush mode turns accessory in `AppDelegate.main()`.
 
 Jack on 0.2.0 on the iPhone, 2026-11-11, asked to time Insights after a fresh launch: "yeah it's instant". How long
 "Updating…" then stays, and which stage dominates, are still unmeasured; packing the per-span sample files is not

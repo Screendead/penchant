@@ -6,37 +6,30 @@ import ServiceManagement
 class AppDelegate: FlutterAppDelegate {
   static let menuBarHelperID = "com.screendead.penchant.menubar"
 
-  // FlutterAppDelegate implements this one (it names the window and menus).
-  // Info.plist's LSUIElement and the nib's window hidden at launch
-  // (MainMenu.xib) keep a flush-mode launch out of the Dock and off screen: a
-  // regular app's Dock icon is up before this runs. Flush mode stays an
-  // accessory app rather than a prohibited one, which may not be activated,
-  // so the user's launch meanwhile can still bring it up.
-  override func applicationWillFinishLaunching(_ notification: Notification) {
-    super.applicationWillFinishLaunching(notification)
-    if !FlushMode.active {
-      NSApp.setActivationPolicy(.regular)
+  // A regular app, so Launch Services brings a launch the user made to the
+  // front: since macOS 14 an app may not activate itself over the active app,
+  // so an LSUIElement Penchant opened behind Safari. A flush-mode launch turns
+  // accessory here, before NSApplicationMain registers the process with the
+  // Dock; in applicationWillFinishLaunching its Dock icon had already flashed.
+  // Flush mode stays accessory rather than prohibited, which may not be
+  // activated, so the user's launch meanwhile can still bring it up.
+  static func main() {
+    if FlushMode.active {
+      NSApplication.shared.setActivationPolicy(.accessory)
     }
-  }
-
-  // Launch Services activates no LSUIElement app it launches, and from inside
-  // `open -a` and `open -g` look the same (an oapp event, a default launch),
-  // so only a login item's launch, which says so, stays in the background.
-  // Read in did-finish, while that event is current.
-  private var launchedAsLoginItem: Bool {
-    NSAppleEventManager.shared().currentAppleEvent?.paramDescriptor(forKeyword: keyAEPropData)?
-      .enumCodeValue == keyAELaunchedAsLogInItem
+    _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
   }
 
   // No super: FlutterAppDelegate does not implement this on macOS, so the call
   // raises "unrecognized selector", which AppKit swallows along with the rest
-  // of the method.
+  // of the method. Activation is Launch Services' call: `open -g` and a login
+  // launch stay behind.
   override func applicationDidFinishLaunching(_ notification: Notification) {
     if FlushMode.active {
       FlushMode.start()
     } else {
       FlushMode.clearOutcome()
-      showMainWindow(activating: !launchedAsLoginItem)
+      mainFlutterWindow?.makeKeyAndOrderFront(nil)
       startMenuBarHelper()
     }
   }
@@ -67,18 +60,13 @@ class AppDelegate: FlutterAppDelegate {
     FlushMode.leave()
     NSApp.setActivationPolicy(.regular)
     (mainFlutterWindow as? MainFlutterWindow)?.attachFlutter()
-    DispatchQueue.main.async { self.showMainWindow(activating: true) }
+    DispatchQueue.main.async { self.showMainWindow() }
     startMenuBarHelper()
   }
 
-  // The window is hidden at launch (MainMenu.xib), for flush mode, so every
-  // other launch shows it.
-  private func showMainWindow(activating: Bool) {
+  // The window is hidden at launch (MainMenu.xib), for flush mode.
+  private func showMainWindow() {
     mainFlutterWindow?.makeKeyAndOrderFront(nil)
-    if activating { activate() }
-  }
-
-  private func activate() {
     if #available(macOS 14.0, *) {
       NSApp.activate()
     } else {
@@ -146,7 +134,7 @@ class AppDelegate: FlutterAppDelegate {
       return true
     }
     if !flag {
-      showMainWindow(activating: true)
+      showMainWindow()
     }
     return true
   }
