@@ -27,14 +27,21 @@ double gaussian(Random random) =>
 // days, of 40 min give or take 8, none on the day after the habit when
 // [skipsAfter]. Sessions only: days without one are absent, as Health gives
 // them.
-InsightsInput sessionInput(int seed, String metric, {bool skipsAfter = true}) {
+InsightsInput sessionInput(
+  int seed,
+  String metric, {
+  bool skipsAfter = true,
+  double habitRate = 0.5,
+  double sessionRate = 0.6,
+  double minutes = 40,
+}) {
   final Random random = Random(seed);
   const int days = 150;
   final List<HabitUse> uses = <HabitUse>[];
   final List<DailyOutcome> outcomes = <DailyOutcome>[];
   for (int i = 0; i < days; i++) {
     final DateTime day = addDays(start, i);
-    final bool used = random.nextBool();
+    final bool used = random.nextDouble() < habitRate;
     if (used) {
       uses.add(
         HabitUse(
@@ -44,13 +51,13 @@ InsightsInput sessionInput(int seed, String metric, {bool skipsAfter = true}) {
         ),
       );
     }
-    final bool session = random.nextDouble() < 0.6;
+    final bool session = random.nextDouble() < sessionRate;
     if (session && !(used && skipsAfter)) {
       outcomes.add(
         DailyOutcome(
           date: addDays(day, 1),
           metricId: metric,
-          value: 40 + 8 * gaussian(random),
+          value: minutes + minutes / 5 * gaussian(random),
         ),
       );
     }
@@ -204,6 +211,31 @@ void main() {
           sessionInput(seed, metric, skipsAfter: false),
         );
         if (report.findings.any((f) => f.metricId == metric)) found++;
+      }
+      expect(found, lessThanOrEqualTo(2));
+    });
+
+    test('on noise at the gate\'s edge, rare long $metric sessions and a rare '
+        'habit, nothing about $metric shows', () {
+      int found = 0;
+      for (int seed = 0; seed < 40; seed++) {
+        final InsightsReport report = computeInsights(
+          sessionInput(
+            seed,
+            metric,
+            skipsAfter: false,
+            habitRate: 0.1,
+            sessionRate: 0.12,
+            minutes: 60,
+          ),
+        );
+        if (report.findings.any((f) => f.metricId == metric) ||
+            report.shifts.any((s) => s.metricId == metric) ||
+            report.payoffs.any(
+              (p) => p.metricId == metric && p.refusal == null,
+            )) {
+          found++;
+        }
       }
       expect(found, lessThanOrEqualTo(2));
     });
