@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -38,6 +39,7 @@ import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
+import 'package:tracker/crypto/sealed_files.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/writes/category_migration.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
@@ -81,6 +83,7 @@ Future<void> _flushInBackground({required bool diskCache}) async {
 
 // main() without the global error handlers, which flutter_test owns.
 void startApp() {
+  unawaited(DeviceFiles().deleteLegacy());
   runApp(
     ProviderScope(
       observers: const [ReportProviderErrors()],

@@ -156,6 +156,54 @@ class Sealer {
     );
   }
 
+  /// Seals a whole file's [bytes], padded by [padFile], so its length on
+  /// disk reveals only a power of two. [pad]'s 2-byte prefix and [buckets]
+  /// cap a document field at 4094 bytes; files are larger.
+  Future<Uint8List> sealFile(
+    List<int> bytes, {
+    List<int> aad = const <int>[],
+  }) => seal(padFile(bytes), aad: aad);
+
+  Future<Uint8List> openFile(
+    List<int> envelope, {
+    List<int> aad = const <int>[],
+  }) async => unpadFile(await open(envelope, aad: aad));
+
+  static const int smallestFileBucket = 4096;
+
+  /// A 4-byte big-endian length, the bytes, then zeros up to the smallest
+  /// power of two of at least [smallestFileBucket] that holds them.
+  static Uint8List padFile(List<int> bytes) {
+    if (bytes.length > 0x7fffffff - 4) {
+      throw ArgumentError('${bytes.length} bytes are too many for one file');
+    }
+    int bucket = smallestFileBucket;
+    while (bucket < bytes.length + 4) {
+      bucket *= 2;
+    }
+    return Uint8List(bucket)
+      ..[0] = (bytes.length >> 24) & 0xff
+      ..[1] = (bytes.length >> 16) & 0xff
+      ..[2] = (bytes.length >> 8) & 0xff
+      ..[3] = bytes.length & 0xff
+      ..setRange(4, 4 + bytes.length, bytes);
+  }
+
+  static Uint8List unpadFile(List<int> padded) {
+    if (padded.length < 4) {
+      throw SealException(SealFailure.badPlaintext, 'No length prefix');
+    }
+    final int length =
+        (padded[0] << 24) | (padded[1] << 16) | (padded[2] << 8) | padded[3];
+    if (length + 4 > padded.length) {
+      throw SealException(
+        SealFailure.badPlaintext,
+        'The length prefix exceeds the padded plaintext',
+      );
+    }
+    return Uint8List.fromList(padded.sublist(4, 4 + length));
+  }
+
   static int bucketFor(int jsonLength, {int minimum = 64}) {
     for (final int bucket in buckets) {
       if (bucket >= minimum && jsonLength + 2 <= bucket) {

@@ -41,12 +41,15 @@ class Account {
     this._firestore,
     this._queuedWrites, {
     FieldSealer? sealer,
-  }) : _sealer = sealer;
+    Future<void> Function()? clearDeviceFiles,
+  }) : _sealer = sealer,
+       _clearDeviceFiles = clearDeviceFiles;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final QueuedWriteJournal _queuedWrites;
   final FieldSealer? _sealer;
+  final Future<void> Function()? _clearDeviceFiles;
 
   // The quotas page sets no per-batch write count, only a 10 MiB request
   // limit; 500 deletes stay far below it.
@@ -292,6 +295,7 @@ class Account {
   // fresh native instance, with the same settings, on the next call.
   // A failure leaves the cache behind but must not undo the sign-out.
   // The journal goes with the cache: the writes it names are no longer queued.
+  // The sealed device files go whatever the cache does.
   Future<void> _clearLocalCache() async {
     try {
       await _firestore.terminate();
@@ -299,6 +303,12 @@ class Account {
       await _queuedWrites.clear();
     } on FirebaseException catch (e, stack) {
       _report(e, stack, 'clearing the on-device Firestore cache');
+    } finally {
+      try {
+        await _clearDeviceFiles?.call();
+      } catch (_) {
+        // Another user's first use removes them.
+      }
     }
   }
 
