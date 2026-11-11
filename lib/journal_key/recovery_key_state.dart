@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/crypto/key_store.dart';
 import 'package:tracker/data/day.dart';
 
 /// What the key screens need to know about this device's journal key.
@@ -11,6 +12,9 @@ class RecoveryKeyStatus {
     this.firstEntryAt,
     this.saved = false,
     this.cardDismissed = false,
+    this.location,
+    this.syncRefused = false,
+    this.syncRefusalStatus,
   });
 
   /// The recovery key in [RecoveryKey.format]'s groups.
@@ -25,6 +29,14 @@ class RecoveryKeyStatus {
   /// The user typed back the last group.
   final bool saved;
   final bool cardDismissed;
+
+  /// Where this device keeps the journal key; null where nothing says.
+  final KeyLocation? location;
+
+  /// The keychain refused the last synced lookup or write, with
+  /// [syncRefusalStatus] when it gave a status code.
+  final bool syncRefused;
+  final int? syncRefusalStatus;
 }
 
 sealed class UnlockOutcome {

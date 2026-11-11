@@ -12,11 +12,26 @@ enum KeyLocation {
   thisDevice,
 }
 
+/// The keychain refused a synced lookup or write. [status] is its OSStatus
+/// (-34018, say), null when it gave none; nothing else of the refusal is kept.
+class SyncRefusal {
+  const SyncRefusal(this.status);
+
+  SyncRefusal.from(PlatformException e)
+    : status = switch (e.details) {
+        final int status => status,
+        _ => int.tryParse(e.code),
+      };
+
+  final int? status;
+}
+
 class StoredKey {
   StoredKey({
     required this.journalKey,
     this.recoveryKey,
     required this.location,
+    this.syncRefusal,
   });
 
   final JournalKey journalKey;
@@ -25,6 +40,10 @@ class StoredKey {
   final Uint8List? recoveryKey;
 
   final KeyLocation location;
+
+  /// Why the key is on this device only, when the keychain said; null for a
+  /// synced key.
+  final SyncRefusal? syncRefusal;
 }
 
 /// Saving a journal key over a different one would orphan everything sealed
@@ -69,6 +88,9 @@ class KeyStore {
 
   static const int _formatVersion = 1;
 
+  // The latest refusal of a synced lookup or write, until one succeeds.
+  SyncRefusal? _refusal;
+
   Future<StoredKey?> read(String uid) async => (await _read(uid)).stored;
 
   // A keychain that refuses synced items refuses the synced lookup too
@@ -83,13 +105,15 @@ class KeyStore {
         mOptions: _syncedMac,
       );
       if (synced != null) {
+        _refusal = null;
         return (
           stored: _decode(synced, KeyLocation.synced),
           syncedRefused: false,
         );
       }
-    } on PlatformException {
+    } on PlatformException catch (e) {
       syncedRefused = true;
+      _refusal = SyncRefusal.from(e);
     }
 
     final String? local = await _storage.read(
@@ -98,7 +122,9 @@ class KeyStore {
       mOptions: _localMac,
     );
     return (
-      stored: local == null ? null : _decode(local, KeyLocation.thisDevice),
+      stored: local == null
+          ? null
+          : _decode(local, KeyLocation.thisDevice, _refusal),
       syncedRefused: syncedRefused,
     );
   }
@@ -117,14 +143,10 @@ class KeyStore {
       throw KeyConflictException(uid);
     }
 
-    final String value = jsonEncode(<String, Object?>{
-      'v': _formatVersion,
-      'key': base64.encode(journalKey.bytes),
-      'recovery': switch (recoveryKey ?? existing?.recoveryKey) {
-        final Uint8List r => base64.encode(r),
-        null => null,
-      },
-    });
+    final String value = _encode(
+      journalKey,
+      recoveryKey ?? existing?.recoveryKey,
+    );
 
     // Writing synced after a refused synced lookup could replace a synced
     // item that lookup failed to see.
@@ -136,10 +158,12 @@ class KeyStore {
           iOptions: _syncedIOS,
           mOptions: _syncedMac,
         );
+        _refusal = null;
         return _decode(value, KeyLocation.synced);
-      } on PlatformException {
+      } on PlatformException catch (e) {
         // Falls through to a this-device item, which needs no iCloud
         // Keychain support from the signing team or the account.
+        _refusal = SyncRefusal.from(e);
       }
     }
 
@@ -149,8 +173,18 @@ class KeyStore {
       iOptions: _localIOS,
       mOptions: _localMac,
     );
-    return _decode(value, KeyLocation.thisDevice);
+    return _decode(value, KeyLocation.thisDevice, _refusal);
   }
+
+  static String _encode(JournalKey journalKey, Uint8List? recoveryKey) =>
+      jsonEncode(<String, Object?>{
+        'v': _formatVersion,
+        'key': base64.encode(journalKey.bytes),
+        'recovery': switch (recoveryKey) {
+          final Uint8List r => base64.encode(r),
+          null => null,
+        },
+      });
 
   /// Deleting the synced item deletes it from every device on the Apple ID.
   Future<void> delete(String uid) async {
@@ -166,7 +200,11 @@ class KeyStore {
     );
   }
 
-  static StoredKey _decode(String value, KeyLocation location) {
+  static StoredKey _decode(
+    String value,
+    KeyLocation location, [
+    SyncRefusal? syncRefusal,
+  ]) {
     final Object? map = jsonDecode(value);
     if (map is! Map<String, dynamic> ||
         map['v'] != _formatVersion ||
@@ -179,6 +217,7 @@ class KeyStore {
       journalKey: JournalKey(base64.decode(map['key'] as String)),
       recoveryKey: recovery is String ? base64.decode(recovery) : null,
       location: location,
+      syncRefusal: syncRefusal,
     );
   }
 }
