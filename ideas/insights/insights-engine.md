@@ -39,11 +39,16 @@ says "can't tell coffee and alcohol apart yet" instead of a number. Sleep is ali
 
 1. at least 21 usable days, with at least 7 exposed and 7 unexposed days for that vice;
 2. the p-value, computed with an effective sample size corrected for autocorrelation, survives Benjamini–Hochberg
-   false-discovery control at q = 0.1 across every vice × outcome × lag tested that week;
+   false-discovery control at q = 0.1 across every vice × outcome × lag tested that week (built for the comparisons
+   whose rows are days, what follows a day's use and what comes before one: `serialInflation` in
+   `lib/insights/stats.dart` counts n(1−r)/(1+r) days, r being the lag-1 autocorrelation of the habit's column times
+   that of the residuals, over rows a calendar day apart);
 3. the effect clears a practical size (built: a floor per outcome, `metricFloors` in
    `lib/insights/insights_report.dart`, such as 10 minutes of sleep or 3 ms of HRV; an amount or a time judged across
    the habit's interquartile range of days);
-4. a 7-day moving-block bootstrap interval excludes zero.
+4. a 7-day moving-block bootstrap interval excludes zero (built for the same comparisons:
+   `blockBootstrapInterval`, 2,000 seeded redraws of the habit's coefficient with the other terms' fit held, run only
+   on a result that passed every other check).
 
 Each card shows the effect with its interval and the number of days behind it, uses "goes with", never "causes", and
 lists the pairs still collecting data ("9 of 21 days"). A day with nothing logged counts as a zero
