@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/providers/firestore_retry.dart';
 import 'package:tracker/providers/signed_in_user.dart';
 
@@ -104,12 +105,18 @@ final viceActivityRangeForUserProvider = FutureProvider.autoDispose
       (ref, key) async {
         final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         final QuerySnapshot<Map<String, dynamic>> snapshot =
-            await _activitiesBetween(
-              key.uid,
-              key.range.start,
-              key.range.end,
-            ).get();
-        return ViceActivity.openQuerySnapshot(snapshot, opener);
+            await timedInsightsStage(
+              'journal range read',
+              () => _activitiesBetween(
+                key.uid,
+                key.range.start,
+                key.range.end,
+              ).get(),
+            );
+        return timedInsightsStage(
+          'journal range open (${snapshot.size} entries)',
+          () => ViceActivity.openQuerySnapshot(snapshot, opener),
+        );
       },
     );
 

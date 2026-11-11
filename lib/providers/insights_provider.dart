@@ -13,7 +13,9 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -101,6 +103,7 @@ Future<bool> connectHealth(ProviderContainer container) async {
   }
   container.invalidate(healthConnectedProvider);
   // A read refused before the sheet was answered is kept as no samples.
+  container.read(insightsSessionProvider)?.samples.clear();
   container.invalidate(_samplesProvider);
   return true;
 }
@@ -159,14 +162,17 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   try {
     if (!await source.isAvailable()) return const HealthUnsupported();
     if (!connected) return const HealthNotConnected();
-    return switch (await syncHealthDaily(
-      source: source,
-      file: file,
-      metrics: _engineMetrics,
-      range: range,
-      today: today,
-      // Left before the read finished: the value would be thrown away.
-      alive: () => ref.mounted,
+    return switch (await timedInsightsStage(
+      'Health daily sync',
+      () => syncHealthDaily(
+        source: source,
+        file: file,
+        metrics: _engineMetrics,
+        range: range,
+        today: today,
+        // Left before the read finished: the value would be thrown away.
+        alive: () => ref.mounted,
+      ),
     )) {
       null => const HealthFailed(),
       HealthUnavailable() => const HealthUnsupported(),
@@ -183,7 +189,11 @@ final healthStateProvider = FutureProvider.autoDispose<HealthState>((
   }
 });
 
-typedef _SamplesKey = ({List<ViceActivity> activities, DateTime today});
+typedef _SamplesKey = ({
+  List<ViceActivity> activities,
+  DateTime today,
+  InsightsSession? session,
+});
 
 /// How long the hours-after read may take before it is left out.
 const Duration hoursAfterReadTimeout = Duration(seconds: 60);
@@ -191,6 +201,8 @@ const Duration hoursAfterReadTimeout = Duration(seconds: 60);
 /// The Health samples around the journal's uses that [hoursAfter] needs, by
 /// [HealthSampleMetric.id]: the time in bed over the past year in one read,
 /// then one span a day per measure, in pages, the measures side by side.
+/// A span ending before yesterday is read once per session: the Watch may
+/// still add to yesterday's.
 /// Empty when any read fails or [hoursAfterReadTimeout] passes, which leaves
 /// the hours-after comparisons out rather than the page: someone who
 /// connected Health before heart rate was read gets `not-determined` here,
@@ -200,12 +212,31 @@ final _samplesProvider = FutureProvider.autoDispose
       const Map<String, List<HealthSample>> none =
           <String, List<HealthSample>>{};
       final HealthSource source = ref.read(healthSourceProvider);
+      final InsightsSession? session = key.session;
+      final DateTime settled = addDays(startOfDay(key.today), -1);
+      int spansRead = 0;
+      int spansKept = 0;
       Future<List<HealthSample>?> read(
         HealthSampleMetric metric,
         List<({DateTime start, DateTime end})> spans,
       ) async {
         final List<HealthSample> got = <HealthSample>[];
         for (final ({DateTime start, DateTime end}) span in spans) {
+          final SampleSpanKey kept = (
+            metric: metric.id,
+            start: span.start,
+            end: span.end,
+          );
+          final bool keep = session != null && !span.end.isAfter(settled);
+          if (keep) {
+            if (session.samples[kept] case final List<HealthSample> known) {
+              spansKept++;
+              got.addAll(known);
+              continue;
+            }
+          }
+          final List<HealthSample> spanSamples = <HealthSample>[];
+          spansRead++;
           await for (final HealthSampleRead page in healthSamplePages(
             source,
             metric,
@@ -217,9 +248,11 @@ final _samplesProvider = FutureProvider.autoDispose
               case HealthUnavailable():
                 return null;
               case HealthSamples(:final List<HealthSample> samples):
-                got.addAll(samples);
+                spanSamples.addAll(samples);
             }
           }
+          if (keep) session.samples[kept] = spanSamples;
+          got.addAll(spanSamples);
         }
         return got;
       }
@@ -248,9 +281,16 @@ final _samplesProvider = FutureProvider.autoDispose
       }
 
       try {
-        return await readAll().timeout(hoursAfterReadTimeout);
+        return await timedInsightsStage(
+          'hours-after samples',
+          () => readAll().timeout(hoursAfterReadTimeout),
+        );
       } catch (_) {
         return none;
+      } finally {
+        insightsTimingLog(
+          'Insights hours-after spans: $spansRead read, $spansKept kept',
+        );
       }
     });
 
@@ -286,37 +326,31 @@ final class InsightsFailed extends InsightsResult {
   const InsightsFailed();
 }
 
-// Keyed on the very lists the watched providers hold, so a rebuild that
-// changes neither reuses the result. The archived habits are a string, since a
-// Set is equal only to itself, so renaming a habit doesn't run the engine again.
-typedef _EngineKey = ({
-  List<ViceActivity> activities,
-  List<DailyOutcome> health,
-  Map<String, List<HealthSample>> samples,
-  DateTime today,
-  String archived,
-  List<CalendarEvent> events,
-});
-
+// Keyed on what the engine reads, so a re-read that changed nothing reuses
+// the result. The archived habits are a string, since a Set is equal only to
+// itself, so renaming a habit doesn't run the engine again.
 // A Firestore document ID never holds a '/', so it parts the IDs.
 const String _archivedSeparator = '/';
 
 final _engineProvider = FutureProvider.autoDispose
-    .family<InsightsResult, _EngineKey>((ref, key) async {
+    .family<InsightsResult, EngineInputs>((ref, key) async {
       try {
+        final InsightsInput input = InsightsInput.from(
+          activities: key.activities,
+          health: key.health,
+          today: key.today,
+          samples: key.samples,
+          events: key.events,
+          archived: <String>{
+            if (key.archived.isNotEmpty)
+              ...key.archived.split(_archivedSeparator),
+          },
+        );
+        final InsightsRunner run = ref.read(insightsRunnerProvider);
         return InsightsComputed(
-          await ref.read(insightsRunnerProvider)(
-            InsightsInput.from(
-              activities: key.activities,
-              health: key.health,
-              today: key.today,
-              samples: key.samples,
-              events: key.events,
-              archived: <String>{
-                if (key.archived.isNotEmpty)
-                  ...key.archived.split(_archivedSeparator),
-              },
-            ),
+          await timedInsightsStage(
+            key.samples.isEmpty ? 'engine, daily' : 'engine, with hours-after',
+            () => run(input),
           ),
           firstDays: insightsFirstDays(key.activities),
         );
@@ -331,16 +365,33 @@ final _engineProvider = FutureProvider.autoDispose
 /// The daily report shows first; while [hoursPending] the hours-after read
 /// is still going, and the report is computed again once it lands, so a
 /// daily finding can then move into the many-comparisons correction's
-/// "could be chance".
+/// "could be chance". While [updating], the view is the one this session
+/// last showed, kept up while every read is made again.
 typedef InsightsView = ({
   HealthState health,
   InsightsResult? result,
   bool hoursPending,
+  bool updating,
 });
 
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
+  final InsightsSession? session = ref.watch(insightsSessionProvider);
+  AsyncValue<InsightsView> waiting() => switch (session?.lastView) {
+    final InsightsView last => AsyncData<InsightsView>((
+      health: last.health,
+      result: last.result,
+      hoursPending: last.hoursPending,
+      updating: true,
+    )),
+    null => const AsyncLoading<InsightsView>(),
+  };
+  AsyncValue<InsightsView> shown(InsightsView view) {
+    session?.lastView = view;
+    return AsyncData<InsightsView>(view);
+  }
+
   final HealthState? state = ref.watch(healthStateProvider).value;
-  if (state == null) return const AsyncLoading<InsightsView>();
+  if (state == null) return waiting();
   // The whole journal is read once per open, billed per document, so it is
   // read only when there is Health data to compare it with.
   if (state case HealthReady(
@@ -359,15 +410,19 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     final List<ViceActivity>? journal = activities.value;
     // The page says when the habits fail to load.
     final List<Vice>? vices = ref.watch(viceListProvider).value;
-    if (journal == null || vices == null) {
-      return const AsyncLoading<InsightsView>();
-    }
+    if (journal == null || vices == null) return waiting();
     final String archived = ([
       for (final Vice v in vices)
         if (v.archived) v.id,
     ]..sort()).join(_archivedSeparator);
     final Map<String, List<HealthSample>>? samples = ref
-        .watch(_samplesProvider((activities: journal, today: today)))
+        .watch(
+          _samplesProvider((
+            activities: journal,
+            today: today,
+            session: session,
+          )),
+        )
         .value;
     // Waiting for the calendar spares a run of the engine without it; it
     // answers at once without access.
@@ -379,33 +434,49 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         : ref
               .watch(calendarEventsProvider((from: firstDay, today: today)))
               .value;
-    if (events == null) return const AsyncLoading<InsightsView>();
-    InsightsResult? report(Map<String, List<HealthSample>> read) => ref
-        .watch(
-          _engineProvider((
-            activities: journal,
-            health: values,
-            samples: read,
-            today: today,
-            archived: archived,
-            events: events,
-          )),
-        )
-        .value;
+    if (events == null) return waiting();
+    InsightsResult? report(Map<String, List<HealthSample>> read) {
+      final EngineInputs inputs = EngineInputs(
+        activities: journal,
+        health: values,
+        samples: read,
+        today: today,
+        archived: archived,
+        events: events,
+      );
+      if (session?.resultFor(inputs) case final InsightsResult kept) {
+        insightsTimingLog('Insights engine: reused');
+        return kept;
+      }
+      final InsightsResult? computed = ref.watch(_engineProvider(inputs)).value;
+      // A failure is worked out again on the next open.
+      if (computed is InsightsComputed) session?.keepResult(inputs, computed);
+      return computed;
+    }
+
     const Map<String, List<HealthSample>> none = <String, List<HealthSample>>{};
     // The daily report stays up while the one with hours-after computes.
     final InsightsResult? full = samples == null ? null : report(samples);
-    final InsightsResult? shown = full ?? report(none);
-    if (shown == null) return const AsyncLoading<InsightsView>();
-    return AsyncData<InsightsView>((
+    if (full == null) {
+      // Ahead of a daily report, the full one this session already showed.
+      if (session?.lastView case final InsightsView last
+          when !last.hoursPending && last.result != null) {
+        return waiting();
+      }
+    }
+    final InsightsResult? daily = full ?? report(none);
+    if (daily == null) return waiting();
+    return shown((
       health: state,
-      result: shown,
+      result: daily,
       hoursPending: full == null,
+      updating: false,
     ));
   }
-  return AsyncData<InsightsView>((
+  return shown((
     health: state,
     result: null,
     hoursPending: false,
+    updating: false,
   ));
 });

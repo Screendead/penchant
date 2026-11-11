@@ -137,6 +137,9 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String hoursAfterPending =
       'Still reading heart rate around your uses from Apple Health.';
 
+  static const String updating =
+      'Updating with anything new in your journal and Apple Health.';
+
   static const String weekSubtitle =
       'Totals, hours and triggers, and what changed';
 
@@ -372,7 +375,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     return <Widget>[
       if (costs.firstDay case final DateTime first)
         CardFoot(InsightsPage.span(first)),
-      if (view.hoursPending) const CardFoot(InsightsPage.hoursAfterPending),
+      if (view.updating)
+        const CardFoot(InsightsPage.updating)
+      else if (view.hoursPending)
+        const CardFoot(InsightsPage.hoursAfterPending),
       _LastNightSection(vices: vices, marks: costs.marks),
       const CardSectionLabel(InsightsPage.costsHeading),
       if (cards.isEmpty) costs.emptyBox(),
@@ -547,7 +553,7 @@ class InsightsCostsPage extends ConsumerWidget {
       children: <Widget>[
         const CardFoot(lede),
         if (view != null && result is InsightsComputed && vices != null)
-          ..._body(_Costs(result, vices), view.hoursPending)
+          ..._body(_Costs(result, vices), view)
         else
           const _MessageCard(InsightsPage.loadingLabel, busy: true),
         if (view?.health case final HealthState health
@@ -558,8 +564,10 @@ class InsightsCostsPage extends ConsumerWidget {
     );
   }
 
-  List<Widget> _body(_Costs costs, bool hoursPending) => <Widget>[
-    if (hoursPending)
+  List<Widget> _body(_Costs costs, InsightsView view) => <Widget>[
+    if (view.updating)
+      const CardFoot(InsightsPage.updating)
+    else if (view.hoursPending)
       const CardFoot(InsightsPage.hoursAfterPending)
     else if (costs.report.hoursAfterChecks > 0)
       const CardFoot(InsightsPage.hoursAfterNote),
