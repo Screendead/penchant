@@ -84,6 +84,16 @@ enum HealthMetric {
   /// The day's total, in kilocalories.
   activeEnergyBurned('activeEnergyBurned'),
 
+  /// The day's workouts, in minutes, merged across sources so an overlap
+  /// counts once and cut at midnight. Only each workout's start and end are
+  /// read. A day without one has no value here, as everywhere in this file;
+  /// the engine reads it as 0 once the person has logged any
+  /// ([sessionMetricIds]).
+  workoutMinutes('workoutMinutes'),
+
+  /// The day's mindful sessions, in minutes, as [workoutMinutes] counts.
+  mindfulMinutes('mindfulMinutes'),
+
   /// The plain mean of the heart rate samples inside the night's asleep time
   /// (core, deep, REM or unspecified; not in bed or awake), keyed to the night
   /// like the sleep metrics, in beats per minute. A sample is inside when its
@@ -95,6 +105,13 @@ enum HealthMetric {
 
   final String id;
 }
+
+/// The [HealthMetric]s counted in sessions, where a day without one is a
+/// day of none rather than a day unmeasured, once there has been any.
+const Set<String> sessionMetricIds = <String>{
+  'workoutMinutes',
+  'mindfulMinutes',
+};
 
 /// What [HealthSource.samples] reads, timestamped rather than per day.
 enum HealthSampleMetric {

@@ -105,7 +105,7 @@ class InsightsInput {
     return InsightsInput(
       // A locked entry counts: its vice and quantity are plaintext.
       uses: habitUsesFrom(activities).toList(),
-      outcomes: <DailyOutcome>[
+      outcomes: withSessionZeros(<DailyOutcome>[
         for (final hs.DailyOutcome o in health)
           // Today's day totals and averages cover only part of it; the night
           // that ended today is whole.
@@ -113,7 +113,7 @@ class InsightsInput {
               (metricCopy(o.metricId)?.night ?? false) ||
               o.metricId == sleepOnsetId)
             DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
-      ],
+      ], through: addDays(unfinished, -1)),
       from: range.start,
       through: addDays(range.end, -1),
       samples: samples,
@@ -138,6 +138,68 @@ class InsightsInput {
   /// The calendar's timed events over the journal's span; empty without
   /// calendar access.
   final List<CalendarEvent> events;
+}
+
+/// The fewest days with a session a [hs.sessionMetricIds] outcome needs to be
+/// judged at all: under it, a series of nearly all zeros would only add
+/// comparisons to the false-discovery family that cannot find anything.
+const int minSessionDays = 14;
+
+/// [outcomes] with each [hs.sessionMetricIds] metric's days without a session
+/// as 0, from its first day with one through [through]. Without the metric
+/// when it has fewer than [minSessionDays] days with a session, or when its
+/// floor ([metricFloors]) cannot be reached: no day's total reaches it. Every
+/// day lies between 0 and that largest day, so no two sets of days can differ
+/// by the floor in either direction, and its comparisons would only enlarge
+/// the false-discovery family. The rule reads the metric's own days alone,
+/// never which days followed a habit, so it cannot favour a finding. It is
+/// exact for the with-and-without comparisons and conservative (it keeps
+/// some unreachable metrics) since the person's floor is never under the
+/// literature's; an amount or time slope across a habit's range is taken to
+/// stay inside the days' range too. A person with none has no rows, which
+/// stays no data: Health answers a refused read with nothing, the same as an
+/// empty one.
+List<DailyOutcome> withSessionZeros(
+  List<DailyOutcome> outcomes, {
+  required DateTime through,
+}) {
+  final Map<String, Set<DateTime>> sessionDays = <String, Set<DateTime>>{};
+  final Map<String, double> largest = <String, double>{};
+  for (final DailyOutcome o in outcomes) {
+    if (hs.sessionMetricIds.contains(o.metricId) && o.value > 0) {
+      (sessionDays[o.metricId] ??= <DateTime>{}).add(o.date);
+      largest[o.metricId] = max(largest[o.metricId] ?? 0, o.value);
+    }
+  }
+  final Set<String> judged = <String>{
+    for (final MapEntry<String, Set<DateTime>> metric in sessionDays.entries)
+      if (metric.value.length >= minSessionDays &&
+          largest[metric.key]! >= (metricFloors[metric.key]?.floor ?? 0))
+        metric.key,
+  };
+  final List<DailyOutcome> filled = <DailyOutcome>[
+    for (final DailyOutcome o in outcomes)
+      if (!hs.sessionMetricIds.contains(o.metricId) ||
+          judged.contains(o.metricId))
+        o,
+  ];
+  for (final MapEntry<String, Set<DateTime>> metric in sessionDays.entries) {
+    if (!judged.contains(metric.key)) continue;
+    final Set<DateTime> known = <DateTime>{
+      for (final DailyOutcome o in outcomes)
+        if (o.metricId == metric.key) o.date,
+    };
+    for (
+      DateTime day = metric.value.reduce((a, b) => a.isBefore(b) ? a : b);
+      !day.isAfter(through);
+      day = addDays(day, 1)
+    ) {
+      if (!known.contains(day)) {
+        filled.add(DailyOutcome(date: day, metricId: metric.key, value: 0));
+      }
+    }
+  }
+  return filled;
 }
 
 /// The moments around uses whose samples Insights reads, with every window
@@ -555,7 +617,8 @@ enum MetricFamily {
   heart('heart'),
   breathing('breathing'),
   temperature('temperature'),
-  activity('activity');
+  activity('activity'),
+  mindfulness('mindfulness');
 
   const MetricFamily(this.label);
 
@@ -646,6 +709,18 @@ metricFloors = <String, ({double floor, MetricFamily family, FloorRule rule})>{
   'activeEnergyBurned': (
     floor: 85,
     family: MetricFamily.activity,
+    rule: FloorRule.fixed,
+  ),
+  // Inferred: Wen 2011's 15 min of exercise a day, self-reported.
+  'workoutMinutes': (
+    floor: 15,
+    family: MetricFamily.activity,
+    rule: FloorRule.fixed,
+  ),
+  // Inferred: Basso 2019's 13 min of meditation a day for 8 weeks.
+  'mindfulMinutes': (
+    floor: 13,
+    family: MetricFamily.mindfulness,
     rule: FloorRule.fixed,
   ),
 };
@@ -881,6 +956,18 @@ MetricCopy? metricCopy(String metricId) => switch (metricId) {
     unit: 'kcal',
     words: DirectionWords.moreLess,
   ),
+  'workoutMinutes' => const MetricCopy(
+    'workout time',
+    night: false,
+    unit: 'min',
+    words: DirectionWords.moreLess,
+  ),
+  'mindfulMinutes' => const MetricCopy(
+    'mindful time',
+    night: false,
+    unit: 'min',
+    words: DirectionWords.moreLess,
+  ),
   _ => null,
 };
 
@@ -915,6 +1002,12 @@ String? metricEvidence(String metricId) => switch (metricId) {
   'activeEnergyBurned' =>
     'About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower '
         'mortality (Strain 2020).',
+  'workoutMinutes' =>
+    'About 15 min of exercise a day went with 14% lower mortality than '
+        'none (Wen 2011).',
+  'mindfulMinutes' =>
+    '13 min of meditation a day for 8 weeks lowered negative mood against a '
+        'podcast (Basso 2019).',
   _ => null,
 };
 
@@ -1328,7 +1421,7 @@ String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
   final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
   final String per = switch (metricFloors[refusal.metricId]?.family) {
     MetricFamily.sleep => ' a night',
-    MetricFamily.activity => ' a day',
+    MetricFamily.activity || MetricFamily.mindfulness => ' a day',
     _ => '',
   };
   return 'under $floor$unit$per of ${copy.name}';

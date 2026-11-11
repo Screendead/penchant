@@ -9,8 +9,10 @@ there. Grouped by what stands in the way.
 
 **No blocker (free team, no outside service):**
 
-- **Health beyond sleep and heart rate:** State of Mind (iOS 18), workouts, mindful minutes, cycle tracking. Same
-  channel and permission flow as [Apple Health](apple-health-correlation.md).
+- **Health beyond sleep and heart rate:** State of Mind (iOS 18) and cycle tracking left. Same channel and
+  permission flow as [Apple Health](apple-health-correlation.md). Workouts and mindful minutes are built (2026-11-11),
+  as minutes a day. State of Mind has no published smallest change on its valence scale, so it needs a floor
+  decision; cycle phase is a condition to hold fixed, not an outcome, so it needs the engine to take covariates.
 - **Places:** Core Location visits, clustered on the device into the user's own places (home, work, a named spot).
   Opt-in, the most sensitive source; coordinates never leave the device.
 - **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.
