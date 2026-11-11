@@ -22,6 +22,8 @@ import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/insights_provider.dart';
+import 'package:tracker/widgets/payoff_card.dart';
+import 'package:tracker/widgets/replacement_card.dart';
 
 import 'fakes.dart';
 import 'insights/hours_after_synthetic.dart';
@@ -1096,6 +1098,114 @@ void main() {
       ),
     );
   });
+
+  for (final bool clear in <bool>[true, false]) {
+    testWidgets('a habit that rose as another fell joins the payoff card of '
+        'the fall (${clear ? 'with' : 'without'} a clear change since), so '
+        'the fall is stated once on the page and in Copy as text', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      final HabitFall fall = HabitFall(
+        habitId: 'coffee',
+        day: DateTime(2026, 3, 3),
+        from: DateTime(2025, 12, 2),
+        before: 3,
+        since: 1.5,
+        sinceDays: 60,
+      );
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          runner: (_) async => InsightsReport(
+            findings: const <HabitFinding>[],
+            refused: const <HabitRefusal>[],
+            payoffs: <Payoff>[
+              Payoff(
+                fall: fall,
+                metricId: 'sleepAsleep',
+                baselineValues: 88,
+                sinceValues: 41,
+                capped: false,
+                effect: clear ? 30 : 2,
+                interval: clear
+                    ? const stats.Interval(22, 38)
+                    : const stats.Interval(-9, 13),
+                pValue: clear ? 0.001 : 0.6,
+                refusal: clear ? null : PayoffRefusal.withinNoise,
+              ),
+            ],
+            replacements: <Replacement>[
+              Replacement(
+                fall: fall,
+                riserId: 'tea',
+                before: 1,
+                since: 2.5,
+                baselineDays: 91,
+                sinceDays: 60,
+                effect: 1.4,
+                interval: const stats.Interval(0.8, 2),
+                pValue: 0.001,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      const String fell =
+          'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
+          'around March 3, 2026.';
+      const String rose =
+          'Around the same time, your logged amount of Tea rose from about 1 '
+          'item a day to 2.5.';
+      const String since =
+          'Since then, your time asleep averages 30 min more than in the 13 '
+          'weeks before, allowing for the trend it was already on.';
+      const String noise =
+          'No clear difference in your sleep, heart or activity since: '
+          'within the noise.';
+      expect(find.text(fell), findsOneWidget);
+      expect(find.textContaining(fell), findsOneWidget);
+      expect(find.text(rose), findsOneWidget);
+      expect(find.text(replacementCaveat), findsOneWidget);
+      expect(find.text(since), clear ? findsOneWidget : findsNothing);
+      expect(find.text(noise), clear ? findsNothing : findsOneWidget);
+      expect(find.byType(PayoffCardView), findsOneWidget);
+      expect(find.byType(ReplacementCardView), findsNothing);
+      expect(
+        tester.getTopLeft(find.text(fell)).dy,
+        lessThan(tester.getTopLeft(find.text(rose)).dy),
+      );
+
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      await tester.ensureVisible(find.text(InsightsPage.copyLabel));
+      await tester.tap(find.text(InsightsPage.copyLabel));
+      await tester.pump();
+      expect(fell.allMatches(copied!).length, 1);
+      expect(
+        copied,
+        contains(
+          clear
+              ? '\nCoffee\n$fell\n$since\nRange: 22 to 38 min more\n'
+                    'From 88 nights before and 41 since\n$rose\n'
+              : '\nCoffee\n$fell\n$noise\n$rose\n',
+        ),
+      );
+    });
+  }
 
   testWidgets('with every habit short of days, What it costs says how far '
       'along the furthest is', (WidgetTester tester) async {

@@ -78,16 +78,26 @@ List<String> replacementText(
   String Function(String id) nameOf,
   Unit Function(String id) unitOf,
   String locale,
+) => <String>[
+  nameOf(card.habitId),
+  fallSentence(
+    card.fall,
+    nameOf(card.habitId),
+    locale,
+    unit: unitOf(card.habitId),
+  ),
+  ...replacementRiserText(card, nameOf, unitOf, locale),
+];
+
+/// [card]'s lines after the fall, for text that has already stated it.
+List<String> replacementRiserText(
+  ReplacementCard card,
+  String Function(String id) nameOf,
+  Unit Function(String id) unitOf,
+  String locale,
 ) {
   final Replacement headline = card.risers.first;
   return <String>[
-    nameOf(card.habitId),
-    fallSentence(
-      card.fall,
-      nameOf(card.habitId),
-      locale,
-      unit: unitOf(card.habitId),
-    ),
     replacementSentence(
       headline,
       nameOf(headline.riserId),

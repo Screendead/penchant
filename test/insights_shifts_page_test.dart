@@ -14,6 +14,7 @@ import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
+import 'package:tracker/widgets/not_yet_box.dart';
 
 import 'insights_harness.dart';
 
@@ -75,12 +76,20 @@ void main() {
     HabitChange(habitId: 'gone', before: 0, after: 2),
   ];
 
-  testWidgets('a measure that moved to a new level gets a card under What '
-      'else changed, naming the habit that changed with it', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('a measure that moved to a new level waits behind What it '
+      'costs\'s More, counted there, and its card names the habit that '
+      'changed with it', (WidgetTester tester) async {
     await _pump(tester, <MeasureShift>[_shift(habits: changes)]);
 
+    expect(find.byType(MeasureShiftCard), findsNothing);
+    expect(find.text(InsightsPage.shiftsHeading), findsNothing);
+    expect(find.text(InsightsPage.shiftsNote), findsNothing);
+    expect(find.text(InsightsPage.more(1)), findsOneWidget);
+
+    await tester.tap(find.text(InsightsPage.moreCosts));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InsightsCostsPage), findsOneWidget);
     expect(find.byType(MeasureShiftCard), findsOneWidget);
     expect(find.text(InsightsPage.shiftsHeading), findsOneWidget);
     expect(find.text(sentence), findsOneWidget);
@@ -88,19 +97,27 @@ void main() {
     expect(find.text(coffee), findsOneWidget);
     expect(find.textContaining('a removed habit'), findsNothing);
     expect(find.text(InsightsPage.shiftsNote), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(MeasureShiftCard)).dy,
+      greaterThan(tester.getTopLeft(find.byType(NotYetBox)).dy),
+    );
   });
 
-  testWidgets('with no shift the page has no such section', (
+  testWidgets('with no shift neither page has the cards', (
     WidgetTester tester,
   ) async {
     await _pump(tester, const <MeasureShift>[]);
+
+    expect(find.text(InsightsPage.more(1)), findsNothing);
+    await tester.tap(find.text(InsightsPage.moreCosts));
+    await tester.pumpAndSettle();
 
     expect(find.byType(MeasureShiftCard), findsNothing);
     expect(find.text(InsightsPage.shiftsHeading), findsNothing);
     expect(find.text(InsightsPage.shiftsNote), findsNothing);
   });
 
-  testWidgets('Copy as text carries the card under its heading', (
+  testWidgets('Copy as text carries the card at the foot of What it costs', (
     WidgetTester tester,
   ) async {
     final List<String?> copied = <String?>[];
@@ -126,13 +143,18 @@ void main() {
     await tester.tap(find.text(InsightsPage.copyLabel));
     await tester.pump();
 
+    final String text = copied.single!;
+    const String block =
+        '\n${InsightsPage.shiftsHeading}\n\n';
     expect(
-      copied.single,
+      text,
       contains(
-        '\n${InsightsPage.shiftsHeading}\n\n$sentence\n$basis\n$coffee\n'
-        '\n${InsightsPage.shiftsNote}\n\n${InsightsPage.foot}\n',
+        '$block$sentence\n$basis\n$coffee\n'
+        '\n${InsightsPage.shiftsNote}\n',
       ),
     );
+    expect(text.indexOf(block), greaterThan(text.indexOf(InsightsPage.costsHeading)));
+    expect(text.indexOf(block), lessThan(text.indexOf(InsightsPage.foot)));
   });
 
   test('the engine says nothing of an archived habit beside a shift', () {
