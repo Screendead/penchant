@@ -188,8 +188,8 @@ enum QueueListener {
 
   #if !PENCHANT_SYNC
     enum SyncApp {
-      // Watched by isTerminated: NSWorkspace documents no quit notification
-      // for a background-only app.
+      // Watched by isTerminated, so hearing the quit does not rest on
+      // NSWorkspace posting one for a background-only app.
       private static var watches: [NSKeyValueObservation] = []
 
       static var isRunning: Bool {

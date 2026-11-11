@@ -8,9 +8,9 @@ class AppDelegate: FlutterAppDelegate {
 
   // No super: FlutterAppDelegate does not implement this on macOS, so the call
   // raises "unrecognized selector", which AppKit swallows along with the rest
-  // of the method. Launch Services activates a launch the user made and no
-  // other (`open -g`, an intent, a login restore), so the app never activates
-  // itself.
+  // of the method. The app never activates itself: Launch Services activates
+  // a regular app's launch the user made and leaves `open -g` in the
+  // background.
   override func applicationDidFinishLaunching(_ notification: Notification) {
     SyncApp.clearOutcome()
     SyncApp.flushOnceEnded()

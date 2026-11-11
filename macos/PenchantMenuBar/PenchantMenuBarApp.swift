@@ -418,8 +418,8 @@ enum FlushLauncher {
     }
   }
 
-  // Watched by isTerminated: NSWorkspace documents no quit notification for a
-  // background-only app.
+  // Watched by isTerminated, so hearing the quit does not rest on NSWorkspace
+  // posting one for a background-only app.
   private static func watch(_ app: NSRunningApplication) {
     run = app.observe(\.isTerminated, options: [.initial, .new]) { app, _ in
       guard app.isTerminated else { return }
