@@ -80,12 +80,16 @@ class PendingEntryPrompt extends Notifier<EntryPrompt?> {
 }
 
 /// The pending entry once the journal key has loaded, without which neither
-/// the queued log nor what is picked can be written.
-final entryPromptReadyProvider = Provider<EntryPrompt?>(
-  (ref) => ref.watch(sealerProvider) == null
-      ? null
-      : ref.watch(pendingEntryPromptProvider),
-);
+/// the queued log nor what is picked can be written, and the habits have
+/// loaded opened with it, so its habit can be found.
+final entryPromptReadyProvider = Provider<EntryPrompt?>((ref) {
+  final EntryPrompt? pending = ref.watch(pendingEntryPromptProvider);
+  if (pending == null || ref.watch(sealerProvider) == null) {
+    return null;
+  }
+  final AsyncValue<List<Vice>> vices = ref.watch(viceListProvider);
+  return vices.hasValue && !vices.isLoading ? pending : null;
+});
 
 /// Takes an entry the launch came with and hears later ones, for the life of
 /// the app; MyApp keeps it alive.
@@ -156,6 +160,8 @@ Future<EntryPromptState> prepareEntryPrompt({
 }
 
 const String entryUndoneNotice = 'That entry was undone.';
+const String entryHabitGoneNotice =
+    "That entry's habit is not in Penchant any more.";
 const String entryUnsavedNotice =
     'That entry is not saved yet. Penchant will save it, then you can add '
     'what was going on from Today.';
@@ -193,6 +199,7 @@ Future<void> openEntryPrompt(
           ?.where((Vice v) => v.id == prompt.viceID && !v.locked)
           .firstOrNull;
       if (vice == null) {
+        showUndoBar(messenger, const TextSpan(text: entryHabitGoneNotice));
         return;
       }
       await askWhatWasGoingOn(

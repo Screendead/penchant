@@ -23,6 +23,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -118,6 +119,18 @@ void _useTallView(WidgetTester tester) {
   );
   addTearDown(tester.view.resetPhysicalSize);
 }
+
+// The habit list, loading until a test loads it.
+class _VicesSlot extends Notifier<AsyncValue<List<Vice>>> {
+  @override
+  AsyncValue<List<Vice>> build() => const AsyncLoading<List<Vice>>();
+
+  void load(List<Vice> vices) => state = AsyncData<List<Vice>>(vices);
+}
+
+final _vicesSlot = NotifierProvider<_VicesSlot, AsyncValue<List<Vice>>>(
+  _VicesSlot.new,
+);
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -1205,6 +1218,43 @@ void main() {
         expect(writes.writes.last.fields, <String, Object?>{
           'triggers': <String>['Pitch review'],
         });
+      }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+      testWidgets('waits for the habits to load before asking', (
+        WidgetTester tester,
+      ) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        bridge = FakeWidgetBridge();
+        await _pumpApp(tester, <Override>[
+          storedTypicalsProvider.overrideWithValue(const <String, double>{}),
+          viceListProvider.overrideWith((ref) => ref.watch(_vicesSlot)),
+          unarchivedViceListProvider.overrideWithValue(
+            AsyncData<List<Vice>>(<Vice>[coffee, tea]),
+          ),
+          userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+          offlineProvider.overrideWith((ref) => Stream.value(false)),
+          trackerWritesProvider.overrideWithValue(writes),
+          memoryJournal(),
+          viceActivityDayProvider.overrideWith(
+            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
+          ),
+          sealerProvider.overrideWith((ref) => FakeSealer()),
+          widgetBridgeProvider.overrideWithValue(bridge),
+          viceActivityHistoryProvider.overrideWith(
+            (ref, query) => const AsyncData(<ViceActivity>[]),
+          ),
+        ], const ViceTracker());
+
+        ask(tester, 'w1');
+        await tester.pumpAndSettle();
+        expect(find.byType(TriggerPickerSheet), findsNothing);
+
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).read(_vicesSlot.notifier).load(<Vice>[coffee, tea]);
+        await tester.pumpAndSettle();
+        expect(find.byType(TriggerPickerSheet), findsOneWidget);
+        expect(writes.writes, isEmpty, reason: 'already written');
       }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
       testWidgets('an entry undone since says so and writes nothing', (
