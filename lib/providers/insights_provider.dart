@@ -387,7 +387,8 @@ final _engineProvider = FutureProvider.autoDispose
 /// is still going, and the report is computed again once it lands, so a
 /// daily finding can then move into the many-comparisons correction's
 /// "could be chance". While [updating], the view is the one this session
-/// last showed, kept up while every read is made again.
+/// last showed, or at a cold open the one the last launch kept sealed, kept
+/// up while every read is made again.
 typedef InsightsView = ({
   HealthState health,
   InsightsResult? result,
