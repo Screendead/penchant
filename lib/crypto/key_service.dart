@@ -155,8 +155,9 @@ class KeyUnknown extends JournalKeyState {
 }
 
 /// Makes, finds and replaces the signed-in user's journal key. The key lives
-/// in the keychain (synced through iCloud Keychain where it can be), the
-/// server holds only [KeyRecord], and the recovery key is the backup.
+/// in the keychain (synced through iCloud Keychain where it can be, and
+/// copied there once a launch when it is on this device only), the server
+/// holds only [KeyRecord], and the recovery key is the backup.
 class KeyService {
   KeyService({
     required this.store,
@@ -200,6 +201,39 @@ class KeyService {
     yield state;
     if (state is KeyNeedsRecovery) {
       yield* _awaitKey(uid, state.record);
+    } else if (_promotable(state)) {
+      yield await _promote(uid, state as KeyReady);
+    }
+  }
+
+  static bool _promotable(JournalKeyState state) =>
+      state is KeyReady &&
+      state.record != null &&
+      state.stored.location == KeyLocation.thisDevice;
+
+  // Only a key the server names goes into iCloud Keychain, and only a synced
+  // copy with that key's id replaces the state. A failure keeps [ready]'s
+  // key, with the refusal for Settings to show.
+  Future<KeyReady> _promote(String uid, KeyReady ready) async {
+    final StoredKey? now;
+    try {
+      now = await store.promote(uid);
+    } on Exception {
+      return ready;
+    }
+    if (now == null || keyIDOf(now.journalKey) != ready.record!.keyID) {
+      return ready;
+    }
+    return KeyReady(now, ready.record, aes256);
+  }
+
+  Stream<JournalKeyState> _thenPromoted(
+    String uid,
+    JournalKeyState state,
+  ) async* {
+    yield state;
+    if (_promotable(state)) {
+      yield await _promote(uid, state as KeyReady);
     }
   }
 
@@ -244,7 +278,7 @@ class KeyService {
       .asyncExpand(
         (JournalKeyState? state) => state is KeyNeedsRecovery
             ? _followedByKey(uid, state)
-            : Stream<JournalKeyState>.value(state!),
+            : _thenPromoted(uid, state!),
       );
 
   Stream<JournalKeyState> _followedByKey(

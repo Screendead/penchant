@@ -59,7 +59,8 @@ class KeyConflictException implements Exception {
 }
 
 /// One keychain item per uid, written synchronizable so iCloud Keychain
-/// syncs it; where the keychain refuses that, a this-device-only item.
+/// syncs it; where the keychain refuses that, a this-device-only item, which
+/// [promote] later copies into a synced one.
 class KeyStore {
   KeyStore([FlutterSecureStorage? storage])
     : _storage = storage ?? const FlutterSecureStorage();
@@ -90,6 +91,10 @@ class KeyStore {
 
   // The latest refusal of a synced lookup or write, until one succeeds.
   SyncRefusal? _refusal;
+
+  // One refused promotion a launch: a keychain that refuses once refuses
+  // every five seconds too.
+  bool _promotionRefused = false;
 
   Future<StoredKey?> read(String uid) async => (await _read(uid)).stored;
 
@@ -174,6 +179,83 @@ class KeyStore {
       mOptions: _localMac,
     );
     return _decode(value, KeyLocation.thisDevice, _refusal);
+  }
+
+  /// Copies a key held only as a this-device item into a synced one, and
+  /// returns the key as it is now stored: synced once the copy reads back as
+  /// the same key, otherwise the this-device key with the refusal.
+  ///
+  /// Never deletes or rewrites the this-device item, so no failure here can
+  /// leave the device without its key. It also stays after a promotion: the
+  /// plugin's delete removes the synced and the this-device item together
+  /// whichever is asked for, and deleting a synced item deletes it on every
+  /// device. Reads prefer the synced item, so the copy left behind is inert.
+  Future<StoredKey?> promote(String uid) async {
+    final (:StoredKey? stored, :bool syncedRefused) = await _read(uid);
+    if (syncedRefused) {
+      _promotionRefused = true;
+    }
+    if (stored == null ||
+        stored.location == KeyLocation.synced ||
+        _promotionRefused) {
+      return stored;
+    }
+
+    final StoredKey? copy;
+    try {
+      await _storage.write(
+        key: itemName(uid),
+        value: _encode(stored.journalKey, stored.recoveryKey),
+        iOptions: _syncedIOS,
+        mOptions: _syncedMac,
+      );
+      final String? written = await _storage.read(
+        key: itemName(uid),
+        iOptions: _syncedIOS,
+        mOptions: _syncedMac,
+      );
+      copy = written == null ? null : _decode(written, KeyLocation.synced);
+    } on PlatformException catch (e) {
+      return _notPromoted(uid, stored, SyncRefusal.from(e));
+    } on FormatException {
+      return _notPromoted(uid, stored, const SyncRefusal(null));
+    }
+    if (copy == null || !copy.journalKey.sameAs(stored.journalKey)) {
+      return _notPromoted(uid, stored, const SyncRefusal(null));
+    }
+    _refusal = null;
+    return copy;
+  }
+
+  Future<StoredKey> _notPromoted(
+    String uid,
+    StoredKey local,
+    SyncRefusal refusal,
+  ) async {
+    _promotionRefused = true;
+    _refusal = refusal;
+    // The plugin's write deletes every item of the name when its update of
+    // an existing one fails, so the this-device item is checked, and put
+    // back from the key in hand if it went.
+    final String? kept = await _storage.read(
+      key: itemName(uid),
+      iOptions: _localIOS,
+      mOptions: _localMac,
+    );
+    if (kept == null) {
+      await _storage.write(
+        key: itemName(uid),
+        value: _encode(local.journalKey, local.recoveryKey),
+        iOptions: _localIOS,
+        mOptions: _localMac,
+      );
+    }
+    return StoredKey(
+      journalKey: local.journalKey,
+      recoveryKey: local.recoveryKey,
+      location: KeyLocation.thisDevice,
+      syncRefusal: refusal,
+    );
   }
 
   static String _encode(JournalKey journalKey, Uint8List? recoveryKey) =>
