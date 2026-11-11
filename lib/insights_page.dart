@@ -895,7 +895,7 @@ String insightsText({
     }
     if (after != null) {
       out
-        ..write('${recoveryRange(after, locale)}\n')
+        ..write('${recoveryRange(after, locale, joined: true)}\n')
         ..write(
           '${recoveryJoinedBasis(f, after, locale: locale, unit: unit)}\n',
         );
@@ -1219,7 +1219,7 @@ class _FindingCard extends StatelessWidget {
               if (findingEvidence(finding) case final String evidence)
                 Text(evidence, style: small),
               if (after != null) ...<Widget>[
-                Text(recoveryRange(after, locale), style: small),
+                Text(recoveryRange(after, locale, joined: true), style: small),
                 Text(
                   recoveryJoinedBasis(
                     finding,
