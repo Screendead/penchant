@@ -506,7 +506,7 @@ void main() {
     // month's edge, where a period level would absorb it whole.
     for (final int stepDay in <int>[40, 80]) {
       int reported = 0, uneven = 0;
-      for (int seed = 0; seed < 50; seed++) {
+      for (int seed = 0; seed < 200; seed++) {
         final data = journal(
           seed: seed,
           usedOn: (random, day) => <String>{
@@ -538,8 +538,8 @@ void main() {
         }
       }
 
-      expect(uneven, lessThan(5), reason: 'step on day $stepDay');
-      expect(reported / 50, lessThan(0.09), reason: 'step on day $stepDay');
+      expect(uneven, lessThan(20), reason: 'step on day $stepDay');
+      expect(reported / 200, lessThan(0.09), reason: 'step on day $stepDay');
     }
   });
 

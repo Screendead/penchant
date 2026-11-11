@@ -12,6 +12,7 @@ import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
+import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -165,8 +166,13 @@ class InsightsReport {
     this.floors = const <String, double>{},
     this.follows = const <HabitFollows>[],
     this.beforeUse = const <BeforeUse>[],
+    this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
   });
+
+  /// The measures whose level changed and stayed changed, by date, judged in
+  /// the same family as [findings]; only those found.
+  final List<MeasureShift> shifts;
 
   /// Whether each habit follows calendar events, findings and refusals,
   /// judged in the same family as [findings].
@@ -302,9 +308,20 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
   ];
+  final ({List<MeasureShift> shifts, List<double> searched}) shifted =
+      measureShifts(
+        outcomes: outcomes,
+        habits: habits,
+        through: input.through,
+        skip: input.archived,
+      );
+  final List<double> shiftPs = <double>[
+    for (final MeasureShift s in shifted.shifts) s.shift.pValue,
+    ...shifted.searched,
+  ];
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[...beforePs, ...followsPs, ...calendarPs],
+    alongside: <double>[...beforePs, ...followsPs, ...calendarPs, ...shiftPs],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -328,17 +345,31 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     follows: judgeHabitFollows(
       follows,
-      alongside: <double>[...afterPs, ...beforePs, ...calendarPs],
+      alongside: <double>[...afterPs, ...beforePs, ...calendarPs, ...shiftPs],
     ),
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[...afterPs, ...followsPs, ...calendarPs],
+      alongside: <double>[...afterPs, ...followsPs, ...calendarPs, ...shiftPs],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     afterEvent: judgeAfterEvent(
       calendar,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs],
+      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...shiftPs],
     ),
+    shifts:
+        judgeMeasureShifts(
+            shifted.shifts,
+            alongside: <double>[
+              ...shifted.searched,
+              ...afterPs,
+              ...beforePs,
+              ...followsPs,
+              ...calendarPs,
+            ],
+            floors: floors,
+            q: const InsightGates().falseDiscoveryRate,
+          ).where((MeasureShift s) => s.found).toList()
+          ..sort((a, b) => a.shift.at.compareTo(b.shift.at)),
     findings: shown,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),
