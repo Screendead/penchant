@@ -23,6 +23,8 @@ import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/insights_provider.dart';
+import 'package:tracker/widgets/payoff_card.dart';
+import 'package:tracker/widgets/replacement_card.dart';
 
 import 'fakes.dart';
 import 'insights/hours_after_synthetic.dart';
@@ -332,6 +334,145 @@ void main() {
     ]);
     expect(lines.where((String l) => l.contains('heavy day')), hasLength(1));
     expect(copied.single, isNot(contains(InsightsPage.nothingClear)));
+  });
+
+  group('recovery beside the other costs', () {
+    RecoveryNight night(double effect, {bool off = false, bool back = false}) =>
+        RecoveryNight(
+          effect: effect,
+          interval: stats.Interval(effect - 10, effect + 10),
+          pValue: 0.001,
+          off: off,
+          back: back,
+        );
+    Recovery fitted() => Recovery(
+      habitId: 'beer',
+      metricId: 'sleepAsleep',
+      usableDays: 118,
+      heavyDays: 14,
+      cut: 4,
+      floor: 21,
+      nights: <RecoveryNight>[
+        night(-31, off: true),
+        night(-3, back: true),
+        night(1, back: true),
+      ],
+    );
+    HabitFinding finding(
+      String habit,
+      InsightKind kind,
+      String metricId,
+      double effect, {
+      double? cut,
+    }) => HabitFinding(
+      habitId: habit,
+      metricId: metricId,
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 41,
+      raw: null,
+      kind: kind,
+      cut: cut,
+      effect: effect,
+      interval: stats.Interval(effect * 1.5, effect / 2),
+      standardized: -0.5,
+      pValue: 0.001,
+    );
+    AsyncData<List<Vice>> habits() => AsyncData<List<Vice>>(<Vice>[
+      fakeVice('beer', name: 'Beer', unit: Unit.drink),
+      fakeVice('coffee', name: 'Coffee', unit: Unit.drink),
+    ]);
+
+    testWidgets('joins the line in the amount on the same habit and measure, '
+        'saying the heavy day once, and is copied so', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      final List<String?> copied = <String?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              (call.arguments as Map<Object?, Object?>)['text'] as String?,
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          vices: habits(),
+          runner: (_) async => InsightsReport(
+            findings: <HabitFinding>[
+              finding('beer', InsightKind.doseLine, 'sleepAsleep', -25, cut: 4),
+            ],
+            refused: const <HabitRefusal>[],
+            recovery: <Recovery>[fitted()],
+          ),
+        ),
+      );
+
+      const String sentence =
+          'On days with 4 drinks or more logged for Beer, your time asleep '
+          'that night averages 25 min less than on days with fewer; after '
+          'such a day it averages 31 min less that night. By the second '
+          'night it is back within 21 min of your usual.';
+      const String basis =
+          'From 118 nights, 14 of them straight after such a day';
+      expect(find.text('Beer · sleep'), findsOneWidget);
+      expect(find.text(sentence), findsOneWidget);
+      expect(find.text('Range that night: 21 to 41 min less'), findsOneWidget);
+      expect(find.text(basis), findsOneWidget);
+      expect(find.text('Beer · after a heavy day'), findsNothing);
+      expect(find.text(InsightsPage.more(1)), findsNothing);
+
+      await tester.tap(find.text(InsightsPage.copyLabel));
+      await tester.pump();
+      final String text = copied.single!;
+      expect(text, contains('$sentence\n'));
+      expect(text, contains('Range that night: 21 to 41 min less\n$basis\n'));
+      expect(text, isNot(contains('after a heavy day')));
+      expect(text, isNot(contains('After a day with')));
+    });
+
+    testWidgets('counts toward the two cards before More', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          vices: habits(),
+          runner: (_) async => InsightsReport(
+            findings: <HabitFinding>[
+              finding('coffee', InsightKind.use, 'sleepDeep', -18),
+              finding('coffee', InsightKind.use, 'restingHeartRate', 4),
+            ],
+            refused: const <HabitRefusal>[],
+            recovery: <Recovery>[fitted()],
+          ),
+        ),
+      );
+
+      expect(find.text('Beer · after a heavy day'), findsNothing);
+      expect(find.text(InsightsPage.more(1)), findsOneWidget);
+      await _openCosts(tester);
+      expect(find.text('Beer · after a heavy day'), findsOneWidget);
+    });
   });
 
   testWidgets('a line in the amount and a cut-off time read as one side of '
@@ -1185,6 +1326,114 @@ void main() {
       ),
     );
   });
+
+  for (final bool clear in <bool>[true, false]) {
+    testWidgets('a habit that rose as another fell joins the payoff card of '
+        'the fall (${clear ? 'with' : 'without'} a clear change since), so '
+        'the fall is stated once on the page and in Copy as text', (
+      WidgetTester tester,
+    ) async {
+      _connected();
+      final HabitFall fall = HabitFall(
+        habitId: 'coffee',
+        day: DateTime(2026, 3, 3),
+        from: DateTime(2025, 12, 2),
+        before: 3,
+        since: 1.5,
+        sinceDays: 60,
+      );
+      await _pump(
+        tester,
+        insightsOverrides(
+          health: FakeHealthSource(
+            read: HealthValues(insightsJournal().health),
+          ),
+          runner: (_) async => InsightsReport(
+            findings: const <HabitFinding>[],
+            refused: const <HabitRefusal>[],
+            payoffs: <Payoff>[
+              Payoff(
+                fall: fall,
+                metricId: 'sleepAsleep',
+                baselineValues: 88,
+                sinceValues: 41,
+                capped: false,
+                effect: clear ? 30 : 2,
+                interval: clear
+                    ? const stats.Interval(22, 38)
+                    : const stats.Interval(-9, 13),
+                pValue: clear ? 0.001 : 0.6,
+                refusal: clear ? null : PayoffRefusal.withinNoise,
+              ),
+            ],
+            replacements: <Replacement>[
+              Replacement(
+                fall: fall,
+                riserId: 'tea',
+                before: 1,
+                since: 2.5,
+                baselineDays: 91,
+                sinceDays: 60,
+                effect: 1.4,
+                interval: const stats.Interval(0.8, 2),
+                pValue: 0.001,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      const String fell =
+          'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
+          'around March 3, 2026.';
+      const String rose =
+          'Around the same time, your logged amount of Tea rose from about 1 '
+          'item a day to 2.5.';
+      const String since =
+          'Since then, your time asleep averages 30 min more than in the 13 '
+          'weeks before, allowing for the trend it was already on.';
+      const String noise =
+          'No clear difference in your sleep, heart or activity since: '
+          'within the noise.';
+      expect(find.text(fell), findsOneWidget);
+      expect(find.textContaining(fell), findsOneWidget);
+      expect(find.text(rose), findsOneWidget);
+      expect(find.text(replacementCaveat), findsOneWidget);
+      expect(find.text(since), clear ? findsOneWidget : findsNothing);
+      expect(find.text(noise), clear ? findsNothing : findsOneWidget);
+      expect(find.byType(PayoffCardView), findsOneWidget);
+      expect(find.byType(ReplacementCardView), findsNothing);
+      expect(
+        tester.getTopLeft(find.text(fell)).dy,
+        lessThan(tester.getTopLeft(find.text(rose)).dy),
+      );
+
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      await tester.ensureVisible(find.text(InsightsPage.copyLabel));
+      await tester.tap(find.text(InsightsPage.copyLabel));
+      await tester.pump();
+      expect(fell.allMatches(copied!).length, 1);
+      expect(
+        copied,
+        contains(
+          clear
+              ? '\nCoffee\n$fell\n$since\nRange: 22 to 38 min more\n'
+                    'From 88 nights before and 41 since\n$rose\n'
+              : '\nCoffee\n$fell\n$noise\n$rose\n',
+        ),
+      );
+    });
+  }
 
   testWidgets('with every habit short of days, What it costs says how far '
       'along the furthest is', (WidgetTester tester) async {
