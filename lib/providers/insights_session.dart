@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -32,6 +33,10 @@ class InsightsSession {
   /// What the page last showed, kept up while the next open re-reads.
   InsightsView? lastView;
 
+  /// The view last handed to the sealed last-report file, so a rebuild that
+  /// shows the same report writes nothing.
+  InsightsView? savedView;
+
   final List<(EngineInputs, InsightsResult)> _results =
       <(EngineInputs, InsightsResult)>[];
 
@@ -42,6 +47,23 @@ class InsightsSession {
   /// Health samples of whole days already read, by metric and span.
   final Map<SampleSpanKey, List<HealthSample>> samples =
       <SampleSpanKey, List<HealthSample>>{};
+
+  HealthSampleCache? _loadedFrom;
+  Future<void>? _loading;
+
+  /// Fills [samples] from what [cache] holds, once per cache. Never throws.
+  Future<void> loadSamples(HealthSampleCache cache) {
+    if (cache.uid != uid) return Future<void>.value();
+    if (identical(cache, _loadedFrom)) return _loading!;
+    _loadedFrom = cache;
+    return _loading = cache.load().then((
+      Map<CachedSpan, List<HealthSample>> kept,
+    ) {
+      for (final MapEntry<CachedSpan, List<HealthSample>> e in kept.entries) {
+        samples.putIfAbsent(e.key, () => e.value);
+      }
+    });
+  }
 
   InsightsResult? resultFor(EngineInputs inputs) {
     for (final (EngineInputs kept, InsightsResult result) in _results) {

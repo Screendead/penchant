@@ -53,7 +53,70 @@ Only the optional Cloud Scheduler "Force run" of the monthly summaries job is le
 CI and the post-merge e2e run are described in `CLAUDE.md`; why `flutter build macos --release` fails on this machine
 is D9.
 
-## Pick up here: after the fourth run (2026-11-11)
+## Pick up here: after the night of 2026-11-11
+
+Jack went to sleep with "treat this as a /finish-and-pitch". Round 15's page holds the calls open now
+(source `docs/pitch/round-15/index.html`, `picks` collection; link in "Calls waiting on Jack").
+
+**Merged that night:**
+
+- #246 Quit on the Mac waits up to 3 s for sync (`lib/writes/quit_when_synced.dart`); unproven on a device that
+  AppKit asks the delegate a second time.
+- #250 Mac widgets say "Saved. Open Penchant to sync" (helper heartbeat in the App Group).
+- #253 Insights keeps its report for the session (`lib/providers/insights_session.dart`); stage timings log as
+  "Insights …".
+- #255 read-only line under Account Settings › Recovery key: where this device keeps the journal key, plus the
+  keychain's refusal status.
+- #251 `crowding` C done: level changes behind More, a rise joined to its fall's payoff card, recovery inside the cap
+  and joined to the where's-the-line card. #258 names the baseline ("than your usual"; "Range against your usual that
+  night" on the joined card).
+- #257 Health caches sealed with the journal key (`lib/crypto/sealed_files.dart`, `Caches/sealed/<uid>/`;
+  `Sealer.sealFile`): `health-daily`, and one randomly named file per settled hours-after span. The plaintext
+  `health-daily.json` is deleted at launch. Jack: "encrypt it with the same key."; "seal the health-daily file too".
+  `Caches/health-sync.json` (anchors, no values) stays plaintext. Unmeasured: the cold-open cost of opening one file
+  per span.
+- #259 `follows` B done: pairs "tend to come together", judged against time since waking (shared-waking false rate
+  100% to 0.3%). Split out of #254. Known: a waking time 10 min off brings the pair back in 67.5% of synthetic
+  journals; a pair card can show from a clock-only report and be withdrawn when bed times arrive.
+- #260 the last Insights report kept sealed (`lib/insights/last_report_file.dart`, `report_codec.dart`, file
+  `last-report` under the sealed folder) and shown at a cold open with "Updating…". Unmeasured on a device.
+- #261 version 0.2.0 cut (`r10-release` B done).
+
+Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack reopens the Mac app himself.
+
+**Open pull requests:**
+
+- #254 (draft) the fall test. `sparse-fell` B (more time for occasional habits) was built, measured and dropped: false
+  "fell" 11.8% to 9.0%, real halving at 8 weeks 76% to 46%. The replacement: a fall's clearest split must stand out
+  among the clearest splits of 499 week-block reorderings (`PayoffGates.searchSignificance` 0.02, 1 restores the old
+  rule; `searchShuffles`). Rises are not judged this way. Measured (400 seeds; 3 / 1 / 0.5 a day): steady false
+  1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); weeks in runs 19.3 / 11.5 / 10.5% (was 35 / 32 / 28); halving at 8 weeks
+  98.5 / 67 / 35% (was 99 / 93 / 76). Waits on round 15 `fall-test` (A as built, B Welch-form comparison, C level
+  0.05, D leave). After #259 its pairs half is already on `master`: merge `master` in before merging.
+- #256 (draft) promote a this-device journal key to iCloud Keychain. Waits on round 15 `key-promotion`, which also
+  asks Jack what the iPhone's new line says. Signing and access groups are identical on both apps; Jack typed the
+  recovery key on the Mac, so only the iPhone's line distinguishes "never synced" from "Mac asked too early" (then the
+  fix is the gate waiting for the key, no keychain write). Close #128 (old probe) once this settles.
+- #252 (draft) `mac-background` C part 2: PenchantSync.app, a background-only nested app
+  (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
+  memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
+  CI. Before any signed build from it: a Mac development profile for the new bundle id, and that id added to the
+  client API key's allowed apps (both Jack's). Then his signed checks (PR body), then delete
+  `tech-debt/platform-and-delivery-config/background-launches-take-focus-on-the-mac.md`.
+
+**Left:**
+
+- The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
+  findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
+  or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
+- `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
+- Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
+- The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
+- The Mac recovery key on Universal Clipboard (register).
+- Process: at most about five workers, each verifying once at the end on only the tests it touched; never
+  `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
+
+## After the fourth run (2026-11-11)
 
 The fourth run (`/finish-and-pitch`, 2026-11-10) merged #223 to #245 except as listed. Devices have build 1300
 (`master` at the instant-quit merge #244), which lacks payoff, replacement and the sample-size gates (#242, #243, #245,
@@ -838,9 +901,13 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None: round 14's seven were picked on 2026-11-11 (Pick up here, above). Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
-round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
-`r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
+Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), two calls:
+
+- `fall-test`: how strict the test for a "fell" row is (#254). Recommended A, as built.
+- `key-promotion`: what the iPhone's journal key line says, and whether to copy a this-device key into iCloud
+  Keychain (#256). Recommended A if "this device only", C if "in iCloud Keychain".
+
+Round 14's seven were picked on 2026-11-11; every earlier call is picked.
 
 ## For Jack to do (not decisions)
 

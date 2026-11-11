@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
@@ -9,12 +10,15 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/from_journal.dart';
+import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
+import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -28,8 +32,9 @@ final healthSourceProvider = Provider<HealthSource>(
   (ref) => ChannelHealthSource(),
 );
 
+// Read at each use, so a key loading mid-read costs no second full read.
 final healthStoreFileProvider = Provider<HealthStoreFile>(
-  (ref) => CacheHealthStoreFile(),
+  (ref) => SealedHealthStoreFile(() => ref.read(sealedFilesProvider)),
 );
 
 /// Whether this device has shown the Health sheet from Insights. Kept on the
@@ -104,6 +109,7 @@ Future<bool> connectHealth(ProviderContainer container) async {
   container.invalidate(healthConnectedProvider);
   // A read refused before the sheet was answered is kept as no samples.
   container.read(insightsSessionProvider)?.samples.clear();
+  unawaited(container.read(healthSampleCacheProvider)?.clear());
   container.invalidate(_samplesProvider);
   return true;
 }
@@ -201,8 +207,8 @@ const Duration hoursAfterReadTimeout = Duration(seconds: 60);
 /// The Health samples around the journal's uses that [hoursAfter] needs, by
 /// [HealthSampleMetric.id]: the time in bed over the past year in one read,
 /// then one span a day per measure, in pages, the measures side by side.
-/// A span ending before yesterday is read once per session: the Watch may
-/// still add to yesterday's.
+/// A span ending before yesterday is read once per session, and kept sealed
+/// on the device between launches: the Watch may still add to yesterday's.
 /// Empty when any read fails or [hoursAfterReadTimeout] passes, which leaves
 /// the hours-after comparisons out rather than the page: someone who
 /// connected Health before heart rate was read gets `not-determined` here,
@@ -213,6 +219,14 @@ final _samplesProvider = FutureProvider.autoDispose
           <String, List<HealthSample>>{};
       final HealthSource source = ref.read(healthSourceProvider);
       final InsightsSession? session = key.session;
+      final HealthSampleCache? disk = switch (ref.read(
+        healthSampleCacheProvider,
+      )) {
+        final HealthSampleCache cache when cache.uid == session?.uid => cache,
+        _ => null,
+      };
+      final Map<SampleSpanKey, List<HealthSample>> settledSpans =
+          <SampleSpanKey, List<HealthSample>>{};
       final DateTime settled = addDays(startOfDay(key.today), -1);
       int spansRead = 0;
       int spansKept = 0;
@@ -230,6 +244,7 @@ final _samplesProvider = FutureProvider.autoDispose
           final bool keep = session != null && !span.end.isAfter(settled);
           if (keep) {
             if (session.samples[kept] case final List<HealthSample> known) {
+              settledSpans[kept] = known;
               spansKept++;
               got.addAll(known);
               continue;
@@ -251,13 +266,18 @@ final _samplesProvider = FutureProvider.autoDispose
                 spanSamples.addAll(samples);
             }
           }
-          if (keep) session.samples[kept] = spanSamples;
+          if (keep) {
+            session.samples[kept] = spanSamples;
+            settledSpans[kept] = spanSamples;
+          }
           got.addAll(spanSamples);
         }
         return got;
       }
 
       Future<Map<String, List<HealthSample>>> readAll() async {
+        if (disk != null) await session!.loadSamples(disk);
+        if (!ref.mounted) return none;
         final List<HealthSample>? bed = await read(HealthSampleMetric.bed, [
           (start: insightsBedFrom(key.today), end: startOfDay(key.today)),
         ]);
@@ -273,6 +293,7 @@ final _samplesProvider = FutureProvider.autoDispose
             read(m, plan.reads),
         ]);
         if (got.contains(null)) return none;
+        if (disk != null) unawaited(disk.keepOnly(settledSpans));
         return <String, List<HealthSample>>{
           HealthSampleMetric.bed.id: bed,
           for (int i = 0; i < insightsSampleMetrics.length; i++)
@@ -366,7 +387,8 @@ final _engineProvider = FutureProvider.autoDispose
 /// is still going, and the report is computed again once it lands, so a
 /// daily finding can then move into the many-comparisons correction's
 /// "could be chance". While [updating], the view is the one this session
-/// last showed, kept up while every read is made again.
+/// last showed, or at a cold open the one the last launch kept sealed, kept
+/// up while every read is made again.
 typedef InsightsView = ({
   HealthState health,
   InsightsResult? result,
@@ -374,8 +396,21 @@ typedef InsightsView = ({
   bool updating,
 });
 
+/// Puts the view the last launch kept into [session] while it has none yet,
+/// so a view computed meanwhile is never replaced. Never fails.
+final _savedViewProvider = FutureProvider.autoDispose
+    .family<void, InsightsSession>((ref, session) async {
+      final LastReportFile? file = ref.watch(lastReportFileProvider);
+      if (file == null || file.uid != session.uid) return;
+      final InsightsView? saved = await file.load();
+      if (saved != null) session.lastView ??= saved;
+    });
+
 final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   final InsightsSession? session = ref.watch(insightsSessionProvider);
+  if (session != null && session.lastView == null) {
+    ref.watch(_savedViewProvider(session));
+  }
   AsyncValue<InsightsView> waiting() => switch (session?.lastView) {
     final InsightsView last => AsyncData<InsightsView>((
       health: last.health,
@@ -387,6 +422,17 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
   };
   AsyncValue<InsightsView> shown(InsightsView view) {
     session?.lastView = view;
+    final InsightsView? saved = session?.savedView;
+    if (session != null &&
+        view.result is InsightsComputed &&
+        !(identical(saved?.result, view.result) &&
+            saved?.hoursPending == view.hoursPending)) {
+      final LastReportFile? file = ref.read(lastReportFileProvider);
+      if (file != null && file.uid == session.uid) {
+        session.savedView = view;
+        unawaited(file.save(view));
+      }
+    }
     return AsyncData<InsightsView>(view);
   }
 
