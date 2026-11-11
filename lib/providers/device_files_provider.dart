@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/crypto/sealed_files.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
+import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/insights_session.dart';
 
 final deviceFilesProvider = Provider<DeviceFiles>((ref) => DeviceFiles());
@@ -26,4 +27,9 @@ final sealedFilesProvider = Provider<SealedFiles?>((ref) {
 final healthSampleCacheProvider = Provider<HealthSampleCache?>((ref) {
   final SealedFiles? files = ref.watch(sealedFilesProvider);
   return files == null ? null : HealthSampleCache(files);
+});
+
+final lastReportFileProvider = Provider<LastReportFile?>((ref) {
+  final SealedFiles? files = ref.watch(sealedFilesProvider);
+  return files == null ? null : LastReportFile(files);
 });
