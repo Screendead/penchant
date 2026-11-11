@@ -24,6 +24,10 @@ import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/measure_shifts.dart';
+import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/payoff_copy.dart';
+import 'package:tracker/insights/replacement.dart';
+import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -38,6 +42,8 @@ import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
+import 'package:tracker/widgets/payoff_card.dart';
+import 'package:tracker/widgets/replacement_card.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -96,7 +102,7 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String cuttingDownBody =
       'When a habit stays lower for a few weeks, this will show what moved '
       'with it: your sleep and heart against before, and any habit that rose '
-      'in its place.';
+      'around the same time.';
   static const String setsOffTitle = 'Nothing to show yet';
   static const String setsOffBody =
       'This will show what tends to come before each habit, such as a short '
@@ -388,10 +394,45 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         ],
       ),
       const CardSectionLabel(InsightsPage.cuttingDownHeading),
-      const NotYetBox(
-        InsightsPage.cuttingDownTitle,
-        body: InsightsPage.cuttingDownBody,
-      ),
+      if (costs.payoffs.isEmpty && costs.replacements.isEmpty)
+        const NotYetBox(
+          InsightsPage.cuttingDownTitle,
+          body: InsightsPage.cuttingDownBody,
+        ),
+      for (final (int i, PayoffCard card) in costs.payoffs.indexed)
+        if (card.findings.isNotEmpty)
+          PayoffCardView(
+            card: card,
+            habit: costs.nameOf(card.habitId),
+            unit: costs.unitOf(card.habitId),
+            mark: costs.marks[card.habitId] ?? const HabitMark(0),
+            locale: formatLocale,
+            top: i == 0 ? 0 : DialSpace.xs,
+          ),
+      // A fall with nothing clear since stays a row, not a card.
+      if (costs.payoffs.any((PayoffCard c) => c.findings.isEmpty))
+        DialCard(
+          top: costs.payoffs.first.findings.isEmpty ? 0 : DialSpace.xs,
+          children: <Widget>[
+            for (final PayoffCard card in costs.payoffs)
+              if (card.refusal case final Payoff refused)
+                CardRow(
+                  label: costs.nameOf(card.habitId),
+                  subtitle:
+                      '${fallSentence(card.fall, costs.nameOf(card.habitId), formatLocale, unit: costs.unitOf(card.habitId))} '
+                      '${payoffRefusal(refused)}',
+                ),
+          ],
+        ),
+      for (final (int i, ReplacementCard card) in costs.replacements.indexed)
+        ReplacementCardView(
+          card: card,
+          nameOf: costs.nameOf,
+          unitOf: costs.unitOf,
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top: i == 0 && costs.payoffs.isEmpty ? 0 : DialSpace.xs,
+        ),
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty &&
           costs.follows.isEmpty &&
@@ -573,6 +614,14 @@ class _Costs {
       for (final BeforeUse b in report.beforeUse)
         if (_names.containsKey(b.habitId)) b,
     ], floors: report.floors);
+    payoffs = payoffCards(<Payoff>[
+      for (final Payoff p in report.payoffs)
+        if (_names.containsKey(p.habitId)) p,
+    ], floors: report.floors);
+    replacements = replacementCards(<Replacement>[
+      for (final Replacement r in report.replacements)
+        if (_names.containsKey(r.habitId) && _names.containsKey(r.riserId)) r,
+    ]);
     calendar = afterEventCards(<AfterEvent>[
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
@@ -601,6 +650,8 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
+  late final List<PayoffCard> payoffs;
+  late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
   late final List<FollowsCard> follows;
   late final List<MeasureShift> shifts;
@@ -662,6 +713,17 @@ class _Costs {
       lastNight: lastNight,
       emptyTitle: empty.title,
       emptyBody: empty.body,
+      cuttingDown: <List<String>>[
+        for (final PayoffCard card in payoffs)
+          payoffText(
+            card,
+            nameOf(card.habitId),
+            formatLocale,
+            unit: unitOf(card.habitId),
+          ),
+        for (final ReplacementCard card in replacements)
+          replacementText(card, nameOf, unitOf, formatLocale),
+      ],
       setsOff: <List<String>>[
         for (final BeforeUseCard card in before)
           beforeUseText(
@@ -695,6 +757,7 @@ String insightsText({
   List<String> lastNight = const <String>[],
   String emptyTitle = InsightsPage.nothingClear,
   String emptyBody = InsightsPage.nothingClearBody,
+  List<List<String>> cuttingDown = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
   List<List<String>> shifts = const <List<String>>[],
 }) {
@@ -732,6 +795,12 @@ String insightsText({
       out.write(
         '${nameOf(r.habitId)}: ${refusalReason(r, nameOf, floors: floors)}\n',
       );
+    }
+  }
+  if (cuttingDown.isNotEmpty) {
+    out.write('\n${InsightsPage.cuttingDownHeading}\n');
+    for (final List<String> card in cuttingDown) {
+      out.write('\n${card.join('\n')}\n');
     }
   }
   if (setsOff.isNotEmpty) {

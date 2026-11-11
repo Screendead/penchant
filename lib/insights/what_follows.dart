@@ -26,6 +26,10 @@ class InsightGates {
     this.minAmountSpread = 0.1,
     this.minTimingSpreadMinutes = 30,
     this.maxCuts = 5,
+    this.minSerialPairs = 14,
+    this.maxSerialCorrelation = 0.9,
+    this.bootstrapBlockDays = 7,
+    this.bootstrapReplicates = 2000,
   });
 
   final int minDays;
@@ -64,6 +68,56 @@ class InsightGates {
   /// For a line in the amount or a cut-off time: the most places it is looked
   /// for. The result is judged as that many comparisons.
   final int maxCuts;
+
+  /// For a comparison whose rows are days: the fewest pairs of rows a day
+  /// apart before a standard error is widened for how much neighbouring days
+  /// resemble each other ([serialInflation]), and the most resemblance
+  /// allowed for. More pairs than any comparison has turns the widening off.
+  final int minSerialPairs;
+  final double maxSerialCorrelation;
+
+  /// For the same comparisons: a result whose t interval excludes zero must
+  /// also have a [blockBootstrapInterval] over blocks of this many days that
+  /// does. No replicates turns that off.
+  final int bootstrapBlockDays;
+  final int bootstrapReplicates;
+}
+
+/// [fit]'s coefficient [column] judged for rows that are [days] in order:
+/// the fit with its standard error widened for neighbouring days that
+/// resemble each other, the widening itself, and the block-bootstrap
+/// interval a finding must also clear.
+({LinearFit fit, double inflation, Interval? Function(double level) bootstrap})
+judgeDays(
+  List<List<double>> rows,
+  List<double> y,
+  LinearFit fit,
+  int column,
+  List<DateTime> days,
+  InsightGates gates,
+) {
+  final List<int> at = <int>[
+    for (final DateTime day in days) daysBetween(days.first, day),
+  ];
+  final Partialled parts = partialOut(rows, y, fit, column);
+  final double inflation = serialInflation(
+    parts,
+    at,
+    minPairs: gates.minSerialPairs,
+    maxCorrelation: gates.maxSerialCorrelation,
+  );
+  return (
+    fit: fit.judgedAs(inflation),
+    inflation: inflation,
+    bootstrap: (double level) => blockBootstrapInterval(
+      parts,
+      fit.coefficients[column],
+      at,
+      blockDays: gates.bootstrapBlockDays,
+      replicates: gates.bootstrapReplicates,
+      level: level,
+    ),
+  );
 }
 
 /// What a result compares.
@@ -167,7 +221,9 @@ enum RefusalReason {
   /// two cannot be told apart.
   entangled,
 
-  /// The adjusted interval includes zero.
+  /// The adjusted interval includes zero, or the interval from redrawing
+  /// the days in week-long blocks does; [HabitRefusal.interval] is the one
+  /// that does.
   withinNoise,
 
   /// For [InsightKind.dose] or [InsightKind.lastUse] on a sleep outcome: the
@@ -1077,14 +1133,16 @@ double doseStep(double sd, {required bool whole}) {
 
 // Whether [fit]'s interval for [column] crosses zero once the day that pulls
 // it furthest from zero is left out, by its DFBETA, (X'X)^-1 x_i e_i /
-// (1 - h_i), the change that day makes to the coefficients.
+// (1 - h_i), the change that day makes to the coefficients. [inflation] is
+// the widening [fit] already carries, given to the fit without that day too.
 bool withoutMostTelling(
   List<List<double>> rows,
   List<double> y,
   LinearFit fit,
   int column,
-  double level,
-) {
+  double level, {
+  double inflation = 1,
+}) {
   final List<List<double>> a = fit.inverseGram;
   final double sign = fit.coefficients[column].sign;
   int most = 0;
@@ -1114,7 +1172,8 @@ bool withoutMostTelling(
     <List<double>>[...rows.sublist(0, most), ...rows.sublist(most + 1)],
     <double>[...y.sublist(0, most), ...y.sublist(most + 1)],
   );
-  return without == null || without.interval(column, level: level).crossesZero;
+  return without == null ||
+      without.judgedAs(inflation).interval(column, level: level).crossesZero;
 }
 
 // Periods in which the habit's column takes more than one value.
@@ -1232,9 +1291,21 @@ HabitInsight _attribute(
     return judged.refuse(RefusalReason.entangled, entangledWith: partner());
   }
 
-  final LinearFit? fit = fitLeastSquares(rows, y);
-  if (fit == null) return judged.refuse(RefusalReason.tooFewDays);
+  final LinearFit? fitted = fitLeastSquares(rows, y);
+  if (fitted == null) return judged.refuse(RefusalReason.tooFewDays);
   const int column = 1;
+  final (
+    :LinearFit fit,
+    inflation: double widening,
+    :Interval? Function(double level) bootstrap,
+  ) = judgeDays(
+    rows,
+    y,
+    fitted,
+    column,
+    days,
+    gates,
+  );
   final double step = judged.step;
   final double effect = fit.coefficients[column] * step;
   final Interval perUnit = fit.interval(column, level: level);
@@ -1260,11 +1331,20 @@ HabitInsight _attribute(
   // A use comparison has a week of days on each side; an amount or a time
   // can hang on one extreme day.
   if (judged.kind != InsightKind.use &&
-      withoutMostTelling(rows, y, fit, column, level)) {
+      withoutMostTelling(rows, y, fit, column, level, inflation: widening)) {
     return judged.refuse(
       RefusalReason.oneDay,
       effect: effect,
       interval: interval,
+      pValue: pValue,
+    );
+  }
+  final Interval? redrawn = bootstrap(level);
+  if (redrawn != null && redrawn.crossesZero) {
+    return judged.refuse(
+      RefusalReason.withinNoise,
+      effect: effect,
+      interval: Interval(redrawn.low * step, redrawn.high * step),
       pValue: pValue,
     );
   }

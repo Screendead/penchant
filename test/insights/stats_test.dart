@@ -82,4 +82,162 @@ void main() {
       isNull,
     );
   });
+  double gaussian(Random r) =>
+      sqrt(-2 * log(1 - r.nextDouble())) * cos(2 * pi * r.nextDouble());
+
+  // Each value keeps [carry] of the one before.
+  List<double> carrying(Random r, int n, double carry) {
+    double last = 0;
+    return <double>[
+      for (int i = 0; i < n; i++) last = carry * last + gaussian(r),
+    ];
+  }
+
+  List<int> everyDay(int n) => <int>[for (int i = 0; i < n; i++) i];
+
+  test('partialling out gives back the coefficient and its variance', () {
+    final Random random = Random(1);
+    final List<List<double>> rows = <List<double>>[
+      for (int i = 0; i < 80; i++)
+        <double>[1, gaussian(random), i / 80, gaussian(random)],
+    ];
+    final List<double> y = <double>[
+      for (final List<double> row in rows)
+        3 + 2 * row[1] - row[2] + 0.5 * row[3] + gaussian(random),
+    ];
+    final LinearFit fit = fitLeastSquares(rows, y)!;
+    final Partialled parts = partialOut(rows, y, fit, 1);
+    double xy = 0, xx = 0;
+    for (int r = 0; r < rows.length; r++) {
+      xy +=
+          parts.own[r] *
+          (parts.own[r] * fit.coefficients[1] + parts.residual[r]);
+      xx += parts.own[r] * parts.own[r];
+    }
+    expect(xy / xx, closeTo(fit.coefficients[1], 1e-9));
+    expect(1 / xx, closeTo(fit.inverseGram[1][1], 1e-9));
+  });
+
+  test('days that resemble their neighbours count as fewer', () {
+    final Random random = Random(2);
+    final Partialled runs = (
+      own: carrying(random, 400, 0.7),
+      residual: carrying(random, 400, 0.7),
+    );
+    double inflation(Partialled parts, List<int> at) =>
+        serialInflation(parts, at, minPairs: 14, maxCorrelation: 0.9);
+    // (1 + 0.49) / (1 - 0.49) = 2.9 for the series themselves.
+    expect(inflation(runs, everyDay(400)), inInclusiveRange(2.0, 4.2));
+    final Partialled separate = (
+      own: carrying(random, 400, 0),
+      residual: carrying(random, 400, 0.7),
+    );
+    expect(inflation(separate, everyDay(400)), lessThan(1.3));
+    // Rows two days apart are no neighbours, so nothing is corrected.
+    expect(inflation(runs, <int>[for (int i = 0; i < 400; i++) 2 * i]), 1);
+    // An alternating column against residuals that carry over would narrow
+    // the interval: left alone.
+    final Partialled alternating = (
+      own: <double>[for (int i = 0; i < 400; i++) i.isEven ? 1 : -1],
+      residual: runs.residual,
+    );
+    expect(inflation(alternating, everyDay(400)), 1);
+  });
+
+  test('a fit judged as fewer rows is wider, with fewer degrees of '
+      'freedom', () {
+    final Random random = Random(3);
+    final List<List<double>> rows = <List<double>>[
+      for (int i = 0; i < 60; i++) <double>[1, gaussian(random)],
+    ];
+    final LinearFit fit = fitLeastSquares(rows, <double>[
+      for (final List<double> row in rows) row[1] + gaussian(random),
+    ])!;
+    expect(fit.judgedAs(1), same(fit));
+    final LinearFit third = fit.judgedAs(3);
+    expect(third.degreesOfFreedom, 60 ~/ 3 - 2);
+    expect(
+      third.standardError(1),
+      closeTo(fit.standardError(1) * sqrt(3), 1e-12),
+    );
+    expect(third.pValue(1), greaterThan(fit.pValue(1)));
+    expect(fit.judgedAs(100).degreesOfFreedom, 1);
+  });
+
+  Partialled through(List<double> own, List<double> y) {
+    double xy = 0, xx = 0;
+    for (int r = 0; r < own.length; r++) {
+      xy += own[r] * y[r];
+      xx += own[r] * own[r];
+    }
+    return (
+      own: own,
+      residual: <double>[
+        for (int r = 0; r < own.length; r++) y[r] - own[r] * xy / xx,
+      ],
+    );
+  }
+
+  double slope(Partialled parts, List<double> y) {
+    double xy = 0, xx = 0;
+    for (int r = 0; r < y.length; r++) {
+      xy += parts.own[r] * y[r];
+      xx += parts.own[r] * parts.own[r];
+    }
+    return xy / xx;
+  }
+
+  Interval? redrawn(Partialled parts, double coefficient, List<int> at) =>
+      blockBootstrapInterval(
+        parts,
+        coefficient,
+        at,
+        blockDays: 7,
+        replicates: 2000,
+        level: 0.95,
+      );
+
+  test('the block bootstrap interval covers a steady effect, the same '
+      'every time', () {
+    final Random random = Random(4);
+    final List<double> own = carrying(random, 200, 0);
+    final List<double> y = <double>[
+      for (final double x in own) 0.5 * x + gaussian(random),
+    ];
+    final Partialled parts = through(own, y);
+    final double coefficient = slope(parts, y);
+    final Interval interval = redrawn(parts, coefficient, everyDay(200))!;
+    expect(interval.low, lessThan(coefficient));
+    expect(interval.high, greaterThan(coefficient));
+    expect(interval.crossesZero, isFalse);
+    // 2 x 1.96 / sqrt(200) = 0.28 for independent days.
+    expect(interval.high - interval.low, inInclusiveRange(0.15, 0.45));
+    final Interval again = redrawn(parts, coefficient, everyDay(200))!;
+    expect(again.low, interval.low);
+    expect(again.high, interval.high);
+  });
+
+  test('an effect that rests on one week does not survive redrawing the '
+      'weeks', () {
+    final Random random = Random(5);
+    final List<double> own = <double>[
+      for (int i = 0; i < 200; i++) random.nextBool() ? 1 : -1,
+    ];
+    final List<double> y = <double>[
+      for (int i = 0; i < 200; i++)
+        0.1 * gaussian(random) + (i >= 50 && i < 57 ? 8 * own[i] : 0),
+    ];
+    final Partialled parts = through(own, y);
+    final double coefficient = slope(parts, y);
+    expect(coefficient, greaterThan(0.2));
+    expect(redrawn(parts, coefficient, everyDay(200))!.crossesZero, isTrue);
+  });
+
+  test('no block bootstrap when the days span less than a block', () {
+    final Partialled parts = (
+      own: <double>[1, -1, 1, -1],
+      residual: <double>[0.1, 0.2, -0.1, 0],
+    );
+    expect(redrawn(parts, 1, <int>[0, 1, 2, 3]), isNull);
+  });
 }
