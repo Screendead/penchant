@@ -109,6 +109,8 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
 - The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
   findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
   or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
+- A save of the last report in flight at sign-out can write the sealed file back after the folder is cleared; it
+  stays sealed and goes at another user's first use (the sample cache has the same exposure).
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
 - The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
@@ -117,6 +119,9 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
 
 ## After the fourth run (2026-11-11)
+
+Superseded on state by the section above: devices are on 0.2.0, #240 recovery time merged, #227 is closed, 0.2.0 is
+cut. Kept for the defaults, measurements and device checks below.
 
 The fourth run (`/finish-and-pitch`, 2026-11-10) merged #223 to #245 except as listed. Devices have build 1300
 (`master` at the instant-quit merge #244), which lacks payoff, replacement and the sample-size gates (#242, #243, #245,
@@ -911,6 +916,11 @@ Round 14's seven were picked on 2026-11-11; every earlier call is picked.
 
 ## For Jack to do (not decisions)
 
+- **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; read the
+  journal key line on the iPhone (Settings › Account Settings › Recovery key) for the `key-promotion` call; for the
+  Mac background app (#252), create the development profile for `com.screendead.penchant.sync`
+  (`xcodebuild -allowProvisioningUpdates`) and add that bundle id to the client API key's allowed apps; test Quit
+  on the Mac (log, Cmd+Q, reopen) and the second Insights open.
 - **Orphaned guest data cleanup runs as a dry run** (`dailyOrphanCleanup` in `functions/index.js`, 04:30 UTC;
   deployed 2026-11-07, first run 2026-11-08; overnight list B1). It logs "Orphan cleanup would delete" with each uid
   and its document counts once two runs a day apart find the account gone. Jack reads those logs for a few days
