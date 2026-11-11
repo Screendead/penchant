@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
@@ -9,12 +10,14 @@ import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/from_journal.dart';
+import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -28,8 +31,9 @@ final healthSourceProvider = Provider<HealthSource>(
   (ref) => ChannelHealthSource(),
 );
 
+// Read at each use, so a key loading mid-read costs no second full read.
 final healthStoreFileProvider = Provider<HealthStoreFile>(
-  (ref) => CacheHealthStoreFile(),
+  (ref) => SealedHealthStoreFile(() => ref.read(sealedFilesProvider)),
 );
 
 /// Whether this device has shown the Health sheet from Insights. Kept on the
@@ -104,6 +108,7 @@ Future<bool> connectHealth(ProviderContainer container) async {
   container.invalidate(healthConnectedProvider);
   // A read refused before the sheet was answered is kept as no samples.
   container.read(insightsSessionProvider)?.samples.clear();
+  unawaited(container.read(healthSampleCacheProvider)?.clear());
   container.invalidate(_samplesProvider);
   return true;
 }
@@ -201,8 +206,8 @@ const Duration hoursAfterReadTimeout = Duration(seconds: 60);
 /// The Health samples around the journal's uses that [hoursAfter] needs, by
 /// [HealthSampleMetric.id]: the time in bed over the past year in one read,
 /// then one span a day per measure, in pages, the measures side by side.
-/// A span ending before yesterday is read once per session: the Watch may
-/// still add to yesterday's.
+/// A span ending before yesterday is read once per session, and kept sealed
+/// on the device between launches: the Watch may still add to yesterday's.
 /// Empty when any read fails or [hoursAfterReadTimeout] passes, which leaves
 /// the hours-after comparisons out rather than the page: someone who
 /// connected Health before heart rate was read gets `not-determined` here,
@@ -213,6 +218,14 @@ final _samplesProvider = FutureProvider.autoDispose
           <String, List<HealthSample>>{};
       final HealthSource source = ref.read(healthSourceProvider);
       final InsightsSession? session = key.session;
+      final HealthSampleCache? disk = switch (ref.read(
+        healthSampleCacheProvider,
+      )) {
+        final HealthSampleCache cache when cache.uid == session?.uid => cache,
+        _ => null,
+      };
+      final Map<SampleSpanKey, List<HealthSample>> settledSpans =
+          <SampleSpanKey, List<HealthSample>>{};
       final DateTime settled = addDays(startOfDay(key.today), -1);
       int spansRead = 0;
       int spansKept = 0;
@@ -230,6 +243,7 @@ final _samplesProvider = FutureProvider.autoDispose
           final bool keep = session != null && !span.end.isAfter(settled);
           if (keep) {
             if (session.samples[kept] case final List<HealthSample> known) {
+              settledSpans[kept] = known;
               spansKept++;
               got.addAll(known);
               continue;
@@ -251,13 +265,18 @@ final _samplesProvider = FutureProvider.autoDispose
                 spanSamples.addAll(samples);
             }
           }
-          if (keep) session.samples[kept] = spanSamples;
+          if (keep) {
+            session.samples[kept] = spanSamples;
+            settledSpans[kept] = spanSamples;
+          }
           got.addAll(spanSamples);
         }
         return got;
       }
 
       Future<Map<String, List<HealthSample>>> readAll() async {
+        if (disk != null) await session!.loadSamples(disk);
+        if (!ref.mounted) return none;
         final List<HealthSample>? bed = await read(HealthSampleMetric.bed, [
           (start: insightsBedFrom(key.today), end: startOfDay(key.today)),
         ]);
@@ -273,6 +292,7 @@ final _samplesProvider = FutureProvider.autoDispose
             read(m, plan.reads),
         ]);
         if (got.contains(null)) return none;
+        if (disk != null) unawaited(disk.keepOnly(settledSpans));
         return <String, List<HealthSample>>{
           HealthSampleMetric.bed.id: bed,
           for (int i = 0; i < insightsSampleMetrics.length; i++)

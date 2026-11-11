@@ -1,14 +1,14 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:tracker/crypto/sealed_files.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 
 // Health values stay on the device: the store is a file in Caches, which iOS
-// leaves out of backups, so nothing read from Health reaches iCloud.
+// leaves out of backups, so nothing read from Health reaches iCloud, and it
+// is sealed with the journal key.
 
 /// Where the daily values kept between opens of Insights live.
 abstract interface class HealthStoreFile {
@@ -18,23 +18,34 @@ abstract interface class HealthStoreFile {
   Future<void> write(String contents);
 }
 
-class CacheHealthStoreFile implements HealthStoreFile {
-  Future<File> get _file async =>
-      File('${(await getApplicationCacheDirectory()).path}/health-daily.json');
+/// health-daily, sealed with the journal key. With no key loaded nothing is
+/// read and a write fails, so the sync reads in full and HealthKit names its
+/// changes again.
+class SealedHealthStoreFile implements HealthStoreFile {
+  SealedHealthStoreFile(this._files);
+
+  final SealedFiles? Function() _files;
+
+  static const String name = 'health-daily';
 
   @override
   Future<String?> read() async {
-    final File file = await _file;
-    return await file.exists() ? await file.readAsString() : null;
+    final SealedFiles? files = _files();
+    if (files == null) return null;
+    final Uint8List? bytes = await files.read(name);
+    if (bytes == null) return null;
+    try {
+      return utf8.decode(bytes);
+    } on FormatException {
+      return null;
+    }
   }
 
   @override
   Future<void> write(String contents) async {
-    final File file = await _file;
-    await file.parent.create(recursive: true);
-    final File next = File('${file.path}.next');
-    await next.writeAsString(contents, flush: true);
-    await next.rename(file.path);
+    final SealedFiles? files = _files();
+    if (files == null) throw StateError('No journal key on this device');
+    await files.write(name, utf8.encode(contents));
   }
 }
 
