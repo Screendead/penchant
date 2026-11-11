@@ -67,7 +67,145 @@ void run(
   );
 }
 
+// The share of seeds with a fall found, the entries alone, with the search
+// over candidate days unjudged (the rule before it was) and judged at each
+// [PayoffGates.searchSignificance].
+void fallsFound(String name, PayoffDays Function(int seed) make) {
+  final List<String> rates = <String>[];
+  for (final double level in <double>[1, 0.02, 0.05]) {
+    final PayoffGates gates = PayoffGates(searchSignificance: level);
+    int falls = 0;
+    for (int seed = 0; seed < seeds; seed++) {
+      final PayoffDays d = make(seed);
+      if (findFalls(
+        DailyHabitSeries.fromUses(d.uses),
+        d.through,
+        gates: gates,
+      ).isNotEmpty) {
+        falls++;
+      }
+    }
+    rates.add('${level == 1 ? 'unjudged' : 'at $level'} ${pct(falls, seeds)}');
+  }
+  stdout.writeln('$name ($seeds seeds): fall found ${rates.join(', ')}');
+}
+
+int _poisson(Random r, double rate) {
+  final double limit = exp(-rate);
+  int k = 0;
+  for (double p = r.nextDouble(); p > limit; p *= r.nextDouble()) {
+    k++;
+  }
+  return k;
+}
+
+// A steady habit whose days are not alike: [rate] a day on average, with
+// [weekend] times a weekday's rate on Saturday and Sunday, and each week's
+// rate multiplied by exp([spread] x z), z an AR(1) at [carry] from week to
+// week.
+PayoffDays unevenDays(
+  int seed, {
+  required double rate,
+  double weekend = 1,
+  double spread = 0,
+  double carry = 0,
+  int days = 182,
+}) {
+  final Random r = Random(seed);
+  final List<HabitUse> uses = <HabitUse>[];
+  final double weekday = rate * 7 / (5 + 2 * weekend);
+  double z = gaussian(r);
+  for (int i = 0; i < days; i++) {
+    final DateTime day = addDays(syntheticStart, i);
+    if (i % 7 == 0) z = carry * z + sqrt(1 - carry * carry) * gaussian(r);
+    final int count = _poisson(
+      r,
+      weekday * (day.weekday >= 6 ? weekend : 1) * exp(spread * z),
+    );
+    for (int k = 0; k < count; k++) {
+      uses.add(
+        HabitUse(
+          habitId: 'Coffee',
+          at: day.add(Duration(minutes: 8 * 60 + 45 * k)),
+          amount: 1,
+        ),
+      );
+    }
+  }
+  return (
+    uses: uses,
+    outcomes: const <DailyOutcome>[],
+    through: addDays(syntheticStart, days - 1),
+    fallDay: null,
+  );
+}
+
 void main() {
+  test('a fall: the search over candidate days, judged or not', () {
+    for (final double rate in <double>[3, 1, 0.5, 0.25]) {
+      fallsFound(
+        '$rate a day, steady',
+        (s) => payoffDays(s, fallAt: null, rateBefore: rate, rateAfter: rate),
+      );
+    }
+    for (final double rate in <double>[1, 0.5]) {
+      fallsFound(
+        '$rate a day, steady, a year',
+        (s) => payoffDays(
+          s,
+          days: 365,
+          fallAt: null,
+          rateBefore: rate,
+          rateAfter: rate,
+        ),
+      );
+    }
+    for (final double rate in <double>[3, 1, 0.5]) {
+      fallsFound(
+        '$rate a day, steady, weekend days 4 times a weekday',
+        (s) => unevenDays(s, rate: rate, weekend: 4),
+      );
+      fallsFound(
+        '$rate a day, steady, weeks differing (spread 0.4)',
+        (s) => unevenDays(s, rate: rate, spread: 0.4),
+      );
+      fallsFound(
+        '$rate a day, steady, weeks in runs (spread 0.4, carry 0.6)',
+        (s) => unevenDays(s, rate: rate, spread: 0.4, carry: 0.6),
+      );
+    }
+    for (final double rate in <double>[3, 1, 0.5]) {
+      for (final int weeks in <int>[4, 6, 8, 13]) {
+        fallsFound(
+          '$rate a day to ${rate / 2}, $weeks weeks ago',
+          (s) => payoffDays(
+            s,
+            days: 91 + 7 * weeks,
+            rateBefore: rate,
+            rateAfter: rate / 2,
+          ),
+        );
+      }
+      fallsFound(
+        '$rate a day to none, 8 weeks ago',
+        (s) => payoffDays(s, days: 147, rateBefore: rate, rateAfter: 0),
+      );
+    }
+    fallsFound(
+      '0.5 a day to none, 4 weeks ago',
+      (s) => payoffDays(s, days: 119, rateBefore: 0.5, rateAfter: 0),
+    );
+    final Stopwatch watch = Stopwatch()..start();
+    for (int seed = 0; seed < 20; seed++) {
+      final PayoffDays d = payoffDays(seed, days: 1095, fallAt: 1004);
+      findFalls(DailyHabitSeries.fromUses(d.uses), d.through);
+    }
+    stdout.writeln(
+      'three years, a halving 13 weeks ago: '
+      '${watch.elapsedMilliseconds ~/ 20} ms a habit',
+    );
+  });
+
   test('a fall with nothing behind it: noise', () {
     run('independent days', (s) => payoffDays(s));
     run('AR(1) 0.6', (s) => payoffDays(s, ar: 0.6));
