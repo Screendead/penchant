@@ -37,6 +37,8 @@ an extrapolation. The cards say "went with" for these, never "caused".
 | Wrist temperature | 0.1 °C | Kept | Shilaih 2018: wrist skin temperature rises about 0.33 °C after ovulation, a measurable shift but a signal, not an effect of the change; no source gives one. |
 | Step count | 500 steps | Sourced | Banach 2023 (meta-analysis of 17 cohorts, 226,889 people): each 500 more steps a day went with 7% lower cardiovascular mortality (HR 0.93, 0.91 to 0.95); each 1,000, 15% lower all-cause mortality. |
 | Active energy | 85 kcal | Inferred | Strain 2020 (UK Biobank, 96,476 wrist-worn): 20 against 15 kJ/kg/day of activity energy went with 21% (4 to 35%) lower mortality. 5 kJ/kg/day at a 70 kg reference is 350 kJ, about 84 kcal; the app reads no body mass, and Apple's active energy approximates but is not the study's estimate. |
+| Workout time | 15 min | Inferred | Wen 2011 (Lancet, over 400,000 Taiwanese adults, about 8 years): about 15 min a day (92 min a week) of moderate exercise went with 14% lower all-cause mortality than none, and each further 15 min a day with 4% lower. The exercise was self-reported, not recorded workouts; read in search summaries quoting the paper (added 2026-11-11). |
+| Mindful time | 13 min | Inferred | Basso 2019 (Behav Brain Res, 42 non-meditators randomised): 13 min of guided meditation a day for 8 weeks lowered negative mood and state anxiety and improved attention and memory against 13 min of podcasts; nothing differed at 4 weeks. A daily dose kept up for weeks, not a one-day change; read in the PubMed abstract's summary (added 2026-11-11). |
 
 ## The noise check
 
@@ -78,6 +80,8 @@ floor rounded up at the digits shown ("under 22 min" for 21.4; "under 0.4 ms" fo
 - Blood oxygen: "Each point lower at night went with 33% more heart events, in dialysis (Zoccali 2002)."
 - Steps: "Each 500 more steps a day went with 7% lower heart-disease death (Banach 2023)."
 - Active energy: "About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower mortality (Strain 2020)."
+- Workout time: "About 15 min of exercise a day went with 14% lower mortality than none (Wen 2011)."
+- Mindful time: "13 min of meditation a day for 8 weeks lowered negative mood against a podcast (Basso 2019)."
 
 ## Sources
 
@@ -120,4 +124,9 @@ floor rounded up at the digits shown ("under 22 min" for 21.4; "under 0.4 ms" fo
   mortality: a meta-analysis. *Eur J Prev Cardiol* 2023;30(18):1975–1985. doi:10.1093/eurjpc/zwad229
 - Strain T, Wijndaele K, Dempsey PC, et al. Wearable-device-measured physical activity and future health risk.
   *Nat Med* 2020. doi:10.1038/s41591-020-1012-3
+- Wen CP, Wai JPM, Tsai MK, et al. Minimum amount of physical activity for reduced mortality and extended life
+  expectancy: a prospective cohort study. *Lancet* 2011;378(9798):1244–1253. PubMed 21846575
+- Basso JC, McHale A, Ende V, Oberlin DJ, Suzuki WA. Brief, daily meditation enhances attention, memory, mood, and
+  emotional regulation in non-experienced meditators. *Behav Brain Res* 2019;356:208–220.
+  doi:10.1016/j.bbr.2018.08.023
 - Hopkins WG. Measures of reliability in sports medicine and science. *Sports Med* 2000;30(1):1–15.

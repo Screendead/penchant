@@ -549,6 +549,9 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
+     First step built (feat/insights-more-health, 2026-11-11): workout and mindful minutes a day as outcomes, read
+     types version 3 (the Insights card offers the sheet again). Not run on a device. Next: State of Mind (iOS 18),
+     then cycle tracking, then places.
 
 ### Third run (`/finish-and-pitch`, 2026-11-09)
 
