@@ -156,13 +156,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     if (pinnedDay != null) {
       _selectDay(ref.read(todayProvider));
     }
-    logOne(
-      ref,
-      ScaffoldMessenger.of(context),
-      vice,
-      from: from,
-      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-    );
+    logOne(ref, context, vice, from: from);
   }
 
   // From a key or the menu bar, which have no bead to fly in.

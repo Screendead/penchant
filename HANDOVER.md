@@ -908,6 +908,13 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
   the first test, so a merge gets its e2e result in about 20 to 27 minutes (iOS), macOS smoke in about 6 to 12
   (pitch: `docs/pitch/e2e-fast/pitch.html`).
 
+- `quick-log-prompt`: Jack, 2026-11-11: "can you have the app prompt me to record what was going on in the journal
+  when i quick-record a habit usage?" Built in the app (`lib/writes/what_was_going_on.dart`): a quick log's bar
+  (tally `+`, Log-fan wedge, Cmd-1…9) carries "What was going on?" under the message, beside Undo; it opens the
+  trigger picker for that entry and saves what is picked. Non-blocking, rather than a picker that opens by itself.
+  Tapping it closes the bar, so Undo for that entry goes with it (the editor's Delete still works). Decided (Jack, 2026-11-11,
+  "i agree with your plan"): this form, not a picker on every quick log.
+
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), two calls:
