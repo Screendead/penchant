@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tracker/account/sign_out.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
+import 'package:tracker/crypto/key_store.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -32,6 +33,11 @@ class RecoveryKeyCopy {
   static const String noKey =
       'This device has no recovery key yet. One is made with your journal key '
       'and shows here.';
+  static const String keptInICloud = 'Journal key kept in iCloud Keychain.';
+  static const String keptOnDevice = 'Journal key kept on this device only.';
+  static String keychainStatus(int? status) => status == null
+      ? 'iCloud Keychain refused it.'
+      : 'iCloud Keychain refused it (status $status).';
   static const String copy = 'Copy';
   static const String copied =
       'Recovery key copied to this device only. It clears in 2 minutes.';
@@ -375,6 +381,14 @@ class _RecoveryKeyPageState extends ConsumerState<RecoveryKeyPage> {
           }),
           child: const Text(RecoveryKeyCopy.savedIt),
         ),
+        if (status.location case final KeyLocation location)
+          CardFoot(
+            location == KeyLocation.synced
+                ? RecoveryKeyCopy.keptInICloud
+                : RecoveryKeyCopy.keptOnDevice,
+          ),
+        if (status.location == KeyLocation.thisDevice && status.syncRefused)
+          CardFoot(RecoveryKeyCopy.keychainStatus(status.syncRefusalStatus)),
       ],
     );
   }

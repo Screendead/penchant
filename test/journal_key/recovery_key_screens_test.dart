@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
+import 'package:tracker/crypto/key_store.dart';
 import 'package:tracker/crypto/recovery_key.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
@@ -202,6 +203,72 @@ void main() {
         ], const Scaffold(body: RecoveryKeyCard())),
       );
       expect(find.text(RecoveryKeyCopy.cardTitle), findsNothing);
+    });
+  });
+
+  group('where the journal key is kept', () {
+    Future<void> openPage(WidgetTester tester, RecoveryKeyStatus status) async {
+      await tester.pumpWidget(
+        _app(<Override>[
+          recoveryKeyStatusProvider.overrideWithValue(status),
+        ], const RecoveryKeyPage()),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    final DateTime created = DateTime(2026, 11, 1);
+
+    testWidgets('says iCloud Keychain for a synced key', (tester) async {
+      await openPage(
+        tester,
+        RecoveryKeyStatus(
+          formatted: _formatted,
+          keyCreatedAt: created,
+          location: KeyLocation.synced,
+        ),
+      );
+      expect(find.text(RecoveryKeyCopy.keptInICloud), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.keptOnDevice), findsNothing);
+      expect(find.textContaining('refused'), findsNothing);
+    });
+
+    testWidgets('says this device only, with the keychain status when it '
+        'refused', (tester) async {
+      await openPage(
+        tester,
+        RecoveryKeyStatus(
+          formatted: _formatted,
+          keyCreatedAt: created,
+          location: KeyLocation.thisDevice,
+        ),
+      );
+      expect(find.text(RecoveryKeyCopy.keptOnDevice), findsOneWidget);
+      expect(find.textContaining('refused'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await openPage(
+        tester,
+        RecoveryKeyStatus(
+          formatted: _formatted,
+          keyCreatedAt: created,
+          location: KeyLocation.thisDevice,
+          syncRefused: true,
+          syncRefusalStatus: -34018,
+        ),
+      );
+      expect(find.text(RecoveryKeyCopy.keptOnDevice), findsOneWidget);
+      expect(
+        find.text('iCloud Keychain refused it (status -34018).'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('says nothing where the location is unknown', (tester) async {
+      await openPage(
+        tester,
+        RecoveryKeyStatus(formatted: _formatted, keyCreatedAt: created),
+      );
+      expect(find.textContaining('Journal key kept'), findsNothing);
     });
   });
 
