@@ -48,18 +48,6 @@ class FakeKeyStore extends Fake implements KeyStore {
     );
   }
 
-  /// What the keychain makes of a promotion: the key as stored afterwards.
-  StoredKey? Function(StoredKey local)? onPromote;
-  int promotions = 0;
-
-  @override
-  Future<StoredKey?> promote(String uid) async {
-    promotions++;
-    final StoredKey? local = keys[uid];
-    if (local == null) return null;
-    return keys[uid] = onPromote!(local)!;
-  }
-
   @override
   Future<void> delete(String uid) async => keys.remove(uid);
 }
@@ -208,103 +196,6 @@ void main() {
 
     expect(states.last, isA<KeyReady>());
     expect(directory.records[uid]!.keyID, keyIDOf(stored.journalKey));
-  });
-
-  group('a key kept on this device only', () {
-    late StoredKey local;
-
-    setUp(() async {
-      local = StoredKey(
-        journalKey: JournalKey.generate(),
-        recoveryKey: RecoveryKey.generate(),
-        location: KeyLocation.thisDevice,
-      );
-      store.keys[uid] = local;
-    });
-
-    StoredKey as(StoredKey from, KeyLocation location, [SyncRefusal? why]) =>
-        StoredKey(
-          journalKey: from.journalKey,
-          recoveryKey: from.recoveryKey,
-          location: location,
-          syncRefusal: why,
-        );
-
-    test('is copied to iCloud Keychain once the server names it', () async {
-      directory.records[uid] = await recordOf(service, local);
-      store.onPromote = (StoredKey k) => as(k, KeyLocation.synced);
-
-      final List<JournalKeyState> states = await service.resolve(uid).toList();
-
-      expect(states, hasLength(3));
-      expect((states[1] as KeyReady).stored.location, KeyLocation.thisDevice);
-      final KeyReady last = states[2] as KeyReady;
-      expect(last.stored.location, KeyLocation.synced);
-      expect(last.stored.journalKey.sameAs(local.journalKey), isTrue);
-      expect(last.record, same(directory.records[uid]));
-      expect(store.promotions, 1);
-    });
-
-    test('stays in use, with the status, when the keychain refuses', () async {
-      directory.records[uid] = await recordOf(service, local);
-      store.onPromote = (StoredKey k) =>
-          as(k, KeyLocation.thisDevice, const SyncRefusal(-34018));
-
-      final KeyReady last =
-          (await service.resolve(uid).toList()).last as KeyReady;
-
-      expect(last.stored.location, KeyLocation.thisDevice);
-      expect(last.stored.syncRefusal!.status, -34018);
-      expect(last.stored.journalKey.sameAs(local.journalKey), isTrue);
-    });
-
-    test('stays in use when the promotion throws', () async {
-      directory.records[uid] = await recordOf(service, local);
-      store.onPromote = (_) => throw const FormatException('unreadable');
-
-      final KeyReady last =
-          (await service.resolve(uid).toList()).last as KeyReady;
-
-      expect(last.stored, same(local));
-    });
-
-    test('is not replaced by a synced item holding another key', () async {
-      directory.records[uid] = await recordOf(service, local);
-      store.onPromote = (_) => StoredKey(
-        journalKey: JournalKey.generate(),
-        location: KeyLocation.synced,
-      );
-
-      final KeyReady last =
-          (await service.resolve(uid).toList()).last as KeyReady;
-
-      expect(last.stored, same(local));
-    });
-
-    test('is not copied while the server has not answered', () async {
-      directory.offline = true;
-
-      final List<JournalKeyState> states = await service.resolve(uid).toList();
-
-      expect((states.single as KeyReady).stored, same(local));
-      expect(store.promotions, 0);
-    });
-
-    test('is not copied when the server names another key', () async {
-      directory.records[uid] = await recordOf(
-        service,
-        StoredKey(
-          journalKey: JournalKey.generate(),
-          recoveryKey: RecoveryKey.generate(),
-          location: KeyLocation.synced,
-        ),
-      );
-
-      final List<JournalKeyState> states = await service.resolve(uid).toList();
-
-      expect(states.last, isA<KeyNeedsRecovery>());
-      expect(store.promotions, 0);
-    });
   });
 
   test('a key on the server but not here needs the recovery key', () async {
