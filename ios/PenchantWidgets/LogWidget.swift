@@ -19,6 +19,7 @@ struct LogEntry: TimelineEntry {
   let chosen: [String]
   // The log this entry offers to undo; nil once its window has passed.
   let undo: LastLog?
+  var waiting = false
 }
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -28,26 +29,31 @@ struct LogProvider: AppIntentTimelineProvider {
   }
 
   func snapshot(for configuration: LogWidgetIntent, in context: Context) async -> LogEntry {
+    let now = Date()
     let snapshot = Snapshot.load() ?? (context.isPreview ? .preview : nil)
-    return LogEntry(date: Date(), snapshot: snapshot, chosen: ids(configuration), undo: nil)
+    return LogEntry(
+      date: now, snapshot: snapshot, chosen: ids(configuration), undo: nil,
+      waiting: !context.isPreview && QueuedWait.current(now: now).waiting(at: now))
   }
 
   // Undo shows until its window closes, then a second entry takes it away.
-  // Midnight moves today's counts on.
+  // Midnight moves today's counts on. On the Mac, logs no helper will write
+  // say so once past their hold.
   func timeline(for configuration: LogWidgetIntent, in context: Context) async -> Timeline<LogEntry> {
     let now = Date()
     let snapshot = Snapshot.load()
     let chosen = ids(configuration)
-    var entries: [LogEntry] = []
-    if let last = LastLog.load(), last.undoUntil > now {
-      entries.append(LogEntry(date: now, snapshot: snapshot, chosen: chosen, undo: last))
-      entries.append(LogEntry(date: last.undoUntil, snapshot: snapshot, chosen: chosen, undo: nil))
-    } else {
-      entries.append(LogEntry(date: now, snapshot: snapshot, chosen: chosen, undo: nil))
-    }
+    let wait = QueuedWait.current(now: now)
+    let last = LastLog.load().flatMap { $0.undoUntil > now ? $0 : nil }
     let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))!
-    entries.append(LogEntry(date: midnight, snapshot: snapshot, chosen: chosen, undo: nil))
-    return Timeline(entries: entries, policy: .atEnd)
+    let dates = [now] + (last.map { [$0.undoUntil] } ?? []) + [midnight]
+    let entries = wait.dates(dates, now: now).map { date in
+      LogEntry(
+        date: date, snapshot: snapshot, chosen: chosen, undo: last.flatMap { date < $0.undoUntil ? $0 : nil },
+        waiting: wait.waiting(at: date))
+    }
+    let policy: TimelineReloadPolicy = wait.recheck.map { .after($0) } ?? .atEnd
+    return Timeline(entries: entries, policy: policy)
   }
 
   private func ids(_ configuration: LogWidgetIntent) -> [String] {
@@ -91,7 +97,7 @@ struct LogView: View {
       } else {
         LogFace(
           family: family, habits: habits.map { habit in today.habits.first { $0.id == habit.id }! },
-          undo: entry.undo)
+          undo: entry.undo, waiting: entry.waiting)
       }
     } else {
       message("Open Penchant to log from here.")
@@ -112,6 +118,7 @@ struct LogFace: View {
   let family: WidgetFamily
   let habits: [HabitWeek]
   let undo: LastLog?
+  var waiting = false
 
   var body: some View {
     let hero = habits[0]
@@ -121,6 +128,7 @@ struct LogFace: View {
         Text(hero.habit.name).font(Typeface.display(13, .bold)).foregroundStyle(Palette.text).lineLimit(1)
         HeroDial(habit: hero, undo: undo(for: hero), badge: 28)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if waiting { WaitingNotice() }
       }
     case .systemMedium:
       HStack(spacing: 14) {
@@ -128,6 +136,7 @@ struct LogFace: View {
         VStack(alignment: .leading, spacing: 8) {
           Text(hero.habit.name).font(Typeface.display(17, .bold)).foregroundStyle(Palette.text).lineLimit(1)
           ForEach(habits.dropFirst().prefix(2)) { HabitPill(habit: $0, undo: undo(for: $0)) }
+          if waiting { WaitingNotice() }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
@@ -147,6 +156,7 @@ struct LogFace: View {
           ForEach(habits.dropFirst()) { HabitPill(habit: $0, undo: undo(for: $0)) }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        if waiting { WaitingNotice().frame(maxWidth: .infinity, alignment: .leading) }
       }
     }
   }
