@@ -61,7 +61,7 @@ final class MenuModel: ObservableObject {
 
   func refresh() {
     snapshot = Snapshot.load()
-    last = LastLog.load().flatMap { $0.undoUntil > Date() ? $0 : nil }
+    last = LastLog.current()
     appRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: mainAppID).isEmpty
     pending = LogQueue.pending().count
     waiting = FlushLauncher.waiting
@@ -102,6 +102,15 @@ final class MenuModel: ObservableObject {
     refresh()
   }
 
+  // Penchant writes the log if it has not yet, then asks; launched if closed
+  // and brought out of flush mode if running so (AppDelegate.application(_:open:)).
+  func ask() {
+    guard let last, let url = EntryLink.url(last), let app = FlushLauncher.appURL else { return }
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.activates = true
+    NSWorkspace.shared.open([url], withApplicationAt: app, configuration: configuration)
+  }
+
   func openApp() {
     guard let url = FlushLauncher.appURL else { return }
     let configuration = NSWorkspace.OpenConfiguration()
@@ -122,6 +131,7 @@ struct MenuContent: View {
 
   static let signedOut = "Sign in to Penchant to log from here."
   static let noHabits = "No habits yet. Add one in Penchant."
+  static let ask = "What was going on?"
 
   static func waiting(_ waiting: FlushLauncher.Waiting) -> String {
     switch waiting {
@@ -203,13 +213,31 @@ struct MenuContent: View {
       Text("Penchant could not save that. Try again in the app.")
         .font(Typeface.text(12)).foregroundStyle(Palette.muted)
     } else if let last = model.last, let habit = model.snapshot?.habit(last.viceID) {
-      HStack {
-        Text("Logged 1 \(habit.unitOne) of \(habit.name)").font(Typeface.text(12)).foregroundStyle(Palette.muted)
-          .lineLimit(1)
-        Spacer()
-        Button("Undo") { model.undo() }.buttonStyle(.borderless).font(Typeface.text(12, .bold))
+      let now = Date()
+      VStack(alignment: .leading, spacing: 4) {
+        HStack {
+          Text("Logged 1 \(habit.unitOne) of \(habit.name)").font(Typeface.text(12)).foregroundStyle(Palette.muted)
+            .lineLimit(1)
+          Spacer()
+          if now < last.undoUntil {
+            Button("Undo") { model.undo() }.buttonStyle(.borderless).font(Typeface.text(12, .bold))
+          }
+        }
+        if last.askable(at: now) {
+          Button(Self.ask) { model.ask() }.buttonStyle(.borderless).font(Typeface.text(12, .bold))
+            .foregroundStyle(Palette.ink(habit.slot))
+            .help("Opens Penchant to add what was going on to this entry.")
+        }
+        waitingNotice
       }
-    } else if model.pending > 0 && !model.appRunning {
+    } else {
+      waitingNotice
+    }
+  }
+
+  @ViewBuilder
+  private var waitingNotice: some View {
+    if model.pending > 0 && !model.appRunning {
       Text(Self.waiting(model.waiting)).font(Typeface.text(12)).foregroundStyle(Palette.muted)
     }
   }

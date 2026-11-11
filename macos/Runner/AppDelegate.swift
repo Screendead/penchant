@@ -139,6 +139,28 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 
+  // A widget's or the menu bar's "What was going on?" (EntryLink). It is not
+  // a reopen, so a flush-mode run becomes the normal app here. After this
+  // turn of the run loop: at launch it can come before
+  // applicationDidFinishLaunching.
+  override func application(_ application: NSApplication, open urls: [URL]) {
+    let others = urls.filter { !EntryPrompt.open($0) }
+    if others.count < urls.count {
+      DispatchQueue.main.async {
+        if FlushMode.active {
+          self.leaveFlushMode()
+        } else {
+          self.showMainWindow()
+        }
+      }
+    }
+    if !others.isEmpty,
+      FlutterAppDelegate.instancesRespond(to: #selector(NSApplicationDelegate.application(_:open:)))
+    {
+      super.application(application, open: others)
+    }
+  }
+
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
     return true
   }
