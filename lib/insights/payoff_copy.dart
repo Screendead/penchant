@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:intl/intl.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/formats.dart';
@@ -68,21 +70,20 @@ List<PayoffCard> payoffCards(
   });
 }
 
-// A rate under one a day reads by the week.
-String _rates(HabitFall fall, Unit unit, String locale) {
-  final bool weekly = fall.before < 1;
-  final double before = fall.before * (weekly ? 7 : 1);
-  final double since = fall.since * (weekly ? 7 : 1);
+/// "4 drinks a day to 1.5"; with [since] zero, "4 drinks a day". When
+/// neither reaches one a day, both read by the week.
+String amountRates(double before, double since, Unit unit, String locale) {
+  final bool weekly = max(before, since) < 1;
+  final double from = before * (weekly ? 7 : 1);
+  final double to = since * (weekly ? 7 : 1);
   String number(double v) =>
       NumberFormat(v >= 10 ? '0' : '0.#', locale).format(v);
-  final double shown = double.parse(
-    before.toStringAsFixed(before >= 10 ? 0 : 1),
-  );
+  final double shown = double.parse(from.toStringAsFixed(from >= 10 ? 0 : 1));
   final String word = unit == Unit.time
       ? pluralWord(shown, one: 'use', other: 'uses')
       : unit.nameFor(shown);
-  final String from = '${number(before)} $word a ${weekly ? 'week' : 'day'}';
-  return fall.stopped ? from : '$from to ${number(since)}';
+  final String first = '${number(from)} $word a ${weekly ? 'week' : 'day'}';
+  return since == 0 ? first : '$first to ${number(to)}';
 }
 
 /// "Your logged amount of Coffee fell from about 4 drinks a day to 1.5
@@ -97,7 +98,7 @@ String fallSentence(
   Unit unit = Unit.fallback,
 }) {
   final String date = formatDate(fall.day);
-  final String rates = _rates(fall, unit, locale);
+  final String rates = amountRates(fall.before, fall.since, unit, locale);
   return fall.stopped
       ? 'No entries for $habit since $date, from about $rates before.'
       : 'Your logged amount of $habit fell from about $rates around $date.';

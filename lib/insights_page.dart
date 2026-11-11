@@ -25,6 +25,8 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/payoff_copy.dart';
+import 'package:tracker/insights/replacement.dart';
+import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -39,6 +41,7 @@ import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/widgets/payoff_card.dart';
+import 'package:tracker/widgets/replacement_card.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -383,7 +386,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         ],
       ),
       const CardSectionLabel(InsightsPage.cuttingDownHeading),
-      if (costs.payoffs.isEmpty)
+      if (costs.payoffs.isEmpty && costs.replacements.isEmpty)
         const NotYetBox(
           InsightsPage.cuttingDownTitle,
           body: InsightsPage.cuttingDownBody,
@@ -412,6 +415,15 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                       '${payoffRefusal(refused)}',
                 ),
           ],
+        ),
+      for (final (int i, ReplacementCard card) in costs.replacements.indexed)
+        ReplacementCardView(
+          card: card,
+          nameOf: costs.nameOf,
+          unitOf: costs.unitOf,
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top: i == 0 && costs.payoffs.isEmpty ? 0 : DialSpace.xs,
         ),
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty &&
@@ -588,6 +600,10 @@ class _Costs {
       for (final Payoff p in report.payoffs)
         if (_names.containsKey(p.habitId)) p,
     ], floors: report.floors);
+    replacements = replacementCards(<Replacement>[
+      for (final Replacement r in report.replacements)
+        if (_names.containsKey(r.habitId) && _names.containsKey(r.riserId)) r,
+    ]);
     calendar = afterEventCards(<AfterEvent>[
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
@@ -605,6 +621,7 @@ class _Costs {
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
   late final List<PayoffCard> payoffs;
+  late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
   late final List<FollowsCard> follows;
   late final DateTime? firstDay;
@@ -673,6 +690,8 @@ class _Costs {
             formatLocale,
             unit: unitOf(card.habitId),
           ),
+        for (final ReplacementCard card in replacements)
+          replacementText(card, nameOf, unitOf, formatLocale),
       ],
       setsOff: <List<String>>[
         for (final BeforeUseCard card in before)

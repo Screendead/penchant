@@ -234,56 +234,83 @@ Map<String, HabitFall> findFalls(
     final DateTime? first = habits.firstUse(id);
     if (first == null) continue;
     final List<DateTime> days = daysFrom(first, last).toList();
-    final int n = days.length;
-    final List<double> sums = List<double>.filled(n + 1, 0);
-    for (int i = 0; i < n; i++) {
-      sums[i + 1] = sums[i] + habits.total(id, days[i]);
-    }
-    double best = 0;
-    HabitFall? fall;
-    for (int c = gates.minBaselineDays; c <= n - gates.minSinceDays; c++) {
-      final int from = max(0, c - gates.baselineDays);
-      final double before = (sums[c] - sums[from]) / (c - from);
-      final double since = (sums[n] - sums[c]) / (n - c);
-      final double recent =
-          (sums[n] - sums[n - gates.recentDays]) / gates.recentDays;
-      final double limit = (1 - gates.minFall) * before;
-      if (before <= 0 || since > limit || recent > limit) continue;
-      final List<double> weeksBefore = <double>[
-        for (int end = c; end - 7 >= from; end -= 7) sums[end] - sums[end - 7],
-      ];
-      final List<double> weeksSince = <double>[
-        for (int start = c; start + 7 <= n; start += 7)
-          sums[start + 7] - sums[start],
-      ];
-      if (weeksBefore.length < 2 || weeksSince.length < 2) continue;
-      final double a = sampleVariance(weeksBefore) / weeksBefore.length;
-      final double b = sampleVariance(weeksSince) / weeksSince.length;
-      final double difference = mean(weeksBefore) - mean(weeksSince);
-      if (difference <= 0) continue;
-      final double t = a + b == 0 ? double.infinity : difference / sqrt(a + b);
-      if (t <= best) continue;
-      if (a + b > 0) {
-        final double df =
-            (a + b) *
-            (a + b) /
-            (a * a / (weeksBefore.length - 1) +
-                b * b / (weeksSince.length - 1));
-        if (1 - studentTCdf(t, df) >= gates.fallSignificance) continue;
-      }
-      best = t;
-      fall = HabitFall(
-        habitId: id,
-        day: days[c],
-        from: days[from],
-        before: before,
-        since: since,
-        sinceDays: n - c,
-      );
-    }
-    if (fall != null) falls[id] = fall;
+    final ShiftSplit? split = bestShift(<double>[
+      for (final DateTime day in days) habits.total(id, day),
+    ], gates);
+    if (split == null) continue;
+    falls[id] = HabitFall(
+      habitId: id,
+      day: days[split.at],
+      from: days[split.from],
+      before: split.before,
+      since: split.since,
+      sinceDays: days.length - split.at,
+    );
   }
   return falls;
+}
+
+/// Where daily totals split: the baseline runs from index [from] up to [at],
+/// the first day at the new level, with the mean a day on each side.
+typedef ShiftSplit = ({int at, int from, double before, double since});
+
+/// The split of [totals], one a day, that [findFalls] describes; with
+/// [rising], its mirror: the mean since, and over the latest
+/// [PayoffGates.recentDays], above zero and at least [PayoffGates.minFall]
+/// over the baseline's, which may be zero. Null when no day qualifies.
+ShiftSplit? bestShift(
+  List<double> totals,
+  PayoffGates gates, {
+  bool rising = false,
+}) {
+  final int n = totals.length;
+  final List<double> sums = List<double>.filled(n + 1, 0);
+  for (int i = 0; i < n; i++) {
+    sums[i + 1] = sums[i] + totals[i];
+  }
+  double best = 0;
+  ShiftSplit? split;
+  for (int c = gates.minBaselineDays; c <= n - gates.minSinceDays; c++) {
+    final int from = max(0, c - gates.baselineDays);
+    final double before = (sums[c] - sums[from]) / (c - from);
+    final double since = (sums[n] - sums[c]) / (n - c);
+    final double recent =
+        (sums[n] - sums[n - gates.recentDays]) / gates.recentDays;
+    if (rising) {
+      final double limit = (1 + gates.minFall) * before;
+      if (since <= 0 || recent <= 0 || since < limit || recent < limit) {
+        continue;
+      }
+    } else {
+      final double limit = (1 - gates.minFall) * before;
+      if (before <= 0 || since > limit || recent > limit) continue;
+    }
+    final List<double> weeksBefore = <double>[
+      for (int end = c; end - 7 >= from; end -= 7) sums[end] - sums[end - 7],
+    ];
+    final List<double> weeksSince = <double>[
+      for (int start = c; start + 7 <= n; start += 7)
+        sums[start + 7] - sums[start],
+    ];
+    if (weeksBefore.length < 2 || weeksSince.length < 2) continue;
+    final double a = sampleVariance(weeksBefore) / weeksBefore.length;
+    final double b = sampleVariance(weeksSince) / weeksSince.length;
+    final double difference =
+        (rising ? -1 : 1) * (mean(weeksBefore) - mean(weeksSince));
+    if (difference <= 0) continue;
+    final double t = a + b == 0 ? double.infinity : difference / sqrt(a + b);
+    if (t <= best) continue;
+    if (a + b > 0) {
+      final double df =
+          (a + b) *
+          (a + b) /
+          (a * a / (weeksBefore.length - 1) + b * b / (weeksSince.length - 1));
+      if (1 - studentTCdf(t, df) >= gates.fallSignificance) continue;
+    }
+    best = t;
+    split = (at: c, from: from, before: before, since: since);
+  }
+  return split;
 }
 
 /// For each habit not in [skip] that [findFalls] gives a fall, each of
@@ -336,7 +363,7 @@ List<Payoff> payoff({
     for (final String metricId in metricIds) {
       out.add(
         other == null
-            ? _judge(fall, metricId, outcomes, last, gates)
+            ? measureSince(fall, metricId, outcomes, last, gates)
             : Payoff(
                 fall: fall,
                 metricId: metricId,
@@ -352,7 +379,9 @@ List<Payoff> payoff({
   return out;
 }
 
-Payoff _judge(
+/// [metricId] from [fall]'s baseline to [PayoffGates.sinceDays] after it or
+/// [last], by the model [payoff] describes; never [PayoffRefusal.otherFall].
+Payoff measureSince(
   HabitFall fall,
   String metricId,
   OutcomeSeries outcomes,

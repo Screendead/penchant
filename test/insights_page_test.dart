@@ -15,6 +15,8 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/replacement.dart';
+import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
@@ -989,6 +991,106 @@ void main() {
     expect(
       tester.getTopLeft(find.text('Range: 22 to 38 min more')).dy,
       lessThan(tester.getTopLeft(find.text(InsightsPage.setsOffHeading)).dy),
+    );
+  });
+
+  testWidgets('How cutting down is going shows a habit that rose as another '
+      'fell, in place of the nothing-yet box, and Copy as text carries it', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        runner: (_) async => InsightsReport(
+          findings: const <HabitFinding>[],
+          refused: const <HabitRefusal>[],
+          replacements: <Replacement>[
+            Replacement(
+              fall: HabitFall(
+                habitId: 'coffee',
+                day: DateTime(2026, 3, 3),
+                from: DateTime(2025, 12, 2),
+                before: 3,
+                since: 1.5,
+                sinceDays: 60,
+              ),
+              riserId: 'tea',
+              before: 1,
+              since: 2.5,
+              baselineDays: 91,
+              sinceDays: 60,
+              effect: 1.4,
+              interval: const stats.Interval(0.8, 2),
+              pValue: 0.001,
+            ),
+            Replacement(
+              fall: HabitFall(
+                habitId: 'tea',
+                day: DateTime(2026, 3, 3),
+                from: DateTime(2025, 12, 2),
+                before: 3,
+                since: 1.5,
+                sinceDays: 60,
+              ),
+              riserId: 'coffee',
+              before: 1,
+              since: 1.1,
+              baselineDays: 91,
+              sinceDays: 60,
+              effect: 0.1,
+              interval: const stats.Interval(-0.4, 0.6),
+              pValue: 0.7,
+              refusal: ReplacementRefusal.noRise,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text(InsightsPage.cuttingDownBody), findsNothing);
+    const String fell =
+        'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
+        'around March 3, 2026.';
+    const String rose =
+        'Around the same time, your logged amount of Tea rose from about 1 '
+        'item a day to 2.5, allowing for the trend it was already on.';
+    expect(find.text(fell), findsOneWidget);
+    expect(find.text(rose), findsOneWidget);
+    expect(find.text('Range: 0.8 to 2 more a day'), findsOneWidget);
+    expect(find.text('From 91 days before and 60 since'), findsOneWidget);
+    expect(find.text(replacementCaveat), findsOneWidget);
+    expect(find.textContaining('Your logged amount of Tea fell'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text(InsightsPage.cuttingDownHeading)).dy,
+      lessThan(tester.getTopLeft(find.text(rose)).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text(rose)).dy,
+      lessThan(tester.getTopLeft(find.text(InsightsPage.setsOffHeading)).dy),
+    );
+
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    await tester.ensureVisible(find.text(InsightsPage.copyLabel));
+    await tester.tap(find.text(InsightsPage.copyLabel));
+    await tester.pump();
+    expect(
+      copied,
+      contains(
+        '\n${InsightsPage.cuttingDownHeading}\n\nCoffee\n$fell\n$rose\n'
+        'Range: 0.8 to 2 more a day\nFrom 91 days before and 60 since\n'
+        '$replacementCaveat\n',
+      ),
     );
   });
 

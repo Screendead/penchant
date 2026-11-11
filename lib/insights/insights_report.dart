@@ -13,6 +13,7 @@ import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -167,12 +168,17 @@ class InsightsReport {
     this.follows = const <HabitFollows>[],
     this.beforeUse = const <BeforeUse>[],
     this.payoffs = const <Payoff>[],
+    this.replacements = const <Replacement>[],
     this.afterEvent = const <AfterEvent>[],
   });
 
   /// Each measure since a habit fell and stayed lower, findings and
   /// refusals, judged in the same family as [findings].
   final List<Payoff> payoffs;
+
+  /// Each other habit's amount since a habit fell, findings and refusals,
+  /// judged in the same family as [findings].
+  final List<Replacement> replacements;
 
   /// Whether each habit follows calendar events, findings and refusals,
   /// judged in the same family as [findings].
@@ -296,6 +302,11 @@ InsightsReport computeInsights(InsightsInput input) {
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<Replacement> replacements = replacement(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<AfterEvent> calendar = afterEvent(
     uses: input.uses,
     events: input.events,
@@ -322,9 +333,12 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
   ];
+  final List<double> replacementPs = <double>[
+    for (final Replacement r in replacements) ?r.pValue,
+  ];
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[...beforePs, ...followsPs, ...calendarPs, ...payoffPs],
+    alongside: <double>[...beforePs, ...followsPs, ...calendarPs, ...payoffPs, ...replacementPs],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -348,21 +362,31 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     follows: judgeHabitFollows(
       follows,
-      alongside: <double>[...afterPs, ...beforePs, ...calendarPs, ...payoffPs],
+      alongside: <double>[...afterPs, ...beforePs, ...calendarPs, ...payoffPs, ...replacementPs],
     ),
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[...afterPs, ...followsPs, ...calendarPs, ...payoffPs],
+      alongside: <double>[...afterPs, ...followsPs, ...calendarPs, ...payoffPs, ...replacementPs],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     payoffs: judgePayoffs(
       payoffs,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...calendarPs],
+      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...calendarPs, ...replacementPs],
       sizeOf: (Payoff p) => practicalSize(p.asFinding, floors: floors),
+    ),
+    replacements: judgeReplacements(
+      replacements,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...payoffPs,
+      ],
     ),
     afterEvent: judgeAfterEvent(
       calendar,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...payoffPs],
+      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...payoffPs, ...replacementPs],
     ),
     findings: shown,
     refused: <HabitRefusal>[
