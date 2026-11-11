@@ -23,6 +23,7 @@ import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/payoff_copy.dart';
 import 'package:tracker/insights/replacement.dart';
@@ -39,6 +40,7 @@ import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/widgets/payoff_card.dart';
 import 'package:tracker/widgets/replacement_card.dart';
@@ -77,6 +79,12 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String costsHeading = 'What it costs';
   static const String cuttingDownHeading = 'How cutting down is going';
   static const String setsOffHeading = 'What sets it off';
+  static const String shiftsHeading = 'What else changed';
+  static const String shiftsNote =
+      'A measure that moved to a new level and stayed there, as after an '
+      'illness or a new routine. Each habit is judged with these changes '
+      'allowed for, so one isn’t pinned on a habit that happened to change '
+      'at the same time.';
 
   /// Cards "What it costs" shows before its "more" row.
   static const int previewCards = 2;
@@ -459,6 +467,16 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               ? 0
               : DialSpace.xs,
         ),
+      if (costs.shifts.isNotEmpty)
+        const CardSectionLabel(InsightsPage.shiftsHeading),
+      for (final (int i, MeasureShift shift) in costs.shifts.indexed)
+        MeasureShiftCard(
+          shift: shift,
+          nameOf: costs.nameOf,
+          locale: formatLocale,
+          top: i == 0 ? 0 : DialSpace.xs,
+        ),
+      if (costs.shifts.isNotEmpty) const CardFoot(InsightsPage.shiftsNote),
       DialCard(
         children: <Widget>[
           CardRow(
@@ -608,6 +626,18 @@ class _Costs {
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
     ]);
+    shifts = <MeasureShift>[
+      for (final MeasureShift s in report.shifts)
+        MeasureShift(
+          metricId: s.metricId,
+          shift: s.shift,
+          found: s.found,
+          habits: <HabitChange>[
+            for (final HabitChange c in s.habits)
+              if (_names.containsKey(c.habitId)) c,
+          ],
+        ),
+    ];
     // A legacy entry of a vice that is gone would date the span from a habit
     // the page doesn't show.
     firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
@@ -624,6 +654,7 @@ class _Costs {
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
   late final List<FollowsCard> follows;
+  late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';
@@ -705,6 +736,10 @@ class _Costs {
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
       ],
+      shifts: <List<String>>[
+        for (final MeasureShift s in shifts)
+          measureShiftText(s, formatDate(s.shift.at), nameOf, formatLocale),
+      ],
     );
   }
 }
@@ -724,6 +759,7 @@ String insightsText({
   String emptyBody = InsightsPage.nothingClearBody,
   List<List<String>> cuttingDown = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
+  List<List<String>> shifts = const <List<String>>[],
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
   if (firstDay != null) out.write('\n${InsightsPage.span(firstDay)}');
@@ -772,6 +808,13 @@ String insightsText({
     for (final List<String> card in setsOff) {
       out.write('\n${card.join('\n')}\n');
     }
+  }
+  if (shifts.isNotEmpty) {
+    out.write('\n${InsightsPage.shiftsHeading}\n');
+    for (final List<String> card in shifts) {
+      out.write('\n${card.join('\n')}\n');
+    }
+    out.write('\n${InsightsPage.shiftsNote}\n');
   }
   out.write('\n${InsightsPage.foot}\n');
   return out.toString();

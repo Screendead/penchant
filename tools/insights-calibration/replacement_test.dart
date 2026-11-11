@@ -162,9 +162,9 @@ void main() {
           s,
           days: 365 * years,
           fallAt: null,
-          fallenShape: (i) => 1 + 0.5 * cos(2 * pi * (i - 270) / 365),
+          fallenShape: (i) => 1 + 0.5 * cos(2 * pi * (i - 230) / 365),
           riser: (i, r) =>
-              poisson(r, 2 * (1 - 0.5 * cos(2 * pi * (i - 270) / 365))),
+              poisson(r, 2 * (1 - 0.5 * cos(2 * pi * (i - 230) / 365))),
         ),
       );
     }

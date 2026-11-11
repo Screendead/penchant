@@ -12,6 +12,7 @@ import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
+import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
@@ -169,8 +170,13 @@ class InsightsReport {
     this.beforeUse = const <BeforeUse>[],
     this.payoffs = const <Payoff>[],
     this.replacements = const <Replacement>[],
+    this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
   });
+
+  /// The measures whose level changed and stayed changed, by date, judged in
+  /// the same family as [findings]; only those found.
+  final List<MeasureShift> shifts;
 
   /// Each measure since a habit fell and stayed lower, findings and
   /// refusals, judged in the same family as [findings].
@@ -336,9 +342,27 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> replacementPs = <double>[
     for (final Replacement r in replacements) ?r.pValue,
   ];
+  final ({List<MeasureShift> shifts, List<double> searched}) shifted =
+      measureShifts(
+        outcomes: outcomes,
+        habits: habits,
+        through: input.through,
+        skip: input.archived,
+      );
+  final List<double> shiftPs = <double>[
+    for (final MeasureShift s in shifted.shifts) s.shift.pValue,
+    ...shifted.searched,
+  ];
   for (final HabitInsight insight in controlFalseDiscoveries(
     after,
-    alongside: <double>[...beforePs, ...followsPs, ...calendarPs, ...payoffPs, ...replacementPs],
+    alongside: <double>[
+      ...beforePs,
+      ...followsPs,
+      ...calendarPs,
+      ...shiftPs,
+      ...payoffPs,
+      ...replacementPs,
+    ],
   )) {
     switch (insight) {
       case HabitFinding() when practicalSize(insight, floors: floors) < 1:
@@ -362,16 +386,16 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     follows: judgeHabitFollows(
       follows,
-      alongside: <double>[...afterPs, ...beforePs, ...calendarPs, ...payoffPs, ...replacementPs],
+      alongside: <double>[...afterPs, ...beforePs, ...calendarPs, ...shiftPs, ...payoffPs, ...replacementPs],
     ),
     beforeUse: judgeBeforeUse(
       before,
-      alongside: <double>[...afterPs, ...followsPs, ...calendarPs, ...payoffPs, ...replacementPs],
+      alongside: <double>[...afterPs, ...followsPs, ...calendarPs, ...shiftPs, ...payoffPs, ...replacementPs],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
     ),
     payoffs: judgePayoffs(
       payoffs,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...calendarPs, ...replacementPs],
+      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...calendarPs, ...shiftPs, ...replacementPs],
       sizeOf: (Payoff p) => practicalSize(p.asFinding, floors: floors),
     ),
     replacements: judgeReplacements(
@@ -381,13 +405,30 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...shiftPs,
         ...payoffPs,
       ],
     ),
     afterEvent: judgeAfterEvent(
       calendar,
-      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...payoffPs, ...replacementPs],
+      alongside: <double>[...afterPs, ...beforePs, ...followsPs, ...shiftPs, ...payoffPs, ...replacementPs],
     ),
+    shifts:
+        judgeMeasureShifts(
+            shifted.shifts,
+            alongside: <double>[
+              ...shifted.searched,
+              ...afterPs,
+              ...beforePs,
+              ...followsPs,
+              ...calendarPs,
+              ...payoffPs,
+              ...replacementPs,
+            ],
+            floors: floors,
+            q: const InsightGates().falseDiscoveryRate,
+          ).where((MeasureShift s) => s.found).toList()
+          ..sort((a, b) => a.shift.at.compareTo(b.shift.at)),
     findings: shown,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),
