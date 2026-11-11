@@ -78,6 +78,15 @@ class _Locked extends Notifier<bool> {
 
 final _lockedProvider = NotifierProvider<_Locked, bool>(_Locked.new);
 
+class _Waiting extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void arrive() => state = false;
+}
+
+final _waitingProvider = NotifierProvider<_Waiting, bool>(_Waiting.new);
+
 final Uint8List _key = RecoveryKey.generate(Random(11));
 final String _formatted = RecoveryKey.format(_key);
 
@@ -357,6 +366,91 @@ void main() {
       await tester.tap(find.text(RecoveryKeyCopy.showAgain));
       await tester.pumpAndSettle();
       expect(find.text(RecoveryKeyCopy.savedIt), findsOneWidget);
+    });
+  });
+
+  group('waiting for iCloud Keychain', () {
+    Future<void> pumpWaiting(
+      WidgetTester tester, {
+      required ProviderListenable<bool> awaiting,
+    }) async {
+      await tester.pumpWidget(
+        _app(<Override>[
+          journalNeedsRecoveryKeyProvider.overrideWithValue(true),
+          journalKeyAwaitingSyncProvider.overrideWith(
+            (ref) => ref.watch(awaiting),
+          ),
+          recoveryKeyActionsProvider.overrideWithValue(_FakeActions()),
+          accountProvider.overrideWithValue(FakeAccount()),
+        ], const Text('journal')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    testWidgets('with no key here, waits instead of asking for the key', (
+      tester,
+    ) async {
+      await pumpWaiting(tester, awaiting: _waitingProvider);
+      expect(find.text(RecoveryKeyCopy.waitingHeading), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.waitingBody), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.enterInstead), findsOneWidget);
+      expect(find.byKey(RecoveryKeyEntryPage.field), findsNothing);
+      expect(find.text('journal'), findsNothing);
+    });
+
+    testWidgets('says it is still waiting after two minutes', (tester) async {
+      await pumpWaiting(tester, awaiting: _waitingProvider);
+      await tester.pump(RecoveryKeyWaitingPage.slowAfter);
+      expect(find.text(RecoveryKeyCopy.stillWaiting), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.waitingBody), findsNothing);
+    });
+
+    testWidgets('Enter recovery key instead opens the entry page', (
+      tester,
+    ) async {
+      await pumpWaiting(tester, awaiting: _waitingProvider);
+      await tester.tap(find.text(RecoveryKeyCopy.enterInstead));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(RecoveryKeyEntryPage.field), findsOneWidget);
+    });
+
+    testWidgets('a different key here goes straight to the entry page', (
+      tester,
+    ) async {
+      final ProviderListenable<bool> notWaiting = Provider<bool>(
+        (ref) => false,
+      );
+      await pumpWaiting(tester, awaiting: notWaiting);
+      expect(find.byKey(RecoveryKeyEntryPage.field), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.waitingHeading), findsNothing);
+    });
+
+    testWidgets('the journal opens when the key arrives, with nothing typed', (
+      tester,
+    ) async {
+      final _FakeActions actions = _FakeActions();
+      await tester.pumpWidget(
+        _app(<Override>[
+          journalNeedsRecoveryKeyProvider.overrideWith(
+            (ref) => ref.watch(_waitingProvider),
+          ),
+          journalKeyAwaitingSyncProvider.overrideWith(
+            (ref) => ref.watch(_waitingProvider),
+          ),
+          recoveryKeyActionsProvider.overrideWithValue(actions),
+        ], const Text('journal')),
+      );
+      await tester.pump();
+      expect(find.text(RecoveryKeyCopy.waitingHeading), findsOneWidget);
+      ProviderScope.containerOf(
+        tester.element(find.text(RecoveryKeyCopy.waitingHeading)),
+      ).read(_waitingProvider.notifier).arrive();
+      await tester.pump();
+      expect(find.text('journal'), findsOneWidget);
+      expect(find.text(RecoveryKeyCopy.waitingHeading), findsNothing);
+      expect(actions.unlocks, isEmpty);
     });
   });
 

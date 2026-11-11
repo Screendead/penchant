@@ -91,8 +91,15 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   reorderings (`PayoffGates.searchSignificance` 0.02, 1 restores the old rule). Measured (400 seeds; 3 / 1 / 0.5 a
   day): steady false 1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); halving at 8 weeks 98.5 / 67 / 35% (was 99 / 93 /
   76). `master` merged in (#259's pairs half already there).
+- #273 built for round 15 `key-promotion` C (Jack, 2026-11-11: the iPhone's key is in iCloud
+  Keychain; the Mac looked before it arrived). A device with no key, where `keys/{uid}` exists, shows "Waiting for
+  your journal key from iCloud Keychain…" and keeps reading the keychain (every 5 s and on resume), opening the
+  journal when the right key lands; "Enter recovery key instead" is always there, and after 2 minutes the wording
+  says it can take a while. A different key here still goes straight to recovery entry. iOS and macOS alike. No new
+  keychain writes. Key change: Jack is asked before it is installed. Not proven on a device: the Mac app seeing the
+  synced item without a relaunch, and how long iCloud Keychain takes.
 - #256 closed: round 15 `key-promotion` C (Jack, 2026-11-11 11:05 UTC), the Mac gate waiting for the synced key, no
-  keychain write; being built in a separate PR. #128 (old keychain probe) closed.
+  keychain write; built in #273. #128 (old keychain probe) closed.
 - #252 (draft) `mac-background` C part 2: PenchantSync.app, a background-only nested app
   (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
   memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in

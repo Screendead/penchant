@@ -355,7 +355,10 @@ SHA-256 over the key, base64url), `wrapped` (the key sealed under the recovery k
 account-wide `saved` and `cardDismissed` flags; the rules let only the owner touch it and fix that field set. With no
 key anywhere it makes one, saves it to the keychain, then creates the record in a transaction, so of two racing
 devices the loser adopts the winner's record and asks for its recovery key. A `keyID` that differs from the keychain's
-(or no key here) locks the journal behind `RecoveryKeyGate`, which also holds every route while
+locks the journal behind `RecoveryKeyGate`'s recovery-key entry. No key here (`KeyNeedsRecovery.otherKeyHere` false)
+locks it behind the gate's waiting page instead, since iCloud Keychain may deliver the key after the first look
+(`key-promotion` C, Jack, 2026-11-11): rechecks keep reading the keychain and the right key opens it with nothing
+typed; "Enter recovery key instead" leads to entry. The gate also holds every route while
 `journalKeyPendingProvider` says no key is here and the server has not answered. Offline with no key: `KeyUnknown`, no
 gate, nothing creatable; each recheck (every 5 s and on resume) reads the keychain and asks the server again.
 `StoredKey.location` and `syncRefusal` (the keychain's status code alone, for a refused synced lookup or write)

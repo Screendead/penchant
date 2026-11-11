@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,6 +86,15 @@ class RecoveryKeyCopy {
       'This is not a valid recovery key. Check it against your saved copy.';
   static const String notThisJournal =
       'That is a recovery key, but for a different journal.';
+  static const String waitingTitle = 'Opening your journal';
+  static const String waitingHeading =
+      'Waiting for your journal key from iCloud Keychain…';
+  static const String waitingBody =
+      'Your other devices pass it on. Your journal opens when it arrives.';
+  static const String stillWaiting =
+      'Still waiting. iCloud Keychain can take a while; you can enter your '
+      'recovery key instead.';
+  static const String enterInstead = 'Enter recovery key instead';
   static const String lostKey = "I've lost my key";
   static const String signOut = 'Sign out';
   static const String lostTitle = 'Lost your recovery key?';
@@ -707,8 +718,121 @@ class _RecoveryKeyLostPageState extends ConsumerState<RecoveryKeyLostPage> {
   }
 }
 
+/// Shown on a device holding no journal key while the server says one exists:
+/// iCloud Keychain may not have delivered it yet. The key service keeps
+/// reading the keychain, and the gate opens once the right key is there.
+class RecoveryKeyWaitingPage extends ConsumerStatefulWidget {
+  const RecoveryKeyWaitingPage({super.key});
+
+  static const Duration slowAfter = Duration(minutes: 2);
+
+  @override
+  ConsumerState<RecoveryKeyWaitingPage> createState() =>
+      _RecoveryKeyWaitingPageState();
+}
+
+class _RecoveryKeyWaitingPageState
+    extends ConsumerState<RecoveryKeyWaitingPage> {
+  late final Timer _slow;
+  bool _isSlow = false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _slow = Timer(
+      RecoveryKeyWaitingPage.slowAfter,
+      () => setState(() => _isSlow = true),
+    );
+  }
+
+  @override
+  void dispose() {
+    _slow.cancel();
+    super.dispose();
+  }
+
+  Future<void> _whileBusy(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return CardPage(
+      title: RecoveryKeyCopy.waitingTitle,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(6, DialSpace.xs, 6, DialSpace.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: DialSpace.s),
+                  Expanded(
+                    child: Text(
+                      RecoveryKeyCopy.waitingHeading,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _isSlow
+                      ? RecoveryKeyCopy.stillWaiting
+                      : RecoveryKeyCopy.waitingBody,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: DialColors.of(context).muted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        FilledButton(
+          onPressed: _busy
+              ? null
+              : () => Navigator.of(context).push(
+                  DialPageRoute<void>(
+                    builder: (_) => const RecoveryKeyEntryPage(),
+                  ),
+                ),
+          child: const Text(RecoveryKeyCopy.enterInstead),
+        ),
+        const SizedBox(height: DialSpace.xs),
+        TextButton(
+          onPressed: _busy
+              ? null
+              : () => signOutAsking(
+                  context,
+                  ref.read(accountProvider),
+                  busy: _whileBusy,
+                ),
+          child: const Text(RecoveryKeyCopy.signOut),
+        ),
+      ],
+    );
+  }
+}
+
 /// Holds [child], the app's navigator, closed behind [RecoveryKeyEntryPage]
-/// while a signed-in user's journal needs its recovery key on this device.
+/// (or [RecoveryKeyWaitingPage] first, while this device holds no key) while
+/// a signed-in user's journal needs its recovery key on this device.
 /// For [MaterialApp.builder], so no route shows while the journal is locked.
 class RecoveryKeyGate extends ConsumerWidget {
   const RecoveryKeyGate({super.key, required this.child});
@@ -725,12 +849,17 @@ class RecoveryKeyGate extends ConsumerWidget {
     if (!applies || !ref.watch(journalNeedsRecoveryKeyProvider)) {
       return child;
     }
+    final bool waiting = ref.watch(journalKeyAwaitingSyncProvider);
     // Above the app's navigator: the entry page needs one of its own for its
-    // dialogs and the lost-key page.
+    // dialogs and the lost-key page. Keyed, since onGenerateRoute builds the
+    // first page only once.
     return Navigator(
+      key: ValueKey<bool>(waiting),
       onGenerateRoute: (RouteSettings settings) => DialPageRoute<void>(
         settings: settings,
-        builder: (_) => const RecoveryKeyEntryPage(),
+        builder: (_) => waiting
+            ? const RecoveryKeyWaitingPage()
+            : const RecoveryKeyEntryPage(),
       ),
     );
   }

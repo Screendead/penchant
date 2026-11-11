@@ -159,6 +159,12 @@ final List<Override> keyServiceOverrides = <Override>[
   journalNeedsRecoveryKeyProvider.overrideWith(
     (ref) => _enabledState(ref) is KeyNeedsRecovery,
   ),
+  journalKeyAwaitingSyncProvider.overrideWith(
+    (ref) => switch (_enabledState(ref)) {
+      KeyNeedsRecovery(otherKeyHere: false) => true,
+      _ => false,
+    },
+  ),
   // No key here and the server not yet asked: nothing can be saved, since the
   // rules refuse a create without its sealed field.
   journalKeyPendingProvider.overrideWith(
