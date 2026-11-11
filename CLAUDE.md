@@ -177,11 +177,13 @@ iOS file and the macOS options carry its `ios` app id.
 `macos/Runner.xcodeproj`: `PenchantMenuBar` (`com.screendead.penchant.menubar`, the login-item menu bar app) and
 `PenchantSync` (`com.screendead.penchant.sync`, `tools/add-mac-sync-target.rb`). With Penchant closed, the menu bar
 helper launches PenchantSync to write the widgets' queued logs: `LSBackgroundOnly`, prohibited activation, a headless
-`FlutterEngine` on `backgroundFlushMain` over the enclosing app's `App.framework` and `FlutterMacOS.framework`. It
+`FlutterEngine` on `macSyncFlushMain` (`lib/main.dart`) over the enclosing app's `App.framework` and `FlutterMacOS.framework`. It
 links the plugins itself, copies `GoogleService-Info.plist` with the strip phase, and has no Crashlytics upload phase.
 Its entitlements files copy Runner's, keychain group included, so that it reads the Auth session and journal key (not
-yet confirmed in a signed build); its sandbox container, so its Firestore cache and write journal, is its own, and
-sign-out clears only the app's. Its bundle ID is not among those the client API key allows (Client API key). While it runs, the app's `pendingLogs` answers
+yet confirmed in a signed build). Its sandbox container is its own, out of reach of sign-out's clearing, so that entry
+point keeps Firestore's cache in memory (`initializeFirebase(diskCache: false)`) and the write journal in memory
+(`memoryJournal()`): nothing of the user's outlives a run. A log leaves the App Group queue only once the server
+acknowledges it, so a run ending offline leaves it for the next. Its bundle ID is not among those the client API key allows (Client API key). While it runs, the app's `pendingLogs` answers
 empty and the app flushes once it quits (`SyncApp`, `ios/Runner/WidgetBridge.swift`). Penchant itself is a regular app
 that never activates itself.
 

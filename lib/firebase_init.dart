@@ -33,14 +33,16 @@ const FirebaseOptions emulatorOptions = FirebaseOptions(
   iosBundleId: 'com.screendead.penchant',
 );
 
-// Offline logging rests on this: the disk cache keeps queued writes across
-// app restarts and answers reads with no signal. Settings apply only before
+// Offline logging rests on the disk cache: it keeps queued writes across app
+// restarts and answers reads with no signal. Settings apply only before
 // Firestore's first use.
-void _configureFirestoreCache() {
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: _firestoreCacheBytes,
-  );
+void _configureFirestoreCache({required bool onDisk}) {
+  FirebaseFirestore.instance.settings = onDisk
+      ? const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: _firestoreCacheBytes,
+        )
+      : const Settings(persistenceEnabled: false);
 }
 
 // The SDK's own default, chosen on purpose: a journal's documents are a few
@@ -104,13 +106,18 @@ ErrorForwarder crashlyticsForwarder(RecordError record) =>
 // once. A failure clears it so Bootstrap's retry starts again.
 Future<void>? _started;
 
-Future<void> initializeFirebase() =>
-    _started ??= _initializeFirebase().catchError((Object e, StackTrace s) {
+/// [diskCache] false keeps Firestore's cache in memory, for a process whose
+/// container sign-out cannot reach (the Mac's PenchantSync).
+Future<void> initializeFirebase({bool diskCache = true}) =>
+    _started ??= _initializeFirebase(diskCache: diskCache).catchError((
+      Object e,
+      StackTrace s,
+    ) {
       _started = null;
       Error.throwWithStackTrace(e, s);
     });
 
-Future<void> _initializeFirebase() async {
+Future<void> _initializeFirebase({required bool diskCache}) async {
   if (!useFirebaseEmulators) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -125,7 +132,7 @@ Future<void> _initializeFirebase() async {
     await FirebaseAppCheck.instance.activate(
       providerApple: const AppleAppAttestWithDeviceCheckFallbackProvider(),
     );
-    _configureFirestoreCache();
+    _configureFirestoreCache(onDisk: diskCache);
     return;
   }
 

@@ -3,11 +3,12 @@ import FlutterMacOS
 
 // The menu bar helper launches this to write what the widgets queued while
 // Penchant is closed. It has no window, Dock icon or menu bar, and nothing can
-// activate it. It runs the enclosing app's Dart (backgroundFlushMain in
+// activate it. It runs the enclosing app's Dart (macSyncFlushMain in
 // lib/main.dart) and leaves the outcome in the App Group for the helper. Its
 // first keychain access group is the app's, so Firebase Auth's session and the
-// journal key are the app's; its sandbox container, and with it the Firestore
-// cache, is its own.
+// journal key are the app's. Its sandbox container is its own and sign-out in
+// Penchant cannot clear it, so the Dart keeps the Firestore cache and write
+// journal in memory.
 @main
 final class SyncDelegate: NSObject, NSApplicationDelegate {
   static func main() {
@@ -64,7 +65,7 @@ enum SyncRun {
       finish(outcome: outcome)
     }
     engine = headless
-    if !headless.run(withEntrypoint: "backgroundFlushMain") {
+    if !headless.run(withEntrypoint: "macSyncFlushMain") {
       quit(outcome: "retry")
     }
   }
