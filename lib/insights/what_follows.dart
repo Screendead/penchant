@@ -1296,7 +1296,7 @@ HabitInsight _attribute(
   const int column = 1;
   final (
     :LinearFit fit,
-    :double inflation,
+    inflation: double widening,
     :Interval? Function(double level) bootstrap,
   ) = judgeDays(
     rows,
@@ -1331,7 +1331,7 @@ HabitInsight _attribute(
   // A use comparison has a week of days on each side; an amount or a time
   // can hang on one extreme day.
   if (judged.kind != InsightKind.use &&
-      withoutMostTelling(rows, y, fit, column, level, inflation: inflation)) {
+      withoutMostTelling(rows, y, fit, column, level, inflation: widening)) {
     return judged.refuse(
       RefusalReason.oneDay,
       effect: effect,

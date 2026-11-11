@@ -41,8 +41,7 @@ InsightsInput yearInput() {
       final DateTime day = addDays(insightsToday, -back);
       carried = 0.5 * carried + 20 * gaussian(random);
       final bool moved =
-          m == HealthMetric.sleepDeep &&
-          coffeeDays.contains(addDays(day, -1));
+          m == HealthMetric.sleepDeep && coffeeDays.contains(addDays(day, -1));
       outcomes.add(
         DailyOutcome(
           date: day,

@@ -451,12 +451,7 @@ BeforeUse _daily(
       spread: spread,
     );
   }
-  return result(
-    effect: effect,
-    interval: interval,
-    pValue: p,
-    spread: spread,
-  );
+  return result(effect: effect, interval: interval, pValue: p, spread: spread);
 }
 
 // The fewest days the model must have beyond its columns.

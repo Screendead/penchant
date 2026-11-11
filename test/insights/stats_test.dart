@@ -134,10 +134,7 @@ void main() {
     );
     expect(inflation(separate, everyDay(400)), lessThan(1.3));
     // Rows two days apart are no neighbours, so nothing is corrected.
-    expect(
-      inflation(runs, <int>[for (int i = 0; i < 400; i++) 2 * i]),
-      1,
-    );
+    expect(inflation(runs, <int>[for (int i = 0; i < 400; i++) 2 * i]), 1);
     // An alternating column against residuals that carry over would narrow
     // the interval: left alone.
     final Partialled alternating = (
@@ -159,7 +156,10 @@ void main() {
     expect(fit.judgedAs(1), same(fit));
     final LinearFit third = fit.judgedAs(3);
     expect(third.degreesOfFreedom, 60 ~/ 3 - 2);
-    expect(third.standardError(1), closeTo(fit.standardError(1) * sqrt(3), 1e-12));
+    expect(
+      third.standardError(1),
+      closeTo(fit.standardError(1) * sqrt(3), 1e-12),
+    );
     expect(third.pValue(1), greaterThan(fit.pValue(1)));
     expect(fit.judgedAs(100).degreesOfFreedom, 1);
   });
