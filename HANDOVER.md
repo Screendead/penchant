@@ -93,10 +93,15 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); weeks in runs 19.3 / 11.5 / 10.5% (was 35 / 32 / 28); halving at 8 weeks
   98.5 / 67 / 35% (was 99 / 93 / 76). Waits on round 15 `fall-test` (A as built, B Welch-form comparison, C level
   0.05, D leave). After #259 its pairs half is already on `master`: merge `master` in before merging.
-- #256 (draft) promote a this-device journal key to iCloud Keychain. Waits on round 15 `key-promotion`, which also
-  asks Jack what the iPhone's new line says. Signing and access groups are identical on both apps; Jack typed the
-  recovery key on the Mac, so only the iPhone's line distinguishes "never synced" from "Mac asked too early" (then the
-  fix is the gate waiting for the key, no keychain write). Close #128 (old probe) once this settles.
+- feat/wait-for-synced-key: built for round 15 `key-promotion` C (Jack, 2026-11-11: the iPhone's key is in iCloud
+  Keychain; the Mac looked before it arrived). A device with no key, where `keys/{uid}` exists, shows "Waiting for
+  your journal key from iCloud Keychain…" and keeps reading the keychain (every 5 s and on resume), opening the
+  journal when the right key lands; "Enter recovery key instead" is always there, and after 2 minutes the wording
+  says it can take a while. A different key here still goes straight to recovery entry. iOS and macOS alike. No new
+  keychain writes. Key change: Jack is asked before it is installed. Not proven on a device: the Mac app seeing the
+  synced item without a relaunch, and how long iCloud Keychain takes.
+- #256 (draft) promote a this-device journal key to iCloud Keychain: `key-promotion` C writes nothing to the keychain,
+  so it is not needed for C. Close #128 (old probe) once this settles.
 - #252 (draft) `mac-background` C part 2: PenchantSync.app, a background-only nested app
   (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
   memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
@@ -927,11 +932,10 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), two calls:
+Round 15 (https://claude.ai/artifact/SXzV3tdDC1hfYN4iVJtAFN, source `docs/pitch/round-15/index.html`), one call
+open (`key-promotion` picked C on 2026-11-11):
 
 - `fall-test`: how strict the test for a "fell" row is (#254). Recommended A, as built.
-- `key-promotion`: what the iPhone's journal key line says, and whether to copy a this-device key into iCloud
-  Keychain (#256). Recommended A if "this device only", C if "in iCloud Keychain".
 
 Round 14's seven were picked on 2026-11-11; every earlier call is picked.
 
