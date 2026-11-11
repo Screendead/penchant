@@ -87,18 +87,24 @@ go. Open: #240 recovery time (draft; a worker is settling one calibration scenar
 - #245 effective sample size and block bootstrap (gates 2 and 4) on the day-level comparisons.
 - #244 Mac quit hides windows at once and exits within a second (cause of the slow quit unmeasured).
 
-**Calls waiting on Jack** on the round 14 page https://claude.ai/artifact/MVqL7vGeqoyrLnVDxW5pb6 (source
-`docs/pitch/round-14/index.html`; picks in its `picks` collection). These are Claude's recommendations, not decisions:
+**Round 14, picked by Jack 2026-11-11** (https://claude.ai/artifact/MVqL7vGeqoyrLnVDxW5pb6, source
+`docs/pitch/round-14/index.html`, `picks` collection). Being built by the workflow started that day unless said:
 
-- `tamper`: A, leave as is and reword `sealed-blobs-bind-neither-time-nor-state` as an accepted limit (B fingerprint
-  prototyped in #227; C breaks older builds; D rollback detection a week or more).
-- `crowding`: B, hold Insights to three sections (level-change cards out of a fourth section; recovery cards count
-  toward the What it costs cap).
-- `follows`: B, reword the pair card now ("tend to come together"), with Health's waking as a control next.
-- `early-recovery`: A, show a recovery card once the first night is off, even before a return is shown.
-- `sparse-fell`: B, require more time since a fall for habits used less than once a day.
-- `no-health`: A, leave Insights computing nothing without Health.
-- `mac-background`: A, accept both Mac gaps (silent widget logs with the helper off; launches that take focus).
+- `tamper`: **A**, leave as is: an accepted limit (done: the debt note now holds only the recovery-key rotation
+  issue; prototype #227 closed).
+- `crowding`: **C**, three sections and the repeats folded: level-change cards behind More in What it costs, a
+  rising habit joined to the payoff card of the one that fell, recovery cards inside the cap and joined to the
+  "where's the line" card for the same habit and measure.
+- `follows`: **B**, the pair card reworded ("tend to come together"), then Health's waking time as a control.
+- `early-recovery`: **A**, a recovery card shows once the first night is off (as built in #240).
+- `sparse-fell`: **B**, more time before a fall is called on a habit used less than once a day.
+- `no-health`: **A**, Insights computes nothing without Health. No work.
+- `mac-background`: **C**, the Mac widgets say when logs are waiting, and background syncing moves into its own
+  background-only process so Penchant never comes forward unless opened. Large.
+
+Also from Jack that day: Insights took as long to open the second time as the first (being fixed: keep the report
+for the session, show the last one on a cold open); Quit on the Mac must be near-instant and may check sync (#246);
+the iPhone-to-Mac journal key sync is being investigated again (P2).
 
 **Claude's defaults; Jack may overturn** (as built):
 
@@ -832,7 +838,7 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Seven on the round 14 page (Pick up here, above). Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
+None: round 14's seven were picked on 2026-11-11 (Pick up here, above). Every call is picked: rounds 1 to 4, 6 and 8 on 2026-11-03/05/06, round 9 on 2026-11-07, and
 round 10, which decided U1 to U8 in the overnight list (Jack's calls, round 10, above), on 2026-11-08. Round 5 and
 `r7-ci` are moot. The API key's restrictions are set (round 13 `api-key`; `CLAUDE.md`, Client API key).
 
