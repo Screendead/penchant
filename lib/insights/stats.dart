@@ -253,7 +253,146 @@ class LinearFit {
     if (se == 0) return coefficients[j] == 0 ? 1 : 0;
     return studentTTwoSided(coefficients[j] / se, degreesOfFreedom.toDouble());
   }
+
+  /// This fit judged as [inflation] times fewer rows than it has (see
+  /// [serialInflation]): the variance that many times larger, and the degrees
+  /// of freedom those of the smaller sample, never under one.
+  LinearFit judgedAs(double inflation) {
+    if (inflation <= 1) return this;
+    final int columns = coefficients.length;
+    return LinearFit(
+      coefficients: coefficients,
+      inverseGram: inverseGram,
+      residualVariance: residualVariance * inflation,
+      degreesOfFreedom: max(
+        1,
+        ((degreesOfFreedom + columns) / inflation).floor() - columns,
+      ),
+    );
+  }
 }
+
+/// One coefficient of a fit with every other column taken out of both sides
+/// (Frisch-Waugh): per row, what is left of the column, and of the outcome
+/// once the whole fit is taken out. The coefficient is the sum of
+/// own × (own × coefficient + residual) over the sum of own squared.
+typedef Partialled = ({List<double> own, List<double> residual});
+
+Partialled partialOut(
+  List<List<double>> rows,
+  List<double> y,
+  LinearFit fit,
+  int column,
+) {
+  final List<double> toward = fit.inverseGram[column];
+  final double scale = toward[column];
+  final List<double> own = <double>[], residual = <double>[];
+  for (int r = 0; r < rows.length; r++) {
+    final List<double> row = rows[r];
+    double part = 0, fitted = 0;
+    for (int j = 0; j < row.length; j++) {
+      part += toward[j] * row[j];
+      fitted += fit.coefficients[j] * row[j];
+    }
+    own.add(scale == 0 ? 0 : part / scale);
+    residual.add(y[r] - fitted);
+  }
+  return (own: own, residual: residual);
+}
+
+// The correlation of [values] with themselves a day earlier, over the rows
+// whose day in [at] follows the row before's; null under [minPairs] of them.
+double? _lagOne(List<double> values, List<int> at, int minPairs) {
+  int pairs = 0;
+  double lagged = 0, now = 0, before = 0;
+  for (int r = 1; r < values.length; r++) {
+    if (at[r] - at[r - 1] != 1) continue;
+    pairs++;
+    lagged += values[r] * values[r - 1];
+    now += values[r] * values[r];
+    before += values[r - 1] * values[r - 1];
+  }
+  if (pairs < minPairs) return null;
+  return now == 0 || before == 0 ? 0 : lagged / sqrt(now * before);
+}
+
+/// How many times fewer independent rows than rows a coefficient rests on
+/// when neighbouring days resemble each other: n / n_eff = (1 + r) / (1 - r),
+/// r being the lag-1 autocorrelation of the column times that of the
+/// residuals (Bartlett's effective sample size). [at] is each row's day,
+/// counted from any fixed day, in order; only rows a day apart are compared,
+/// and with fewer than [minPairs] such pairs nothing is corrected. r is
+/// clamped to [0, maxCorrelation]: a negative one would narrow the interval.
+double serialInflation(
+  Partialled parts,
+  List<int> at, {
+  required int minPairs,
+  required double maxCorrelation,
+}) {
+  final double? own = _lagOne(parts.own, at, minPairs);
+  final double? residual = _lagOne(parts.residual, at, minPairs);
+  if (own == null || residual == null) return 1;
+  final double r = (own * residual).clamp(0.0, maxCorrelation);
+  return (1 + r) / (1 - r);
+}
+
+/// A moving-block bootstrap percentile interval at [level] for a coefficient
+/// (Künsch 1989): the rows are redrawn in whole blocks of [blockDays]
+/// calendar days, so a stretch of days that resemble each other stays
+/// together, and the coefficient is recomputed from [parts] each time, the
+/// other columns' fit held as it was. A block is the rows from one row's day
+/// up to [blockDays] days later, however many of those days have a row;
+/// blocks are drawn until they hold as many rows as there are. The draws are
+/// seeded, so the same rows always give the same interval. Null when no block
+/// fits or [replicates] is under 1.
+Interval? blockBootstrapInterval(
+  Partialled parts,
+  double coefficient,
+  List<int> at, {
+  required int blockDays,
+  required int replicates,
+  required double level,
+}) {
+  final int n = at.length;
+  if (replicates < 1 || n == 0) return null;
+  // Running sums, so a block's share of each is a difference of two.
+  final List<double> cross = List<double>.filled(n + 1, 0);
+  final List<double> squares = List<double>.filled(n + 1, 0);
+  for (int r = 0; r < n; r++) {
+    final double x = parts.own[r];
+    cross[r + 1] = cross[r] + x * (x * coefficient + parts.residual[r]);
+    squares[r + 1] = squares[r] + x * x;
+  }
+  final List<int> starts = <int>[], ends = <int>[];
+  int end = 0;
+  for (int r = 0; r < n && at[r] + blockDays - 1 <= at.last; r++) {
+    while (end < n && at[end] < at[r] + blockDays) {
+      end++;
+    }
+    starts.add(r);
+    ends.add(end);
+  }
+  if (starts.isEmpty) return null;
+  final Random random = Random(_bootstrapSeed);
+  final List<double> estimates = <double>[];
+  for (int b = 0; b < replicates; b++) {
+    double xy = 0, xx = 0;
+    for (int drawn = 0; drawn < n;) {
+      final int k = random.nextInt(starts.length);
+      xy += cross[ends[k]] - cross[starts[k]];
+      xx += squares[ends[k]] - squares[starts[k]];
+      drawn += ends[k] - starts[k];
+    }
+    if (xx > 0) estimates.add(xy / xx);
+  }
+  if (estimates.isEmpty) return null;
+  return Interval(
+    quantile(estimates, (1 - level) / 2),
+    quantile(estimates, 1 - (1 - level) / 2),
+  );
+}
+
+const int _bootstrapSeed = 20261111;
 
 // Ordinary least squares by the normal equations. Null when the design is
 // singular or leaves no residual degrees of freedom.

@@ -13,7 +13,9 @@ import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/measure_shifts.dart';
+import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/recovery.dart';
+import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -167,6 +169,8 @@ class InsightsReport {
     this.floors = const <String, double>{},
     this.follows = const <HabitFollows>[],
     this.beforeUse = const <BeforeUse>[],
+    this.payoffs = const <Payoff>[],
+    this.replacements = const <Replacement>[],
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
     this.recovery = const <Recovery>[],
@@ -179,6 +183,14 @@ class InsightsReport {
   /// The measures whose level changed and stayed changed, by date, judged in
   /// the same family as [findings]; only those found.
   final List<MeasureShift> shifts;
+
+  /// Each measure since a habit fell and stayed lower, findings and
+  /// refusals, judged in the same family as [findings].
+  final List<Payoff> payoffs;
+
+  /// Each other habit's amount since a habit fell, findings and refusals,
+  /// judged in the same family as [findings].
+  final List<Replacement> replacements;
 
   /// Whether each habit follows calendar events, findings and refusals,
   /// judged in the same family as [findings].
@@ -299,6 +311,22 @@ InsightsReport computeInsights(InsightsInput input) {
     floors: floors,
     skip: input.archived,
   );
+  final List<Payoff> payoffs = payoff(
+    uses: input.uses,
+    outcomes: outcomes,
+    metricIds: <String>[
+      for (final String metricId in outcomes.metricIds)
+        if (metricCopy(metricId) != null && metricFloors.containsKey(metricId))
+          metricId,
+    ]..sort(),
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<Replacement> replacements = replacement(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<AfterEvent> calendar = afterEvent(
     uses: input.uses,
     events: input.events,
@@ -319,8 +347,14 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> followsPs = <double>[
     for (final HabitFollows f in follows) ?f.pValue,
   ];
+  final List<double> payoffPs = <double>[
+    for (final Payoff p in payoffs) ?p.pValue,
+  ];
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
+  ];
+  final List<double> replacementPs = <double>[
+    for (final Replacement r in replacements) ?r.pValue,
   ];
   final ({List<MeasureShift> shifts, List<double> searched}) shifted =
       measureShifts(
@@ -341,6 +375,8 @@ InsightsReport computeInsights(InsightsInput input) {
       ...followsPs,
       ...calendarPs,
       ...shiftPs,
+      ...payoffPs,
+      ...replacementPs,
       ...recoveryPs,
     ],
   )) {
@@ -371,6 +407,8 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...calendarPs,
         ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
         ...recoveryPs,
       ],
     ),
@@ -381,6 +419,8 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
         ...recoveryPs,
       ],
       sizeOf: (BeforeUse b) => practicalSize(b.asFinding, floors: floors),
@@ -393,6 +433,33 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+      ],
+    ),
+    payoffs: judgePayoffs(
+      payoffs,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+      sizeOf: (Payoff p) => practicalSize(p.asFinding, floors: floors),
+    ),
+    replacements: judgeReplacements(
+      replacements,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...recoveryPs,
       ],
     ),
     afterEvent: judgeAfterEvent(
@@ -402,6 +469,8 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
         ...recoveryPs,
       ],
     ),
@@ -414,6 +483,8 @@ InsightsReport computeInsights(InsightsInput input) {
               ...beforePs,
               ...followsPs,
               ...calendarPs,
+              ...payoffPs,
+              ...replacementPs,
               ...recoveryPs,
             ],
             floors: floors,

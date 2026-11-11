@@ -395,6 +395,19 @@ BeforeUse _daily(
   if (fit == null || fit.degreesOfFreedom < _minResidualDays) {
     return result(refusal: RefusalReason.tooFewDays);
   }
+  final (
+    fit: LinearFit widened,
+    :double inflation,
+    :Interval? Function(double level) bootstrap,
+  ) = judgeDays(
+    design,
+    y,
+    fit,
+    1,
+    days,
+    gates,
+  );
+  fit = widened;
   final double effect = fit.coefficients[1] * step;
   final Interval raw = fit.interval(1, level: gates.level);
   final Interval interval = Interval(raw.low * step, raw.high * step);
@@ -411,17 +424,34 @@ BeforeUse _daily(
       spread: spread,
     );
   }
-  return result(
-    refusal:
-        kind != BeforeUseKind.whether &&
-            withoutMostTelling(design, y, fit, 1, gates.level)
-        ? RefusalReason.oneDay
-        : null,
-    effect: effect,
-    interval: interval,
-    pValue: p,
-    spread: spread,
-  );
+  if (kind != BeforeUseKind.whether &&
+      withoutMostTelling(
+        design,
+        y,
+        fit,
+        1,
+        gates.level,
+        inflation: inflation,
+      )) {
+    return result(
+      refusal: RefusalReason.oneDay,
+      effect: effect,
+      interval: interval,
+      pValue: p,
+      spread: spread,
+    );
+  }
+  final Interval? redrawn = bootstrap(gates.level);
+  if (redrawn != null && redrawn.crossesZero) {
+    return result(
+      refusal: RefusalReason.withinNoise,
+      effect: effect,
+      interval: Interval(redrawn.low * step, redrawn.high * step),
+      pValue: p,
+      spread: spread,
+    );
+  }
+  return result(effect: effect, interval: interval, pValue: p, spread: spread);
 }
 
 // The fewest days the model must have beyond its columns.

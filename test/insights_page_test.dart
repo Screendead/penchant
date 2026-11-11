@@ -14,7 +14,10 @@ import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/recovery.dart';
+import 'package:tracker/insights/replacement.dart';
+import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
@@ -996,6 +999,191 @@ void main() {
     expect(find.text(InsightsPage.cuttingDownBody), findsOneWidget);
     expect(find.text(InsightsPage.setsOffBody), findsOneWidget);
     expect(find.text(InsightsPage.lastNightHeading), findsNothing);
+  });
+
+  testWidgets('How cutting down is going shows a fall with a finding as a '
+      'card and one with nothing clear as a row with the reason', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    HabitFall fall(String habit, double since) => HabitFall(
+      habitId: habit,
+      day: DateTime(2026, 3, 3),
+      from: DateTime(2025, 12, 2),
+      before: 3,
+      since: since,
+      sinceDays: 60,
+    );
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        runner: (_) async => InsightsReport(
+          findings: const <HabitFinding>[],
+          refused: const <HabitRefusal>[],
+          payoffs: <Payoff>[
+            Payoff(
+              fall: fall('coffee', 1.5),
+              metricId: 'sleepAsleep',
+              baselineValues: 88,
+              sinceValues: 41,
+              capped: false,
+              effect: 30,
+              interval: const stats.Interval(22, 38),
+              pValue: 0.001,
+            ),
+            Payoff(
+              fall: fall('tea', 0),
+              metricId: 'sleepAsleep',
+              baselineValues: 88,
+              sinceValues: 41,
+              capped: false,
+              effect: 2,
+              interval: const stats.Interval(-9, 13),
+              pValue: 0.6,
+              refusal: PayoffRefusal.withinNoise,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text(InsightsPage.cuttingDownBody), findsNothing);
+    expect(
+      find.text(
+        'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
+        'around March 3, 2026.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Since then, your time asleep averages 30 min more than in the 13 '
+        'weeks before, allowing for the trend it was already on.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Range: 22 to 38 min more'), findsOneWidget);
+    expect(find.text('From 88 nights before and 41 since'), findsOneWidget);
+    expect(
+      find.text(
+        'No entries for Tea since March 3, 2026, from about 3 items a day '
+        'before. No clear difference in your sleep, heart or activity '
+        'since: within the noise.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(find.text(InsightsPage.cuttingDownHeading)).dy,
+      lessThan(tester.getTopLeft(find.text('Range: 22 to 38 min more')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Range: 22 to 38 min more')).dy,
+      lessThan(tester.getTopLeft(find.text(InsightsPage.setsOffHeading)).dy),
+    );
+  });
+
+  testWidgets('How cutting down is going shows a habit that rose as another '
+      'fell, in place of the nothing-yet box, and Copy as text carries it', (
+    WidgetTester tester,
+  ) async {
+    _connected();
+    await _pump(
+      tester,
+      insightsOverrides(
+        health: FakeHealthSource(read: HealthValues(insightsJournal().health)),
+        runner: (_) async => InsightsReport(
+          findings: const <HabitFinding>[],
+          refused: const <HabitRefusal>[],
+          replacements: <Replacement>[
+            Replacement(
+              fall: HabitFall(
+                habitId: 'coffee',
+                day: DateTime(2026, 3, 3),
+                from: DateTime(2025, 12, 2),
+                before: 3,
+                since: 1.5,
+                sinceDays: 60,
+              ),
+              riserId: 'tea',
+              before: 1,
+              since: 2.5,
+              baselineDays: 91,
+              sinceDays: 60,
+              effect: 1.4,
+              interval: const stats.Interval(0.8, 2),
+              pValue: 0.001,
+            ),
+            Replacement(
+              fall: HabitFall(
+                habitId: 'tea',
+                day: DateTime(2026, 3, 3),
+                from: DateTime(2025, 12, 2),
+                before: 3,
+                since: 1.5,
+                sinceDays: 60,
+              ),
+              riserId: 'coffee',
+              before: 1,
+              since: 1.1,
+              baselineDays: 91,
+              sinceDays: 60,
+              effect: 0.1,
+              interval: const stats.Interval(-0.4, 0.6),
+              pValue: 0.7,
+              refusal: ReplacementRefusal.noRise,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text(InsightsPage.cuttingDownBody), findsNothing);
+    const String fell =
+        'Your logged amount of Coffee fell from about 3 items a day to 1.5 '
+        'around March 3, 2026.';
+    const String rose =
+        'Around the same time, your logged amount of Tea rose from about 1 '
+        'item a day to 2.5.';
+    const String range =
+        'Range: 0.8 to 2 more a day, allowing for the trend it was already '
+        'on';
+    expect(find.text(fell), findsOneWidget);
+    expect(find.text(rose), findsOneWidget);
+    expect(find.text(range), findsOneWidget);
+    expect(find.text('From 91 days before and 60 since'), findsOneWidget);
+    expect(find.text(replacementCaveat), findsOneWidget);
+    expect(find.textContaining('Your logged amount of Tea fell'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text(InsightsPage.cuttingDownHeading)).dy,
+      lessThan(tester.getTopLeft(find.text(rose)).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text(rose)).dy,
+      lessThan(tester.getTopLeft(find.text(InsightsPage.setsOffHeading)).dy),
+    );
+
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    await tester.ensureVisible(find.text(InsightsPage.copyLabel));
+    await tester.tap(find.text(InsightsPage.copyLabel));
+    await tester.pump();
+    expect(
+      copied,
+      contains(
+        '\n${InsightsPage.cuttingDownHeading}\n\nCoffee\n$fell\n$rose\n'
+        '$range\nFrom 91 days before and 60 since\n'
+        '$replacementCaveat\n',
+      ),
+    );
   });
 
   testWidgets('with every habit short of days, What it costs says how far '
