@@ -133,11 +133,7 @@ class HealthSampleCache {
     }) {
       final List<HealthSample> samples = <HealthSample>[];
       for (final Object? row in rows) {
-        if (row case [
-          final int s,
-          final int e,
-          final num v,
-        ] when v.isFinite) {
+        if (row case [final int s, final int e, final num v] when v.isFinite) {
           samples.add(
             HealthSample(
               DateTime.fromMicrosecondsSinceEpoch(s),

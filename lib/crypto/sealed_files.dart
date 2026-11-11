@@ -91,8 +91,7 @@ class SealedFiles {
   final FileSealer _sealer;
   Directory? _dir;
 
-  Future<Directory> _folder() async =>
-      _dir ??= await _files._userFolder(uid);
+  Future<Directory> _folder() async => _dir ??= await _files._userFolder(uid);
 
   File _file(Directory dir, String name) {
     if (!_fileName.hasMatch(name)) {

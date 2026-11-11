@@ -64,10 +64,7 @@ void main() {
 
     test('a length past the padding is refused', () {
       final Uint8List padded = Sealer.padFile(<int>[1, 2, 3])..[0] = 0x7f;
-      expect(
-        () => Sealer.unpadFile(padded),
-        throwsA(isA<SealException>()),
-      );
+      expect(() => Sealer.unpadFile(padded), throwsA(isA<SealException>()));
     });
   });
 
@@ -77,27 +74,35 @@ void main() {
       await files.write('note', utf8.encode('stepCount 9000'));
       expect(utf8.decode((await files.read('note'))!), 'stepCount 9000');
       for (final File f in await filesOnDisk()) {
-        expect(utf8.decode(await f.readAsBytes(), allowMalformed: true),
-            isNot(contains('stepCount')));
+        expect(
+          utf8.decode(await f.readAsBytes(), allowMalformed: true),
+          isNot(contains('stepCount')),
+        );
       }
     });
 
-    test('another user neither opens nor keeps the first user\'s files',
-        () async {
-      await device.forUser('alice', _sealer()).write('note', <int>[1, 2, 3]);
-      final SealedFiles bob = device.forUser('bob', _sealer());
-      expect(await bob.read('note'), isNull);
-      expect(await filesOnDisk(), isEmpty);
-    });
+    test(
+      'another user neither opens nor keeps the first user\'s files',
+      () async {
+        await device.forUser('alice', _sealer()).write('note', <int>[1, 2, 3]);
+        final SealedFiles bob = device.forUser('bob', _sealer());
+        expect(await bob.read('note'), isNull);
+        expect(await filesOnDisk(), isEmpty);
+      },
+    );
 
     test('a file copied to another user\'s context does not open', () async {
       final JournalFieldSealer sealer = _sealer();
-      final Uint8List envelope = await sealer.sealFile(
-        <int>[1, 2, 3],
-        context: deviceFileContext('alice', 'note'),
-      );
+      final Uint8List envelope = await sealer.sealFile(<int>[
+        1,
+        2,
+        3,
+      ], context: deviceFileContext('alice', 'note'));
       expect(
-        () => sealer.openFile(envelope, context: deviceFileContext('bob', 'note')),
+        () => sealer.openFile(
+          envelope,
+          context: deviceFileContext('bob', 'note'),
+        ),
         throwsA(isA<SealException>()),
       );
       expect(
@@ -117,36 +122,40 @@ void main() {
       expect(await files.read('two'), isNull);
     });
 
-    test('a corrupt file or another key reads as absent and is deleted',
-        () async {
-      final SealedFiles files = device.forUser('alice', _sealer());
-      await files.write('note', <int>[1, 2, 3]);
-      expect(
-        await device.forUser('alice', _sealer(keyByte: 8)).read('note'),
-        isNull,
-      );
-      expect(await filesOnDisk(), isEmpty);
+    test(
+      'a corrupt file or another key reads as absent and is deleted',
+      () async {
+        final SealedFiles files = device.forUser('alice', _sealer());
+        await files.write('note', <int>[1, 2, 3]);
+        expect(
+          await device.forUser('alice', _sealer(keyByte: 8)).read('note'),
+          isNull,
+        );
+        expect(await filesOnDisk(), isEmpty);
 
-      await files.write('note', <int>[1, 2, 3]);
-      final File file = (await filesOnDisk()).single;
-      final Uint8List bytes = await file.readAsBytes();
-      bytes[bytes.length - 1] ^= 1;
-      await file.writeAsBytes(bytes);
-      expect(await files.read('note'), isNull);
-      expect(await filesOnDisk(), isEmpty);
+        await files.write('note', <int>[1, 2, 3]);
+        final File file = (await filesOnDisk()).single;
+        final Uint8List bytes = await file.readAsBytes();
+        bytes[bytes.length - 1] ^= 1;
+        await file.writeAsBytes(bytes);
+        expect(await files.read('note'), isNull);
+        expect(await filesOnDisk(), isEmpty);
 
-      await files.write('note', <int>[1, 2, 3]);
-      await (await filesOnDisk()).single.writeAsBytes(<int>[1]);
-      expect(await files.read('note'), isNull);
-    });
+        await files.write('note', <int>[1, 2, 3]);
+        await (await filesOnDisk()).single.writeAsBytes(<int>[1]);
+        expect(await files.read('note'), isNull);
+      },
+    );
 
-    test('clearAll removes every user\'s files and the plaintext store',
-        () async {
-      await device.forUser('alice', _sealer()).write('note', <int>[1]);
-      await File('${caches.path}/health-daily.json').writeAsString('{}');
-      await device.clearAll();
-      expect(await filesOnDisk(), isEmpty);
-    });
+    test(
+      'clearAll removes every user\'s files and the plaintext store',
+      () async {
+        await device.forUser('alice', _sealer()).write('note', <int>[1]);
+        await File('${caches.path}/health-daily.json').writeAsString('{}');
+        await device.clearAll();
+        expect(await filesOnDisk(), isEmpty);
+      },
+    );
   });
 
   group('SealedHealthStoreFile', () {
@@ -196,12 +205,13 @@ void main() {
     ];
 
     test('round trips across launches under opaque names', () async {
-      await HealthSampleCache(device.forUser('alice', _sealer())).keepOnly(
-        <CachedSpan, List<HealthSample>>{nov3: samples},
-      );
-      final Map<CachedSpan, List<HealthSample>> loaded = await HealthSampleCache(
-        DeviceFiles(caches: () async => caches).forUser('alice', _sealer()),
-      ).load();
+      await HealthSampleCache(
+        device.forUser('alice', _sealer()),
+      ).keepOnly(<CachedSpan, List<HealthSample>>{nov3: samples});
+      final Map<CachedSpan, List<HealthSample>> loaded =
+          await HealthSampleCache(
+            DeviceFiles(caches: () async => caches).forUser('alice', _sealer()),
+          ).load();
       expect(loaded, hasLength(1));
       expect(loaded[nov3], samples);
       final String name = (await filesOnDisk()).single.path.split('/').last;
@@ -218,9 +228,8 @@ void main() {
       });
       expect(await filesOnDisk(), hasLength(1));
       await cache.keepOnly(<CachedSpan, List<HealthSample>>{nov4: samples});
-      final Map<CachedSpan, List<HealthSample>> loaded = await HealthSampleCache(
-        device.forUser('alice', _sealer()),
-      ).load();
+      final Map<CachedSpan, List<HealthSample>> loaded =
+          await HealthSampleCache(device.forUser('alice', _sealer())).load();
       expect(loaded.keys, <CachedSpan>[nov4]);
     });
 
@@ -255,26 +264,28 @@ void main() {
   });
 
   group('Account', () {
-    test('sign-out clears the device files even when the cache will not',
-        () async {
-      await device.forUser('alice', _sealer()).write('note', <int>[1]);
-      final _Auth auth = _Auth();
-      final _Firestore firestore = _Firestore();
-      final _Journal journal = _Journal();
-      when(firestore.waitForPendingWrites).thenAnswer((_) async {});
-      when(auth.signOut).thenAnswer((_) async {});
-      when(firestore.terminate).thenAnswer((_) async {});
-      when(firestore.clearPersistence).thenThrow(
-        FirebaseException(plugin: 'cloud_firestore', code: 'failed'),
-      );
-      when(journal.clear).thenAnswer((_) async {});
-      await Account(
-        auth,
-        firestore,
-        journal,
-        clearDeviceFiles: device.clearAll,
-      ).signOut();
-      expect(await filesOnDisk(), isEmpty);
-    });
+    test(
+      'sign-out clears the device files even when the cache will not',
+      () async {
+        await device.forUser('alice', _sealer()).write('note', <int>[1]);
+        final _Auth auth = _Auth();
+        final _Firestore firestore = _Firestore();
+        final _Journal journal = _Journal();
+        when(firestore.waitForPendingWrites).thenAnswer((_) async {});
+        when(auth.signOut).thenAnswer((_) async {});
+        when(firestore.terminate).thenAnswer((_) async {});
+        when(firestore.clearPersistence).thenThrow(
+          FirebaseException(plugin: 'cloud_firestore', code: 'failed'),
+        );
+        when(journal.clear).thenAnswer((_) async {});
+        await Account(
+          auth,
+          firestore,
+          journal,
+          clearDeviceFiles: device.clearAll,
+        ).signOut();
+        expect(await filesOnDisk(), isEmpty);
+      },
+    );
   });
 }
