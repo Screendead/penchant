@@ -64,7 +64,12 @@ class ReplacementCardView extends StatelessWidget {
                 ),
                 style: small,
               ),
-              ReplacementRisers(card: card, nameOf: nameOf, unitOf: unitOf, locale: locale),
+              ReplacementRisers(
+                card: card,
+                nameOf: nameOf,
+                unitOf: unitOf,
+                locale: locale,
+              ),
             ],
           ),
         ),

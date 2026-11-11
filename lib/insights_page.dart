@@ -79,6 +79,7 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String costsHeading = 'What it costs';
   static const String cuttingDownHeading = 'How cutting down is going';
   static const String setsOffHeading = 'What sets it off';
+
   /// The level changes' heading on the "What it costs" drill-in.
   static const String shiftsHeading = 'What else changed';
   static const String shiftsNote =
@@ -372,44 +373,44 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     final List<InsightCard> cards = costs.cards;
     final int shown = min(cards.length, InsightsPage.previewCards);
     final int hidden = cards.length - shown + costs.shifts.length;
-    final List<Widget Function(double top)> cuttingDown =
-        <Widget Function(double top)>[
-          for (final PayoffCard card in costs.fallCards)
-            (double top) => PayoffCardView(
-              card: card,
-              habit: costs.nameOf(card.habitId),
-              unit: costs.unitOf(card.habitId),
-              mark: costs.marks[card.habitId] ?? const HabitMark(0),
-              locale: formatLocale,
-              top: top,
-              replacement: costs.risers[card.habitId],
-              nameOf: costs.nameOf,
-              unitOf: costs.unitOf,
-            ),
-          // A fall with nothing clear since stays a row, not a card.
-          if (costs.payoffRows.isNotEmpty)
-            (double top) => DialCard(
-              top: top,
-              children: <Widget>[
-                for (final PayoffCard card in costs.payoffRows)
-                  CardRow(
-                    label: costs.nameOf(card.habitId),
-                    subtitle:
-                        '${fallSentence(card.fall, costs.nameOf(card.habitId), formatLocale, unit: costs.unitOf(card.habitId))} '
-                        '${payoffRefusal(card.refusal!)}',
-                  ),
-              ],
-            ),
-          for (final ReplacementCard card in costs.replacements)
-            (double top) => ReplacementCardView(
-              card: card,
-              nameOf: costs.nameOf,
-              unitOf: costs.unitOf,
-              mark: costs.marks[card.habitId] ?? const HabitMark(0),
-              locale: formatLocale,
-              top: top,
-            ),
-        ];
+    final List<Widget Function(double top)>
+    cuttingDown = <Widget Function(double top)>[
+      for (final PayoffCard card in costs.fallCards)
+        (double top) => PayoffCardView(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          unit: costs.unitOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top: top,
+          replacement: costs.risers[card.habitId],
+          nameOf: costs.nameOf,
+          unitOf: costs.unitOf,
+        ),
+      // A fall with nothing clear since stays a row, not a card.
+      if (costs.payoffRows.isNotEmpty)
+        (double top) => DialCard(
+          top: top,
+          children: <Widget>[
+            for (final PayoffCard card in costs.payoffRows)
+              CardRow(
+                label: costs.nameOf(card.habitId),
+                subtitle:
+                    '${fallSentence(card.fall, costs.nameOf(card.habitId), formatLocale, unit: costs.unitOf(card.habitId))} '
+                    '${payoffRefusal(card.refusal!)}',
+              ),
+          ],
+        ),
+      for (final ReplacementCard card in costs.replacements)
+        (double top) => ReplacementCardView(
+          card: card,
+          nameOf: costs.nameOf,
+          unitOf: costs.unitOf,
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top: top,
+        ),
+    ];
     return <Widget>[
       if (costs.firstDay case final DateTime first)
         CardFoot(InsightsPage.span(first)),
@@ -680,6 +681,7 @@ class _Costs {
   late final List<InsightCard> cards;
   late final List<HabitRefusal> refused;
   late final List<BeforeUseCard> before;
+
   /// Falls shown as cards, in order, and the rest as rows after them.
   late final List<PayoffCard> fallCards;
   late final List<PayoffCard> payoffRows;
@@ -751,10 +753,7 @@ class _Costs {
       emptyTitle: empty.title,
       emptyBody: empty.body,
       cuttingDown: <List<String>>[
-        for (final PayoffCard card in <PayoffCard>[
-          ...fallCards,
-          ...payoffRows,
-        ])
+        for (final PayoffCard card in <PayoffCard>[...fallCards, ...payoffRows])
           <String>[
             ...payoffText(
               card,

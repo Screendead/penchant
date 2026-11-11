@@ -144,8 +144,7 @@ void main() {
     await tester.pump();
 
     final String text = copied.single!;
-    const String block =
-        '\n${InsightsPage.shiftsHeading}\n\n';
+    const String block = '\n${InsightsPage.shiftsHeading}\n\n';
     expect(
       text,
       contains(
@@ -153,7 +152,10 @@ void main() {
         '\n${InsightsPage.shiftsNote}\n',
       ),
     );
-    expect(text.indexOf(block), greaterThan(text.indexOf(InsightsPage.costsHeading)));
+    expect(
+      text.indexOf(block),
+      greaterThan(text.indexOf(InsightsPage.costsHeading)),
+    );
     expect(text.indexOf(block), lessThan(text.indexOf(InsightsPage.foot)));
   });
 
