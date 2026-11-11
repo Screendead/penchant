@@ -361,9 +361,9 @@ reach the Recovery key page through `RecoveryKeyStatus`, which says where this d
 key stays one. `deleteAccount` deletes the record. Device files holding journal content, findings or
 Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/sealed/<uid>/`, each file through
 `Sealer.sealFile` (a 4-byte length prefix, padded to a power of two from 4096; the field envelope is unchanged) with
-`device-file/v1/<uid>/<name>` as associated data. `sealedFilesProvider` is null while nobody is signed in or no key is
+`device-file/v1/<uid length>:<uid>/<name>` as associated data. `sealedFilesProvider` is null while nobody is signed in or no key is
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
-use deletes other users' folders and the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
+use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
 it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
 `lib/insights/health_sample_cache.dart`; random names, since spans follow use times). The Swift-written
 `Caches/health-sync.json` (anchors and changed days, no values) stays plaintext. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):

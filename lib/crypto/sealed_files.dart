@@ -51,6 +51,15 @@ class DeviceFiles {
     }
   }
 
+  /// At launch, whether or not a key loads. Never throws.
+  Future<void> deleteLegacy() async {
+    try {
+      await _deleteLegacy(await _caches());
+    } catch (_) {
+      // Tried again next launch.
+    }
+  }
+
   SealedFiles forUser(String uid, FileSealer sealer) =>
       SealedFiles._(this, uid, sealer);
 

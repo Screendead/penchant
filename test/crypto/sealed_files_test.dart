@@ -7,7 +7,11 @@ import 'package:cryptography/cryptography.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/sealed.dart';
+import 'package:tracker/providers/device_files_provider.dart';
+import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/crypto/journal_field_sealer.dart';
 import 'package:tracker/crypto/sealed_files.dart';
 import 'package:tracker/crypto/sealer.dart';
@@ -15,6 +19,8 @@ import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
+
+import '../fake_sealer.dart';
 
 JournalFieldSealer _sealer({int keyByte = 7}) => JournalFieldSealer(
   Sealer(aes: AesGcm.with256bits(), key: List<int>.filled(32, keyByte)),
@@ -287,5 +293,37 @@ void main() {
         expect(await filesOnDisk(), isEmpty);
       },
     );
+  });
+
+  test('deleteLegacy removes the plaintext store alone', () async {
+    await File('${caches.path}/health-daily.json').writeAsString('{}');
+    await File('${caches.path}/health-daily.json.next').writeAsString('{}');
+    await device.forUser('alice', _sealer()).write('note', <int>[1]);
+    await device.deleteLegacy();
+    expect((await filesOnDisk()).single.path, endsWith('note'));
+  });
+
+  group('sealedFilesProvider', () {
+    SealedFiles? files({String? uid, FieldSealer? sealer}) {
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          insightsUidProvider.overrideWithValue(uid),
+          sealerProvider.overrideWithValue(sealer),
+          deviceFilesProvider.overrideWithValue(device),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container.read(sealedFilesProvider);
+    }
+
+    test('is null with no key, nobody signed in or no file sealer', () {
+      expect(files(uid: 'alice'), isNull);
+      expect(files(sealer: _sealer()), isNull);
+      expect(files(uid: 'alice', sealer: FakeSealer()), isNull);
+    });
+
+    test('is the signed-in user\'s with the journal key', () {
+      expect(files(uid: 'alice', sealer: _sealer())?.uid, 'alice');
+    });
   });
 }
