@@ -101,9 +101,14 @@ void main() {
       'measures AR(1) 0.6, use in runs',
       (s) => recoveryDays(s, ar: 0.6, runs: true),
     );
+    rates('measures AR(1) 0.6 alone', (s) => recoveryDays(s, ar: 0.6));
     rates(
       'a short night brings a heavier day, AR(1) 0.6',
       (s) => recoveryDays(s, ar: 0.6, reverse: 1),
+    );
+    rates(
+      'a short night brings a heavier day, AR(1) 0.6, seeds from $seeds',
+      (s) => recoveryDays(s + seeds, ar: 0.6, reverse: 1),
     );
     rates(
       'a short night brings a heavier day, independent days',

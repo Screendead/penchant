@@ -174,14 +174,20 @@ class Recovery {
 /// measure averaged over the calendar day, a heavy day on t itself; whether
 /// t is a weekend day; a trend and a level per period.
 ///
-/// The measure's own previous value is not held fixed: it lies between the
-/// heavy day and the later nights, and would take the carry-over with it.
-/// Its day-to-day persistence goes into the errors instead: the fit is
-/// generalised least squares for errors that are first-order autoregressive
-/// across the days present, their correlation estimated from the residuals
-/// (twice over). Each transformed row sets the night against what the night
-/// before left unexplained, so a bad night that led to the heavy day reads
-/// as its cost only as far as that correlation is underestimated.
+/// The measure's own previous value is not held fixed for the later nights:
+/// it lies between the heavy day and them, and would take the carry-over
+/// with it. Its day-to-day persistence goes into the errors instead: the fit
+/// is generalised least squares for errors that are first-order
+/// autoregressive across the days present, their correlation estimated from
+/// the residuals (twice over).
+///
+/// That estimate runs low, and what it misses of a bad night that led to the
+/// heavy day would read as the day's cost. So the first night of a measure
+/// of the night itself comes from a second, ordinary least squares fit that
+/// also holds the night before fixed, on the nights that have one: that
+/// night ended before the heavy day began, so it can carry none of the
+/// day's effect. A measure of the calendar day gets no such fit, since its
+/// value on the heavy day already holds some of the cost.
 ///
 /// The first night must be clear on its own (and not rest on one night);
 /// each later night is "still off" only when its own interval excludes zero,
@@ -366,29 +372,73 @@ Recovery _recovery(
 
   final ({List<List<double>> rows, List<double> y, LinearFit fit}) model =
       _autoregressiveFit(design, y, days, plain);
-  final LinearFit fit = model.fit;
+  ({List<List<double>> rows, List<double> y, LinearFit fit}) opening = model;
+  if (sleepMinutesIds.contains(metricId)) {
+    final ({List<List<double>> rows, List<double> y, LinearFit fit})? given =
+        _givenNightBefore(design, y, days);
+    if (given == null ||
+        given.fit.degreesOfFreedom < _minResidualDays ||
+        given.rows.where((List<double> row) => row[1] == 1).length <
+            gates.minExposedDays) {
+      return result(refusal: RefusalReason.tooFewDays);
+    }
+    opening = given;
+  }
+  RecoveryNight night(LinearFit fit, int k) {
+    final Interval within = fit.interval(k, level: 2 * gates.level - 1);
+    return RecoveryNight(
+      effect: fit.coefficients[k],
+      interval: fit.interval(k, level: gates.level),
+      pValue: fit.pValue(k),
+      off: !fit.interval(k, level: gates.level).crossesZero,
+      back: within.low > -floor && within.high < floor,
+    );
+  }
+
   final List<RecoveryNight> nights = <RecoveryNight>[
-    for (int k = 1; k <= recoveryNights; k++)
-      () {
-        final Interval within = fit.interval(k, level: 2 * gates.level - 1);
-        return RecoveryNight(
-          effect: fit.coefficients[k],
-          interval: fit.interval(k, level: gates.level),
-          pValue: fit.pValue(k),
-          off: !fit.interval(k, level: gates.level).crossesZero,
-          back: within.low > -floor && within.high < floor,
-        );
-      }(),
+    night(opening.fit, 1),
+    for (int k = 2; k <= recoveryNights; k++) night(model.fit, k),
   ];
   if (!nights.first.off) {
     return result(refusal: RefusalReason.withinNoise, nights: nights);
   }
   return result(
-    refusal: withoutMostTelling(model.rows, model.y, fit, 1, gates.level)
+    refusal:
+        withoutMostTelling(opening.rows, opening.y, opening.fit, 1, gates.level)
         ? RefusalReason.oneDay
         : null,
     nights: nights,
   );
+}
+
+// [design] and [y] on the rows whose day before is also a row, with that
+// day's value as one more column; a column left constant on those rows is
+// dropped, the intercept and the heavy-day columns apart. Null when it cannot
+// be fitted.
+({List<List<double>> rows, List<double> y, LinearFit fit})? _givenNightBefore(
+  List<List<double>> design,
+  List<double> y,
+  List<DateTime> days,
+) {
+  final List<int> kept = <int>[
+    for (int r = 1; r < y.length; r++)
+      if ((days[r].difference(days[r - 1]).inHours / 24).round() == 1) r,
+  ];
+  if (kept.length < 2) return null;
+  final List<int> columns = <int>[
+    for (int j = 0; j < design.first.length; j++)
+      if (j <= recoveryNights ||
+          sampleVariance(<double>[for (final int r in kept) design[r][j]]) >
+              1e-12)
+        j,
+  ];
+  final List<List<double>> rows = <List<double>>[
+    for (final int r in kept)
+      <double>[for (final int j in columns) design[r][j], y[r - 1]],
+  ];
+  final List<double> ys = <double>[for (final int r in kept) y[r]];
+  final LinearFit? fit = fitLeastSquares(rows, ys);
+  return fit == null ? null : (rows: rows, y: ys, fit: fit);
 }
 
 int _mixedPeriods(List<double> x, List<int> period) {
