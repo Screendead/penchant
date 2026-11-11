@@ -103,7 +103,7 @@ void main() {
           DailyOutcome(
             date: addDays(DateTime(2026, 10, 20), i * 2),
             metricId: 'mindfulMinutes',
-            value: 10,
+            value: 20,
           ),
       ];
       final Map<DateTime, double> got = series(
@@ -135,6 +135,18 @@ void main() {
       expect(withSessionZeros(steps, through: addDays(start, 40)), steps);
     });
 
+    test('leaves out a session metric whose floor no day reaches, and keeps '
+        'one that a day reaches', () {
+      List<DailyOutcome> mindful(double longest) => <DailyOutcome>[
+        for (int i = 0; i < minSessionDays; i++)
+          outcome(3 + 2 * i, 'mindfulMinutes', i == 0 ? longest : 4),
+      ];
+      final double floor = metricFloors['mindfulMinutes']!.floor;
+      final DateTime through = addDays(start, 40);
+      expect(withSessionZeros(mindful(floor - 1), through: through), isEmpty);
+      expect(withSessionZeros(mindful(floor), through: through), hasLength(38));
+    });
+
     test('a person with no sessions has none', () {
       expect(withSessionZeros(const [], through: addDays(start, 40)), isEmpty);
     });
@@ -159,6 +171,42 @@ void main() {
     expect(got.containsKey(today), isFalse);
     expect(got[DateTime(2026, 5, 31)], 0);
     expect(got.length, 31);
+  });
+
+  test('a sub-floor session metric leaves the rest of the report as it was '
+      'without it', () {
+    String summary(InsightsReport r) => <String>[
+      for (final HabitFinding f in r.findings)
+        '${f.habitId} ${f.metricId} ${f.kind} ${f.pValue}',
+      for (final HabitRefusal f in r.refused)
+        '${f.habitId} ${f.metricId} ${f.reason} ${f.pValue}',
+    ].join('\n');
+    for (int seed = 0; seed < 5; seed++) {
+      final InsightsInput base = sessionInput(seed, 'workoutMinutes');
+      final Random random = Random(seed);
+      final InsightsInput withMindful = InsightsInput(
+        uses: base.uses,
+        outcomes: withSessionZeros(<DailyOutcome>[
+          ...base.outcomes,
+          for (int i = 0; i < 150; i++)
+            if (random.nextDouble() < 0.5)
+              outcome(i + 1, 'mindfulMinutes', 1 + 4 * random.nextDouble()),
+        ], through: base.through),
+        from: base.from,
+        through: base.through,
+      );
+      expect(
+        withMindful.outcomes.where((o) => o.metricId == 'mindfulMinutes'),
+        isEmpty,
+      );
+      final InsightsReport before = computeInsights(base);
+      expect(summary(computeInsights(withMindful)), summary(before));
+      expect(
+        before.findings.where((f) => f.metricId == 'workoutMinutes'),
+        isNotEmpty,
+        reason: 'the reachable metric stays judged',
+      );
+    }
   });
 
   test('the new outcomes carry a floor, a family, copy and a source line', () {

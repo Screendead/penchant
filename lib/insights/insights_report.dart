@@ -146,28 +146,45 @@ class InsightsInput {
 const int minSessionDays = 14;
 
 /// [outcomes] with each [hs.sessionMetricIds] metric's days without a session
-/// as 0, from its first day with one through [through]; without the metric
-/// when it has fewer than [minSessionDays] days with a session. A person with
-/// none has no rows, which stays no data: Health answers a refused read with
-/// nothing, the same as an empty one.
+/// as 0, from its first day with one through [through]. Without the metric
+/// when it has fewer than [minSessionDays] days with a session, or when its
+/// floor ([metricFloors]) cannot be reached: no day's total reaches it. Every
+/// day lies between 0 and that largest day, so no two sets of days can differ
+/// by the floor in either direction, and its comparisons would only enlarge
+/// the false-discovery family. The rule reads the metric's own days alone,
+/// never which days followed a habit, so it cannot favour a finding. It is
+/// exact for the with-and-without comparisons and conservative (it keeps
+/// some unreachable metrics) since the person's floor is never under the
+/// literature's; an amount or time slope across a habit's range is taken to
+/// stay inside the days' range too. A person with none has no rows, which
+/// stays no data: Health answers a refused read with nothing, the same as an
+/// empty one.
 List<DailyOutcome> withSessionZeros(
   List<DailyOutcome> outcomes, {
   required DateTime through,
 }) {
   final Map<String, Set<DateTime>> sessionDays = <String, Set<DateTime>>{};
+  final Map<String, double> largest = <String, double>{};
   for (final DailyOutcome o in outcomes) {
     if (hs.sessionMetricIds.contains(o.metricId) && o.value > 0) {
       (sessionDays[o.metricId] ??= <DateTime>{}).add(o.date);
+      largest[o.metricId] = max(largest[o.metricId] ?? 0, o.value);
     }
   }
+  final Set<String> judged = <String>{
+    for (final MapEntry<String, Set<DateTime>> metric in sessionDays.entries)
+      if (metric.value.length >= minSessionDays &&
+          largest[metric.key]! >= (metricFloors[metric.key]?.floor ?? 0))
+        metric.key,
+  };
   final List<DailyOutcome> filled = <DailyOutcome>[
     for (final DailyOutcome o in outcomes)
       if (!hs.sessionMetricIds.contains(o.metricId) ||
-          (sessionDays[o.metricId]?.length ?? 0) >= minSessionDays)
+          judged.contains(o.metricId))
         o,
   ];
   for (final MapEntry<String, Set<DateTime>> metric in sessionDays.entries) {
-    if (metric.value.length < minSessionDays) continue;
+    if (!judged.contains(metric.key)) continue;
     final Set<DateTime> known = <DateTime>{
       for (final DailyOutcome o in outcomes)
         if (o.metricId == metric.key) o.date,

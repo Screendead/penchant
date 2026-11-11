@@ -40,6 +40,10 @@ an extrapolation. The cards say "went with" for these, never "caused".
 | Workout time | 15 min | Inferred | Wen 2011 (Lancet, over 400,000 Taiwanese adults, about 8 years): about 15 min a day (92 min a week) of moderate exercise went with 14% lower all-cause mortality than none, and each further 15 min a day with 4% lower. The exercise was self-reported, not recorded workouts; read in search summaries quoting the paper (added 2026-11-11). |
 | Mindful time | 13 min | Inferred | Basso 2019 (Behav Brain Res, 42 non-meditators randomised): 13 min of guided meditation a day for 8 weeks lowered negative mood and state anxiety and improved attention and memory against 13 min of podcasts; nothing differed at 4 weeks. A daily dose kept up for weeks, not a one-day change; read in the PubMed abstract's summary (added 2026-11-11). |
 
+Workout and mindful time count a day without a session as 0, so a person whose longest day never reaches the floor
+cannot show a difference of it either way; the engine leaves such a metric out rather than add its comparisons to
+the false-discovery family (`withSessionZeros`). The rule reads the person's days alone, never which followed a habit.
+
 ## The noise check
 
 A floor must not sit inside the person's own night-to-night scatter. For each daily outcome the engine measures that
