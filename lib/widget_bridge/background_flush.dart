@@ -15,13 +15,13 @@ import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 
 // Inside a BGAppRefreshTask, which iOS ends after about 30 seconds, or the
-// Mac's flush mode: the session and the key get this long between them, a
+// Mac's PenchantSync run: the session and the key get this long between them, a
 // write up to settleWrite's 10 s more.
 const Duration backgroundReadyWithin = Duration(seconds: 12);
 
 /// One flush of the widgets' queue from a headless engine that iOS started for
-/// a background refresh, or the Mac app started in flush mode
-/// (ios/Runner/WidgetBridge.swift). It writes only what
+/// a background refresh (ios/Runner/WidgetBridge.swift), or the Mac's
+/// PenchantSync (macos/PenchantSync). It writes only what
 /// the app would: the signed-in user's logs, sealed. Without the session or
 /// the key in time it writes nothing and the logs stay queued. A log the
 /// server refused makes it [BackgroundFlushOutcome.blocked], for the app's

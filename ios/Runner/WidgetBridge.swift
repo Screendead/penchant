@@ -47,6 +47,14 @@ enum WidgetBridge {
         defaults.removeObject(forKey: snapshotKey)
         LastLog.save(nil)
       case "pendingLogs":
+        #if os(macOS) && !PENCHANT_SYNC
+          // PenchantSync writes from its own Firestore cache, so only one of
+          // them writes at a time; the app flushes once it has quit.
+          if SyncApp.isRunning {
+            result("[]")
+            return
+          }
+        #endif
         let data = (try? JSONEncoder().encode(LogQueue.read())) ?? Data("[]".utf8)
         result(String(decoding: data, as: UTF8.self))
         return
@@ -152,8 +160,8 @@ enum QueueListener {
   // A widget click while the app runs reaches it through QueueListener. This
   // only retries a flush that left the user's logs queued (the key not yet
   // loaded, say), every 15 minutes or more at utility priority, and stops once
-  // the queue is empty. With the app closed, the menu bar helper launches it
-  // in FlushMode.
+  // the queue is empty. With the app closed, the menu bar helper launches
+  // PenchantSync (macos/PenchantSync) instead.
   enum MacFlushSchedule {
     private static var activity: NSBackgroundActivityScheduler?
 
@@ -178,109 +186,37 @@ enum QueueListener {
     }
   }
 
-  // Penchant launched by the menu bar helper (macos/PenchantMenuBar) to write
-  // what was queued while it was closed: no Dock icon, no window, and a
-  // headless engine on backgroundFlushMain in lib/main.dart, which seals and
-  // writes through TrackerWrites or leaves the logs queued. It quits once the
-  // flush ends, leaving the outcome in the App Group for the helper, which
-  // tries again after a retry. The helper launches it only while no Penchant
-  // runs, and the user's own launch meanwhile reaches this process as a reopen
-  // (AppDelegate), so no second process opens the Firestore cache.
-  enum FlushMode {
-    // A sandboxed launcher's arguments are dropped (NSWorkspace.OpenConfiguration
-    // .arguments), so the helper leaves a stamp in the App Group first. Only a
-    // recent one counts: a stale stamp must not hide a launch the user made.
-    // It is consumed on read and removed when the launch fails, so the window
-    // can be wide enough for a launch slowed by login or a Gatekeeper scan.
-    static let argument = "--background-flush"
-    private static let stampFreshFor: TimeInterval = 60
-    // No system limit applies on the Mac. Engine start and Firebase take a few
-    // seconds, the session and key up to 12 s between them
-    // (backgroundReadyWithin), and a write 10 s more (writeTimeout).
-    private static let budget: TimeInterval = 40
-    private static let runNeeds: TimeInterval = 30
+  #if !PENCHANT_SYNC
+    enum SyncApp {
+      // Watched by isTerminated: NSWorkspace documents no quit notification
+      // for a background-only app.
+      private static var watches: [NSKeyValueObservation] = []
 
-    static private(set) var active: Bool = launchedToFlush()
-    private static var engine: FlutterEngine?
-    private static var startedAt = Date()
-
-    private static func launchedToFlush() -> Bool {
-      if CommandLine.arguments.contains(argument) { return true }
-      guard let defaults = UserDefaults(suiteName: appGroup) else { return false }
-      let stamp = defaults.double(forKey: FlushHandoff.launchedAt)
-      guard stamp > 0 else { return false }
-      defaults.removeObject(forKey: FlushHandoff.launchedAt)
-      return abs(Date().timeIntervalSince1970 - stamp) < stampFreshFor
-    }
-
-    static func start() {
-      startedAt = Date()
-      DispatchQueue.main.asyncAfter(deadline: .now() + budget) {
-        if active { quit(outcome: "retry") }
+      static var isRunning: Bool {
+        NSRunningApplication.runningApplications(withBundleIdentifier: syncAppID).contains { !$0.isTerminated }
       }
-      run()
-    }
 
-    private static func run() {
-      guard active else { return }
-      if LogQueue.pending().isEmpty {
-        quit(outcome: "flushed")
-        return
+      // The helper's retries are for PenchantSync's runs; the app's own
+      // session leaves no outcome.
+      static func clearOutcome() {
+        UserDefaults(suiteName: appGroup)?.removeObject(forKey: FlushHandoff.outcome)
       }
-      let headless = FlutterEngine(name: "background-flush", project: nil, allowHeadlessExecution: true)
-      RegisterGeneratedPlugins(registry: headless)
-      WidgetBridge.register(with: headless.registrar(forPlugin: "WidgetBridge")) { outcome in
-        finish(outcome: outcome)
-      }
-      engine = headless
-      if !headless.run(withEntrypoint: "backgroundFlushMain") {
-        quit(outcome: "retry")
+
+      static func flushOnceEnded() {
+        for app in NSRunningApplication.runningApplications(withBundleIdentifier: syncAppID) {
+          watches.append(
+            app.observe(\.isTerminated, options: [.initial, .new]) { app, _ in
+              guard app.isTerminated else { return }
+              DispatchQueue.main.async {
+                guard !isRunning, !watches.isEmpty else { return }
+                watches = []
+                QueueListener.flush()
+              }
+            })
+        }
       }
     }
-
-    // backgroundDone: BackgroundFlushOutcome's name. A log still inside its
-    // Undo hold gets one more run, if a whole run fits in the budget after it
-    // falls due; anything else left is the helper's to retry.
-    static func finish(outcome: String?) {
-      guard active else { return }
-      stopEngine()
-      let due = LogQueue.pending().map { $0.date.addingTimeInterval(queuedLogHold) }.max()
-      if outcome == "retry", let due, due > Date(),
-        due.timeIntervalSince(startedAt) < budget - runNeeds
-      {
-        DispatchQueue.main.asyncAfter(deadline: .now() + due.timeIntervalSinceNow + 0.5) { run() }
-        return
-      }
-      quit(outcome: outcome ?? "retry")
-    }
-
-    // The user opened Penchant while it flushed: the app's own flush
-    // (widgetLogFlushProvider) writes what is left, to the same document ids.
-    static func leave() {
-      active = false
-      stopEngine()
-      clearOutcome()
-    }
-
-    // A normal launch: the helper's retries are for flush-mode runs only.
-    static func clearOutcome() {
-      UserDefaults(suiteName: appGroup)?.removeObject(forKey: FlushHandoff.outcome)
-    }
-
-    private static func stopEngine() {
-      engine?.shutDownEngine()
-      engine = nil
-    }
-
-    private static func quit(outcome: String) {
-      stopEngine()
-      if let defaults = UserDefaults(suiteName: appGroup) {
-        defaults.set(outcome, forKey: FlushHandoff.outcome)
-        defaults.synchronize()
-      }
-      NSApp.terminate(nil)
-    }
-  }
+  #endif
 #else
   // Writes the queue from this process, sealed, through the Dart flush: the
   // running engine's when there is one, otherwise a headless engine on

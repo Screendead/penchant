@@ -48,8 +48,9 @@ void main() {
   startApp();
 }
 
-/// The headless engine's entrypoint, for an iOS background refresh or a Mac
-/// flush-mode launch with the queue non-empty (ios/Runner/WidgetBridge.swift). It flushes once and tells
+/// The headless engine's entrypoint, for an iOS background refresh
+/// (ios/Runner/WidgetBridge.swift) or the Mac's PenchantSync
+/// (macos/PenchantSync) with the queue non-empty. It flushes once and tells
 /// native, which ends the task.
 @pragma('vm:entry-point')
 Future<void> backgroundFlushMain() async {
