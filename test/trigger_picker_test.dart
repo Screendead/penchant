@@ -268,6 +268,8 @@ void main() {
 
     await openPicker();
     expect(find.text('What was going on?'), findsOneWidget);
+    // The record sheet and editor share this picker; the editor has Delete.
+    expect(find.text(undoLogLabel), findsNothing);
     expect(find.text('Your own words'), findsOneWidget);
     // Two uses so far: not yet a choice.
     expect(find.text('Your own'), findsNothing);

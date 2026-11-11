@@ -111,6 +111,7 @@ Future<void> logOne(
       vice: vice,
       cancelled: () => undone,
       entry: entry,
+      onUndone: () => undone = true,
     );
   }
 
