@@ -308,7 +308,7 @@ void main() {
 
     const String sentence =
         'After a day with 4 drinks or more logged for Beer, your time asleep '
-        'averages 31 min less that night. By the second night it is back '
+        'averages 31 min less than your usual that night. By the second night it is back '
         'within 21 min of your usual.';
     expect(find.text('Beer · after a heavy day'), findsOneWidget);
     expect(find.text(sentence), findsOneWidget);
@@ -426,13 +426,16 @@ void main() {
       const String sentence =
           'On days with 4 drinks or more logged for Beer, your time asleep '
           'that night averages 25 min less than on days with fewer; after '
-          'such a day it averages 31 min less that night. By the second '
-          'night it is back within 21 min of your usual.';
+          'such a day it averages 31 min less than your usual that night. By the '
+          'second night it is back within 21 min of your usual.';
       const String basis =
           'From 118 nights, 14 of them straight after such a day';
       expect(find.text('Beer · sleep'), findsOneWidget);
       expect(find.text(sentence), findsOneWidget);
-      expect(find.text('Range that night: 21 to 41 min less'), findsOneWidget);
+      expect(
+        find.text('Range against your usual that night: 21 to 41 min less'),
+        findsOneWidget,
+      );
       expect(find.text(basis), findsOneWidget);
       expect(find.text('Beer · after a heavy day'), findsNothing);
       expect(find.text(InsightsPage.more(1)), findsNothing);
@@ -441,7 +444,12 @@ void main() {
       await tester.pump();
       final String text = copied.single!;
       expect(text, contains('$sentence\n'));
-      expect(text, contains('Range that night: 21 to 41 min less\n$basis\n'));
+      expect(
+        text,
+        contains(
+          'Range against your usual that night: 21 to 41 min less\n$basis\n',
+        ),
+      );
       expect(text, isNot(contains('after a heavy day')));
       expect(text, isNot(contains('After a day with')));
     });

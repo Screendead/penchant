@@ -103,7 +103,8 @@ String _floorWords(Recovery r, String locale) {
 }
 
 /// "After a day with 4 drinks or more logged for Beer, your time asleep
-/// averages 31 min less that night and 16 min less the second night. By the
+/// averages 31 min less than your usual that night and 16 min less the second
+/// night. By the
 /// third night it is back within 21 min of your usual." Without a night
 /// shown to be back, it ends "When it comes back to your usual isn’t clear
 /// yet." The habit's name only ever follows "for", as in [findingSentence].
@@ -119,12 +120,13 @@ String recoverySentence(
       '${_changes(finding, locale)}. ${_back(finding, locale)}';
 }
 
-// "31 min less that night and 16 min less the second night".
+// "31 min less than your usual that night and 16 min less the second night".
 String _changes(Recovery finding, String locale) {
   final MetricCopy copy = metricCopy(finding.metricId)!;
   final List<String> parts = <String>[
     for (int k = 1; k <= max(1, finding.offNights); k++)
-      '${findingChange(finding.nightFinding(k), locale)} '
+      '${findingChange(finding.nightFinding(k), locale)}'
+          '${k == 1 ? ' than your usual' : ''} '
           '${_when(k, ofNight: copy.night)}',
   ];
   return parts.length == 1
@@ -153,8 +155,8 @@ String _afterSuch(
 /// [line], a line in the amount on [finding]'s habit and measure, with
 /// [finding] after it, so the heavy day is said once: "On days with 4 drinks
 /// or more logged for Beer, your time asleep that night averages 25 min less
-/// than on days with fewer; after such a day it averages 31 min less that
-/// night. By the second night it is back within 21 min of your usual."
+/// than on days with fewer; after such a day it averages 31 min less than
+/// your usual that night. By the second night it is back within 21 min of your usual."
 String recoveryJoinedSentence(
   HabitFinding line,
   Recovery finding,
@@ -233,13 +235,15 @@ String recoveryBasis(
       '${cutAmount(finding.cut!, unit, locale)} or more';
 }
 
-/// "Range that night: 12 to 50 min less".
-String recoveryRange(Recovery finding, String locale) {
+/// "Range that night: 12 to 50 min less"; [joined], under a line in the
+/// amount that has a "Range:" of its own, "Range against your usual that
+/// night: 12 to 50 min less".
+String recoveryRange(Recovery finding, String locale, {bool joined = false}) {
   final bool ofNight = metricCopy(finding.metricId)!.night;
-  return findingRange(
-    finding.nightFinding(1),
-    locale,
-  ).replaceFirst('Range:', 'Range ${_when(1, ofNight: ofNight)}:');
+  return findingRange(finding.nightFinding(1), locale).replaceFirst(
+    'Range:',
+    'Range ${joined ? 'against your usual ' : ''}${_when(1, ofNight: ofNight)}:',
+  );
 }
 
 /// [card] as the lines "Copy as text" writes.
