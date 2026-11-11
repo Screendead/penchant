@@ -110,11 +110,7 @@ needed unless that wait proves long.
 
 **Left:**
 
-- The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
-  findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
-  or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
-- A save of the last report in flight at sign-out can write the sealed file back after the folder is cleared; it
-  stays sealed and goes at another user's first use (the sample cache has the same exposure).
+- Unproven: stutter when a multi-year Insights view is encoded and sealed on the UI isolate.
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
 - The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
