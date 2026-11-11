@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
+import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/recovery_copy.dart';
 import 'package:tracker/insights/stats.dart';
@@ -219,5 +220,71 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  group('joined to a line in the amount', () {
+    HabitFinding line(String metricId, double cut) => HabitFinding(
+      habitId: 'beer',
+      metricId: metricId,
+      lagDays: 1,
+      usableDays: 120,
+      exposedDays: 41,
+      raw: null,
+      kind: InsightKind.doseLine,
+      cut: cut,
+      effect: -25,
+      interval: Interval(-37, -12),
+      standardized: -0.5,
+      pValue: 0.001,
+    );
+
+    test('takes only the finding on the line\'s habit and measure', () {
+      final ({Map<(String, String), Recovery> joined, List<Recovery> rest})
+      split = joinRecovery(
+        <InsightCard>[
+          InsightCard(
+            family: MetricFamily.sleep,
+            headline: line('sleepAsleep', 4),
+          ),
+        ],
+        <Recovery>[sleep, resting],
+      );
+      expect(split.joined, <(String, String), Recovery>{
+        ('beer', 'sleepAsleep'): sleep,
+      });
+      expect(split.rest, <Recovery>[resting]);
+    });
+
+    test('says "such a day" for the same cut and the heavy day in full for '
+        'another', () {
+      expect(
+        recoveryJoinedSentence(
+          line('sleepAsleep', 4),
+          sleep,
+          'Beer',
+          'en',
+          unit: Unit.drink,
+        ),
+        'On days with 4 drinks or more logged for Beer, your time asleep that '
+        'night averages 25 min less than on days with fewer; after such a day '
+        'it averages 31 min less that night and 16 min less the second night. '
+        'By the third night it is back within 21 min of your usual.',
+      );
+      expect(
+        recoveryJoinedLine(
+          line('sleepAsleep', 3),
+          sleep,
+          'en',
+          unit: Unit.drink,
+        ),
+        'From 3 drinks a day: time asleep 25 min less; after a day with 4 '
+        'drinks or more 31 min less that night, back by the third night',
+      );
+      expect(
+        recoveryJoinedBasis(line('sleepAsleep', 3), sleep, unit: Unit.drink),
+        'From 118 nights, 14 of them straight after a day with 4 drinks or '
+        'more',
+      );
+    });
   });
 }
