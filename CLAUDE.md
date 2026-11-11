@@ -365,7 +365,10 @@ Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/s
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
 use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
 it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
-`lib/insights/health_sample_cache.dart`; random names, since spans follow use times). The Swift-written
+`lib/insights/health_sample_cache.dart`; random names, since spans follow use times), and `last-report` (the last
+Insights view with a computed report, `lib/insights/last_report_file.dart` over `report_codec.dart`; a cold open with
+no view in the session shows it, updating, until the fresh one lands; raise `insightsViewFormat` with any change to
+the report's types). The Swift-written
 `Caches/health-sync.json` (anchors and changed days, no values) stays plaintext. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
