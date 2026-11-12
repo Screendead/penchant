@@ -173,9 +173,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         if (ref.read(calendarAccessProvider).value != CalendarAccess.full) {
           ref.invalidate(calendarAccessProvider);
         }
-        if (ref.read(healthStateProvider).value case HealthReady(
-          :final values,
-        ) when values.isEmpty) {
+        if (ref.read(healthStateProvider).value case HealthReady(:final values)
+            when values.isEmpty) {
           _retryHealth();
         }
       },

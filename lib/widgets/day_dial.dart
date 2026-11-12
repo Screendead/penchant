@@ -819,9 +819,8 @@ class _DayDialState extends ConsumerState<DayDial>
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialType type = DialType.of(context);
     final bool alwaysUse24Hour = MediaQuery.alwaysUse24HourFormatOf(context);
-    final TextScaler textScaler = MediaQuery.textScalerOf(
-      context,
-    ).clamp(maxScaleFactor: 1.35);
+    final TextScaler textScaler = MediaQuery.textScalerOf(context)
+        .clamp(maxScaleFactor: 1.35);
     final List<DialEntry>? entries = widget.entries;
     final bool contracting =
         _contractStart != null && _t - _contractStart! < _leaving;

@@ -34,6 +34,7 @@
 		A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */; };
 		A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */; };
+		A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */; };
 		E5FFCDD8E9C437FBA3489068 /* LastWeekWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998351430EAA92ABEDA6864E /* LastWeekWidget.swift */; };
 		E79CFF4636BCA7CB66FC29C5 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */; };
 		ED907333D07824E46214ADD2 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E1EA1AAF79873A5820DAE /* LogQueue.swift */; };
@@ -94,6 +95,7 @@
 		A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthDays.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RemindersChannel.swift; sourceTree = "<group>"; };
 		7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -236,6 +238,7 @@
 				A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */,
 				A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */,
+				A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */,
 				7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */,
 				2CC8BF16A2E2BF31EDCE1023 /* Runner.entitlements */,
 			);
@@ -463,6 +466,7 @@
 				A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */,
+				A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */,
 				8EE7B624B3FF8FD24ECF5F41 /* AppShortcuts.swift in Sources */,
 				55472B4E166DAC649E7BA254 /* Snapshot.swift in Sources */,
 				35537E769B73D3EB43BF6ADD /* LogQueue.swift in Sources */,

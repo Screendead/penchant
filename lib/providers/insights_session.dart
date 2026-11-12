@@ -92,6 +92,7 @@ class EngineInputs {
     required this.today,
     required this.archived,
     required this.events,
+    this.reminders = const <DailyOutcome>[],
   });
 
   final List<ViceActivity> activities;
@@ -101,6 +102,9 @@ class EngineInputs {
   final String archived;
   final List<CalendarEvent> events;
 
+  /// [reminderOutcomes]; empty without Reminders access.
+  final List<DailyOutcome> reminders;
+
   @override
   bool operator ==(Object other) =>
       other is EngineInputs &&
@@ -109,7 +113,8 @@ class EngineInputs {
       _sameUses(other.activities, activities) &&
       listEquals(other.health, health) &&
       _sameSamples(other.samples, samples) &&
-      _sameEvents(other.events, events);
+      _sameEvents(other.events, events) &&
+      listEquals(other.reminders, reminders);
 
   @override
   int get hashCode => Object.hash(
@@ -119,6 +124,7 @@ class EngineInputs {
     health.length,
     samples.length,
     events.length,
+    reminders.length,
   );
 }
 

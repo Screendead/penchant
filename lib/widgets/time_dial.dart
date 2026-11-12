@@ -175,9 +175,8 @@ class _TimeDialState extends State<TimeDial> {
     final DialColors colors = DialColors.of(context);
     final DialType type = DialType.of(context);
     final Brightness brightness = Theme.of(context).brightness;
-    final TextScaler textScaler = MediaQuery.textScalerOf(
-      context,
-    ).clamp(maxScaleFactor: 1.35);
+    final TextScaler textScaler = MediaQuery.textScalerOf(context)
+        .clamp(maxScaleFactor: 1.35);
     final int up = stepMinute(widget.minute, 1, latest: widget.latest);
     final int down = stepMinute(widget.minute, -1, latest: widget.latest);
     final bool enabled = widget.enabled;
@@ -313,9 +312,8 @@ class _TimeDialPainter extends CustomPainter {
           in DayDial.denseHourEntries(ghosts).entries) {
         final List<({Vice vice, HabitMark mark, int count, num total})> shares =
             DayDial.arcShares(inHour);
-        final List<Path> pieces = HourArc(
-          hour,
-        ).shares(<int>[for (final s in shares) s.count]);
+        final List<Path> pieces = HourArc(hour)
+            .shares(<int>[for (final s in shares) s.count]);
         for (int i = 0; i < shares.length; i++) {
           paintHabitBand(canvas, pieces[i], shares[i].mark, colors);
         }

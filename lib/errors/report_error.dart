@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Where each error goes after the device log: Crashlytics in production
 // (firebase_init.dart), nothing under the emulators or in tests. Callers pass
 // only literal context strings, so no habit name or amount reaches it.
-typedef ErrorForwarder =
-    void Function(FlutterErrorDetails details, {required bool fatal});
+typedef ErrorForwarder = void Function(
+  FlutterErrorDetails details, {
+  required bool fatal,
+});
 
 ErrorForwarder? errorForwarder;
 

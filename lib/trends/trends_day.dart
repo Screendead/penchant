@@ -182,8 +182,8 @@ class TrendsDay extends ConsumerWidget {
                                 MediaQuery.alwaysUse24HourFormatOf(context),
                           ),
                     offline: offline,
-                    onBeadTap: (DialEntry entry) =>
-                        Navigator.of(context).pushNamed(
+                    onBeadTap: (DialEntry entry) => Navigator.of(context)
+                        .pushNamed(
                           '/vices/${entry.vice.id}/activities/${entry.id}',
                         ),
                   ),

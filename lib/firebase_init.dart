@@ -73,14 +73,13 @@ void _setCrashlyticsCollection(bool enabled) {
   );
 }
 
-typedef RecordError =
-    Future<void> Function(
-      dynamic exception,
-      StackTrace? stack, {
-      dynamic reason,
-      bool? printDetails,
-      bool fatal,
-    });
+typedef RecordError = Future<void> Function(
+  dynamic exception,
+  StackTrace? stack, {
+  dynamic reason,
+  bool? printDetails,
+  bool fatal,
+});
 
 // Sends the exception, stack and literal context only. FlutterErrorDetails'
 // informationCollector is left out: its diagnostics can describe widgets,
