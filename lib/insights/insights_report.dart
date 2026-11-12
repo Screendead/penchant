@@ -15,6 +15,7 @@ import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
@@ -90,6 +91,7 @@ class InsightsInput {
     this.samples = const <String, List<hs.HealthSample>>{},
     this.archived = const <String>{},
     this.events = const <CalendarEvent>[],
+    this.stays = const <PlaceStay>[],
     this.conditions = const <DayCondition>[],
   });
 
@@ -102,6 +104,7 @@ class InsightsInput {
     Set<String> archived = const <String>{},
     List<CalendarEvent> events = const <CalendarEvent>[],
     Iterable<hs.DailyOutcome> reminders = const <hs.DailyOutcome>[],
+    List<PlaceStay> stays = const <PlaceStay>[],
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -128,6 +131,7 @@ class InsightsInput {
       samples: samples,
       archived: archived,
       events: events,
+      stays: stays,
       conditions: <DayCondition>[
         cyclePhases(<DateTime>[
           for (final hs.DailyOutcome o in health)
@@ -154,6 +158,9 @@ class InsightsInput {
   /// The calendar's timed events over the journal's span; empty without
   /// calendar access.
   final List<CalendarEvent> events;
+
+  /// Time spent at the person's own places; empty without location access.
+  final List<PlaceStay> stays;
 
   /// What the day-after comparisons hold fixed where there are enough days:
   /// the cycle's phase ([cyclePhases]), never an outcome of its own.
@@ -282,6 +289,7 @@ class InsightsReport {
     this.replacements = const <Replacement>[],
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
+    this.atPlace = const <AtPlace>[],
     this.recovery = const <Recovery>[],
   });
 
@@ -304,6 +312,11 @@ class InsightsReport {
   /// Whether each habit follows calendar events, findings and refusals,
   /// judged in the same family as [findings].
   final List<AfterEvent> afterEvent;
+
+  /// Whether each habit is logged at each place more than the time spent
+  /// there would give, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<AtPlace> atPlace;
 
   /// Every pair of habits shown, one following the other within minutes,
   /// each with its verdict, judged in the same family as [findings].
@@ -444,6 +457,12 @@ InsightsReport computeInsights(InsightsInput input) {
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<AtPlace> places = atPlace(
+    uses: input.uses,
+    stays: input.stays,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<HabitFollows> follows = habitFollows(
     uses: input.uses,
     through: addDays(input.through, -1),
@@ -467,6 +486,9 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
   ];
+  final List<double> placePs = <double>[
+    for (final AtPlace a in places) ?a.pValue,
+  ];
   final List<double> replacementPs = <double>[
     for (final Replacement r in replacements) ?r.pValue,
   ];
@@ -488,6 +510,7 @@ InsightsReport computeInsights(InsightsInput input) {
       ...beforePs,
       ...followsPs,
       ...calendarPs,
+      ...placePs,
       ...shiftPs,
       ...payoffPs,
       ...replacementPs,
@@ -520,6 +543,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...calendarPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -532,6 +556,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...followsPs,
         ...calendarPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -546,6 +571,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -558,6 +584,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...placePs,
         ...shiftPs,
         ...replacementPs,
         ...recoveryPs,
@@ -571,6 +598,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...recoveryPs,
@@ -580,8 +608,22 @@ InsightsReport computeInsights(InsightsInput input) {
       calendar,
       alongside: <double>[
         ...afterPs,
+        ...placePs,
         ...beforePs,
         ...followsPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    atPlace: judgeAtPlace(
+      places,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -597,6 +639,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...beforePs,
               ...followsPs,
               ...calendarPs,
+              ...placePs,
               ...payoffPs,
               ...replacementPs,
               ...recoveryPs,

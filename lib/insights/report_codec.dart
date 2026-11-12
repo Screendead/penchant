@@ -8,6 +8,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
@@ -20,7 +21,7 @@ import 'package:tracker/providers/insights_provider.dart';
 
 /// Raise with any change to what is written below or to the report's types,
 /// so a file an older build wrote reads as absent.
-const int insightsViewFormat = 2;
+const int insightsViewFormat = 3;
 
 /// [view] as bytes to seal; null for a view with no computed report, which is
 /// never kept. Throws only on a value JSON cannot hold.
@@ -198,6 +199,7 @@ Map<String, Object?> _report(InsightsReport r) => <String, Object?>{
   ],
   'shifts': <Object?>[for (final MeasureShift s in r.shifts) _shift(s)],
   'afterEvent': <Object?>[for (final AfterEvent a in r.afterEvent) _after(a)],
+  'atPlace': <Object?>[for (final AtPlace a in r.atPlace) _atPlace(a)],
   'recovery': <Object?>[for (final Recovery x in r.recovery) _recovery(x)],
 };
 
@@ -221,6 +223,7 @@ InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
   replacements: _list(m, 'replacements', _each(_readReplacement)),
   shifts: _list(m, 'shifts', _each(_readShift)),
   afterEvent: _list(m, 'afterEvent', _each(_readAfter)),
+  atPlace: _list(m, 'atPlace', _each(_readAtPlace)),
   recovery: _list(m, 'recovery', _each(_readRecovery)),
 );
 
@@ -533,6 +536,30 @@ AfterEvent _readAfter(Map<String, Object?> m) => AfterEvent(
   controlDays: _int(m, 'controlDays'),
   eventRate: _dbl(m, 'eventRate'),
   controlRate: _dbl(m, 'controlRate'),
+  effect: _odbl(m, 'effect'),
+  interval: _opt(m, 'interval', _readInterval),
+  pValue: _odbl(m, 'pValue'),
+  refusal: _oenum(RefusalReason.values, m, 'refusal'),
+);
+
+Map<String, Object?> _atPlace(AtPlace a) => <String, Object?>{
+  'habitId': a.habitId,
+  'placeId': a.placeId,
+  'days': a.days,
+  'useShare': _d(a.useShare),
+  'timeShare': _d(a.timeShare),
+  'effect': _od(a.effect),
+  'interval': _ointerval(a.interval),
+  'pValue': _od(a.pValue),
+  'refusal': a.refusal?.name,
+};
+
+AtPlace _readAtPlace(Map<String, Object?> m) => AtPlace(
+  habitId: _str(m, 'habitId'),
+  placeId: _int(m, 'placeId'),
+  days: _int(m, 'days'),
+  useShare: _dbl(m, 'useShare'),
+  timeShare: _dbl(m, 'timeShare'),
   effect: _odbl(m, 'effect'),
   interval: _opt(m, 'interval', _readInterval),
   pValue: _odbl(m, 'pValue'),
