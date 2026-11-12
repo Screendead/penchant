@@ -9,6 +9,8 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/daily_series.dart' show HabitUse;
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -18,6 +20,8 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/daylight_provider.dart';
+import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
 import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
@@ -209,7 +213,9 @@ const Duration hoursAfterReadTimeout = Duration(seconds: 60);
 
 /// The Health samples around the journal's uses that [hoursAfter] needs, by
 /// [HealthSampleMetric.id]: the time in bed over the past year in one read,
-/// then one span a day per measure, in pages, the measures side by side.
+/// steps over each night near a use that it does not hold (under
+/// [wakingStepsKey]), then one span a day per measure, in pages, the
+/// measures side by side.
 /// A span ending before yesterday is read once per session, and kept sealed
 /// on the device between launches: the Watch may still add to yesterday's.
 /// Empty when any read fails or [hoursAfterReadTimeout] passes, which leaves
@@ -285,10 +291,18 @@ final _samplesProvider = FutureProvider.autoDispose
           (start: insightsBedFrom(key.today), end: startOfDay(key.today)),
         ]);
         if (bed == null || !ref.mounted) return none;
+        final List<HabitUse> uses = habitUsesFrom(key.activities).toList();
+        final List<({DateTime start, DateTime end})> nights =
+            insightsWakingReads(uses, key.today, bed: bed);
+        final List<HealthSample>? wakingSteps = nights.isEmpty
+            ? const <HealthSample>[]
+            : await read(HealthSampleMetric.stepCount, nights);
+        if (wakingSteps == null || !ref.mounted) return none;
         final HoursAfterPlan plan = insightsHoursAfterPlan(
-          habitUsesFrom(key.activities).toList(),
+          uses,
           key.today,
           bed: bed,
+          wakingSteps: wakingSteps,
         );
         if (plan.reads.isEmpty) return none;
         final List<List<HealthSample>?> got = await Future.wait([
@@ -299,6 +313,7 @@ final _samplesProvider = FutureProvider.autoDispose
         if (disk != null) unawaited(disk.keepOnly(settledSpans));
         return <String, List<HealthSample>>{
           HealthSampleMetric.bed.id: bed,
+          wakingStepsKey: wakingSteps,
           for (int i = 0; i < insightsSampleMetrics.length; i++)
             insightsSampleMetrics[i].id: got[i]!,
         };
@@ -366,6 +381,8 @@ final _engineProvider = FutureProvider.autoDispose
           samples: key.samples,
           events: key.events,
           reminders: key.reminders,
+          stays: key.stays,
+          location: key.location,
           archived: <String>{
             if (key.archived.isNotEmpty)
               ...key.archived.split(_archivedSeparator),
@@ -500,6 +517,12 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         ? noReminderOutcomes
         : ref.watch(reminderOutcomesProvider(today)).value;
     if (reminders == null) return waiting();
+    final PlacesState places = ref.watch(placesProvider);
+    if (!places.ready) return waiting();
+    final AsyncValue<RoughLocation?> location = ref.watch(
+      roughLocationProvider,
+    );
+    if (location.isLoading) return waiting();
     InsightsResult? report(Map<String, List<HealthSample>> read) {
       final EngineInputs inputs = EngineInputs(
         activities: journal,
@@ -509,6 +532,8 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         archived: archived,
         events: events,
         reminders: reminders,
+        stays: places.store.stays,
+        location: location.value,
       );
       if (session?.resultFor(inputs) case final InsightsResult kept) {
         insightsTimingLog('Insights engine: reused');

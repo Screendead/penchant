@@ -1,0 +1,79 @@
+<!-- Option D, full detail sheet: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdD">
+<style>
+.cdD{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdD{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdD *{box-sizing:border-box}
+.cdD .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdD .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdD .today{padding:14px 18px 8px;position:relative}
+.cdD .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdD .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdD .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdD .row .n{flex:1}.cdD .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdD .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdD .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdD .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdD .snack b{font-weight:600}.cdD .snack .m{flex:1}
+.cdD .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdD .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdD .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdD .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdD .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdD .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdD .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdD .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdD .amt{text-align:center}.cdD .amt .v{font:500 42px/1 var(--fm)}.cdD .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdD .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdD .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdD .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdD .time .t{font:500 20px/1 var(--fm)}.cdD .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdD .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdD .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdD .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdD .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdD .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdD .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdD .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdD .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdD .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdD .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdD .note.filled{color:var(--text)}
+.cdD .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdD .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdD .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdD .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdD .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdD .go .mn{font-family:var(--fm);font-size:17px}
+.cdD .pair{display:flex;gap:10px;margin-top:18px}.cdD .pair .go{flex:1;margin:0}
+.cdD .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdD .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdD .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdD .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdD .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdD .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdD .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdD .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">One tap on Wine +</div><div class="today">
+  <div class="dial"><span class="bead" style="background:var(--d1);left:118px;top:22px"></span><span class="bead" style="background:var(--d1);left:142px;top:52px"></span><span class="bead" style="background:var(--d2);left:62px;top:146px;width:12px;height:12px"></span><span class="bead" style="background:var(--d3);left:20px;top:110px;width:16px;height:16px"></span></div>
+  <div class="row"><span class="dot" style="background:var(--d1)"></span><span class="n">Coffee</span><span class="c">2</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d2)"></span><span class="n">Cigarettes</span><span class="c">1</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d3)"></span><span class="n">Wine</span><span class="c">1</span><span class="plus">+</span></div>
+</div>
+<div class="snack"><div class="m">Logged <b>1 glass</b> of Wine at <b>21:40</b><span class="act">Add details</span></div><span class="undo">Undo 8</span></div></div><div class="ph"><div class="cap">Add details: every field</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr" style="font-size:22px;line-height:28px">1 glass of Wine, 21:40<span class="x">&#x2715;</span></div>
+  <p class="sub">All optional. Skip any.</p>
+  <div class="lbl">What was going on?</div><div class="chips"><span class="chip on">Winding down</span><span class="chip">With a meal</span><span class="chip">Stressed</span><span class="chip ghost">More</span></div>
+  <div class="lbl">Urge, 1 to 5</div><div class="scale"><span>1</span><span>2</span><span class="on">3</span><span>4</span><span>5</span></div>
+  <div class="lbl">Mood going in, 1 to 5</div><div class="scale"><span>1</span><span class="on">2</span><span>3</span><span>4</span><span>5</span></div>
+  <div class="lbl">With</div><div class="seg"><span class="chip on">Alone</span><span class="chip">Partner</span><span class="chip">Friends</span><span class="chip">Colleagues</span></div>
+  <div class="lbl">Where</div><div class="seg"><span class="chip on">Home</span><span class="chip">Work</span><span class="chip">Out</span><span class="chip">Travelling</span></div>
+  <div class="two" style="margin-top:14px"><div class="field"><small>Lasted</small>&ndash; min</div><div class="field"><small>Cost</small>&pound; &ndash;</div></div>
+  <div class="lbl">Note</div><div class="note">Anything to remember</div>
+  <div class="pair"><span class="ghostbtn">Undo log</span><div class="go">Save details</div></div>
+</div></div>
+<p class="legend">The bar&rsquo;s second action becomes &ldquo;Add details&rdquo;; the amount sheet would carry the same rows. &ldquo;With&rdquo; and &ldquo;Where&rdquo; repeat trigger choices that exist today (On my own, With friends, Home, Travelling). Silent fields of option B included.</p>
+</div>

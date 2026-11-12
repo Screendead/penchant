@@ -1,0 +1,78 @@
+<!-- Option A: no weather; daylight only (being built). Mock-up, copy invented to match today's finding cards. -->
+<style>
+.wxa{--wxa-bg:#F6F4EF;--wxa-surface:#FFFFFF;--wxa-surface2:#EFECE5;--wxa-text:#1D1C1A;--wxa-muted:#635E56;--wxa-line:#1D1C1A1A;--wxa-outline:#1D1C1A8C;--wxa-accent:#1D1C1A;--wxa-onaccent:#F6F4EF;--wxa-d1:#FFB347;--wxa-d2:#FF7A59;--wxa-d3:#E8505B;--wxa-d1i:#8F5600;--wxa-d2i:#B03E1C;--wxa-d3i:#B42A37;--wxa-spoke:#1D1C1A80;--wxa-clear:#E3EFE4;--wxa-clearink:#276B43;
+  --wxa-display:"Red Hat Display",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --wxa-txt:"Red Hat Text",-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --wxa-mono:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wxa{--wxa-bg:#151412;--wxa-surface:#1F1D1B;--wxa-surface2:#2A2825;--wxa-text:#F3F0EA;--wxa-muted:#ACA79D;--wxa-line:#F3F0EA1F;--wxa-outline:#F3F0EA66;--wxa-accent:#F3F0EA;--wxa-onaccent:#1D1C1A;--wxa-d1:#FFB347;--wxa-d2:#FF7A59;--wxa-d3:#E95963;--wxa-d1i:#FFB347;--wxa-d2i:#FF7A59;--wxa-d3i:#F0737C;--wxa-spoke:#F3F0EA80;--wxa-clear:#15241B;--wxa-clearink:#9ED8B0}}
+:root[data-theme="dark"] .wxa{--wxa-bg:#151412;--wxa-surface:#1F1D1B;--wxa-surface2:#2A2825;--wxa-text:#F3F0EA;--wxa-muted:#ACA79D;--wxa-line:#F3F0EA1F;--wxa-outline:#F3F0EA66;--wxa-accent:#F3F0EA;--wxa-onaccent:#1D1C1A;--wxa-d1:#FFB347;--wxa-d2:#FF7A59;--wxa-d3:#E95963;--wxa-d1i:#FFB347;--wxa-d2i:#FF7A59;--wxa-d3i:#F0737C;--wxa-spoke:#F3F0EA80;--wxa-clear:#15241B;--wxa-clearink:#9ED8B0}
+.wxa *{box-sizing:border-box}
+.wxa figure{margin:0;display:grid;gap:8px;width:390px;max-width:100%}
+.wxa figcaption{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted);padding:0 4px}
+.wxa .ph{width:100%;background:var(--wxa-bg);color:var(--wxa-text);border:1px solid var(--wxa-line);border-radius:44px;
+  padding:14px 20px 28px;font:400 15px/21px var(--wxa-txt);display:grid;gap:12px;overflow:hidden}
+.wxa .sb{display:flex;justify-content:space-between;font:600 15px/20px var(--wxa-txt);padding:4px 10px 6px}
+.wxa .bar{display:flex;align-items:center;gap:10px}
+.wxa .circ{width:40px;height:40px;border-radius:999px;background:var(--wxa-surface);border:1px solid var(--wxa-line);
+  display:grid;place-items:center;font:600 18px/1 var(--wxa-txt)}
+.wxa h4{margin:0;font:900 34px/40px var(--wxa-display);letter-spacing:-.5px}
+.wxa h5{margin:6px 4px 0;font:600 13px/18px var(--wxa-txt);color:var(--wxa-muted);letter-spacing:.04em;text-transform:uppercase}
+.wxa .card{background:var(--wxa-surface);border-radius:24px;border:1px solid var(--wxa-line);padding:14px 18px 16px;display:grid;gap:6px}
+.wxa .row{display:flex;gap:12px;align-items:center}
+.wxa .row .t{flex:1;display:grid;gap:2px}
+.wxa .lab{font:600 15px/20px var(--wxa-txt)}
+.wxa .sub{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .chev{font:600 18px/1 var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .val{font:400 15px/20px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .kick{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .pip{width:12px;height:12px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.25px var(--wxa-ink)}
+.wxa .big{font:500 16px/22px var(--wxa-txt)}
+.wxa .sm{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .rng{position:relative;height:14px;margin:6px 0 2px}
+.wxa .rng .tr{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--wxa-line)}
+.wxa .rng .z{position:absolute;top:0;bottom:0;width:1.5px;background:var(--wxa-spoke)}
+.wxa .rng .iv{position:absolute;top:3px;height:8px;border-radius:999px;background:var(--wxa-surface2);border:1.5px solid var(--wxa-text)}
+.wxa .rng .pt{position:absolute;top:2px;width:10px;height:10px;border-radius:999px;background:var(--wxa-text);margin-left:-5px}
+.wxa .pill{height:52px;border-radius:999px;display:grid;place-items:center;font:600 15px/20px var(--wxa-txt)}
+.wxa .pill.pri{background:var(--wxa-accent);color:var(--wxa-onaccent)}
+.wxa .pill.sec{border:1px solid var(--wxa-outline);color:var(--wxa-text)}
+.wxa ul.leave{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wxa ul.leave li{display:grid;grid-template-columns:18px 1fr;gap:6px;font:400 13px/18px var(--wxa-txt)}
+.wxa ul.leave li b{font-weight:600}
+.wxa .mono{font-family:var(--wxa-mono);font-weight:500}
+.wxa .tag{display:inline-block;font:600 11px/16px var(--wxa-txt);letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--wxa-surface2);color:var(--wxa-muted)}
+.wxa .foot{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted);padding:0 4px}
+.wxa .foot.changed{border-left:3px solid var(--wxa-outline);padding-left:8px}
+.wxa .sheet{background:var(--wxa-surface);border-radius:32px 32px 0 0;border:1px solid var(--wxa-line);padding:10px 20px 20px;display:grid;gap:12px;margin:0 -20px -28px}
+.wxa .grab{width:36px;height:5px;border-radius:999px;background:var(--wxa-line);margin:0 auto 4px}
+.wxa .sheet h6{margin:0;font:900 26px/32px var(--wxa-display);letter-spacing:-.3px}
+.wxa .dim{opacity:.45}
+.wxa code{font:500 11px/16px var(--wxa-mono);word-break:break-all;color:var(--wxa-muted);background:var(--wxa-surface2);
+  border-radius:10px;padding:8px 10px;display:block}
+</style>
+<div class="wxa">
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<h5>What sets it off</h5>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxa-d2);--wxa-ink:var(--wxa-d2i)"></span><span>Wine &#183; Daylight</span></div>
+  <div class="big">On days with under 9 hours of daylight you log Wine 0.8 glasses more than on longer days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:38%;width:46%"></div><div class="pt" style="left:60%"></div></div>
+  <div class="sm">Range: 0.3 to 1.4 glasses more</div>
+  <div class="sm">From 212 days with Wine, 71 of them with under 9 hours of daylight</div>
+</div>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxa-d1);--wxa-ink:var(--wxa-d1i)"></span><span>Coffee &#183; Calendar</span></div>
+  <div class="big">In the hour after a calendar event ends, you log Coffee 64% of the time, against 21% at the same time on nearby days without one.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:10%"></div><div class="iv" style="left:40%;width:22%"></div><div class="pt" style="left:53%"></div></div>
+  <div class="sm">Range: 30 to 52 points more often</div>
+  <div class="sm">From 42 days with calendar events, against the same times on 38 nearby days clear of events</div>
+</div>
+<p class="foot">Worked out on this device from your journal and Apple Health; Penchant sends none of it anywhere. These are patterns in your own days, not medical advice, and a pattern doesn&#8217;t show that one thing causes another.</p>
+</div>
+<figcaption>No weather. Daylight (sunrise, sunset, day length, worked out on the phone with no network) arrives as its own finding. The footer&#8217;s promise stands as written.</figcaption>
+</figure>
+</div>

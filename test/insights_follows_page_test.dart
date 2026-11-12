@@ -101,6 +101,37 @@ void main() {
     expect(find.text(InsightsPage.setsOffBody), findsOneWidget);
   });
 
+  testWidgets('habits with no card say why behind a row, one line each', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, <HabitFollows>[
+      _pair('coffee', 'tea', verdict: FollowsVerdict.chance),
+      _pair('water', 'tea', verdict: FollowsVerdict.tooFewDays),
+      _pair('coffee', 'water', verdict: FollowsVerdict.tooSmall),
+      _pair('gone', 'coffee'),
+    ]);
+
+    expect(find.text(InsightsPage.setsOffWhyNot), findsOneWidget);
+    await tester.tap(find.text(InsightsPage.setsOffWhyNot));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InsightsSetsOffPage), findsOneWidget);
+    expect(find.text(InsightsPage.refusedHeading), findsOneWidget);
+    for (final String other in <String>['Water', 'Coffee']) {
+      expect(
+        find.text(
+          'With $other: too small to matter, under 10 points over your usual '
+          'timing',
+        ),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.text('With Coffee: could be chance, one of many comparisons'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('Copy as text carries the card under its heading', (
     WidgetTester tester,
   ) async {

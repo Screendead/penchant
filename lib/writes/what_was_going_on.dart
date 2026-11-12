@@ -23,13 +23,14 @@ const String whatWasGoingOnLabel = 'What was going on?';
 /// [cancelled], asked once the picker closes, stops the write (an entry undone
 /// meanwhile). [entry] names the entry if the server refuses the change. The
 /// picker's Undo log deletes the entry through [undoLog], then calls
-/// [onUndone].
+/// [onUndone]. [at], the entry's time, lets the calendar suggest a trigger.
 Future<void> askWhatWasGoingOn(
   BuildContext context,
   WidgetRef ref, {
   required String activityID,
   required Vice vice,
   List<String> initial = const <String>[],
+  DateTime? at,
   bool Function()? cancelled,
   String? entry,
   VoidCallback? onUndone,
@@ -49,6 +50,7 @@ Future<void> askWhatWasGoingOn(
     viceID: vice.id,
     viceName: vice.name,
     initial: initial,
+    at: at,
     onUndoLog: messenger == null
         ? null
         : () {
