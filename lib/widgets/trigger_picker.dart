@@ -7,6 +7,8 @@ import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/insights/calendar_suggestion.dart';
+import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
@@ -27,11 +29,13 @@ const String undoLogLabel = 'Undo log';
 /// Opens the picker for an entry of [viceID] and returns the chosen
 /// triggers, or null when it is dismissed without Done. With [onUndoLog] the
 /// sheet also offers Undo log, which closes it with null and calls that.
+/// With [at], the entry's time, it offers what the calendar suggests.
 Future<List<String>?> showTriggerPicker(
   BuildContext context, {
   required String viceID,
   required String viceName,
   required List<String> initial,
+  DateTime? at,
   VoidCallback? onUndoLog,
 }) => showModalBottomSheet<List<String>>(
   context: context,
@@ -41,23 +45,27 @@ Future<List<String>?> showTriggerPicker(
     viceID: viceID,
     viceName: viceName,
     initial: initial,
+    at: at,
     onUndoLog: onUndoLog,
   ),
 );
 
-// Supplies the habit's usual triggers and the promoted free text, so the
-// sheet itself needs neither Firestore nor the device store.
+// Supplies the habit's usual triggers, the promoted free text and the
+// calendar's suggestion, so the sheet itself needs neither Firestore, the
+// device store nor the calendar.
 class _TriggerPickerLoader extends ConsumerStatefulWidget {
   const _TriggerPickerLoader({
     required this.viceID,
     required this.viceName,
     required this.initial,
+    this.at,
     this.onUndoLog,
   });
 
   final String viceID;
   final String viceName;
   final List<String> initial;
+  final DateTime? at;
   final VoidCallback? onUndoLog;
 
   @override
@@ -67,6 +75,7 @@ class _TriggerPickerLoader extends ConsumerStatefulWidget {
 
 class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
   List<String> promoted = const <String>[];
+  List<String> suggested = const <String>[];
 
   @override
   void initState() {
@@ -76,6 +85,13 @@ class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
       ref.read(freeTextTriggersProvider).promoted(uid).then((List<String> p) {
         if (mounted) setState(() => promoted = p);
       }, onError: (Object _) {});
+    }
+    if (widget.at case final DateTime at) {
+      readCalendarSuggestions(ref.read(calendarSourceProvider), at).then((
+        List<String> s,
+      ) {
+        if (mounted && s.isNotEmpty) setState(() => suggested = s);
+      });
     }
   }
 
@@ -96,6 +112,7 @@ class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
       viceName: widget.viceName,
       usual: usualTriggers(recent),
       promoted: promoted,
+      suggested: suggested,
       initial: widget.initial,
       onDone: (List<String> picked) => Navigator.of(context).pop(picked),
       onUndoLog: widget.onUndoLog == null
@@ -108,9 +125,10 @@ class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
   }
 }
 
-/// Optional triggers for one entry: the habit's usual ones as one-tap chips,
-/// the starter tree two levels deep, and free text, which becomes a choice
-/// once used [freeTextPromotionUses] times.
+/// Optional triggers for one entry: the calendar's suggestions and the
+/// habit's usual ones as one-tap chips, the starter tree two levels deep, and
+/// free text, which becomes a choice once used [freeTextPromotionUses] times.
+/// Nothing starts picked but [initial].
 class TriggerPickerSheet extends StatefulWidget {
   const TriggerPickerSheet({
     super.key,
@@ -118,6 +136,7 @@ class TriggerPickerSheet extends StatefulWidget {
     required this.onDone,
     this.usual = const <String>[],
     this.promoted = const <String>[],
+    this.suggested = const <String>[],
     this.initial = const <String>[],
     this.roots = triggerTree,
     this.onUndoLog,
@@ -126,10 +145,14 @@ class TriggerPickerSheet extends StatefulWidget {
   final String viceName;
   final List<String> usual;
   final List<String> promoted;
+  final List<String> suggested;
   final List<String> initial;
   final List<TriggerNode> roots;
   final ValueChanged<List<String>> onDone;
   final VoidCallback? onUndoLog;
+
+  static const String calendarLabel = 'Suggested from your calendar';
+  static const String calendarHint = 'A calendar event ended in the hour before';
 
   @override
   State<TriggerPickerSheet> createState() => _TriggerPickerSheetState();
@@ -266,12 +289,35 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
   );
 
   List<Widget> _levelOne(BuildContext context) {
-    final List<String> usual = widget.usual;
+    final List<String> suggested = widget.suggested;
+    final List<String> usual = widget.usual
+        .where((String p) => !suggested.contains(p))
+        .toList();
     final List<String> promoted = widget.promoted
         .where((String p) => !usual.contains(p))
         .toList();
 
     return <Widget>[
+      if (suggested.isNotEmpty) ...<Widget>[
+        const _SectionLabel(TriggerPickerSheet.calendarLabel),
+        Wrap(
+          spacing: DialSpace.xs,
+          runSpacing: DialSpace.xs,
+          children: <Widget>[
+            for (final String path in suggested)
+              FilterChip(
+                avatar: const Icon(Icons.event_outlined, size: 18),
+                showCheckmark: false,
+                tooltip: TriggerPickerSheet.calendarHint,
+                label: Text(triggerDisplay(path)),
+                selected: selected.contains(path),
+                side: _focusSide(context),
+                onSelected: (_) => toggle(path),
+              ),
+          ],
+        ),
+        const SizedBox(height: DialSpace.m),
+      ],
       if (usual.isNotEmpty) ...<Widget>[
         _SectionLabel('Usual for ${widget.viceName}'),
         Wrap(
@@ -649,6 +695,7 @@ class TriggersField extends StatelessWidget {
     required this.onChanged,
     required this.viceID,
     required this.viceName,
+    this.at,
     this.enabled = true,
   });
 
@@ -657,6 +704,8 @@ class TriggersField extends StatelessWidget {
   // Null until a habit is chosen; the picker needs one for its usual chips.
   final String? viceID;
   final String viceName;
+  // The entry's time as the picker opens, for the calendar's suggestion.
+  final DateTime Function()? at;
   final bool enabled;
 
   Future<void> _open(BuildContext context) async {
@@ -665,6 +714,7 @@ class TriggersField extends StatelessWidget {
       viceID: viceID!,
       viceName: viceName,
       initial: value,
+      at: at?.call(),
     );
     if (picked != null) onChanged(picked);
   }
