@@ -9,11 +9,16 @@ class HabitUse {
     required this.habitId,
     required this.at,
     required this.amount,
+    this.triggers = const <String>[],
   });
 
   final String habitId;
   final DateTime at;
   final num amount;
+
+  /// As stored on the entry (lib/data/activity_triggers.dart); empty when
+  /// untagged or locked.
+  final List<String> triggers;
 }
 
 /// One value of an outcome (a night's sleep, a day's resting heart rate) for
@@ -206,11 +211,26 @@ class DayCondition {
   }) : _level = <DateTime, int>{
          for (final MapEntry<DateTime, int> e in level.entries)
            startOfDay(e.key): e.value,
-       };
+       },
+       _value = const <DateTime, double>{};
+
+  /// A quantity rather than levels ([levels] 0): held fixed as one column.
+  DayCondition.measure({required this.id, required Map<DateTime, double> value})
+    : levels = 0,
+      _level = const <DateTime, int>{},
+      _value = <DateTime, double>{
+        for (final MapEntry<DateTime, double> e in value.entries)
+          startOfDay(e.key): e.value,
+      };
 
   final String id;
   final int levels;
   final Map<DateTime, int> _level;
+  final Map<DateTime, double> _value;
+
+  bool get isMeasure => levels == 0;
 
   int? level(DateTime day) => _level[startOfDay(day)];
+
+  double? value(DateTime day) => _value[startOfDay(day)];
 }

@@ -7,6 +7,7 @@ import 'package:tracker/insights/health_source.dart'
     show HealthMetric, HealthSample, HealthSampleMetric;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/stats.dart' show Interval;
 import 'package:tracker/insights/what_follows.dart';
 
 import 'hours_after_synthetic.dart';
@@ -15,6 +16,7 @@ HoursAfterPlan plan(Synthetic s) => planHoursAfter(
   s.uses,
   s.through,
   bed: s.samples[HealthSampleMetric.bed.id]!,
+  wakingSteps: s.samples[wakingStepsKey] ?? const <HealthSample>[],
 );
 
 List<HabitInsight> judge(Synthetic s) =>
@@ -139,9 +141,57 @@ void main() {
       expect(plan(s).points, isEmpty);
       expect(
         reason(at(judge(s), (start: 0, end: 30))),
-        'Hours after it: needs your sleep in Health, to time each use from '
-        'waking: most uses have no night recorded before them',
+        'Hours after it: needs your sleep in Health, or steps through the '
+        'morning, to time each use from waking: most uses have no night '
+        'recorded before them',
       );
+    });
+
+    test('with no night recorded, waking comes from steps', () {
+      final Synthetic s = wakingSynthetic(
+        8,
+        missingNight: 1,
+        stepLag: 30,
+        habits: const <String, UsePolicy>{'Coffee': midday},
+      );
+      final HoursAfterPlan planned = plan(s);
+      expect(planned.points.length, greaterThan(40));
+      expect(planned.points.every((p) => p.estimated), isTrue);
+    });
+
+    test('a recorded night always wins over steps', () {
+      final Synthetic s = wakingSynthetic(
+        6,
+        stepLag: 30,
+        habits: const <String, UsePolicy>{'Coffee': midday},
+      );
+      final List<HoursAfterPoint> withSteps = plan(s).points;
+      final List<HoursAfterPoint> bedAlone = planHoursAfter(
+        s.uses,
+        s.through,
+        bed: s.samples[HealthSampleMetric.bed.id]!,
+      ).points;
+      expect(withSteps.any((p) => p.estimated), isFalse);
+      expect(withSteps.map((p) => p.at), bedAlone.map((p) => p.at));
+    });
+
+    test('a use timed from steps is never set against a recorded night', () {
+      final Synthetic s = wakingSynthetic(
+        6,
+        missingNight: 0.5,
+        stepLag: 30,
+        habits: const <String, UsePolicy>{'Coffee': midday},
+      );
+      final List<HoursAfterPoint> points = plan(s).points;
+      int controls = 0;
+      for (int i = 0; i < points.length; i++) {
+        if (!points[i].control) continue;
+        controls++;
+        expect(points[i].estimated, points[i - 1].estimated);
+      }
+      expect(controls, greaterThan(20));
+      expect(points.where((p) => p.estimated), isNotEmpty);
+      expect(points.where((p) => !p.estimated), isNotEmpty);
     });
 
     test('an event whose windows run past the cut-off waits', () {
@@ -217,6 +267,84 @@ void main() {
     );
   });
 
+  group('wakingFromSteps', () {
+    final DateTime day = DateTime(2026, 3, 4);
+    HealthSample stepsAt(int hour, int minute, double count) {
+      final DateTime at = DateTime(2026, 3, 4, hour, minute);
+      return HealthSample(at, at.add(const Duration(minutes: 5)), count);
+    }
+
+    // Evening steps on the 3rd, a trip at 03:00, up at 07:12.
+    final List<HealthSample> night = <HealthSample>[
+      for (int m = 0; m < 30; m += 5) stepsAt(-3, m, 60),
+      stepsAt(3, 0, 25),
+      HealthSample(
+        DateTime(2026, 3, 4, 7, 12),
+        DateTime(2026, 3, 4, 7, 17),
+        80,
+      ),
+      for (int m = 20; m < 60; m += 5) stepsAt(7, m, 50),
+    ];
+
+    test('waking is the first steps after the longest still span', () {
+      final HealthSample guess = wakingFromSteps(night, day)!;
+      expect(guess.end, DateTime(2026, 3, 4, 7, 12));
+      expect(guess.start, DateTime(2026, 3, 3, 21, 30));
+    });
+
+    test('no steps, or none before the night, is no waking', () {
+      expect(wakingFromSteps(const <HealthSample>[], day), isNull);
+      expect(wakingFromSteps(night.skip(6).toList(), day), isNull);
+    });
+
+    test('a short still span is not a night', () {
+      final List<HealthSample> nap = <HealthSample>[
+        for (int m = 0; m < 30; m += 5) stepsAt(10, m, 60),
+        for (int m = 0; m < 30; m += 5) stepsAt(12, m, 60),
+      ];
+      expect(wakingFromSteps(nap, day), isNull);
+    });
+  });
+
+  test('a finding timed from steps says so in its basis', () {
+    const HabitFinding f = HabitFinding(
+      habitId: 'Coffee',
+      metricId: 'heartRate',
+      lagDays: 0,
+      usableDays: 30,
+      exposedDays: 12,
+      raw: null,
+      kind: InsightKind.hoursAfter,
+      window: (start: 60, end: 120),
+      effect: 5,
+      interval: Interval(2, 8),
+      standardized: 1,
+      pValue: 0.01,
+      stepWakingDays: 30,
+    );
+    expect(
+      findingBasis(f, 'Coffee'),
+      'From 12 days with Coffee, against 18 days at the same time after '
+      'waking with none of it within 4 hours; waking estimated from steps, '
+      'with no night in Health',
+    );
+  });
+
+  test('a rise after Coffee is found with waking from steps', () {
+    final List<HabitInsight> insights = judge(
+      wakingSynthetic(
+        3,
+        missingNight: 1,
+        stepLag: 30,
+        habits: const <String, UsePolicy>{'Coffee': midday},
+        effect: (h, m) => h == 'Coffee' && m >= 60 && m < 120 ? 6 : 0,
+      ),
+    );
+    final HabitInsight hit = at(insights, (start: 60, end: 120));
+    expect(hit, isA<HabitFinding>());
+    expect((hit as HabitFinding).stepWakingDays, hit.usableDays);
+  });
+
   // 20 seeds x 4 windows; at a 5% false rate per check, 10 or more is
   // under 1 in 100 (binomial).
   int falseFindings(Synthetic Function(int seed) make) => <int>[
@@ -235,6 +363,20 @@ void main() {
       falseFindings(
         (seed) => wakingSynthetic(
           seed,
+          habits: const <String, UsePolicy>{'Coffee': _twoHoursAfterWaking},
+        ),
+      ),
+      lessThan(10),
+    );
+  });
+
+  test('Coffee soon after a waking from steps is not a finding', () {
+    expect(
+      falseFindings(
+        (seed) => wakingSynthetic(
+          seed,
+          missingNight: 1,
+          stepLag: 30,
           habits: const <String, UsePolicy>{'Coffee': _twoHoursAfterWaking},
         ),
       ),

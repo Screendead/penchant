@@ -1,0 +1,76 @@
+<!-- Option C: wait for a paid Apple developer team and WeatherKit. Mock-up of what would come later. -->
+<style>
+.wxc{--wxc-bg:#F6F4EF;--wxc-surface:#FFFFFF;--wxc-surface2:#EFECE5;--wxc-text:#1D1C1A;--wxc-muted:#635E56;--wxc-line:#1D1C1A1A;--wxc-outline:#1D1C1A8C;--wxc-accent:#1D1C1A;--wxc-onaccent:#F6F4EF;--wxc-d1:#FFB347;--wxc-d2:#FF7A59;--wxc-d3:#E8505B;--wxc-d1i:#8F5600;--wxc-d2i:#B03E1C;--wxc-d3i:#B42A37;--wxc-spoke:#1D1C1A80;--wxc-clear:#E3EFE4;--wxc-clearink:#276B43;
+  --wxc-display:"Red Hat Display",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --wxc-txt:"Red Hat Text",-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --wxc-mono:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wxc{--wxc-bg:#151412;--wxc-surface:#1F1D1B;--wxc-surface2:#2A2825;--wxc-text:#F3F0EA;--wxc-muted:#ACA79D;--wxc-line:#F3F0EA1F;--wxc-outline:#F3F0EA66;--wxc-accent:#F3F0EA;--wxc-onaccent:#1D1C1A;--wxc-d1:#FFB347;--wxc-d2:#FF7A59;--wxc-d3:#E95963;--wxc-d1i:#FFB347;--wxc-d2i:#FF7A59;--wxc-d3i:#F0737C;--wxc-spoke:#F3F0EA80;--wxc-clear:#15241B;--wxc-clearink:#9ED8B0}}
+:root[data-theme="dark"] .wxc{--wxc-bg:#151412;--wxc-surface:#1F1D1B;--wxc-surface2:#2A2825;--wxc-text:#F3F0EA;--wxc-muted:#ACA79D;--wxc-line:#F3F0EA1F;--wxc-outline:#F3F0EA66;--wxc-accent:#F3F0EA;--wxc-onaccent:#1D1C1A;--wxc-d1:#FFB347;--wxc-d2:#FF7A59;--wxc-d3:#E95963;--wxc-d1i:#FFB347;--wxc-d2i:#FF7A59;--wxc-d3i:#F0737C;--wxc-spoke:#F3F0EA80;--wxc-clear:#15241B;--wxc-clearink:#9ED8B0}
+.wxc *{box-sizing:border-box}
+.wxc figure{margin:0;display:grid;gap:8px;width:390px;max-width:100%}
+.wxc figcaption{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted);padding:0 4px}
+.wxc .ph{width:100%;background:var(--wxc-bg);color:var(--wxc-text);border:1px solid var(--wxc-line);border-radius:44px;
+  padding:14px 20px 28px;font:400 15px/21px var(--wxc-txt);display:grid;gap:12px;overflow:hidden}
+.wxc .sb{display:flex;justify-content:space-between;font:600 15px/20px var(--wxc-txt);padding:4px 10px 6px}
+.wxc .bar{display:flex;align-items:center;gap:10px}
+.wxc .circ{width:40px;height:40px;border-radius:999px;background:var(--wxc-surface);border:1px solid var(--wxc-line);
+  display:grid;place-items:center;font:600 18px/1 var(--wxc-txt)}
+.wxc h4{margin:0;font:900 34px/40px var(--wxc-display);letter-spacing:-.5px}
+.wxc h5{margin:6px 4px 0;font:600 13px/18px var(--wxc-txt);color:var(--wxc-muted);letter-spacing:.04em;text-transform:uppercase}
+.wxc .card{background:var(--wxc-surface);border-radius:24px;border:1px solid var(--wxc-line);padding:14px 18px 16px;display:grid;gap:6px}
+.wxc .row{display:flex;gap:12px;align-items:center}
+.wxc .row .t{flex:1;display:grid;gap:2px}
+.wxc .lab{font:600 15px/20px var(--wxc-txt)}
+.wxc .sub{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .chev{font:600 18px/1 var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .val{font:400 15px/20px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .kick{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .pip{width:12px;height:12px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.25px var(--wxc-ink)}
+.wxc .big{font:500 16px/22px var(--wxc-txt)}
+.wxc .sm{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .rng{position:relative;height:14px;margin:6px 0 2px}
+.wxc .rng .tr{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--wxc-line)}
+.wxc .rng .z{position:absolute;top:0;bottom:0;width:1.5px;background:var(--wxc-spoke)}
+.wxc .rng .iv{position:absolute;top:3px;height:8px;border-radius:999px;background:var(--wxc-surface2);border:1.5px solid var(--wxc-text)}
+.wxc .rng .pt{position:absolute;top:2px;width:10px;height:10px;border-radius:999px;background:var(--wxc-text);margin-left:-5px}
+.wxc .pill{height:52px;border-radius:999px;display:grid;place-items:center;font:600 15px/20px var(--wxc-txt)}
+.wxc .pill.pri{background:var(--wxc-accent);color:var(--wxc-onaccent)}
+.wxc .pill.sec{border:1px solid var(--wxc-outline);color:var(--wxc-text)}
+.wxc ul.leave{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wxc ul.leave li{display:grid;grid-template-columns:18px 1fr;gap:6px;font:400 13px/18px var(--wxc-txt)}
+.wxc ul.leave li b{font-weight:600}
+.wxc .mono{font-family:var(--wxc-mono);font-weight:500}
+.wxc .tag{display:inline-block;font:600 11px/16px var(--wxc-txt);letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--wxc-surface2);color:var(--wxc-muted)}
+.wxc .foot{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted);padding:0 4px}
+.wxc .foot.changed{border-left:3px solid var(--wxc-outline);padding-left:8px}
+.wxc .sheet{background:var(--wxc-surface);border-radius:32px 32px 0 0;border:1px solid var(--wxc-line);padding:10px 20px 20px;display:grid;gap:12px;margin:0 -20px -28px}
+.wxc .grab{width:36px;height:5px;border-radius:999px;background:var(--wxc-line);margin:0 auto 4px}
+.wxc .sheet h6{margin:0;font:900 26px/32px var(--wxc-display);letter-spacing:-.3px}
+.wxc .dim{opacity:.45}
+.wxc code{font:500 11px/16px var(--wxc-mono);word-break:break-all;color:var(--wxc-muted);background:var(--wxc-surface2);
+  border-radius:10px;padding:8px 10px;display:block}
+</style>
+<div class="wxc">
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<div class="card">
+  <div class="row"><div class="t"><span class="lab">Compare with the weather</span>
+  <span class="sub">Penchant asks Apple Weather for past weather in your area. Apple says the location is used only for the forecast and not tied to you.</span></div><span class="tag">Later</span></div>
+</div>
+<h5>What sets it off</h5>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxc-d2);--wxc-ink:var(--wxc-d2i)"></span><span>Wine &#183; Weather</span></div>
+  <div class="big">On days with more than 5&#8202;mm of rain you log Wine 0.6 glasses more than on dry days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:30%;width:42%"></div><div class="pt" style="left:51%"></div></div>
+  <div class="sm">Range: 0.1 to 1.1 glasses more</div>
+  <div class="sm">From 212 days with Wine, 48 of them with more than 5&#8202;mm of rain</div>
+  <div class="sm">&#63743;&#8202;Weather &#183; Other data sources</div>
+</div>
+<p class="foot">Until then Insights looks exactly like option A: daylight only, footer unchanged.</p>
+</div>
+<figcaption>Only once there is a paid Apple developer team (US$99 a year). The phone still sends a location to Apple to get the weather, so the footer still has to change; what improves is who receives it.</figcaption>
+</figure>
+</div>

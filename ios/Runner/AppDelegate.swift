@@ -14,6 +14,7 @@ import UserNotifications
     UNUserNotificationCenter.current().delegate = self
     BackgroundFlush.register()
     HealthChannel.Sync.start()
+    PlacesChannel.start()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -33,6 +34,9 @@ import UserNotifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "RemindersChannel") {
       RemindersChannel.register(with: registrar)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PlacesChannel") {
+      PlacesChannel.register(with: registrar)
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "SecretPasteboard") {
       SecretPasteboard.register(with: registrar.messenger())

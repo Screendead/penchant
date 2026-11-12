@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/design/motion_binding.dart';
 import 'package:tracker/providers/reduce_motion_provider.dart';
 
 /// Overrides `MediaQuery.disableAnimations` for everything below it with the
@@ -13,11 +14,13 @@ class ReduceMotionScope extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MediaQueryData data = MediaQuery.of(context);
+    final MotionPreference motion = ref.watch(reduceMotionProvider);
+    if (WidgetsBinding.instance case final MotionOverride binding) {
+      binding.motion = motion;
+    }
     return MediaQuery(
       data: data.copyWith(
-        disableAnimations: ref
-            .watch(reduceMotionProvider)
-            .resolve(system: data.disableAnimations),
+        disableAnimations: motion.resolve(system: data.disableAnimations),
       ),
       child: child,
     );

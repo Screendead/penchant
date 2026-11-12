@@ -1,0 +1,159 @@
+<!-- Option C: experiment plus a daily notification -->
+<div class="sxc"><style>
+.sxc{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--d2ink:#B03E1C;--spoke:#1D1C1A80;--clear:#E3EFE4;--clearInk:#276B43;--shadow:0 2px 8px #1D1C1A12;
+--ff-display:"Red Hat Display",ui-rounded,system-ui,-apple-system,sans-serif;
+--ff-text:"Red Hat Text",system-ui,-apple-system,sans-serif;
+--ff-mono:"Red Hat Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+font-family:var(--ff-text);color:var(--text);font-variant-numeric:tabular-nums;
+display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:8px 0}
+@media (prefers-color-scheme:dark){.sxc{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--d2ink:#FF7A59;--spoke:#F3F0EA80;--clear:#15241B;--clearInk:#9ED8B0;--shadow:none;}}
+.sxc *{box-sizing:border-box}
+.sxc .sxc-col{display:grid;gap:8px;width:390px;max-width:100%;align-content:start}
+.sxc .sxc-cap{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 4px}
+.sxc .sxc-capnote{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0 4px}
+.sxc .sxc-phone{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;padding:0 0 20px}
+.sxc .sxc-status{display:flex;justify-content:space-between;padding:14px 28px 6px;font:600 15px/20px var(--ff-text)}
+.sxc .sxc-bar{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.sxc .sxc-circ{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font:500 18px/1 var(--ff-text);flex:none}
+.sxc .sxc-title{font:900 26px/32px var(--ff-display);letter-spacing:-.3px;margin:0}
+.sxc .sxc-titlexl{font:900 34px/40px var(--ff-display);letter-spacing:-.5px;margin:0}
+.sxc .sxc-pad{padding:0 20px;display:grid;gap:12px}
+.sxc .sxc-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 18px 16px;box-shadow:var(--shadow);display:grid;gap:4px}
+.sxc .sxc-head{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--ff-text);color:var(--muted)}
+.sxc .sxc-pip{width:10px;height:10px;border-radius:999px;background:var(--d2);box-shadow:inset 0 0 0 1.25px var(--d2ink);flex:none}
+.sxc .sxc-pip.c{background:var(--d1);box-shadow:none}
+.sxc .sxc-pip.g{background:var(--d3);box-shadow:none}
+.sxc .sxc-sent{font:500 16px/22px var(--ff-text);margin:2px 0 8px}
+.sxc .sxc-small{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0}
+.sxc .sxc-body{font:400 15px/21px var(--ff-text);margin:0}
+.sxc .sxc-range{display:block;width:100%;height:14px;margin:0 0 6px}
+.sxc .sxc-btn{display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);font:600 15px/20px var(--ff-text)}
+.sxc .sxc-btn2{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:999px;border:1px solid var(--outline);font:600 15px/20px var(--ff-text);margin-top:10px}
+.sxc .sxc-sec{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+.sxc .sxc-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sxc .sxc-chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--outline);display:inline-flex;align-items:center;gap:6px;font:500 14px/1 var(--ff-text)}
+.sxc .sxc-chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.sxc .sxc-chip .m{font:500 12px/1 var(--ff-mono);opacity:.75}
+.sxc .sxc-chip.dim{opacity:.5}
+.sxc .sxc-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font:400 15px/21px var(--ff-text)}
+.sxc .sxc-row:first-child{border-top:0}
+.sxc .sxc-row b{font-weight:600}
+.sxc .sxc-mono{font-family:var(--ff-mono);font-weight:500}
+.sxc .sxc-big{font:500 40px/44px var(--ff-mono)}
+.sxc .sxc-strip{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.sxc .sxc-strip .t{display:grid;gap:2px;flex:1;min-width:0}
+.sxc .sxc-strip .k{font:600 15px/20px var(--ff-text)}
+.sxc .sxc-days{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.sxc .sxc-days i{display:block;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxc .sxc-days i.n{background:var(--accent);border-color:var(--accent)}
+.sxc .sxc-days i.f{opacity:.35}
+.sxc .sxc-days i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxc .sxc-days i.today{outline:2px solid var(--text);outline-offset:1px}
+.sxc .sxc-legend{display:flex;gap:14px;flex-wrap:wrap;font:400 13px/18px var(--ff-text);color:var(--muted)}
+.sxc .sxc-legend span{display:inline-flex;align-items:center;gap:6px}
+.sxc .sxc-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxc .sxc-legend i.n{background:var(--accent);border-color:var(--accent)}
+.sxc .sxc-legend i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxc .sxc-dial{display:block;margin:0 auto;width:250px;height:250px}
+.sxc .sxc-tally{display:flex;align-items:center;gap:10px;height:38px;font:500 16px/22px var(--ff-text)}
+.sxc .sxc-tally .n{margin-left:auto;font:500 15px/20px var(--ff-mono)}
+.sxc .sxc-tally .plus{width:32px;height:32px;border-radius:999px;border:1px solid var(--outline);display:grid;place-items:center;font:500 18px/1 var(--ff-text)}
+.sxc .sxc-lock{background:linear-gradient(160deg,#3b4a63,#1d2433 60%,#151a24);color:#fff;padding:0 0 28px}
+.sxc .sxc-lock .sxc-status{color:#fff}
+.sxc .sxc-clock{text-align:center;font:600 76px/1 var(--ff-display);margin:18px 0 4px;letter-spacing:-1px}
+.sxc .sxc-date{text-align:center;font:500 17px/22px var(--ff-text);opacity:.9;margin-bottom:28px}
+.sxc .sxc-notif{margin:0 12px;background:rgba(245,245,245,.78);color:#111;border-radius:22px;padding:12px 14px;display:grid;grid-template-columns:38px 1fr;gap:4px 10px;box-shadow:0 6px 24px #0005}
+.sxc .sxc-notif .ic{grid-row:span 3;width:38px;height:38px;border-radius:9px;background:#F6F4EF;display:grid;place-items:center;border:1px solid #0001}
+.sxc .sxc-notif .h{display:flex;justify-content:space-between;font:600 15px/20px -apple-system,system-ui,sans-serif}
+.sxc .sxc-notif .h span{font-weight:400;color:#555;font-size:13px}
+.sxc .sxc-notif p{margin:0;font:400 15px/20px -apple-system,system-ui,sans-serif}
+.sxc .sxc-tag{display:inline-block;font:600 12px/16px var(--ff-text);padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.sxc .sxc-tag.new{background:var(--accent);color:var(--onAccent)}
+.sxc .sxc-clear{background:var(--clear);color:var(--clearInk);border-radius:12px;padding:8px 12px;font:500 14px/19px var(--ff-text)}
+</style><div class="sxc-col"><p class="sxc-cap">1. Finding card</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar"><div class="sxc-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxc-titlexl">Insights</h3></div>
+<div class="sxc-pad">
+<p class="sxc-sec">What it costs</p>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip"></span>Wine &middot; sleep</div>
+<p class="sxc-sent">On nights after Wine, your deep sleep averages 14&nbsp;min less.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="224.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="120.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="120.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 6 to 22 min less</p>
+<p class="sxc-small">From 212 days, 61 of them with Wine</p>
+<div class="sxc-btn2">Test this for 6 weeks <span class="sxc-tag new">New</span></div><p class="sxc-small" style="margin-top:4px">The app picks the evenings at random, so a busy week or a late night can&rsquo;t explain the result.</p></div>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip c"></span>Coffee &middot; sleep</div>
+<p class="sxc-sent">On nights after Coffee, your time asleep averages 21&nbsp;min less.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="239.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="36.0" y="4" width="156.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="114.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 8 to 34 min less</p>
+<p class="sxc-small">From 212 days, 188 of them with Coffee</p>
+</div></div></div><p class="sxc-capnote">Same button as option B.</p></div><div class="sxc-col"><p class="sxc-cap">2. Plan</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar"><div class="sxc-circ" aria-hidden="true">&times;</div><h3 class="sxc-title">Test Wine and deep sleep</h3></div>
+<div class="sxc-pad">
+<div class="sxc-card">
+<p class="sxc-body">On days chosen at random, have <b>no Wine after 18:00</b>. On the others, do as you normally would. Penchant compares your deep sleep on the two kinds of night.</p>
+<p class="sxc-small" style="margin-top:6px">It reads what you log: a Wine entry after 18:00 on a <i>none</i> day counts as a missed day, not a failure. You can stop at any time.</p>
+</div>
+<p class="sxc-sec">How long</p>
+<div class="sxc-chips">
+<span class="sxc-chip dim">2 weeks <span class="m">&plusmn;19</span></span>
+<span class="sxc-chip">4 weeks <span class="m">&plusmn;12</span></span>
+<span class="sxc-chip on">6 weeks <span class="m">&plusmn;10</span></span>
+<span class="sxc-chip">8 weeks <span class="m">&plusmn;9</span></span>
+</div>
+<p class="sxc-small">How sure the answer will be, in minutes either way, from how much your deep sleep already varies night to night (16 min). The finding was 14 min: 6 weeks would usually tell that from no difference; 2 weeks almost never would.</p>
+<p class="sxc-sec">Days</p>
+<div class="sxc-card" style="gap:0;padding-top:6px;padding-bottom:6px">
+<div class="sxc-row"><span>Starts</span><b>Tomorrow, 13 Nov</b></div>
+<div class="sxc-row"><span>Ends</span><b>Thu 24 Dec</b></div>
+<div class="sxc-row"><span><i>None</i> days</span><span class="sxc-mono">21 of 42</span></div>
+<div class="sxc-row"><span class="sxc-small" style="color:inherit">Every week has 3 or 4 of each, so weekends land on both sides.</span></div>
+</div>
+<p class="sxc-sec">Tell me each day</p>
+<div class="sxc-card" style="gap:0;padding-top:6px;padding-bottom:6px">
+<div class="sxc-row"><span>Notification</span><span class="sxc-mono">17:30</span></div>
+<div class="sxc-row"><span class="sxc-small" style="color:inherit">It says &ldquo;Experiment, day 9 of 42: a <i>none</i> day&rdquo;, never the habit&rsquo;s name. Turning this on asks for notifications if you haven&rsquo;t allowed them for the daily reminder.</span></div>
+</div>
+<div class="sxc-btn" style="margin-top:6px">Start experiment</div>
+</div></div><p class="sxc-capnote">Same plan, plus a daily notification time.</p></div><div class="sxc-col"><p class="sxc-cap">3a. A day (lock screen, 17:30)</p><div class="sxc-phone sxc-lock"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-date">Saturday 21 November</div>
+<div class="sxc-clock">17:30</div>
+<div style="height:120px"></div>
+<div class="sxc-notif"><div class="ic" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#1D1C1A" stroke-width="1.5"/><circle cx="12" cy="4.5" r="2" fill="#FFB347"/><circle cx="18.5" cy="14" r="2" fill="#FF7A59"/><circle cx="7" cy="17" r="2" fill="#4D96FF"/></svg></div>
+<div class="h">Penchant<span>now</span></div>
+<p><b>Experiment, day 9 of 42</b></p>
+<p>Today is a <i>none</i> day, from 18:00.</p>
+</div>
+<div style="height:150px"></div>
+</div><p class="sxc-capnote">Arrives before the evening starts. Names no habit, like the weekly review notification.</p></div><div class="sxc-col"><p class="sxc-cap">3b. A day (Today)</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar" style="justify-content:space-between"><div class="sxc-circ" aria-hidden="true">&#8801;</div><span class="sxc-chip" style="height:40px;font:700 17px/22px var(--ff-display)">Today</span><span class="sxc-tag">Synced</span></div>
+<div class="sxc-pad">
+<div class="sxc-strip"><div class="t"><span class="k">No Wine after 18:00 today</span><span class="sxc-small">Wine and deep sleep &middot; day 9 of 42</span></div><span class="sxc-circ" aria-hidden="true" style="width:32px;height:32px;font-size:15px">&rsaquo;</span></div>
+<svg class="sxc-dial" viewBox="0 0 250 250" aria-hidden="true"><circle cx="125" cy="125" r="97" fill="var(--surface)" stroke="var(--line)"/><line x1="125.0" y1="83.0" x2="125.0" y2="17.0" stroke="var(--line)" stroke-width="1"/><line x1="150.4" y1="30.3" x2="151.9" y2="24.5" stroke="var(--line)" stroke-width="1"/><line x1="174.0" y1="40.1" x2="177.0" y2="34.9" stroke="var(--line)" stroke-width="1"/><line x1="194.3" y1="55.7" x2="198.5" y2="51.5" stroke="var(--line)" stroke-width="1"/><line x1="209.9" y1="76.0" x2="215.1" y2="73.0" stroke="var(--line)" stroke-width="1"/><line x1="219.7" y1="99.6" x2="225.5" y2="98.1" stroke="var(--line)" stroke-width="1"/><line x1="167.0" y1="125.0" x2="233.0" y2="125.0" stroke="var(--line)" stroke-width="1"/><line x1="219.7" y1="150.4" x2="225.5" y2="151.9" stroke="var(--line)" stroke-width="1"/><line x1="209.9" y1="174.0" x2="215.1" y2="177.0" stroke="var(--line)" stroke-width="1"/><line x1="194.3" y1="194.3" x2="198.5" y2="198.5" stroke="var(--line)" stroke-width="1"/><line x1="174.0" y1="209.9" x2="177.0" y2="215.1" stroke="var(--line)" stroke-width="1"/><line x1="150.4" y1="219.7" x2="151.9" y2="225.5" stroke="var(--line)" stroke-width="1"/><line x1="125.0" y1="167.0" x2="125.0" y2="233.0" stroke="var(--line)" stroke-width="1"/><line x1="99.6" y1="219.7" x2="98.1" y2="225.5" stroke="var(--line)" stroke-width="1"/><line x1="76.0" y1="209.9" x2="73.0" y2="215.1" stroke="var(--line)" stroke-width="1"/><line x1="55.7" y1="194.3" x2="51.5" y2="198.5" stroke="var(--line)" stroke-width="1"/><line x1="40.1" y1="174.0" x2="34.9" y2="177.0" stroke="var(--line)" stroke-width="1"/><line x1="30.3" y1="150.4" x2="24.5" y2="151.9" stroke="var(--line)" stroke-width="1"/><line x1="83.0" y1="125.0" x2="17.0" y2="125.0" stroke="var(--line)" stroke-width="1"/><line x1="30.3" y1="99.6" x2="24.5" y2="98.1" stroke="var(--line)" stroke-width="1"/><line x1="40.1" y1="76.0" x2="34.9" y2="73.0" stroke="var(--line)" stroke-width="1"/><line x1="55.7" y1="55.7" x2="51.5" y2="51.5" stroke="var(--line)" stroke-width="1"/><line x1="76.0" y1="40.1" x2="73.0" y2="34.9" stroke="var(--line)" stroke-width="1"/><line x1="99.6" y1="30.3" x2="98.1" y2="24.5" stroke="var(--line)" stroke-width="1"/><text x="125.0" y="12.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">00</text><text x="242.0" y="129.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">06</text><text x="125.0" y="246.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">12</text><text x="8.0" y="129.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">18</text><path d="M125 125 L28.0 125.0 A97 97 0 0 1 125.0 28.0 Z" fill="var(--surface2)" opacity=".9"/><circle cx="197.1" cy="154.8" r="7" fill="var(--d1)"/><circle cx="160.4" cy="194.5" r="7" fill="var(--d1)"/><circle cx="97.0" cy="197.8" r="7" fill="var(--d1)"/><line x1="125" y1="125" x2="31.6" y2="160.8" stroke="var(--text)" stroke-width="2"/><circle cx="125" cy="125" r="18" fill="var(--bg)" stroke="var(--line)"/></svg>
+<div class="sxc-tally"><span class="sxc-pip c"></span>Coffee<span class="n">3 cups</span><span class="plus">+</span></div>
+<div class="sxc-tally"><span class="sxc-pip"></span>Wine<span class="n">0 glasses</span><span class="plus">+</span></div>
+<div class="sxc-tally"><span class="sxc-pip g"></span>Cigarettes<span class="n">0</span><span class="plus">+</span></div>
+<p class="sxc-small">The shaded evening on the dial is the hours the plan covers.</p>
+</div></div><p class="sxc-capnote">Tapping it opens Today with the same strip as option B.</p></div><div class="sxc-col"><p class="sxc-cap">4. Result</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar"><div class="sxc-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxc-titlexl">Insights</h3></div>
+<div class="sxc-pad">
+<p class="sxc-sec">Your experiment</p>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip"></span>Wine &middot; deep sleep &middot; finished 24 Dec</div>
+<p class="sxc-sent">On the nights you had no Wine after 18:00, your deep sleep was 12&nbsp;min more than on the other nights.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="74.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="90.0" y="4" width="150.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="165.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 2 to 22 min more</p>
+<p class="sxc-small">From 40 nights, 20 of each (2 had no sleep data)</p>
+<p class="sxc-small">Plan kept on 39 of 42 days: Wine was logged after 18:00 on 3 <i>none</i> days, counted where they were planned</p>
+<div style="display:grid;gap:4px;margin:10px 0 4px"><div class="sxc-days"><i class="n"></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class=""></i><i class="n"></i><i class=""></i><i class="x"></i><i class="n"></i><i class=""></i><i class=""></i></div><div class="sxc-days"><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class=""></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class="x"></i><i class=""></i><i class="n"></i></div><div class="sxc-days"><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class=""></i><i class="n"></i><i class="x"></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i></div></div>
+<div class="sxc-legend"><span><i class="n"></i>none after 18:00</span><span><i></i>as usual</span><span><i class="x"></i>Wine on a none day</span></div>
+<p class="sxc-small" style="margin-top:6px">Before the experiment your journal showed 14 min (6 to 22). Because the days were picked at random, this one is the stronger evidence.</p>
+</div>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip c"></span>Coffee &middot; time asleep &middot; finished 3 Oct</div>
+<p class="sxc-sent">Can&rsquo;t tell: on the nights with no Coffee after 14:00, your time asleep was 6&nbsp;min more, inside your usual night-to-night swing.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="119.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="192.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="156.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 10 min less to 22 min more</p>
+<p class="sxc-small">From 27 nights &middot; <span style="text-decoration:underline;font-weight:600;color:var(--text)">Run it 4 more weeks</span></p>
+</div>
+</div></div><p class="sxc-capnote">Same as option B.</p></div></div>

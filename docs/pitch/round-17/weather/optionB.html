@@ -1,0 +1,103 @@
+<!-- Option B: Open-Meteo, opt-in, area rounded to 1 degree. Mock-up; finding copy invented in the shape of today's cards. -->
+<style>
+.wxb{--wxb-bg:#F6F4EF;--wxb-surface:#FFFFFF;--wxb-surface2:#EFECE5;--wxb-text:#1D1C1A;--wxb-muted:#635E56;--wxb-line:#1D1C1A1A;--wxb-outline:#1D1C1A8C;--wxb-accent:#1D1C1A;--wxb-onaccent:#F6F4EF;--wxb-d1:#FFB347;--wxb-d2:#FF7A59;--wxb-d3:#E8505B;--wxb-d1i:#8F5600;--wxb-d2i:#B03E1C;--wxb-d3i:#B42A37;--wxb-spoke:#1D1C1A80;--wxb-clear:#E3EFE4;--wxb-clearink:#276B43;
+  --wxb-display:"Red Hat Display",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --wxb-txt:"Red Hat Text",-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --wxb-mono:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wxb{--wxb-bg:#151412;--wxb-surface:#1F1D1B;--wxb-surface2:#2A2825;--wxb-text:#F3F0EA;--wxb-muted:#ACA79D;--wxb-line:#F3F0EA1F;--wxb-outline:#F3F0EA66;--wxb-accent:#F3F0EA;--wxb-onaccent:#1D1C1A;--wxb-d1:#FFB347;--wxb-d2:#FF7A59;--wxb-d3:#E95963;--wxb-d1i:#FFB347;--wxb-d2i:#FF7A59;--wxb-d3i:#F0737C;--wxb-spoke:#F3F0EA80;--wxb-clear:#15241B;--wxb-clearink:#9ED8B0}}
+:root[data-theme="dark"] .wxb{--wxb-bg:#151412;--wxb-surface:#1F1D1B;--wxb-surface2:#2A2825;--wxb-text:#F3F0EA;--wxb-muted:#ACA79D;--wxb-line:#F3F0EA1F;--wxb-outline:#F3F0EA66;--wxb-accent:#F3F0EA;--wxb-onaccent:#1D1C1A;--wxb-d1:#FFB347;--wxb-d2:#FF7A59;--wxb-d3:#E95963;--wxb-d1i:#FFB347;--wxb-d2i:#FF7A59;--wxb-d3i:#F0737C;--wxb-spoke:#F3F0EA80;--wxb-clear:#15241B;--wxb-clearink:#9ED8B0}
+.wxb *{box-sizing:border-box}
+.wxb figure{margin:0;display:grid;gap:8px;width:390px;max-width:100%}
+.wxb figcaption{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted);padding:0 4px}
+.wxb .ph{width:100%;background:var(--wxb-bg);color:var(--wxb-text);border:1px solid var(--wxb-line);border-radius:44px;
+  padding:14px 20px 28px;font:400 15px/21px var(--wxb-txt);display:grid;gap:12px;overflow:hidden}
+.wxb .sb{display:flex;justify-content:space-between;font:600 15px/20px var(--wxb-txt);padding:4px 10px 6px}
+.wxb .bar{display:flex;align-items:center;gap:10px}
+.wxb .circ{width:40px;height:40px;border-radius:999px;background:var(--wxb-surface);border:1px solid var(--wxb-line);
+  display:grid;place-items:center;font:600 18px/1 var(--wxb-txt)}
+.wxb h4{margin:0;font:900 34px/40px var(--wxb-display);letter-spacing:-.5px}
+.wxb h5{margin:6px 4px 0;font:600 13px/18px var(--wxb-txt);color:var(--wxb-muted);letter-spacing:.04em;text-transform:uppercase}
+.wxb .card{background:var(--wxb-surface);border-radius:24px;border:1px solid var(--wxb-line);padding:14px 18px 16px;display:grid;gap:6px}
+.wxb .row{display:flex;gap:12px;align-items:center}
+.wxb .row .t{flex:1;display:grid;gap:2px}
+.wxb .lab{font:600 15px/20px var(--wxb-txt)}
+.wxb .sub{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .chev{font:600 18px/1 var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .val{font:400 15px/20px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .kick{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .pip{width:12px;height:12px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.25px var(--wxb-ink)}
+.wxb .big{font:500 16px/22px var(--wxb-txt)}
+.wxb .sm{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .rng{position:relative;height:14px;margin:6px 0 2px}
+.wxb .rng .tr{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--wxb-line)}
+.wxb .rng .z{position:absolute;top:0;bottom:0;width:1.5px;background:var(--wxb-spoke)}
+.wxb .rng .iv{position:absolute;top:3px;height:8px;border-radius:999px;background:var(--wxb-surface2);border:1.5px solid var(--wxb-text)}
+.wxb .rng .pt{position:absolute;top:2px;width:10px;height:10px;border-radius:999px;background:var(--wxb-text);margin-left:-5px}
+.wxb .pill{height:52px;border-radius:999px;display:grid;place-items:center;font:600 15px/20px var(--wxb-txt)}
+.wxb .pill.pri{background:var(--wxb-accent);color:var(--wxb-onaccent)}
+.wxb .pill.sec{border:1px solid var(--wxb-outline);color:var(--wxb-text)}
+.wxb ul.leave{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wxb ul.leave li{display:grid;grid-template-columns:18px 1fr;gap:6px;font:400 13px/18px var(--wxb-txt)}
+.wxb ul.leave li b{font-weight:600}
+.wxb .mono{font-family:var(--wxb-mono);font-weight:500}
+.wxb .tag{display:inline-block;font:600 11px/16px var(--wxb-txt);letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--wxb-surface2);color:var(--wxb-muted)}
+.wxb .foot{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted);padding:0 4px}
+.wxb .foot.changed{border-left:3px solid var(--wxb-outline);padding-left:8px}
+.wxb .sheet{background:var(--wxb-surface);border-radius:32px 32px 0 0;border:1px solid var(--wxb-line);padding:10px 20px 20px;display:grid;gap:12px;margin:0 -20px -28px}
+.wxb .grab{width:36px;height:5px;border-radius:999px;background:var(--wxb-line);margin:0 auto 4px}
+.wxb .sheet h6{margin:0;font:900 26px/32px var(--wxb-display);letter-spacing:-.3px}
+.wxb .dim{opacity:.45}
+.wxb code{font:500 11px/16px var(--wxb-mono);word-break:break-all;color:var(--wxb-muted);background:var(--wxb-surface2);
+  border-radius:10px;padding:8px 10px;display:block}
+</style>
+<div class="wxb">
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<div class="card">
+  <div class="row"><div class="t"><span class="lab">Compare with the weather</span>
+  <span class="sub">Needs Penchant to send a rough area and a range of dates to Open-Meteo, a free weather service. Off until you turn it on.</span></div><span class="chev">&#8250;</span></div>
+</div>
+<div class="sheet">
+  <div class="grab"></div>
+  <h6>Weather</h6>
+  <p style="margin:0">To compare your habits with rain, temperature and sunshine, Penchant asks Open-Meteo for past weather. This is the only thing in Insights that leaves this iPhone.</p>
+  <ul class="leave">
+    <li><span>&#8599;</span><span><b>Sent:</b> your area to the nearest degree (a square about 100&#8202;km across), the dates from 1&#160;January of the year you started to today, and which weather to return.</span></li>
+    <li><span>&#8599;</span><span><b>Also seen:</b> this iPhone&#8217;s internet address, which can place you more closely than the area does. Open-Meteo keeps request logs for up to 90 days.</span></li>
+    <li><span>&#8599;</span><span><b>Again:</b> once a week for the newest days, and once for each new area you spend a day in.</span></li>
+    <li><span>&#10003;</span><span><b>Never sent:</b> your habits, entries, times, triggers, Health data or account.</span></li>
+  </ul>
+  <code>archive-api.open-meteo.com/v1/archive?latitude=51&amp;longitude=0&amp;start_date=2025-01-01&amp;end_date=2026-11-12&amp;daily=temperature_2m_max,precipitation_sum,sunshine_duration&amp;timezone=auto</code>
+  <div class="pill pri">Turn on weather</div>
+  <div class="pill sec">Not now</div>
+</div>
+</div>
+<figcaption>The opt-in, from a card in Insights. The sheet lists exactly what leaves the phone, with the request itself (example values).</figcaption>
+</figure>
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<h5>What sets it off</h5>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxb-d2);--wxb-ink:var(--wxb-d2i)"></span><span>Wine &#183; Weather</span></div>
+  <div class="big">On days with more than 5&#8202;mm of rain you log Wine 0.6 glasses more than on dry days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:30%;width:42%"></div><div class="pt" style="left:51%"></div></div>
+  <div class="sm">Range: 0.1 to 1.1 glasses more</div>
+  <div class="sm">From 212 days with Wine, 48 of them with more than 5&#8202;mm of rain</div>
+  <div class="sm">Weather for your area, about 100&#8202;km across, from Open-Meteo (CC BY 4.0)</div>
+</div>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxb-d2);--wxb-ink:var(--wxb-d2i)"></span><span>Wine &#183; Daylight</span></div>
+  <div class="big">On days with under 9 hours of daylight you log Wine 0.8 glasses more than on longer days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:38%;width:46%"></div><div class="pt" style="left:60%"></div></div>
+  <div class="sm">Range: 0.3 to 1.4 glasses more</div>
+  <div class="sm">From 212 days with Wine, 71 of them with under 9 hours of daylight</div>
+</div>
+<p class="foot changed">Worked out on this device from your journal, Apple Health and past weather for your area. Penchant sends only that area and the dates to Open-Meteo, and none of your journal or Health data anywhere. These are patterns in your own days, not medical advice, and a pattern doesn&#8217;t show that one thing causes another.</p>
+</div>
+<figcaption>A resulting finding. The source line is required by Open-Meteo&#8217;s licence. The footer, which today says Penchant sends nothing anywhere, has to change (marked).</figcaption>
+</figure>
+</div>

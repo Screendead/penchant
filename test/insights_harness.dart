@@ -11,6 +11,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/providers/daylight_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/providers/last_night_provider.dart';
@@ -238,6 +239,7 @@ List<Override> insightsOverrides({
   // the counts of the engine's.
   lastNightProvider.overrideWith((Ref ref) async => lastNight),
   todayProvider.overrideWith(() => FixedToday(insightsToday)),
+  deviceTimeZoneProvider.overrideWith((Ref ref) async => null),
   healthSourceProvider.overrideWithValue(health),
   healthStoreFileProvider.overrideWithValue(MemoryHealthStoreFile()),
   insightsRunnerProvider.overrideWithValue(
