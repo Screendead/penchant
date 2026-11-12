@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/places.dart';
@@ -18,6 +20,10 @@ class RoughLocation {
   RoughLocation(double latitude, double longitude)
     : latitude = latitude.clamp(-90, 90).roundToDouble(),
       longitude = longitude.clamp(-180, 180).roundToDouble();
+
+  /// Unrounded, to check the solar arithmetic against published times.
+  @visibleForTesting
+  const RoughLocation.exact(this.latitude, this.longitude);
 
   final double latitude;
 
