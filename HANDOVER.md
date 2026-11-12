@@ -116,7 +116,6 @@ needed unless that wait proves long.
 - Unproven: stutter when a multi-year Insights view is encoded and sealed on the UI isolate.
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
-- The steps-based waking fallback for hours-after.
 - The Mac recovery key on Universal Clipboard (register).
 - Process: at most about five workers, each verifying once at the end on only the tests it touched; never
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
@@ -130,7 +129,11 @@ The list this run works from, sorted before any building. Tick or strike here as
 1. ~~"Why not" lines under What sets it off~~ (built: feat/insights-sets-off; unseen on a device).
 2. ~~Trigger analysis under What sets it off~~ (built: feat/insights-sets-off; unseen on a device, and untried on a
    journal with real tags).
-3. Steps-based waking fallback for hours-after, for a day with no night recorded.
+3. ~~Steps-based waking fallback for hours-after, for a day with no night recorded~~ (built: feat/insights-sets-off;
+   synthetic data only, unseen on a device and untried on a Watch charged overnight: how late real first steps run
+   after waking is a guess, 0 to 30 minutes in the tests). One calibration run, 40 seeds, every night missing, steps
+   0-30 min late: per-window false rate 0-5% before correction; Coffee within an hour of waking and Coffee at 22:30
+   both refused in words, 0 of 40 whole reports with an hours-after finding. Hour-before skips such moments.
 4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
    on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
@@ -317,8 +320,8 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
 
 - Recovery time #240 (draft): rerun the reverse-cause AR(1) 0.6 line beside an AR(1)-alone control; fix the method if
   it holds near 7%.
-- The steps-based waking fallback for hours-after: not built (#241's report), and the page still does not say why a
-  day with no night recorded gives nothing.
+- Hours-after with no night recorded and no steps either: the page still does not say why it gives nothing (the
+  steps-based waking fallback is built, fifth run).
 - Cut 0.2.0 (`r10-release` B: gates met; not cut this run).
 - The Mac recovery key on Universal Clipboard (register).
 - Process for the next run: a ten-worker fan-out drove this Mac to load 189 and Jack stopped it. Cap at about five
@@ -550,7 +553,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        hour of waking, or anything within 4 h of bed, is refused in words; a day with no night recorded gives no
        moment (a Watch charged overnight gives no hours-after at all, and the page does not say why: the "needs your
        sleep" refusal exists, but with nothing planned the provider reads no heart rate and the engine skips the
-       comparison; steps-based waking is the named fallback, not built). A window is dropped when another habit was used from its baseline to its end, the habit again before
+       comparison; steps-based waking, built in the fifth run, now covers a day with steps through the morning). A window is dropped when another habit was used from its baseline to its end, the habit again before
        its end, under 3 readings in baseline or window, or a walk (any 10 min over 60 steps a minute in the
        baseline, or from 30 min before the window to its end); the change in steps a minute is a covariate.
        Moments are averaged per day, one OLS per window on days (intercept, use, steps); at least 10 days each side.

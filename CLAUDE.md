@@ -369,7 +369,7 @@ Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/s
 `device-file/v1/<uid length>:<uid>/<name>` as associated data. `sealedFilesProvider` is null while nobody is signed in or no key is
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
 use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
-it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
+it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each, steps over the nights Health lacks among them,
 `lib/insights/health_sample_cache.dart`; random names, since spans follow use times), and `last-report` (the last
 Insights view with a computed report, `lib/insights/last_report_file.dart` over `report_codec.dart`; a cold open with
 no view in the session shows it, updating, until the fresh one lands; raise `insightsViewFormat` with any change to
@@ -492,7 +492,12 @@ Health leaves the device: not Firestore, analytics or crash reports. Insights' d
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
 `HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
 by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
-acknowledges the generation once the store is written. Menstrual flow is read as days with flow (value 1, never the
+acknowledges the generation once the store is written. Hours after a use (`lib/insights/hours_after.dart`) times each moment
+from that day's waking: the night in Health, else, for a day with none (a Watch charged overnight), `wakingFromSteps`:
+the first sustained steps after the longest still span from 18:00 the evening before to 15:00, read one span a night
+under `wakingStepsKey`, apart from the `stepCount` spans around moments. Such moments are never set against a recorded
+night's (that waking runs late), the finding's basis says waking was estimated from steps (`stepWakingDays`), and the
+hour-before comparison leaves them out. Menstrual flow is read as days with flow (value 1, never the
 amount) and is no outcome: `InsightsInput.from` takes it out of the outcomes and `cyclePhases`
 (`lib/insights/cycle_phase.dart`) infers each day's phase from those days alone (menstrual through the bleed, luteal
 the 14 days before the next start, follicular between; only in whole cycles of 24 to 38 days). The five day-after
