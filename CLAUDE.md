@@ -519,7 +519,11 @@ outcomes, so nothing compares meetings after a use. `ios/Runner/RemindersChannel
 (`lib/insights/reminders_source.dart`), made into two daily outcomes beside Health's: reminders completed that day
 (`remindersCompleted`) and due that day but not done by its end (`remindersMissed`), each from its first day above 0
 and judged only with `minSessionDays` such days. Both providers turn a failure or a 30 s timeout into nothing, since
-provider errors reach Crashlytics. Like everything in Insights they wait for Health values.
+provider errors reach Crashlytics. Like everything in Insights they wait for Health values. Outside Insights, the
+trigger picker (`showTriggerPicker`'s `at`: the record sheet and editor pass the sheet's time, `logOne`'s "What was
+going on?" the log's; the widget's prompt passes none) reads the hour before the entry once as it opens, only with full
+access already granted, and offers `work/meeting` first under "Suggested from your calendar" when an event of 15 minutes
+or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped).
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and

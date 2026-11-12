@@ -143,6 +143,10 @@ The list this run works from, sorted before any building. Tick or strike here as
      compiles only in CI; real calendars' attendee counts and plausible cards on real data.
    - [ ] ~~macOS EventKit channel~~ set aside: the Mac computes no Insights without Health, so it would read events
      nothing uses and add a prompt that does nothing.
+   - [x] "Work → Meeting" suggestions (this branch): an entry logged in the hour after a calendar event of 15 minutes
+     or more ended gets Work › Meeting first in the trigger picker, under "Suggested from your calendar", never picked
+     until tapped; only with calendar access already granted; no titles read. The widget's later prompt offers none
+     (it carries no entry time). Not proven on a device: the EventKit read as the picker opens.
    - Once the why-not lines (item 1) merge, `setsOffRefusals` should also take `report.calendarDays` (words:
      `calendarDayRefusal`) and count its habits as shown.
 6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers

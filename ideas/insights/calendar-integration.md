@@ -12,8 +12,7 @@ more often than at the same time on nearby days clear of events. Left:
   without Health.
 - Events the user tags (for example "1:1s with my manager"). Built since: per-day features (time in meetings,
   events, back-to-back runs, events of 5 or more people, events over 45 minutes) in `lib/insights/calendar_days.dart`.
-- "Work → Meeting" suggestions in the trigger picker when an entry follows an event; at most the entry stores the
-  trigger path the user accepted.
+  Also built: Work › Meeting suggested in the trigger picker after an event (`lib/insights/calendar_suggestion.dart`).
 - Calendar findings without Health: Insights computes nothing until Health has values.
 
 ## Why
