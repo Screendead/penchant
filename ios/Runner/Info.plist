@@ -50,9 +50,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Penchant reads when your calendar events start and end, to see which habits tend to follow them. It never reads or keeps their titles, never writes to your calendar, and nothing leaves this device.</string>
+	<string>Penchant reads when your calendar events start and end and how many people each lists, to see which habits tend to follow them or come with busy days. It never reads or keeps their titles or who is invited, never writes to your calendar, and nothing leaves this device.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Penchant reads when your calendar events start and end, to see which habits tend to follow them. It never reads or keeps their titles, never writes to your calendar, and nothing leaves this device.</string>
+	<string>Penchant reads when your calendar events start and end and how many people each lists, to see which habits tend to follow them or come with busy days. It never reads or keeps their titles or who is invited, never writes to your calendar, and nothing leaves this device.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
 	<key>NSRemindersUsageDescription</key>

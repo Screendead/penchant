@@ -119,9 +119,10 @@ class InsightsPage extends ConsumerStatefulWidget {
 
   static const String calendarLabel = 'Connect Calendar';
   static const String calendarBody =
-      'See which habits follow your events. Penchant reads only when each '
-      'event starts and ends, on this iPhone, never writes to your calendar, '
-      'and sends none of it anywhere.';
+      'See which habits follow your events or come with busy days. Penchant '
+      'reads only when each event starts and ends and how many people it '
+      'lists, on this iPhone, never writes to your calendar, and sends none of '
+      'it anywhere.';
   static const String calendarOffLabel = 'Calendar';
   static const String calendarOffValue = 'Off';
   static const String calendarOffBody =
