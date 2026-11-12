@@ -148,6 +148,14 @@ The list this run works from, sorted before any building. Tick or strike here as
      (an evening habit would look tied to darkness in winter alone); an honest one compares the same clock hours
      dark and light, and waits for a call. Not proven on a device: the time zone read through `flutter_timezone`
      inside Insights (tests answer it with none).
+   - Music: set aside 2026-11-12. MusicKit is an App Service ticked on the App ID in Certificates, Identifiers &
+     Profiles, which a personal team cannot open (Apple grants it on enrolment), and it has no entitlement a build
+     could probe; without it the developer token, and so recently played, fails at run time. Nothing built. Waits
+     for a paid team. (MediaPlayer's `lastPlayedDate` needs no service but keeps only each song's last play: no
+     daily minutes, no "music before a use".)
+   - Journaling Suggestions: probed 2026-11-12, the free team cannot sign it. Signed iOS build with provisioning
+     updates: "Personal development teams, including "Jack Lusher", do not support the Journaling Suggestions
+     capability." Entitlement reverted; waits for a paid team.
 5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
    calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
    (round 14 `no-health` A).

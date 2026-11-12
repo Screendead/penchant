@@ -20,8 +20,6 @@ there. Grouped by what stands in the way.
 - **Daylight:** built (2026-11-12): sunrise, sunset and day length computed on the device from the most-visited
   place or the time zone's city, to whole degrees, no network; day length held fixed where the month terms miss it.
   Not yet: a "dark against light at the same clock hour" comparison.
-- **Music:** recently played from Apple Music (MusicKit), as a rough mood and context signal. Only for Apple Music
-  users.
 - **Reminders**, beside
   [Calendar](calendar-integration.md), are built (2026-11-12, iOS only like Calendar): reminders completed a day
   and reminders missed (due that day, not done by its end).
@@ -29,8 +27,19 @@ there. Grouped by what stands in the way.
 **Blocked or costly:**
 
 - **Journaling Suggestions** (workouts, places, people contacted, music, photos the user picks for an entry): needs
-  the `com.apple.developer.journal.allow` entitlement. UNVERIFIED whether the free team can sign it; probe it the way
-  HealthKit was probed (HANDOVER, queue item 7).
+  the `com.apple.developer.journal.allow` entitlement, which the free team cannot sign: probed 2026-11-12 with a
+  signed iOS build and provisioning updates, Xcode answered "Cannot create a iOS App Development provisioning profile
+  for "com.screendead.penchant". Personal development teams, including "Jack Lusher", do not support the Journaling
+  Suggestions capability." Waits for a paid team.
+- **Music:** recently played from Apple Music (MusicKit `MusicRecentlyPlayedRequest`), as a rough mood and context
+  signal, only for Apple Music users. MusicKit has no entitlement for a build to probe: it is the MusicKit App
+  Service ticked on the App ID in Certificates, Identifiers & Profiles (developer.apple.com/help/account/services/musickit),
+  which Apple opens only on enrolment ("Once you're enrolled, you'll be able to access additional resources, like
+  Certificates, Identifiers & Profiles", developer.apple.com/support/compare-memberships). A personal team has no way
+  to tick it, so the app's developer token, and with it recently played, would fail at run time. Set aside
+  2026-11-12 until there is a paid team. The one route without it, MediaPlayer's `lastPlayedDate` on library items
+  (`NSAppleMusicUsageDescription` only), gives each song's last play alone, not a history, so it cannot say how much
+  music a day held or what played before a use; not worth building.
 - **Weather:** WeatherKit needs the paid team. A free outside service would see a rough location, which breaks "it
   stays on your device"; ask Jack before using one.
 - **Screen Time:** the Family Controls entitlement needs the paid team and Apple's approval, and the DeviceActivity
@@ -44,9 +53,9 @@ there. Grouped by what stands in the way.
 
 ## Recommendation
 
-Build the unblocked group in the order listed, each as one small PR after the engine and Health (queue item 7). Probe
-Journaling Suggestions before planning it. Leave the blocked four until there is a paid team or Jack asks.
+The unblocked sources are built. Leave the blocked ones (Journaling Suggestions, Music, Weather, Screen Time,
+Spending, Focus) until there is a paid team or Jack asks.
 
-**Effort:** M each for the unblocked sources.
+**Effort:** M each, once unblocked.
 
 **Needs Jack:** only for weather's outside service, and the paid team for the blocked group.
