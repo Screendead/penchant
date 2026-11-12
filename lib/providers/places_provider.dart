@@ -48,6 +48,7 @@ class PlacesSync extends Notifier<PlacesState> {
   Future<void> _queue = Future<void>.value();
   SealedFiles? _files;
   PlacesSource? _source;
+  bool _allowed = false;
 
   @override
   PlacesState build() {
@@ -56,9 +57,9 @@ class PlacesSync extends Notifier<PlacesState> {
     final PlacesAccess? access = ref.watch(placesAccessProvider).value;
     _source = source;
     _files = files;
-    if (source == null || files == null) return _none;
-    final bool allowed =
+    final bool allowed = _allowed =
         access == PlacesAccess.always || access == PlacesAccess.whenInUse;
+    if (source == null || files == null) return _none;
     final AppLifecycleListener lifecycle = AppLifecycleListener(
       onResume: drain,
     );
@@ -105,7 +106,7 @@ class PlacesSync extends Notifier<PlacesState> {
   Future<void> _drain() async {
     final SealedFiles? files = _files;
     final PlacesSource? source = _source;
-    if (files == null || source == null || !state.ready) return;
+    if (files == null || source == null || !_allowed || !state.ready) return;
     final List<PlaceVisit> visits = await source.take();
     if (visits.isEmpty) return;
     final PlaceStore next = state.store.withVisits(visits);
