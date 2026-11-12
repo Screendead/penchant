@@ -20,7 +20,7 @@ import 'package:tracker/providers/insights_provider.dart';
 
 /// Raise with any change to what is written below or to the report's types,
 /// so a file an older build wrote reads as absent.
-const int insightsViewFormat = 1;
+const int insightsViewFormat = 2;
 
 /// [view] as bytes to seal; null for a view with no computed report, which is
 /// never kept. Throws only on a value JSON cannot hold.
@@ -266,6 +266,7 @@ Map<String, Object?> _insight(HabitInsight i) => <String, Object?>{
       'pValue': _d(f.pValue),
       'spread': _od(f.spread),
       'sameBedtime': f.sameBedtime == null ? null : _insight(f.sameBedtime!),
+      'heldFixed': (f.heldFixed.toList()..sort()),
     },
     final HabitRefusal r => <String, Object?>{
       'reason': r.reason.name,
@@ -311,6 +312,10 @@ HabitInsight _readInsight(Map<String, Object?> m) {
       pValue: _dbl(m, 'pValue'),
       spread: _odbl(m, 'spread'),
       sameBedtime: _opt(m, 'sameBedtime', _readInsight),
+      heldFixed: _list(m, 'heldFixed', (Object? id) {
+        if (id is String) return id;
+        throw const _Bad();
+      }).toSet(),
     ),
     'refusal' => HabitRefusal(
       habitId: habitId,
