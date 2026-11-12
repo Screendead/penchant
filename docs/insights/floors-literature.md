@@ -94,8 +94,8 @@ floor rounded up at the digits shown ("under 22 min" for 21.4; "under 0.4 ms" fo
 - Active energy: "About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower mortality (Strain 2020)."
 - Workout time: "About 15 min of exercise a day went with 14% lower mortality than none (Wen 2011)."
 - Mindful time: "13 min of meditation a day for 8 weeks lowered negative mood against a podcast (Basso 2019)."
-- Mood: "Half a standard deviation is the usual rule for the smallest change people notice in rated wellbeing
-  (Norman 2003); here, half your own day-to-day spread." Mood cards and refusals use words, never numbers: "slightly", "noticeably" or "much"
+- Mood: "Half your own day-to-day spread, after the usual rule that half a standard deviation is the smallest change
+  people notice in rated wellbeing (Norman 2003)." Mood cards and refusals use words, never numbers: "slightly", "noticeably" or "much"
   more or less pleasant (under 1/7, under 3/7, else, against Health's seven labels 2/7 apart; our cut-offs), levels
   as Health's labels, and "under half your usual day-to-day swing in mood".
 
