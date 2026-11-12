@@ -7,6 +7,7 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/formats.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -22,6 +23,10 @@ class ViceForm extends ConsumerStatefulWidget {
   static const String lockedMessage =
       'Not saved. This habit did not open with your journal key, so its '
       'name and unit cannot be changed here.';
+
+  static const Key unitLabelKey = ValueKey<String>('vice-form-unit-label');
+  static const Key costKey = ValueKey<String>('vice-form-cost');
+  static const Key currencyKey = ValueKey<String>('vice-form-currency');
 
   final Vice? vice;
 
@@ -44,12 +49,49 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     final Vice vice when !vice.categoryStored => guessCategory(vice.name),
     final Vice vice => vice.category,
   };
+  late final TextEditingController unitLabelController = TextEditingController(
+    text: opened?.unitLabel,
+  );
+  late final TextEditingController costController = TextEditingController(
+    text: switch (opened?.costPerUnit) {
+      final double cost => formatAmount(cost),
+      null => '',
+    },
+  );
+  // A price is in the habit's currency, else another habit's, else the
+  // device region's.
+  late final TextEditingController currencyController = TextEditingController(
+    text:
+        opened?.currency ??
+        ref
+            .read(viceListProvider)
+            .value
+            ?.map((Vice v) => v.currency)
+            .nonNulls
+            .firstOrNull ??
+        deviceCurrency(),
+  );
   bool saving = false;
 
   @override
   void dispose() {
     viceNameController.dispose();
+    unitLabelController.dispose();
+    costController.dispose();
+    currencyController.dispose();
     super.dispose();
+  }
+
+  UnitAndPrice get _unitAndPrice {
+    final String label = unitLabelController.text.trim();
+    final double? cost = parseAmount(costController.text.trim())?.toDouble();
+    return (
+      unitLabel: label.isEmpty ? null : label,
+      costPerUnit: cost,
+      currency: cost == null
+          ? null
+          : currencyController.text.trim().toUpperCase(),
+    );
   }
 
   Future<void> _save(User user) async {
@@ -66,9 +108,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
     final Vice? vice = opened;
     final String name = viceNameController.text;
+    final UnitAndPrice unitAndPrice = _unitAndPrice;
+    final bool unitAndPriceChanged =
+        vice != null && unitAndPrice != unitAndPriceOf(vice);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
-    if (vice == null && !ref.read(trackerWritesProvider).canCreate) {
+    // The label and price exist only sealed, so they wait for the key too.
+    if ((vice == null || unitAndPriceChanged) &&
+        !ref.read(trackerWritesProvider).canCreate) {
       // The form stays open with what was typed.
       messenger.showSnackBar(
         const SnackBar(content: Text('Not saved. $noJournalKeyMessage')),
@@ -85,11 +132,13 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             name: name,
             unit: unit!,
             category: category,
+            unitAndPrice: unitAndPrice,
           );
     } else if (name != vice.name ||
         unit != vice.unit ||
         !vice.categoryStored ||
-        category != vice.category) {
+        category != vice.category ||
+        unitAndPriceChanged) {
       // Only the changed fields are written: an untouched unit may be a
       // legacy value the parser shows as the fallback.
       write = ref
@@ -101,6 +150,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             category: vice.categoryStored && category == vice.category
                 ? null
                 : category,
+            unitAndPrice: unitAndPriceChanged ? unitAndPrice : null,
           );
     } else {
       write = null;
@@ -204,6 +254,64 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                key: ViceForm.unitLabelKey,
+                controller: unitLabelController,
+                decoration: InputDecoration(
+                  labelText: 'Own unit (optional)',
+                  hintText: 'cups, mg, sessions',
+                  helperText: 'Shown in place of ${unit?.plural ?? 'the unit'}',
+                ),
+                onChanged: (_) => setState(() {}),
+                validator: unitLabelError,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: TextFormField(
+                      key: ViceForm.costKey,
+                      controller: costController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Cost per unit (optional)',
+                        helperText: 'For what you spend',
+                        suffixText: unitLabelController.text.trim().isEmpty
+                            ? null
+                            : 'per ${unitLabelController.text.trim()}',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: costPerUnitError,
+                    ),
+                  ),
+                  if (costController.text.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(width: 16),
+                    SizedBox(
+                      width: 96,
+                      child: TextFormField(
+                        key: ViceForm.currencyKey,
+                        controller: currencyController,
+                        textCapitalization: TextCapitalization.characters,
+                        maxLength: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Currency',
+                          counterText: '',
+                        ),
+                        validator: (String? value) =>
+                            currencyCodePattern.hasMatch(
+                              value?.trim().toUpperCase() ?? '',
+                            )
+                            ? null
+                            : 'Use a code like GBP',
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<ViceCategory>(

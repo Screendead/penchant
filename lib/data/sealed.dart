@@ -4,17 +4,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/errors/report_error.dart';
 
-/// The field that holds a document's content fields (a vice's name, unit and
-/// category, an activity's triggers) once sealed. The structural fields every query and
-/// rule needs (ownerID, createdAt, viceID, archived) stay beside it in
-/// plaintext.
+/// The field that holds a document's content fields (a vice's name, unit,
+/// category, unit label, cost per unit and currency, an activity's triggers)
+/// once sealed. The structural fields every query and rule needs (ownerID,
+/// createdAt, viceID, archived) stay beside it in plaintext.
 const String sealedField = 'sealed';
 
 /// The content fields each collection seals. firestore.rules lists the same
 /// fields (`sealedAlone`, `changedContent`), and so must every content field
 /// added later. An activity's quantity and decimal amount stay plaintext
 /// (Jack, 2026-11-06), so a server-side job can aggregate them.
-const List<String> viceContentFields = <String>['name', 'unit', 'category'];
+const List<String> viceContentFields = <String>[
+  'name',
+  'unit',
+  'category',
+  'unitLabel',
+  'costPerUnit',
+  'currency',
+];
 const List<String> activityContentFields = <String>['triggers'];
 
 const Map<String, List<String>> contentFields = <String, List<String>>{

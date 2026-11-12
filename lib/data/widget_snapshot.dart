@@ -85,8 +85,8 @@ Map<String, Object?> widgetSnapshot({
         <String, Object?>{
           'id': v.id,
           'name': v.name,
-          'unitOne': v.unit.singular,
-          'unitOther': v.unit.plural,
+          'unitOne': v.units.singular,
+          'unitOther': v.units.plural,
           'slot': marks[v.id]!.slot,
           'style': marks[v.id]!.style.name,
           'week': week[v.id],

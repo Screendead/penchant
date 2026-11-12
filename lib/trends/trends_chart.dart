@@ -94,12 +94,12 @@ class TrendsChart extends StatelessWidget {
         ? ''
         : ' Compared with ${overlays.map((TrendsOverlay o) {
             final double sum = o.totals.fold<double>(0, (a, b) => a + b);
-            return '${o.vice.name}, ${o.vice.unit.label(sum)} in all';
+            return '${o.vice.name}, ${o.vice.units.label(sum)} in all';
           }).join('; ')}.';
 
     return '${seriesName(stepDays)}s of ${vice.name} over the last '
-        '${formatCount(range.days)} days: ${vice.unit.label(total)} in all. The most was '
-        '${vice.unit.label(totals[stats.peakIndex])} '
+        '${formatCount(range.days)} days: ${vice.units.label(total)} in all. The most was '
+        '${vice.units.label(totals[stats.peakIndex])} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average$compared';
   }
 
@@ -138,7 +138,7 @@ class TrendsChart extends StatelessWidget {
   }) {
     final String date = readoutLabel(range, index, addDays(range.end, -1));
     String one(Vice v, List<double> totals, List<double> line) {
-      final String amount = v.unit.label(totals[index]);
+      final String amount = v.units.label(totals[index]);
       return window > 1
           ? '$amount, average ${formatAverage(line[index])}'
           : amount;
@@ -624,7 +624,7 @@ class TrendsChart extends StatelessWidget {
       children: <InlineSpan>[
         TextSpan(text: readoutLabel(range, index, today)),
         const TextSpan(text: '  '),
-        TextSpan(text: vice.unit.label(value), style: strong),
+        TextSpan(text: vice.units.label(value), style: strong),
         if (window > 1) ...<InlineSpan>[
           const TextSpan(text: '  avg '),
           TextSpan(

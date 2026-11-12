@@ -63,3 +63,43 @@ String? triggersError(List<String> triggers) {
 
   return null;
 }
+
+// A habit's own unit label and cost per unit live only inside its sealed
+// envelope, so these are their only bounds; firestore.rules repeats them for a
+// plaintext write, which this build never makes.
+const int maxUnitLabelLength = 20;
+const double maxCostPerUnit = 100000;
+
+String? unitLabelError(String? value) {
+  final String label = value?.trim() ?? '';
+  if (label.length > maxUnitLabelLength) {
+    return 'Use $maxUnitLabelLength characters or fewer';
+  }
+
+  return null;
+}
+
+String? costPerUnitError(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return null;
+  }
+
+  final num? cost = parseAmount(value);
+
+  if (cost == null) {
+    return 'Please enter a valid amount';
+  }
+
+  if (cost <= 0) {
+    return 'Please enter more than 0';
+  }
+
+  if (cost > maxCostPerUnit) {
+    return 'Please enter ${formatCount(maxCostPerUnit)} or less';
+  }
+
+  return null;
+}
+
+// An ISO 4217 code, as intl's currency formats take it.
+final RegExp currencyCodePattern = RegExp(r'^[A-Z]{3}$');

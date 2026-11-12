@@ -26,3 +26,18 @@ enum Unit {
     );
   }
 }
+
+// A habit's words for its unit: its own label, used as typed whatever the
+// count (mg, cups), else the preset's singular and plural.
+class UnitWords {
+  const UnitWords(this.unit, [this.custom]);
+
+  final Unit unit;
+  final String? custom;
+
+  String get singular => custom ?? unit.singular;
+  String get plural => custom ?? unit.plural;
+
+  String nameFor(num count) => custom ?? unit.nameFor(count);
+  String label(num count) => '${formatCount(count)} ${nameFor(count)}';
+}
