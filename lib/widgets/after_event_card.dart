@@ -36,19 +36,19 @@ class AfterEventCardView extends StatelessWidget {
   );
 }
 
-/// One habit's finding of how often it is used on days with more of a
+/// One habit's findings of how often it is used on days with more of a
 /// calendar feature.
 class CalendarDayCardView extends StatelessWidget {
   const CalendarDayCardView({
     super.key,
-    required this.finding,
+    required this.card,
     required this.habit,
     required this.mark,
     required this.locale,
     required this.top,
   });
 
-  final CalendarDay finding;
+  final CalendarDayCard card;
   final String habit;
   final HabitMark mark;
   final String locale;
@@ -59,10 +59,12 @@ class CalendarDayCardView extends StatelessWidget {
     habit: habit,
     mark: mark,
     top: top,
-    sentence: calendarDaySentence(finding, habit, locale),
+    sentence: calendarDaySentence(card.headline, habit, locale),
     lines: <String>[
-      calendarDayRange(finding, locale),
-      calendarDayBasis(finding),
+      calendarDayRange(card.headline, locale),
+      calendarDayBasis(card.headline),
+      for (final CalendarDay other in card.others)
+        calendarDayLine(other, locale),
     ],
   );
 }

@@ -41,8 +41,8 @@ Future<void> _pump(WidgetTester tester, List<CalendarDay> days) async {
 }
 
 void main() {
-  testWidgets('a habit used on more of the busy days gets a card under What '
-      'sets it off; a refused one does not', (WidgetTester tester) async {
+  testWidgets('a habit used on more of the busy days gets one card under What '
+      'sets it off; a refused one gets none', (WidgetTester tester) async {
     await _pump(tester, const <CalendarDay>[
       CalendarDay(
         habitId: 'coffee',
@@ -53,6 +53,16 @@ void main() {
         effect: 0.18,
         interval: Interval(0.06, 0.3),
         pValue: 0.001,
+      ),
+      CalendarDay(
+        habitId: 'coffee',
+        feature: CalendarDayFeature.long,
+        cut: 1,
+        usableDays: 90,
+        moreDays: 30,
+        effect: 0.12,
+        interval: Interval(0.02, 0.22),
+        pValue: 0.004,
       ),
       CalendarDay(
         habitId: 'tea',
@@ -70,6 +80,12 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Range: 6 to 30 points more often'), findsOneWidget);
+    expect(
+      find.text(
+        'Days with 2 or more meetings over 45 minutes: 12 points more often',
+      ),
+      findsOneWidget,
+    );
     expect(find.text(InsightsPage.setsOffBody), findsNothing);
   });
 }

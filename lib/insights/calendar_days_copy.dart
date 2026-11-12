@@ -40,12 +40,34 @@ String calendarDayMore(CalendarDayFeature feature, double cut) {
   };
 }
 
-/// The findings among [results], largest difference first.
-List<CalendarDay> calendarDayCards(List<CalendarDay> results) =>
-    results.where((c) => c.found).toList()..sort((a, b) {
-      final int bySize = b.effect!.abs().compareTo(a.effect!.abs());
-      return bySize != 0 ? bySize : a.habitId.compareTo(b.habitId);
-    });
+/// One habit's calendar-day findings: the largest difference leads, since the
+/// features move together and would otherwise say one thing several times.
+class CalendarDayCard {
+  const CalendarDayCard(this.headline, this.others);
+
+  final CalendarDay headline;
+  final List<CalendarDay> others;
+
+  String get habitId => headline.habitId;
+}
+
+/// The findings among [results] as one card per habit, largest headline
+/// first.
+List<CalendarDayCard> calendarDayCards(List<CalendarDay> results) {
+  int bySize(CalendarDay a, CalendarDay b) =>
+      b.effect!.abs().compareTo(a.effect!.abs());
+  final Map<String, List<CalendarDay>> byHabit = <String, List<CalendarDay>>{};
+  for (final CalendarDay c in results) {
+    if (c.found) byHabit.putIfAbsent(c.habitId, () => []).add(c);
+  }
+  return <CalendarDayCard>[
+    for (final List<CalendarDay> found in byHabit.values)
+      CalendarDayCard((found..sort(bySize)).first, found.sublist(1)),
+  ]..sort((a, b) {
+    final int size = bySize(a.headline, b.headline);
+    return size != 0 ? size : a.habitId.compareTo(b.habitId);
+  });
+}
 
 /// "On days with over 2 h in meetings, you log Coffee 18 points more often
 /// than on other days."
@@ -70,16 +92,24 @@ String calendarDayBasis(CalendarDay finding) =>
     'of them with ${calendarDayMore(finding.feature, finding.cut)}, weekdays '
     'set against weekdays';
 
-/// [finding] as the lines "Copy as text" writes.
+/// A card's line under its headline: "Days with 3 or more calendar events:
+/// 15 points more often".
+String calendarDayLine(CalendarDay finding, String locale) =>
+    'Days with ${calendarDayMore(finding.feature, finding.cut)}: '
+    '${_points(finding.effect!.abs(), locale)} points '
+    '${finding.effect! > 0 ? 'more' : 'less'} often';
+
+/// [card] as the lines "Copy as text" writes.
 List<String> calendarDayText(
-  CalendarDay finding,
+  CalendarDayCard card,
   String habit,
   String locale,
 ) => <String>[
   habit,
-  calendarDaySentence(finding, habit, locale),
-  calendarDayRange(finding, locale),
-  calendarDayBasis(finding),
+  calendarDaySentence(card.headline, habit, locale),
+  calendarDayRange(card.headline, locale),
+  calendarDayBasis(card.headline),
+  for (final CalendarDay other in card.others) calendarDayLine(other, locale),
 ];
 
 /// Why [refusal] is not shown, in words.

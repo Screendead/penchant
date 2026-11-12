@@ -550,11 +550,11 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               ? 0
               : DialSpace.xs,
         ),
-      for (final (int i, CalendarDay finding) in costs.calendarDays.indexed)
+      for (final (int i, CalendarDayCard card) in costs.calendarDays.indexed)
         CalendarDayCardView(
-          finding: finding,
-          habit: costs.nameOf(finding.habitId),
-          mark: costs.marks[finding.habitId] ?? const HabitMark(0),
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
           locale: formatLocale,
           top:
               i == 0 &&
@@ -805,7 +805,7 @@ class _Costs {
   /// Rises with no payoff card for the same fall, each a card of its own.
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
-  late final List<CalendarDay> calendarDays;
+  late final List<CalendarDayCard> calendarDays;
   late final List<FollowsCard> follows;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
@@ -913,7 +913,7 @@ class _Costs {
         for (final FollowsCard card in follows) followsText(card, nameOf),
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
-        for (final CalendarDay c in calendarDays)
+        for (final CalendarDayCard c in calendarDays)
           calendarDayText(c, nameOf(c.habitId), formatLocale),
       ],
       shifts: <List<String>>[
