@@ -116,7 +116,7 @@ needed unless that wait proves long.
 - Unproven: stutter when a multi-year Insights view is encoded and sealed on the UI isolate.
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
-- The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
+- The steps-based waking fallback for hours-after.
 - The Mac recovery key on Universal Clipboard (register).
 - Process: at most about five workers, each verifying once at the end on only the tests it touched; never
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
@@ -127,7 +127,7 @@ The list this run works from, sorted before any building. Tick or strike here as
 
 **DECIDED (build, PR, merge on green):**
 
-1. "Why not" lines under What sets it off (a habit with no before-a-use, pair or calendar card says why).
+1. ~~"Why not" lines under What sets it off~~ (built: feat/insights-sets-off; unseen on a device).
 2. Trigger analysis under What sets it off (queue step k; triggers reach only the weekly review today).
 3. Steps-based waking fallback for hours-after, for a day with no night recorded.
 4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
@@ -310,7 +310,6 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
   it holds near 7%.
 - The steps-based waking fallback for hours-after: not built (#241's report), and the page still does not say why a
   day with no night recorded gives nothing.
-- "Why not" lines under What sets it off.
 - Cut 0.2.0 (`r10-release` B: gates met; not cut this run).
 - The Mac recovery key on Universal Clipboard (register).
 - Process for the next run: a ten-worker fan-out drove this Mac to load 189 and Jack stopped it. Cap at about five
