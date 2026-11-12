@@ -67,8 +67,9 @@ class FirestoreKeyDirectory implements KeyDirectory {
 
   @override
   Future<KeyRecord?> fetch(String uid) async {
-    final DocumentSnapshot<Map<String, dynamic>> snapshot = await _doc(uid)
-        .get(const GetOptions(source: Source.server));
+    final DocumentSnapshot<Map<String, dynamic>> snapshot = await _doc(
+      uid,
+    ).get(const GetOptions(source: Source.server));
     return _parse(snapshot.data());
   }
 

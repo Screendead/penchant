@@ -436,8 +436,9 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
                   padding: const EdgeInsets.only(top: DialSpace.xxs),
                   child: Text(
                     'Up to $maxTriggers per entry',
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: DialColors.of(context).muted),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: DialColors.of(context).muted,
+                    ),
                   ),
                 ),
               const SizedBox(height: DialSpace.s),
@@ -493,8 +494,9 @@ class _SectionLabel extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.titleSmall
-            ?.copyWith(color: DialColors.of(context).muted),
+        style: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(color: DialColors.of(context).muted),
       ),
     );
   }

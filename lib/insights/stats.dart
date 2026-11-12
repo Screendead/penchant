@@ -409,8 +409,9 @@ LinearFit? fitLeastSquares(List<List<double>> rows, List<double> y) {
   }
   final List<double> beta = <double>[
     for (int i = 0; i < p; i++)
-      <double>[for (int j = 0; j < p; j++) inverse[i][j] * xty[j]]
-          .fold<double>(0, (s, v) => s + v),
+      <double>[
+        for (int j = 0; j < p; j++) inverse[i][j] * xty[j],
+      ].fold<double>(0, (s, v) => s + v),
   ];
   double rss = 0;
   for (int r = 0; r < n; r++) {

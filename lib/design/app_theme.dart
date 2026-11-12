@@ -240,8 +240,9 @@ ThemeData appTheme(Brightness brightness) {
       ).copyWith(side: sideWhenFocused(focusEdge)),
     ),
     iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(foregroundColor: p.text)
-          .copyWith(side: sideWhenFocused(focusEdge)),
+      style: IconButton.styleFrom(
+        foregroundColor: p.text,
+      ).copyWith(side: sideWhenFocused(focusEdge)),
     ),
     timePickerTheme: TimePickerThemeData(
       hourMinuteColor: WidgetStateColor.resolveWith(

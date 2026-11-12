@@ -78,9 +78,9 @@ class DialPage extends StatelessWidget {
                               child: Text(
                                 title,
                                 style: DialTypeScale.displayXL.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   height: 1.05,
                                 ),
                               ),
