@@ -92,8 +92,9 @@ class PlacesSync extends Notifier<PlacesState> {
             }
           })
           .catchError((Object _) {
-            if (identical(files, _files))
+            if (identical(files, _files)) {
               state = (ready: true, store: state.store);
+            }
           });
 
   /// Adds the visits Core Location reported since the last drain. Never
