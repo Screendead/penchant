@@ -23,6 +23,7 @@ void main() {
       ProviderScope(
         overrides: [
           deviceAuthProvider.overrideWithValue(auth),
+          appLockSavedProvider.overrideWithValue(saved),
           appLockClockProvider.overrideWithValue(() => now),
         ],
         child: MaterialApp(
@@ -134,6 +135,13 @@ void main() {
     expect(find.semantics.byLabel(_journal), findsOneWidget);
   });
 
+  test('the saved choice is read before launch, off when unset', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    expect(await readAppLockChoice(), isFalse);
+    SharedPreferences.setMockInitialValues(<String, Object>{AppLock.key: true});
+    expect(await readAppLockChoice(), isTrue);
+  });
+
   group('turning it on', () {
     ProviderContainer container() {
       final ProviderContainer c = ProviderContainer(
@@ -150,7 +158,7 @@ void main() {
       final AppLock lock = c.read(appLockProvider.notifier);
 
       expect(await lock.setEnabled(true), LockToggleResult.notConfirmed);
-      expect(c.read(appLockProvider).enabled, isNot(isTrue));
+      expect(c.read(appLockProvider).enabled, isFalse);
 
       expect(await lock.setEnabled(true), LockToggleResult.done);
       expect(c.read(appLockProvider).enabled, isTrue);

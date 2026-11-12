@@ -60,6 +60,7 @@ void main() {
               deviceAuthProvider.overrideWithValue(
                 FakeDeviceAuth(outcomes: <AuthOutcome>[AuthOutcome.cancelled]),
               ),
+              appLockSavedProvider.overrideWithValue(true),
               accountProvider.overrideWithValue(FakeAccount()),
               exportShareProvider.overrideWithValue(FakeExportShare()),
               userProvider.overrideWith((ref) => Stream.value(user)),

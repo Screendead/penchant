@@ -7,15 +7,14 @@ import 'package:tracker/errors/report_error.dart';
 
 class AppLockState {
   const AppLockState({
-    this.enabled,
+    this.enabled = false,
     this.locked = false,
     this.obscured = false,
     this.authenticating = false,
     this.prompted = false,
   });
 
-  /// Null until the saved choice is read; content stays covered meanwhile.
-  final bool? enabled;
+  final bool enabled;
   final bool locked;
 
   /// The app is inactive or in the background with the lock on: a plain
@@ -27,7 +26,7 @@ class AppLockState {
   /// lock screen waits for its button.
   final bool prompted;
 
-  bool get covered => enabled == null || locked || obscured;
+  bool get covered => locked || obscured;
 
   AppLockState copyWith({
     bool? enabled,
@@ -46,6 +45,21 @@ class AppLockState {
 
 enum LockToggleResult { done, unavailable, notConfirmed }
 
+/// The saved choice, read before the first frame (`startApp`), so a locked
+/// journal never shows while it loads.
+final appLockSavedProvider = Provider<bool>((Ref ref) => false);
+
+/// A failed read leaves the lock off rather than shut the user out.
+Future<bool> readAppLockChoice() async {
+  try {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(AppLock.key) ?? false;
+  } catch (e, stack) {
+    reportError(e, stack, context: 'while reading the app lock choice');
+    return false;
+  }
+}
+
 final appLockClockProvider = Provider<DateTime Function()>(
   (Ref ref) => DateTime.now,
 );
@@ -60,7 +74,6 @@ class AppLock extends Notifier<AppLockState> {
   static const Duration grace = Duration(minutes: 1);
   static const String reason = 'Unlock your journal';
 
-  bool _chosen = false;
   DateTime? _leftAt;
 
   @override
@@ -69,26 +82,12 @@ class AppLock extends Notifier<AppLockState> {
       onStateChange: _onLifecycle,
     );
     ref.onDispose(lifecycle.dispose);
-    _load();
-    return const AppLockState();
-  }
-
-  // A failed read leaves the lock off rather than shut the user out.
-  Future<void> _load() async {
-    bool saved = false;
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      saved = prefs.getBool(key) ?? false;
-    } catch (e, stack) {
-      reportError(e, stack, context: 'while reading the app lock choice');
-    }
-    if (!_chosen) {
-      state = state.copyWith(enabled: saved, locked: saved);
-    }
+    final bool saved = ref.read(appLockSavedProvider);
+    return AppLockState(enabled: saved, locked: saved);
   }
 
   void _onLifecycle(AppLifecycleState lifecycle) {
-    if (state.enabled != true) return;
+    if (!state.enabled) return;
     switch (lifecycle) {
       // The Mac turns inactive whenever another app has focus, and has no
       // switcher snapshot to hide from.
@@ -156,7 +155,6 @@ class AppLock extends Notifier<AppLockState> {
   /// Turning the lock on first proves the device can open it.
   Future<LockToggleResult> setEnabled(bool on) async {
     if (!on) {
-      _chosen = true;
       state = state.copyWith(enabled: false, locked: false, obscured: false);
       await _save(false);
       return LockToggleResult.done;
@@ -180,7 +178,6 @@ class AppLock extends Notifier<AppLockState> {
     } finally {
       state = state.copyWith(authenticating: false);
     }
-    _chosen = true;
     state = state.copyWith(enabled: true);
     await _save(true);
     return LockToggleResult.done;

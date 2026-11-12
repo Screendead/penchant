@@ -183,7 +183,7 @@ class _SettingsState extends ConsumerState<Settings> {
 
   Widget _lockRow() {
     final AppLockState lock = ref.watch(appLockProvider);
-    final bool on = lock.enabled ?? false;
+    final bool on = lock.enabled;
     final Biometry biometry =
         ref.watch(deviceAuthStatusProvider).value?.biometry ?? Biometry.none;
     return MergeSemantics(
