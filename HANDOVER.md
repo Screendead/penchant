@@ -121,6 +121,48 @@ needed unless that wait proves long.
 - Process: at most about five workers, each verifying once at the end on only the tests it touched; never
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
 
+## Fifth run (`/finish-and-pitch`, started 2026-11-12 evening)
+
+The list this run works from, sorted before any building. Tick or strike here as each lands.
+
+**DECIDED (build, PR, merge on green):**
+
+1. "Why not" lines under What sets it off (a habit with no before-a-use, pair or calendar card says why).
+2. Trigger analysis under What sets it off (queue step k; triggers reach only the weekly review today).
+3. Steps-based waking fallback for hours-after, for a day with no night recorded.
+4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
+   places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
+   on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
+   signing probe only.
+5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
+   calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
+   (round 14 `no-health` A).
+6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
+   the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
+   trigger breakdowns over time, spend).
+7. Reduce motion "Full" over framework animations: a spike of the binding override; dropped if it does not work.
+8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
+   sheet is its graph); iPhone-only install of `master` at the end (the Mac stays on 1422 for #252).
+
+**UNDECIDED (built as options, then pitched on a new page, round 17):**
+
+- Capture detail: which of the granular-logging fields a log can carry and the detail sheet after a one-tap log
+  (`r2-data-model` B decided the mechanism, not the fields or the sheet).
+- App lock and discreet mode now, or still parked with the store work (`r2-applock` decided free, not when).
+- Optional goals and limits: timing was only Claude's "after 1.1".
+- Self-experiments (randomised n-of-1 trials of a finding): whether to build.
+- Weather from an outside service that would see a rough location, or wait for WeatherKit and a paid team.
+- A read-only check in CI of the live project's indexes against `firestore.indexes.json` (the last open register
+  item; Claude may not read production). Line "unlisted production indexes were removed by a forced deploy on
+  2026-11-09" (third run) disagrees with `CLAUDE.md`'s "the 4 production indexes ... stay"; only the console or
+  such a check settles it.
+- No "What was going on?" prompt after a Siri or Shortcuts log (Jack ruled only on Control Centre).
+- Claude's as-built defaults from the fourth run (list above) were never put to Jack; the page lists them once.
+
+**Blocked or Jack's:** #252 waits on Jack saying the menu-bar log reached the iPhone
+(`~/Library/Containers/com.screendead.penchant.sync` now exists, created 2026-11-12 18:11, so PenchantSync has
+run; that alone proves no write); the device checks; `DELETE_ORPHANED_DATA`; the paid team and release items.
+
 ## After the fourth run (2026-11-11)
 
 Superseded on state by the section above: devices are on 0.2.0, #240 recovery time merged, #227 is closed, 0.2.0 is
@@ -952,9 +994,9 @@ call is picked.
 
 ## For Jack to do (not decisions)
 
-- **#252 Mac background sync, one real check.** Jack reported the checks "seem fine" (2026-11-12), but build 1422's
-  PenchantSync has never run: no `~/Library/Containers/com.screendead.penchant.sync` exists, and the helper is
-  sandboxed. Asked: Cmd+Q Penchant, log from the menu bar, wait 30 s, see the entry on the iPhone before reopening
+- **#252 Mac background sync, one real check.** Jack reported the checks "seem fine" (2026-11-12), and its
+  container `~/Library/Containers/com.screendead.penchant.sync` exists since 2026-11-12 18:11, so PenchantSync has run;
+  whether the entry reached the server is unseen from here. Asked: Cmd+Q Penchant, log from the menu bar, wait 30 s, see the entry on the iPhone before reopening
   the Mac app. Merge #252 only after that passes; the Mac stays on 1422 until then.
 
 - **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; for the
