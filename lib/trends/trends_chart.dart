@@ -143,7 +143,10 @@ class TrendsChart extends StatelessWidget {
 
     final String under = health == null ? '' : _healthSummary(health);
 
-    return '${seriesName(stepDays, money: money != null)}s of ${vice.name} '
+    final String what = money == null
+        ? '${seriesName(stepDays)}s of'
+        : '${seriesName(stepDays, money: true)} on';
+    return '$what ${vice.name} '
         'over the last ${formatCount(range.days)} days: '
         '${amount(vice, total, money)} in all. The most was '
         '${amount(vice, totals[stats.peakIndex], money)} '

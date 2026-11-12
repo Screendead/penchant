@@ -15,7 +15,9 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/main.dart';
+import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -951,4 +953,170 @@ void main() {
     expect(lengths, containsAll(<int>[30, RangeMorph.samples, 90]));
     expect(_totals(tester), hasLength(90));
   });
+
+  group('spend, Health and triggers', () {
+    testWidgets('a priced habit charts its spend in money', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      _usePhone(tester);
+      final Vice priced = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        archived: false,
+        costPerUnit: 0.5,
+        currency: 'GBP',
+      );
+      await _pump(
+        tester,
+        <ViceActivity>[_daysAgo(0, 4)],
+        vices: <Vice>[priced],
+      );
+      expect(_totals(tester).last, 4);
+
+      await _tapText(tester, TrendsSheet.spendLabel);
+      expect(_totals(tester).last, 2);
+      expect(
+        _axisLabels(tester, dates: false).map(_label),
+        everyElement(startsWith('£')),
+      );
+      final SemanticsData chart = find.semantics
+          .byLabel(RegExp('^Daily spend on Coffee'))
+          .evaluate()
+          .single
+          .getSemanticsData();
+      expect(chart.label, contains('£2.00 in all'));
+      expect(chart.value, startsWith('Today, £2.00'));
+      semantics.dispose();
+    });
+
+    testWidgets('an unpriced habit offers no spend', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[_daysAgo(0, 4)]);
+      expect(inTrends(find.text(TrendsSheet.spendLabel)), findsNothing);
+    });
+
+    testWidgets(
+      'draws a Health measure under the habit line on its own scale',
+      (WidgetTester tester) async {
+        final SemanticsHandle semantics = tester.ensureSemantics();
+        _usePhone(tester);
+        await _pumpWithHealth(tester, <DailyOutcome>[
+          DailyOutcome(_today, 'restingHeartRate', 60),
+          DailyOutcome(addDays(_today, -2), 'restingHeartRate', 64),
+        ]);
+        expect(_chart(tester).lineBarsData, hasLength(2));
+
+        await _tapText(tester, TrendsSheet.healthLabel);
+        expect(
+          inTrends(find.text('Resting heart rate')),
+          findsAtLeastNWidgets(1),
+        );
+        final LineChartData data = _chart(tester);
+        expect(data.lineBarsData, hasLength(3));
+        final List<FlSpot> under = data.lineBarsData.first.spots;
+        expect(under.last.y, closeTo(data.maxY * 0.1, 1e-9));
+        expect(under[under.length - 2], FlSpot.nullSpot);
+        expect(under[under.length - 3].y, closeTo(data.maxY * 0.9, 1e-9));
+        // The habit's own line is still the one the cursor follows.
+        expect(data.lineBarsData[1].spots.last.y, 2);
+
+        final SemanticsData chart = find.semantics
+            .byLabel(RegExp('^Daily totals of Coffee'))
+            .evaluate()
+            .single
+            .getSemanticsData();
+        expect(
+          chart.label,
+          endsWith(' Under it, Resting heart rate, from 60.0 bpm to 64.0 bpm.'),
+        );
+        expect(chart.value, endsWith('; Resting heart rate 60.0 bpm'));
+        semantics.dispose();
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    testWidgets('break tagged entries down by area, with the chart\'s cursor', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      _usePhone(tester);
+      await _pump(tester, <ViceActivity>[
+        fakeActivity(
+          _coffee.id,
+          1,
+          _today.add(const Duration(hours: 9)),
+          triggers: <String>['work/meeting'],
+        ),
+        fakeActivity(
+          _coffee.id,
+          1,
+          _today.add(const Duration(hours: 10)),
+          triggers: <String>['feeling/bored'],
+        ),
+        fakeActivity(
+          _coffee.id,
+          1,
+          addDays(_today, -1).add(const Duration(hours: 9)),
+          triggers: <String>['work/deadline'],
+        ),
+      ]);
+      final Finder card = inTrends(find.text(TrendsSheet.triggersTitle));
+      await tester.ensureVisible(card);
+      await tester.pumpAndSettle();
+      expect(card, findsOneWidget);
+
+      final FinderBase<SemanticsNode> bars = find.semantics.byLabel(
+        RegExp('^What set off Coffee'),
+      );
+      SemanticsData data() => bars.evaluate().single.getSemanticsData();
+      expect(
+        data().label,
+        contains('3 tagged entries. Work 67%, Feeling 33%.'),
+      );
+      expect(data().value, 'Today, 2 tagged: Work 50%, Feeling 50%');
+
+      tester.semantics.decrease(bars);
+      await tester.pumpAndSettle();
+      expect(data().value, endsWith(', 1 tagged: Work 100%'));
+      final SemanticsData chart = find.semantics
+          .byLabel(RegExp('^Daily totals of Coffee'))
+          .evaluate()
+          .single
+          .getSemanticsData();
+      expect(chart.value, isNot(startsWith('Today')));
+      semantics.dispose();
+    });
+  });
+}
+
+Future<void> _pumpWithHealth(
+  WidgetTester tester,
+  List<DailyOutcome> values,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: <Override>[
+        userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
+        offlineProvider.overrideWithValue(const AsyncData(false)),
+        trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
+        healthStateProvider.overrideWith((ref) async => HealthReady(values)),
+        ...trendsOverrides(<Vice>[
+          _coffee,
+        ], inRange(<ViceActivity>[_daysAgo(0, 2), _daysAgo(2, 1)])),
+      ],
+      child: MaterialApp(
+        theme: appTheme(Brightness.light),
+        home: const Scaffold(body: ViceTracker()),
+        onGenerateRoute: generateRoute,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await openTrends(tester);
 }
