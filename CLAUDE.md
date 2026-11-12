@@ -492,7 +492,13 @@ Health leaves the device: not Firestore, analytics or crash reports. Insights' d
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
 `HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
 by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
-acknowledges the generation once the store is written. `HKObserverQuery`s with hourly background delivery
+acknowledges the generation once the store is written. Menstrual flow is read as days with flow (value 1, never the
+amount) and is no outcome: `InsightsInput.from` takes it out of the outcomes and `cyclePhases`
+(`lib/insights/cycle_phase.dart`) infers each day's phase from those days alone (menstrual through the bleed, luteal
+the 14 days before the next start, follicular between; only in whole cycles of 24 to 38 days). The five day-after
+comparisons hold it fixed as a `DayCondition` (indicator columns in `_timeTerms`) when every phase has a week of the
+comparison's days; such a finding's `heldFixed` names it and its basis line says so, and nothing else shows the cycle.
+`HKObserverQuery`s with hourly background delivery
 (`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
 closed. The Health sheet resets the anchors; a store over 30 days old is read again in full.
 

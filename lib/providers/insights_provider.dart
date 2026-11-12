@@ -53,8 +53,9 @@ const String healthConnectedKey = 'healthConnected';
 
 /// Which set of read types the sheet last showed, so a later set can be asked
 /// for. Raise with each change to readTypes in ios/Runner/HealthChannel.swift:
-/// 2 added heart rate, 3 workouts and mindful sessions. Absent for anyone who connected before it was kept.
-const int healthReadTypesVersion = 3;
+/// 2 added heart rate, 3 workouts and mindful sessions, 4 menstrual flow.
+/// Absent for anyone who connected before it was kept.
+const int healthReadTypesVersion = 4;
 
 const String healthAskedVersionKey = 'healthAskedVersion';
 

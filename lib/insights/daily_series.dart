@@ -195,3 +195,22 @@ Iterable<DateTime> daysFrom(DateTime from, DateTime through) sync* {
     yield day;
   }
 }
+
+/// A condition of each day that a comparison holds fixed rather than judges:
+/// each day's [level], from 0 to [levels] - 1, or none when it is not known.
+class DayCondition {
+  DayCondition({
+    required this.id,
+    required this.levels,
+    required Map<DateTime, int> level,
+  }) : _level = <DateTime, int>{
+         for (final MapEntry<DateTime, int> e in level.entries)
+           startOfDay(e.key): e.value,
+       };
+
+  final String id;
+  final int levels;
+  final Map<DateTime, int> _level;
+
+  int? level(DateTime day) => _level[startOfDay(day)];
+}

@@ -561,8 +561,11 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      person's reaches its literature floor (habit-blind; coordinator's call, 2026-11-11). Not run on a device.
      Reminders built (#276, 2026-11-12; iOS only, as Calendar): reminders completed a day and reminders missed (due
      that day, not done by its end), outcomes beside Health's, asked for from an Insights card like Calendar's; floor
-     1 a day, kept (no source). Not run on a device. Focus is left. Next: State of Mind (iOS 18), then cycle tracking,
-     then places.
+     1 a day, kept (no source). Not run on a device. Focus is left.
+     Cycle tracking built (#277, 2026-11-12): menstrual flow days, read types version 4, the
+     phase inferred on the device and held fixed in the five day-after comparisons (not hours-after, before-use,
+     recovery, payoffs or shifts); a finding so compared says so in its basis line. Not run on a device. Next: State
+     of Mind (iOS 18, waits on Jack's floor call), then places.
 
 ### Third run (`/finish-and-pitch`, 2026-11-09)
 

@@ -7,6 +7,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/cycle_phase.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
@@ -89,6 +90,7 @@ class InsightsInput {
     this.samples = const <String, List<hs.HealthSample>>{},
     this.archived = const <String>{},
     this.events = const <CalendarEvent>[],
+    this.conditions = const <DayCondition>[],
   });
 
   factory InsightsInput.from({
@@ -113,9 +115,10 @@ class InsightsInput {
         ])
           // Today's day totals and averages cover only part of it; the night
           // that ended today is whole.
-          if (o.date.isBefore(unfinished) ||
-              (metricCopy(o.metricId)?.night ?? false) ||
-              o.metricId == sleepOnsetId)
+          if (o.metricId != hs.HealthMetric.menstrualFlow.id &&
+              (o.date.isBefore(unfinished) ||
+                  (metricCopy(o.metricId)?.night ?? false) ||
+                  o.metricId == sleepOnsetId))
             DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
       ], through: addDays(unfinished, -1)),
       from: range.start,
@@ -123,6 +126,13 @@ class InsightsInput {
       samples: samples,
       archived: archived,
       events: events,
+      conditions: <DayCondition>[
+        cyclePhases(<DateTime>[
+          for (final hs.DailyOutcome o in health)
+            if (o.metricId == hs.HealthMetric.menstrualFlow.id && o.value > 0)
+              o.date,
+        ]),
+      ],
     );
   }
 
@@ -142,6 +152,10 @@ class InsightsInput {
   /// The calendar's timed events over the journal's span; empty without
   /// calendar access.
   final List<CalendarEvent> events;
+
+  /// What the day-after comparisons hold fixed where there are enough days:
+  /// the cycle's phase ([cyclePhases]), never an outcome of its own.
+  final List<DayCondition> conditions;
 }
 
 /// The fewest days with a session a [hs.sessionMetricIds] outcome needs to be
@@ -303,6 +317,7 @@ typedef _Comparison =
       DateTime? from,
       DateTime? through,
       InsightGates gates,
+      List<DayCondition> conditions,
     });
 
 const List<_Comparison> _comparisons = <_Comparison>[
@@ -348,6 +363,7 @@ InsightsReport computeInsights(InsightsInput input) {
             lagDays: insightsLagDays,
             from: input.from,
             through: input.through,
+            conditions: input.conditions,
           ))
             if (!input.archived.contains(result.habitId)) result,
     for (final HabitInsight result in hours)
@@ -1276,28 +1292,30 @@ String findingBasis(
   String locale = 'en',
   Unit unit = Unit.fallback,
 }) {
-  if (finding.kind == InsightKind.doseLine) {
-    return 'From ${finding.usableDays} days with $habit, '
-        '${finding.exposedDays} of them with '
-        '${cutAmount(finding.cut!, unit, locale)} or more';
-  }
-  if (finding.kind == InsightKind.lastUseLine) {
-    return 'From ${finding.usableDays} days with $habit, '
-        '${finding.exposedDays} of them with the last use at '
-        '${_cutClock(finding.cut!)} or later';
-  }
-  if (finding.kind == InsightKind.hoursAfter) {
-    return 'From ${finding.exposedDays} days with $habit, against '
-        '${finding.usableDays - finding.exposedDays} days at the same time '
-        'after waking with none of it within 4 hours';
-  }
-  if (finding.kind != InsightKind.use) {
-    return 'From ${finding.usableDays} days with $habit';
-  }
-  final int? used = finding.raw?.exposedDays;
-  return used == null
-      ? 'From ${finding.usableDays} days'
-      : 'From ${finding.usableDays} days, $used of them with $habit';
+  final String basis = switch (finding.kind) {
+    InsightKind.doseLine =>
+      'From ${finding.usableDays} days with $habit, '
+          '${finding.exposedDays} of them with '
+          '${cutAmount(finding.cut!, unit, locale)} or more',
+    InsightKind.lastUseLine =>
+      'From ${finding.usableDays} days with $habit, '
+          '${finding.exposedDays} of them with the last use at '
+          '${_cutClock(finding.cut!)} or later',
+    InsightKind.hoursAfter =>
+      'From ${finding.exposedDays} days with $habit, against '
+          '${finding.usableDays - finding.exposedDays} days at the same time '
+          'after waking with none of it within 4 hours',
+    InsightKind.dose ||
+    InsightKind.lastUse => 'From ${finding.usableDays} days with $habit',
+    InsightKind.use => switch (finding.raw?.exposedDays) {
+      null => 'From ${finding.usableDays} days',
+      final int used =>
+        'From ${finding.usableDays} days, $used of them with $habit',
+    },
+  };
+  return finding.heldFixed.contains(cyclePhaseId)
+      ? '$basis, compared within the same phase of your cycle'
+      : basis;
 }
 
 /// Why a habit has no finding, in plain words; for an amount or a time, said

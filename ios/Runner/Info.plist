@@ -58,7 +58,7 @@
 	<key>NSRemindersUsageDescription</key>
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Penchant reads sleep, heart, activity, workout and mindfulness data from Health to compare with your journal. It stays on this device.</string>
+	<string>Penchant reads sleep, heart, activity, workout and mindfulness data from Health to compare with your journal, and your period days to compare like with like. It stays on this device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
