@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -20,7 +21,7 @@ import 'package:tracker/providers/insights_provider.dart';
 
 /// Raise with any change to what is written below or to the report's types,
 /// so a file an older build wrote reads as absent.
-const int insightsViewFormat = 2;
+const int insightsViewFormat = 3;
 
 /// [view] as bytes to seal; null for a view with no computed report, which is
 /// never kept. Throws only on a value JSON cannot hold.
@@ -198,6 +199,9 @@ Map<String, Object?> _report(InsightsReport r) => <String, Object?>{
   ],
   'shifts': <Object?>[for (final MeasureShift s in r.shifts) _shift(s)],
   'afterEvent': <Object?>[for (final AfterEvent a in r.afterEvent) _after(a)],
+  'calendarDays': <Object?>[
+    for (final CalendarDay c in r.calendarDays) _calendarDay(c),
+  ],
   'recovery': <Object?>[for (final Recovery x in r.recovery) _recovery(x)],
 };
 
@@ -221,6 +225,7 @@ InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
   replacements: _list(m, 'replacements', _each(_readReplacement)),
   shifts: _list(m, 'shifts', _each(_readShift)),
   afterEvent: _list(m, 'afterEvent', _each(_readAfter)),
+  calendarDays: _list(m, 'calendarDays', _each(_readCalendarDay)),
   recovery: _list(m, 'recovery', _each(_readRecovery)),
 );
 
@@ -533,6 +538,30 @@ AfterEvent _readAfter(Map<String, Object?> m) => AfterEvent(
   controlDays: _int(m, 'controlDays'),
   eventRate: _dbl(m, 'eventRate'),
   controlRate: _dbl(m, 'controlRate'),
+  effect: _odbl(m, 'effect'),
+  interval: _opt(m, 'interval', _readInterval),
+  pValue: _odbl(m, 'pValue'),
+  refusal: _oenum(RefusalReason.values, m, 'refusal'),
+);
+
+Map<String, Object?> _calendarDay(CalendarDay c) => <String, Object?>{
+  'habitId': c.habitId,
+  'feature': c.feature.name,
+  'cut': _d(c.cut),
+  'usableDays': c.usableDays,
+  'moreDays': c.moreDays,
+  'effect': _od(c.effect),
+  'interval': _ointerval(c.interval),
+  'pValue': _od(c.pValue),
+  'refusal': c.refusal?.name,
+};
+
+CalendarDay _readCalendarDay(Map<String, Object?> m) => CalendarDay(
+  habitId: _str(m, 'habitId'),
+  feature: _enum(CalendarDayFeature.values, m, 'feature'),
+  cut: _dbl(m, 'cut'),
+  usableDays: _int(m, 'usableDays'),
+  moreDays: _int(m, 'moreDays'),
   effect: _odbl(m, 'effect'),
   interval: _opt(m, 'interval', _readInterval),
   pValue: _odbl(m, 'pValue'),

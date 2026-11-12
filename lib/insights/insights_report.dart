@@ -7,6 +7,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/cycle_phase.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
@@ -282,8 +283,14 @@ class InsightsReport {
     this.replacements = const <Replacement>[],
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
+    this.calendarDays = const <CalendarDay>[],
     this.recovery = const <Recovery>[],
   });
+
+  /// Whether each habit is used on more of the days with more of each
+  /// calendar feature, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<CalendarDay> calendarDays;
 
   /// Each habit's measures over the nights after its heavy days, findings
   /// and refusals, judged in the same family as [findings].
@@ -444,6 +451,12 @@ InsightsReport computeInsights(InsightsInput input) {
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<CalendarDay> calendarDay = calendarDays(
+    uses: input.uses,
+    events: input.events,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<HabitFollows> follows = habitFollows(
     uses: input.uses,
     through: addDays(input.through, -1),
@@ -467,6 +480,9 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
   ];
+  final List<double> calendarDayPs = <double>[
+    for (final CalendarDay c in calendarDay) ?c.pValue,
+  ];
   final List<double> replacementPs = <double>[
     for (final Replacement r in replacements) ?r.pValue,
   ];
@@ -488,6 +504,7 @@ InsightsReport computeInsights(InsightsInput input) {
       ...beforePs,
       ...followsPs,
       ...calendarPs,
+      ...calendarDayPs,
       ...shiftPs,
       ...payoffPs,
       ...replacementPs,
@@ -520,6 +537,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...calendarPs,
+        ...calendarDayPs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -532,6 +550,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -546,6 +565,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -558,6 +578,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...shiftPs,
         ...replacementPs,
         ...recoveryPs,
@@ -571,6 +592,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...shiftPs,
         ...payoffPs,
         ...recoveryPs,
@@ -579,9 +601,23 @@ InsightsReport computeInsights(InsightsInput input) {
     afterEvent: judgeAfterEvent(
       calendar,
       alongside: <double>[
+        ...calendarDayPs,
         ...afterPs,
         ...beforePs,
         ...followsPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    calendarDays: judgeCalendarDays(
+      calendarDay,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -597,6 +633,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...beforePs,
               ...followsPs,
               ...calendarPs,
+              ...calendarDayPs,
               ...payoffPs,
               ...replacementPs,
               ...recoveryPs,

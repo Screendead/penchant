@@ -15,8 +15,10 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/after_event_copy.dart';
-import 'package:tracker/insights/before_use_copy.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/before_use_copy.dart';
+import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/insights/calendar_source.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/habit_follows.dart';
@@ -515,7 +517,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty &&
           costs.follows.isEmpty &&
-          costs.calendar.isEmpty)
+          costs.calendar.isEmpty &&
+          costs.calendarDays.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -543,6 +546,20 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           mark: costs.marks[finding.habitId] ?? const HabitMark(0),
           locale: formatLocale,
           top: i == 0 && costs.before.isEmpty && costs.follows.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      for (final (int i, CalendarDay finding) in costs.calendarDays.indexed)
+        CalendarDayCardView(
+          finding: finding,
+          habit: costs.nameOf(finding.habitId),
+          mark: costs.marks[finding.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty
               ? 0
               : DialSpace.xs,
         ),
@@ -741,6 +758,10 @@ class _Costs {
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
     ]);
+    calendarDays = calendarDayCards(<CalendarDay>[
+      for (final CalendarDay c in report.calendarDays)
+        if (_names.containsKey(c.habitId)) c,
+    ]);
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -783,6 +804,7 @@ class _Costs {
   /// Rises with no payoff card for the same fall, each a card of its own.
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
+  late final List<CalendarDay> calendarDays;
   late final List<FollowsCard> follows;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
@@ -890,6 +912,8 @@ class _Costs {
         for (final FollowsCard card in follows) followsText(card, nameOf),
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
+        for (final CalendarDay c in calendarDays)
+          calendarDayText(c, nameOf(c.habitId), formatLocale),
       ],
       shifts: <List<String>>[
         for (final MeasureShift s in shifts)

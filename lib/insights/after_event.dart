@@ -8,12 +8,16 @@ import 'package:tracker/insights/what_follows.dart';
 
 // Calendar events stay on the device: nothing here is logged or reported.
 
-/// A timed calendar event: when it starts and ends, and nothing else.
+/// A timed calendar event: when it starts and ends and how many people it
+/// lists, and nothing else.
 class CalendarEvent {
-  const CalendarEvent(this.start, this.end);
+  const CalendarEvent(this.start, this.end, {this.attendees = 0});
 
   final DateTime start;
   final DateTime end;
+
+  /// How many people the event lists; 0 when it lists none.
+  final int attendees;
 }
 
 /// The window after an event's end that counts as "after it".
