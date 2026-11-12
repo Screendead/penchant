@@ -531,6 +531,18 @@ during a stay there with the share of those hours spent there, by day, on days w
 and elsewhere: 14 days at least, in the report's false-discovery family, floor 10 points. Findings show under What
 sets it off; names stay out of the engine and the report codec (results carry the place id).
 
+**Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
+held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city
+(`deviceTimeZoneProvider`, `flutter_timezone`, 2 s timeout; `lib/insights/zone_locations.dart`, generated from the
+system's `zone.tab` by `tools/zone-locations.py`); an unknown zone gives none. One location serves the whole span
+(travel ignored). `sunTimes` is the sunrise equation with NOAA's terms (upper limb, refraction), polar days 24 or 0
+hours. `dayLengths` is a `DayCondition.measure` (a quantity, not levels) in `InsightsInput.conditions`: `_timeTerms`
+adds it as one centred column only when every day has a value, its own inflation against the trend, month and shift
+terms and the habit's column's beside them are both within `maxVarianceInflation`, so it never turns a comparison into
+a refusal by itself. Over months it is nearly all month levels and trend and seldom joins; a finding that held it says
+"compared at the same length of day". No "after sunset" comparison: at a fixed clock hour, a habit logged in the
+evening would look tied to darkness through winter alone.
+
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
 writes, above). `ViceActivity.pending` carries `hasPendingWrites`; the day and history providers listen with

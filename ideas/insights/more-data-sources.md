@@ -16,8 +16,10 @@ there. Grouped by what stands in the way.
   `mood-floor` A).
 - **Places:** built (2026-11-12, iOS only): Core Location visits clustered on the device into numbered places the
   person can name, sealed on the device, and each habit's share of entries at a place against its share of waking
-  time there. Not yet: a rough location for daylight, and a "home / work" guess from the hours spent.
-- **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.
+  time there. Not yet: a "home / work" guess from the hours spent.
+- **Daylight:** built (2026-11-12): sunrise, sunset and day length computed on the device from the most-visited
+  place or the time zone's city, to whole degrees, no network; day length held fixed where the month terms miss it.
+  Not yet: a "dark against light at the same clock hour" comparison.
 - **Music:** recently played from Apple Music (MusicKit), as a rough mood and context signal. Only for Apple Music
   users.
 - **Reminders**, beside

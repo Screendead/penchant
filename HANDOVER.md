@@ -142,6 +142,12 @@ The list this run works from, sorted before any building. Tick or strike here as
      Native build. Visits wait in Swift memory only until sealed, so one reported while no key is loaded is lost if
      the process ends first. Defaults to put to Jack: waking hours fixed at 07:00-23:00, 150 m places, 5 places
      judged, 10-point floor.
+   - Daylight: built 2026-11-12 (#280). Sunrise, sunset and day length on the device from the most-visited place
+     to whole degrees, else the time zone's city; day length held fixed in the day-after comparisons only where
+     the month terms miss it (rarely, by design). No "use after sunset" comparison: the clock hour confounds it
+     (an evening habit would look tied to darkness in winter alone); an honest one compares the same clock hours
+     dark and light, and waits for a call. Not proven on a device: the time zone read through `flutter_timezone`
+     inside Insights (tests answer it with none).
 5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
    calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
    (round 14 `no-health` A).
