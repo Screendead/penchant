@@ -17,6 +17,8 @@ import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/after_event_copy.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/before_use_copy.dart';
+import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/insights/calendar_source.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/habit_follows.dart';
@@ -126,9 +128,11 @@ class InsightsPage extends ConsumerStatefulWidget {
 
   static const String calendarLabel = 'Connect Calendar';
   static const String calendarBody =
-      'See which habits follow your events. Penchant reads only when each '
-      'event starts and ends, on this iPhone, never writes to your calendar, '
-      'and sends none of it anywhere.';
+      'See which habits follow your events or come with busy days, and get '
+      'Meeting suggested when you log just after one. Penchant '
+      'reads only when each event starts and ends and how many people it '
+      'lists, on this iPhone, never writes to your calendar, and sends none of '
+      'it anywhere.';
   static const String calendarOffLabel = 'Calendar';
   static const String calendarOffValue = 'Off';
   static const String calendarOffBody =
@@ -602,6 +606,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       if (costs.before.isEmpty &&
           costs.follows.isEmpty &&
           costs.calendar.isEmpty &&
+          costs.calendarDays.isEmpty &&
           costs.places.isEmpty &&
           costs.triggers.isEmpty)
         const NotYetBox(
@@ -634,6 +639,20 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               ? 0
               : DialSpace.xs,
         ),
+      for (final (int i, CalendarDayCard card) in costs.calendarDays.indexed)
+        CalendarDayCardView(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
       for (final (int i, AtPlace finding) in costs.places.indexed)
         AtPlaceCardView(
           finding: finding,
@@ -645,7 +664,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               i == 0 &&
                   costs.before.isEmpty &&
                   costs.follows.isEmpty &&
-                  costs.calendar.isEmpty
+                  costs.calendar.isEmpty &&
+                  costs.calendarDays.isEmpty
               ? 0
               : DialSpace.xs,
         ),
@@ -659,6 +679,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   costs.before.isEmpty &&
                   costs.follows.isEmpty &&
                   costs.calendar.isEmpty &&
+                  costs.calendarDays.isEmpty &&
                   costs.places.isEmpty
               ? 0
               : DialSpace.xs,
@@ -914,6 +935,10 @@ class _Costs {
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
     ]);
+    calendarDays = calendarDayCards(<CalendarDay>[
+      for (final CalendarDay c in report.calendarDays)
+        if (_names.containsKey(c.habitId)) c,
+    ]);
     this.places = atPlaceCards(<AtPlace>[
       for (final AtPlace a in report.atPlace)
         if (_names.containsKey(a.habitId)) a,
@@ -951,6 +976,7 @@ class _Costs {
             ...c.others,
           ]) ...<String>[f.leadId, f.followerId],
         for (final AfterEvent a in calendar) a.habitId,
+        for (final CalendarDayCard c in calendarDays) c.habitId,
         for (final AtPlace a in this.places) a.habitId,
         for (final TriggerCard c in triggers) c.habitId,
       },
@@ -983,6 +1009,7 @@ class _Costs {
   /// Rises with no payoff card for the same fall, each a card of its own.
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
+  late final List<CalendarDayCard> calendarDays;
   late final List<AtPlace> places;
   final PlaceStore _places;
   late final List<FollowsCard> follows;
@@ -1100,6 +1127,8 @@ class _Costs {
         for (final FollowsCard card in follows) followsText(card, nameOf),
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
+        for (final CalendarDayCard c in calendarDays)
+          calendarDayText(c, nameOf(c.habitId), formatLocale),
         for (final AtPlace a in places)
           atPlaceText(a, nameOf(a.habitId), placeOf(a.placeId), formatLocale),
         for (final TriggerCard card in triggers)

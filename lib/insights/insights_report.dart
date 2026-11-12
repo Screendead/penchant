@@ -7,6 +7,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/cycle_phase.dart';
 import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/daily_series.dart';
@@ -312,10 +313,16 @@ class InsightsReport {
     this.replacements = const <Replacement>[],
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
+    this.calendarDays = const <CalendarDay>[],
     this.atPlace = const <AtPlace>[],
     this.recovery = const <Recovery>[],
     this.triggers = const <HabitTriggers>[],
   });
+
+  /// Whether each habit is used on more of the days with more of each
+  /// calendar feature, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<CalendarDay> calendarDays;
 
   /// Each habit's tagged triggers against its other tagged entries, findings
   /// and refusals, judged in the same family as [findings].
@@ -487,6 +494,12 @@ InsightsReport computeInsights(InsightsInput input) {
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<CalendarDay> calendarDay = calendarDays(
+    uses: input.uses,
+    events: input.events,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<AtPlace> places = atPlace(
     uses: input.uses,
     stays: input.stays,
@@ -522,6 +535,9 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
   ];
+  final List<double> calendarDayPs = <double>[
+    for (final CalendarDay c in calendarDay) ?c.pValue,
+  ];
   final List<double> placePs = <double>[
     for (final AtPlace a in places) ?a.pValue,
   ];
@@ -547,6 +563,7 @@ InsightsReport computeInsights(InsightsInput input) {
       ...triggerPs,
       ...followsPs,
       ...calendarPs,
+      ...calendarDayPs,
       ...placePs,
       ...shiftPs,
       ...payoffPs,
@@ -581,6 +598,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...placePs,
         ...shiftPs,
         ...payoffPs,
@@ -595,6 +613,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...placePs,
         ...shiftPs,
         ...payoffPs,
@@ -611,6 +630,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...placePs,
         ...shiftPs,
         ...payoffPs,
@@ -625,6 +645,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...placePs,
         ...shiftPs,
         ...replacementPs,
@@ -640,6 +661,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
         ...placePs,
         ...shiftPs,
         ...payoffPs,
@@ -649,6 +671,7 @@ InsightsReport computeInsights(InsightsInput input) {
     afterEvent: judgeAfterEvent(
       calendar,
       alongside: <double>[
+        ...calendarDayPs,
         ...afterPs,
         ...placePs,
         ...beforePs,
@@ -660,11 +683,28 @@ InsightsReport computeInsights(InsightsInput input) {
         ...recoveryPs,
       ],
     ),
+    calendarDays: judgeCalendarDays(
+      calendarDay,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...triggerPs,
+        ...placePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
     atPlace: judgeAtPlace(
       places,
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
+        ...calendarDayPs,
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
@@ -683,6 +723,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...triggerPs,
               ...followsPs,
               ...calendarPs,
+              ...calendarDayPs,
               ...placePs,
               ...payoffPs,
               ...replacementPs,
@@ -699,6 +740,8 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,

@@ -29,7 +29,7 @@ class AtPlaceCardView extends StatelessWidget {
     habit: habit,
     mark: mark,
     sentence: atPlaceSentence(finding, habit, place, locale),
-    details: <String>[atPlaceRange(finding, locale), atPlaceBasis(finding)],
+    lines: <String>[atPlaceRange(finding, locale), atPlaceBasis(finding)],
     top: top,
   );
 }
