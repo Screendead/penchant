@@ -1,0 +1,153 @@
+<title>Penchant Round 16</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of call cards; each card = question, what exists, option buttons (tap to pick), recommendation, what happens if nothing is picked. */
+:root{
+  --paper:#f6f5f2; --card:#ffffff; --ink:#1b1c1f; --muted:#5d606a; --rule:#dcdbd6;
+  --pick:#1b1c1f; --pickInk:#f6f5f2; --rec:#2f6b4f; --warn:#8a5a12;
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0}
+.lede{color:var(--muted)}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.call{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:12px;min-width:0}
+.block{display:grid;gap:4px}
+.opts{display:grid;gap:8px}
+.opt{all:unset;box-sizing:border-box;display:grid;gap:3px;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.opt b{font-weight:600}
+.opt .why{font-size:14px}
+.opt .cost{color:var(--muted);font-size:13px}
+.opt .rec{color:var(--rec);font-size:12px;font-family:var(--mono)}
+.opt[aria-pressed="true"]{background:var(--pick);color:var(--pickInk);border-color:var(--pick)}
+.opt[aria-pressed="true"] .cost,.opt[aria-pressed="true"] .rec{color:var(--pickInk)}
+.recline{border-left:3px solid var(--rec);padding-left:10px}
+.nothing{color:var(--muted);font-size:14px}
+ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.saved{font-family:var(--mono);font-size:12px;color:var(--rec);min-height:1em}
+#calls{display:grid;gap:18px}
+@media (prefers-reduced-motion:no-preference){.opt{transition:background .12s,color .12s}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Round 16: four calls</h1>
+    <p class="lede">12 November. The first call matters; the other three are clean-up, each with a "leave it" recommendation. Tap an option to pick it. Your picks save here and I read them back.</p>
+    <p class="status" id="status">Loading saved picks…</p>
+  </header>
+
+  <section class="call" style="gap:8px">
+    <h2>What finished</h2>
+    <ul>
+      <li><b>Quick logs ask "What was going on?"</b> After a one-tap log, a button beside Undo opens the trigger picker for that entry. Undo is in the picker too. Widgets and the menu bar have a "What was going on?" link that works for 5 minutes after a log.</li>
+      <li><b>A late Undo from a widget</b> now removes the entry. Before, it could stay.</li>
+      <li><b>On a new device, Penchant waits for your journal key from iCloud Keychain</b> before it asks for the recovery key. "Enter recovery key instead" is there throughout.</li>
+      <li><b>Insights compares your habits with workout minutes and mindful minutes</b> from Apple Health. A measure is left out until at least one of your days reaches 15 minutes of exercise or 13 of mindfulness, the smallest amounts studies link to a benefit. The Health permission sheet will show once more, to ask for these two.</li>
+      <li><b>On the iPhone:</b> all of the above, installed today.</li>
+    </ul>
+  </section>
+
+  <div id="calls"></div>
+
+  <section class="call" style="gap:8px">
+    <h2>For you to do</h2>
+    <ul>
+      <li><b>The Mac's background sync, one more check (1 minute).</b> The hidden sync app in your Mac build has never started: macOS creates a folder for it the first time it runs, and there is none. Your logs synced because Penchant itself was open, or synced them when you reopened it. To test it: quit Penchant with Cmd+Q, log once from the menu bar, wait 30 seconds, and check that the entry is on your iPhone <i>before</i> you reopen Penchant on the Mac. Then tell me what you saw. Until that passes, I will not merge it. Your Mac stays on that test build and does not yet have the iPhone's new features.</li>
+      <li><b>Being built now, no call needed:</b> cycle tracking from Apple Health, used only to make other findings fairer (no cycle data is shown), and Reminders as a source beside Calendar. Places and daylight come after; music and Focus first need a check that your developer team can sign them.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const CALLS = [
+ {id:'mood-floor', q:'How big must a change in mood be before Insights reports it?',
+  today:'iOS 18 lets you log your mood in the Health app or on the Watch: a slider from very unpleasant to very pleasant, either for a moment or for the whole day. Penchant does not read it yet. Workout and mindful minutes each have a smallest amount that studies link to a benefit, and Insights stays quiet below it. Mood logged this way has no such published amount.',
+  now:'Mood is the next Health source and the one most likely to show what a habit costs you. It cannot ship until the threshold is set. Everything else about it is ready to build.',
+  opts:[
+   ['a','Half of your own day-to-day spread','A change is reported only when it is at least half as large as the way your mood normally varies from day to day. If your mood barely moves, small shifts count; if it swings a lot, only large ones do.','Half a standard deviation is the most-cited general rule for the smallest change people notice in self-rated wellbeing (Norman, Sloan and Wyrwich, Medical Care, 2003). It is the same rule for every habit, set by your own data.',true],
+   ['b','One step on Apple\'s seven-step scale','A change is reported only when it moves your mood by about one of Apple\'s seven labels, for example from "Neutral" to "Slightly Unpleasant".','Easy to explain on the card. For someone whose mood rarely moves a whole step, it will almost never report anything.'],
+   ['c','No threshold','Any change that passes the significance test is reported, as for heart rate today.','Finds the most. It may report shifts too small for you to feel.'],
+   ['d','Leave mood out','Penchant does not read mood.','No cost. Insights cannot say whether a habit goes with worse days.']],
+  rec:'A. It needs no number invented by us. It adapts to how much your own mood varies, and it has the best support in the research. In every option, mood counts only after 14 days with a mood log, because most people log it now and then, not daily.',
+  nothing:'Mood stays out of Insights; the next source is built instead.'},
+
+ {id:'key-rotation', q:'Should making a new recovery key also lock out the old one?',
+  today:'Settings › Recovery key can make a new recovery key. It re-wraps the same journal key, so the old recovery key still opens your journal. Using an old key also needs your account sign-in, because only you can read the stored key record. The only way to cut off an old key today is "Start a new journal", which abandons your data.',
+  now:'This is an encryption change, so it waits for your approval. It only matters if a recovery key has leaked.',
+  opts:[
+   ['a','Leave it','Nothing changes.','No cost. An old recovery key plus your password still opens the journal.',true],
+   ['b','Real rotation','A new recovery key makes a new journal key. Every habit, entry and encrypted file on your devices is re-encrypted under it. Your other devices pick up the new key from iCloud Keychain, or ask for the new recovery key.','About a day of work, plus device testing. If re-encryption is cut short, some entries are under the old key and some under the new one, and the app has to finish the job next launch. That is the riskiest kind of change in this app.']],
+  rec:'A for now. A leaked recovery key is useless without your sign-in, and the risk of rotation is to your own data. Reconsider before inviting other users.',
+  nothing:'Same as A.'},
+
+ {id:'mac-copy', q:'On the Mac, should "Copy" for the recovery key go?',
+  today:'On the iPhone, a copied recovery key stays on that phone and expires after 2 minutes. The Mac has no clipboard that stays on one device. A copy made there is offered to your other Apple devices through Universal Clipboard. The Mac clears it after 2 minutes, but only if Penchant is still running. The screen already says this.',
+  now:'This was left open when the copy feature shipped. No other way to fix it exists.',
+  opts:[
+   ['a','Keep Copy on the Mac','Nothing changes.','The key can reach your own iPhone or iPad clipboard for a short time.',true],
+   ['b','Remove Copy on the Mac','The Mac shows the key to read and write down, with no Copy button.','Copying 32 characters by hand invites mistakes, and a key written down wrong is found only when you need it.']],
+  rec:'A. Universal Clipboard only reaches devices signed in to your own Apple ID, and the screen already says so.',
+  nothing:'Same as A.'},
+
+ {id:'probe-pr', q:'Close the old test build for keychain sync (pull request #128)?',
+  today:'A draft pull request that built a one-off test to see whether the journal key syncs through iCloud Keychain. It was never meant to be merged. The new-device waiting screen that shipped today replaced it.',
+  now:'It is the last open pull request with no plan. I could not close it without your say-so.',
+  opts:[
+   ['a','Close it','The pull request is closed; its branch stays on GitHub as a record.','None.',true],
+   ['b','Keep it open','Nothing changes.','It stays in the list.']],
+  rec:'A.',
+  nothing:'It stays open.'},
+];
+
+const picks = {};
+const host = document.getElementById('calls');
+function el(tag, cls, text){const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e;}
+function block(label, text){const d=el('div','block'); d.append(el('h3',null,label), el('p',null,text)); return d;}
+function render(){
+  host.replaceChildren(...CALLS.map(c=>{
+    const s=el('section','call');
+    s.append(el('h2',null,c.q), block('Today',c.today), block('Why now',c.now));
+    const o=el('div','opts'); o.setAttribute('role','group'); o.setAttribute('aria-label',c.q);
+    c.opts.forEach(([k,label,see,cost,isRec])=>{
+      const b=el('button','opt'); b.id=`${c.id}-${k}`;
+      b.setAttribute('aria-pressed', picks[c.id]===k?'true':'false');
+      b.append(el('b',null,`${k.toUpperCase()}. ${label}`), el('span','why',see), el('span','cost',cost));
+      if(isRec) b.append(el('span','rec','Recommended'));
+      b.onclick=()=>pick(c.id,k);
+      o.append(b);
+    });
+    s.append(o, el('p','recline',c.rec), el('p','nothing','If you pick nothing: '+c.nothing));
+    const sv=el('p','saved', picks[c.id]?'Saved':''); sv.id=`saved-${c.id}`;
+    s.append(sv);
+    return s;
+  }));
+  const n=Object.keys(picks).length;
+  document.getElementById('status').textContent = db ? `${n} of ${CALLS.length} picked` : (dbTried ? 'Picks cannot save in this view' : 'Loading saved picks…');
+}
+let db=null, dbTried=false;
+async function pick(id,k){
+  picks[id]=k; render();
+  if(!db) return;
+  try{ await db.doc(`picks/${id}`).set({option:k, at:new Date().toISOString()}); }
+  catch(e){ const s=document.getElementById(`saved-${id}`); if(s) s.textContent='Not saved: '+(e&&e.message||'error'); }
+}
+render();
+(async()=>{
+  const timer=setTimeout(()=>{dbTried=true; render();},10000);
+  try{
+    db = window.claude ? await window.claude.use('db') : null;
+    if(db){ const snap=await db.collection('picks').get();
+      (snap.docs||snap).forEach(d=>{const v=d.data?d.data():d; if(v&&v.option) picks[d.id]=v.option;}); }
+  }catch(e){ db=null; }
+  clearTimeout(timer); dbTried=true; render();
+})();
+</script>
