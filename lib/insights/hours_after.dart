@@ -229,7 +229,8 @@ HealthSample? wakingFromSteps(List<HealthSample> steps, DateTime day) {
 /// The days whose steps [planHoursAfter] would read for waking, given [bed]:
 /// each day Health holds no night for (see [wakingOn]) that has an event of
 /// [uses] up to [through], lies within [hoursAfterControlReachDays] of one,
-/// or follows one of those (its night is the evening's bed), each as its
+/// or follows one of those (its night is the evening's bed), from the day
+/// before the first that can hold an event through [through]'s, each as its
 /// [wakingStepsSpan], oldest first.
 List<({DateTime start, DateTime end})> hoursAfterWakingReads(
   List<HabitUse> uses,
@@ -253,7 +254,10 @@ List<({DateTime start, DateTime end})> hoursAfterWakingReads(
   final List<DateTime> sorted = days.toList()..sort();
   return <({DateTime start, DateTime end})>[
     for (final DateTime day in sorted)
-      if (wakingOn(bed, day) == null) wakingStepsSpan(day),
+      if (!day.isBefore(addDays(since, -1)) &&
+          !day.isAfter(startOfDay(through)) &&
+          wakingOn(bed, day) == null)
+        wakingStepsSpan(day),
   ];
 }
 
