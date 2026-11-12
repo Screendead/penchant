@@ -8,7 +8,11 @@ final FutureProvider<String?> deviceTimeZoneProvider = FutureProvider<String?>((
   ref,
 ) async {
   try {
-    return (await FlutterTimezone.getLocalTimezone()).identifier;
+    // Insights waits on it, so a channel that never answers must not hold
+    // the page.
+    return (await FlutterTimezone.getLocalTimezone().timeout(
+      const Duration(seconds: 2),
+    )).identifier;
   } catch (_) {
     return null;
   }
