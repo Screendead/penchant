@@ -29,7 +29,7 @@ there. Grouped by what stands in the way.
 - **Journaling Suggestions** (workouts, places, people contacted, music, photos the user picks for an entry): needs
   the `com.apple.developer.journal.allow` entitlement, which the free team cannot sign: probed 2026-11-12 with a
   signed iOS build and provisioning updates, Xcode answered "Cannot create a iOS App Development provisioning profile
-  for "com.screendead.penchant". Personal development teams, including "Jack Lusher", do not support the Journaling
+  for "com.screendead.penchant". Personal development teams, including [the team owner's name], do not support the Journaling
   Suggestions capability." Waits for a paid team.
 - **Music:** recently played from Apple Music (MusicKit `MusicRecentlyPlayedRequest`), as a rough mood and context
   signal, only for Apple Music users. MusicKit has no entitlement for a build to probe: it is the MusicKit App

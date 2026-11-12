@@ -154,7 +154,7 @@ The list this run works from, sorted before any building. Tick or strike here as
      for a paid team. (MediaPlayer's `lastPlayedDate` needs no service but keeps only each song's last play: no
      daily minutes, no "music before a use".)
    - Journaling Suggestions: probed 2026-11-12, the free team cannot sign it. Signed iOS build with provisioning
-     updates: "Personal development teams, including "Jack Lusher", do not support the Journaling Suggestions
+     updates: "Personal development teams, including [the team owner's name], do not support the Journaling Suggestions
      capability." Entitlement reverted; waits for a paid team.
 5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
    calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
