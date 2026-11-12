@@ -57,6 +57,8 @@
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Penchant uses Face ID to open your journal when App lock is on.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Penchant reads sleep, heart, activity, workout, mindfulness and mood data from Health to compare with your journal, and your period days to compare like with like. It stays on this device.</string>
 	<key>UIApplicationSceneManifest</key>

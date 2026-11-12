@@ -5,6 +5,8 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/export_action.dart';
+import 'package:tracker/app_lock/app_lock.dart';
+import 'package:tracker/app_lock/device_auth.dart';
 import 'package:tracker/appearance_settings.dart';
 import 'package:tracker/account/sign_out.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
@@ -50,6 +52,13 @@ Future<bool> _confirmGuestSignOut(BuildContext context) async {
 class Settings extends ConsumerStatefulWidget {
   const Settings({super.key});
 
+  static const String lockLabel = 'App lock';
+  static String lockSubtitle(Biometry biometry) =>
+      'Ask for ${unlockMethod(biometry)} when Penchant opens';
+  static const String lockUnavailable =
+      'Set a passcode on this device to use App lock.';
+  static const String lockNotConfirmed = 'App lock stays off.';
+
   @override
   ConsumerState<Settings> createState() => _SettingsState();
 }
@@ -58,6 +67,21 @@ class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
   bool _exporting = false;
   final GlobalKey _exportRow = GlobalKey();
+
+  Future<void> _setLock(bool on) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final LockToggleResult result = await ref
+        .read(appLockProvider.notifier)
+        .setEnabled(on);
+    final String? note = switch (result) {
+      LockToggleResult.done => null,
+      LockToggleResult.unavailable => Settings.lockUnavailable,
+      LockToggleResult.notConfirmed => Settings.lockNotConfirmed,
+    };
+    if (note != null) {
+      messenger.showSnackBar(SnackBar(content: Text(note)));
+    }
+  }
 
   Future<void> _export() async {
     if (_exporting) {
@@ -157,6 +181,26 @@ class _SettingsState extends ConsumerState<Settings> {
     }
   }
 
+  Widget _lockRow() {
+    final AppLockState lock = ref.watch(appLockProvider);
+    final bool on = lock.enabled ?? false;
+    final Biometry biometry =
+        ref.watch(deviceAuthStatusProvider).value?.biometry ?? Biometry.none;
+    return MergeSemantics(
+      child: CardRow(
+        label: Settings.lockLabel,
+        subtitle: Settings.lockSubtitle(biometry),
+        enabled: !lock.authenticating,
+        onTap: () => _setLock(!on),
+        trailing: Switch.adaptive(
+          value: on,
+          activeTrackColor: Theme.of(context).colorScheme.primary,
+          onChanged: lock.authenticating ? null : _setLock,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String? version = ref
@@ -226,6 +270,7 @@ class _SettingsState extends ConsumerState<Settings> {
                 Navigator.of(context).pushNamed(ReduceMotionSettings.route);
               },
             ),
+            _lockRow(),
             CardRow(
               label: 'Reminder',
               value: Text(
