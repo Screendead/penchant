@@ -31,6 +31,15 @@ extension UsageRangeDays on UsageRange {
   DateTime get end => addDays(start, days);
 
   DateTime bucketStart(int index) => addDays(start, index * stepDays);
+
+  // The bucket holding the local day of [time], or null outside the range.
+  int? bucketOf(DateTime time) {
+    final int offset = daysBetween(start, time);
+    if (offset < 0 || offset >= days) {
+      return null;
+    }
+    return bucketCount - 1 - (days - 1 - offset) ~/ stepDays;
+  }
 }
 
 // The total quantity recorded in each bucket of [range]. Activities outside
@@ -40,12 +49,10 @@ List<double> bucketTotals(UsageRange range, Iterable<ViceActivity> activities) {
   final List<double> totals = List<double>.filled(bucketCount, 0);
 
   for (final ViceActivity activity in activities) {
-    final int offset = daysBetween(range.start, activity.createdAt.toDate());
-    if (offset < 0 || offset >= range.days) {
-      continue;
+    final int? bucket = range.bucketOf(activity.createdAt.toDate());
+    if (bucket != null) {
+      totals[bucket] += activity.measure;
     }
-    final int daysAgo = range.days - 1 - offset;
-    totals[bucketCount - 1 - daysAgo ~/ range.stepDays] += activity.measure;
   }
 
   return totals;
