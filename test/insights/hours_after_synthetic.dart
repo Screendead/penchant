@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/hours_after.dart' show wakingStepsKey;
 
 // Synthetic days for the hours-after comparisons, shared with
 // tools/insights-calibration/hours_after_test.dart. No real Health data.
@@ -144,7 +145,9 @@ typedef UsePolicy =
 /// to 03:40. Two 15-minute walks a day at 100 steps a minute. Each of
 /// [habits] is used once a day by its policy; [frequent] habits that many
 /// times a day at random from 08:00 to 22:00. [effect] adds bpm at a number
-/// of minutes after a use.
+/// of minutes after a use. With [stepLag], steps start from 0 up to that many
+/// minutes after waking (a phone left on the nightstand), with 20 minutes of
+/// getting up at 10 a minute, and half the nights hold a trip of 30 steps.
 Synthetic wakingSynthetic(
   int seed, {
   int days = 120,
@@ -156,6 +159,7 @@ Synthetic wakingSynthetic(
   Map<String, UsePolicy> habits = const <String, UsePolicy>{},
   Map<String, int> frequent = const <String, int>{},
   double Function(String habit, int minutesAfter)? effect,
+  int? stepLag,
 }) {
   final Random r = Random(seed);
   final List<HabitUse> uses = <HabitUse>[];
@@ -203,10 +207,20 @@ Synthetic wakingSynthetic(
       for (int k = 0; k < 2; k++) wake + 60 + r.nextInt(12 * 60),
     ];
     final double level = 3 * gaussian(r);
+    final int? firstStep = stepLag == null
+        ? null
+        : wake + r.nextInt(stepLag + 1);
+    final int? trip = stepLag != null && r.nextBool()
+        ? 60 + 5 * r.nextInt(48)
+        : null;
     for (int m = 0; m < 1440; m += 5) {
       final bool awake = m >= wake && m < sleep;
       final double spm = !awake
+          ? (trip != null && m == trip ? 6 : 0)
+          : firstStep != null && m < firstStep
           ? 0
+          : firstStep != null && m < firstStep + 20
+          ? 10
           : walks.any((x) => m >= x && m < x + 15)
           ? 100
           : 3;
@@ -250,5 +264,6 @@ Synthetic wakingSynthetic(
     HealthSampleMetric.heartRateVariabilitySDNN.id: hrv,
     HealthSampleMetric.stepCount.id: steps,
     HealthSampleMetric.bed.id: bed,
+    if (stepLag != null) wakingStepsKey: steps,
   }, addDays(syntheticStart, days));
 }

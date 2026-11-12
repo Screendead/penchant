@@ -22,6 +22,7 @@ import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/deleted_habit_page.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/appearance_provider.dart';
+import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
@@ -37,6 +38,7 @@ import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
+import 'package:tracker/design/motion_binding.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
@@ -46,7 +48,7 @@ import 'package:tracker/writes/category_migration.dart';
 import 'package:tracker/writes/quit_when_synced.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+  PenchantBinding.ensureInitialized();
   installErrorHandlers();
   registerFontLicence();
   startApp();
@@ -99,6 +101,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final AsyncValue<User?> userValue = ref.watch(userProvider);
     final User? user = userValue.value;
     ref.watch(categoryMigrationProvider);
+    ref.listen(placesProvider, (_, _) {});
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen. The root messenger

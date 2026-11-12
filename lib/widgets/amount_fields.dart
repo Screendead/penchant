@@ -146,6 +146,7 @@ class AmountFields extends ConsumerWidget {
             onChanged: onTriggersChanged,
             viceID: viceID,
             viceName: viceName,
+            at: () => timeController.value,
             enabled: enabled,
           ),
         ),
