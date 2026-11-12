@@ -1259,8 +1259,21 @@ class _PlacesCard extends StatelessWidget {
     final bool early =
         since == null ||
         DateTime.now().difference(since) < InsightsPage.placesEarlyFor;
+    // The engine judges the places with the most time spent, so the card
+    // offers those for naming.
+    final Map<int, Duration> spent = <int, Duration>{};
+    for (final PlaceStay s in store.stays) {
+      if (s.departure case final DateTime left) {
+        spent[s.placeId] =
+            (spent[s.placeId] ?? Duration.zero) + left.difference(s.arrival);
+      }
+    }
     final List<Place> shown = List<Place>.of(store.places)
-      ..sort((a, b) => b.visits.compareTo(a.visits));
+      ..sort(
+        (a, b) => (spent[b.id] ?? Duration.zero).compareTo(
+          spent[a.id] ?? Duration.zero,
+        ),
+      );
     return DialCard(
       children: <Widget>[
         switch (access) {

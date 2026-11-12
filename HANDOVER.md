@@ -137,7 +137,7 @@ The list this run works from, sorted before any building. Tick or strike here as
    - Focus: set aside 2026-11-12. The free team cannot sign `com.apple.developer.focus-status` (signed iOS build
      with provisioning updates: "Entitlement com.apple.developer.focus-status not found and could not be included
      in profile"); nothing built. Waits for a paid team.
-   - Places: built 2026-11-12 (PR on `feat/insights-more-sources-2`). Not proven on a device: the location prompts
+   - Places: built 2026-11-12 (#280, with Focus's note). Not proven on a device: the location prompts
      (When In Use, then Always), visits arriving while the app is closed, and the Swift channel beyond the PR's
      Native build. Visits wait in Swift memory only until sealed, so one reported while no key is loaded is lost if
      the process ends first. Defaults to put to Jack: waking hours fixed at 07:00-23:00, 150 m places, 5 places
