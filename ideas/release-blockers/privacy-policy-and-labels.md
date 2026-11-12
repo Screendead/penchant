@@ -1,4 +1,4 @@
-# Publish a privacy policy, App Privacy labels and the Health, Calendar and Reminders disclosures
+# Publish a privacy policy, App Privacy labels and the Health, Calendar, Reminders and location disclosures
 
 **Priority:** release blocker
 
@@ -10,7 +10,8 @@ inventory has two halves:
 
 - **Synced to Firestore:** email, display name, photo URL, uid, and the user's own logs (vices, timestamps,
   quantities, triggers, context, notes).
-- **Never leaves the device:** everything read from Apple Health, Calendar and Reminders, and everything the insights engine
+- **Never leaves the device:** everything read from Apple Health, Calendar, Reminders and location (visits and places,
+  sealed on the device), and everything the insights engine
   derives.
 
 ## Why

@@ -52,14 +52,14 @@ class PlacesSync extends Notifier<PlacesState> {
 
   @override
   PlacesState build() {
-    final PlacesSource? source = ref.watch(placesSourceProvider);
-    final SealedFiles? files = ref.watch(sealedFilesProvider);
+    final PlacesSource? source = _source = ref.watch(placesSourceProvider);
+    // Where no location is read, the key and the files are never asked for.
+    if (source == null) return _none;
+    final SealedFiles? files = _files = ref.watch(sealedFilesProvider);
     final PlacesAccess? access = ref.watch(placesAccessProvider).value;
-    _source = source;
-    _files = files;
     final bool allowed = _allowed =
         access == PlacesAccess.always || access == PlacesAccess.whenInUse;
-    if (source == null || files == null) return _none;
+    if (files == null) return _none;
     final AppLifecycleListener lifecycle = AppLifecycleListener(
       onResume: drain,
     );

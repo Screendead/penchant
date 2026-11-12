@@ -16,17 +16,17 @@ import 'fake_places.dart';
 import 'insights_harness.dart';
 
 class _KeptPlaces extends PlacesSync {
-  _KeptPlaces(this.store);
+  _KeptPlaces(this._initial, this._renames);
 
-  PlaceStore store;
-  final List<(int, String)> renames = <(int, String)>[];
+  final PlaceStore _initial;
+  final List<(int, String)> _renames;
 
   @override
-  PlacesState build() => (ready: true, store: store);
+  PlacesState build() => (ready: true, store: _initial);
 
   @override
   Future<bool> rename(int placeId, String name) async {
-    renames.add((placeId, name));
+    _renames.add((placeId, name));
     state = (ready: true, store: state.store.renamed(placeId, name));
     return true;
   }
@@ -103,12 +103,14 @@ void main() {
     WidgetTester tester,
   ) async {
     final DateTime old = DateTime.now().subtract(const Duration(days: 60));
+    final List<(int, String)> renames = <(int, String)>[];
     final _KeptPlaces kept = _KeptPlaces(
       const PlaceStore().withVisits(<PlaceVisit>[
         _visit(old, 0),
         _visit(old.add(const Duration(days: 1)), 0),
         _visit(old.add(const Duration(days: 2)), 0.02),
       ]),
+      renames,
     );
     await _pump(tester, FakePlaces(PlacesAccess.always), kept: kept);
 
@@ -122,7 +124,7 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    expect(kept.renames, <(int, String)>[(2, 'Gym')]);
+    expect(renames, <(int, String)>[(2, 'Gym')]);
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('Place 2'), findsNothing);
   });

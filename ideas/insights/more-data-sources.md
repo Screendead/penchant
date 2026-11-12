@@ -14,8 +14,9 @@ there. Grouped by what stands in the way.
   cycle tracking is built (2026-11-12) as a phase held fixed in the day-after comparisons, not an outcome; State of
   Mind (iOS 18) is built (2026-11-12) as one valence a day, floored at half the person's own SD of it (Jack, round 16
   `mood-floor` A).
-- **Places:** Core Location visits, clustered on the device into the user's own places (home, work, a named spot).
-  Opt-in, the most sensitive source; coordinates never leave the device.
+- **Places:** built (2026-11-12, iOS only): Core Location visits clustered on the device into numbered places the
+  person can name, sealed on the device, and each habit's share of entries at a place against its share of waking
+  time there. Not yet: a rough location for daylight, and a "home / work" guess from the hours spent.
 - **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.
 - **Music:** recently played from Apple Music (MusicKit), as a rough mood and context signal. Only for Apple Music
   users.
