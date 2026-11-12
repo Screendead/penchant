@@ -129,9 +129,9 @@ class PlaceStore {
   /// When the first visit was kept: no stay is known before it.
   DateTime? get since => stays.isEmpty ? null : stays.first.arrival;
 
-  String labelOf(int placeId) => <int, String>{
-    for (final Place p in places) p.id: p.label,
-  }[placeId] ?? 'Place $placeId';
+  String labelOf(int placeId) =>
+      <int, String>{for (final Place p in places) p.id: p.label}[placeId] ??
+      'Place $placeId';
 
   /// [visits] added: each to the nearest place within [placeRadiusMeters],
   /// moving its centre, or to a new place; a departure joins the stay its
@@ -398,12 +398,7 @@ List<AtPlace> atPlace({
   final Map<DateTime, Map<int, int>> minutesAt = <DateTime, Map<int, int>>{};
   final Map<int, int> totals = <int, int>{};
   for (DateTime d = first; !d.isAfter(last); d = addDays(d, 1)) {
-    final DateTime w0 = DateTime(
-      d.year,
-      d.month,
-      d.day,
-      placeWakingFromHour,
-    );
+    final DateTime w0 = DateTime(d.year, d.month, d.day, placeWakingFromHour);
     final DateTime w1 = DateTime(d.year, d.month, d.day, placeWakingToHour);
     final Map<int, int> day = <int, int>{};
     for (final PlaceStay s in closed) {
@@ -458,12 +453,9 @@ List<AtPlace> atPlace({
       final List<double> useShares = <double>[], timeShares = <double>[];
       for (final MapEntry<DateTime, List<int?>> e in logged.entries) {
         final DateTime d = e.key;
-        final int waking = DateTime(
-          d.year,
-          d.month,
-          d.day,
-          placeWakingToHour,
-        ).difference(DateTime(d.year, d.month, d.day, placeWakingFromHour)).inMinutes;
+        final int waking = DateTime(d.year, d.month, d.day, placeWakingToHour)
+            .difference(DateTime(d.year, d.month, d.day, placeWakingFromHour))
+            .inMinutes;
         final int there = minutesAt[d]?[placeId] ?? 0;
         if (there < placeMinMinutes || waking - there < placeMinMinutes) {
           continue;

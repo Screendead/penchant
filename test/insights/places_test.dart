@@ -37,9 +37,7 @@ final DateTime _first = DateTime(2026, 3, 2);
     stays
       ..add(PlaceStay(2, at(d, 9), at(d, 17)))
       ..add(PlaceStay(1, at(d, 18), at(d, 23)));
-    final List<int> hours = i.isEven
-        ? <int>[10, 19, 21]
-        : <int>[10, 12, 19];
+    final List<int> hours = i.isEven ? <int>[10, 19, 21] : <int>[10, 12, 19];
     for (final int h in hours) {
       uses.add(HabitUse(habitId: 'Coffee', at: at(d, h), amount: 1));
     }
@@ -136,7 +134,9 @@ void main() {
       pValue: 0.01,
     );
     expect(
-      judgeAtPlace(<AtPlace>[small], alongside: const <double>[]).single.refusal,
+      judgeAtPlace(<AtPlace>[
+        small,
+      ], alongside: const <double>[]).single.refusal,
       RefusalReason.tooSmall,
     );
     const AtPlace weak = AtPlace(
@@ -169,10 +169,7 @@ void main() {
     ];
     final List<AtPlace> results = atPlace(
       uses: <HabitUse>[...earlier, ...w.uses],
-      stays: <PlaceStay>[
-        ...w.stays,
-        PlaceStay(3, addDays(_first, 20), null),
-      ],
+      stays: <PlaceStay>[...w.stays, PlaceStay(3, addDays(_first, 20), null)],
       through: w.through,
     );
     expect(results.map((r) => r.placeId), <int>[1, 2]);
