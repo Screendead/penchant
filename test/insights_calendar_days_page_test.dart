@@ -87,5 +87,25 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(InsightsPage.setsOffBody), findsNothing);
+
+    // Why not: the habit with a card has no line; the refused one gives the
+    // calendar-day reason.
+    await tester.tap(find.text(InsightsPage.setsOffWhyNot));
+    await tester.pumpAndSettle();
+    final Finder page = find.byType(InsightsSetsOffPage);
+    expect(
+      find.descendant(of: page, matching: find.text('Coffee')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: page,
+        matching: find.text(
+          'Days with 3 or more calendar events: no clear difference from '
+          'other days',
+        ),
+      ),
+      findsOneWidget,
+    );
   });
 }

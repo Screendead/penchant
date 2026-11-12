@@ -369,7 +369,7 @@ Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/s
 `device-file/v1/<uid length>:<uid>/<name>` as associated data. `sealedFilesProvider` is null while nobody is signed in or no key is
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
 use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
-it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
+it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each, steps over the nights Health lacks among them,
 `lib/insights/health_sample_cache.dart`; random names, since spans follow use times), and `last-report` (the last
 Insights view with a computed report, `lib/insights/last_report_file.dart` over `report_codec.dart`; a cold open with
 no view in the session shows it, updating, until the fresh one lands; raise `insightsViewFormat` with any change to
@@ -457,6 +457,13 @@ rather than wait out Flutter's and Firebase's shutdown (it took seconds). Widget
 resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
 (`splitLayout`, `integration_test/support.dart`).
 
+Reduce motion (Settings: Follow system / Reduce / Full, `reduceMotionProvider`) reaches widgets through
+`ReduceMotionScope` (`MaterialApp.builder`, overriding `MediaQuery.disableAnimations`) and the framework through
+`PenchantBinding` (`lib/design/motion_binding.dart`, made first in `main()`), whose `MotionOverride` resolves
+`SemanticsBinding.disableAnimations`, which every default `AnimationController` (sheets, dialogs, implicit animations)
+scales its duration by; the scope sets it on build. Tests needing it make their own binding with the mixin
+(`test/motion_binding_test.dart`).
+
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection across rebuilds. Both read
 the current day from `todayProvider`; Today follows it unless the user picked another day, and a log (always now)
 returns a past day to today. Entry times go through `EntryTimeField` (`lib/widgets/time_dial.dart`) in the amount
@@ -492,7 +499,12 @@ Health leaves the device: not Firestore, analytics or crash reports. Insights' d
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
 `HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
 by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
-acknowledges the generation once the store is written. Menstrual flow is read as days with flow (value 1, never the
+acknowledges the generation once the store is written. Hours after a use (`lib/insights/hours_after.dart`) times each moment
+from that day's waking: the night in Health, else, for a day with none (a Watch charged overnight), `wakingFromSteps`:
+the first sustained steps after the longest still span from 18:00 the evening before to 15:00, read one span a night
+under `wakingStepsKey`, apart from the `stepCount` spans around moments. Such moments are never set against a recorded
+night's (that waking runs late), the finding's basis says waking was estimated from steps (`stepWakingDays`), and the
+hour-before comparison leaves them out. Menstrual flow is read as days with flow (value 1, never the
 amount) and is no outcome: `InsightsInput.from` takes it out of the outcomes and `cyclePhases`
 (`lib/insights/cycle_phase.dart`) infers each day's phase from those days alone (menstrual through the bleed, luteal
 the 14 days before the next start, follicular between; only in whole cycles of 24 to 38 days). The five day-after
@@ -524,6 +536,16 @@ trigger picker (`showTriggerPicker`'s `at`: the record sheet and editor pass the
 going on?" the log's; the widget's prompt passes none) reads the hour before the entry once as it opens, only with full
 access already granted, and offers `work/meeting` first under "Suggested from your calendar" when an event of 15 minutes
 or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped).
+
+What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, cards in
+`lib/widgets/trigger_amounts_card.dart`): per habit, the amount per entry on entries tagged a trigger against its other
+tagged entries (untagged ones say nothing, so they are left out, and the card says how many were tagged), each day's
+mean per entry as the unit, in the page's false-discovery family. A trigger counts under its tree path, its top-level
+area, or as its free-text label; `HabitUse.triggers` carries them from the opened entries, so a locked entry reads as
+untagged. Each unarchived habit on no before-a-use, pair (either side), calendar or trigger card gets one reason, on a
+drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
+(`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
+has no entries or nothing to compare against.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and

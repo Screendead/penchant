@@ -116,7 +116,6 @@ needed unless that wait proves long.
 - Unproven: stutter when a multi-year Insights view is encoded and sealed on the UI isolate.
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
-- The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
 - The Mac recovery key on Universal Clipboard (register).
 - Process: at most about five workers, each verifying once at the end on only the tests it touched; never
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
@@ -127,16 +126,23 @@ The list this run works from, sorted before any building. Tick or strike here as
 
 **DECIDED (build, PR, merge on green):**
 
-1. "Why not" lines under What sets it off (a habit with no before-a-use, pair or calendar card says why).
-2. Trigger analysis under What sets it off (queue step k; triggers reach only the weekly review today).
-3. Steps-based waking fallback for hours-after, for a day with no night recorded.
+1. ~~"Why not" lines under What sets it off~~ (built: feat/insights-sets-off; unseen on a device).
+2. ~~Trigger analysis under What sets it off~~ (built: feat/insights-sets-off; unseen on a device, and untried on a
+   journal with real tags).
+3. ~~Steps-based waking fallback for hours-after, for a day with no night recorded~~ (built: feat/insights-sets-off;
+   synthetic data only, unseen on a device and untried on a Watch charged overnight: how late real first steps run
+   after waking is a guess, 0 to 30 minutes in the tests). One calibration run, 40 seeds, every night missing, steps
+   0-30 min late: per-window false rate 0-5% before correction (Coffee 1-2 h after waking, the band a late guess
+   could bias: 0-5%, against 0-7.5% with nights recorded); Coffee within an hour of waking and at 22:30 refused in
+   words; 0 of 40 whole reports with an hours-after finding in each. Hour-before skips such moments. Not measured: a
+   first open with no nights reads steps one night at a time, up to about 366 reads, inside the 60 s read limit.
 4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
    on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
    signing probe only.
-5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
-   calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
-   (round 14 `no-health` A).
+5. ~~Calendar's rest~~ (built: feat/calendar-rest, PR #286; `ideas/insights/calendar-integration.md`, Needs Jack:
+   no): the macOS EventKit channel, per-day calendar features, "Work → Meeting" suggestions in the trigger picker.
+   Not its "findings without Health" item (round 14 `no-health` A).
    - [x] Per-day calendar features (this branch): time in meetings, events, back-to-back runs, meetings of 5 or more
      people, meetings over 45 minutes, each a day above the person's median against the rest, under What sets it off.
      The channel now sends each event's number of people listed (never who). Not proven on a device: the Swift
@@ -147,12 +153,15 @@ The list this run works from, sorted before any building. Tick or strike here as
      or more ended gets Work › Meeting first in the trigger picker, under "Suggested from your calendar", never picked
      until tapped; only with calendar access already granted; no titles read. The widget's later prompt offers none
      (it carries no entry time). Not proven on a device: the EventKit read as the picker opens.
-   - Once the why-not lines (item 1) merge, `setsOffRefusals` should also take `report.calendarDays` (words:
-     `calendarDayRefusal`) and count its habits as shown.
+   - [x] Why-not lines take the calendar days: a habit with a calendar-day card counts as shown; one without can
+     give the calendar-day refusal (`calendarDayRefusal`), ranked by refusal, then after the hour-after-event
+     comparison and before triggers. Calendar-day and trigger comparisons now count in each other's family. Saved
+     report format 4. Not proven on a device: unit and widget tests only.
 6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
    the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
    trigger breakdowns over time, spend).
-7. Reduce motion "Full" over framework animations: a spike of the binding override; dropped if it does not work.
+7. [x] Reduce motion "Full" over framework animations: built (`PenchantBinding`, `lib/design/motion_binding.dart`;
+   widget-tested on a modal sheet both ways). Not proven on a device with iOS or macOS Reduce Motion on.
 8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
    sheet is its graph); iPhone-only install of `master` at the end (the Mac stays on 1422 for #252).
 
@@ -251,6 +260,11 @@ the iPhone-to-Mac journal key sync is being investigated again (P2).
   clip and fade, not an `OpenContainer`; back is a plain fade.
 - One habit after another (#236): one family at q = 0.1; 15-minute window, 21 days with both, 7 followed, 10 points
   over chance; "more often" only, stronger direction only; refused pairs not listed.
+- Triggers (fifth run): the amount per entry on tagged entries with a trigger against the habit's other tagged
+  entries, untagged ones left out; days as the unit (each day's mean per entry), 7 days a side, Welch on the smaller
+  side's days less one, two-sided, joining the page's family at q = 0.1; 20% of the other entries' mean as the floor;
+  more or less both shown; top-level areas and paths, a free-text label as itself, an area dropped where it covers
+  the same entries as one path under it.
 - Recovery time (#240): heavy day against the usual mix of nights; heavy = at or over the upper quartile and over the
   median of use days; a rebound night is not mentioned; three measures, three nights.
 - Editor as a sheet (#238): new-entry layout with red text Delete and full-width Save, no delete confirmation (Undo);
@@ -287,6 +301,9 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
   page 0.10% of checks, 8.0% of reports. A straight-line effect also yields a line.
 - One habit after another (#236): noise found 0 to 0.3%; 20% following found 83% (30 days) and 99% (120); 10% mostly
   refused. Shared waking anchor: 100% found.
+- Triggers (fifth run, 2000 noise journals of 90 days, own family): 4.7% of tests under 0.05, a card on 7.9% of
+  journals; Welch-Satterthwaite's degrees of freedom gave 5.5% and 11.5%, so the smaller side's days less one.
+  Power not measured.
 - Recovery time (#240, draft): reverse cause with AR(1) 0.6 averages 6.7% (other AR lines about 5.2%), to rerun and
   fix; power 1 sd one night 95 to 97%, 0.5 sd 52 to 53%; page 0.1% of checks, 0.8% of reports.
 - Step changes (#241): day-50 step case 19.2% to 4.0%; card check on noise 0.2 to 1.8%; planted 1 sd 50% by card (97%
@@ -323,9 +340,8 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
 
 - Recovery time #240 (draft): rerun the reverse-cause AR(1) 0.6 line beside an AR(1)-alone control; fix the method if
   it holds near 7%.
-- The steps-based waking fallback for hours-after: not built (#241's report), and the page still does not say why a
-  day with no night recorded gives nothing.
-- "Why not" lines under What sets it off.
+- Hours-after with no night recorded and no steps either: the page still does not say why it gives nothing (the
+  steps-based waking fallback is built, fifth run).
 - Cut 0.2.0 (`r10-release` B: gates met; not cut this run).
 - The Mac recovery key on Universal Clipboard (register).
 - Process for the next run: a ten-worker fan-out drove this Mac to load 189 and Jack stopped it. Cap at about five
@@ -557,7 +573,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        hour of waking, or anything within 4 h of bed, is refused in words; a day with no night recorded gives no
        moment (a Watch charged overnight gives no hours-after at all, and the page does not say why: the "needs your
        sleep" refusal exists, but with nothing planned the provider reads no heart rate and the engine skips the
-       comparison; steps-based waking is the named fallback, not built). A window is dropped when another habit was used from its baseline to its end, the habit again before
+       comparison; steps-based waking, built in the fifth run, now covers a day with steps through the morning). A window is dropped when another habit was used from its baseline to its end, the habit again before
        its end, under 3 readings in baseline or window, or a walk (any 10 min over 60 steps a minute in the
        baseline, or from 30 min before the window to its end); the change in steps a minute is a covariate.
        Moments are averaged per day, one OLS per window on days (intercept, use, steps); at least 10 days each side.
@@ -722,8 +738,8 @@ Effort: S under a day, M a day or two, L more.
   `AnimationController` runs at 5% length and no release-mode API turns that off. So Full covers the app's own
   controllers (`AnimationBehavior.preserve`: dial, log fan, tallies, day picker, Undo timer, status pills
   (`PillDrop`), the Trends range morph (`RangeMorph`)) and pushed pages (`DialPageRoute`); sheets, dialogs and
-  implicit animations (segment thumbs, label fades) follow the system, as the page's foot copy says. Open: a custom
-  `WidgetsFlutterBinding` overriding `SemanticsBinding.disableAnimations` would cover the rest (inferred, untested).
+  implicit animations (segment thumbs, label fades) followed the system until the fifth run's binding override
+  (`MotionOverride`), which now carries the choice to every `AnimationController`.
 
 **Were UNDECIDED; all decided in round 10 (2026-11-08)** (U1 to U8; picks in Jack's calls, round 10):
 

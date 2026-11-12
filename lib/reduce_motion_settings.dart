@@ -25,10 +25,9 @@ class ReduceMotionSettings extends ConsumerWidget {
         ),
         const CardFoot(
           'Follow system uses your device’s Reduce Motion setting. Reduce '
-          'swaps travel and sweeps for short fades. Full keeps the dial, the '
-          'log fan, the tallies, the Undo timer and page changes moving even '
-          'if the system asks for less; sheets, dialogs and small fades still '
-          'follow the system. Saved on this device only.',
+          'swaps travel and sweeps for short fades. Full keeps everything '
+          'moving even if the system asks for less. Saved on this device '
+          'only.',
         ),
       ],
     );
