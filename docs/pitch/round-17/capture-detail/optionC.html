@@ -1,0 +1,81 @@
+<!-- Option C, urge and note in the existing steps: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdC">
+<style>
+.cdC{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdC{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdC *{box-sizing:border-box}
+.cdC .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdC .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdC .today{padding:14px 18px 8px;position:relative}
+.cdC .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdC .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdC .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdC .row .n{flex:1}.cdC .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdC .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdC .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdC .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdC .snack b{font-weight:600}.cdC .snack .m{flex:1}
+.cdC .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdC .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdC .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdC .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdC .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdC .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdC .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdC .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdC .amt{text-align:center}.cdC .amt .v{font:500 42px/1 var(--fm)}.cdC .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdC .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdC .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdC .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdC .time .t{font:500 20px/1 var(--fm)}.cdC .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdC .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdC .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdC .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdC .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdC .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdC .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdC .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdC .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdC .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdC .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdC .note.filled{color:var(--text)}
+.cdC .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdC .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdC .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdC .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdC .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdC .go .mn{font-family:var(--fm);font-size:17px}
+.cdC .pair{display:flex;gap:10px;margin-top:18px}.cdC .pair .go{flex:1;margin:0}
+.cdC .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdC .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdC .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdC .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdC .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdC .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdC .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdC .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">Amount sheet: two optional rows added</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr"><span class="dot" style="background:var(--d3);width:16px;height:16px"></span>Wine<span class="x">&#x2715;</span></div>
+  <div class="stepper"><span class="sb">&minus;</span><div class="amt"><div class="v">1</div><div class="u">glass</div></div><span class="sb">+</span></div>
+  <div class="time"><span class="mini"></span><div><div class="t">21:40</div><div class="d">Today, Thursday 12 November</div></div></div>
+  <div class="chips" style="margin-top:12px"><span class="chip">Winding down &#x2715;</span><span class="chip">Home &#x2715;</span><span class="chip ghost">Change triggers</span></div><div class="new"><div class="lbl">How strong was the urge? <span class="tag">OPTIONAL</span></div>
+  <div class="scale"><span>1</span><span>2</span><span class="on">3</span><span>4</span><span>5</span></div>
+  <div class="ends"><span>Barely</span><span>Couldn&rsquo;t not</span></div></div><div class="new"><div class="lbl">Note <span class="tag">OPTIONAL</span></div><div class="note filled">Long day, finished the bottle from Sunday</div></div>
+  <div class="go"><span>Log <span class="mn">1</span> glass at <span class="mn">21:40</span></span></div>
+</div></div><div class="ph"><div class="cap">After a one-tap log, the Undo bar&rsquo;s &ldquo;What was going on?&rdquo;</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr" style="font-size:22px;line-height:28px">What was going on?<span class="x">&#x2715;</span></div>
+  <p class="sub">Optional. Tap any that fit.</p>
+  <div class="lbl">Usual for Wine</div>
+  <div class="chips"><span class="chip on">Winding down</span><span class="chip">With a meal</span><span class="chip on">Home</span><span class="chip">With friends</span><span class="chip">Stressed</span></div>
+  <div class="lbl">Or browse</div>
+  <div class="chips"><span class="chip">Social</span><span class="chip">Feeling</span><span class="chip">Work</span><span class="chip">Body</span><span class="chip">Routine</span><span class="chip">Place</span><span class="chip">Craving</span></div>
+  <div class="new"><div class="lbl">How strong was the urge? <span class="tag">OPTIONAL</span></div>
+  <div class="scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+  <div class="ends"><span>Barely</span><span>Couldn&rsquo;t not</span></div></div><div class="new"><div class="lbl">Note <span class="tag">OPTIONAL</span></div><div class="note">Anything to remember</div></div>
+  <div class="pair"><span class="ghostbtn">Undo log</span><div class="go">Done</div></div>
+</div></div>
+<p class="legend">Dashed outlines mark what is new. From the amount sheet the rows sit in the sheet itself, so the picker it opens shows triggers only. A one-tap log is still one tap, and the Undo bar is unchanged. The silent fields of option B come with it.</p>
+</div>

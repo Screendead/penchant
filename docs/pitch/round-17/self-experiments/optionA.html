@@ -1,0 +1,90 @@
+<!-- Option A: leave as is -->
+<div class="sxa"><style>
+.sxa{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--d2ink:#B03E1C;--spoke:#1D1C1A80;--clear:#E3EFE4;--clearInk:#276B43;--shadow:0 2px 8px #1D1C1A12;
+--ff-display:"Red Hat Display",ui-rounded,system-ui,-apple-system,sans-serif;
+--ff-text:"Red Hat Text",system-ui,-apple-system,sans-serif;
+--ff-mono:"Red Hat Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+font-family:var(--ff-text);color:var(--text);font-variant-numeric:tabular-nums;
+display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:8px 0}
+@media (prefers-color-scheme:dark){.sxa{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--d2ink:#FF7A59;--spoke:#F3F0EA80;--clear:#15241B;--clearInk:#9ED8B0;--shadow:none;}}
+.sxa *{box-sizing:border-box}
+.sxa .sxa-col{display:grid;gap:8px;width:390px;max-width:100%;align-content:start}
+.sxa .sxa-cap{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 4px}
+.sxa .sxa-capnote{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0 4px}
+.sxa .sxa-phone{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;padding:0 0 20px}
+.sxa .sxa-status{display:flex;justify-content:space-between;padding:14px 28px 6px;font:600 15px/20px var(--ff-text)}
+.sxa .sxa-bar{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.sxa .sxa-circ{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font:500 18px/1 var(--ff-text);flex:none}
+.sxa .sxa-title{font:900 26px/32px var(--ff-display);letter-spacing:-.3px;margin:0}
+.sxa .sxa-titlexl{font:900 34px/40px var(--ff-display);letter-spacing:-.5px;margin:0}
+.sxa .sxa-pad{padding:0 20px;display:grid;gap:12px}
+.sxa .sxa-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 18px 16px;box-shadow:var(--shadow);display:grid;gap:4px}
+.sxa .sxa-head{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--ff-text);color:var(--muted)}
+.sxa .sxa-pip{width:10px;height:10px;border-radius:999px;background:var(--d2);box-shadow:inset 0 0 0 1.25px var(--d2ink);flex:none}
+.sxa .sxa-pip.c{background:var(--d1);box-shadow:none}
+.sxa .sxa-pip.g{background:var(--d3);box-shadow:none}
+.sxa .sxa-sent{font:500 16px/22px var(--ff-text);margin:2px 0 8px}
+.sxa .sxa-small{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0}
+.sxa .sxa-body{font:400 15px/21px var(--ff-text);margin:0}
+.sxa .sxa-range{display:block;width:100%;height:14px;margin:0 0 6px}
+.sxa .sxa-btn{display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);font:600 15px/20px var(--ff-text)}
+.sxa .sxa-btn2{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:999px;border:1px solid var(--outline);font:600 15px/20px var(--ff-text);margin-top:10px}
+.sxa .sxa-sec{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+.sxa .sxa-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sxa .sxa-chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--outline);display:inline-flex;align-items:center;gap:6px;font:500 14px/1 var(--ff-text)}
+.sxa .sxa-chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.sxa .sxa-chip .m{font:500 12px/1 var(--ff-mono);opacity:.75}
+.sxa .sxa-chip.dim{opacity:.5}
+.sxa .sxa-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font:400 15px/21px var(--ff-text)}
+.sxa .sxa-row:first-child{border-top:0}
+.sxa .sxa-row b{font-weight:600}
+.sxa .sxa-mono{font-family:var(--ff-mono);font-weight:500}
+.sxa .sxa-big{font:500 40px/44px var(--ff-mono)}
+.sxa .sxa-strip{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.sxa .sxa-strip .t{display:grid;gap:2px;flex:1;min-width:0}
+.sxa .sxa-strip .k{font:600 15px/20px var(--ff-text)}
+.sxa .sxa-days{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.sxa .sxa-days i{display:block;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxa .sxa-days i.n{background:var(--accent);border-color:var(--accent)}
+.sxa .sxa-days i.f{opacity:.35}
+.sxa .sxa-days i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxa .sxa-days i.today{outline:2px solid var(--text);outline-offset:1px}
+.sxa .sxa-legend{display:flex;gap:14px;flex-wrap:wrap;font:400 13px/18px var(--ff-text);color:var(--muted)}
+.sxa .sxa-legend span{display:inline-flex;align-items:center;gap:6px}
+.sxa .sxa-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxa .sxa-legend i.n{background:var(--accent);border-color:var(--accent)}
+.sxa .sxa-legend i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxa .sxa-dial{display:block;margin:0 auto;width:250px;height:250px}
+.sxa .sxa-tally{display:flex;align-items:center;gap:10px;height:38px;font:500 16px/22px var(--ff-text)}
+.sxa .sxa-tally .n{margin-left:auto;font:500 15px/20px var(--ff-mono)}
+.sxa .sxa-tally .plus{width:32px;height:32px;border-radius:999px;border:1px solid var(--outline);display:grid;place-items:center;font:500 18px/1 var(--ff-text)}
+.sxa .sxa-lock{background:linear-gradient(160deg,#3b4a63,#1d2433 60%,#151a24);color:#fff;padding:0 0 28px}
+.sxa .sxa-lock .sxa-status{color:#fff}
+.sxa .sxa-clock{text-align:center;font:600 76px/1 var(--ff-display);margin:18px 0 4px;letter-spacing:-1px}
+.sxa .sxa-date{text-align:center;font:500 17px/22px var(--ff-text);opacity:.9;margin-bottom:28px}
+.sxa .sxa-notif{margin:0 12px;background:rgba(245,245,245,.78);color:#111;border-radius:22px;padding:12px 14px;display:grid;grid-template-columns:38px 1fr;gap:4px 10px;box-shadow:0 6px 24px #0005}
+.sxa .sxa-notif .ic{grid-row:span 3;width:38px;height:38px;border-radius:9px;background:#F6F4EF;display:grid;place-items:center;border:1px solid #0001}
+.sxa .sxa-notif .h{display:flex;justify-content:space-between;font:600 15px/20px -apple-system,system-ui,sans-serif}
+.sxa .sxa-notif .h span{font-weight:400;color:#555;font-size:13px}
+.sxa .sxa-notif p{margin:0;font:400 15px/20px -apple-system,system-ui,sans-serif}
+.sxa .sxa-tag{display:inline-block;font:600 12px/16px var(--ff-text);padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.sxa .sxa-tag.new{background:var(--accent);color:var(--onAccent)}
+.sxa .sxa-clear{background:var(--clear);color:var(--clearInk);border-radius:12px;padding:8px 12px;font:500 14px/19px var(--ff-text)}
+</style><div class="sxa-col"><p class="sxa-cap">Insights today (unchanged)</p><div class="sxa-phone"><div class="sxa-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxa-bar"><div class="sxa-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxa-titlexl">Insights</h3></div>
+<div class="sxa-pad">
+<p class="sxa-sec">What it costs</p>
+<div class="sxa-card">
+<div class="sxa-head"><span class="sxa-pip"></span>Wine &middot; sleep</div>
+<p class="sxa-sent">On nights after Wine, your deep sleep averages 14&nbsp;min less.</p>
+<svg class="sxa-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="224.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="120.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="120.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxa-small">Range: 6 to 22 min less</p>
+<p class="sxa-small">From 212 days, 61 of them with Wine</p>
+</div>
+<div class="sxa-card">
+<div class="sxa-head"><span class="sxa-pip c"></span>Coffee &middot; sleep</div>
+<p class="sxa-sent">On nights after Coffee, your time asleep averages 21&nbsp;min less.</p>
+<svg class="sxa-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="239.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="36.0" y="4" width="156.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="114.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxa-small">Range: 8 to 34 min less</p>
+<p class="sxa-small">From 212 days, 188 of them with Coffee</p>
+</div></div></div><p class="sxa-capnote">The finding card as the app shows it now: what goes with Wine, its range and the days behind it. No way to test it; nothing else changes.</p></div></div>

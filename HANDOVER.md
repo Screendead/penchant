@@ -205,6 +205,12 @@ The list this run works from, sorted before any building. Tick or strike here as
 - No "What was going on?" prompt after a Siri or Shortcuts log (Jack ruled only on Control Centre).
 - Claude's as-built defaults from the fourth run (list above) were never put to Jack; the page lists them once.
 
+**State at the end of the run (2026-11-12 night):** merged #281 (why-not lines, trigger analysis, steps waking),
+#284 (Reduce motion over framework animations), #286 (calendar days, Meeting suggestion), #280 (Places, Daylight;
+Focus, Music and Journaling Suggestions need a paid team). The macOS calendar channel was not built. Held for round
+17: #282, #287, #283, #285. Refused to Claude here, so Jack's: closing issue #9, deleting the spare Flutter clones
+in `~/development/tracker-tools` (a hook leaves disk clean-up to claude-reaper). iPhone: `master` at #280.
+
 **Blocked or Jack's:** #252 waits on Jack saying the menu-bar log reached the iPhone
 (`~/Library/Containers/com.screendead.penchant.sync` now exists, created 2026-11-12 18:11, so PenchantSync has
 run; that alone proves no write); the device checks; `DELETE_ORPHANED_DATA`; the paid team and release items.
@@ -1036,7 +1042,28 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None open.
+Round 17 (`docs/pitch/round-17/index.html`, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, `picks` collection),
+published 2026-11-12, none picked yet. Each option's mock-up and notes are in `docs/pitch/round-17/<call>/`.
+Recommendations are Claude's:
+
+- `capture-detail`: what extra detail a log carries. A leave; B silent fields (time zone, written-at, how logged);
+  **C** B plus an urge row and a note on the existing sheets (recommended); D a full detail sheet after a one-tap log.
+- `goals`: an optional limit per habit. A never; **B** a quiet line per habit (recommended); C B plus Insights
+  offering its line.
+- `self-experiments`: randomised trials of a finding. A no; B from a finding card, in the app only; **C** B plus a
+  daily notification (recommended).
+- `weather`: **A** none, daylight only (recommended); B Open-Meteo, opt-in, whole-degree location; C wait for a paid
+  team.
+- `app-lock`: draft #283 is built and green. **A** merge (recommended); B leave parked; C drop.
+- `units-cost`: #282 (unit label, cost per unit, currency on the habit; rules change) and #287 (Trends: spend,
+  Health under the line, trigger areas over time; stacked on #282) are green and held unmerged, because installing
+  them is a shape change and the Mac's older build drops the new fields when it edits a habit. **A** merge and
+  install on the iPhone now (recommended); B hold until the Mac can update too. Both need `master` merged in first.
+- `index-check`: draft #285, a weekly read-only job listing production's indexes against the file. **A** merge
+  (recommended); B leave.
+
+Not put as calls, listed on the page as defaults: the thresholds of the trigger, places and calendar-day
+comparisons, waking from steps, no "after sunset" finding, no prompt after a Siri or Shortcuts log.
 
 Round 16 (`docs/pitch/round-16/index.html`, https://claude.ai/artifact/DkKHDabq8g6XaDUmB5XcE4, `picks`), all
 picked by Jack on 2026-11-12: `mood-floor` A (a State of Mind change is reported only when at least half the
