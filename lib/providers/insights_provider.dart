@@ -9,6 +9,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/daily_series.dart' show HabitUse;
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -209,7 +210,9 @@ const Duration hoursAfterReadTimeout = Duration(seconds: 60);
 
 /// The Health samples around the journal's uses that [hoursAfter] needs, by
 /// [HealthSampleMetric.id]: the time in bed over the past year in one read,
-/// then one span a day per measure, in pages, the measures side by side.
+/// steps over each night near a use that it does not hold (under
+/// [wakingStepsKey]), then one span a day per measure, in pages, the
+/// measures side by side.
 /// A span ending before yesterday is read once per session, and kept sealed
 /// on the device between launches: the Watch may still add to yesterday's.
 /// Empty when any read fails or [hoursAfterReadTimeout] passes, which leaves
@@ -285,10 +288,18 @@ final _samplesProvider = FutureProvider.autoDispose
           (start: insightsBedFrom(key.today), end: startOfDay(key.today)),
         ]);
         if (bed == null || !ref.mounted) return none;
+        final List<HabitUse> uses = habitUsesFrom(key.activities).toList();
+        final List<({DateTime start, DateTime end})> nights =
+            insightsWakingReads(uses, key.today, bed: bed);
+        final List<HealthSample>? wakingSteps = nights.isEmpty
+            ? const <HealthSample>[]
+            : await read(HealthSampleMetric.stepCount, nights);
+        if (wakingSteps == null || !ref.mounted) return none;
         final HoursAfterPlan plan = insightsHoursAfterPlan(
-          habitUsesFrom(key.activities).toList(),
+          uses,
           key.today,
           bed: bed,
+          wakingSteps: wakingSteps,
         );
         if (plan.reads.isEmpty) return none;
         final List<List<HealthSample>?> got = await Future.wait([
@@ -299,6 +310,7 @@ final _samplesProvider = FutureProvider.autoDispose
         if (disk != null) unawaited(disk.keepOnly(settledSpans));
         return <String, List<HealthSample>>{
           HealthSampleMetric.bed.id: bed,
+          wakingStepsKey: wakingSteps,
           for (int i = 0; i < insightsSampleMetrics.length; i++)
             insightsSampleMetrics[i].id: got[i]!,
         };

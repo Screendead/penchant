@@ -311,6 +311,7 @@ Map<String, Object?> _insight(HabitInsight i) => <String, Object?>{
       'spread': _od(f.spread),
       'sameBedtime': f.sameBedtime == null ? null : _insight(f.sameBedtime!),
       'heldFixed': (f.heldFixed.toList()..sort()),
+      if (f.stepWakingDays > 0) 'stepWakingDays': f.stepWakingDays,
     },
     final HabitRefusal r => <String, Object?>{
       'reason': r.reason.name,
@@ -360,6 +361,9 @@ HabitInsight _readInsight(Map<String, Object?> m) {
         if (id is String) return id;
         throw const _Bad();
       }).toSet(),
+      stepWakingDays: m.containsKey('stepWakingDays')
+          ? _int(m, 'stepWakingDays')
+          : 0,
     ),
     'refusal' => HabitRefusal(
       habitId: habitId,

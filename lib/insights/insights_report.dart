@@ -251,12 +251,24 @@ List<DailyOutcome> withEnoughMood(List<DailyOutcome> outcomes) {
 }
 
 /// The moments around uses whose samples Insights reads, with every window
-/// ended by the start of [today], given [bed] ([hs.HealthSampleMetric.bed]).
+/// ended by the start of [today], given [bed] ([hs.HealthSampleMetric.bed])
+/// and, for days with no night in it, [wakingSteps] read over
+/// [insightsWakingReads].
 HoursAfterPlan insightsHoursAfterPlan(
   List<HabitUse> uses,
   DateTime today, {
   List<hs.HealthSample> bed = const <hs.HealthSample>[],
-}) => planHoursAfter(uses, startOfDay(today), bed: bed);
+  List<hs.HealthSample> wakingSteps = const <hs.HealthSample>[],
+}) =>
+    planHoursAfter(uses, startOfDay(today), bed: bed, wakingSteps: wakingSteps);
+
+/// The spans of steps [insightsHoursAfterPlan] guesses waking from: one per
+/// day near a use that [bed] holds no night for.
+List<({DateTime start, DateTime end})> insightsWakingReads(
+  List<HabitUse> uses,
+  DateTime today, {
+  List<hs.HealthSample> bed = const <hs.HealthSample>[],
+}) => hoursAfterWakingReads(uses, startOfDay(today), bed: bed);
 
 /// Where [insightsHoursAfterPlan] reads [hs.HealthSampleMetric.bed] from: the
 /// evening before the first day a use can be judged.
@@ -373,6 +385,8 @@ InsightsReport computeInsights(InsightsInput input) {
           bed:
               input.samples[hs.HealthSampleMetric.bed.id] ??
               const <hs.HealthSample>[],
+          wakingSteps:
+              input.samples[wakingStepsKey] ?? const <hs.HealthSample>[],
         );
   final List<HabitInsight> hours = plan == null
       ? const <HabitInsight>[]
@@ -1486,7 +1500,8 @@ String findingBasis(
     InsightKind.hoursAfter =>
       'From ${finding.exposedDays} days with $habit, against '
           '${finding.usableDays - finding.exposedDays} days at the same time '
-          'after waking with none of it within 4 hours',
+          'after waking with none of it within 4 hours'
+          '${_stepWaking(finding)}',
     InsightKind.dose ||
     InsightKind.lastUse => 'From ${finding.usableDays} days with $habit',
     InsightKind.use => switch (finding.raw?.exposedDays) {
@@ -1499,6 +1514,15 @@ String findingBasis(
       ? '$basis, compared within the same phase of your cycle'
       : basis;
 }
+
+String _stepWaking(HabitFinding finding) => switch (finding.stepWakingDays) {
+  0 => '',
+  final int n when n == finding.usableDays =>
+    '; waking estimated from steps, with no night in Health',
+  final int n =>
+    '; waking estimated from steps on $n of these days, with no night in '
+        'Health',
+};
 
 /// Why a habit has no finding, in plain words; for an amount or a time, said
 /// to be about that.
@@ -1531,8 +1555,9 @@ String _hoursAfterRefusal(HabitRefusal refusal, Map<String, double> floors) {
       HoursAfterShortfall.uses ||
       null => 'too few uses with none of it in the 4 hours before yet: $days',
       HoursAfterShortfall.noSleep =>
-        'needs your sleep in Health, to time each use from waking: most uses '
-            'have no night recorded before them',
+        'needs your sleep in Health, or steps through the morning, to time '
+            'each use from waking: most uses have no night recorded before '
+            'them',
       HoursAfterShortfall.nearSleep =>
         'most uses come within an hour of waking or within 4 hours of bed, '
             'when $name moves anyway',
