@@ -152,7 +152,8 @@ class TriggerPickerSheet extends StatefulWidget {
   final VoidCallback? onUndoLog;
 
   static const String calendarLabel = 'Suggested from your calendar';
-  static const String calendarHint = 'A calendar event ended in the hour before';
+  static const String calendarHint =
+      'A calendar event ended in the hour before';
 
   @override
   State<TriggerPickerSheet> createState() => _TriggerPickerSheetState();

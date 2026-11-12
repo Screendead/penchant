@@ -61,15 +61,18 @@ void main() {
       ]);
     });
 
-    test('offers nothing an hour on, before the end, or after a short hold', () {
-      expect(calendarSuggestions(at, <CalendarEvent>[ending(60)]), isEmpty);
-      expect(calendarSuggestions(at, <CalendarEvent>[ending(-10)]), isEmpty);
-      expect(
-        calendarSuggestions(at, <CalendarEvent>[ending(5, length: 10)]),
-        isEmpty,
-      );
-      expect(calendarSuggestions(at, const <CalendarEvent>[]), isEmpty);
-    });
+    test(
+      'offers nothing an hour on, before the end, or after a short hold',
+      () {
+        expect(calendarSuggestions(at, <CalendarEvent>[ending(60)]), isEmpty);
+        expect(calendarSuggestions(at, <CalendarEvent>[ending(-10)]), isEmpty);
+        expect(
+          calendarSuggestions(at, <CalendarEvent>[ending(5, length: 10)]),
+          isEmpty,
+        );
+        expect(calendarSuggestions(at, const <CalendarEvent>[]), isEmpty);
+      },
+    );
   });
 
   group('readCalendarSuggestions', () {
@@ -155,15 +158,13 @@ void main() {
     final FakeTrackerWrites writes = FakeTrackerWrites();
     final vice = fakeVice('coffee');
     final DateTime now = DateTime.now();
-    final _FakeCalendar calendar = _FakeCalendar(
-      CalendarAccess.full,
-      <CalendarEvent>[
-        CalendarEvent(
-          now.subtract(const Duration(minutes: 70)),
-          now.subtract(const Duration(minutes: 10)),
-        ),
-      ],
-    );
+    final _FakeCalendar calendar =
+        _FakeCalendar(CalendarAccess.full, <CalendarEvent>[
+          CalendarEvent(
+            now.subtract(const Duration(minutes: 70)),
+            now.subtract(const Duration(minutes: 10)),
+          ),
+        ]);
 
     await tester.pumpWidget(
       ProviderScope(
