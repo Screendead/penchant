@@ -66,6 +66,8 @@ void scenario(
 // Uses tied to waking, to the clock, to how the person feels, or to bed.
 int? afterWaking(int wake, bool weekend, List<double> w, Random r) =>
     r.nextDouble() < 0.85 ? wake + 15 + r.nextInt(45) : null;
+int? anHourAfterWaking(int wake, bool weekend, List<double> w, Random r) =>
+    r.nextDouble() < 0.85 ? wake + 60 + r.nextInt(60) : null;
 int? laterAfterWaking(int wake, bool weekend, List<double> w, Random r) =>
     r.nextDouble() < 0.85 ? wake + 120 + r.nextInt(60) : null;
 int? weekdaysAtSeven(int wake, bool weekend, List<double> w, Random r) =>
@@ -271,6 +273,7 @@ void main() {
     const int n = 40;
     for (final (String name, UsePolicy p) in <(String, UsePolicy)>[
       ('Coffee 15-60 min after waking', afterWaking),
+      ('Coffee 1-2 h after waking', anHourAfterWaking),
       ('Coffee 2-3 h after waking', laterAfterWaking),
       ('Coffee at 22:30, bed at 23:00', atBedtime),
       ('Coffee 09:00-15:00 at random', midday),
@@ -281,8 +284,14 @@ void main() {
         seeds: n,
       );
     }
+    scenario(
+      'Coffee 1-2 h after waking, nights recorded',
+      (seed) => waking(seed, anHourAfterWaking, stepLag: 30),
+      seeds: n,
+    );
     for (final (String name, UsePolicy p) in <(String, UsePolicy)>[
       ('Coffee 15-60 min after waking', afterWaking),
+      ('Coffee 1-2 h after waking', anHourAfterWaking),
       ('Coffee at 22:30', atBedtime),
     ]) {
       int reports = 0, shown = 0;

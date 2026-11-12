@@ -132,8 +132,10 @@ The list this run works from, sorted before any building. Tick or strike here as
 3. ~~Steps-based waking fallback for hours-after, for a day with no night recorded~~ (built: feat/insights-sets-off;
    synthetic data only, unseen on a device and untried on a Watch charged overnight: how late real first steps run
    after waking is a guess, 0 to 30 minutes in the tests). One calibration run, 40 seeds, every night missing, steps
-   0-30 min late: per-window false rate 0-5% before correction; Coffee within an hour of waking and Coffee at 22:30
-   both refused in words, 0 of 40 whole reports with an hours-after finding. Hour-before skips such moments.
+   0-30 min late: per-window false rate 0-5% before correction (Coffee 1-2 h after waking, the band a late guess
+   could bias: 0-5%, against 0-7.5% with nights recorded); Coffee within an hour of waking and at 22:30 refused in
+   words; 0 of 40 whole reports with an hours-after finding in each. Hour-before skips such moments. Not measured: a
+   first open with no nights reads steps one night at a time, up to about 366 reads, inside the 60 s read limit.
 4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
    on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the

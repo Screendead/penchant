@@ -162,13 +162,14 @@ const int wakingMinStillMinutes = 180;
 /// Steps start later than waking (a lie-in, a phone left on the nightstand),
 /// so this waking runs late; [planHoursAfter] never sets a moment timed from
 /// it against one timed from a recorded night.
-HealthSample? wakingFromSteps(List<HealthSample> steps, DateTime day) {
+HealthSample? wakingFromSteps(
+  List<HealthSample> steps,
+  DateTime day, {
+  int? longestMinutes,
+}) {
   final ({DateTime start, DateTime end}) span = wakingStepsSpan(day);
   final int n = span.end.difference(span.start).inMinutes ~/ _bin.inMinutes;
-  int longest = 0;
-  for (final HealthSample s in steps) {
-    longest = max(longest, s.end.difference(s.start).inMinutes + 1);
-  }
+  final int longest = longestMinutes ?? _longestMinutes(steps);
   final List<double> bins = <double>[
     for (int k = 0; k < n; k++)
       _bin.inMinutes *
@@ -261,6 +262,14 @@ List<({DateTime start, DateTime end})> hoursAfterWakingReads(
   ];
 }
 
+int _longestMinutes(List<HealthSample> samples) {
+  int longest = 0;
+  for (final HealthSample s in samples) {
+    longest = max(longest, s.end.difference(s.start).inMinutes + 1);
+  }
+  return longest;
+}
+
 Map<String, List<DateTime>> _usesByHabit(List<HabitUse> uses) {
   final Map<String, List<DateTime>> byHabit = <String, List<DateTime>>{};
   for (final HabitUse u in uses) {
@@ -292,15 +301,19 @@ List<DateTime> _events(List<DateTime> times, DateTime since, DateTime through) {
 class _Bed {
   _Bed(List<HealthSample> spans, this._steps)
     : _spans = List<HealthSample>.of(spans)
-        ..sort((a, b) => a.start.compareTo(b.start));
+        ..sort((a, b) => a.start.compareTo(b.start)),
+      _longestStep = _longestMinutes(_steps);
 
   final List<HealthSample> _spans;
   final List<HealthSample> _steps;
+  final int _longestStep;
   final Map<DateTime, HealthSample?> _guessed = <DateTime, HealthSample?>{};
 
   HealthSample? _guess(DateTime day) => _guessed.containsKey(day)
       ? _guessed[day]
-      : _guessed[day] = _steps.isEmpty ? null : wakingFromSteps(_steps, day);
+      : _guessed[day] = _steps.isEmpty
+            ? null
+            : wakingFromSteps(_steps, day, longestMinutes: _longestStep);
 
   /// The day's waking, and whether it came from steps. A recorded night
   /// always wins.
