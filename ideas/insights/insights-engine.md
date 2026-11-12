@@ -20,7 +20,7 @@ thousand rows, so a full rebuild takes seconds.
 **Two families of insight.**
 
 - *What comes before use:* hour-of-day and weekday patterns, the most common triggers per vice (at the deepest
-  trigger level with enough data), and calendar exposure (does use follow meetings more than chance, against the
+  trigger level with enough data; the amount on tagged entries per trigger is built), and calendar exposure (does use follow meetings more than chance, against the
   user's own hours with no meeting).
 - *What follows use:* for each Health outcome (sleep duration and stages, overnight HRV, resting heart rate, next-day
   steps, State of Mind), a regression on every vice at once.

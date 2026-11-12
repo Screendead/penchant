@@ -30,6 +30,8 @@ import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/recovery_copy.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
+import 'package:tracker/insights/sets_off_refusal.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
@@ -42,6 +44,7 @@ import 'package:tracker/widgets/after_event_card.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
+import 'package:tracker/widgets/trigger_amounts_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
@@ -111,9 +114,10 @@ class InsightsPage extends ConsumerStatefulWidget {
       'with it: your sleep and heart against before, and any habit that rose '
       'around the same time.';
   static const String setsOffTitle = 'Nothing to show yet';
+  static const String setsOffWhyNot = 'Habits with nothing here';
   static const String setsOffBody =
       'This will show what tends to come before each habit, such as a short '
-      'night or another habit.';
+      'night, another habit or a trigger you tag.';
 
   static const String calendarLabel = 'Connect Calendar';
   static const String calendarBody =
@@ -515,7 +519,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty &&
           costs.follows.isEmpty &&
-          costs.calendar.isEmpty)
+          costs.calendar.isEmpty &&
+          costs.triggers.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -545,6 +550,35 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           top: i == 0 && costs.before.isEmpty && costs.follows.isEmpty
               ? 0
               : DialSpace.xs,
+        ),
+      for (final (int i, TriggerCard card) in costs.triggers.indexed)
+        TriggerAmountsCard(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      if (costs.setsOffRefused.isNotEmpty)
+        DialCard(
+          top: DialSpace.xs,
+          children: <Widget>[
+            CardRow(
+              label: InsightsPage.setsOffWhyNot,
+              value: Text('${costs.setsOffRefused.length}'),
+              glyph: DialGlyph.right,
+              onTap: () => Navigator.of(context).push(
+                DialPageRoute<void>(
+                  builder: (_) => const InsightsSetsOffPage(),
+                ),
+              ),
+            ),
+          ],
         ),
       DialCard(
         children: <Widget>[
@@ -677,6 +711,42 @@ class InsightsCostsPage extends ConsumerWidget {
   ];
 }
 
+/// "What sets it off" for the habits with nothing there: why, one line each.
+class InsightsSetsOffPage extends ConsumerWidget {
+  const InsightsSetsOffPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final InsightsView? view = ref.watch(insightsProvider).value;
+    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final InsightsResult? result = view?.result;
+    final _Costs? costs = result is InsightsComputed && vices != null
+        ? _Costs(result, vices)
+        : null;
+    return CardPage(
+      title: InsightsPage.setsOffHeading,
+      children: <Widget>[
+        if (costs == null)
+          const _MessageCard(InsightsPage.loadingLabel, busy: true)
+        else if (costs.setsOffRefused.isNotEmpty) ...<Widget>[
+          const CardSectionLabel(InsightsPage.refusedHeading),
+          DialCard(
+            top: 0,
+            children: <Widget>[
+              for (final SetsOffRefusal r in costs.setsOffRefused)
+                CardRow(
+                  label: costs.nameOf(r.habitId),
+                  subtitle: costs.setsOffReasonOf(r),
+                ),
+            ],
+          ),
+        ],
+        const CardFoot(InsightsPage.foot),
+      ],
+    );
+  }
+}
+
 // The report as both "What it costs" views show it: the habits the page
 // knows, by name, unit and mark.
 class _Costs {
@@ -741,6 +811,10 @@ class _Costs {
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
     ]);
+    triggers = triggerCards(<HabitTriggers>[
+      for (final HabitTriggers h in report.triggers)
+        if (_names.containsKey(h.habitId)) h,
+    ]);
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -756,6 +830,24 @@ class _Costs {
     // A legacy entry of a vice that is gone would date the span from a habit
     // the page doesn't show.
     firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
+    setsOffRefused = setsOffRefusals(
+      habitIds: <String>[
+        for (final Vice v in vices)
+          if (!v.archived) v.id,
+      ],
+      report: report,
+      shown: <String>{
+        for (final BeforeUseCard c in before) c.habitId,
+        for (final FollowsCard c in follows)
+          for (final HabitFollows f in <HabitFollows>[
+            c.headline,
+            ...c.others,
+          ]) ...<String>[f.leadId, f.followerId],
+        for (final AfterEvent a in calendar) a.habitId,
+        for (final TriggerCard c in triggers) c.habitId,
+      },
+      logged: computed.firstDays.keys.toSet(),
+    )..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
   }
 
   final InsightsReport report;
@@ -784,8 +876,15 @@ class _Costs {
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
   late final List<FollowsCard> follows;
+  late final List<TriggerCard> triggers;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
+
+  /// The unarchived habits with nothing under "What sets it off", and why.
+  late final List<SetsOffRefusal> setsOffRefused;
+
+  String setsOffReasonOf(SetsOffRefusal r) =>
+      setsOffReason(r, nameOf, floors: report.floors);
 
   String nameOf(String id) => _names[id] ?? 'a removed habit';
   Unit unitOf(String id) => _units[id] ?? Unit.fallback;
@@ -890,6 +989,12 @@ class _Costs {
         for (final FollowsCard card in follows) followsText(card, nameOf),
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
+        for (final TriggerCard card in triggers)
+          triggerText(card, nameOf(card.habitId)),
+      ],
+      setsOffRefused: <String>[
+        for (final SetsOffRefusal r in setsOffRefused)
+          '${nameOf(r.habitId)}: ${setsOffReasonOf(r)}',
       ],
       shifts: <List<String>>[
         for (final MeasureShift s in shifts)
@@ -916,6 +1021,7 @@ String insightsText({
   List<List<String>> recovery = const <List<String>>[],
   List<List<String>> cuttingDown = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
+  List<String> setsOffRefused = const <String>[],
   List<List<String>> shifts = const <List<String>>[],
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
@@ -988,10 +1094,16 @@ String insightsText({
       out.write('\n${card.join('\n')}\n');
     }
   }
-  if (setsOff.isNotEmpty) {
+  if (setsOff.isNotEmpty || setsOffRefused.isNotEmpty) {
     out.write('\n${InsightsPage.setsOffHeading}\n');
     for (final List<String> card in setsOff) {
       out.write('\n${card.join('\n')}\n');
+    }
+  }
+  if (setsOffRefused.isNotEmpty) {
+    out.write('\n${InsightsPage.refusedHeading}\n');
+    for (final String line in setsOffRefused) {
+      out.write('$line\n');
     }
   }
   out.write('\n${InsightsPage.foot}\n');

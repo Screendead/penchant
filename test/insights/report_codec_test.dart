@@ -13,6 +13,7 @@ import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/report_codec.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/step_changes.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
@@ -107,6 +108,7 @@ InsightsReport everySection() => InsightsReport(
       standardized: 0.8,
       pValue: 0.0001,
       sameBedtime: _bedtimeRefusal,
+      stepWakingDays: 14,
     ),
     const HabitFinding(
       habitId: 'tea',
@@ -318,6 +320,34 @@ InsightsReport everySection() => InsightsReport(
       refusal: RefusalReason.tooFewDays,
     ),
   ],
+  triggers: const <HabitTriggers>[
+    HabitTriggers(
+      habitId: 'coffee',
+      entries: 120,
+      tagged: 64,
+      triggers: <TriggerAmount>[
+        TriggerAmount(
+          trigger: 'social/friends',
+          entries: 30,
+          withDays: 18,
+          withoutDays: 25,
+          withMean: 2.9,
+          withoutMean: 2,
+          pValue: 0.001,
+          verdict: TriggerVerdict.found,
+        ),
+        TriggerAmount(
+          trigger: 'Bored at the bus stop',
+          entries: 2,
+          withDays: 2,
+          withoutDays: 30,
+          withMean: 1,
+          withoutMean: 2.1,
+          pValue: null,
+        ),
+      ],
+    ),
+  ],
 );
 
 InsightsView _view(InsightsReport report, {bool hoursPending = false}) => (
@@ -349,11 +379,15 @@ void main() {
     final InsightsReport report = (back.result! as InsightsComputed).report;
     expect(report.findings[2].window, (start: 60, end: 120));
     expect(report.findings[2].sameBedtime, isA<HabitRefusal>());
+    expect(report.findings[2].stepWakingDays, 14);
+    expect(report.findings[0].stepWakingDays, 0);
     expect(report.findings[3].heldFixed, <String>{'cyclePhase'});
     expect(report.findings[0].heldFixed, isEmpty);
     expect(report.refused.first.raw!.interval.high, double.infinity);
     expect(report.recovery.first.nights[1].effect, isNaN);
     expect(report.payoffs.first.fall.day, _day);
+    expect(report.triggers.single.triggers[1].trigger, 'Bored at the bus stop');
+    expect(report.triggers.single.triggers.first.verdict, TriggerVerdict.found);
   });
 
   test('a computed report round trips', () {
