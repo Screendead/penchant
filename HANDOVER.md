@@ -137,6 +137,14 @@ The list this run works from, sorted before any building. Tick or strike here as
 5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
    calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
    (round 14 `no-health` A).
+   - [x] Per-day calendar features (this branch): time in meetings, events, back-to-back runs, meetings of 5 or more
+     people, meetings over 45 minutes, each a day above the person's median against the rest, under What sets it off.
+     The channel now sends each event's number of people listed (never who). Not proven on a device: the Swift
+     compiles only in CI; real calendars' attendee counts and plausible cards on real data.
+   - [ ] ~~macOS EventKit channel~~ set aside: the Mac computes no Insights without Health, so it would read events
+     nothing uses and add a prompt that does nothing.
+   - Once the why-not lines (item 1) merge, `setsOffRefusals` should also take `report.calendarDays` (words:
+     `calendarDayRefusal`) and count its habits as shown.
 6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
    the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
    trigger breakdowns over time, spend).
@@ -246,6 +254,9 @@ the iPhone-to-Mac journal key sync is being investigated again (P2).
 - Calendar (#239): hour after an event ends against nearby event-free days; 60-min window, events under 15 min out,
   gaps under 10 min merged, controls clear 2 h before and 1 h after within 14 days, 14 days a side, 10 points;
   weekday/weekend matching only; iOS only; footer does not mention the calendar.
+- Calendar days (fifth run): a feature is judged only with 14 days above 0; "more" is above the person's median day
+  (counts read as whole thresholds); use that day on the feature, weekend, trend, period levels and the day before's
+  use; 10-point floor; crowded is 5 or more people listed; long is over 45 minutes; whether only, not amount or time.
 - Step changes (#241): shift cards use the habit-effect floors; 14 days a side, at most 3 per measure; a habit named
   beside a shift at 1.5x and p < 0.01 over 28 days a side, outside the family; power cost accepted (185 to 123 of 200
   on one-day amount jumps); the existing "uneven" refusal reused; card wording "From March 12, 2026, your resting heart

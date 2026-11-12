@@ -8,10 +8,10 @@ Built on iOS: `ios/Runner/CalendarChannel.swift` reads timed events' starts and 
 from Insights, and `lib/insights/after_event.dart` judges whether each habit is used in the hour after an event ends
 more often than at the same time on nearby days clear of events. Left:
 
-- The macOS runner's channel, so the Mac gets the same comparison.
-- The other features per entry and per day: minutes in meetings that day, the number of events, back-to-back
-  blocks, events with many attendees, long meetings (over 45 minutes) on their own, and events the user tags (for
-  example "1:1s with my manager").
+- The macOS runner's channel, so the Mac gets the same comparison: set aside while the Mac computes no Insights
+  without Health.
+- Events the user tags (for example "1:1s with my manager"). Built since: per-day features (time in meetings,
+  events, back-to-back runs, events of 5 or more people, events over 45 minutes) in `lib/insights/calendar_days.dart`.
 - "Work → Meeting" suggestions in the trigger picker when an entry follows an event; at most the entry stores the
   trigger path the user accepted.
 - Calendar findings without Health: Insights computes nothing until Health has values.
