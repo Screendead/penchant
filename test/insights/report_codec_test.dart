@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -285,6 +286,26 @@ InsightsReport everySection() => InsightsReport(
       refusal: RefusalReason.tooFewDays,
     ),
   ],
+  calendarDays: const <CalendarDay>[
+    CalendarDay(
+      habitId: 'coffee',
+      feature: CalendarDayFeature.meetingMinutes,
+      cut: 127.5,
+      usableDays: 90,
+      moreDays: 40,
+      effect: 0.2,
+      interval: Interval(0.08, 0.32),
+      pValue: 0.003,
+    ),
+    CalendarDay(
+      habitId: 'tea',
+      feature: CalendarDayFeature.crowded,
+      cut: 0,
+      usableDays: 12,
+      moreDays: 3,
+      refusal: RefusalReason.tooFewDays,
+    ),
+  ],
   recovery: const <Recovery>[
     Recovery(
       habitId: 'coffee',
@@ -354,6 +375,11 @@ void main() {
     expect(report.refused.first.raw!.interval.high, double.infinity);
     expect(report.recovery.first.nights[1].effect, isNaN);
     expect(report.payoffs.first.fall.day, _day);
+    expect(
+      report.calendarDays.first.feature,
+      CalendarDayFeature.meetingMinutes,
+    );
+    expect(report.calendarDays.last.refusal, RefusalReason.tooFewDays);
   });
 
   test('a computed report round trips', () {
