@@ -283,6 +283,85 @@ void main() {
       expect(find.byType(EditVice), findsNothing);
     });
 
+    testWidgets('writes a unit label and price', (WidgetTester tester) async {
+      await open(tester);
+      await tester.enterText(find.byKey(ViceForm.unitLabelKey), ' cups ');
+      await tester.enterText(find.byKey(ViceForm.costKey), '2.5');
+      await tester.pump();
+      await tester.enterText(find.byKey(ViceForm.currencyKey), 'gbp');
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'unitAndPrice': (
+            unitLabel: 'cups',
+            costPerUnit: 2.5,
+            currency: 'GBP',
+          ),
+        }),
+      ]);
+    });
+
+    testWidgets('refuses an unknown currency code inline', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(find.byKey(ViceForm.costKey), '2.5');
+      await tester.pump();
+      await tester.enterText(find.byKey(ViceForm.currencyKey), 'G1');
+      await save(tester);
+
+      expect(writes.writes, isEmpty);
+      expect(find.text('Use a code like GBP'), findsOneWidget);
+    });
+
+    testWidgets('a price waits for the journal key', (
+      WidgetTester tester,
+    ) async {
+      writes.canCreate = false;
+      await open(tester);
+      await tester.enterText(find.byKey(ViceForm.costKey), '2.5');
+      await save(tester);
+
+      expect(writes.writes, isEmpty);
+      expect(find.text('Not saved. $noJournalKeyMessage'), findsOneWidget);
+    });
+
+    testWidgets('clears a price, keeping the label', (
+      WidgetTester tester,
+    ) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith(
+          (ref) => AsyncData([
+            Vice(
+              id: 'coffee',
+              name: 'Coffee',
+              unit: Unit.drink,
+              ownerID: ownerID,
+              createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+              archived: false,
+              unitLabel: 'cups',
+              costPerUnit: 2.5,
+              currency: 'GBP',
+            ),
+          ]),
+        ),
+      ], const EditVice(viceID: 'coffee'));
+      expect(find.text('GBP'), findsOneWidget);
+      await tester.enterText(find.byKey(ViceForm.costKey), '');
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'unitAndPrice': (
+            unitLabel: 'cups',
+            costPerUnit: null,
+            currency: null,
+          ),
+        }),
+      ]);
+    });
+
     testWidgets('writes only a changed name', (WidgetTester tester) async {
       await open(tester);
       await tester.enterText(

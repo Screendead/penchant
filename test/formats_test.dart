@@ -9,6 +9,28 @@ void main() {
 
   setUpAll(() => formatLocale);
 
+  group('money', () {
+    test('formats in the habit currency with the region digits', () {
+      expect(formatMoney(1234.5, 'GBP'), '£1,234.50');
+      expect(formatMoney(2, null), '2.00');
+    });
+
+    test('a new price starts in the device region currency', () {
+      expect(deviceCurrency(const <Locale>[Locale('en', 'GB')]), 'GBP');
+      expect(deviceCurrency(const <Locale>[Locale('de', 'DE')]), 'EUR');
+      expect(deviceCurrency(const <Locale>[Locale('ja', 'JP')]), 'JPY');
+    });
+  });
+
+  group('UnitWords', () {
+    test('an own label is used as typed whatever the count', () {
+      expect(const UnitWords(Unit.drink, 'mg').label(1), '1 mg');
+      expect(const UnitWords(Unit.drink, 'mg').label(250), '250 mg');
+      expect(const UnitWords(Unit.drink).label(1), '1 drink');
+      expect(const UnitWords(Unit.drink).plural, 'drinks');
+    });
+  });
+
   group('localeForFormatting', () {
     test('keeps an English variant the device lists', () {
       expect(localeForFormatting(const [Locale('en', 'GB')]), 'en_GB');

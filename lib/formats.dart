@@ -203,13 +203,17 @@ String formatMoney(double value, String? currency) => currency == null
 // [formatLocale] can lose (it keeps English regions only).
 String deviceCurrency([List<Locale>? deviceLocales]) {
   final List<Locale> locales =
-      deviceLocales ?? debugFormatLocales ?? PlatformDispatcher.instance.locales;
+      deviceLocales ??
+      debugFormatLocales ??
+      PlatformDispatcher.instance.locales;
   for (final Locale locale in locales) {
     final String? country = locale.countryCode;
     if (country == null) continue;
+    // intl keeps most regions only under their language (de, not de_DE).
     for (final String candidate in <String>[
       '${locale.languageCode}_$country',
       'en_$country',
+      if (locale.languageCode != 'en') locale.languageCode,
     ]) {
       if (NumberFormat.localeExists(candidate)) {
         return NumberFormat.simpleCurrency(locale: candidate).currencyName ??

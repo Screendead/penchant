@@ -58,20 +58,26 @@ class _ViceFormState extends ConsumerState<ViceForm> {
       null => '',
     },
   );
+  late final TextEditingController currencyController;
+  bool saving = false;
+
   // A price is in the habit's currency, else another habit's, else the
   // device region's.
-  late final TextEditingController currencyController = TextEditingController(
-    text:
-        opened?.currency ??
-        ref
-            .read(viceListProvider)
-            .value
-            ?.map((Vice v) => v.currency)
-            .nonNulls
-            .firstOrNull ??
-        deviceCurrency(),
-  );
-  bool saving = false;
+  @override
+  void initState() {
+    super.initState();
+    currencyController = TextEditingController(
+      text:
+          opened?.currency ??
+          ref
+              .read(viceListProvider)
+              .value
+              ?.map((Vice v) => v.currency)
+              .nonNulls
+              .firstOrNull ??
+          deviceCurrency(),
+    );
+  }
 
   @override
   void dispose() {

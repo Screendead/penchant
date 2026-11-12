@@ -137,9 +137,10 @@ The list this run works from, sorted before any building. Tick or strike here as
 5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
    calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
    (round 14 `no-health` A).
-6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
-   the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
-   trigger breakdowns over time, spend).
+6. ~~Units and cost per unit~~ (`feat/units-and-cost`): a habit's own unit label, cost per unit and currency, sealed;
+   spend for the last 7 days and the range in Trends. Not proven on a device; an older build editing a habit drops
+   its label and price. Left: per-entry cost, spend trend lines. Then the rest of trend views (Health under the habit
+   lines, trigger breakdowns over time, spend).
 7. Reduce motion "Full" over framework animations: a spike of the binding override; dropped if it does not work.
 8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
    sheet is its graph); iPhone-only install of `master` at the end (the Mac stays on 1422 for #252).

@@ -82,6 +82,25 @@ void main() {
     });
   });
 
+  group('unit label and cost per unit', () {
+    test('a label is optional and at most 20 characters', () {
+      expect(unitLabelError(''), isNull);
+      expect(unitLabelError('cups'), isNull);
+      expect(unitLabelError('x' * maxUnitLabelLength), isNull);
+      expect(unitLabelError('x' * 21), 'Use 20 characters or fewer');
+    });
+
+    test('a cost is optional, above 0 and at most 100,000', () {
+      expect(costPerUnitError(''), isNull);
+      expect(costPerUnitError('2.50'), isNull);
+      expect(costPerUnitError('100000'), isNull);
+      expect(costPerUnitError('0'), 'Please enter more than 0');
+      expect(costPerUnitError('-1'), 'Please enter more than 0');
+      expect(costPerUnitError('100001'), 'Please enter 100,000 or less');
+      expect(costPerUnitError('two'), 'Please enter a valid amount');
+    });
+  });
+
   testWidgets('Add Habit shows the length message inline', (tester) async {
     await _pump(tester, [
       userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
