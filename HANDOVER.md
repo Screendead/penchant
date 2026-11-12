@@ -156,6 +156,7 @@ The list this run works from, sorted before any building. Tick or strike here as
   item; Claude may not read production). Line "unlisted production indexes were removed by a forced deploy on
   2026-11-09" (third run) disagrees with `CLAUDE.md`'s "the 4 production indexes ... stay"; only the console or
   such a check settles it.
+  Built as a draft PR (`chore/index-drift-check`, `.github/workflows/index-drift.yml`), waiting on Jack; never run.
 - No "What was going on?" prompt after a Siri or Shortcuts log (Jack ruled only on Control Centre).
 - Claude's as-built defaults from the fourth run (list above) were never put to Jack; the page lists them once.
 

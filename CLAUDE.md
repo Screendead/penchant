@@ -150,6 +150,10 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
   with the firebase-tools pinned in `tests/firestore-rules/package-lock.json`. Gated on repository variable
   `DEPLOY_FIRESTORE_RULES` (unset, skipped; state under Hard rules); deploys queue in one concurrency group so the
   newest commit lands last.
+- `index-drift.yml` (draft, waits on Jack), weekly and by hand only, never on a PR: in `firestore-production`, with
+  the deploy service account, runs the pinned `firebase firestore:indexes --project screendead-vice-tracker --json`
+  (a list; Cloud Datastore Index Admin covers `datastore.indexes.list`) and fails with a `diff -u` when production's
+  composite indexes differ from `firestore.indexes.json` (field overrides not compared).
 - `functions.yml` tests (`npm --prefix functions test`) PRs touching `functions/`, `firebase.json` or itself; on such
   a push to `master` it deploys (`firebase deploy --only functions`, same pinned firebase-tools,
   `firestore-production` environment) only while repository variable `DEPLOY_FUNCTIONS` is `true` (unset, skipped).

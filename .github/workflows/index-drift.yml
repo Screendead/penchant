@@ -1,0 +1,50 @@
+name: Index drift
+# A read of production's composite indexes, compared with firestore.indexes.json. Never on a PR or push: the
+# credentials live in the firestore-production environment, which admits master alone.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: index-drift
+  cancel-in-progress: true
+jobs:
+  compare:
+    environment: firestore-production
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.1'
+          cache: npm
+          cache-dependency-path: tests/firestore-rules/package-lock.json
+      # The firebase-tools the deploy uses, pinned by that lockfile.
+      - run: npm --prefix tests/firestore-rules ci
+      - name: List production's indexes
+        env:
+          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER }}
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
+          (umask 077 && printf '%s' "$SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS")
+          # firestore:indexes only lists (needs datastore.indexes.list); --json wraps its spec in {status, result}.
+          tests/firestore-rules/node_modules/.bin/firebase firestore:indexes \
+            --project screendead-vice-tracker --non-interactive --json > "$RUNNER_TEMP/live.json"
+          rm "$GOOGLE_APPLICATION_CREDENTIALS"
+      - name: Compare with firestore.indexes.json
+        run: |
+          # The API appends the implicit __name__ field and fills defaults the file omits.
+          normalise='[.indexes[] | {collectionGroup, queryScope: (.queryScope // "COLLECTION"),
+            fields: [.fields[] | select(.fieldPath != "__name__") | with_entries(select(.value != null))]}]
+            | sort_by(tostring)'
+          jq "$normalise" firestore.indexes.json > "$RUNNER_TEMP/file.norm.json"
+          jq ".result | $normalise" "$RUNNER_TEMP/live.json" > "$RUNNER_TEMP/live.norm.json"
+          if ! diff -u --label firestore.indexes.json --label production \
+              "$RUNNER_TEMP/file.norm.json" "$RUNNER_TEMP/live.norm.json"; then
+            echo "::error::Production's composite indexes differ from firestore.indexes.json (+ only in production, - only in the file)."
+            exit 1
+          fi

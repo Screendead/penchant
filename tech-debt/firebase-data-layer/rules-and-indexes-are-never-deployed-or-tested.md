@@ -9,3 +9,4 @@ console never appears here, and the next merge overwrites the live rules with th
 ## Evidence
 
 - `test/firestore_indexes_test.dart` — checks the file against `lib/`'s queries only, never against the project
+- A weekly read-only index check (`index-drift.yml`) waits on Jack as a draft PR; the rules have no such check
