@@ -18,8 +18,9 @@ there. Grouped by what stands in the way.
 - **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.
 - **Music:** recently played from Apple Music (MusicKit), as a rough mood and context signal. Only for Apple Music
   users.
-- **Reminders and Focus:** EventKit reminders beside [Calendar](calendar-integration.md); Focus only says whether a
-  Focus is on (`INFocusStatusCenter`), not which.
+- **Focus:** only says whether a Focus is on (`INFocusStatusCenter`), not which. Reminders, beside
+  [Calendar](calendar-integration.md), are built (2026-11-12, iOS only like Calendar): reminders completed a day
+  and reminders missed (due that day, not done by its end).
 
 **Blocked or costly:**
 

@@ -101,6 +101,7 @@ class InsightsInput {
         const <String, List<hs.HealthSample>>{},
     Set<String> archived = const <String>{},
     List<CalendarEvent> events = const <CalendarEvent>[],
+    Iterable<hs.DailyOutcome> reminders = const <hs.DailyOutcome>[],
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -108,7 +109,10 @@ class InsightsInput {
       // A locked entry counts: its vice and quantity are plaintext.
       uses: habitUsesFrom(activities).toList(),
       outcomes: withSessionZeros(<DailyOutcome>[
-        for (final hs.DailyOutcome o in health)
+        for (final hs.DailyOutcome o in <hs.DailyOutcome>[
+          ...health,
+          ...reminders,
+        ])
           // Today's day totals and averages cover only part of it; the night
           // that ended today is whole.
           if (o.metricId != hs.HealthMetric.menstrualFlow.id &&
@@ -634,7 +638,8 @@ enum MetricFamily {
   breathing('breathing'),
   temperature('temperature'),
   activity('activity'),
-  mindfulness('mindfulness');
+  mindfulness('mindfulness'),
+  reminders('reminders');
 
   const MetricFamily(this.label);
 
@@ -737,6 +742,18 @@ metricFloors = <String, ({double floor, MetricFamily family, FloorRule rule})>{
   'mindfulMinutes': (
     floor: 13,
     family: MetricFamily.mindfulness,
+    rule: FloorRule.fixed,
+  ),
+  // Kept: no source sizes a change in reminders done or missed; one whole
+  // reminder a day, raised to the person's own noise as every floor is.
+  'remindersCompleted': (
+    floor: 1,
+    family: MetricFamily.reminders,
+    rule: FloorRule.fixed,
+  ),
+  'remindersMissed': (
+    floor: 1,
+    family: MetricFamily.reminders,
     rule: FloorRule.fixed,
   ),
 };
@@ -982,6 +999,18 @@ MetricCopy? metricCopy(String metricId) => switch (metricId) {
     'mindful time',
     night: false,
     unit: 'min',
+    words: DirectionWords.moreLess,
+  ),
+  'remindersCompleted' => const MetricCopy(
+    'completed-reminder count',
+    night: false,
+    decimals: 1,
+    words: DirectionWords.moreLess,
+  ),
+  'remindersMissed' => const MetricCopy(
+    'missed-reminder count',
+    night: false,
+    decimals: 1,
     words: DirectionWords.moreLess,
   ),
   _ => null,
@@ -1439,7 +1468,9 @@ String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
   final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
   final String per = switch (metricFloors[refusal.metricId]?.family) {
     MetricFamily.sleep => ' a night',
-    MetricFamily.activity || MetricFamily.mindfulness => ' a day',
+    MetricFamily.activity ||
+    MetricFamily.mindfulness ||
+    MetricFamily.reminders => ' a day',
     _ => '',
   };
   return 'under $floor$unit$per of ${copy.name}';
