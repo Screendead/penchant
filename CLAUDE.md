@@ -457,6 +457,13 @@ rather than wait out Flutter's and Firebase's shutdown (it took seconds). Widget
 resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
 (`splitLayout`, `integration_test/support.dart`).
 
+Reduce motion (Settings: Follow system / Reduce / Full, `reduceMotionProvider`) reaches widgets through
+`ReduceMotionScope` (`MaterialApp.builder`, overriding `MediaQuery.disableAnimations`) and the framework through
+`PenchantBinding` (`lib/design/motion_binding.dart`, made first in `main()`), whose `MotionOverride` resolves
+`SemanticsBinding.disableAnimations`, which every default `AnimationController` (sheets, dialogs, implicit animations)
+scales its duration by; the scope sets it on build. Tests needing it make their own binding with the mixin
+(`test/motion_binding_test.dart`).
+
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection across rebuilds. Both read
 the current day from `todayProvider`; Today follows it unless the user picked another day, and a log (always now)
 returns a past day to today. Entry times go through `EntryTimeField` (`lib/widgets/time_dial.dart`) in the amount

@@ -140,7 +140,8 @@ The list this run works from, sorted before any building. Tick or strike here as
 6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
    the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
    trigger breakdowns over time, spend).
-7. Reduce motion "Full" over framework animations: a spike of the binding override; dropped if it does not work.
+7. [x] Reduce motion "Full" over framework animations: built (`PenchantBinding`, `lib/design/motion_binding.dart`;
+   widget-tested on a modal sheet both ways). Not proven on a device with iOS or macOS Reduce Motion on.
 8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
    sheet is its graph); iPhone-only install of `master` at the end (the Mac stays on 1422 for #252).
 
@@ -707,8 +708,8 @@ Effort: S under a day, M a day or two, L more.
   `AnimationController` runs at 5% length and no release-mode API turns that off. So Full covers the app's own
   controllers (`AnimationBehavior.preserve`: dial, log fan, tallies, day picker, Undo timer, status pills
   (`PillDrop`), the Trends range morph (`RangeMorph`)) and pushed pages (`DialPageRoute`); sheets, dialogs and
-  implicit animations (segment thumbs, label fades) follow the system, as the page's foot copy says. Open: a custom
-  `WidgetsFlutterBinding` overriding `SemanticsBinding.disableAnimations` would cover the rest (inferred, untested).
+  implicit animations (segment thumbs, label fades) followed the system until the fifth run's binding override
+  (`MotionOverride`), which now carries the choice to every `AnimationController`.
 
 **Were UNDECIDED; all decided in round 10 (2026-11-08)** (U1 to U8; picks in Jack's calls, round 10):
 
