@@ -12,6 +12,7 @@ import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/step_changes.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
@@ -20,7 +21,7 @@ import 'package:tracker/providers/insights_provider.dart';
 
 /// Raise with any change to what is written below or to the report's types,
 /// so a file an older build wrote reads as absent.
-const int insightsViewFormat = 2;
+const int insightsViewFormat = 3;
 
 /// [view] as bytes to seal; null for a view with no computed report, which is
 /// never kept. Throws only on a value JSON cannot hold.
@@ -199,6 +200,7 @@ Map<String, Object?> _report(InsightsReport r) => <String, Object?>{
   'shifts': <Object?>[for (final MeasureShift s in r.shifts) _shift(s)],
   'afterEvent': <Object?>[for (final AfterEvent a in r.afterEvent) _after(a)],
   'recovery': <Object?>[for (final Recovery x in r.recovery) _recovery(x)],
+  'triggers': <Object?>[for (final HabitTriggers h in r.triggers) _triggers(h)],
 };
 
 InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
@@ -222,6 +224,48 @@ InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
   shifts: _list(m, 'shifts', _each(_readShift)),
   afterEvent: _list(m, 'afterEvent', _each(_readAfter)),
   recovery: _list(m, 'recovery', _each(_readRecovery)),
+  triggers: _list(m, 'triggers', _each(_readTriggers)),
+);
+
+Map<String, Object?> _triggers(HabitTriggers h) => <String, Object?>{
+  'habitId': h.habitId,
+  'entries': h.entries,
+  'tagged': h.tagged,
+  'triggers': <Object?>[
+    for (final TriggerAmount t in h.triggers)
+      <String, Object?>{
+        'trigger': t.trigger,
+        'entries': t.entries,
+        'withDays': t.withDays,
+        'withoutDays': t.withoutDays,
+        'withMean': _d(t.withMean),
+        'withoutMean': _d(t.withoutMean),
+        'pValue': _od(t.pValue),
+        'verdict': t.verdict?.name,
+      },
+  ],
+};
+
+HabitTriggers _readTriggers(Map<String, Object?> m) => HabitTriggers(
+  habitId: _str(m, 'habitId'),
+  entries: _int(m, 'entries'),
+  tagged: _int(m, 'tagged'),
+  triggers: _list(
+    m,
+    'triggers',
+    _each(
+      (Map<String, Object?> t) => TriggerAmount(
+        trigger: _str(t, 'trigger'),
+        entries: _int(t, 'entries'),
+        withDays: _int(t, 'withDays'),
+        withoutDays: _int(t, 'withoutDays'),
+        withMean: _dbl(t, 'withMean'),
+        withoutMean: _dbl(t, 'withoutMean'),
+        pValue: _odbl(t, 'pValue'),
+        verdict: _oenum(TriggerVerdict.values, t, 'verdict'),
+      ),
+    ),
+  ),
 );
 
 Map<String, Object?> _comparison(Comparison c) => <String, Object?>{

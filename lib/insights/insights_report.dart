@@ -18,6 +18,7 @@ import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 /// The earliest day an entry can be dated (the date picker's floor), so the
@@ -283,7 +284,12 @@ class InsightsReport {
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
     this.recovery = const <Recovery>[],
+    this.triggers = const <HabitTriggers>[],
   });
+
+  /// Each habit's tagged triggers against its other tagged entries, findings
+  /// and refusals, judged in the same family as [findings].
+  final List<HabitTriggers> triggers;
 
   /// Each habit's measures over the nights after its heavy days, findings
   /// and refusals, judged in the same family as [findings].
@@ -378,8 +384,8 @@ InsightsReport computeInsights(InsightsInput input) {
       <String, List<HabitRefusal>>{};
   // The family for false-discovery control is the whole page: every habit it
   // shows against every outcome, by use, amount and time and a line in each,
-  // what came before each use and each night after a heavy day, not one at a
-  // time.
+  // what came before each use, each night after a heavy day and each tagged
+  // trigger, not one at a time.
   // An archived habit's comparisons are never shown, so they are not counted.
   final List<HabitInsight> after = <HabitInsight>[
     for (final String metricId in outcomes.metricIds)
@@ -452,9 +458,15 @@ InsightsReport computeInsights(InsightsInput input) {
         input.samples[hs.HealthSampleMetric.bed.id] ??
         const <hs.HealthSample>[],
   );
+  final List<HabitTriggers> triggered = triggerAmounts(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<double> afterPs = <double>[
     for (final HabitInsight i in after) ?insightPValue(i),
   ];
+  final List<double> triggerPs = triggerPValues(triggered);
   final List<double> beforePs = <double>[
     for (final BeforeUse b in before) ?b.pValue,
   ];
@@ -486,6 +498,7 @@ InsightsReport computeInsights(InsightsInput input) {
     after,
     alongside: <double>[
       ...beforePs,
+      ...triggerPs,
       ...followsPs,
       ...calendarPs,
       ...shiftPs,
@@ -519,6 +532,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...calendarPs,
         ...shiftPs,
         ...payoffPs,
@@ -530,6 +544,7 @@ InsightsReport computeInsights(InsightsInput input) {
       before,
       alongside: <double>[
         ...afterPs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
@@ -544,6 +559,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
@@ -556,6 +572,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
@@ -569,6 +586,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
@@ -581,6 +599,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...shiftPs,
         ...payoffPs,
@@ -595,6 +614,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...shifted.searched,
               ...afterPs,
               ...beforePs,
+              ...triggerPs,
               ...followsPs,
               ...calendarPs,
               ...payoffPs,
@@ -605,6 +625,19 @@ InsightsReport computeInsights(InsightsInput input) {
             q: const InsightGates().falseDiscoveryRate,
           ).where((MeasureShift s) => s.found).toList()
           ..sort((a, b) => a.shift.at.compareTo(b.shift.at)),
+    triggers: judgeTriggerAmounts(
+      triggered,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
     findings: shown,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),

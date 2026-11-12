@@ -1,36 +1,58 @@
 import 'dart:math';
 
+import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 /// Why a habit has nothing under "What sets it off": the most telling of its
-/// refused before-a-use, pair and calendar comparisons, or, with none of
-/// them, whether it has entries at all.
+/// refused before-a-use, pair, calendar and trigger comparisons, or, with
+/// none of them, whether it has entries at all.
 class SetsOffRefusal {
   const SetsOffRefusal.before(this.habitId, BeforeUse this.before)
     : pair = null,
       calendar = null,
+      tagging = null,
+      trigger = null,
       logged = true;
   const SetsOffRefusal.pair(this.habitId, HabitFollows this.pair)
     : before = null,
       calendar = null,
+      tagging = null,
+      trigger = null,
       logged = true;
   const SetsOffRefusal.calendar(this.habitId, AfterEvent this.calendar)
     : before = null,
       pair = null,
+      tagging = null,
+      trigger = null,
+      logged = true;
+  const SetsOffRefusal.trigger(
+    this.habitId,
+    HabitTriggers this.tagging,
+    TriggerAmount this.trigger,
+  ) : before = null,
+      pair = null,
+      calendar = null,
       logged = true;
   const SetsOffRefusal.nothing(this.habitId, {required this.logged})
     : before = null,
       pair = null,
-      calendar = null;
+      calendar = null,
+      tagging = null,
+      trigger = null;
 
   final String habitId;
   final BeforeUse? before;
   final HabitFollows? pair;
   final AfterEvent? calendar;
+
+  /// With [trigger]: the habit's tagging as a whole.
+  final HabitTriggers? tagging;
+  final TriggerAmount? trigger;
 
   /// With no comparison: whether the habit has entries in the span read.
   final bool logged;
@@ -43,22 +65,36 @@ class SetsOffRefusal {
         FollowsVerdict.chance => RefusalReason.chance,
         FollowsVerdict.tooSmall => RefusalReason.tooSmall,
         _ => null,
+      } ??
+      switch (trigger?.verdict) {
+        TriggerVerdict.tooFewDays => RefusalReason.tooFewDays,
+        TriggerVerdict.steadyAmount => RefusalReason.steadyAmount,
+        TriggerVerdict.chance => RefusalReason.chance,
+        TriggerVerdict.tooSmall => RefusalReason.tooSmall,
+        _ => null,
       };
 
-  int get _days => before?.usableDays ?? pair?.days ?? calendar?.eventDays ?? 0;
+  int get _days =>
+      before?.usableDays ??
+      pair?.days ??
+      calendar?.eventDays ??
+      trigger?.withDays ??
+      0;
 
   int get _source => before != null
       ? 0
       : pair != null
       ? 1
-      : 2;
+      : calendar != null
+      ? 2
+      : 3;
 }
 
 /// One [SetsOffRefusal] for each of [habitIds] (the unarchived habits shown,
 /// in order) that no card in [shown] names, from [report]'s before-a-use,
-/// pair and calendar comparisons; [logged] holds the habits with entries in
-/// the span read. Ranked as [refusalRank], then before-a-use, pair and
-/// calendar, then the comparison from the most days.
+/// pair, calendar and trigger comparisons; [logged] holds the habits with entries in
+/// the span read. Ranked as [refusalRank], then before-a-use, pair,
+/// calendar and trigger, then the comparison from the most days.
 List<SetsOffRefusal> setsOffRefusals({
   required Iterable<String> habitIds,
   required InsightsReport report,
@@ -85,6 +121,11 @@ List<SetsOffRefusal> setsOffRefusals({
   }
   for (final AfterEvent a in report.afterEvent) {
     add(SetsOffRefusal.calendar(a.habitId, a));
+  }
+  for (final HabitTriggers h in report.triggers) {
+    for (final TriggerAmount t in h.triggers) {
+      add(SetsOffRefusal.trigger(h.habitId, h, t));
+    }
   }
   return <SetsOffRefusal>[
     for (final String id in habitIds)
@@ -124,9 +165,16 @@ String setsOffReason(
   if (refusal.calendar case final AfterEvent a) {
     return 'After calendar events: ${_calendarReason(a, gates)}';
   }
+  if ((refusal.tagging, refusal.trigger) case (
+    final HabitTriggers h,
+    final TriggerAmount t,
+  )) {
+    return 'Tagged ${triggerDisplay(t.trigger)}: ${_triggerReason(h, t, gates)}';
+  }
   return refusal.logged
       ? 'Nothing to compare it with yet: no sleep or heart readings in '
-            'Health, no calendar events and no other habit logged'
+            'Health, no calendar events, no other habit logged and no '
+            'triggers tagged'
       : 'No entries yet in the time Insights reads';
 }
 
@@ -204,3 +252,23 @@ String _calendarReason(AfterEvent a, InsightGates gates) {
     _ => 'within the noise, no clear difference',
   };
 }
+
+// Only tagged entries are compared, so the count of them leads a shortfall.
+String _triggerReason(HabitTriggers h, TriggerAmount t, InsightGates gates) =>
+    switch (t.verdict!) {
+      TriggerVerdict.tooFewDays when t.withDays < gates.minExposedDays =>
+        'too few days with it yet: ${t.withDays} of ${gates.minExposedDays} '
+            '(${h.tagged} of ${h.entries} entries tagged)',
+      TriggerVerdict.tooFewDays =>
+        'too few days tagged otherwise to compare: ${t.withoutDays} of '
+            '${gates.minUnexposedDays} (${h.tagged} of ${h.entries} entries '
+            'tagged)',
+      TriggerVerdict.steadyAmount =>
+        'the same amount on every tagged entry, so there’s no difference to '
+            'compare',
+      TriggerVerdict.chance => 'could be chance, one of many comparisons',
+      TriggerVerdict.tooSmall =>
+        'too small to matter, under ${(triggerFloor * 100).round()}% more or '
+            'less than on your other tagged entries',
+      TriggerVerdict.found => '',
+    };

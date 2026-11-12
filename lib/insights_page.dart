@@ -31,6 +31,7 @@ import 'package:tracker/insights/recovery_copy.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
@@ -43,6 +44,7 @@ import 'package:tracker/widgets/after_event_card.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
+import 'package:tracker/widgets/trigger_amounts_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
@@ -115,7 +117,7 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String setsOffWhyNot = 'Habits with nothing here';
   static const String setsOffBody =
       'This will show what tends to come before each habit, such as a short '
-      'night or another habit.';
+      'night, another habit or a trigger you tag.';
 
   static const String calendarLabel = 'Connect Calendar';
   static const String calendarBody =
@@ -517,7 +519,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty &&
           costs.follows.isEmpty &&
-          costs.calendar.isEmpty)
+          costs.calendar.isEmpty &&
+          costs.triggers.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -545,6 +548,19 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           mark: costs.marks[finding.habitId] ?? const HabitMark(0),
           locale: formatLocale,
           top: i == 0 && costs.before.isEmpty && costs.follows.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      for (final (int i, TriggerCard card) in costs.triggers.indexed)
+        TriggerAmountsCard(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty
               ? 0
               : DialSpace.xs,
         ),
@@ -795,6 +811,10 @@ class _Costs {
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
     ]);
+    triggers = triggerCards(<HabitTriggers>[
+      for (final HabitTriggers h in report.triggers)
+        if (_names.containsKey(h.habitId)) h,
+    ]);
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -824,6 +844,7 @@ class _Costs {
             ...c.others,
           ]) ...<String>[f.leadId, f.followerId],
         for (final AfterEvent a in calendar) a.habitId,
+        for (final TriggerCard c in triggers) c.habitId,
       },
       logged: computed.firstDays.keys.toSet(),
     )..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
@@ -855,6 +876,7 @@ class _Costs {
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
   late final List<FollowsCard> follows;
+  late final List<TriggerCard> triggers;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
 
@@ -967,6 +989,8 @@ class _Costs {
         for (final FollowsCard card in follows) followsText(card, nameOf),
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
+        for (final TriggerCard card in triggers)
+          triggerText(card, nameOf(card.habitId)),
       ],
       setsOffRefused: <String>[
         for (final SetsOffRefusal r in setsOffRefused)
