@@ -494,7 +494,12 @@ Health leaves the device: not Firestore, analytics or crash reports. Insights' d
 by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
 acknowledges the generation once the store is written. `HKObserverQuery`s with hourly background delivery
 (`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
-closed. The Health sheet resets the anchors; a store over 30 days old is read again in full.
+closed. The Health sheet resets the anchors; a store over 30 days old is read again in full. State of Mind (iOS 18+,
+`#available`-gated; older systems read no rows and observe nothing) is `moodValence`: the day's mean valence, -1 to
+1, of its daily-mood logs, else its momentary emotions (`HealthDays.moodRows`). Insights judges it only from 14 days
+with a log (`withEnoughMood`), floors it at half the SD of the person's daily valence (`FloorRule.ownSpread`; Jack,
+round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`MetricCopy.inWords`: "slightly less
+pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
