@@ -70,11 +70,20 @@ class HoursAfterGates {
 /// One moment [hoursAfter] measures around: a use, or as long after waking
 /// on a nearby day clear of the habit.
 class HoursAfterPoint {
-  const HoursAfterPoint(this.habitId, this.at, {required this.control});
+  const HoursAfterPoint(
+    this.habitId,
+    this.at, {
+    required this.control,
+    this.estimated = false,
+  });
 
   final String habitId;
   final DateTime at;
   final bool control;
+
+  /// Whether its day's waking came from steps ([wakingFromSteps]): Health
+  /// held no night for it.
+  final bool estimated;
 }
 
 class HoursAfterPlan {
@@ -118,28 +127,229 @@ DateTime? wakingOn(Iterable<HealthSample> bed, DateTime day) {
   return main?.end;
 }
 
-/// When the person was in bed, from [HealthSampleMetric.bed].
+/// Where [InsightsInput.samples] holds the steps [wakingFromSteps] reads,
+/// apart from [HealthSampleMetric.stepCount]'s spans around moments: the two
+/// overlap, and merged they would count steps twice.
+const String wakingStepsKey = 'wakingSteps';
+
+/// A 10-minute stretch of the night with fewer steps than this is still, so a
+/// trip across the room does not end it.
+const int wakingStillBinSteps = 10;
+
+/// Steps in the 30 minutes from a stretch that are sustained: up and about.
+const int wakingSustainedSteps = 100;
+
+/// The shortest still span taken for a night, in minutes.
+const int wakingMinStillMinutes = 180;
+
+/// The steps [wakingFromSteps] reads for [day]: from 18:00 the evening
+/// before up to 15:00 on it, so one day's span never overlaps another's.
+({DateTime start, DateTime end}) wakingStepsSpan(DateTime day) => (
+  start: DateTime(day.year, day.month, day.day - 1, 18),
+  end: DateTime(day.year, day.month, day.day, 15),
+);
+
+/// The night before [day] guessed from [steps] (sorted by start), for a day
+/// Health holds no night for, as a span like [HealthSampleMetric.bed]'s:
+/// over [wakingStepsSpan], the longest still stretch (10-minute bins under
+/// [wakingStillBinSteps], or not followed by [wakingSustainedSteps] in 30
+/// minutes) of at least [wakingMinStillMinutes], ended by sustained steps
+/// and with steps before it: sustained ones, or [wakingSustainedSteps] in
+/// all from 18:00. Waking is the first step sample of the sustained steps
+/// after it. Null with no such stretch: a phone left off or out of reach is
+/// not a night.
+///
+/// Steps start later than waking (a lie-in, a phone left on the nightstand),
+/// so this waking runs late; [planHoursAfter] never sets a moment timed from
+/// it against one timed from a recorded night.
+HealthSample? wakingFromSteps(
+  List<HealthSample> steps,
+  DateTime day, {
+  int? longestMinutes,
+}) {
+  final ({DateTime start, DateTime end}) span = wakingStepsSpan(day);
+  final int n = span.end.difference(span.start).inMinutes ~/ _bin.inMinutes;
+  final int longest = longestMinutes ?? _longestMinutes(steps);
+  final List<double> bins = <double>[
+    for (int k = 0; k < n; k++)
+      _bin.inMinutes *
+          stepsPerMinute(
+            steps,
+            span.start.add(_bin * k),
+            span.start.add(_bin * (k + 1)),
+            longestMinutes: longest,
+          ),
+  ];
+  bool active(int k) {
+    if (bins[k] < wakingStillBinSteps) return false;
+    double sum = 0;
+    for (int j = k; j < min(n, k + 3); j++) {
+      sum += bins[j];
+    }
+    return sum >= wakingSustainedSteps;
+  }
+
+  final List<bool> up = <bool>[for (int k = 0; k < n; k++) active(k)];
+  ({int from, int to})? best;
+  int k = 0;
+  while (k < n) {
+    if (up[k]) {
+      k++;
+      continue;
+    }
+    final int from = k;
+    while (k < n && !up[k]) {
+      k++;
+    }
+    if (k < n &&
+        (k - from) * _bin.inMinutes >= wakingMinStillMinutes &&
+        (best == null || k - from > best.to - best.from) &&
+        (from > 0 ||
+            bins.take(k).fold(0.0, (a, b) => a + b) >= wakingSustainedSteps)) {
+      best = (from: from, to: k);
+    }
+  }
+  if (best == null) return null;
+  final DateTime binStart = span.start.add(_bin * best.to);
+  final DateTime binEnd = binStart.add(_bin);
+  DateTime wake = binStart;
+  for (
+    int i = _firstFrom(steps, binStart.subtract(Duration(minutes: longest)));
+    i < steps.length && steps[i].start.isBefore(binEnd);
+    i++
+  ) {
+    final HealthSample s = steps[i];
+    if (s.value > 0 && s.end.isAfter(binStart)) {
+      wake = s.start.isAfter(binStart) ? s.start : binStart;
+      break;
+    }
+  }
+  return HealthSample(span.start.add(_bin * best.from), wake, 0);
+}
+
+/// The days whose steps [planHoursAfter] would read for waking, given [bed]:
+/// each day Health holds no night for (see [wakingOn]) that has an event of
+/// [uses] up to [through], lies within [hoursAfterControlReachDays] of one,
+/// or follows one of those (its night is the evening's bed), from the day
+/// before the first that can hold an event through [through]'s, each as its
+/// [wakingStepsSpan], oldest first.
+List<({DateTime start, DateTime end})> hoursAfterWakingReads(
+  List<HabitUse> uses,
+  DateTime through, {
+  List<HealthSample> bed = const <HealthSample>[],
+}) {
+  final DateTime since = addDays(startOfDay(through), -hoursAfterLookbackDays);
+  final Set<DateTime> days = <DateTime>{};
+  for (final List<DateTime> times in _usesByHabit(uses).values) {
+    for (final DateTime at in _events(times, since, through)) {
+      final DateTime day = startOfDay(at);
+      for (
+        int d = -hoursAfterControlReachDays;
+        d <= hoursAfterControlReachDays + 1;
+        d++
+      ) {
+        days.add(addDays(day, d));
+      }
+    }
+  }
+  final List<DateTime> sorted = days.toList()..sort();
+  return <({DateTime start, DateTime end})>[
+    for (final DateTime day in sorted)
+      if (!day.isBefore(addDays(since, -1)) &&
+          !day.isAfter(startOfDay(through)) &&
+          wakingOn(bed, day) == null)
+        wakingStepsSpan(day),
+  ];
+}
+
+int _longestMinutes(List<HealthSample> samples) {
+  int longest = 0;
+  for (final HealthSample s in samples) {
+    longest = max(longest, s.end.difference(s.start).inMinutes + 1);
+  }
+  return longest;
+}
+
+Map<String, List<DateTime>> _usesByHabit(List<HabitUse> uses) {
+  final Map<String, List<DateTime>> byHabit = <String, List<DateTime>>{};
+  for (final HabitUse u in uses) {
+    if (u.amount > 0) byHabit.putIfAbsent(u.habitId, () => []).add(u.at);
+  }
+  for (final List<DateTime> t in byHabit.values) {
+    t.sort();
+  }
+  return byHabit;
+}
+
+// Of sorted [times], those with none in the [hoursAfterClearMinutes] before
+// and every window ended by [through], from [since], at most
+// [hoursAfterMaxEvents], most recent first.
+List<DateTime> _events(List<DateTime> times, DateTime since, DateTime through) {
+  const Duration clear = Duration(minutes: hoursAfterClearMinutes);
+  final Duration last = Duration(minutes: hoursAfterWindows.last.end);
+  return <DateTime>[
+    for (int i = times.length - 1; i >= 0; i--)
+      if (!times[i].isBefore(since) &&
+          !times[i].add(last).isAfter(through) &&
+          !anyTimeIn(times, times[i].subtract(clear), times[i]))
+        times[i],
+  ].take(hoursAfterMaxEvents).toList();
+}
+
+/// When the person was in bed, from [HealthSampleMetric.bed], and failing
+/// that from steps ([wakingFromSteps]).
 class _Bed {
-  _Bed(List<HealthSample> spans)
+  _Bed(List<HealthSample> spans, this._steps)
     : _spans = List<HealthSample>.of(spans)
-        ..sort((a, b) => a.start.compareTo(b.start));
+        ..sort((a, b) => a.start.compareTo(b.start)),
+      _longestStep = _longestMinutes(_steps);
 
   final List<HealthSample> _spans;
+  final List<HealthSample> _steps;
+  final int _longestStep;
+  final Map<DateTime, HealthSample?> _guessed = <DateTime, HealthSample?>{};
 
-  DateTime? wake(DateTime day) => wakingOn(_spans, day);
+  HealthSample? _guess(DateTime day) => _guessed.containsKey(day)
+      ? _guessed[day]
+      : _guessed[day] = _steps.isEmpty
+            ? null
+            : wakingFromSteps(_steps, day, longestMinutes: _longestStep);
+
+  /// The day's waking, and whether it came from steps. A recorded night
+  /// always wins.
+  ({DateTime? at, bool estimated}) wake(DateTime day) {
+    if (wakingOn(_spans, day) case final DateTime at) {
+      return (at: at, estimated: false);
+    }
+    return (at: _guess(day)?.end, estimated: true);
+  }
 
   /// Null when [at]'s hour before and every window fall after [wake] and
-  /// clear of bed.
-  HoursAfterShortfall? check(DateTime at, DateTime? wake) {
-    if (wake == null) return HoursAfterShortfall.noSleep;
+  /// clear of bed; for a waking from steps, clear of the next night guessed
+  /// from steps too.
+  HoursAfterShortfall? check(
+    DateTime at,
+    ({DateTime? at, bool estimated}) wake,
+  ) {
+    final DateTime? woke = wake.at;
+    if (woke == null) return HoursAfterShortfall.noSleep;
     final DateTime from = at.subtract(
       const Duration(minutes: hoursAfterBaselineMinutes),
     );
     final DateTime to = at.add(Duration(minutes: hoursAfterWindows.last.end));
-    if (wake.isAfter(from)) return HoursAfterShortfall.nearSleep;
+    if (woke.isAfter(from)) return HoursAfterShortfall.nearSleep;
     for (final HealthSample s in _spans) {
       if (!s.start.isBefore(to)) break;
       if (s.end.isAfter(from)) return HoursAfterShortfall.nearSleep;
+    }
+    if (wake.estimated) {
+      final DateTime next = addDays(startOfDay(at), 1);
+      if (wakingOn(_spans, next) == null) {
+        if (_guess(next) case final HealthSample night
+            when night.start.isBefore(to) && night.end.isAfter(from)) {
+          return HoursAfterShortfall.nearSleep;
+        }
+      }
     }
     return null;
   }
@@ -155,25 +365,26 @@ class _Bed {
 /// Heart rate climbs for a while after waking, whatever the clock says, so
 /// a moment is placed by its time since that day's waking (the end of its
 /// main sleep): an event needs a known waking before its hour before, and no
-/// time in bed from then to its last window's end. Each event gets one
-/// control: as long after waking on the nearest day within
-/// [hoursAfterControlReachDays] whose waking is within
-/// [hoursAfterMaxWakeShiftMinutes] of the event's, under the same sleep
-/// condition, with no use of the habit within [hoursAfterClearMinutes] either
-/// side of it, inside the habit's span from its first use to its last. A day
-/// with the habit at another time can serve, so a habit used every day still
-/// has controls unless it is used at nearly the same time every day.
+/// time in bed from then to its last window's end. A day Health holds no
+/// night for takes its waking from [wakingSteps] ([wakingFromSteps], over
+/// [hoursAfterWakingReads]), and its moments are marked
+/// [HoursAfterPoint.estimated]. Each event gets one control: as long after
+/// waking on the nearest day within [hoursAfterControlReachDays] whose waking
+/// has the same source and is within [hoursAfterMaxWakeShiftMinutes] of the
+/// event's, under the same sleep condition, with no use of the habit within
+/// [hoursAfterClearMinutes] either side of it, inside the habit's span from
+/// its first use to its last. A day with the habit at another time can serve,
+/// so a habit used every day still has controls unless it is used at nearly
+/// the same time every day.
 HoursAfterPlan planHoursAfter(
   List<HabitUse> uses,
   DateTime through, {
   List<HealthSample> bed = const <HealthSample>[],
+  List<HealthSample> wakingSteps = const <HealthSample>[],
 }) {
-  final _Bed sleep = _Bed(bed);
+  final _Bed sleep = _Bed(bed, wakingSteps);
   final DateTime since = addDays(startOfDay(through), -hoursAfterLookbackDays);
-  final Map<String, List<DateTime>> byHabit = <String, List<DateTime>>{};
-  for (final HabitUse u in uses) {
-    if (u.amount > 0) byHabit.putIfAbsent(u.habitId, () => []).add(u.at);
-  }
+  final Map<String, List<DateTime>> byHabit = _usesByHabit(uses);
   const Duration clear = Duration(minutes: hoursAfterClearMinutes);
   final Duration last = Duration(minutes: hoursAfterWindows.last.end);
   const Duration maxShift = Duration(minutes: hoursAfterMaxWakeShiftMinutes);
@@ -183,7 +394,7 @@ HoursAfterPlan planHoursAfter(
       <String, Map<(HoursAfterShortfall, bool), int>>{};
   final List<String> ids = byHabit.keys.toList()..sort();
   for (final String id in ids) {
-    final List<DateTime> times = byHabit[id]!..sort();
+    final List<DateTime> times = byHabit[id]!;
     bool clearAround(DateTime at, Duration before, Duration after) =>
         !anyTimeIn(times, at.subtract(before), at.add(after));
     final Map<(HoursAfterShortfall, bool), int> drops = dropped[id] =
@@ -191,30 +402,31 @@ HoursAfterPlan planHoursAfter(
     void drop(HoursAfterShortfall why, {required bool control}) =>
         drops[(why, control)] = (drops[(why, control)] ?? 0) + 1;
 
-    final List<DateTime> events = <DateTime>[
-      for (int i = times.length - 1; i >= 0; i--)
-        if (!times[i].isBefore(since) &&
-            !times[i].add(last).isAfter(through) &&
-            clearAround(times[i], clear, Duration.zero))
-          times[i],
-    ].take(hoursAfterMaxEvents).toList();
+    final List<DateTime> events = _events(times, since, through);
     useDays[id] = events.map(startOfDay).toSet().length;
     final Set<DateTime> taken = <DateTime>{};
     for (final DateTime at in events) {
       final DateTime day = startOfDay(at);
-      final DateTime? wake = sleep.wake(day);
-      if (sleep.check(at, wake) case final HoursAfterShortfall why) {
+      final ({DateTime? at, bool estimated}) woke = sleep.wake(day);
+      if (sleep.check(at, woke) case final HoursAfterShortfall why) {
         drop(why, control: false);
         continue;
       }
-      points.add(HoursAfterPoint(id, at, control: false));
-      final Duration sinceWake = at.difference(wake!);
+      final DateTime wake = woke.at!;
+      points.add(
+        HoursAfterPoint(id, at, control: false, estimated: woke.estimated),
+      );
+      final Duration sinceWake = at.difference(wake);
       bool found = false;
       for (int k = 1; k <= 2 * hoursAfterControlReachDays; k++) {
         final int offset = k.isOdd ? -(k + 1) ~/ 2 : k ~/ 2;
         final DateTime other = addDays(day, offset);
-        final DateTime? otherWake = sleep.wake(other);
-        if (otherWake == null) continue;
+        final ({DateTime? at, bool estimated}) otherWoke = sleep.wake(other);
+        final DateTime? otherWake = otherWoke.at;
+        // A waking from steps runs late: set like against like.
+        if (otherWake == null || otherWoke.estimated != woke.estimated) {
+          continue;
+        }
         final Duration shift = otherWake.difference(
           DateTime(
             wake.year,
@@ -235,11 +447,13 @@ HoursAfterPlan planHoursAfter(
             !p.isBefore(times.last) ||
             taken.contains(p) ||
             !clearAround(p, clear, clear) ||
-            sleep.check(p, otherWake) != null) {
+            sleep.check(p, otherWoke) != null) {
           continue;
         }
         taken.add(p);
-        points.add(HoursAfterPoint(id, p, control: true));
+        points.add(
+          HoursAfterPoint(id, p, control: true, estimated: woke.estimated),
+        );
         found = true;
         break;
       }
@@ -382,7 +596,8 @@ double stepsPerMinute(
 /// and the model is fitted on days: one row per day of use and per control
 /// day (a day can be both, for different moments), the outcome on an
 /// intercept, a use indicator and the change in steps. Results join the
-/// report's false-discovery family.
+/// report's false-discovery family. A finding counts the days whose waking
+/// came from steps ([HabitFinding.stepWakingDays]).
 List<HabitInsight> hoursAfter({
   required HoursAfterPlan plan,
   required List<HabitUse> uses,
@@ -494,10 +709,11 @@ List<HabitInsight> hoursAfter({
           final List<double> sums = days.putIfAbsent((
             startOfDay(p.at),
             p.control,
-          ), () => <double>[0, 0, 0]);
+          ), () => <double>[0, 0, 0, 0]);
           sums[0] += mean(after) - mean(before);
           sums[1] += stepsAfter - stepsBefore;
           sums[2] += 1;
+          if (p.estimated) sums[3] = 1;
         }
         out.add(
           _judge(
@@ -604,6 +820,7 @@ HabitInsight _judge(
   }
   final double sd = sqrt(sampleVariance(y));
   return HabitFinding(
+    stepWakingDays: days.where((d) => d.value[3] > 0).length,
     habitId: id,
     metricId: metric.id,
     lagDays: 0,

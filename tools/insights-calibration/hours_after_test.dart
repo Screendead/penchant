@@ -11,7 +11,8 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
-import 'package:tracker/insights/health_source.dart' show HealthSampleMetric;
+import 'package:tracker/insights/health_source.dart'
+    show HealthSample, HealthSampleMetric;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/what_follows.dart';
@@ -38,6 +39,7 @@ void scenario(
         s.uses,
         s.through,
         bed: s.samples[HealthSampleMetric.bed.id]!,
+        wakingSteps: s.samples[wakingStepsKey] ?? const <HealthSample>[],
       ),
       uses: s.uses,
       samples: s.samples,
@@ -64,6 +66,8 @@ void scenario(
 // Uses tied to waking, to the clock, to how the person feels, or to bed.
 int? afterWaking(int wake, bool weekend, List<double> w, Random r) =>
     r.nextDouble() < 0.85 ? wake + 15 + r.nextInt(45) : null;
+int? anHourAfterWaking(int wake, bool weekend, List<double> w, Random r) =>
+    r.nextDouble() < 0.85 ? wake + 60 + r.nextInt(60) : null;
 int? laterAfterWaking(int wake, bool weekend, List<double> w, Random r) =>
     r.nextDouble() < 0.85 ? wake + 120 + r.nextInt(60) : null;
 int? weekdaysAtSeven(int wake, bool weekend, List<double> w, Random r) =>
@@ -94,6 +98,7 @@ Synthetic waking(
   double splitNight = 0,
   Map<String, int> frequent = const <String, int>{},
   double Function(String habit, int minutesAfter)? effect,
+  int? stepLag,
 }) => wakingSynthetic(
   seed,
   weekendLieIn: lieIn,
@@ -104,6 +109,7 @@ Synthetic waking(
   habits: <String, UsePolicy>{'Coffee': coffee},
   frequent: frequent,
   effect: effect,
+  stepLag: stepLag,
 );
 
 double noise(Random r) => gaussian(r);
@@ -259,6 +265,56 @@ void main() {
       stdout.writeln(
         'Coffee 15-60 min after waking, lie-in $lieIn, whole report: '
         '$reports of 40 reports with an hours-after finding, $shown in all',
+      );
+    }
+  });
+
+  test('hours after a use, waking from steps', () {
+    const int n = 40;
+    for (final (String name, UsePolicy p) in <(String, UsePolicy)>[
+      ('Coffee 15-60 min after waking', afterWaking),
+      ('Coffee 1-2 h after waking', anHourAfterWaking),
+      ('Coffee 2-3 h after waking', laterAfterWaking),
+      ('Coffee at 22:30, bed at 23:00', atBedtime),
+      ('Coffee 09:00-15:00 at random', midday),
+    ]) {
+      scenario(
+        '$name, no nights, steps 0-30 min after waking',
+        (seed) => waking(seed, p, missingNight: 1, stepLag: 30),
+        seeds: n,
+      );
+    }
+    scenario(
+      'Coffee 1-2 h after waking, nights recorded',
+      (seed) => waking(seed, anHourAfterWaking, stepLag: 30),
+      seeds: n,
+    );
+    for (final (String name, UsePolicy p) in <(String, UsePolicy)>[
+      ('Coffee 15-60 min after waking', afterWaking),
+      ('Coffee 1-2 h after waking', anHourAfterWaking),
+      ('Coffee at 22:30', atBedtime),
+    ]) {
+      int reports = 0, shown = 0;
+      for (int seed = 0; seed < n; seed++) {
+        final Synthetic s = waking(seed, p, missingNight: 1, stepLag: 30);
+        final InsightsReport report = computeInsights(
+          InsightsInput(
+            uses: s.uses,
+            outcomes: const <DailyOutcome>[],
+            from: syntheticStart,
+            through: s.through,
+            samples: s.samples,
+          ),
+        );
+        final int h = report.findings
+            .where((f) => f.kind == InsightKind.hoursAfter)
+            .length;
+        if (h > 0) reports++;
+        shown += h;
+      }
+      stdout.writeln(
+        '$name, no nights, waking from steps, whole report: '
+        '$reports of $n reports with an hours-after finding, $shown in all',
       );
     }
   });

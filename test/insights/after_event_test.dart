@@ -90,10 +90,12 @@ void main() {
       Float64List.fromList(<double>[
         s.microsecondsSinceEpoch.toDouble(),
         e.microsecondsSinceEpoch.toDouble(),
+        6,
       ]),
     );
     expect(got.single.start, s);
     expect(got.single.end, e);
+    expect(got.single.attendees, 6);
     final chunks = calendarChunks(DateTime(2019, 6, 1), DateTime(2026, 11, 11));
     expect(chunks.first.start, DateTime(2019, 6, 1));
     expect(chunks.last.end, DateTime(2026, 11, 11));

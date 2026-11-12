@@ -4,8 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/after_event.dart';
 
-// The Swift side is ios/Runner/CalendarChannel.swift. Only each event's start
-// and end cross the channel, and nothing read here leaves the device.
+// The Swift side is ios/Runner/CalendarChannel.swift. Only each event's start,
+// end and number of people listed cross the channel, and nothing read here
+// leaves the device.
 
 /// What EventKit says the app may do with the calendar.
 enum CalendarAccess {
@@ -64,13 +65,14 @@ class ChannelCalendarSource implements CalendarSource {
   }
 }
 
-/// The channel's answer, start and end in microseconds since 1970 in turn, as
-/// events.
+/// The channel's answer, start and end in microseconds since 1970 and the
+/// number of people listed in turn, as events.
 List<CalendarEvent> calendarEventsFrom(Float64List flat) => <CalendarEvent>[
-  for (int i = 0; i + 1 < flat.length; i += 2)
+  for (int i = 0; i + 2 < flat.length; i += 3)
     CalendarEvent(
       DateTime.fromMicrosecondsSinceEpoch(flat[i].round()),
       DateTime.fromMicrosecondsSinceEpoch(flat[i + 1].round()),
+      attendees: flat[i + 2].round(),
     ),
 ];
 

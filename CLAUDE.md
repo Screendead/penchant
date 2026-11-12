@@ -382,11 +382,12 @@ Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/s
 `device-file/v1/<uid length>:<uid>/<name>` as associated data. `sealedFilesProvider` is null while nobody is signed in or no key is
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
 use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
-it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each,
-`lib/insights/health_sample_cache.dart`; random names, since spans follow use times), and `last-report` (the last
+it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each, steps over the nights Health lacks among them,
+`lib/insights/health_sample_cache.dart`; random names, since spans follow use times), `last-report` (the last
 Insights view with a computed report, `lib/insights/last_report_file.dart` over `report_codec.dart`; a cold open with
 no view in the session shows it, updating, until the fresh one lands; raise `insightsViewFormat` with any change to
-the report's types). The Swift-written
+the report's types), and `places` (Places' visits and names, which nothing can read again: Caches being emptied
+restarts them). The Swift-written
 `Caches/health-sync.json` (anchors and changed days, no values) stays plaintext. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
@@ -478,6 +479,13 @@ rather than wait out Flutter's and Firebase's shutdown (it took seconds). Widget
 resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
 (`splitLayout`, `integration_test/support.dart`).
 
+Reduce motion (Settings: Follow system / Reduce / Full, `reduceMotionProvider`) reaches widgets through
+`ReduceMotionScope` (`MaterialApp.builder`, overriding `MediaQuery.disableAnimations`) and the framework through
+`PenchantBinding` (`lib/design/motion_binding.dart`, made first in `main()`), whose `MotionOverride` resolves
+`SemanticsBinding.disableAnimations`, which every default `AnimationController` (sheets, dialogs, implicit animations)
+scales its duration by; the scope sets it on build. Tests needing it make their own binding with the mixin
+(`test/motion_binding_test.dart`).
+
 Homepage has no tabs; its `PageStorage` bucket keeps Today's day and the Trends selection across rebuilds. Both read
 the current day from `todayProvider`; Today follows it unless the user picked another day, and a log (always now)
 returns a past day to today. Entry times go through `EntryTimeField` (`lib/widgets/time_dial.dart`) in the amount
@@ -513,7 +521,12 @@ Health leaves the device: not Firestore, analytics or crash reports. Insights' d
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
 `HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
 by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
-acknowledges the generation once the store is written. Menstrual flow is read as days with flow (value 1, never the
+acknowledges the generation once the store is written. Hours after a use (`lib/insights/hours_after.dart`) times each moment
+from that day's waking: the night in Health, else, for a day with none (a Watch charged overnight), `wakingFromSteps`:
+the first sustained steps after the longest still span from 18:00 the evening before to 15:00, read one span a night
+under `wakingStepsKey`, apart from the `stepCount` spans around moments. Such moments are never set against a recorded
+night's (that waking runs late), the finding's basis says waking was estimated from steps (`stepWakingDays`), and the
+hour-before comparison leaves them out. Menstrual flow is read as days with flow (value 1, never the
 amount) and is no outcome: `InsightsInput.from` takes it out of the outcomes and `cyclePhases`
 (`lib/insights/cycle_phase.dart`) infers each day's phase from those days alone (menstrual through the bleed, luteal
 the 14 days before the next start, follicular between; only in whole cycles of 24 to 38 days). The five day-after
@@ -529,13 +542,58 @@ round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`Metri
 pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
 
 **Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
-the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start
-and end alone (`lib/insights/calendar_source.dart`, a year per read), which `lib/insights/after_event.dart` compares
-with the hour after. `ios/Runner/RemindersChannel.swift` gives each reminder's due and completion times alone
+the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start,
+end and number of people listed, never who (`lib/insights/calendar_source.dart`, a year per read), which
+`lib/insights/after_event.dart` compares with the hour after, and `lib/insights/calendar_days.dart` makes into daily
+features (time in meetings, events, back-to-back runs, events of `calendarCrowdedAttendees` or more people, events over
+`calendarLongMinutes`), each judged from `calendarDayMinDays` days above 0: whether a habit is used on more of the days
+above the feature's median, with weekend, trend, period and the day before's use held fixed, in the page's family with a
+10-point floor (`CalendarDay`, `report.calendarDays`, cards under What sets it off). The features never become
+outcomes, so nothing compares meetings after a use. `ios/Runner/RemindersChannel.swift` gives each reminder's due and completion times alone
 (`lib/insights/reminders_source.dart`), made into two daily outcomes beside Health's: reminders completed that day
 (`remindersCompleted`) and due that day but not done by its end (`remindersMissed`), each from its first day above 0
 and judged only with `minSessionDays` such days. Both providers turn a failure or a 30 s timeout into nothing, since
-provider errors reach Crashlytics. Like everything in Insights they wait for Health values.
+provider errors reach Crashlytics. Like everything in Insights they wait for Health values. Outside Insights, the
+trigger picker (`showTriggerPicker`'s `at`: the record sheet and editor pass the sheet's time, `logOne`'s "What was
+going on?" the log's; the widget's prompt passes none) reads the hour before the entry once as it opens, only with full
+access already granted, and offers `work/meeting` first under "Suggested from your calendar" when an event of 15 minutes
+or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped).
+
+What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, cards in
+`lib/widgets/trigger_amounts_card.dart`): per habit, the amount per entry on entries tagged a trigger against its other
+tagged entries (untagged ones say nothing, so they are left out, and the card says how many were tagged), each day's
+mean per entry as the unit, in the page's false-discovery family. A trigger counts under its tree path, its top-level
+area, or as its free-text label; `HabitUse.triggers` carries them from the opened entries, so a locked entry reads as
+untagged. Each unarchived habit on no before-a-use, pair (either side), calendar, place or trigger card gets one reason, on a
+drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
+(`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
+has no entries or nothing to compare against.
+
+**Places** (iOS only; Core Location visits, opt-in from a card on Insights: When In Use first, then the upgrade to
+Always, which Apple shows at most once; `NSLocation...UsageDescription` strings, no background mode or paid
+capability). `ios/Runner/PlacesChannel.swift` makes its `CLLocationManager` in `didFinishLaunching`, since the system
+relaunches the app for a visit, and holds each visit (arrival, departure, coordinates, accuracy) in memory only, never
+on disk, until Dart takes it (`lib/insights/places_source.dart`: `take`, then `ack` once sealed; `reported` on each
+visit). `placesProvider` (`lib/providers/places_provider.dart`, built at launch by `MyApp`) drains them at launch, on
+each report and on resume, once a key is loaded, into the sealed device file `places`: `PlaceStore`
+(`lib/insights/places.dart`) clusters visits within 150 m into places numbered from 1 ("Place n" until renamed on the
+card) and keeps the stays. A visit reported while no key is loaded is lost if the process ends first. `atPlace`
+compares, per habit and per place (the 5 with the most waking time), the share of a day's 07:00-23:00 entries logged
+during a stay there with the share of those hours spent there, by day, on days with an entry and an hour both there
+and elsewhere: 14 days at least, in the report's false-discovery family, floor 10 points. Findings show under What
+sets it off; names stay out of the engine and the report codec (results carry the place id).
+
+**Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
+held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city
+(`deviceTimeZoneProvider`, `flutter_timezone`, 2 s timeout; `lib/insights/zone_locations.dart`, generated from the
+system's `zone.tab` by `tools/zone-locations.py`); an unknown zone gives none. One location serves the whole span
+(travel ignored). `sunTimes` is the sunrise equation with NOAA's terms (upper limb, refraction), polar days 24 or 0
+hours. `dayLengths` is a `DayCondition.measure` (a quantity, not levels) in `InsightsInput.conditions`: `_timeTerms`
+adds it as one centred column only when every day has a value, its own inflation against the trend, month and shift
+terms and the habit's column's beside them are both within `maxVarianceInflation`, so it never turns a comparison into
+a refusal by itself. Over months it is nearly all month levels and trend and seldom joins; a finding that held it says
+"compared at the same length of day". No "after sunset" comparison: at a fixed clock hour, a habit logged in the
+evening would look tied to darkness through winter alone.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
