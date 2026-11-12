@@ -1,0 +1,1310 @@
+<title>Penchant Round 17</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of call cards; each card = question, what exists, option buttons (tap to pick), recommendation, what happens if nothing is picked. */
+:root{
+  --paper:#f6f5f2; --card:#ffffff; --ink:#1b1c1f; --muted:#5d606a; --rule:#dcdbd6;
+  --pick:#1b1c1f; --pickInk:#f6f5f2; --rec:#2f6b4f; --warn:#8a5a12;
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --pick:#ecebe7; --pickInk:#141518; --rec:#7cc4a0; --warn:#e0b065; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0}
+.lede{color:var(--muted)}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.call{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:12px;min-width:0}
+.block{display:grid;gap:4px}
+.opts{display:grid;gap:8px}
+.opt{all:unset;box-sizing:border-box;display:grid;gap:3px;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.opt b{font-weight:600}
+.opt .why{font-size:14px}
+.opt .cost{color:var(--muted);font-size:13px}
+.opt .rec{color:var(--rec);font-size:12px;font-family:var(--mono)}
+.opt[aria-pressed="true"]{background:var(--pick);color:var(--pickInk);border-color:var(--pick)}
+.opt[aria-pressed="true"] .cost,.opt[aria-pressed="true"] .rec{color:var(--pickInk)}
+.recline{border-left:3px solid var(--rec);padding-left:10px}
+.nothing{color:var(--muted);font-size:14px}
+ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.saved{font-family:var(--mono);font-size:12px;color:var(--rec);min-height:1em}
+#calls{display:grid;gap:18px}
+@media (prefers-reduced-motion:no-preference){.opt{transition:background .12s,color .12s}}
+
+.mocks{display:grid;gap:14px}
+.mock{display:grid;gap:6px;min-width:0}
+.mock h3{color:var(--ink)}
+.mockscroll{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;padding:12px;background:var(--paper)}
+.shots{display:flex;gap:12px;overflow-x:auto}
+.shots figure{margin:0;display:grid;gap:4px;flex:0 0 auto}
+.shots img{width:200px;border:1px solid var(--rule);border-radius:12px;display:block}
+.shots figcaption{font-size:12px;color:var(--muted)}
+details.mk>summary{cursor:pointer;font-family:var(--mono);font-size:13px;color:var(--muted)}
+details.mk[open]>summary{margin-bottom:10px}
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Round 17: seven calls</h1>
+    <p class="lede">12 November, evening. Four are product calls with mock-ups; three are yes-or-no on work already built. Tap an option to pick it. Your picks save here and I read them back.</p>
+    <p class="status" id="status">Loading saved picks…</p>
+  </header>
+  <section class="call" style="gap:8px">
+    <h2>What finished</h2>
+    <ul>
+      <li><b>Insights says why a habit has nothing under "What sets it off".</b> One line per habit, behind a "Habits with nothing here" row.</li>
+      <li><b>Insights compares your tags.</b> Among entries you tagged, it asks whether a given "What was going on?" tag goes with larger or smaller amounts. On random journals with no real effect, a false card appeared in 7.9% of reports.</li>
+      <li><b>"Hours after a use" works without a recorded night.</b> On days with no sleep in Health (Watch on the charger), waking is estimated from your first steps, and the card says so.</li>
+      <li><b>Calendar: busy days and a tag suggestion.</b> Insights sets each habit against days with more meetings, events, back-to-back blocks, crowded or long meetings. When you log within an hour after a meeting, the tag picker offers "Work › Meeting" first; it is never picked for you.</li>
+      <li><b>Places and daylight.</b> A Places card on Insights asks for location; the iPhone groups its visits into your own places (kept encrypted on the phone, never sent) and asks whether you log a habit at one place more than the time you spend there explains. Findings need a few weeks of visits. Day length is worked out on the phone and held fixed in comparisons.</li>
+      <li><b>Reduce motion now covers everything.</b> Your in-app choice also governs sheets, dialogs and small fades.</li>
+      <li><b>Not possible on your free Apple developer team:</b> Focus, Apple Music and Journaling Suggestions. Each was tried or checked; Apple refuses the permission without a paid team. Screen Time and spending were already blocked.</li>
+      <li><b>None of the above has run on a device yet.</b> Everything is covered by automated tests only.</li>
+    </ul>
+  </section>
+  <div id="calls"></div>
+  <section class="call" style="gap:8px">
+    <h2>For you to do</h2>
+    <ul>
+      <li><b>Mac background sync: one answer.</b> The hidden sync app in your Mac build has now run at least once (macOS created its folder today at 18:11). I cannot see whether it worked. Quit Penchant with Cmd+Q, log once from the menu bar, wait 30 seconds, and check the entry is on the iPhone before reopening the Mac app. Tell me yes or no; on yes I merge that work and update the Mac.</li>
+      <li><b>Try the Places card</b> on the iPhone: Insights, then Places. It asks for location twice (While Using, then Always). Tell me if either prompt does not appear.</li>
+      <li><b>Close GitHub issue 9</b> ("Add time-series graph view", from 2025). The Trends sheet is that graph. I was not permitted to close it.</li>
+      <li><b>6.5 GB of spare Flutter copies</b> sit in <code>~/development/tracker-tools</code> (<code>flutter-3.47.9</code>, <code>flutter-3.44.9</code>). Nothing uses them; I was not permitted to delete them.</li>
+      <li><b>Orphaned guest data:</b> the nightly clean-up still only logs what it would delete. When you have read a few days of its logs in the Firebase console and they look right, say so and I turn deletion on.</li>
+    </ul>
+  </section>
+  <section class="call" style="gap:8px">
+    <h2>Defaults I chose; say if any is wrong</h2>
+    <ul>
+      <li>A tag card needs 7 days with the tag, 7 without, and a 20% difference.</li>
+      <li>Places: waking hours fixed at 07:00 to 23:00; visits within 150 m are one place; the five places with most time are judged; a visit that arrives while the phone is locked and the journal key cannot be read is lost.</li>
+      <li>Calendar: "busy" means above your own median; "crowded" is 5 or more people; "long" is over 45 minutes.</li>
+      <li>Waking from steps: 100 steps in 30 minutes after at least 3 still hours.</li>
+      <li>No "use after sunset" finding: it would flag any evening habit in winter. An honest version needs months of data.</li>
+      <li>Still as before: no "What was going on?" prompt after a Siri or Shortcuts log.</li>
+    </ul>
+  </section>
+</div>
+<template id="mock-capture-detail-a"><!-- Option A, leave as is: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdA">
+<style>
+.cdA{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdA{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdA *{box-sizing:border-box}
+.cdA .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdA .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdA .today{padding:14px 18px 8px;position:relative}
+.cdA .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdA .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdA .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdA .row .n{flex:1}.cdA .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdA .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdA .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdA .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdA .snack b{font-weight:600}.cdA .snack .m{flex:1}
+.cdA .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdA .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdA .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdA .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdA .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdA .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdA .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdA .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdA .amt{text-align:center}.cdA .amt .v{font:500 42px/1 var(--fm)}.cdA .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdA .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdA .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdA .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdA .time .t{font:500 20px/1 var(--fm)}.cdA .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdA .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdA .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdA .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdA .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdA .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdA .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdA .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdA .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdA .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdA .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdA .note.filled{color:var(--text)}
+.cdA .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdA .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdA .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdA .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdA .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdA .go .mn{font-family:var(--fm);font-size:17px}
+.cdA .pair{display:flex;gap:10px;margin-top:18px}.cdA .pair .go{flex:1;margin:0}
+.cdA .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdA .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdA .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdA .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdA .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdA .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdA .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdA .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">One tap on Wine +</div><div class="today">
+  <div class="dial"><span class="bead" style="background:var(--d1);left:118px;top:22px"></span><span class="bead" style="background:var(--d1);left:142px;top:52px"></span><span class="bead" style="background:var(--d2);left:62px;top:146px;width:12px;height:12px"></span><span class="bead" style="background:var(--d3);left:20px;top:110px;width:16px;height:16px"></span></div>
+  <div class="row"><span class="dot" style="background:var(--d1)"></span><span class="n">Coffee</span><span class="c">2</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d2)"></span><span class="n">Cigarettes</span><span class="c">1</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d3)"></span><span class="n">Wine</span><span class="c">1</span><span class="plus">+</span></div>
+</div>
+<div class="snack"><div class="m">Logged <b>1 glass</b> of Wine at <b>21:40</b><span class="act">What was going on?</span></div><span class="undo">Undo 8</span></div></div><div class="ph"><div class="cap">Amount sheet (hold a Log wedge)</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr"><span class="dot" style="background:var(--d3);width:16px;height:16px"></span>Wine<span class="x">&#x2715;</span></div>
+  <div class="stepper"><span class="sb">&minus;</span><div class="amt"><div class="v">1</div><div class="u">glass</div></div><span class="sb">+</span></div>
+  <div class="time"><span class="mini"></span><div><div class="t">21:40</div><div class="d">Today, Thursday 12 November</div></div></div>
+  <div class="chips" style="margin-top:12px"><span class="chip ghost">What was going on? (optional)</span></div>
+  <div class="go"><span>Log <span class="mn">1</span> glass at <span class="mn">21:40</span></span></div>
+</div></div>
+<p class="legend">As built today: the Undo bar offers the trigger picker; the amount sheet asks amount, time and triggers.</p>
+</div>
+</template>
+<template id="mock-capture-detail-b"><!-- Option B, silent fields only: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdB">
+<style>
+.cdB{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdB{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdB *{box-sizing:border-box}
+.cdB .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdB .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdB .today{padding:14px 18px 8px;position:relative}
+.cdB .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdB .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdB .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdB .row .n{flex:1}.cdB .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdB .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdB .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdB .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdB .snack b{font-weight:600}.cdB .snack .m{flex:1}
+.cdB .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdB .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdB .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdB .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdB .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdB .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdB .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdB .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdB .amt{text-align:center}.cdB .amt .v{font:500 42px/1 var(--fm)}.cdB .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdB .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdB .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdB .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdB .time .t{font:500 20px/1 var(--fm)}.cdB .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdB .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdB .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdB .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdB .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdB .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdB .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdB .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdB .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdB .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdB .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdB .note.filled{color:var(--text)}
+.cdB .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdB .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdB .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdB .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdB .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdB .go .mn{font-family:var(--fm);font-size:17px}
+.cdB .pair{display:flex;gap:10px;margin-top:18px}.cdB .pair .go{flex:1;margin:0}
+.cdB .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdB .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdB .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdB .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdB .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdB .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdB .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdB .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">One tap on Wine +, screen unchanged</div><div class="today">
+  <div class="dial"><span class="bead" style="background:var(--d1);left:118px;top:22px"></span><span class="bead" style="background:var(--d1);left:142px;top:52px"></span><span class="bead" style="background:var(--d2);left:62px;top:146px;width:12px;height:12px"></span><span class="bead" style="background:var(--d3);left:20px;top:110px;width:16px;height:16px"></span></div>
+  <div class="row"><span class="dot" style="background:var(--d1)"></span><span class="n">Coffee</span><span class="c">2</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d2)"></span><span class="n">Cigarettes</span><span class="c">1</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d3)"></span><span class="n">Wine</span><span class="c">1</span><span class="plus">+</span></div>
+</div>
+<div class="snack"><div class="m">Logged <b>1 glass</b> of Wine at <b>21:40</b><span class="act">What was going on?</span></div><span class="undo">Undo 8</span></div></div><div class="ph"><div class="cap">Amount sheet, unchanged</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr"><span class="dot" style="background:var(--d3);width:16px;height:16px"></span>Wine<span class="x">&#x2715;</span></div>
+  <div class="stepper"><span class="sb">&minus;</span><div class="amt"><div class="v">1</div><div class="u">glass</div></div><span class="sb">+</span></div>
+  <div class="time"><span class="mini"></span><div><div class="t">21:40</div><div class="d">Today, Thursday 12 November</div></div></div>
+  <div class="chips" style="margin-top:12px"><span class="chip ghost">What was going on? (optional)</span></div>
+  <div class="go"><span>Log <span class="mn">1</span> glass at <span class="mn">21:40</span></span></div>
+</div></div><dl class="silent"><dt style="margin-top:0">Stored with each new entry, never shown</dt>
+<dt>Time zone</dt><dd>Europe/London</dd>
+<dt>Written at</dt><dd>21:40:12, live (not filled in later)</dd>
+<dt>How it was logged</dt><dd>one tap on a tally</dd></dl>
+<p class="legend">Nothing on screen changes. The dashed box beside the phones is a caption for this page, not part of the app.</p>
+</div>
+</template>
+<template id="mock-capture-detail-c"><!-- Option C, urge and note in the existing steps: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdC">
+<style>
+.cdC{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdC{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdC *{box-sizing:border-box}
+.cdC .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdC .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdC .today{padding:14px 18px 8px;position:relative}
+.cdC .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdC .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdC .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdC .row .n{flex:1}.cdC .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdC .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdC .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdC .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdC .snack b{font-weight:600}.cdC .snack .m{flex:1}
+.cdC .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdC .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdC .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdC .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdC .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdC .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdC .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdC .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdC .amt{text-align:center}.cdC .amt .v{font:500 42px/1 var(--fm)}.cdC .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdC .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdC .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdC .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdC .time .t{font:500 20px/1 var(--fm)}.cdC .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdC .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdC .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdC .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdC .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdC .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdC .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdC .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdC .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdC .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdC .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdC .note.filled{color:var(--text)}
+.cdC .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdC .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdC .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdC .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdC .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdC .go .mn{font-family:var(--fm);font-size:17px}
+.cdC .pair{display:flex;gap:10px;margin-top:18px}.cdC .pair .go{flex:1;margin:0}
+.cdC .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdC .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdC .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdC .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdC .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdC .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdC .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdC .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">Amount sheet: two optional rows added</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr"><span class="dot" style="background:var(--d3);width:16px;height:16px"></span>Wine<span class="x">&#x2715;</span></div>
+  <div class="stepper"><span class="sb">&minus;</span><div class="amt"><div class="v">1</div><div class="u">glass</div></div><span class="sb">+</span></div>
+  <div class="time"><span class="mini"></span><div><div class="t">21:40</div><div class="d">Today, Thursday 12 November</div></div></div>
+  <div class="chips" style="margin-top:12px"><span class="chip">Winding down &#x2715;</span><span class="chip">Home &#x2715;</span><span class="chip ghost">Change triggers</span></div><div class="new"><div class="lbl">How strong was the urge? <span class="tag">OPTIONAL</span></div>
+  <div class="scale"><span>1</span><span>2</span><span class="on">3</span><span>4</span><span>5</span></div>
+  <div class="ends"><span>Barely</span><span>Couldn&rsquo;t not</span></div></div><div class="new"><div class="lbl">Note <span class="tag">OPTIONAL</span></div><div class="note filled">Long day, finished the bottle from Sunday</div></div>
+  <div class="go"><span>Log <span class="mn">1</span> glass at <span class="mn">21:40</span></span></div>
+</div></div><div class="ph"><div class="cap">After a one-tap log, the Undo bar&rsquo;s &ldquo;What was going on?&rdquo;</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr" style="font-size:22px;line-height:28px">What was going on?<span class="x">&#x2715;</span></div>
+  <p class="sub">Optional. Tap any that fit.</p>
+  <div class="lbl">Usual for Wine</div>
+  <div class="chips"><span class="chip on">Winding down</span><span class="chip">With a meal</span><span class="chip on">Home</span><span class="chip">With friends</span><span class="chip">Stressed</span></div>
+  <div class="lbl">Or browse</div>
+  <div class="chips"><span class="chip">Social</span><span class="chip">Feeling</span><span class="chip">Work</span><span class="chip">Body</span><span class="chip">Routine</span><span class="chip">Place</span><span class="chip">Craving</span></div>
+  <div class="new"><div class="lbl">How strong was the urge? <span class="tag">OPTIONAL</span></div>
+  <div class="scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+  <div class="ends"><span>Barely</span><span>Couldn&rsquo;t not</span></div></div><div class="new"><div class="lbl">Note <span class="tag">OPTIONAL</span></div><div class="note">Anything to remember</div></div>
+  <div class="pair"><span class="ghostbtn">Undo log</span><div class="go">Done</div></div>
+</div></div>
+<p class="legend">Dashed outlines mark what is new. From the amount sheet the rows sit in the sheet itself, so the picker it opens shows triggers only. A one-tap log is still one tap, and the Undo bar is unchanged. The silent fields of option B come with it.</p>
+</div>
+</template>
+<template id="mock-capture-detail-d"><!-- Option D, full detail sheet: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdD">
+<style>
+.cdD{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdD{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdD *{box-sizing:border-box}
+.cdD .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdD .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdD .today{padding:14px 18px 8px;position:relative}
+.cdD .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdD .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdD .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdD .row .n{flex:1}.cdD .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdD .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdD .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdD .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdD .snack b{font-weight:600}.cdD .snack .m{flex:1}
+.cdD .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdD .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdD .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdD .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdD .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdD .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdD .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdD .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdD .amt{text-align:center}.cdD .amt .v{font:500 42px/1 var(--fm)}.cdD .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdD .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdD .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdD .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdD .time .t{font:500 20px/1 var(--fm)}.cdD .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdD .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdD .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdD .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdD .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdD .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdD .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdD .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdD .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdD .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdD .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdD .note.filled{color:var(--text)}
+.cdD .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdD .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdD .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdD .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdD .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdD .go .mn{font-family:var(--fm);font-size:17px}
+.cdD .pair{display:flex;gap:10px;margin-top:18px}.cdD .pair .go{flex:1;margin:0}
+.cdD .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdD .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdD .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdD .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdD .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdD .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdD .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdD .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">One tap on Wine +</div><div class="today">
+  <div class="dial"><span class="bead" style="background:var(--d1);left:118px;top:22px"></span><span class="bead" style="background:var(--d1);left:142px;top:52px"></span><span class="bead" style="background:var(--d2);left:62px;top:146px;width:12px;height:12px"></span><span class="bead" style="background:var(--d3);left:20px;top:110px;width:16px;height:16px"></span></div>
+  <div class="row"><span class="dot" style="background:var(--d1)"></span><span class="n">Coffee</span><span class="c">2</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d2)"></span><span class="n">Cigarettes</span><span class="c">1</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d3)"></span><span class="n">Wine</span><span class="c">1</span><span class="plus">+</span></div>
+</div>
+<div class="snack"><div class="m">Logged <b>1 glass</b> of Wine at <b>21:40</b><span class="act">Add details</span></div><span class="undo">Undo 8</span></div></div><div class="ph"><div class="cap">Add details: every field</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr" style="font-size:22px;line-height:28px">1 glass of Wine, 21:40<span class="x">&#x2715;</span></div>
+  <p class="sub">All optional. Skip any.</p>
+  <div class="lbl">What was going on?</div><div class="chips"><span class="chip on">Winding down</span><span class="chip">With a meal</span><span class="chip">Stressed</span><span class="chip ghost">More</span></div>
+  <div class="lbl">Urge, 1 to 5</div><div class="scale"><span>1</span><span>2</span><span class="on">3</span><span>4</span><span>5</span></div>
+  <div class="lbl">Mood going in, 1 to 5</div><div class="scale"><span>1</span><span class="on">2</span><span>3</span><span>4</span><span>5</span></div>
+  <div class="lbl">With</div><div class="seg"><span class="chip on">Alone</span><span class="chip">Partner</span><span class="chip">Friends</span><span class="chip">Colleagues</span></div>
+  <div class="lbl">Where</div><div class="seg"><span class="chip on">Home</span><span class="chip">Work</span><span class="chip">Out</span><span class="chip">Travelling</span></div>
+  <div class="two" style="margin-top:14px"><div class="field"><small>Lasted</small>&ndash; min</div><div class="field"><small>Cost</small>&pound; &ndash;</div></div>
+  <div class="lbl">Note</div><div class="note">Anything to remember</div>
+  <div class="pair"><span class="ghostbtn">Undo log</span><div class="go">Save details</div></div>
+</div></div>
+<p class="legend">The bar&rsquo;s second action becomes &ldquo;Add details&rdquo;; the amount sheet would carry the same rows. &ldquo;With&rdquo; and &ldquo;Where&rdquo; repeat trigger choices that exist today (On my own, With friends, Home, Travelling). Silent fields of option B included.</p>
+</div>
+</template>
+<template id="mock-goals-a"><div class="gA"><style>
+.gA{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--i1:#8F5600;--i2:#B03E1C;--i3:#B42A37;--clear:#E3EFE4;--clearInk:#276B43;--display:"Red Hat Display",system-ui,-apple-system,sans-serif;--txt:"Red Hat Text",system-ui,-apple-system,sans-serif;--mono:"Red Hat Mono",ui-monospace,Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;font-family:var(--txt);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.gA{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--i1:#FFB347;--i2:#FF7A59;--i3:#F0737C;--clear:#15241B;--clearInk:#9ED8B0}}
+.gA *{box-sizing:border-box}
+.gA .ph{width:390px;max-width:100%;background:var(--bg);border-radius:36px;border:1px solid var(--line);padding:18px 16px 22px;display:grid;gap:12px;align-content:start;overflow:hidden}
+.gA .cap{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gA .ttl{font-family:var(--display);font-weight:900;font-size:26px;line-height:32px;letter-spacing:-.3px;margin:0}
+.gA .sub{font-size:13px;color:var(--muted);line-height:18px}
+.gA .tallies{display:grid;gap:0}
+.gA .tr{display:grid;grid-template-columns:10px 1fr auto 40px;align-items:center;column-gap:10px;min-height:44px;padding-left:10px}
+.gA .pip{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.gA .tr.zero .pip{opacity:.4} .gA .tr.zero .nm{color:var(--muted)}
+.gA .nm{font-weight:500;font-size:15.5px}
+.gA .tot{display:flex;align-items:baseline;gap:6px;justify-content:flex-end}
+.gA .n{font-family:var(--mono);font-weight:500;font-size:15px;color:var(--ci)}
+.gA .tr.zero .n{color:var(--muted)}
+.gA .u{font-size:13.5px;color:var(--muted);min-width:58px}
+.gA .of{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.gA .plus{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font-size:18px;color:var(--text);justify-self:end}
+.gA .track{grid-column:2/4;position:relative;height:3px;border-radius:2px;background:var(--line);margin:-6px 0 6px}
+.gA .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--c);opacity:.75}
+.gA .tick{position:absolute;top:-4px;bottom:-4px;width:1.5px;background:var(--text);opacity:.7}
+.gA .card{background:var(--surface);border-radius:24px;padding:16px;display:grid;gap:10px;border:1px solid var(--line)}
+.gA .chips{display:flex;gap:6px;flex-wrap:wrap}
+.gA .chip{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.gA .chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.gA .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gA .stat{background:var(--surface2);border-radius:18px;padding:10px}
+.gA .stat b{display:block;font-family:var(--mono);font-weight:500;font-size:20px;color:var(--ci)}
+.gA .stat span{font-size:12px;color:var(--muted)}
+.gA svg text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.gA .field{display:grid;gap:4px;border-bottom:1px solid var(--outline);padding:6px 0 8px}
+.gA .field label{font-size:12px;color:var(--muted)}
+.gA .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--outline);border-radius:999px;overflow:hidden}
+.gA .seg span{text-align:center;font-size:13px;font-weight:600;padding:7px 0}
+.gA .seg .on{background:var(--accent);color:var(--onAccent)}
+.gA .step{display:flex;align-items:center;justify-content:space-between}
+.gA .step .big{font-family:var(--mono);font-weight:500;font-size:28px}
+.gA .btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--accent);font-weight:600;font-size:14px;color:var(--text)}
+.gA .btn.fill2{background:var(--accent);color:var(--onAccent)}
+.gA .head{font-family:var(--display);font-weight:700;font-size:17px;line-height:22px}
+.gA .body{font-size:15px;line-height:21px}
+.gA .basis{font-size:13px;color:var(--muted)}
+.gA .note{font-size:13px;color:var(--muted);line-height:18px;border-left:3px solid var(--outline);padding-left:8px}
+.gA .toast{background:var(--accent);color:var(--onAccent);border-radius:16px;padding:10px 14px;font-size:14px;display:flex;justify-content:space-between}
+</style><section class="ph"><div class="cap">Today · Thu 12 Nov</div>
+<div style="display:flex;justify-content:space-between;align-items:center"><span class="ttl" style="font-size:21px">Penchant</span><span class="sub">Synced</span></div>
+<svg viewBox="0 0 200 200" width="190" style="justify-self:center"><circle cx="100" cy="100" r="78" fill="var(--surface)" stroke="var(--line)"/><circle cx="100" cy="100" r="14" fill="var(--surface2)"/><line x1="100" y1="100" x2="38" y2="132" stroke="var(--text)" stroke-width="2"/>
+<circle cx="146" cy="44" r="7" fill="var(--d1)"/><circle cx="168" cy="82" r="7" fill="var(--d1)"/><circle cx="150" cy="150" r="7" fill="var(--d1)"/><circle cx="60" cy="160" r="8" fill="var(--d2)"/><circle cx="48" cy="148" r="6" fill="var(--d2)"/><circle cx="132" cy="168" r="6" fill="var(--d3)"/><circle cx="84" cy="176" r="6" fill="var(--d3)"/><circle cx="40" cy="120" r="6" fill="var(--d3)"/><circle cx="112" cy="178" r="6" fill="var(--d3)"/>
+<text x="100" y="18" text-anchor="middle">00</text><text x="190" y="104" text-anchor="middle">06</text><text x="100" y="196" text-anchor="middle">12</text><text x="10" y="104" text-anchor="middle">18</text></svg>
+<div class="tallies"><div class="tr" style="--c:var(--d1);--ci:var(--i1)"><span class="pip"></span><span class="nm">Coffee</span><span class="tot"><span class="n">3</span><span class="u">cups</span></span><span class="plus">+</span></div><div class="tr" style="--c:var(--d2);--ci:var(--i2)"><span class="pip"></span><span class="nm">Wine</span><span class="tot"><span class="n">2</span><span class="u">glasses</span></span><span class="plus">+</span></div><div class="tr" style="--c:var(--d3);--ci:var(--i3)"><span class="pip"></span><span class="nm">Cigarettes</span><span class="tot"><span class="n">4</span><span class="u">cigarettes</span></span><span class="plus">+</span></div></div></section><section class="ph"><div class="cap">Trends sheet, opened</div><div class="card" style="--c:var(--d2);--ci:var(--i2)">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ttl" style="font-size:22px">Trends</span><span class="sub">Close</span></div>
+<div class="chips"><span class="chip">7 d</span><span class="chip on">30 d</span><span class="chip">90 d</span><span class="chip">Year</span></div>
+<div class="chips"><span class="chip">Coffee</span><span class="chip on">Wine</span><span class="chip">Cigarettes</span></div>
+<svg viewBox="0 0 358 170" width="100%" role="img" aria-label="Wine, glasses a day over 30 days"><line x1="22" x2="352" y1="152.0" y2="152.0" stroke="var(--line)"/><text x="16" y="155.0" text-anchor="end">0</text><line x1="22" x2="352" y1="104.0" y2="104.0" stroke="var(--line)"/><text x="16" y="107.0" text-anchor="end">2</text><line x1="22" x2="352" y1="56.0" y2="56.0" stroke="var(--line)"/><text x="16" y="59.0" text-anchor="end">4</text><line x1="22" x2="352" y1="8.0" y2="8.0" stroke="var(--line)"/><text x="16" y="11.0" text-anchor="end">6</text><line x1="352.0" x2="352.0" y1="8" y2="152" stroke="var(--outline)"/><path d="M22.0,104.0 L33.4,152.0 L44.8,80.0 L56.1,128.0 L67.5,56.0 L78.9,104.0 L90.3,152.0 L101.7,104.0 L113.0,80.0 L124.4,32.0 L135.8,128.0 L147.2,152.0 L158.6,104.0 L169.9,104.0 L181.3,80.0 L192.7,56.0 L204.1,128.0 L215.4,152.0 L226.8,104.0 L238.2,80.0 L249.6,104.0 L261.0,128.0 L272.3,152.0 L283.7,56.0 L295.1,80.0 L306.5,104.0 L317.9,152.0 L329.2,128.0 L340.6,104.0 L352.0,104.0" fill="none" stroke="var(--c)" stroke-opacity=".45" stroke-width="1.5"/><path d="M22.0,104.0 L33.4,128.0 L44.8,112.0 L56.1,116.0 L67.5,104.0 L78.9,104.0 L90.3,110.9 L101.7,110.9 L113.0,100.6 L124.4,93.7 L135.8,93.7 L147.2,107.4 L158.6,107.4 L169.9,100.6 L181.3,97.1 L192.7,93.7 L204.1,107.4 L215.4,110.9 L226.8,104.0 L238.2,100.6 L249.6,100.6 L261.0,107.4 L272.3,121.1 L283.7,110.9 L295.1,100.6 L306.5,100.6 L317.9,110.9 L329.2,114.3 L340.6,110.9 L352.0,104.0" fill="none" stroke="var(--ci)" stroke-width="2.5" stroke-linecap="round"/><text x="33.4" y="166" text-anchor="middle">15 Oct</text><text x="113.0" y="166" text-anchor="middle">22 Oct</text><text x="192.7" y="166" text-anchor="middle">29 Oct</text><text x="272.3" y="166" text-anchor="middle">5 Nov</text><text x="352.0" y="166" text-anchor="middle">12 Nov</text></svg>
+<div class="sub">Average over 7 days: 1.9 glasses a day</div>
+<div class="stats"><div class="stat"><b>56</b><span>total</span></div><div class="stat"><b>1.9</b><span>a day</span></div><div class="stat"><b>5</b><span>peak</span></div></div>
+</div></section><section class="ph"><div class="cap">Insights · as built today</div><div class="card" style="--c:var(--d2);--ci:var(--i2)">
+<div class="head">Wine and deep sleep</div>
+<div class="body">On days with 3 glasses or more logged for Wine, your deep sleep that night averages 18 min less than on days with fewer.</div>
+<div class="basis">From 74 days with Wine, 21 of them with 3 glasses or more</div></div><div class="note">Nothing to set, nothing drawn. The journal records; Insights says where a line in the amount shows up in your sleep; what you do with it is yours.</div></section></div>
+</template>
+<template id="mock-goals-b"><div class="gB"><style>
+.gB{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--i1:#8F5600;--i2:#B03E1C;--i3:#B42A37;--clear:#E3EFE4;--clearInk:#276B43;--display:"Red Hat Display",system-ui,-apple-system,sans-serif;--txt:"Red Hat Text",system-ui,-apple-system,sans-serif;--mono:"Red Hat Mono",ui-monospace,Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;font-family:var(--txt);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.gB{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--i1:#FFB347;--i2:#FF7A59;--i3:#F0737C;--clear:#15241B;--clearInk:#9ED8B0}}
+.gB *{box-sizing:border-box}
+.gB .ph{width:390px;max-width:100%;background:var(--bg);border-radius:36px;border:1px solid var(--line);padding:18px 16px 22px;display:grid;gap:12px;align-content:start;overflow:hidden}
+.gB .cap{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gB .ttl{font-family:var(--display);font-weight:900;font-size:26px;line-height:32px;letter-spacing:-.3px;margin:0}
+.gB .sub{font-size:13px;color:var(--muted);line-height:18px}
+.gB .tallies{display:grid;gap:0}
+.gB .tr{display:grid;grid-template-columns:10px 1fr auto 40px;align-items:center;column-gap:10px;min-height:44px;padding-left:10px}
+.gB .pip{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.gB .tr.zero .pip{opacity:.4} .gB .tr.zero .nm{color:var(--muted)}
+.gB .nm{font-weight:500;font-size:15.5px}
+.gB .tot{display:flex;align-items:baseline;gap:6px;justify-content:flex-end}
+.gB .n{font-family:var(--mono);font-weight:500;font-size:15px;color:var(--ci)}
+.gB .tr.zero .n{color:var(--muted)}
+.gB .u{font-size:13.5px;color:var(--muted);min-width:58px}
+.gB .of{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.gB .plus{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font-size:18px;color:var(--text);justify-self:end}
+.gB .track{grid-column:2/4;position:relative;height:3px;border-radius:2px;background:var(--line);margin:-6px 0 6px}
+.gB .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--c);opacity:.75}
+.gB .tick{position:absolute;top:-4px;bottom:-4px;width:1.5px;background:var(--text);opacity:.7}
+.gB .card{background:var(--surface);border-radius:24px;padding:16px;display:grid;gap:10px;border:1px solid var(--line)}
+.gB .chips{display:flex;gap:6px;flex-wrap:wrap}
+.gB .chip{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.gB .chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.gB .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gB .stat{background:var(--surface2);border-radius:18px;padding:10px}
+.gB .stat b{display:block;font-family:var(--mono);font-weight:500;font-size:20px;color:var(--ci)}
+.gB .stat span{font-size:12px;color:var(--muted)}
+.gB svg text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.gB .field{display:grid;gap:4px;border-bottom:1px solid var(--outline);padding:6px 0 8px}
+.gB .field label{font-size:12px;color:var(--muted)}
+.gB .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--outline);border-radius:999px;overflow:hidden}
+.gB .seg span{text-align:center;font-size:13px;font-weight:600;padding:7px 0}
+.gB .seg .on{background:var(--accent);color:var(--onAccent)}
+.gB .step{display:flex;align-items:center;justify-content:space-between}
+.gB .step .big{font-family:var(--mono);font-weight:500;font-size:28px}
+.gB .btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--accent);font-weight:600;font-size:14px;color:var(--text)}
+.gB .btn.fill2{background:var(--accent);color:var(--onAccent)}
+.gB .head{font-family:var(--display);font-weight:700;font-size:17px;line-height:22px}
+.gB .body{font-size:15px;line-height:21px}
+.gB .basis{font-size:13px;color:var(--muted)}
+.gB .note{font-size:13px;color:var(--muted);line-height:18px;border-left:3px solid var(--outline);padding-left:8px}
+.gB .toast{background:var(--accent);color:var(--onAccent);border-radius:16px;padding:10px 14px;font-size:14px;display:flex;justify-content:space-between}
+</style><section class="ph"><div class="cap">Today · Thu 12 Nov</div>
+<div style="display:flex;justify-content:space-between;align-items:center"><span class="ttl" style="font-size:21px">Penchant</span><span class="sub">Synced</span></div>
+<svg viewBox="0 0 200 200" width="190" style="justify-self:center"><circle cx="100" cy="100" r="78" fill="var(--surface)" stroke="var(--line)"/><circle cx="100" cy="100" r="14" fill="var(--surface2)"/><line x1="100" y1="100" x2="38" y2="132" stroke="var(--text)" stroke-width="2"/>
+<circle cx="146" cy="44" r="7" fill="var(--d1)"/><circle cx="168" cy="82" r="7" fill="var(--d1)"/><circle cx="150" cy="150" r="7" fill="var(--d1)"/><circle cx="60" cy="160" r="8" fill="var(--d2)"/><circle cx="48" cy="148" r="6" fill="var(--d2)"/><circle cx="132" cy="168" r="6" fill="var(--d3)"/><circle cx="84" cy="176" r="6" fill="var(--d3)"/><circle cx="40" cy="120" r="6" fill="var(--d3)"/><circle cx="112" cy="178" r="6" fill="var(--d3)"/>
+<text x="100" y="18" text-anchor="middle">00</text><text x="190" y="104" text-anchor="middle">06</text><text x="100" y="196" text-anchor="middle">12</text><text x="10" y="104" text-anchor="middle">18</text></svg>
+<div class="tallies"><div class="tr" style="--c:var(--d1);--ci:var(--i1)"><span class="pip"></span><span class="nm">Coffee</span><span class="tot"><span class="n">3</span><span class="u">cups</span></span><span class="plus">+</span></div><div class="tr" style="--c:var(--d2);--ci:var(--i2)"><span class="pip"></span><span class="nm">Wine</span><span class="tot"><span class="n">2</span><span class="u">glasses</span><span class="of">of 3</span></span><span class="plus">+</span></div><div class="tr" style="min-height:0;--c:var(--d2);--ci:var(--i2)"><span></span><div class="track"><div class="fill" style="width:50%"></div><div class="tick" style="left:75%"></div></div></div><div class="tr" style="--c:var(--d3);--ci:var(--i3)"><span class="pip"></span><span class="nm">Cigarettes</span><span class="tot"><span class="n">4</span><span class="u">cigarettes</span><span class="of">22 of 30 · 7 days</span></span><span class="plus">+</span></div><div class="tr" style="min-height:0;--c:var(--d3);--ci:var(--i3)"><span></span><div class="track"><div class="fill" style="width:55%"></div><div class="tick" style="left:75%"></div></div></div></div><div class="note">Coffee has no line, so its row is exactly as today. Wine: a day line of 3, 2 logged. Cigarettes: a week line of 30, 22 in the last 7 days (the same rolling weeks Trends counts back from today), 4 of them today. Going over just runs the bar past the tick, in the same colour.</div></section><section class="ph"><div class="cap">Trends sheet, opened</div><div class="card" style="--c:var(--d2);--ci:var(--i2)">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ttl" style="font-size:22px">Trends</span><span class="sub">Close</span></div>
+<div class="chips"><span class="chip">7 d</span><span class="chip on">30 d</span><span class="chip">90 d</span><span class="chip">Year</span></div>
+<div class="chips"><span class="chip">Coffee</span><span class="chip on">Wine</span><span class="chip">Cigarettes</span></div>
+<svg viewBox="0 0 358 170" width="100%" role="img" aria-label="Wine, glasses a day over 30 days, with a dashed line at 3"><line x1="22" x2="352" y1="152.0" y2="152.0" stroke="var(--line)"/><text x="16" y="155.0" text-anchor="end">0</text><line x1="22" x2="352" y1="104.0" y2="104.0" stroke="var(--line)"/><text x="16" y="107.0" text-anchor="end">2</text><line x1="22" x2="352" y1="56.0" y2="56.0" stroke="var(--line)"/><text x="16" y="59.0" text-anchor="end">4</text><line x1="22" x2="352" y1="8.0" y2="8.0" stroke="var(--line)"/><text x="16" y="11.0" text-anchor="end">6</text><line x1="352.0" x2="352.0" y1="8" y2="152" stroke="var(--outline)"/><line x1="22" x2="352" y1="80.0" y2="80.0" stroke="var(--text)" stroke-opacity=".7" stroke-width="1.25" stroke-dasharray="4 4"/><rect x="296" y="63.0" width="56" height="14" rx="7" fill="var(--surface)"/><text x="350" y="73.0" text-anchor="end" style="fill:var(--text)">your line 3</text><path d="M22.0,104.0 L33.4,152.0 L44.8,80.0 L56.1,128.0 L67.5,56.0 L78.9,104.0 L90.3,152.0 L101.7,104.0 L113.0,80.0 L124.4,32.0 L135.8,128.0 L147.2,152.0 L158.6,104.0 L169.9,104.0 L181.3,80.0 L192.7,56.0 L204.1,128.0 L215.4,152.0 L226.8,104.0 L238.2,80.0 L249.6,104.0 L261.0,128.0 L272.3,152.0 L283.7,56.0 L295.1,80.0 L306.5,104.0 L317.9,152.0 L329.2,128.0 L340.6,104.0 L352.0,104.0" fill="none" stroke="var(--c)" stroke-opacity=".45" stroke-width="1.5"/><path d="M22.0,104.0 L33.4,128.0 L44.8,112.0 L56.1,116.0 L67.5,104.0 L78.9,104.0 L90.3,110.9 L101.7,110.9 L113.0,100.6 L124.4,93.7 L135.8,93.7 L147.2,107.4 L158.6,107.4 L169.9,100.6 L181.3,97.1 L192.7,93.7 L204.1,107.4 L215.4,110.9 L226.8,104.0 L238.2,100.6 L249.6,100.6 L261.0,107.4 L272.3,121.1 L283.7,110.9 L295.1,100.6 L306.5,100.6 L317.9,110.9 L329.2,114.3 L340.6,110.9 L352.0,104.0" fill="none" stroke="var(--ci)" stroke-width="2.5" stroke-linecap="round"/><text x="33.4" y="166" text-anchor="middle">15 Oct</text><text x="113.0" y="166" text-anchor="middle">22 Oct</text><text x="192.7" y="166" text-anchor="middle">29 Oct</text><text x="272.3" y="166" text-anchor="middle">5 Nov</text><text x="352.0" y="166" text-anchor="middle">12 Nov</text></svg>
+<div class="sub">Average over 7 days: 1.9 glasses a day</div>
+<div class="stats"><div class="stat"><b>56</b><span>total</span></div><div class="stat"><b>1.9</b><span>a day</span></div><div class="stat"><b>4</b><span>days over your line</span></div></div>
+</div></section><section class="ph"><div class="cap">Edit Habit · Wine</div>
+<div class="field"><label>Habit Name</label><span>Wine</span></div>
+<div class="field"><label>Unit</label><span>Glasses</span></div>
+<div class="field"><label>Category</label><span>Alcohol</span></div>
+<div class="field" style="border:0;gap:10px"><label>Your line (optional)</label>
+<div class="seg"><span>None</span><span class="on">A day</span><span>A week</span></div>
+<div class="step"><span class="plus">&minus;</span><span><span class="big">3</span> <span class="sub">glasses a day</span></span><span class="plus">+</span></div>
+<div class="sub">Shown as a mark on Today and a dashed line in Trends. Nothing else changes: no alerts, no streaks, no colour for going over.</div></div></section></div>
+</template>
+<template id="mock-goals-c"><div class="gC"><style>
+.gC{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--i1:#8F5600;--i2:#B03E1C;--i3:#B42A37;--clear:#E3EFE4;--clearInk:#276B43;--display:"Red Hat Display",system-ui,-apple-system,sans-serif;--txt:"Red Hat Text",system-ui,-apple-system,sans-serif;--mono:"Red Hat Mono",ui-monospace,Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;font-family:var(--txt);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.gC{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--i1:#FFB347;--i2:#FF7A59;--i3:#F0737C;--clear:#15241B;--clearInk:#9ED8B0}}
+.gC *{box-sizing:border-box}
+.gC .ph{width:390px;max-width:100%;background:var(--bg);border-radius:36px;border:1px solid var(--line);padding:18px 16px 22px;display:grid;gap:12px;align-content:start;overflow:hidden}
+.gC .cap{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gC .ttl{font-family:var(--display);font-weight:900;font-size:26px;line-height:32px;letter-spacing:-.3px;margin:0}
+.gC .sub{font-size:13px;color:var(--muted);line-height:18px}
+.gC .tallies{display:grid;gap:0}
+.gC .tr{display:grid;grid-template-columns:10px 1fr auto 40px;align-items:center;column-gap:10px;min-height:44px;padding-left:10px}
+.gC .pip{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.gC .tr.zero .pip{opacity:.4} .gC .tr.zero .nm{color:var(--muted)}
+.gC .nm{font-weight:500;font-size:15.5px}
+.gC .tot{display:flex;align-items:baseline;gap:6px;justify-content:flex-end}
+.gC .n{font-family:var(--mono);font-weight:500;font-size:15px;color:var(--ci)}
+.gC .tr.zero .n{color:var(--muted)}
+.gC .u{font-size:13.5px;color:var(--muted);min-width:58px}
+.gC .of{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.gC .plus{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font-size:18px;color:var(--text);justify-self:end}
+.gC .track{grid-column:2/4;position:relative;height:3px;border-radius:2px;background:var(--line);margin:-6px 0 6px}
+.gC .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--c);opacity:.75}
+.gC .tick{position:absolute;top:-4px;bottom:-4px;width:1.5px;background:var(--text);opacity:.7}
+.gC .card{background:var(--surface);border-radius:24px;padding:16px;display:grid;gap:10px;border:1px solid var(--line)}
+.gC .chips{display:flex;gap:6px;flex-wrap:wrap}
+.gC .chip{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.gC .chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.gC .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gC .stat{background:var(--surface2);border-radius:18px;padding:10px}
+.gC .stat b{display:block;font-family:var(--mono);font-weight:500;font-size:20px;color:var(--ci)}
+.gC .stat span{font-size:12px;color:var(--muted)}
+.gC svg text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.gC .field{display:grid;gap:4px;border-bottom:1px solid var(--outline);padding:6px 0 8px}
+.gC .field label{font-size:12px;color:var(--muted)}
+.gC .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--outline);border-radius:999px;overflow:hidden}
+.gC .seg span{text-align:center;font-size:13px;font-weight:600;padding:7px 0}
+.gC .seg .on{background:var(--accent);color:var(--onAccent)}
+.gC .step{display:flex;align-items:center;justify-content:space-between}
+.gC .step .big{font-family:var(--mono);font-weight:500;font-size:28px}
+.gC .btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--accent);font-weight:600;font-size:14px;color:var(--text)}
+.gC .btn.fill2{background:var(--accent);color:var(--onAccent)}
+.gC .head{font-family:var(--display);font-weight:700;font-size:17px;line-height:22px}
+.gC .body{font-size:15px;line-height:21px}
+.gC .basis{font-size:13px;color:var(--muted)}
+.gC .note{font-size:13px;color:var(--muted);line-height:18px;border-left:3px solid var(--outline);padding-left:8px}
+.gC .toast{background:var(--accent);color:var(--onAccent);border-radius:16px;padding:10px 14px;font-size:14px;display:flex;justify-content:space-between}
+</style><section class="ph"><div class="cap">Today · Thu 12 Nov</div>
+<div style="display:flex;justify-content:space-between;align-items:center"><span class="ttl" style="font-size:21px">Penchant</span><span class="sub">Synced</span></div>
+<svg viewBox="0 0 200 200" width="190" style="justify-self:center"><circle cx="100" cy="100" r="78" fill="var(--surface)" stroke="var(--line)"/><circle cx="100" cy="100" r="14" fill="var(--surface2)"/><line x1="100" y1="100" x2="38" y2="132" stroke="var(--text)" stroke-width="2"/>
+<circle cx="146" cy="44" r="7" fill="var(--d1)"/><circle cx="168" cy="82" r="7" fill="var(--d1)"/><circle cx="150" cy="150" r="7" fill="var(--d1)"/><circle cx="60" cy="160" r="8" fill="var(--d2)"/><circle cx="48" cy="148" r="6" fill="var(--d2)"/><circle cx="132" cy="168" r="6" fill="var(--d3)"/><circle cx="84" cy="176" r="6" fill="var(--d3)"/><circle cx="40" cy="120" r="6" fill="var(--d3)"/><circle cx="112" cy="178" r="6" fill="var(--d3)"/>
+<text x="100" y="18" text-anchor="middle">00</text><text x="190" y="104" text-anchor="middle">06</text><text x="100" y="196" text-anchor="middle">12</text><text x="10" y="104" text-anchor="middle">18</text></svg>
+<div class="tallies"><div class="tr" style="--c:var(--d1);--ci:var(--i1)"><span class="pip"></span><span class="nm">Coffee</span><span class="tot"><span class="n">3</span><span class="u">cups</span></span><span class="plus">+</span></div><div class="tr" style="--c:var(--d2);--ci:var(--i2)"><span class="pip"></span><span class="nm">Wine</span><span class="tot"><span class="n">2</span><span class="u">glasses</span><span class="of">of 3</span></span><span class="plus">+</span></div><div class="tr" style="min-height:0;--c:var(--d2);--ci:var(--i2)"><span></span><div class="track"><div class="fill" style="width:50%"></div><div class="tick" style="left:75%"></div></div></div><div class="tr" style="--c:var(--d3);--ci:var(--i3)"><span class="pip"></span><span class="nm">Cigarettes</span><span class="tot"><span class="n">4</span><span class="u">cigarettes</span><span class="of">22 of 30 · 7 days</span></span><span class="plus">+</span></div><div class="tr" style="min-height:0;--c:var(--d3);--ci:var(--i3)"><span></span><div class="track"><div class="fill" style="width:55%"></div><div class="tick" style="left:75%"></div></div></div></div></section><section class="ph"><div class="cap">Trends sheet, opened</div><div class="card" style="--c:var(--d2);--ci:var(--i2)">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ttl" style="font-size:22px">Trends</span><span class="sub">Close</span></div>
+<div class="chips"><span class="chip">7 d</span><span class="chip on">30 d</span><span class="chip">90 d</span><span class="chip">Year</span></div>
+<div class="chips"><span class="chip">Coffee</span><span class="chip on">Wine</span><span class="chip">Cigarettes</span></div>
+<svg viewBox="0 0 358 170" width="100%" role="img" aria-label="Wine, glasses a day over 30 days, with a dashed line at 3"><line x1="22" x2="352" y1="152.0" y2="152.0" stroke="var(--line)"/><text x="16" y="155.0" text-anchor="end">0</text><line x1="22" x2="352" y1="104.0" y2="104.0" stroke="var(--line)"/><text x="16" y="107.0" text-anchor="end">2</text><line x1="22" x2="352" y1="56.0" y2="56.0" stroke="var(--line)"/><text x="16" y="59.0" text-anchor="end">4</text><line x1="22" x2="352" y1="8.0" y2="8.0" stroke="var(--line)"/><text x="16" y="11.0" text-anchor="end">6</text><line x1="352.0" x2="352.0" y1="8" y2="152" stroke="var(--outline)"/><line x1="22" x2="352" y1="80.0" y2="80.0" stroke="var(--text)" stroke-opacity=".7" stroke-width="1.25" stroke-dasharray="4 4"/><rect x="296" y="63.0" width="56" height="14" rx="7" fill="var(--surface)"/><text x="350" y="73.0" text-anchor="end" style="fill:var(--text)">your line 3</text><path d="M22.0,104.0 L33.4,152.0 L44.8,80.0 L56.1,128.0 L67.5,56.0 L78.9,104.0 L90.3,152.0 L101.7,104.0 L113.0,80.0 L124.4,32.0 L135.8,128.0 L147.2,152.0 L158.6,104.0 L169.9,104.0 L181.3,80.0 L192.7,56.0 L204.1,128.0 L215.4,152.0 L226.8,104.0 L238.2,80.0 L249.6,104.0 L261.0,128.0 L272.3,152.0 L283.7,56.0 L295.1,80.0 L306.5,104.0 L317.9,152.0 L329.2,128.0 L340.6,104.0 L352.0,104.0" fill="none" stroke="var(--c)" stroke-opacity=".45" stroke-width="1.5"/><path d="M22.0,104.0 L33.4,128.0 L44.8,112.0 L56.1,116.0 L67.5,104.0 L78.9,104.0 L90.3,110.9 L101.7,110.9 L113.0,100.6 L124.4,93.7 L135.8,93.7 L147.2,107.4 L158.6,107.4 L169.9,100.6 L181.3,97.1 L192.7,93.7 L204.1,107.4 L215.4,110.9 L226.8,104.0 L238.2,100.6 L249.6,100.6 L261.0,107.4 L272.3,121.1 L283.7,110.9 L295.1,100.6 L306.5,100.6 L317.9,110.9 L329.2,114.3 L340.6,110.9 L352.0,104.0" fill="none" stroke="var(--ci)" stroke-width="2.5" stroke-linecap="round"/><text x="33.4" y="166" text-anchor="middle">15 Oct</text><text x="113.0" y="166" text-anchor="middle">22 Oct</text><text x="192.7" y="166" text-anchor="middle">29 Oct</text><text x="272.3" y="166" text-anchor="middle">5 Nov</text><text x="352.0" y="166" text-anchor="middle">12 Nov</text></svg>
+<div class="sub">Average over 7 days: 1.9 glasses a day</div>
+<div class="stats"><div class="stat"><b>56</b><span>total</span></div><div class="stat"><b>1.9</b><span>a day</span></div><div class="stat"><b>4</b><span>days over your line</span></div></div>
+</div></section><section class="ph"><div class="cap">Insights</div><div class="card" style="--c:var(--d2);--ci:var(--i2)">
+<div class="head">Wine and deep sleep</div>
+<div class="body">On days with 3 glasses or more logged for Wine, your deep sleep that night averages 18 min less than on days with fewer.</div>
+<div class="basis">From 74 days with Wine, 21 of them with 3 glasses or more</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><span class="btn">Mark 3 a day as Wine's line</span></div>
+<div class="sub">Optional. Shown only when you have no line for Wine. Change or remove it in Edit Habit.</div></div>
+<div class="toast"><span>Wine's line: 3 glasses a day</span><b>Undo</b></div></section></div>
+</template>
+<template id="mock-self-experiments-a"><!-- Option A: leave as is -->
+<div class="sxa"><style>
+.sxa{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--d2ink:#B03E1C;--spoke:#1D1C1A80;--clear:#E3EFE4;--clearInk:#276B43;--shadow:0 2px 8px #1D1C1A12;
+--ff-display:"Red Hat Display",ui-rounded,system-ui,-apple-system,sans-serif;
+--ff-text:"Red Hat Text",system-ui,-apple-system,sans-serif;
+--ff-mono:"Red Hat Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+font-family:var(--ff-text);color:var(--text);font-variant-numeric:tabular-nums;
+display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:8px 0}
+@media (prefers-color-scheme:dark){.sxa{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--d2ink:#FF7A59;--spoke:#F3F0EA80;--clear:#15241B;--clearInk:#9ED8B0;--shadow:none;}}
+.sxa *{box-sizing:border-box}
+.sxa .sxa-col{display:grid;gap:8px;width:390px;max-width:100%;align-content:start}
+.sxa .sxa-cap{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 4px}
+.sxa .sxa-capnote{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0 4px}
+.sxa .sxa-phone{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;padding:0 0 20px}
+.sxa .sxa-status{display:flex;justify-content:space-between;padding:14px 28px 6px;font:600 15px/20px var(--ff-text)}
+.sxa .sxa-bar{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.sxa .sxa-circ{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font:500 18px/1 var(--ff-text);flex:none}
+.sxa .sxa-title{font:900 26px/32px var(--ff-display);letter-spacing:-.3px;margin:0}
+.sxa .sxa-titlexl{font:900 34px/40px var(--ff-display);letter-spacing:-.5px;margin:0}
+.sxa .sxa-pad{padding:0 20px;display:grid;gap:12px}
+.sxa .sxa-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 18px 16px;box-shadow:var(--shadow);display:grid;gap:4px}
+.sxa .sxa-head{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--ff-text);color:var(--muted)}
+.sxa .sxa-pip{width:10px;height:10px;border-radius:999px;background:var(--d2);box-shadow:inset 0 0 0 1.25px var(--d2ink);flex:none}
+.sxa .sxa-pip.c{background:var(--d1);box-shadow:none}
+.sxa .sxa-pip.g{background:var(--d3);box-shadow:none}
+.sxa .sxa-sent{font:500 16px/22px var(--ff-text);margin:2px 0 8px}
+.sxa .sxa-small{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0}
+.sxa .sxa-body{font:400 15px/21px var(--ff-text);margin:0}
+.sxa .sxa-range{display:block;width:100%;height:14px;margin:0 0 6px}
+.sxa .sxa-btn{display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);font:600 15px/20px var(--ff-text)}
+.sxa .sxa-btn2{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:999px;border:1px solid var(--outline);font:600 15px/20px var(--ff-text);margin-top:10px}
+.sxa .sxa-sec{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+.sxa .sxa-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sxa .sxa-chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--outline);display:inline-flex;align-items:center;gap:6px;font:500 14px/1 var(--ff-text)}
+.sxa .sxa-chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.sxa .sxa-chip .m{font:500 12px/1 var(--ff-mono);opacity:.75}
+.sxa .sxa-chip.dim{opacity:.5}
+.sxa .sxa-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font:400 15px/21px var(--ff-text)}
+.sxa .sxa-row:first-child{border-top:0}
+.sxa .sxa-row b{font-weight:600}
+.sxa .sxa-mono{font-family:var(--ff-mono);font-weight:500}
+.sxa .sxa-big{font:500 40px/44px var(--ff-mono)}
+.sxa .sxa-strip{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.sxa .sxa-strip .t{display:grid;gap:2px;flex:1;min-width:0}
+.sxa .sxa-strip .k{font:600 15px/20px var(--ff-text)}
+.sxa .sxa-days{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.sxa .sxa-days i{display:block;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxa .sxa-days i.n{background:var(--accent);border-color:var(--accent)}
+.sxa .sxa-days i.f{opacity:.35}
+.sxa .sxa-days i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxa .sxa-days i.today{outline:2px solid var(--text);outline-offset:1px}
+.sxa .sxa-legend{display:flex;gap:14px;flex-wrap:wrap;font:400 13px/18px var(--ff-text);color:var(--muted)}
+.sxa .sxa-legend span{display:inline-flex;align-items:center;gap:6px}
+.sxa .sxa-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxa .sxa-legend i.n{background:var(--accent);border-color:var(--accent)}
+.sxa .sxa-legend i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxa .sxa-dial{display:block;margin:0 auto;width:250px;height:250px}
+.sxa .sxa-tally{display:flex;align-items:center;gap:10px;height:38px;font:500 16px/22px var(--ff-text)}
+.sxa .sxa-tally .n{margin-left:auto;font:500 15px/20px var(--ff-mono)}
+.sxa .sxa-tally .plus{width:32px;height:32px;border-radius:999px;border:1px solid var(--outline);display:grid;place-items:center;font:500 18px/1 var(--ff-text)}
+.sxa .sxa-lock{background:linear-gradient(160deg,#3b4a63,#1d2433 60%,#151a24);color:#fff;padding:0 0 28px}
+.sxa .sxa-lock .sxa-status{color:#fff}
+.sxa .sxa-clock{text-align:center;font:600 76px/1 var(--ff-display);margin:18px 0 4px;letter-spacing:-1px}
+.sxa .sxa-date{text-align:center;font:500 17px/22px var(--ff-text);opacity:.9;margin-bottom:28px}
+.sxa .sxa-notif{margin:0 12px;background:rgba(245,245,245,.78);color:#111;border-radius:22px;padding:12px 14px;display:grid;grid-template-columns:38px 1fr;gap:4px 10px;box-shadow:0 6px 24px #0005}
+.sxa .sxa-notif .ic{grid-row:span 3;width:38px;height:38px;border-radius:9px;background:#F6F4EF;display:grid;place-items:center;border:1px solid #0001}
+.sxa .sxa-notif .h{display:flex;justify-content:space-between;font:600 15px/20px -apple-system,system-ui,sans-serif}
+.sxa .sxa-notif .h span{font-weight:400;color:#555;font-size:13px}
+.sxa .sxa-notif p{margin:0;font:400 15px/20px -apple-system,system-ui,sans-serif}
+.sxa .sxa-tag{display:inline-block;font:600 12px/16px var(--ff-text);padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.sxa .sxa-tag.new{background:var(--accent);color:var(--onAccent)}
+.sxa .sxa-clear{background:var(--clear);color:var(--clearInk);border-radius:12px;padding:8px 12px;font:500 14px/19px var(--ff-text)}
+</style><div class="sxa-col"><p class="sxa-cap">Insights today (unchanged)</p><div class="sxa-phone"><div class="sxa-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxa-bar"><div class="sxa-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxa-titlexl">Insights</h3></div>
+<div class="sxa-pad">
+<p class="sxa-sec">What it costs</p>
+<div class="sxa-card">
+<div class="sxa-head"><span class="sxa-pip"></span>Wine &middot; sleep</div>
+<p class="sxa-sent">On nights after Wine, your deep sleep averages 14&nbsp;min less.</p>
+<svg class="sxa-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="224.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="120.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="120.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxa-small">Range: 6 to 22 min less</p>
+<p class="sxa-small">From 212 days, 61 of them with Wine</p>
+</div>
+<div class="sxa-card">
+<div class="sxa-head"><span class="sxa-pip c"></span>Coffee &middot; sleep</div>
+<p class="sxa-sent">On nights after Coffee, your time asleep averages 21&nbsp;min less.</p>
+<svg class="sxa-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="239.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="36.0" y="4" width="156.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="114.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxa-small">Range: 8 to 34 min less</p>
+<p class="sxa-small">From 212 days, 188 of them with Coffee</p>
+</div></div></div><p class="sxa-capnote">The finding card as the app shows it now: what goes with Wine, its range and the days behind it. No way to test it; nothing else changes.</p></div></div>
+</template>
+<template id="mock-self-experiments-b"><!-- Option B: experiment, assignment shown in the app -->
+<div class="sxb"><style>
+.sxb{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--d2ink:#B03E1C;--spoke:#1D1C1A80;--clear:#E3EFE4;--clearInk:#276B43;--shadow:0 2px 8px #1D1C1A12;
+--ff-display:"Red Hat Display",ui-rounded,system-ui,-apple-system,sans-serif;
+--ff-text:"Red Hat Text",system-ui,-apple-system,sans-serif;
+--ff-mono:"Red Hat Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+font-family:var(--ff-text);color:var(--text);font-variant-numeric:tabular-nums;
+display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:8px 0}
+@media (prefers-color-scheme:dark){.sxb{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--d2ink:#FF7A59;--spoke:#F3F0EA80;--clear:#15241B;--clearInk:#9ED8B0;--shadow:none;}}
+.sxb *{box-sizing:border-box}
+.sxb .sxb-col{display:grid;gap:8px;width:390px;max-width:100%;align-content:start}
+.sxb .sxb-cap{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 4px}
+.sxb .sxb-capnote{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0 4px}
+.sxb .sxb-phone{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;padding:0 0 20px}
+.sxb .sxb-status{display:flex;justify-content:space-between;padding:14px 28px 6px;font:600 15px/20px var(--ff-text)}
+.sxb .sxb-bar{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.sxb .sxb-circ{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font:500 18px/1 var(--ff-text);flex:none}
+.sxb .sxb-title{font:900 26px/32px var(--ff-display);letter-spacing:-.3px;margin:0}
+.sxb .sxb-titlexl{font:900 34px/40px var(--ff-display);letter-spacing:-.5px;margin:0}
+.sxb .sxb-pad{padding:0 20px;display:grid;gap:12px}
+.sxb .sxb-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 18px 16px;box-shadow:var(--shadow);display:grid;gap:4px}
+.sxb .sxb-head{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--ff-text);color:var(--muted)}
+.sxb .sxb-pip{width:10px;height:10px;border-radius:999px;background:var(--d2);box-shadow:inset 0 0 0 1.25px var(--d2ink);flex:none}
+.sxb .sxb-pip.c{background:var(--d1);box-shadow:none}
+.sxb .sxb-pip.g{background:var(--d3);box-shadow:none}
+.sxb .sxb-sent{font:500 16px/22px var(--ff-text);margin:2px 0 8px}
+.sxb .sxb-small{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0}
+.sxb .sxb-body{font:400 15px/21px var(--ff-text);margin:0}
+.sxb .sxb-range{display:block;width:100%;height:14px;margin:0 0 6px}
+.sxb .sxb-btn{display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);font:600 15px/20px var(--ff-text)}
+.sxb .sxb-btn2{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:999px;border:1px solid var(--outline);font:600 15px/20px var(--ff-text);margin-top:10px}
+.sxb .sxb-sec{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+.sxb .sxb-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sxb .sxb-chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--outline);display:inline-flex;align-items:center;gap:6px;font:500 14px/1 var(--ff-text)}
+.sxb .sxb-chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.sxb .sxb-chip .m{font:500 12px/1 var(--ff-mono);opacity:.75}
+.sxb .sxb-chip.dim{opacity:.5}
+.sxb .sxb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font:400 15px/21px var(--ff-text)}
+.sxb .sxb-row:first-child{border-top:0}
+.sxb .sxb-row b{font-weight:600}
+.sxb .sxb-mono{font-family:var(--ff-mono);font-weight:500}
+.sxb .sxb-big{font:500 40px/44px var(--ff-mono)}
+.sxb .sxb-strip{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.sxb .sxb-strip .t{display:grid;gap:2px;flex:1;min-width:0}
+.sxb .sxb-strip .k{font:600 15px/20px var(--ff-text)}
+.sxb .sxb-days{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.sxb .sxb-days i{display:block;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxb .sxb-days i.n{background:var(--accent);border-color:var(--accent)}
+.sxb .sxb-days i.f{opacity:.35}
+.sxb .sxb-days i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxb .sxb-days i.today{outline:2px solid var(--text);outline-offset:1px}
+.sxb .sxb-legend{display:flex;gap:14px;flex-wrap:wrap;font:400 13px/18px var(--ff-text);color:var(--muted)}
+.sxb .sxb-legend span{display:inline-flex;align-items:center;gap:6px}
+.sxb .sxb-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxb .sxb-legend i.n{background:var(--accent);border-color:var(--accent)}
+.sxb .sxb-legend i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxb .sxb-dial{display:block;margin:0 auto;width:250px;height:250px}
+.sxb .sxb-tally{display:flex;align-items:center;gap:10px;height:38px;font:500 16px/22px var(--ff-text)}
+.sxb .sxb-tally .n{margin-left:auto;font:500 15px/20px var(--ff-mono)}
+.sxb .sxb-tally .plus{width:32px;height:32px;border-radius:999px;border:1px solid var(--outline);display:grid;place-items:center;font:500 18px/1 var(--ff-text)}
+.sxb .sxb-lock{background:linear-gradient(160deg,#3b4a63,#1d2433 60%,#151a24);color:#fff;padding:0 0 28px}
+.sxb .sxb-lock .sxb-status{color:#fff}
+.sxb .sxb-clock{text-align:center;font:600 76px/1 var(--ff-display);margin:18px 0 4px;letter-spacing:-1px}
+.sxb .sxb-date{text-align:center;font:500 17px/22px var(--ff-text);opacity:.9;margin-bottom:28px}
+.sxb .sxb-notif{margin:0 12px;background:rgba(245,245,245,.78);color:#111;border-radius:22px;padding:12px 14px;display:grid;grid-template-columns:38px 1fr;gap:4px 10px;box-shadow:0 6px 24px #0005}
+.sxb .sxb-notif .ic{grid-row:span 3;width:38px;height:38px;border-radius:9px;background:#F6F4EF;display:grid;place-items:center;border:1px solid #0001}
+.sxb .sxb-notif .h{display:flex;justify-content:space-between;font:600 15px/20px -apple-system,system-ui,sans-serif}
+.sxb .sxb-notif .h span{font-weight:400;color:#555;font-size:13px}
+.sxb .sxb-notif p{margin:0;font:400 15px/20px -apple-system,system-ui,sans-serif}
+.sxb .sxb-tag{display:inline-block;font:600 12px/16px var(--ff-text);padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.sxb .sxb-tag.new{background:var(--accent);color:var(--onAccent)}
+.sxb .sxb-clear{background:var(--clear);color:var(--clearInk);border-radius:12px;padding:8px 12px;font:500 14px/19px var(--ff-text)}
+</style><div class="sxb-col"><p class="sxb-cap">1. Finding card</p><div class="sxb-phone"><div class="sxb-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxb-bar"><div class="sxb-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxb-titlexl">Insights</h3></div>
+<div class="sxb-pad">
+<p class="sxb-sec">What it costs</p>
+<div class="sxb-card">
+<div class="sxb-head"><span class="sxb-pip"></span>Wine &middot; sleep</div>
+<p class="sxb-sent">On nights after Wine, your deep sleep averages 14&nbsp;min less.</p>
+<svg class="sxb-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="224.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="120.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="120.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxb-small">Range: 6 to 22 min less</p>
+<p class="sxb-small">From 212 days, 61 of them with Wine</p>
+<div class="sxb-btn2">Test this for 6 weeks <span class="sxb-tag new">New</span></div><p class="sxb-small" style="margin-top:4px">The app picks the evenings at random, so a busy week or a late night can&rsquo;t explain the result.</p></div>
+<div class="sxb-card">
+<div class="sxb-head"><span class="sxb-pip c"></span>Coffee &middot; sleep</div>
+<p class="sxb-sent">On nights after Coffee, your time asleep averages 21&nbsp;min less.</p>
+<svg class="sxb-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="239.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="36.0" y="4" width="156.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="114.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxb-small">Range: 8 to 34 min less</p>
+<p class="sxb-small">From 212 days, 188 of them with Coffee</p>
+</div></div></div><p class="sxb-capnote">One new button on a sleep, heart or activity finding.</p></div><div class="sxb-col"><p class="sxb-cap">2. Plan</p><div class="sxb-phone"><div class="sxb-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxb-bar"><div class="sxb-circ" aria-hidden="true">&times;</div><h3 class="sxb-title">Test Wine and deep sleep</h3></div>
+<div class="sxb-pad">
+<div class="sxb-card">
+<p class="sxb-body">On days chosen at random, have <b>no Wine after 18:00</b>. On the others, do as you normally would. Penchant compares your deep sleep on the two kinds of night.</p>
+<p class="sxb-small" style="margin-top:6px">It reads what you log: a Wine entry after 18:00 on a <i>none</i> day counts as a missed day, not a failure. You can stop at any time.</p>
+</div>
+<p class="sxb-sec">How long</p>
+<div class="sxb-chips">
+<span class="sxb-chip dim">2 weeks <span class="m">&plusmn;19</span></span>
+<span class="sxb-chip">4 weeks <span class="m">&plusmn;12</span></span>
+<span class="sxb-chip on">6 weeks <span class="m">&plusmn;10</span></span>
+<span class="sxb-chip">8 weeks <span class="m">&plusmn;9</span></span>
+</div>
+<p class="sxb-small">How sure the answer will be, in minutes either way, from how much your deep sleep already varies night to night (16 min). The finding was 14 min: 6 weeks would usually tell that from no difference; 2 weeks almost never would.</p>
+<p class="sxb-sec">Days</p>
+<div class="sxb-card" style="gap:0;padding-top:6px;padding-bottom:6px">
+<div class="sxb-row"><span>Starts</span><b>Tomorrow, 13 Nov</b></div>
+<div class="sxb-row"><span>Ends</span><b>Thu 24 Dec</b></div>
+<div class="sxb-row"><span><i>None</i> days</span><span class="sxb-mono">21 of 42</span></div>
+<div class="sxb-row"><span class="sxb-small" style="color:inherit">Every week has 3 or 4 of each, so weekends land on both sides.</span></div>
+</div>
+<p class="sxb-small">Each day&rsquo;s plan shows at the top of Today. Nothing is sent to you.</p>
+<div class="sxb-btn" style="margin-top:6px">Start experiment</div>
+</div></div><p class="sxb-capnote">Length chosen from how much the measure already varies, so the answer is sure enough to mean something.</p></div><div class="sxb-col"><p class="sxb-cap">3. A day (Today)</p><div class="sxb-phone"><div class="sxb-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxb-bar" style="justify-content:space-between"><div class="sxb-circ" aria-hidden="true">&#8801;</div><span class="sxb-chip" style="height:40px;font:700 17px/22px var(--ff-display)">Today</span><span class="sxb-tag">Synced</span></div>
+<div class="sxb-pad">
+<div class="sxb-strip"><div class="t"><span class="k">No Wine after 18:00 today</span><span class="sxb-small">Wine and deep sleep &middot; day 9 of 42</span></div><span class="sxb-circ" aria-hidden="true" style="width:32px;height:32px;font-size:15px">&rsaquo;</span></div>
+<svg class="sxb-dial" viewBox="0 0 250 250" aria-hidden="true"><circle cx="125" cy="125" r="97" fill="var(--surface)" stroke="var(--line)"/><line x1="125.0" y1="83.0" x2="125.0" y2="17.0" stroke="var(--line)" stroke-width="1"/><line x1="150.4" y1="30.3" x2="151.9" y2="24.5" stroke="var(--line)" stroke-width="1"/><line x1="174.0" y1="40.1" x2="177.0" y2="34.9" stroke="var(--line)" stroke-width="1"/><line x1="194.3" y1="55.7" x2="198.5" y2="51.5" stroke="var(--line)" stroke-width="1"/><line x1="209.9" y1="76.0" x2="215.1" y2="73.0" stroke="var(--line)" stroke-width="1"/><line x1="219.7" y1="99.6" x2="225.5" y2="98.1" stroke="var(--line)" stroke-width="1"/><line x1="167.0" y1="125.0" x2="233.0" y2="125.0" stroke="var(--line)" stroke-width="1"/><line x1="219.7" y1="150.4" x2="225.5" y2="151.9" stroke="var(--line)" stroke-width="1"/><line x1="209.9" y1="174.0" x2="215.1" y2="177.0" stroke="var(--line)" stroke-width="1"/><line x1="194.3" y1="194.3" x2="198.5" y2="198.5" stroke="var(--line)" stroke-width="1"/><line x1="174.0" y1="209.9" x2="177.0" y2="215.1" stroke="var(--line)" stroke-width="1"/><line x1="150.4" y1="219.7" x2="151.9" y2="225.5" stroke="var(--line)" stroke-width="1"/><line x1="125.0" y1="167.0" x2="125.0" y2="233.0" stroke="var(--line)" stroke-width="1"/><line x1="99.6" y1="219.7" x2="98.1" y2="225.5" stroke="var(--line)" stroke-width="1"/><line x1="76.0" y1="209.9" x2="73.0" y2="215.1" stroke="var(--line)" stroke-width="1"/><line x1="55.7" y1="194.3" x2="51.5" y2="198.5" stroke="var(--line)" stroke-width="1"/><line x1="40.1" y1="174.0" x2="34.9" y2="177.0" stroke="var(--line)" stroke-width="1"/><line x1="30.3" y1="150.4" x2="24.5" y2="151.9" stroke="var(--line)" stroke-width="1"/><line x1="83.0" y1="125.0" x2="17.0" y2="125.0" stroke="var(--line)" stroke-width="1"/><line x1="30.3" y1="99.6" x2="24.5" y2="98.1" stroke="var(--line)" stroke-width="1"/><line x1="40.1" y1="76.0" x2="34.9" y2="73.0" stroke="var(--line)" stroke-width="1"/><line x1="55.7" y1="55.7" x2="51.5" y2="51.5" stroke="var(--line)" stroke-width="1"/><line x1="76.0" y1="40.1" x2="73.0" y2="34.9" stroke="var(--line)" stroke-width="1"/><line x1="99.6" y1="30.3" x2="98.1" y2="24.5" stroke="var(--line)" stroke-width="1"/><text x="125.0" y="12.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">00</text><text x="242.0" y="129.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">06</text><text x="125.0" y="246.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">12</text><text x="8.0" y="129.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">18</text><path d="M125 125 L28.0 125.0 A97 97 0 0 1 125.0 28.0 Z" fill="var(--surface2)" opacity=".9"/><circle cx="197.1" cy="154.8" r="7" fill="var(--d1)"/><circle cx="160.4" cy="194.5" r="7" fill="var(--d1)"/><circle cx="97.0" cy="197.8" r="7" fill="var(--d1)"/><line x1="125" y1="125" x2="31.6" y2="160.8" stroke="var(--text)" stroke-width="2"/><circle cx="125" cy="125" r="18" fill="var(--bg)" stroke="var(--line)"/></svg>
+<div class="sxb-tally"><span class="sxb-pip c"></span>Coffee<span class="n">3 cups</span><span class="plus">+</span></div>
+<div class="sxb-tally"><span class="sxb-pip"></span>Wine<span class="n">0 glasses</span><span class="plus">+</span></div>
+<div class="sxb-tally"><span class="sxb-pip g"></span>Cigarettes<span class="n">0</span><span class="plus">+</span></div>
+<p class="sxb-small">The shaded evening on the dial is the hours the plan covers.</p>
+</div></div><p class="sxb-capnote">The day&rsquo;s plan sits above the dial. You see it only when you open the app.</p></div><div class="sxb-col"><p class="sxb-cap">4. Result</p><div class="sxb-phone"><div class="sxb-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxb-bar"><div class="sxb-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxb-titlexl">Insights</h3></div>
+<div class="sxb-pad">
+<p class="sxb-sec">Your experiment</p>
+<div class="sxb-card">
+<div class="sxb-head"><span class="sxb-pip"></span>Wine &middot; deep sleep &middot; finished 24 Dec</div>
+<p class="sxb-sent">On the nights you had no Wine after 18:00, your deep sleep was 12&nbsp;min more than on the other nights.</p>
+<svg class="sxb-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="74.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="90.0" y="4" width="150.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="165.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxb-small">Range: 2 to 22 min more</p>
+<p class="sxb-small">From 40 nights, 20 of each (2 had no sleep data)</p>
+<p class="sxb-small">Plan kept on 39 of 42 days: Wine was logged after 18:00 on 3 <i>none</i> days, counted where they were planned</p>
+<div style="display:grid;gap:4px;margin:10px 0 4px"><div class="sxb-days"><i class="n"></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class=""></i><i class="n"></i><i class=""></i><i class="x"></i><i class="n"></i><i class=""></i><i class=""></i></div><div class="sxb-days"><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class=""></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class="x"></i><i class=""></i><i class="n"></i></div><div class="sxb-days"><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class=""></i><i class="n"></i><i class="x"></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i></div></div>
+<div class="sxb-legend"><span><i class="n"></i>none after 18:00</span><span><i></i>as usual</span><span><i class="x"></i>Wine on a none day</span></div>
+<p class="sxb-small" style="margin-top:6px">Before the experiment your journal showed 14 min (6 to 22). Because the days were picked at random, this one is the stronger evidence.</p>
+</div>
+<div class="sxb-card">
+<div class="sxb-head"><span class="sxb-pip c"></span>Coffee &middot; time asleep &middot; finished 3 Oct</div>
+<p class="sxb-sent">Can&rsquo;t tell: on the nights with no Coffee after 14:00, your time asleep was 6&nbsp;min more, inside your usual night-to-night swing.</p>
+<svg class="sxb-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="119.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="192.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="156.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxb-small">Range: 10 min less to 22 min more</p>
+<p class="sxb-small">From 27 nights &middot; <span style="text-decoration:underline;font-weight:600;color:var(--text)">Run it 4 more weeks</span></p>
+</div>
+</div></div><p class="sxb-capnote">Shown in Insights when the last night&rsquo;s sleep is in. Top: a clear answer. Below: the likelier &ldquo;can&rsquo;t tell&rdquo;.</p></div></div>
+</template>
+<template id="mock-self-experiments-c"><!-- Option C: experiment plus a daily notification -->
+<div class="sxc"><style>
+.sxc{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--d2ink:#B03E1C;--spoke:#1D1C1A80;--clear:#E3EFE4;--clearInk:#276B43;--shadow:0 2px 8px #1D1C1A12;
+--ff-display:"Red Hat Display",ui-rounded,system-ui,-apple-system,sans-serif;
+--ff-text:"Red Hat Text",system-ui,-apple-system,sans-serif;
+--ff-mono:"Red Hat Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+font-family:var(--ff-text);color:var(--text);font-variant-numeric:tabular-nums;
+display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:8px 0}
+@media (prefers-color-scheme:dark){.sxc{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--d2ink:#FF7A59;--spoke:#F3F0EA80;--clear:#15241B;--clearInk:#9ED8B0;--shadow:none;}}
+.sxc *{box-sizing:border-box}
+.sxc .sxc-col{display:grid;gap:8px;width:390px;max-width:100%;align-content:start}
+.sxc .sxc-cap{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 4px}
+.sxc .sxc-capnote{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0 4px}
+.sxc .sxc-phone{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;padding:0 0 20px}
+.sxc .sxc-status{display:flex;justify-content:space-between;padding:14px 28px 6px;font:600 15px/20px var(--ff-text)}
+.sxc .sxc-bar{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.sxc .sxc-circ{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font:500 18px/1 var(--ff-text);flex:none}
+.sxc .sxc-title{font:900 26px/32px var(--ff-display);letter-spacing:-.3px;margin:0}
+.sxc .sxc-titlexl{font:900 34px/40px var(--ff-display);letter-spacing:-.5px;margin:0}
+.sxc .sxc-pad{padding:0 20px;display:grid;gap:12px}
+.sxc .sxc-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 18px 16px;box-shadow:var(--shadow);display:grid;gap:4px}
+.sxc .sxc-head{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--ff-text);color:var(--muted)}
+.sxc .sxc-pip{width:10px;height:10px;border-radius:999px;background:var(--d2);box-shadow:inset 0 0 0 1.25px var(--d2ink);flex:none}
+.sxc .sxc-pip.c{background:var(--d1);box-shadow:none}
+.sxc .sxc-pip.g{background:var(--d3);box-shadow:none}
+.sxc .sxc-sent{font:500 16px/22px var(--ff-text);margin:2px 0 8px}
+.sxc .sxc-small{font:400 13px/18px var(--ff-text);color:var(--muted);margin:0}
+.sxc .sxc-body{font:400 15px/21px var(--ff-text);margin:0}
+.sxc .sxc-range{display:block;width:100%;height:14px;margin:0 0 6px}
+.sxc .sxc-btn{display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);font:600 15px/20px var(--ff-text)}
+.sxc .sxc-btn2{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:999px;border:1px solid var(--outline);font:600 15px/20px var(--ff-text);margin-top:10px}
+.sxc .sxc-sec{font:600 12px/16px var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+.sxc .sxc-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sxc .sxc-chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--outline);display:inline-flex;align-items:center;gap:6px;font:500 14px/1 var(--ff-text)}
+.sxc .sxc-chip.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.sxc .sxc-chip .m{font:500 12px/1 var(--ff-mono);opacity:.75}
+.sxc .sxc-chip.dim{opacity:.5}
+.sxc .sxc-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font:400 15px/21px var(--ff-text)}
+.sxc .sxc-row:first-child{border-top:0}
+.sxc .sxc-row b{font-weight:600}
+.sxc .sxc-mono{font-family:var(--ff-mono);font-weight:500}
+.sxc .sxc-big{font:500 40px/44px var(--ff-mono)}
+.sxc .sxc-strip{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.sxc .sxc-strip .t{display:grid;gap:2px;flex:1;min-width:0}
+.sxc .sxc-strip .k{font:600 15px/20px var(--ff-text)}
+.sxc .sxc-days{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.sxc .sxc-days i{display:block;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxc .sxc-days i.n{background:var(--accent);border-color:var(--accent)}
+.sxc .sxc-days i.f{opacity:.35}
+.sxc .sxc-days i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxc .sxc-days i.today{outline:2px solid var(--text);outline-offset:1px}
+.sxc .sxc-legend{display:flex;gap:14px;flex-wrap:wrap;font:400 13px/18px var(--ff-text);color:var(--muted)}
+.sxc .sxc-legend span{display:inline-flex;align-items:center;gap:6px}
+.sxc .sxc-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--outline)}
+.sxc .sxc-legend i.n{background:var(--accent);border-color:var(--accent)}
+.sxc .sxc-legend i.x{background:repeating-linear-gradient(45deg,var(--d2) 0 2px,transparent 2px 5px);border-color:var(--d2ink)}
+.sxc .sxc-dial{display:block;margin:0 auto;width:250px;height:250px}
+.sxc .sxc-tally{display:flex;align-items:center;gap:10px;height:38px;font:500 16px/22px var(--ff-text)}
+.sxc .sxc-tally .n{margin-left:auto;font:500 15px/20px var(--ff-mono)}
+.sxc .sxc-tally .plus{width:32px;height:32px;border-radius:999px;border:1px solid var(--outline);display:grid;place-items:center;font:500 18px/1 var(--ff-text)}
+.sxc .sxc-lock{background:linear-gradient(160deg,#3b4a63,#1d2433 60%,#151a24);color:#fff;padding:0 0 28px}
+.sxc .sxc-lock .sxc-status{color:#fff}
+.sxc .sxc-clock{text-align:center;font:600 76px/1 var(--ff-display);margin:18px 0 4px;letter-spacing:-1px}
+.sxc .sxc-date{text-align:center;font:500 17px/22px var(--ff-text);opacity:.9;margin-bottom:28px}
+.sxc .sxc-notif{margin:0 12px;background:rgba(245,245,245,.78);color:#111;border-radius:22px;padding:12px 14px;display:grid;grid-template-columns:38px 1fr;gap:4px 10px;box-shadow:0 6px 24px #0005}
+.sxc .sxc-notif .ic{grid-row:span 3;width:38px;height:38px;border-radius:9px;background:#F6F4EF;display:grid;place-items:center;border:1px solid #0001}
+.sxc .sxc-notif .h{display:flex;justify-content:space-between;font:600 15px/20px -apple-system,system-ui,sans-serif}
+.sxc .sxc-notif .h span{font-weight:400;color:#555;font-size:13px}
+.sxc .sxc-notif p{margin:0;font:400 15px/20px -apple-system,system-ui,sans-serif}
+.sxc .sxc-tag{display:inline-block;font:600 12px/16px var(--ff-text);padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.sxc .sxc-tag.new{background:var(--accent);color:var(--onAccent)}
+.sxc .sxc-clear{background:var(--clear);color:var(--clearInk);border-radius:12px;padding:8px 12px;font:500 14px/19px var(--ff-text)}
+</style><div class="sxc-col"><p class="sxc-cap">1. Finding card</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar"><div class="sxc-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxc-titlexl">Insights</h3></div>
+<div class="sxc-pad">
+<p class="sxc-sec">What it costs</p>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip"></span>Wine &middot; sleep</div>
+<p class="sxc-sent">On nights after Wine, your deep sleep averages 14&nbsp;min less.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="224.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="120.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="120.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 6 to 22 min less</p>
+<p class="sxc-small">From 212 days, 61 of them with Wine</p>
+<div class="sxc-btn2">Test this for 6 weeks <span class="sxc-tag new">New</span></div><p class="sxc-small" style="margin-top:4px">The app picks the evenings at random, so a busy week or a late night can&rsquo;t explain the result.</p></div>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip c"></span>Coffee &middot; sleep</div>
+<p class="sxc-sent">On nights after Coffee, your time asleep averages 21&nbsp;min less.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="239.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="36.0" y="4" width="156.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="114.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 8 to 34 min less</p>
+<p class="sxc-small">From 212 days, 188 of them with Coffee</p>
+</div></div></div><p class="sxc-capnote">Same button as option B.</p></div><div class="sxc-col"><p class="sxc-cap">2. Plan</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar"><div class="sxc-circ" aria-hidden="true">&times;</div><h3 class="sxc-title">Test Wine and deep sleep</h3></div>
+<div class="sxc-pad">
+<div class="sxc-card">
+<p class="sxc-body">On days chosen at random, have <b>no Wine after 18:00</b>. On the others, do as you normally would. Penchant compares your deep sleep on the two kinds of night.</p>
+<p class="sxc-small" style="margin-top:6px">It reads what you log: a Wine entry after 18:00 on a <i>none</i> day counts as a missed day, not a failure. You can stop at any time.</p>
+</div>
+<p class="sxc-sec">How long</p>
+<div class="sxc-chips">
+<span class="sxc-chip dim">2 weeks <span class="m">&plusmn;19</span></span>
+<span class="sxc-chip">4 weeks <span class="m">&plusmn;12</span></span>
+<span class="sxc-chip on">6 weeks <span class="m">&plusmn;10</span></span>
+<span class="sxc-chip">8 weeks <span class="m">&plusmn;9</span></span>
+</div>
+<p class="sxc-small">How sure the answer will be, in minutes either way, from how much your deep sleep already varies night to night (16 min). The finding was 14 min: 6 weeks would usually tell that from no difference; 2 weeks almost never would.</p>
+<p class="sxc-sec">Days</p>
+<div class="sxc-card" style="gap:0;padding-top:6px;padding-bottom:6px">
+<div class="sxc-row"><span>Starts</span><b>Tomorrow, 13 Nov</b></div>
+<div class="sxc-row"><span>Ends</span><b>Thu 24 Dec</b></div>
+<div class="sxc-row"><span><i>None</i> days</span><span class="sxc-mono">21 of 42</span></div>
+<div class="sxc-row"><span class="sxc-small" style="color:inherit">Every week has 3 or 4 of each, so weekends land on both sides.</span></div>
+</div>
+<p class="sxc-sec">Tell me each day</p>
+<div class="sxc-card" style="gap:0;padding-top:6px;padding-bottom:6px">
+<div class="sxc-row"><span>Notification</span><span class="sxc-mono">17:30</span></div>
+<div class="sxc-row"><span class="sxc-small" style="color:inherit">It says &ldquo;Experiment, day 9 of 42: a <i>none</i> day&rdquo;, never the habit&rsquo;s name. Turning this on asks for notifications if you haven&rsquo;t allowed them for the daily reminder.</span></div>
+</div>
+<div class="sxc-btn" style="margin-top:6px">Start experiment</div>
+</div></div><p class="sxc-capnote">Same plan, plus a daily notification time.</p></div><div class="sxc-col"><p class="sxc-cap">3a. A day (lock screen, 17:30)</p><div class="sxc-phone sxc-lock"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-date">Saturday 21 November</div>
+<div class="sxc-clock">17:30</div>
+<div style="height:120px"></div>
+<div class="sxc-notif"><div class="ic" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#1D1C1A" stroke-width="1.5"/><circle cx="12" cy="4.5" r="2" fill="#FFB347"/><circle cx="18.5" cy="14" r="2" fill="#FF7A59"/><circle cx="7" cy="17" r="2" fill="#4D96FF"/></svg></div>
+<div class="h">Penchant<span>now</span></div>
+<p><b>Experiment, day 9 of 42</b></p>
+<p>Today is a <i>none</i> day, from 18:00.</p>
+</div>
+<div style="height:150px"></div>
+</div><p class="sxc-capnote">Arrives before the evening starts. Names no habit, like the weekly review notification.</p></div><div class="sxc-col"><p class="sxc-cap">3b. A day (Today)</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar" style="justify-content:space-between"><div class="sxc-circ" aria-hidden="true">&#8801;</div><span class="sxc-chip" style="height:40px;font:700 17px/22px var(--ff-display)">Today</span><span class="sxc-tag">Synced</span></div>
+<div class="sxc-pad">
+<div class="sxc-strip"><div class="t"><span class="k">No Wine after 18:00 today</span><span class="sxc-small">Wine and deep sleep &middot; day 9 of 42</span></div><span class="sxc-circ" aria-hidden="true" style="width:32px;height:32px;font-size:15px">&rsaquo;</span></div>
+<svg class="sxc-dial" viewBox="0 0 250 250" aria-hidden="true"><circle cx="125" cy="125" r="97" fill="var(--surface)" stroke="var(--line)"/><line x1="125.0" y1="83.0" x2="125.0" y2="17.0" stroke="var(--line)" stroke-width="1"/><line x1="150.4" y1="30.3" x2="151.9" y2="24.5" stroke="var(--line)" stroke-width="1"/><line x1="174.0" y1="40.1" x2="177.0" y2="34.9" stroke="var(--line)" stroke-width="1"/><line x1="194.3" y1="55.7" x2="198.5" y2="51.5" stroke="var(--line)" stroke-width="1"/><line x1="209.9" y1="76.0" x2="215.1" y2="73.0" stroke="var(--line)" stroke-width="1"/><line x1="219.7" y1="99.6" x2="225.5" y2="98.1" stroke="var(--line)" stroke-width="1"/><line x1="167.0" y1="125.0" x2="233.0" y2="125.0" stroke="var(--line)" stroke-width="1"/><line x1="219.7" y1="150.4" x2="225.5" y2="151.9" stroke="var(--line)" stroke-width="1"/><line x1="209.9" y1="174.0" x2="215.1" y2="177.0" stroke="var(--line)" stroke-width="1"/><line x1="194.3" y1="194.3" x2="198.5" y2="198.5" stroke="var(--line)" stroke-width="1"/><line x1="174.0" y1="209.9" x2="177.0" y2="215.1" stroke="var(--line)" stroke-width="1"/><line x1="150.4" y1="219.7" x2="151.9" y2="225.5" stroke="var(--line)" stroke-width="1"/><line x1="125.0" y1="167.0" x2="125.0" y2="233.0" stroke="var(--line)" stroke-width="1"/><line x1="99.6" y1="219.7" x2="98.1" y2="225.5" stroke="var(--line)" stroke-width="1"/><line x1="76.0" y1="209.9" x2="73.0" y2="215.1" stroke="var(--line)" stroke-width="1"/><line x1="55.7" y1="194.3" x2="51.5" y2="198.5" stroke="var(--line)" stroke-width="1"/><line x1="40.1" y1="174.0" x2="34.9" y2="177.0" stroke="var(--line)" stroke-width="1"/><line x1="30.3" y1="150.4" x2="24.5" y2="151.9" stroke="var(--line)" stroke-width="1"/><line x1="83.0" y1="125.0" x2="17.0" y2="125.0" stroke="var(--line)" stroke-width="1"/><line x1="30.3" y1="99.6" x2="24.5" y2="98.1" stroke="var(--line)" stroke-width="1"/><line x1="40.1" y1="76.0" x2="34.9" y2="73.0" stroke="var(--line)" stroke-width="1"/><line x1="55.7" y1="55.7" x2="51.5" y2="51.5" stroke="var(--line)" stroke-width="1"/><line x1="76.0" y1="40.1" x2="73.0" y2="34.9" stroke="var(--line)" stroke-width="1"/><line x1="99.6" y1="30.3" x2="98.1" y2="24.5" stroke="var(--line)" stroke-width="1"/><text x="125.0" y="12.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">00</text><text x="242.0" y="129.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">06</text><text x="125.0" y="246.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">12</text><text x="8.0" y="129.0" text-anchor="middle" font-family="var(--ff-display)" font-weight="700" font-size="10" fill="var(--muted)">18</text><path d="M125 125 L28.0 125.0 A97 97 0 0 1 125.0 28.0 Z" fill="var(--surface2)" opacity=".9"/><circle cx="197.1" cy="154.8" r="7" fill="var(--d1)"/><circle cx="160.4" cy="194.5" r="7" fill="var(--d1)"/><circle cx="97.0" cy="197.8" r="7" fill="var(--d1)"/><line x1="125" y1="125" x2="31.6" y2="160.8" stroke="var(--text)" stroke-width="2"/><circle cx="125" cy="125" r="18" fill="var(--bg)" stroke="var(--line)"/></svg>
+<div class="sxc-tally"><span class="sxc-pip c"></span>Coffee<span class="n">3 cups</span><span class="plus">+</span></div>
+<div class="sxc-tally"><span class="sxc-pip"></span>Wine<span class="n">0 glasses</span><span class="plus">+</span></div>
+<div class="sxc-tally"><span class="sxc-pip g"></span>Cigarettes<span class="n">0</span><span class="plus">+</span></div>
+<p class="sxc-small">The shaded evening on the dial is the hours the plan covers.</p>
+</div></div><p class="sxc-capnote">Tapping it opens Today with the same strip as option B.</p></div><div class="sxc-col"><p class="sxc-cap">4. Result</p><div class="sxc-phone"><div class="sxc-status"><span>9:41</span><span aria-hidden="true">&#9679;&#9679;&#9679; &#9645;</span></div>
+<div class="sxc-bar"><div class="sxc-circ" aria-hidden="true">&lsaquo;</div><h3 class="sxc-titlexl">Insights</h3></div>
+<div class="sxc-pad">
+<p class="sxc-sec">Your experiment</p>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip"></span>Wine &middot; deep sleep &middot; finished 24 Dec</div>
+<p class="sxc-sent">On the nights you had no Wine after 18:00, your deep sleep was 12&nbsp;min more than on the other nights.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="74.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="90.0" y="4" width="150.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="165.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 2 to 22 min more</p>
+<p class="sxc-small">From 40 nights, 20 of each (2 had no sleep data)</p>
+<p class="sxc-small">Plan kept on 39 of 42 days: Wine was logged after 18:00 on 3 <i>none</i> days, counted where they were planned</p>
+<div style="display:grid;gap:4px;margin:10px 0 4px"><div class="sxc-days"><i class="n"></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class=""></i><i class="n"></i><i class=""></i><i class="x"></i><i class="n"></i><i class=""></i><i class=""></i></div><div class="sxc-days"><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class=""></i><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class="x"></i><i class=""></i><i class="n"></i></div><div class="sxc-days"><i class="n"></i><i class=""></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i><i class=""></i><i class=""></i><i class="n"></i><i class="x"></i><i class=""></i><i class="n"></i><i class="n"></i><i class=""></i></div></div>
+<div class="sxc-legend"><span><i class="n"></i>none after 18:00</span><span><i></i>as usual</span><span><i class="x"></i>Wine on a none day</span></div>
+<p class="sxc-small" style="margin-top:6px">Before the experiment your journal showed 14 min (6 to 22). Because the days were picked at random, this one is the stronger evidence.</p>
+</div>
+<div class="sxc-card">
+<div class="sxc-head"><span class="sxc-pip c"></span>Coffee &middot; time asleep &middot; finished 3 Oct</div>
+<p class="sxc-sent">Can&rsquo;t tell: on the nights with no Coffee after 14:00, your time asleep was 6&nbsp;min more, inside your usual night-to-night swing.</p>
+<svg class="sxc-range" viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="6" width="300" height="2" rx="1" fill="var(--line)"/><rect x="119.25" y="0" width="1.5" height="14" fill="var(--spoke)"/><rect x="60.0" y="4" width="192.0" height="6" rx="3" fill="var(--surface2)" stroke="var(--text)" stroke-width="1"/><circle cx="156.0" cy="7" r="4" fill="var(--text)"/></svg>
+<p class="sxc-small">Range: 10 min less to 22 min more</p>
+<p class="sxc-small">From 27 nights &middot; <span style="text-decoration:underline;font-weight:600;color:var(--text)">Run it 4 more weeks</span></p>
+</div>
+</div></div><p class="sxc-capnote">Same as option B.</p></div></div>
+</template>
+<template id="mock-weather-a"><!-- Option A: no weather; daylight only (being built). Mock-up, copy invented to match today's finding cards. -->
+<style>
+.wxa{--wxa-bg:#F6F4EF;--wxa-surface:#FFFFFF;--wxa-surface2:#EFECE5;--wxa-text:#1D1C1A;--wxa-muted:#635E56;--wxa-line:#1D1C1A1A;--wxa-outline:#1D1C1A8C;--wxa-accent:#1D1C1A;--wxa-onaccent:#F6F4EF;--wxa-d1:#FFB347;--wxa-d2:#FF7A59;--wxa-d3:#E8505B;--wxa-d1i:#8F5600;--wxa-d2i:#B03E1C;--wxa-d3i:#B42A37;--wxa-spoke:#1D1C1A80;--wxa-clear:#E3EFE4;--wxa-clearink:#276B43;
+  --wxa-display:"Red Hat Display",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --wxa-txt:"Red Hat Text",-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --wxa-mono:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wxa{--wxa-bg:#151412;--wxa-surface:#1F1D1B;--wxa-surface2:#2A2825;--wxa-text:#F3F0EA;--wxa-muted:#ACA79D;--wxa-line:#F3F0EA1F;--wxa-outline:#F3F0EA66;--wxa-accent:#F3F0EA;--wxa-onaccent:#1D1C1A;--wxa-d1:#FFB347;--wxa-d2:#FF7A59;--wxa-d3:#E95963;--wxa-d1i:#FFB347;--wxa-d2i:#FF7A59;--wxa-d3i:#F0737C;--wxa-spoke:#F3F0EA80;--wxa-clear:#15241B;--wxa-clearink:#9ED8B0}}
+:root[data-theme="dark"] .wxa{--wxa-bg:#151412;--wxa-surface:#1F1D1B;--wxa-surface2:#2A2825;--wxa-text:#F3F0EA;--wxa-muted:#ACA79D;--wxa-line:#F3F0EA1F;--wxa-outline:#F3F0EA66;--wxa-accent:#F3F0EA;--wxa-onaccent:#1D1C1A;--wxa-d1:#FFB347;--wxa-d2:#FF7A59;--wxa-d3:#E95963;--wxa-d1i:#FFB347;--wxa-d2i:#FF7A59;--wxa-d3i:#F0737C;--wxa-spoke:#F3F0EA80;--wxa-clear:#15241B;--wxa-clearink:#9ED8B0}
+.wxa *{box-sizing:border-box}
+.wxa figure{margin:0;display:grid;gap:8px;width:390px;max-width:100%}
+.wxa figcaption{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted);padding:0 4px}
+.wxa .ph{width:100%;background:var(--wxa-bg);color:var(--wxa-text);border:1px solid var(--wxa-line);border-radius:44px;
+  padding:14px 20px 28px;font:400 15px/21px var(--wxa-txt);display:grid;gap:12px;overflow:hidden}
+.wxa .sb{display:flex;justify-content:space-between;font:600 15px/20px var(--wxa-txt);padding:4px 10px 6px}
+.wxa .bar{display:flex;align-items:center;gap:10px}
+.wxa .circ{width:40px;height:40px;border-radius:999px;background:var(--wxa-surface);border:1px solid var(--wxa-line);
+  display:grid;place-items:center;font:600 18px/1 var(--wxa-txt)}
+.wxa h4{margin:0;font:900 34px/40px var(--wxa-display);letter-spacing:-.5px}
+.wxa h5{margin:6px 4px 0;font:600 13px/18px var(--wxa-txt);color:var(--wxa-muted);letter-spacing:.04em;text-transform:uppercase}
+.wxa .card{background:var(--wxa-surface);border-radius:24px;border:1px solid var(--wxa-line);padding:14px 18px 16px;display:grid;gap:6px}
+.wxa .row{display:flex;gap:12px;align-items:center}
+.wxa .row .t{flex:1;display:grid;gap:2px}
+.wxa .lab{font:600 15px/20px var(--wxa-txt)}
+.wxa .sub{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .chev{font:600 18px/1 var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .val{font:400 15px/20px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .kick{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .pip{width:12px;height:12px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.25px var(--wxa-ink)}
+.wxa .big{font:500 16px/22px var(--wxa-txt)}
+.wxa .sm{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted)}
+.wxa .rng{position:relative;height:14px;margin:6px 0 2px}
+.wxa .rng .tr{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--wxa-line)}
+.wxa .rng .z{position:absolute;top:0;bottom:0;width:1.5px;background:var(--wxa-spoke)}
+.wxa .rng .iv{position:absolute;top:3px;height:8px;border-radius:999px;background:var(--wxa-surface2);border:1.5px solid var(--wxa-text)}
+.wxa .rng .pt{position:absolute;top:2px;width:10px;height:10px;border-radius:999px;background:var(--wxa-text);margin-left:-5px}
+.wxa .pill{height:52px;border-radius:999px;display:grid;place-items:center;font:600 15px/20px var(--wxa-txt)}
+.wxa .pill.pri{background:var(--wxa-accent);color:var(--wxa-onaccent)}
+.wxa .pill.sec{border:1px solid var(--wxa-outline);color:var(--wxa-text)}
+.wxa ul.leave{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wxa ul.leave li{display:grid;grid-template-columns:18px 1fr;gap:6px;font:400 13px/18px var(--wxa-txt)}
+.wxa ul.leave li b{font-weight:600}
+.wxa .mono{font-family:var(--wxa-mono);font-weight:500}
+.wxa .tag{display:inline-block;font:600 11px/16px var(--wxa-txt);letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--wxa-surface2);color:var(--wxa-muted)}
+.wxa .foot{font:400 13px/18px var(--wxa-txt);color:var(--wxa-muted);padding:0 4px}
+.wxa .foot.changed{border-left:3px solid var(--wxa-outline);padding-left:8px}
+.wxa .sheet{background:var(--wxa-surface);border-radius:32px 32px 0 0;border:1px solid var(--wxa-line);padding:10px 20px 20px;display:grid;gap:12px;margin:0 -20px -28px}
+.wxa .grab{width:36px;height:5px;border-radius:999px;background:var(--wxa-line);margin:0 auto 4px}
+.wxa .sheet h6{margin:0;font:900 26px/32px var(--wxa-display);letter-spacing:-.3px}
+.wxa .dim{opacity:.45}
+.wxa code{font:500 11px/16px var(--wxa-mono);word-break:break-all;color:var(--wxa-muted);background:var(--wxa-surface2);
+  border-radius:10px;padding:8px 10px;display:block}
+</style>
+<div class="wxa">
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<h5>What sets it off</h5>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxa-d2);--wxa-ink:var(--wxa-d2i)"></span><span>Wine &#183; Daylight</span></div>
+  <div class="big">On days with under 9 hours of daylight you log Wine 0.8 glasses more than on longer days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:38%;width:46%"></div><div class="pt" style="left:60%"></div></div>
+  <div class="sm">Range: 0.3 to 1.4 glasses more</div>
+  <div class="sm">From 212 days with Wine, 71 of them with under 9 hours of daylight</div>
+</div>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxa-d1);--wxa-ink:var(--wxa-d1i)"></span><span>Coffee &#183; Calendar</span></div>
+  <div class="big">In the hour after a calendar event ends, you log Coffee 64% of the time, against 21% at the same time on nearby days without one.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:10%"></div><div class="iv" style="left:40%;width:22%"></div><div class="pt" style="left:53%"></div></div>
+  <div class="sm">Range: 30 to 52 points more often</div>
+  <div class="sm">From 42 days with calendar events, against the same times on 38 nearby days clear of events</div>
+</div>
+<p class="foot">Worked out on this device from your journal and Apple Health; Penchant sends none of it anywhere. These are patterns in your own days, not medical advice, and a pattern doesn&#8217;t show that one thing causes another.</p>
+</div>
+<figcaption>No weather. Daylight (sunrise, sunset, day length, worked out on the phone with no network) arrives as its own finding. The footer&#8217;s promise stands as written.</figcaption>
+</figure>
+</div>
+</template>
+<template id="mock-weather-b"><!-- Option B: Open-Meteo, opt-in, area rounded to 1 degree. Mock-up; finding copy invented in the shape of today's cards. -->
+<style>
+.wxb{--wxb-bg:#F6F4EF;--wxb-surface:#FFFFFF;--wxb-surface2:#EFECE5;--wxb-text:#1D1C1A;--wxb-muted:#635E56;--wxb-line:#1D1C1A1A;--wxb-outline:#1D1C1A8C;--wxb-accent:#1D1C1A;--wxb-onaccent:#F6F4EF;--wxb-d1:#FFB347;--wxb-d2:#FF7A59;--wxb-d3:#E8505B;--wxb-d1i:#8F5600;--wxb-d2i:#B03E1C;--wxb-d3i:#B42A37;--wxb-spoke:#1D1C1A80;--wxb-clear:#E3EFE4;--wxb-clearink:#276B43;
+  --wxb-display:"Red Hat Display",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --wxb-txt:"Red Hat Text",-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --wxb-mono:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wxb{--wxb-bg:#151412;--wxb-surface:#1F1D1B;--wxb-surface2:#2A2825;--wxb-text:#F3F0EA;--wxb-muted:#ACA79D;--wxb-line:#F3F0EA1F;--wxb-outline:#F3F0EA66;--wxb-accent:#F3F0EA;--wxb-onaccent:#1D1C1A;--wxb-d1:#FFB347;--wxb-d2:#FF7A59;--wxb-d3:#E95963;--wxb-d1i:#FFB347;--wxb-d2i:#FF7A59;--wxb-d3i:#F0737C;--wxb-spoke:#F3F0EA80;--wxb-clear:#15241B;--wxb-clearink:#9ED8B0}}
+:root[data-theme="dark"] .wxb{--wxb-bg:#151412;--wxb-surface:#1F1D1B;--wxb-surface2:#2A2825;--wxb-text:#F3F0EA;--wxb-muted:#ACA79D;--wxb-line:#F3F0EA1F;--wxb-outline:#F3F0EA66;--wxb-accent:#F3F0EA;--wxb-onaccent:#1D1C1A;--wxb-d1:#FFB347;--wxb-d2:#FF7A59;--wxb-d3:#E95963;--wxb-d1i:#FFB347;--wxb-d2i:#FF7A59;--wxb-d3i:#F0737C;--wxb-spoke:#F3F0EA80;--wxb-clear:#15241B;--wxb-clearink:#9ED8B0}
+.wxb *{box-sizing:border-box}
+.wxb figure{margin:0;display:grid;gap:8px;width:390px;max-width:100%}
+.wxb figcaption{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted);padding:0 4px}
+.wxb .ph{width:100%;background:var(--wxb-bg);color:var(--wxb-text);border:1px solid var(--wxb-line);border-radius:44px;
+  padding:14px 20px 28px;font:400 15px/21px var(--wxb-txt);display:grid;gap:12px;overflow:hidden}
+.wxb .sb{display:flex;justify-content:space-between;font:600 15px/20px var(--wxb-txt);padding:4px 10px 6px}
+.wxb .bar{display:flex;align-items:center;gap:10px}
+.wxb .circ{width:40px;height:40px;border-radius:999px;background:var(--wxb-surface);border:1px solid var(--wxb-line);
+  display:grid;place-items:center;font:600 18px/1 var(--wxb-txt)}
+.wxb h4{margin:0;font:900 34px/40px var(--wxb-display);letter-spacing:-.5px}
+.wxb h5{margin:6px 4px 0;font:600 13px/18px var(--wxb-txt);color:var(--wxb-muted);letter-spacing:.04em;text-transform:uppercase}
+.wxb .card{background:var(--wxb-surface);border-radius:24px;border:1px solid var(--wxb-line);padding:14px 18px 16px;display:grid;gap:6px}
+.wxb .row{display:flex;gap:12px;align-items:center}
+.wxb .row .t{flex:1;display:grid;gap:2px}
+.wxb .lab{font:600 15px/20px var(--wxb-txt)}
+.wxb .sub{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .chev{font:600 18px/1 var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .val{font:400 15px/20px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .kick{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .pip{width:12px;height:12px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.25px var(--wxb-ink)}
+.wxb .big{font:500 16px/22px var(--wxb-txt)}
+.wxb .sm{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted)}
+.wxb .rng{position:relative;height:14px;margin:6px 0 2px}
+.wxb .rng .tr{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--wxb-line)}
+.wxb .rng .z{position:absolute;top:0;bottom:0;width:1.5px;background:var(--wxb-spoke)}
+.wxb .rng .iv{position:absolute;top:3px;height:8px;border-radius:999px;background:var(--wxb-surface2);border:1.5px solid var(--wxb-text)}
+.wxb .rng .pt{position:absolute;top:2px;width:10px;height:10px;border-radius:999px;background:var(--wxb-text);margin-left:-5px}
+.wxb .pill{height:52px;border-radius:999px;display:grid;place-items:center;font:600 15px/20px var(--wxb-txt)}
+.wxb .pill.pri{background:var(--wxb-accent);color:var(--wxb-onaccent)}
+.wxb .pill.sec{border:1px solid var(--wxb-outline);color:var(--wxb-text)}
+.wxb ul.leave{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wxb ul.leave li{display:grid;grid-template-columns:18px 1fr;gap:6px;font:400 13px/18px var(--wxb-txt)}
+.wxb ul.leave li b{font-weight:600}
+.wxb .mono{font-family:var(--wxb-mono);font-weight:500}
+.wxb .tag{display:inline-block;font:600 11px/16px var(--wxb-txt);letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--wxb-surface2);color:var(--wxb-muted)}
+.wxb .foot{font:400 13px/18px var(--wxb-txt);color:var(--wxb-muted);padding:0 4px}
+.wxb .foot.changed{border-left:3px solid var(--wxb-outline);padding-left:8px}
+.wxb .sheet{background:var(--wxb-surface);border-radius:32px 32px 0 0;border:1px solid var(--wxb-line);padding:10px 20px 20px;display:grid;gap:12px;margin:0 -20px -28px}
+.wxb .grab{width:36px;height:5px;border-radius:999px;background:var(--wxb-line);margin:0 auto 4px}
+.wxb .sheet h6{margin:0;font:900 26px/32px var(--wxb-display);letter-spacing:-.3px}
+.wxb .dim{opacity:.45}
+.wxb code{font:500 11px/16px var(--wxb-mono);word-break:break-all;color:var(--wxb-muted);background:var(--wxb-surface2);
+  border-radius:10px;padding:8px 10px;display:block}
+</style>
+<div class="wxb">
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<div class="card">
+  <div class="row"><div class="t"><span class="lab">Compare with the weather</span>
+  <span class="sub">Needs Penchant to send a rough area and a range of dates to Open-Meteo, a free weather service. Off until you turn it on.</span></div><span class="chev">&#8250;</span></div>
+</div>
+<div class="sheet">
+  <div class="grab"></div>
+  <h6>Weather</h6>
+  <p style="margin:0">To compare your habits with rain, temperature and sunshine, Penchant asks Open-Meteo for past weather. This is the only thing in Insights that leaves this iPhone.</p>
+  <ul class="leave">
+    <li><span>&#8599;</span><span><b>Sent:</b> your area to the nearest degree (a square about 100&#8202;km across), the dates from 1&#160;January of the year you started to today, and which weather to return.</span></li>
+    <li><span>&#8599;</span><span><b>Also seen:</b> this iPhone&#8217;s internet address, which can place you more closely than the area does. Open-Meteo keeps request logs for up to 90 days.</span></li>
+    <li><span>&#8599;</span><span><b>Again:</b> once a week for the newest days, and once for each new area you spend a day in.</span></li>
+    <li><span>&#10003;</span><span><b>Never sent:</b> your habits, entries, times, triggers, Health data or account.</span></li>
+  </ul>
+  <code>archive-api.open-meteo.com/v1/archive?latitude=51&amp;longitude=0&amp;start_date=2025-01-01&amp;end_date=2026-11-12&amp;daily=temperature_2m_max,precipitation_sum,sunshine_duration&amp;timezone=auto</code>
+  <div class="pill pri">Turn on weather</div>
+  <div class="pill sec">Not now</div>
+</div>
+</div>
+<figcaption>The opt-in, from a card in Insights. The sheet lists exactly what leaves the phone, with the request itself (example values).</figcaption>
+</figure>
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<h5>What sets it off</h5>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxb-d2);--wxb-ink:var(--wxb-d2i)"></span><span>Wine &#183; Weather</span></div>
+  <div class="big">On days with more than 5&#8202;mm of rain you log Wine 0.6 glasses more than on dry days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:30%;width:42%"></div><div class="pt" style="left:51%"></div></div>
+  <div class="sm">Range: 0.1 to 1.1 glasses more</div>
+  <div class="sm">From 212 days with Wine, 48 of them with more than 5&#8202;mm of rain</div>
+  <div class="sm">Weather for your area, about 100&#8202;km across, from Open-Meteo (CC BY 4.0)</div>
+</div>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxb-d2);--wxb-ink:var(--wxb-d2i)"></span><span>Wine &#183; Daylight</span></div>
+  <div class="big">On days with under 9 hours of daylight you log Wine 0.8 glasses more than on longer days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:38%;width:46%"></div><div class="pt" style="left:60%"></div></div>
+  <div class="sm">Range: 0.3 to 1.4 glasses more</div>
+  <div class="sm">From 212 days with Wine, 71 of them with under 9 hours of daylight</div>
+</div>
+<p class="foot changed">Worked out on this device from your journal, Apple Health and past weather for your area. Penchant sends only that area and the dates to Open-Meteo, and none of your journal or Health data anywhere. These are patterns in your own days, not medical advice, and a pattern doesn&#8217;t show that one thing causes another.</p>
+</div>
+<figcaption>A resulting finding. The source line is required by Open-Meteo&#8217;s licence. The footer, which today says Penchant sends nothing anywhere, has to change (marked).</figcaption>
+</figure>
+</div>
+</template>
+<template id="mock-weather-c"><!-- Option C: wait for a paid Apple developer team and WeatherKit. Mock-up of what would come later. -->
+<style>
+.wxc{--wxc-bg:#F6F4EF;--wxc-surface:#FFFFFF;--wxc-surface2:#EFECE5;--wxc-text:#1D1C1A;--wxc-muted:#635E56;--wxc-line:#1D1C1A1A;--wxc-outline:#1D1C1A8C;--wxc-accent:#1D1C1A;--wxc-onaccent:#F6F4EF;--wxc-d1:#FFB347;--wxc-d2:#FF7A59;--wxc-d3:#E8505B;--wxc-d1i:#8F5600;--wxc-d2i:#B03E1C;--wxc-d3i:#B42A37;--wxc-spoke:#1D1C1A80;--wxc-clear:#E3EFE4;--wxc-clearink:#276B43;
+  --wxc-display:"Red Hat Display",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --wxc-txt:"Red Hat Text",-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --wxc-mono:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wxc{--wxc-bg:#151412;--wxc-surface:#1F1D1B;--wxc-surface2:#2A2825;--wxc-text:#F3F0EA;--wxc-muted:#ACA79D;--wxc-line:#F3F0EA1F;--wxc-outline:#F3F0EA66;--wxc-accent:#F3F0EA;--wxc-onaccent:#1D1C1A;--wxc-d1:#FFB347;--wxc-d2:#FF7A59;--wxc-d3:#E95963;--wxc-d1i:#FFB347;--wxc-d2i:#FF7A59;--wxc-d3i:#F0737C;--wxc-spoke:#F3F0EA80;--wxc-clear:#15241B;--wxc-clearink:#9ED8B0}}
+:root[data-theme="dark"] .wxc{--wxc-bg:#151412;--wxc-surface:#1F1D1B;--wxc-surface2:#2A2825;--wxc-text:#F3F0EA;--wxc-muted:#ACA79D;--wxc-line:#F3F0EA1F;--wxc-outline:#F3F0EA66;--wxc-accent:#F3F0EA;--wxc-onaccent:#1D1C1A;--wxc-d1:#FFB347;--wxc-d2:#FF7A59;--wxc-d3:#E95963;--wxc-d1i:#FFB347;--wxc-d2i:#FF7A59;--wxc-d3i:#F0737C;--wxc-spoke:#F3F0EA80;--wxc-clear:#15241B;--wxc-clearink:#9ED8B0}
+.wxc *{box-sizing:border-box}
+.wxc figure{margin:0;display:grid;gap:8px;width:390px;max-width:100%}
+.wxc figcaption{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted);padding:0 4px}
+.wxc .ph{width:100%;background:var(--wxc-bg);color:var(--wxc-text);border:1px solid var(--wxc-line);border-radius:44px;
+  padding:14px 20px 28px;font:400 15px/21px var(--wxc-txt);display:grid;gap:12px;overflow:hidden}
+.wxc .sb{display:flex;justify-content:space-between;font:600 15px/20px var(--wxc-txt);padding:4px 10px 6px}
+.wxc .bar{display:flex;align-items:center;gap:10px}
+.wxc .circ{width:40px;height:40px;border-radius:999px;background:var(--wxc-surface);border:1px solid var(--wxc-line);
+  display:grid;place-items:center;font:600 18px/1 var(--wxc-txt)}
+.wxc h4{margin:0;font:900 34px/40px var(--wxc-display);letter-spacing:-.5px}
+.wxc h5{margin:6px 4px 0;font:600 13px/18px var(--wxc-txt);color:var(--wxc-muted);letter-spacing:.04em;text-transform:uppercase}
+.wxc .card{background:var(--wxc-surface);border-radius:24px;border:1px solid var(--wxc-line);padding:14px 18px 16px;display:grid;gap:6px}
+.wxc .row{display:flex;gap:12px;align-items:center}
+.wxc .row .t{flex:1;display:grid;gap:2px}
+.wxc .lab{font:600 15px/20px var(--wxc-txt)}
+.wxc .sub{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .chev{font:600 18px/1 var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .val{font:400 15px/20px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .kick{display:flex;align-items:center;gap:8px;font:600 15px/20px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .pip{width:12px;height:12px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.25px var(--wxc-ink)}
+.wxc .big{font:500 16px/22px var(--wxc-txt)}
+.wxc .sm{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted)}
+.wxc .rng{position:relative;height:14px;margin:6px 0 2px}
+.wxc .rng .tr{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--wxc-line)}
+.wxc .rng .z{position:absolute;top:0;bottom:0;width:1.5px;background:var(--wxc-spoke)}
+.wxc .rng .iv{position:absolute;top:3px;height:8px;border-radius:999px;background:var(--wxc-surface2);border:1.5px solid var(--wxc-text)}
+.wxc .rng .pt{position:absolute;top:2px;width:10px;height:10px;border-radius:999px;background:var(--wxc-text);margin-left:-5px}
+.wxc .pill{height:52px;border-radius:999px;display:grid;place-items:center;font:600 15px/20px var(--wxc-txt)}
+.wxc .pill.pri{background:var(--wxc-accent);color:var(--wxc-onaccent)}
+.wxc .pill.sec{border:1px solid var(--wxc-outline);color:var(--wxc-text)}
+.wxc ul.leave{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wxc ul.leave li{display:grid;grid-template-columns:18px 1fr;gap:6px;font:400 13px/18px var(--wxc-txt)}
+.wxc ul.leave li b{font-weight:600}
+.wxc .mono{font-family:var(--wxc-mono);font-weight:500}
+.wxc .tag{display:inline-block;font:600 11px/16px var(--wxc-txt);letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--wxc-surface2);color:var(--wxc-muted)}
+.wxc .foot{font:400 13px/18px var(--wxc-txt);color:var(--wxc-muted);padding:0 4px}
+.wxc .foot.changed{border-left:3px solid var(--wxc-outline);padding-left:8px}
+.wxc .sheet{background:var(--wxc-surface);border-radius:32px 32px 0 0;border:1px solid var(--wxc-line);padding:10px 20px 20px;display:grid;gap:12px;margin:0 -20px -28px}
+.wxc .grab{width:36px;height:5px;border-radius:999px;background:var(--wxc-line);margin:0 auto 4px}
+.wxc .sheet h6{margin:0;font:900 26px/32px var(--wxc-display);letter-spacing:-.3px}
+.wxc .dim{opacity:.45}
+.wxc code{font:500 11px/16px var(--wxc-mono);word-break:break-all;color:var(--wxc-muted);background:var(--wxc-surface2);
+  border-radius:10px;padding:8px 10px;display:block}
+</style>
+<div class="wxc">
+<figure>
+<div class="ph">
+<div class="sb"><span class="mono">9:41</span><span>&#9679;&#9679;&#9679;</span></div><div class="bar"><span class="circ">&#8249;</span></div><h4>Insights</h4>
+<div class="card">
+  <div class="row"><div class="t"><span class="lab">Compare with the weather</span>
+  <span class="sub">Penchant asks Apple Weather for past weather in your area. Apple says the location is used only for the forecast and not tied to you.</span></div><span class="tag">Later</span></div>
+</div>
+<h5>What sets it off</h5>
+<div class="card">
+  <div class="kick"><span class="pip" style="background:var(--wxc-d2);--wxc-ink:var(--wxc-d2i)"></span><span>Wine &#183; Weather</span></div>
+  <div class="big">On days with more than 5&#8202;mm of rain you log Wine 0.6 glasses more than on dry days.</div>
+  <div class="rng" aria-hidden="true"><div class="tr"></div><div class="z" style="left:20%"></div><div class="iv" style="left:30%;width:42%"></div><div class="pt" style="left:51%"></div></div>
+  <div class="sm">Range: 0.1 to 1.1 glasses more</div>
+  <div class="sm">From 212 days with Wine, 48 of them with more than 5&#8202;mm of rain</div>
+  <div class="sm">&#63743;&#8202;Weather &#183; Other data sources</div>
+</div>
+<p class="foot">Until then Insights looks exactly like option A: daylight only, footer unchanged.</p>
+</div>
+<figcaption>Only once there is a paid Apple developer team (US$99 a year). The phone still sends a location to Apple to get the weather, so the footer still has to change; what improves is who receives it.</figcaption>
+</figure>
+</div>
+</template>
+<script>
+const CALLS = [{"id": "capture-detail", "q": "What extra detail should a log be able to carry?", "today": "A log stores the habit, the amount, the time and any \"What was going on?\" tags. A one-tap log shows an Undo bar that also offers the tag picker; the amount sheet takes amount, time and tags. You already decided that new details are optional and old entries stay untouched. You have not decided which details, or which screen asks.", "now": "History that is not collected cannot be added later. The time zone of a log is the clearest case: an entry made abroad sits on the wrong hour in Insights today.", "opts": [["a", "Leave as is", "Nothing changes.", "No cost. Entries logged while travelling stay on the wrong hour, and a log filled in later looks the same as a live one."], ["b", "Silent details only", "Each new entry also stores its time zone, when it was written and how it was logged (one tap, sheet or widget). Nothing changes on screen.", "About 1 day. One small change to the database rules. No extra taps."], ["c", "Silent details, plus an urge row and a note", "The amount sheet, the entry editor and the tag picker each gain two optional rows: urge from 1 to 5, and a one-line note. One tap stays one tap.", "About 3 to 4 days in all. Urge is the only new field Insights could measure that Health and the tags do not already cover. If the Mac runs an older build and edits an entry's tags, that entry loses its urge and note.", true], ["d", "Silent details, plus a full detail sheet after every one-tap log", "After a one-tap log a sheet offers mood, with whom, where, urge and a note.", "5 to 7 days. Mood repeats Health's State of Mind; with whom and where repeat the existing tags. It adds a step to the fastest path in the app."]], "rec": "C. It collects the two things nothing else records, costs no extra tap, and starts the time-zone history now.", "nothing": "Same as A. Nothing is collected.", "imgs": []}, {"id": "goals", "q": "Should a habit be able to carry an optional personal limit?", "today": "Penchant has no goals or limits. You rejected the moderation and quit-counter framings: it is a neutral journal. Insights can already find \"where's the line\" (the amount above which a night gets worse), but nothing in the app lets you hold yourself to a number.", "now": "It was in the backlog with only my suggested timing (\"after a paid release\"), which no longer means anything now the app is just for you.", "opts": [["a", "Never build it", "Nothing changes.", "No cost. Staying under a number is done in your head against the tally."], ["b", "A quiet line per habit", "Edit Habit gains \"Your line (optional)\": a number per day or per week, off by default. Today shows \"of 3\" and a thin bar with a tick; Trends shows a dashed line. Going over changes no colour and sends no alert. A habit without a line looks exactly as now.", "About 3 days. Risk: the app drifts toward a cutting-down tool if the wording slips.", true], ["c", "B, plus Insights offers its line", "An Insights \"where's the line\" card gets a button: \"Mark 3 a day as Wine's line\".", "About 4 days. The Insights line is only where your past days split most cleanly, not a safe amount, and it can move. This is the first place the app would propose a number to you."]], "rec": "B. It serves you when you want a number and is invisible when you do not. C would present a statistical split as advice.", "nothing": "Same as A.", "imgs": []}, {"id": "self-experiments", "q": "Should Insights be able to run an experiment on one of its findings?", "today": "Insights reports what goes with what in your journal and Apple Health, for example \"after Wine, deep sleep is 14 minutes lower\". It cannot say whether Wine causes the drop or only comes with it.", "now": "It is the one question the current engine cannot answer, and it is the largest unbuilt piece of Insights. It was only ever my suggestion.", "opts": [["a", "Do not build it", "Findings stay \"goes with\".", "No cost."], ["b", "Experiment from a finding card, shown in the app", "A \"Test this for 6 weeks\" button on a finding. The app picks days at random (about half \"none after 18:00\"), shows the day's plan above the dial, and ends with a result card: the difference, its range, and how many days you kept to the plan, read from your own logs.", "4 to 5 days. You only learn the day's plan if you open the app, and missed days weaken a test that is only just long enough. The plan lives on the iPhone only."], ["c", "B, plus a daily notification with the day's plan", "At a time you pick: \"Experiment, day 9 of 42. Today is a none day, from 18:00.\" It never names the habit.", "5 to 6 days. One quiet notification a day while a test runs. The real cost is yours: about 21 evenings without the habit over 6 weeks.", true]], "rec": "C, after the current Insights work. The plan has to reach you in the evening, when you decide; that is worth the extra day.", "nothing": "Same as A.", "imgs": []}, {"id": "weather", "q": "Should Insights use the weather?", "today": "Daylight (sunrise, sunset, day length) is now worked out on the phone with no network. Weather is not read. Apple's weather service needs the paid developer team you do not have. A free service, Open-Meteo, needs no key but must be sent a rough location.", "now": "You said to add every source. Weather is the only one where the phone would have to send something about you to a third party, which the app promises never to do.", "opts": [["a", "No weather; daylight only", "Nothing more is built.", "No cost. A pattern that is truly about rain or heat, not season, is missed.", true], ["b", "Open-Meteo, opt-in, area rounded to about 100 km", "An Insights card, off by default, says exactly what is sent. Sent: latitude and longitude rounded to whole degrees, a date range, and your internet address as with any request. Never sent: habits, entries, Health data or any account id.", "3 to 4 days. Their logs keep coordinates and addresses for 90 days. The free tier is for non-commercial use only. A 100 km cell blurs local rain."], ["c", "Wait for a paid Apple team", "Nothing now. Later, Apple Weather supplies it.", "US$99 a year for the team. The location still leaves the phone, to Apple instead."]], "rec": "A. Day length already covers the seasonal part, and \"nothing leaves the phone\" stays true without exceptions.", "nothing": "Same as A.", "imgs": []}, {"id": "app-lock", "q": "Turn on the app lock I built?", "today": "You decided earlier that an app lock would be free, then it was parked with the App Store work. It is now built and waiting as a draft pull request (#283, an app lock with Face ID, Touch ID or passcode). Settings gets an App lock switch, off by default. When on, Penchant opens to a lock screen at launch and after a minute away, and the iPhone app switcher shows a plain cover.", "now": "The work is done; merging it is the only step left. It changes nothing until you flip the switch.", "imgs": [["Lock screen", "app-lock/app-lock-lock-screen-light.png"], ["Lock screen, dark", "app-lock/app-lock-lock-screen-dark.png"], ["Settings row", "app-lock/app-lock-settings-light.png"]], "opts": [["a", "Merge it", "The switch appears in Settings, off.", "Not yet run on a device: the Face ID prompt itself and whether the cover beats the app-switcher snapshot. Widgets, Control Centre, Siri and the Mac menu bar can still show or log habits while the app is locked.", true], ["b", "Leave it parked", "The draft stays open, unmerged.", "It goes stale as the app changes."], ["c", "Drop it", "The draft is closed.", "None."]], "rec": "A. It is off by default, so the unproven parts cannot affect you until you try it.", "nothing": "Same as B."}, {"id": "units-cost", "q": "Install the build that lets a habit have its own unit and a price?", "today": "Built and passing its checks, waiting in two pull requests (#282: a habit can carry its own unit name such as \"cups\", a cost per unit and a currency; #287: Trends can show spend, a Health measure under the habit line, and tags over time). The new habit fields are encrypted with the habit's name. Merging also sends a small database-rules change to production through the usual automatic deploy.", "now": "Your rule is that I ask before installing anything that changes the shape of stored data. One wrinkle: the Mac is held on an older build until you confirm its background sync works. If that older Mac build renames a habit or changes its unit, it silently drops that habit's new unit name and price, and you would type them again.", "opts": [["a", "Merge and install on the iPhone now", "Units, cost and the new Trends views arrive on the iPhone today. The Mac gets them after its sync check.", "Until the Mac is updated, do not rename or re-unit a priced habit on the Mac.", true], ["b", "Hold until the Mac can update too", "Both devices get it together, after you confirm the Mac sync check (see \"For you to do\").", "Nothing arrives until then."]], "rec": "A. The only thing at risk is a label and a price you can re-enter, and only if you edit that habit on the Mac.", "nothing": "Same as B: the two pull requests stay open.", "imgs": []}, {"id": "index-check", "q": "Let a weekly job read the live database's index list?", "today": "The repository holds the list of database indexes the app needs. Nothing checks that the live Firebase project matches it, and my notes disagree on whether four old unlisted indexes still exist there. I am not allowed to look at production, so I cannot settle it. A draft pull request (#285, a weekly read-only index check) adds a Monday job that lists the live indexes with the existing deploy account and fails with a diff if they differ from the file. It reads the index list only and writes nothing.", "now": "It is the last open item in the technical-debt register.", "opts": [["a", "Merge the weekly check", "A red job tells us when production and the file disagree. The first run settles the four-index question.", "The job has never run; its first run may need a fix. It gives CI one more reason to touch production, read-only.", true], ["b", "Leave it", "Nothing changes.", "A missing index shows up only as a failed query in the app."]], "rec": "A. Read-only, weekly, and it closes the register.", "nothing": "Same as B.", "imgs": []}];
+const picks = {};
+const host = document.getElementById('calls');
+function el(tag, cls, text){const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e;}
+function block(label, text){const d=el('div','block'); d.append(el('h3',null,label), el('p',null,text)); return d;}
+function render(){
+  host.replaceChildren(...CALLS.map(c=>{
+    const s=el('section','call');
+    s.append(el('h2',null,c.q), block('Today',c.today), block('Why now',c.now));
+    const ms=c.opts.map(o=>[o,document.getElementById(`mock-${c.id}-${o[0]}`)]).filter(x=>x[1]);
+    if(ms.length){const d=el('details','mk'); d.open=true; d.id=`mk-${c.id}`; d.append(el('summary',null,'Mock-ups')); const w=el('div','mocks');
+      ms.forEach(([o,t])=>{const m=el('div','mock'); m.append(el('h3',null,`${o[0].toUpperCase()}. ${o[1]}`)); const sc=el('div','mockscroll'); sc.append(t.content.cloneNode(true)); m.append(sc); w.append(m);});
+      d.append(w); s.append(d);}
+    if(c.imgs&&c.imgs.length){const w=el('div','shots'); c.imgs.forEach(([cap,src])=>{const f=el('figure'); const i=el('img'); i.src=src; i.alt=cap; f.append(i, el('figcaption',null,cap)); w.append(f);}); s.append(w);}
+    const o=el('div','opts'); o.setAttribute('role','group'); o.setAttribute('aria-label',c.q);
+    c.opts.forEach(([k,label,see,cost,isRec])=>{
+      const b=el('button','opt'); b.id=`${c.id}-${k}`;
+      b.setAttribute('aria-pressed', picks[c.id]===k?'true':'false');
+      b.append(el('b',null,`${k.toUpperCase()}. ${label}`), el('span','why',see), el('span','cost',cost));
+      if(isRec) b.append(el('span','rec','Recommended'));
+      b.onclick=()=>pick(c.id,k);
+      o.append(b);
+    });
+    s.append(o, el('p','recline',c.rec), el('p','nothing','If you pick nothing: '+c.nothing));
+    const sv=el('p','saved', picks[c.id]?'Saved':''); sv.id=`saved-${c.id}`;
+    s.append(sv);
+    return s;
+  }));
+  const n=Object.keys(picks).length;
+  document.getElementById('status').textContent = db ? `${n} of ${CALLS.length} picked` : (dbTried ? 'Picks cannot save in this view' : 'Loading saved picks…');
+}
+let db=null, dbTried=false;
+async function pick(id,k){
+  picks[id]=k; render();
+  if(!db) return;
+  try{ await db.doc(`picks/${id}`).set({option:k, at:new Date().toISOString()}); }
+  catch(e){ const s=document.getElementById(`saved-${id}`); if(s) s.textContent='Not saved: '+(e&&e.message||'error'); }
+}
+render();
+(async()=>{
+  const timer=setTimeout(()=>{dbTried=true; render();},10000);
+  try{
+    db = window.claude ? await window.claude.use('db') : null;
+    if(db){ const snap=await db.collection('picks').get();
+      (snap.docs||snap).forEach(d=>{const v=d.data?d.data():d; if(v&&v.option) picks[d.id]=v.option;}); }
+  }catch(e){ db=null; }
+  clearTimeout(timer); dbTried=true; render();
+})();
+</script>
