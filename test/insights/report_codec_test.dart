@@ -3,16 +3,19 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/report_codec.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/step_changes.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
@@ -107,6 +110,7 @@ InsightsReport everySection() => InsightsReport(
       standardized: 0.8,
       pValue: 0.0001,
       sameBedtime: _bedtimeRefusal,
+      stepWakingDays: 14,
     ),
     const HabitFinding(
       habitId: 'tea',
@@ -285,6 +289,46 @@ InsightsReport everySection() => InsightsReport(
       refusal: RefusalReason.tooFewDays,
     ),
   ],
+  calendarDays: const <CalendarDay>[
+    CalendarDay(
+      habitId: 'coffee',
+      feature: CalendarDayFeature.meetingMinutes,
+      cut: 127.5,
+      usableDays: 90,
+      moreDays: 40,
+      effect: 0.2,
+      interval: Interval(0.08, 0.32),
+      pValue: 0.003,
+    ),
+    CalendarDay(
+      habitId: 'tea',
+      feature: CalendarDayFeature.crowded,
+      cut: 0,
+      usableDays: 12,
+      moreDays: 3,
+      refusal: RefusalReason.tooFewDays,
+    ),
+  ],
+  atPlace: const <AtPlace>[
+    AtPlace(
+      habitId: 'coffee',
+      placeId: 2,
+      days: 31,
+      useShare: 0.6,
+      timeShare: 0.35,
+      effect: 0.25,
+      interval: Interval(0.12, 0.38),
+      pValue: 0.001,
+    ),
+    AtPlace(
+      habitId: 'tea',
+      placeId: 1,
+      days: 3,
+      useShare: 0,
+      timeShare: 0.5,
+      refusal: RefusalReason.tooFewDays,
+    ),
+  ],
   recovery: const <Recovery>[
     Recovery(
       habitId: 'coffee',
@@ -318,6 +362,34 @@ InsightsReport everySection() => InsightsReport(
       refusal: RefusalReason.tooFewDays,
     ),
   ],
+  triggers: const <HabitTriggers>[
+    HabitTriggers(
+      habitId: 'coffee',
+      entries: 120,
+      tagged: 64,
+      triggers: <TriggerAmount>[
+        TriggerAmount(
+          trigger: 'social/friends',
+          entries: 30,
+          withDays: 18,
+          withoutDays: 25,
+          withMean: 2.9,
+          withoutMean: 2,
+          pValue: 0.001,
+          verdict: TriggerVerdict.found,
+        ),
+        TriggerAmount(
+          trigger: 'Bored at the bus stop',
+          entries: 2,
+          withDays: 2,
+          withoutDays: 30,
+          withMean: 1,
+          withoutMean: 2.1,
+          pValue: null,
+        ),
+      ],
+    ),
+  ],
 );
 
 InsightsView _view(InsightsReport report, {bool hoursPending = false}) => (
@@ -349,11 +421,22 @@ void main() {
     final InsightsReport report = (back.result! as InsightsComputed).report;
     expect(report.findings[2].window, (start: 60, end: 120));
     expect(report.findings[2].sameBedtime, isA<HabitRefusal>());
+    expect(report.findings[2].stepWakingDays, 14);
+    expect(report.findings[0].stepWakingDays, 0);
     expect(report.findings[3].heldFixed, <String>{'cyclePhase'});
     expect(report.findings[0].heldFixed, isEmpty);
     expect(report.refused.first.raw!.interval.high, double.infinity);
     expect(report.recovery.first.nights[1].effect, isNaN);
     expect(report.payoffs.first.fall.day, _day);
+    expect(
+      report.calendarDays.first.feature,
+      CalendarDayFeature.meetingMinutes,
+    );
+    expect(report.calendarDays.last.refusal, RefusalReason.tooFewDays);
+    expect(report.atPlace.first.placeId, 2);
+    expect(report.atPlace.last.refusal, RefusalReason.tooFewDays);
+    expect(report.triggers.single.triggers[1].trigger, 'Bored at the bus stop');
+    expect(report.triggers.single.triggers.first.verdict, TriggerVerdict.found);
   });
 
   test('a computed report round trips', () {
