@@ -935,10 +935,22 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 None open.
 
+Round 16 (`docs/pitch/round-16/index.html`, https://claude.ai/artifact/DkKHDabq8g6XaDUmB5XcE4, `picks`), all
+picked by Jack on 2026-11-12: `mood-floor` A (a State of Mind change is reported only when at least half the
+person's own day-to-day SD of daily valence, Norman, Sloan and Wyrwich 2003; counted only after 14 days with a mood
+log), `key-rotation` A (leave: a new recovery key re-wraps the same journal key; the register note stays as an
+accepted limit), `mac-copy` A (keep Copy on the Mac; register note stays as an accepted limit), `probe-pr` A (#128
+closed). Also 2026-11-12: Jack OK'd installing the key change (#273); iPhone has master bd2d1cf (build 1425).
+
 Round 15's two (`fall-test` A, `key-promotion` C) and round 14's seven were picked on 2026-11-11; every earlier
 call is picked.
 
 ## For Jack to do (not decisions)
+
+- **#252 Mac background sync, one real check.** Jack reported the checks "seem fine" (2026-11-12), but build 1422's
+  PenchantSync has never run: no `~/Library/Containers/com.screendead.penchant.sync` exists, and the helper is
+  sandboxed. Asked: Cmd+Q Penchant, log from the menu bar, wait 30 s, see the entry on the iPhone before reopening
+  the Mac app. Merge #252 only after that passes; the Mac stays on 1422 until then.
 
 - **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; for the
   Mac background app (#252), create the development profile for `com.screendead.penchant.sync`
