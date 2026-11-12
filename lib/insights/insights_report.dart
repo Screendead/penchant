@@ -938,22 +938,27 @@ List<InsightCard> insightCards(
   });
 }
 
+/// How much a refusal says, lowest first: too small to matter, then
+/// entangled, then possibly chance, then logged unevenly, then resting on one
+/// day, then within the noise, then a steady amount or time or a time that
+/// follows the amount, then too few days.
+int refusalRank(RefusalReason reason) => switch (reason) {
+  RefusalReason.tooSmall => -1,
+  RefusalReason.entangled => 0,
+  RefusalReason.chance => 1,
+  RefusalReason.uneven => 2,
+  RefusalReason.oneDay => 3,
+  RefusalReason.withinNoise => 4,
+  RefusalReason.steadyAmount ||
+  RefusalReason.steadyTiming ||
+  RefusalReason.followsAmount ||
+  RefusalReason.followsBedtime => 5,
+  RefusalReason.tooFewDays => 6,
+};
+
 HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
-  int rank(RefusalReason reason) => switch (reason) {
-    RefusalReason.tooSmall => -1,
-    RefusalReason.entangled => 0,
-    RefusalReason.chance => 1,
-    RefusalReason.uneven => 2,
-    RefusalReason.oneDay => 3,
-    RefusalReason.withinNoise => 4,
-    RefusalReason.steadyAmount ||
-    RefusalReason.steadyTiming ||
-    RefusalReason.followsAmount ||
-    RefusalReason.followsBedtime => 5,
-    RefusalReason.tooFewDays => 6,
-  };
   return refusals.reduce((a, b) {
-    final int byReason = rank(a.reason).compareTo(rank(b.reason));
+    final int byReason = refusalRank(a.reason).compareTo(refusalRank(b.reason));
     if (byReason != 0) return byReason < 0 ? a : b;
     final int byKind = a.kind.index.compareTo(b.kind.index);
     if (byKind != 0) return byKind < 0 ? a : b;
@@ -1600,12 +1605,17 @@ String _useRefusal(
 // "under 22 min a night of REM sleep", "under 500 a day of step count". A
 // person's floor (21.4 min, 0.35 ms) is rounded up at the digits shown, so
 // "under" stays true of every refused finding and never reads "under 0".
-String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
-  final MetricCopy copy = metricCopy(refusal.metricId)!;
+String _underFloor(HabitRefusal refusal, Map<String, double> floors) =>
+    underFloor(refusal.metricId, floors);
+
+/// "under 22 min a night of REM sleep", as [refusalReason] says a difference
+/// too small to matter on [metricId].
+String underFloor(String metricId, Map<String, double> floors) {
+  final MetricCopy copy = metricCopy(metricId)!;
   if (copy.inWords) {
     return 'under half your usual day-to-day swing in ${copy.name}';
   }
-  final double shown = metricFloor(refusal.metricId, floors) * copy.scale;
+  final double shown = metricFloor(metricId, floors) * copy.scale;
   final int digits = _digitsToShow(shown, copy.decimals);
   final num scale = pow(10, digits);
   final String floor = NumberFormat.decimalPatternDigits(
@@ -1613,7 +1623,7 @@ String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
     decimalDigits: digits,
   ).format((shown * scale - 1e-9).ceil() / scale);
   final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
-  final String per = switch (metricFloors[refusal.metricId]?.family) {
+  final String per = switch (metricFloors[metricId]?.family) {
     MetricFamily.sleep => ' a night',
     MetricFamily.activity ||
     MetricFamily.mindfulness ||
