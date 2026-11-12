@@ -108,19 +108,21 @@ class InsightsInput {
     return InsightsInput(
       // A locked entry counts: its vice and quantity are plaintext.
       uses: habitUsesFrom(activities).toList(),
-      outcomes: withSessionZeros(<DailyOutcome>[
-        for (final hs.DailyOutcome o in <hs.DailyOutcome>[
-          ...health,
-          ...reminders,
-        ])
-          // Today's day totals and averages cover only part of it; the night
-          // that ended today is whole.
-          if (o.metricId != hs.HealthMetric.menstrualFlow.id &&
-              (o.date.isBefore(unfinished) ||
-                  (metricCopy(o.metricId)?.night ?? false) ||
-                  o.metricId == sleepOnsetId))
-            DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
-      ], through: addDays(unfinished, -1)),
+      outcomes: withEnoughMood(
+        withSessionZeros(<DailyOutcome>[
+          for (final hs.DailyOutcome o in <hs.DailyOutcome>[
+            ...health,
+            ...reminders,
+          ])
+            // Today's day totals and averages cover only part of it; the night
+            // that ended today is whole.
+            if (o.metricId != hs.HealthMetric.menstrualFlow.id &&
+                (o.date.isBefore(unfinished) ||
+                    (metricCopy(o.metricId)?.night ?? false) ||
+                    o.metricId == sleepOnsetId))
+              DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
+        ], through: addDays(unfinished, -1)),
+      ),
       from: range.start,
       through: addDays(range.end, -1),
       samples: samples,
@@ -218,6 +220,33 @@ List<DailyOutcome> withSessionZeros(
     }
   }
   return filled;
+}
+
+/// The fewest days with a mood log before [hs.HealthMetric.moodValence] is
+/// judged at all (Jack, round 16 `mood-floor` A): most people log mood now and
+/// then, and a handful of days would only add comparisons to the
+/// false-discovery family.
+const int minMoodDays = 14;
+
+/// [outcomes] without [hs.HealthMetric.moodValence] when it has fewer than
+/// [minMoodDays] days or every day's value is the same, so it has no spread
+/// to set its floor ([FloorRule.ownSpread]) and nothing could differ. Reads
+/// the person's days alone, never which followed a habit.
+List<DailyOutcome> withEnoughMood(List<DailyOutcome> outcomes) {
+  final String mood = hs.HealthMetric.moodValence.id;
+  final List<double> days = <double>[
+    for (final DailyOutcome o in outcomes)
+      if (o.metricId == mood) o.value,
+  ];
+  if (days.isEmpty) return outcomes;
+  final bool judged =
+      days.length >= minMoodDays && days.any((v) => v != days.first);
+  return judged
+      ? outcomes
+      : <DailyOutcome>[
+          for (final DailyOutcome o in outcomes)
+            if (o.metricId != mood) o,
+        ];
 }
 
 /// The moments around uses whose samples Insights reads, with every window
@@ -639,7 +668,8 @@ enum MetricFamily {
   temperature('temperature'),
   activity('activity'),
   mindfulness('mindfulness'),
-  reminders('reminders');
+  reminders('reminders'),
+  mood('mood');
 
   const MetricFamily(this.label);
 
@@ -658,6 +688,12 @@ enum FloorRule {
   /// [noiseShare] of the person's own night-to-night variation alone; the
   /// floor as it stands when there are too few nights to measure it.
   ownNoise,
+
+  /// [noiseShare] of the standard deviation of the person's daily values,
+  /// over every day with one (not only next-door days, which a measure logged
+  /// now and then seldom has); the floor as it stands under [minNoisePairs]
+  /// days.
+  ownSpread,
 }
 
 /// The smallest difference in each outcome worth a card, in its stored units,
@@ -756,13 +792,23 @@ metricFloors = <String, ({double floor, MetricFamily family, FloorRule rule})>{
     family: MetricFamily.reminders,
     rule: FloorRule.fixed,
   ),
+  // Jack's call (round 16 `mood-floor` A): half the person's own SD of daily
+  // valence, after Norman 2003's half a standard deviation. The 2 here, the
+  // scale's whole width, would show nothing; withEnoughMood leaves mood out
+  // before it could apply.
+  'moodValence': (
+    floor: 2,
+    family: MetricFamily.mood,
+    rule: FloorRule.ownSpread,
+  ),
 };
 
 /// Leary 2020's step: 5 percentage points of the night in REM.
 const double remShareOfNight = 0.05;
 
 /// The share of the person's night-to-night variation no floor goes under:
-/// half, the smallest worthwhile change Javaloyes 2019 acts on.
+/// half, the smallest worthwhile change Javaloyes 2019 acts on, and half of
+/// [FloorRule.ownSpread]'s standard deviation (Norman 2003).
 const double noiseShare = 0.5;
 
 /// The fewest pairs of next-door days [typicalError] needs.
@@ -807,6 +853,14 @@ Map<String, double> resolveFloors(OutcomeSeries outcomes) {
             remShareOfNight * median(asleep.values.toList()),
           FloorRule.shareOfNight => metric.value.floor,
           FloorRule.ownNoise => noise ?? metric.value.floor,
+          FloorRule.ownSpread => switch (outcomes
+              .days(metric.key)
+              .values
+              .toList()) {
+            final List<double> days when days.length >= minNoisePairs =>
+              noiseShare * sqrt(sampleVariance(days)),
+            _ => metric.value.floor,
+          },
         };
         final double resolved = noise == null ? floor : max(floor, noise);
         return resolved > 0 ? resolved : metric.value.floor;
@@ -907,7 +961,14 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
   });
 }
 
-enum DirectionWords { moreLess, higherLower }
+enum DirectionWords {
+  moreLess,
+  higherLower,
+
+  /// "more pleasant", "less pleasant"; amounts and levels in words, never
+  /// numbers ([measureAmount], [measureLevel]).
+  pleasantness,
+}
 
 /// How one outcome is named and measured on a card.
 class MetricCopy {
@@ -931,9 +992,14 @@ class MetricCopy {
   final double scale;
   final DirectionWords _words;
 
+  /// Shown in words rather than numbers.
+  bool get inWords => _words == DirectionWords.pleasantness;
+
   String direction(double effect) => switch (_words) {
     DirectionWords.moreLess => effect < 0 ? 'less' : 'more',
     DirectionWords.higherLower => effect < 0 ? 'lower' : 'higher',
+    DirectionWords.pleasantness =>
+      effect < 0 ? 'less pleasant' : 'more pleasant',
   };
 }
 
@@ -1013,6 +1079,11 @@ MetricCopy? metricCopy(String metricId) => switch (metricId) {
     decimals: 1,
     words: DirectionWords.moreLess,
   ),
+  'moodValence' => const MetricCopy(
+    'mood',
+    night: false,
+    words: DirectionWords.pleasantness,
+  ),
   _ => null,
 };
 
@@ -1053,6 +1124,10 @@ String? metricEvidence(String metricId) => switch (metricId) {
   'mindfulMinutes' =>
     '13 min of meditation a day for 8 weeks lowered negative mood against a '
         'podcast (Basso 2019).',
+  'moodValence' =>
+    'Half your own day-to-day spread, after the usual rule that half a '
+        'standard deviation is the smallest change people notice in rated '
+        'wellbeing (Norman 2003).',
   _ => null,
 };
 
@@ -1066,11 +1141,60 @@ String? findingEvidence(HabitFinding finding) =>
 MetricCopy _minutes(String name) =>
     MetricCopy(name, night: true, unit: 'min', words: DirectionWords.moreLess);
 
-String _amount(double value, MetricCopy copy, int decimals, String locale) {
+String _amount(double value, MetricCopy copy, int decimals, String locale) =>
+    measureAmount(value, copy, decimals, locale);
+
+/// The size of a difference of [value] in [copy]'s units: "18 min"; for a
+/// measure shown in words, a size word on the mood scale, whose seven labels
+/// in Health are 2/7 apart: under half a label "slightly", up to a label and
+/// a half "noticeably", beyond it "much". The cut-offs are ours; no source
+/// gives them.
+String measureAmount(
+  double value,
+  MetricCopy copy,
+  int decimals,
+  String locale,
+) {
+  if (copy.inWords) {
+    final double size = value.abs();
+    return size < 1 / 7
+        ? 'slightly'
+        : size < 3 / 7
+        ? 'noticeably'
+        : 'much';
+  }
   final String number = NumberFormat.decimalPatternDigits(
     locale: locale,
     decimalDigits: decimals,
   ).format(value.abs() * copy.scale);
+  return copy.unit.isEmpty ? number : '$number ${copy.unit}';
+}
+
+/// [value] as a level in [copy]'s units: "58 bpm"; for a measure shown in
+/// words, the label Health gives that valence ("slightly pleasant"), its
+/// seven equal bands from -1 to 1.
+String measureLevel(
+  double value,
+  MetricCopy copy,
+  int decimals,
+  String locale,
+) {
+  if (copy.inWords) {
+    const List<String> labels = <String>[
+      'very unpleasant',
+      'unpleasant',
+      'slightly unpleasant',
+      'neutral',
+      'slightly pleasant',
+      'pleasant',
+      'very pleasant',
+    ];
+    return labels[((value + 1) * 3.5).floor().clamp(0, 6)];
+  }
+  final String number = NumberFormat.decimalPatternDigits(
+    locale: locale,
+    decimalDigits: decimals,
+  ).format(value * copy.scale);
   return copy.unit.isEmpty ? number : '$number ${copy.unit}';
 }
 
@@ -1266,8 +1390,28 @@ String findingChange(HabitFinding finding, String locale) {
 }
 
 /// "Range: 7 to 29 min less"; both ends share a sign, so one word serves.
+/// In words, "Range: slightly to noticeably less pleasant", or "Range:
+/// noticeably less pleasant at both ends".
 String findingRange(HabitFinding finding, String locale) {
   final MetricCopy copy = metricCopy(finding.metricId)!;
+  if (copy.inWords) {
+    final String low = measureAmount(
+      min(finding.interval.low.abs(), finding.interval.high.abs()),
+      copy,
+      0,
+      locale,
+    );
+    final String high = measureAmount(
+      max(finding.interval.low.abs(), finding.interval.high.abs()),
+      copy,
+      0,
+      locale,
+    );
+    final String direction = copy.direction(finding.effect);
+    return low == high
+        ? 'Range: $low $direction at both ends'
+        : 'Range: $low to $high $direction';
+  }
   final int digits = _digits(finding, copy);
   final double near = finding.effect < 0
       ? finding.interval.high
@@ -1458,6 +1602,9 @@ String _useRefusal(
 // "under" stays true of every refused finding and never reads "under 0".
 String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
   final MetricCopy copy = metricCopy(refusal.metricId)!;
+  if (copy.inWords) {
+    return 'under half your usual day-to-day swing in ${copy.name}';
+  }
   final double shown = metricFloor(refusal.metricId, floors) * copy.scale;
   final int digits = _digitsToShow(shown, copy.decimals);
   final num scale = pow(10, digits);

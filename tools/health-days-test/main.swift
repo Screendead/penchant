@@ -723,6 +723,24 @@ do {
   check("cut at local midnight", dst["2026-10-24 m"] == 30 && dst["2026-10-25 m"] == 90, "\(dst)")
 }
 
+// moodRows: daily mood over momentary emotions, by the log's local day.
+do {
+  let rows = HealthDays.moodRows(
+    [
+      (at: at(2026, 11, 8, 9), daily: false, valence: -0.6),
+      (at: at(2026, 11, 8, 21), daily: true, valence: 0.2),
+      (at: at(2026, 11, 8, 22), daily: true, valence: 0.4),
+      (at: at(2026, 11, 9, 8), daily: false, valence: -0.2),
+      (at: at(2026, 11, 9, 23, 30), daily: false, valence: 0.6),
+      (at: at(2026, 11, 7, 23), daily: true, valence: 1),
+      (at: at(2026, 11, 11), daily: true, valence: 1),
+    ], metric: "moodValence", start: at(2026, 11, 8), end: at(2026, 11, 11), calendar)
+  let got = values(rows)
+  check("daily mood wins over momentary emotions", abs(got["2026-11-08 moodValence"]! - 0.3) < 1e-9, "\(got)")
+  check("momentary emotions alone are averaged", abs(got["2026-11-09 moodValence"]! - 0.2) < 1e-9, "\(got)")
+  check("only logs inside the window count", rows.count == 2, "\(got)")
+}
+
 // flowDayRows: a day with flow, once, keyed to its start; "none" is no flow.
 do {
   let rows = HealthDays.flowDayRows(

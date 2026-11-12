@@ -9,10 +9,11 @@ there. Grouped by what stands in the way.
 
 **No blocker (free team, no outside service):**
 
-- **Health beyond sleep and heart rate:** State of Mind (iOS 18) left. Same channel and permission flow as
+- **Health beyond sleep and heart rate:** built. Same channel and permission flow as
   [Apple Health](apple-health-correlation.md). Workouts and mindful minutes are built (2026-11-11), as minutes a day;
-  cycle tracking is built (2026-11-12) as a phase held fixed in the day-after comparisons, not an outcome. State of
-  Mind has no published smallest change on its valence scale, so it needs a floor decision.
+  cycle tracking is built (2026-11-12) as a phase held fixed in the day-after comparisons, not an outcome; State of
+  Mind (iOS 18) is built (2026-11-12) as one valence a day, floored at half the person's own SD of it (Jack, round 16
+  `mood-floor` A).
 - **Places:** Core Location visits, clustered on the device into the user's own places (home, work, a named spot).
   Opt-in, the most sensitive source; coordinates never leave the device.
 - **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.

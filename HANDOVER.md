@@ -564,8 +564,10 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      1 a day, kept (no source). Not run on a device. Focus is left.
      Cycle tracking built (#277, 2026-11-12): menstrual flow days, read types version 4, the
      phase inferred on the device and held fixed in the five day-after comparisons (not hours-after, before-use,
-     recovery, payoffs or shifts); a finding so compared says so in its basis line. Not run on a device. Next: State
-     of Mind (iOS 18, waits on Jack's floor call), then places.
+     recovery, payoffs or shifts); a finding so compared says so in its basis line. Not run on a device.
+     State of Mind built (#278, 2026-11-12): one valence a day (daily mood preferred over momentary emotions),
+     counted from 14 days with a log, floor half the person's own SD of daily valence (`mood-floor` A), copy in
+     words; read types version 5. Not run on a device. Next: places.
 
 ### Third run (`/finish-and-pitch`, 2026-11-09)
 

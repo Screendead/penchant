@@ -500,7 +500,12 @@ comparisons hold it fixed as a `DayCondition` (indicator columns in `_timeTerms`
 comparison's days; such a finding's `heldFixed` names it and its basis line says so, and nothing else shows the cycle.
 `HKObserverQuery`s with hourly background delivery
 (`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
-closed. The Health sheet resets the anchors; a store over 30 days old is read again in full.
+closed. The Health sheet resets the anchors; a store over 30 days old is read again in full. State of Mind (iOS 18+,
+`#available`-gated; older systems read no rows and observe nothing) is `moodValence`: the day's mean valence, -1 to
+1, of its daily-mood logs, else its momentary emotions (`HealthDays.moodRows`). Insights judges it only from 14 days
+with a log (`withEnoughMood`), floors it at half the SD of the person's daily valence (`FloorRule.ownSpread`; Jack,
+round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`MetricCopy.inWords`: "slightly less
+pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
 
 **Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
 the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start

@@ -13,6 +13,7 @@ Kinds of basis, in the table and in the code comments:
 - **Consensus**: a clinical body set the size by expert judgement, with no effect measured at it.
 - **Inferred**: the source measures a neighbouring quantity or population; the step from it is stated.
 - **Kept**: nothing usable was found; #192's reasoned floor stays and the card carries no line.
+- **Decision**: no source gives a size for the measure; Jack picked a general rule, applied within one person.
 
 Most sources are observational cohorts, where the figure is the reporting step of a dose-response (per 5 bpm, per
 500 steps): the association is shown at that step, not that the change causes the outcome, and a smaller step is
@@ -44,6 +45,13 @@ an extrapolation. The cards say "went with" for these, never "caused".
 Workout and mindful time count a day without a session as 0, so a person whose longest day never reaches the floor
 cannot show a difference of it either way; the engine leaves such a metric out rather than add its comparisons to
 the false-discovery family (`withSessionZeros`). The rule reads the person's days alone, never which followed a habit.
+
+| Mood (State of Mind valence) | half the SD of the person's daily valence | Decision (own spread) | Norman, Sloan and Wyrwich 2003 (Medical Care, "the remarkable universality of half a standard deviation"): half a standard deviation is the most-cited general rule for the smallest change people notice in self-rated wellbeing. The paper's standard deviations are of health-related quality-of-life scores; Jack applied the rule to one person's own day-to-day spread of Health's -1 to 1 valence (round 16 `mood-floor` A, 2026-11-12). No study gives a smallest change on Apple's scale. The paper was not re-read for this row; the summary is the round 16 pitch's (added 2026-11-12). |
+
+Mood's SD is taken over every day with a mood log (`FloorRule.ownSpread`), not only next-door days, since most
+people log it now and then; the noise check below may still raise it. Mood counts only from 14 days with a log, and
+not at all when every day's valence is the same (`withEnoughMood`); both read the person's days alone. A day's value
+is the mean valence of its daily-mood logs, or of its momentary emotions when it has no daily mood.
 
 ## The noise check
 
@@ -87,8 +95,15 @@ floor rounded up at the digits shown ("under 22 min" for 21.4; "under 0.4 ms" fo
 - Active energy: "About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower mortality (Strain 2020)."
 - Workout time: "About 15 min of exercise a day went with 14% lower mortality than none (Wen 2011)."
 - Mindful time: "13 min of meditation a day for 8 weeks lowered negative mood against a podcast (Basso 2019)."
+- Mood: "Half your own day-to-day spread, after the usual rule that half a standard deviation is the smallest change
+  people notice in rated wellbeing (Norman 2003)." Mood cards and refusals use words, never numbers: "slightly", "noticeably" or "much"
+  more or less pleasant (under 1/7, under 3/7, else, against Health's seven labels 2/7 apart; our cut-offs), levels
+  as Health's labels, and "under half your usual day-to-day swing in mood".
 
 ## Sources
+
+- Norman GR, Sloan JA, Wyrwich KW. Interpretation of changes in health-related quality of life: the remarkable
+  universality of half a standard deviation. *Med Care* 2003;41(5):582–592.
 
 - Al Khatib HK, Hall WL, Creedon A, et al. Sleep extension is a feasible lifestyle intervention in free-living adults
   who are habitually short sleepers: a potential strategy for decreasing intake of free sugars? A randomized

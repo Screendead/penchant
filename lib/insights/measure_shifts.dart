@@ -213,13 +213,8 @@ int _decimals(MeasureShift s) {
 /// before." [date] is the shift's day as the page writes dates.
 String measureShiftSentence(MeasureShift s, String date, String locale) {
   final MetricCopy copy = metricCopy(s.metricId)!;
-  final String size = _number(
-    s.shift.change.abs() * copy.scale,
-    _decimals(s),
-    locale,
-  );
-  final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
-  return 'From $date, your ${copy.name} averaged $size$unit '
+  final String size = measureAmount(s.shift.change, copy, _decimals(s), locale);
+  return 'From $date, your ${copy.name} averaged $size '
       '${copy.direction(s.shift.change)} than before.';
 }
 
@@ -227,8 +222,7 @@ String measureShiftSentence(MeasureShift s, String date, String locale) {
 String measureShiftBasis(MeasureShift s, String locale) {
   final MetricCopy copy = metricCopy(s.metricId)!;
   final int digits = _decimals(s);
-  final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
-  String level(double v) => '${_number(v * copy.scale, digits, locale)}$unit';
+  String level(double v) => measureLevel(v, copy, digits, locale);
   return '${level(s.shift.before)} over the ${s.shift.daysBefore} days '
       'before, ${level(s.shift.after)} over the ${s.shift.daysAfter} days '
       'from then';

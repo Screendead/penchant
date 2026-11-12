@@ -94,6 +94,12 @@ enum HealthMetric {
   /// The day's mindful sessions, in minutes, as [workoutMinutes] counts.
   mindfulMinutes('mindfulMinutes'),
 
+  /// State of Mind (iOS 18 and later): the mean valence, -1 (very unpleasant)
+  /// to 1 (very pleasant), of the day's daily-mood logs, or of its momentary
+  /// emotions when it has no daily mood, each on the local day of its start.
+  /// A day without a log has no value; earlier systems have none at all.
+  moodValence('moodValence'),
+
   /// 1 on each day with menstrual flow logged (any amount); a day logged
   /// without flow, or not logged, has no value. Not an outcome: the insights
   /// engine infers the cycle's phase from these days alone and holds it
