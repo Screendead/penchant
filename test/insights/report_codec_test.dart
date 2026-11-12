@@ -121,6 +121,7 @@ InsightsReport everySection() => InsightsReport(
       interval: Interval(1, 3),
       standardized: 0.5,
       pValue: 0.002,
+      heldFixed: <String>{'cyclePhase'},
     ),
   ],
   refused: <HabitRefusal>[
@@ -348,6 +349,8 @@ void main() {
     final InsightsReport report = (back.result! as InsightsComputed).report;
     expect(report.findings[2].window, (start: 60, end: 120));
     expect(report.findings[2].sameBedtime, isA<HabitRefusal>());
+    expect(report.findings[3].heldFixed, <String>{'cyclePhase'});
+    expect(report.findings[0].heldFixed, isEmpty);
     expect(report.refused.first.raw!.interval.high, double.infinity);
     expect(report.recovery.first.nights[1].effect, isNaN);
     expect(report.payoffs.first.fall.day, _day);
