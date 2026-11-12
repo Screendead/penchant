@@ -94,6 +94,12 @@ enum HealthMetric {
   /// The day's mindful sessions, in minutes, as [workoutMinutes] counts.
   mindfulMinutes('mindfulMinutes'),
 
+  /// State of Mind (iOS 18 and later): the mean valence, -1 (very unpleasant)
+  /// to 1 (very pleasant), of the day's daily-mood logs, or of its momentary
+  /// emotions when it has no daily mood, each on the local day of its start.
+  /// A day without a log has no value; earlier systems have none at all.
+  moodValence('moodValence'),
+
   /// The plain mean of the heart rate samples inside the night's asleep time
   /// (core, deep, REM or unspecified; not in bed or awake), keyed to the night
   /// like the sleep metrics, in beats per minute. A sample is inside when its

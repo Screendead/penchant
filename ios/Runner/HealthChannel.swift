@@ -68,6 +68,16 @@ enum HealthChannel {
 
   private static let sessionMetrics = ["workoutMinutes", "mindfulMinutes"]
 
+  // State of Mind, iOS 18 and later, read as one valence a day
+  // (HealthDays.moodRows): only each log's start, kind and valence, never its
+  // labels or associations. Older systems lack the type and read no rows.
+  static let moodMetric = "moodValence"
+
+  static var stateOfMindType: HKSampleType? {
+    guard #available(iOS 18.0, *) else { return nil }
+    return HKSampleType.stateOfMindType()
+  }
+
   // Raw samples, for the hours around an entry. Units as the daily path's.
   private static func sampleType(_ metric: String) -> (type: HKQuantityType, unit: HKUnit)? {
     switch metric {
@@ -94,6 +104,7 @@ enum HealthChannel {
     for metric in sessionMetrics {
       if let type = sessionType(metric) { types.insert(type) }
     }
+    if let type = stateOfMindType { types.insert(type) }
     return types
   }
 
@@ -302,6 +313,25 @@ enum HealthChannel {
       store.execute(query)
     }
 
+    if metrics.contains(moodMetric), #available(iOS 18.0, *) {
+      group.enter()
+      let query = HKSampleQuery(
+        sampleType: HKSampleType.stateOfMindType(), predicate: HKQuery.predicateForSamples(withStart: start, end: end),
+        limit: HKObjectQueryNoLimit, sortDescriptors: nil
+      ) { _, samples, error in
+        // Not asked for yet, as the session types above.
+        if let error, isNotDetermined(error) {
+          finish([], nil)
+          return
+        }
+        let logs = (samples ?? []).compactMap { $0 as? HKStateOfMind }.map {
+          (at: $0.startDate, daily: $0.kind == .dailyMood, valence: $0.valence)
+        }
+        finish(HealthDays.moodRows(logs, metric: moodMetric, start: start, end: end, calendar), error)
+      }
+      store.execute(query)
+    }
+
     let wantedSleep = HealthDays.sleepMetrics.filter { metrics.contains($0.id) }
     let wantedTiming = HealthDays.sleepTimingMetrics.intersection(metrics)
     let wantsSleepingHeartRate = metrics.contains(sleepingHeartRate)
@@ -484,6 +514,7 @@ extension HealthChannel {
     private static func types(for metric: String) -> [HKSampleType] {
       if let s = HealthChannel.statistic(metric) { return [s.type] }
       if let type = HealthChannel.sessionType(metric) { return [type] }
+      if metric == HealthChannel.moodMetric { return HealthChannel.stateOfMindType.map { [$0] } ?? [] }
       let sleep = HKCategoryType(.sleepAnalysis)
       if metric == HealthChannel.sleepingHeartRate { return [sleep, HKQuantityType(.heartRate)] }
       if HealthDays.sleepMetrics.contains(where: { $0.id == metric }) || HealthDays.sleepTimingMetrics.contains(metric) {

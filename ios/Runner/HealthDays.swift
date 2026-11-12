@@ -323,6 +323,25 @@ enum HealthDays {
     return minutes.keys.sorted().map { ["date": $0, "metric": metric, "value": minutes[$0]!] }
   }
 
+  // State of Mind as one valence (-1 to 1) a day: the mean of the day's
+  // daily-mood logs, or of its momentary emotions when it has no daily mood.
+  // A log counts on the local day of its start, inside [start, end).
+  static func moodRows(
+    _ logs: [(at: Date, daily: Bool, valence: Double)], metric: String, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    var byDay: [String: (daily: [Double], momentary: [Double])] = [:]
+    for log in logs where log.at >= start && log.at < end {
+      let day = key(log.at, calendar)
+      if log.daily { byDay[day, default: ([], [])].daily.append(log.valence) }
+      else { byDay[day, default: ([], [])].momentary.append(log.valence) }
+    }
+    return byDay.keys.sorted().map { day in
+      let (daily, momentary) = byDay[day]!
+      let chosen = daily.isEmpty ? momentary : daily
+      return ["date": day, "metric": metric, "value": chosen.reduce(0, +) / Double(chosen.count)]
+    }
+  }
+
   // Each night's asleep time (no in bed, no awake), from the night's one source.
   static func asleepIntervals(_ byNight: [String: [SleepSample]]) -> [String: [(Date, Date)]] {
     var result: [String: [(Date, Date)]] = [:]

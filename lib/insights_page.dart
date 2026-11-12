@@ -327,8 +327,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           _MessageCard(
             'How it works',
             body:
-                'Insights compare your sleep, heart, activity and mindfulness '
-                'after days '
+                'Insights compare your sleep, heart, activity, mindfulness '
+                'and mood after days '
                 'with each habit against days without it. Connect Apple '
                 'Health to start.',
           ),
@@ -549,7 +549,8 @@ class InsightsCostsPage extends ConsumerWidget {
   const InsightsCostsPage({super.key});
 
   static const String lede =
-      'What follows each habit in your sleep, heart, activity and mindfulness';
+      'What follows each habit in your sleep, heart, activity, mindfulness '
+      'and mood';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
