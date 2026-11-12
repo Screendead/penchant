@@ -19,7 +19,7 @@ there. Grouped by what stands in the way.
 - **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.
 - **Music:** recently played from Apple Music (MusicKit), as a rough mood and context signal. Only for Apple Music
   users.
-- **Focus:** only says whether a Focus is on (`INFocusStatusCenter`), not which. Reminders, beside
+- **Reminders**, beside
   [Calendar](calendar-integration.md), are built (2026-11-12, iOS only like Calendar): reminders completed a day
   and reminders missed (due that day, not done by its end).
 
@@ -33,11 +33,16 @@ there. Grouped by what stands in the way.
 - **Screen Time:** the Family Controls entitlement needs the paid team and Apple's approval, and the DeviceActivity
   API reports through an extension that cannot hand raw usage to the app.
 - **Spending:** FinanceKit is US-only and needs Apple's approval.
+- **Focus:** `INFocusStatusCenter` says only whether a Focus is on, not which, keeps no history, and can be sampled
+  only while the app runs. It needs the Focus Status entitlement (`com.apple.developer.focus-status`), which the free
+  team cannot sign: probed 2026-11-12 with a signed iOS build and provisioning updates, Xcode answered "Entitlement
+  com.apple.developer.focus-status not found and could not be included in profile." Set aside until there is a paid
+  team.
 
 ## Recommendation
 
 Build the unblocked group in the order listed, each as one small PR after the engine and Health (queue item 7). Probe
-Journaling Suggestions before planning it. Leave the blocked three until there is a paid team or Jack asks.
+Journaling Suggestions before planning it. Leave the blocked four until there is a paid team or Jack asks.
 
 **Effort:** M each for the unblocked sources.
 

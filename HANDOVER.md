@@ -134,6 +134,9 @@ The list this run works from, sorted before any building. Tick or strike here as
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
    on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
    signing probe only.
+   - Focus: set aside 2026-11-12. The free team cannot sign `com.apple.developer.focus-status` (signed iOS build
+     with provisioning updates: "Entitlement com.apple.developer.focus-status not found and could not be included
+     in profile"); nothing built. Waits for a paid team.
 5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
    calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
    (round 14 `no-health` A).
