@@ -39,8 +39,10 @@ Future<List<String>> readCalendarSuggestions(
       if (await source.access() != CalendarAccess.full) {
         return const <String>[];
       }
+      // A day back, so an event that began well before the window is read
+      // whether or not the store matches events by overlap.
       final List<CalendarEvent> events = await source.events(
-        at.subtract(const Duration(minutes: afterEventMinutes)),
+        at.subtract(const Duration(days: 1)),
         at.add(const Duration(minutes: 1)),
       );
       return calendarSuggestions(at, events);

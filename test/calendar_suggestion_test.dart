@@ -26,6 +26,7 @@ class _FakeCalendar implements CalendarSource {
   bool fail = false;
   int asked = 0;
   int reads = 0;
+  DateTime? readFrom;
 
   @override
   Future<CalendarAccess> access() async => state;
@@ -39,6 +40,7 @@ class _FakeCalendar implements CalendarSource {
   @override
   Future<List<CalendarEvent>> events(DateTime start, DateTime end) async {
     reads++;
+    readFrom = start;
     if (fail) throw Exception('EventKit');
     return answer;
   }
@@ -108,6 +110,11 @@ void main() {
         meetingTrigger,
       ]);
       expect(calendar.asked, 0);
+      // A three-hour event that ended 10 minutes ago began inside the read.
+      expect(
+        calendar.readFrom!.isBefore(at.subtract(const Duration(hours: 3))),
+        isTrue,
+      );
     });
   });
 
