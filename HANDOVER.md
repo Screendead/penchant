@@ -128,7 +128,8 @@ The list this run works from, sorted before any building. Tick or strike here as
 **DECIDED (build, PR, merge on green):**
 
 1. ~~"Why not" lines under What sets it off~~ (built: feat/insights-sets-off; unseen on a device).
-2. Trigger analysis under What sets it off (queue step k; triggers reach only the weekly review today).
+2. ~~Trigger analysis under What sets it off~~ (built: feat/insights-sets-off; unseen on a device, and untried on a
+   journal with real tags).
 3. Steps-based waking fallback for hours-after, for a day with no night recorded.
 4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
@@ -239,6 +240,11 @@ the iPhone-to-Mac journal key sync is being investigated again (P2).
   clip and fade, not an `OpenContainer`; back is a plain fade.
 - One habit after another (#236): one family at q = 0.1; 15-minute window, 21 days with both, 7 followed, 10 points
   over chance; "more often" only, stronger direction only; refused pairs not listed.
+- Triggers (fifth run): the amount per entry on tagged entries with a trigger against the habit's other tagged
+  entries, untagged ones left out; days as the unit (each day's mean per entry), 7 days a side, Welch on the smaller
+  side's days less one, two-sided, joining the page's family at q = 0.1; 20% of the other entries' mean as the floor;
+  more or less both shown; top-level areas and paths, a free-text label as itself, an area dropped where it covers
+  the same entries as one path under it.
 - Recovery time (#240): heavy day against the usual mix of nights; heavy = at or over the upper quartile and over the
   median of use days; a rebound night is not mentioned; three measures, three nights.
 - Editor as a sheet (#238): new-entry layout with red text Delete and full-width Save, no delete confirmation (Undo);
@@ -272,6 +278,9 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
   page 0.10% of checks, 8.0% of reports. A straight-line effect also yields a line.
 - One habit after another (#236): noise found 0 to 0.3%; 20% following found 83% (30 days) and 99% (120); 10% mostly
   refused. Shared waking anchor: 100% found.
+- Triggers (fifth run, 2000 noise journals of 90 days, own family): 4.7% of tests under 0.05, a card on 7.9% of
+  journals; Welch-Satterthwaite's degrees of freedom gave 5.5% and 11.5%, so the smaller side's days less one.
+  Power not measured.
 - Recovery time (#240, draft): reverse cause with AR(1) 0.6 averages 6.7% (other AR lines about 5.2%), to rerun and
   fix; power 1 sd one night 95 to 97%, 0.5 sd 52 to 53%; page 0.1% of checks, 0.8% of reports.
 - Step changes (#241): day-50 step case 19.2% to 4.0%; card check on noise 0.2 to 1.8%; planted 1 sd 50% by card (97%

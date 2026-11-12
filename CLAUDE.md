@@ -516,10 +516,15 @@ with the hour after. `ios/Runner/RemindersChannel.swift` gives each reminder's d
 and judged only with `minSessionDays` such days. Both providers turn a failure or a 30 s timeout into nothing, since
 provider errors reach Crashlytics. Like everything in Insights they wait for Health values.
 
-Under Insights' What sets it off, each unarchived habit on no before-a-use, pair (either side) or calendar card gets
-one reason, on a drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
+What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, cards in
+`lib/widgets/trigger_amounts_card.dart`): per habit, the amount per entry on entries tagged a trigger against its other
+tagged entries (untagged ones say nothing, so they are left out, and the card says how many were tagged), each day's
+mean per entry as the unit, in the page's false-discovery family. A trigger counts under its tree path, its top-level
+area, or as its free-text label; `HabitUse.triggers` carries them from the opened entries, so a locked entry reads as
+untagged. Each unarchived habit on no before-a-use, pair (either side), calendar or trigger card gets one reason, on a
+drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
 (`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
-has no entries or nothing to compare against. It reads the report as stored, so `report_codec.dart` is unchanged.
+has no entries or nothing to compare against.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
