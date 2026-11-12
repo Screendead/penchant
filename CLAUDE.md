@@ -492,7 +492,13 @@ Health leaves the device: not Firestore, analytics or crash reports. Insights' d
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
 `HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep
 by calendar year, and in full a type with no anchor or a deletion (HealthKit gives a deleted sample no date), then
-acknowledges the generation once the store is written. `HKObserverQuery`s with hourly background delivery
+acknowledges the generation once the store is written. Menstrual flow is read as days with flow (value 1, never the
+amount) and is no outcome: `InsightsInput.from` takes it out of the outcomes and `cyclePhases`
+(`lib/insights/cycle_phase.dart`) infers each day's phase from those days alone (menstrual through the bleed, luteal
+the 14 days before the next start, follicular between; only in whole cycles of 24 to 38 days). The five day-after
+comparisons hold it fixed as a `DayCondition` (indicator columns in `_timeTerms`) when every phase has a week of the
+comparison's days; such a finding's `heldFixed` names it and its basis line says so, and nothing else shows the cycle.
+`HKObserverQuery`s with hourly background delivery
 (`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
 closed. The Health sheet resets the anchors; a store over 30 days old is read again in full. State of Mind (iOS 18+,
 `#available`-gated; older systems read no rows and observe nothing) is `moodValence`: the day's mean valence, -1 to
@@ -500,6 +506,15 @@ closed. The Health sheet resets the anchors; a store over 30 days old is read ag
 with a log (`withEnoughMood`), floors it at half the SD of the person's daily valence (`FloorRule.ownSpread`; Jack,
 round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`MetricCopy.inWords`: "slightly less
 pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
+
+**Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
+the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start
+and end alone (`lib/insights/calendar_source.dart`, a year per read), which `lib/insights/after_event.dart` compares
+with the hour after. `ios/Runner/RemindersChannel.swift` gives each reminder's due and completion times alone
+(`lib/insights/reminders_source.dart`), made into two daily outcomes beside Health's: reminders completed that day
+(`remindersCompleted`) and due that day but not done by its end (`remindersMissed`), each from its first day above 0
+and judged only with `minSessionDays` such days. Both providers turn a failure or a 30 s timeout into nothing, since
+provider errors reach Crashlytics. Like everything in Insights they wait for Health values.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and

@@ -9,18 +9,19 @@ there. Grouped by what stands in the way.
 
 **No blocker (free team, no outside service):**
 
-- **Health beyond sleep and heart rate:** cycle tracking left. Same channel and permission flow as
+- **Health beyond sleep and heart rate:** built. Same channel and permission flow as
   [Apple Health](apple-health-correlation.md). Workouts and mindful minutes are built (2026-11-11), as minutes a day;
-  State of Mind (iOS 18) is built (2026-11-12) as one valence a day, floored at half the person's own SD of it (Jack,
-  round 16 `mood-floor` A). Cycle phase is a condition to hold fixed, not an outcome, so it needs the engine to take
-  covariates.
+  cycle tracking is built (2026-11-12) as a phase held fixed in the day-after comparisons, not an outcome; State of
+  Mind (iOS 18) is built (2026-11-12) as one valence a day, floored at half the person's own SD of it (Jack, round 16
+  `mood-floor` A).
 - **Places:** Core Location visits, clustered on the device into the user's own places (home, work, a named spot).
   Opt-in, the most sensitive source; coordinates never leave the device.
 - **Daylight:** sunrise, sunset and day length computed on the device from a rough location. No network.
 - **Music:** recently played from Apple Music (MusicKit), as a rough mood and context signal. Only for Apple Music
   users.
-- **Reminders and Focus:** EventKit reminders beside [Calendar](calendar-integration.md); Focus only says whether a
-  Focus is on (`INFocusStatusCenter`), not which.
+- **Focus:** only says whether a Focus is on (`INFocusStatusCenter`), not which. Reminders, beside
+  [Calendar](calendar-integration.md), are built (2026-11-12, iOS only like Calendar): reminders completed a day
+  and reminders missed (due that day, not done by its end).
 
 **Blocked or costly:**
 

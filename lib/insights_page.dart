@@ -32,6 +32,7 @@ import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/reminders_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
@@ -126,6 +127,19 @@ class InsightsPage extends ConsumerStatefulWidget {
       'Calendars in Settings.';
   static const String calendarFailed = 'The calendar couldn’t be opened.';
 
+  static const String remindersLabel = 'Connect Reminders';
+  static const String remindersBody =
+      'See which habits come before days you complete or miss more '
+      'reminders. Penchant reads only when each reminder is due and when it '
+      'was completed, on this iPhone, never changes your reminders, and '
+      'sends none of it anywhere.';
+  static const String remindersOffLabel = 'Reminders';
+  static const String remindersOffValue = 'Off';
+  static const String remindersOffBody =
+      'To compare your habits with your reminders, give Penchant full access '
+      'to Reminders in Settings.';
+  static const String remindersFailed = 'Reminders couldn’t be opened.';
+
   static const String copied = 'Insights copied';
   static const String foot =
       'Worked out on this device from your journal and Apple Health; '
@@ -159,6 +173,7 @@ class InsightsPage extends ConsumerStatefulWidget {
 class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connecting = false;
   bool _connectingCalendar = false;
+  bool _connectingReminders = false;
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -172,6 +187,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         // asking again would read the calendar and run the engine anew.
         if (ref.read(calendarAccessProvider).value != CalendarAccess.full) {
           ref.invalidate(calendarAccessProvider);
+        }
+        if (ref.read(remindersAccessProvider).value != CalendarAccess.full) {
+          ref.invalidate(remindersAccessProvider);
         }
         if (ref.read(healthStateProvider).value case HealthReady(
           :final values,
@@ -224,6 +242,25 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
   }
 
+  Future<void> _connectReminders() async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    setState(() => _connectingReminders = true);
+    final bool granted = await connectReminders(container);
+    if (!mounted) return;
+    setState(() => _connectingReminders = false);
+    if (!granted &&
+        await container.read(remindersAccessProvider.future) ==
+            CalendarAccess.notDetermined) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(InsightsPage.remindersFailed)),
+      );
+    }
+  }
+
   // A new read gives new values, so the engine runs again too.
   void _retryHealth() => ref.invalidate(healthStateProvider);
 
@@ -241,6 +278,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         view.value?.health ?? ref.watch(healthStateProvider).value;
     final bool askAgain = ref.watch(healthAskAgainProvider).value ?? false;
     final CalendarAccess? calendar = ref.watch(calendarAccessProvider).value;
+    final CalendarAccess? reminders = ref.watch(remindersAccessProvider).value;
 
     return CardPage(
       title: InsightsPage.title,
@@ -255,10 +293,26 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             onConnect: _connect,
           ),
         if (calendar != null && calendar != CalendarAccess.full)
-          _CalendarCard(
+          _EventKitCard(
             access: calendar,
             connecting: _connectingCalendar,
             onConnect: _connectCalendar,
+            label: InsightsPage.calendarLabel,
+            body: InsightsPage.calendarBody,
+            offLabel: InsightsPage.calendarOffLabel,
+            offValue: InsightsPage.calendarOffValue,
+            offBody: InsightsPage.calendarOffBody,
+          ),
+        if (reminders != null && reminders != CalendarAccess.full)
+          _EventKitCard(
+            access: reminders,
+            connecting: _connectingReminders,
+            onConnect: _connectReminders,
+            label: InsightsPage.remindersLabel,
+            body: InsightsPage.remindersBody,
+            offLabel: InsightsPage.remindersOffLabel,
+            offValue: InsightsPage.remindersOffValue,
+            offBody: InsightsPage.remindersOffBody,
           ),
         ...switch (view) {
           AsyncError() => <Widget>[
@@ -327,8 +381,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           _MessageCard(
             'How it works',
             body:
-                'Insights compare your sleep, heart, activity, mindfulness '
-                'and mood after days '
+                'Insights compare your sleep, heart, activity, mindfulness, '
+                'reminders and mood after days '
                 'with each habit against days without it. Connect Apple '
                 'Health to start.',
           ),
@@ -549,8 +603,8 @@ class InsightsCostsPage extends ConsumerWidget {
   const InsightsCostsPage({super.key});
 
   static const String lede =
-      'What follows each habit in your sleep, heart, activity, mindfulness '
-      'and mood';
+      'What follows each habit in your sleep, heart, activity, mindfulness, '
+      'reminders and mood';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1025,25 +1079,36 @@ class _HealthCard extends StatelessWidget {
   }
 }
 
-/// Asks for calendar access, or says where to allow it once refused.
-class _CalendarCard extends StatelessWidget {
-  const _CalendarCard({
+/// Asks for calendar or Reminders access, or says where to allow it once
+/// refused.
+class _EventKitCard extends StatelessWidget {
+  const _EventKitCard({
     required this.access,
     required this.connecting,
     required this.onConnect,
+    required this.label,
+    required this.body,
+    required this.offLabel,
+    required this.offValue,
+    required this.offBody,
   });
 
   final CalendarAccess access;
   final bool connecting;
   final VoidCallback onConnect;
+  final String label;
+  final String body;
+  final String offLabel;
+  final String offValue;
+  final String offBody;
 
   @override
   Widget build(BuildContext context) => DialCard(
     children: <Widget>[
       if (access == CalendarAccess.notDetermined)
         CardRow(
-          label: InsightsPage.calendarLabel,
-          subtitle: InsightsPage.calendarBody,
+          label: label,
+          subtitle: body,
           enabled: !connecting,
           glyph: connecting ? null : DialGlyph.right,
           trailing: connecting
@@ -1055,11 +1120,7 @@ class _CalendarCard extends StatelessWidget {
           onTap: onConnect,
         )
       else
-        const CardRow(
-          label: InsightsPage.calendarOffLabel,
-          subtitle: InsightsPage.calendarOffBody,
-          value: Text(InsightsPage.calendarOffValue),
-        ),
+        CardRow(label: offLabel, subtitle: offBody, value: Text(offValue)),
     ],
   );
 }

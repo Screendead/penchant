@@ -78,6 +78,10 @@ enum HealthChannel {
     return HKSampleType.stateOfMindType()
   }
 
+  // Days with menstrual flow (HealthDays.flowDayRows), for the insights engine
+  // to infer cycle phase from and hold fixed; never an outcome or shown.
+  private static let menstrualFlow = "menstrualFlow"
+
   // Raw samples, for the hours around an entry. Units as the daily path's.
   private static func sampleType(_ metric: String) -> (type: HKQuantityType, unit: HKUnit)? {
     switch metric {
@@ -104,6 +108,7 @@ enum HealthChannel {
     for metric in sessionMetrics {
       if let type = sessionType(metric) { types.insert(type) }
     }
+    types.insert(HKCategoryType(.menstrualFlow))
     if let type = stateOfMindType { types.insert(type) }
     return types
   }
@@ -332,6 +337,24 @@ enum HealthChannel {
       store.execute(query)
     }
 
+    if metrics.contains(menstrualFlow) {
+      group.enter()
+      let query = HKSampleQuery(
+        sampleType: HKCategoryType(.menstrualFlow), predicate: HKQuery.predicateForSamples(withStart: start, end: end),
+        limit: HKObjectQueryNoLimit, sortDescriptors: nil
+      ) { _, samples, error in
+        // As for the session types: asked of someone who connected before it
+        // joined readTypes, it costs this metric alone.
+        if let error, isNotDetermined(error) {
+          finish([], nil)
+          return
+        }
+        let days = (samples ?? []).compactMap { $0 as? HKCategorySample }.map { (start: $0.startDate, value: $0.value) }
+        finish(HealthDays.flowDayRows(days, metric: menstrualFlow, start: start, end: end, calendar), error)
+      }
+      store.execute(query)
+    }
+
     let wantedSleep = HealthDays.sleepMetrics.filter { metrics.contains($0.id) }
     let wantedTiming = HealthDays.sleepTimingMetrics.intersection(metrics)
     let wantsSleepingHeartRate = metrics.contains(sleepingHeartRate)
@@ -514,6 +537,7 @@ extension HealthChannel {
     private static func types(for metric: String) -> [HKSampleType] {
       if let s = HealthChannel.statistic(metric) { return [s.type] }
       if let type = HealthChannel.sessionType(metric) { return [type] }
+      if metric == HealthChannel.menstrualFlow { return [HKCategoryType(.menstrualFlow)] }
       if metric == HealthChannel.moodMetric { return HealthChannel.stateOfMindType.map { [$0] } ?? [] }
       let sleep = HKCategoryType(.sleepAnalysis)
       if metric == HealthChannel.sleepingHeartRate { return [sleep, HKQuantityType(.heartRate)] }

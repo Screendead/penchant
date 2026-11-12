@@ -100,6 +100,12 @@ enum HealthMetric {
   /// A day without a log has no value; earlier systems have none at all.
   moodValence('moodValence'),
 
+  /// 1 on each day with menstrual flow logged (any amount); a day logged
+  /// without flow, or not logged, has no value. Not an outcome: the insights
+  /// engine infers the cycle's phase from these days alone and holds it
+  /// fixed (`lib/insights/cycle_phase.dart`).
+  menstrualFlow('menstrualFlow'),
+
   /// The plain mean of the heart rate samples inside the night's asleep time
   /// (core, deep, REM or unspecified; not in bed or awake), keyed to the night
   /// like the sleep metrics, in beats per minute. A sample is inside when its

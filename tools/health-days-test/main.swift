@@ -741,5 +741,25 @@ do {
   check("only logs inside the window count", rows.count == 2, "\(got)")
 }
 
+// flowDayRows: a day with flow, once, keyed to its start; "none" is no flow.
+do {
+  let rows = HealthDays.flowDayRows(
+    [
+      (start: at(2026, 11, 7), value: 2),
+      (start: at(2026, 11, 8), value: 4),
+      (start: at(2026, 11, 8, 9), value: 1),
+      (start: at(2026, 11, 9), value: HealthDays.noFlow),
+      (start: at(2026, 11, 10, 23, 30), value: 3),
+      (start: at(2026, 11, 11), value: 2),
+    ], metric: "menstrualFlow", start: at(2026, 11, 8), end: at(2026, 11, 11), calendar)
+  let got = values(rows)
+  check("flow before the window is left out", got["2026-11-07 menstrualFlow"] == nil, "\(got)")
+  check("two samples on one day are one day of 1", got["2026-11-08 menstrualFlow"] == 1, "\(got)")
+  check("no flow is no day", got["2026-11-09 menstrualFlow"] == nil, "\(got)")
+  check("a sample is the day it starts", got["2026-11-10 menstrualFlow"] == 1, "\(got)")
+  check("flow at the window's end is left out", got["2026-11-11 menstrualFlow"] == nil, "\(got)")
+  check("only flow days have rows", rows.count == 2, "\(got)")
+}
+
 if failures > 0 { exit(1) }
 print("ok")

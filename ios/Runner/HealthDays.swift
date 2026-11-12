@@ -342,6 +342,23 @@ enum HealthDays {
     }
   }
 
+  // HKCategoryValueVaginalBleeding.none (iOS 18), HKCategoryValueMenstrualFlow.none
+  // before it: a day logged without flow.
+  static let noFlow = 5
+
+  // Days with menstrual flow, one row each with value 1: only that the day had
+  // flow, never how much. A sample is the local day it starts on, inside
+  // [start, end).
+  static func flowDayRows(
+    _ samples: [(start: Date, value: Int)], metric: String, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    var days = Set<String>()
+    for sample in samples where sample.value != noFlow && sample.start >= start && sample.start < end {
+      days.insert(key(sample.start, calendar))
+    }
+    return days.sorted().map { ["date": $0, "metric": metric, "value": 1.0] }
+  }
+
   // Each night's asleep time (no in bed, no awake), from the night's one source.
   static func asleepIntervals(_ byNight: [String: [SleepSample]]) -> [String: [(Date, Date)]] {
     var result: [String: [(Date, Date)]] = [:]
