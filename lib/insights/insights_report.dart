@@ -9,6 +9,7 @@ import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/cycle_phase.dart';
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
@@ -16,6 +17,7 @@ import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
@@ -92,6 +94,7 @@ class InsightsInput {
     this.samples = const <String, List<hs.HealthSample>>{},
     this.archived = const <String>{},
     this.events = const <CalendarEvent>[],
+    this.stays = const <PlaceStay>[],
     this.conditions = const <DayCondition>[],
   });
 
@@ -104,12 +107,19 @@ class InsightsInput {
     Set<String> archived = const <String>{},
     List<CalendarEvent> events = const <CalendarEvent>[],
     Iterable<hs.DailyOutcome> reminders = const <hs.DailyOutcome>[],
+    List<PlaceStay> stays = const <PlaceStay>[],
+    RoughLocation? location,
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
+    // A locked entry counts: its vice and quantity are plaintext.
+    final List<HabitUse> uses = habitUsesFrom(activities).toList();
+    DateTime? firstUse;
+    for (final HabitUse u in uses) {
+      if (firstUse == null || u.at.isBefore(firstUse)) firstUse = u.at;
+    }
     return InsightsInput(
-      // A locked entry counts: its vice and quantity are plaintext.
-      uses: habitUsesFrom(activities).toList(),
+      uses: uses,
       outcomes: withEnoughMood(
         withSessionZeros(<DailyOutcome>[
           for (final hs.DailyOutcome o in <hs.DailyOutcome>[
@@ -130,12 +140,15 @@ class InsightsInput {
       samples: samples,
       archived: archived,
       events: events,
+      stays: stays,
       conditions: <DayCondition>[
         cyclePhases(<DateTime>[
           for (final hs.DailyOutcome o in health)
             if (o.metricId == hs.HealthMetric.menstrualFlow.id && o.value > 0)
               o.date,
         ]),
+        if (location != null && firstUse != null)
+          dayLengths(location, from: firstUse, through: range.end),
       ],
     );
   }
@@ -157,8 +170,12 @@ class InsightsInput {
   /// calendar access.
   final List<CalendarEvent> events;
 
+  /// Time spent at the person's own places; empty without location access.
+  final List<PlaceStay> stays;
+
   /// What the day-after comparisons hold fixed where there are enough days:
-  /// the cycle's phase ([cyclePhases]), never an outcome of its own.
+  /// the cycle's phase ([cyclePhases]) and the day's length ([dayLengths]),
+  /// never outcomes of their own.
   final List<DayCondition> conditions;
 }
 
@@ -297,6 +314,7 @@ class InsightsReport {
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
     this.calendarDays = const <CalendarDay>[],
+    this.atPlace = const <AtPlace>[],
     this.recovery = const <Recovery>[],
     this.triggers = const <HabitTriggers>[],
   });
@@ -329,6 +347,11 @@ class InsightsReport {
   /// Whether each habit follows calendar events, findings and refusals,
   /// judged in the same family as [findings].
   final List<AfterEvent> afterEvent;
+
+  /// Whether each habit is logged at each place more than the time spent
+  /// there would give, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<AtPlace> atPlace;
 
   /// Every pair of habits shown, one following the other within minutes,
   /// each with its verdict, judged in the same family as [findings].
@@ -477,6 +500,12 @@ InsightsReport computeInsights(InsightsInput input) {
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<AtPlace> places = atPlace(
+    uses: input.uses,
+    stays: input.stays,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<HabitFollows> follows = habitFollows(
     uses: input.uses,
     through: addDays(input.through, -1),
@@ -509,6 +538,9 @@ InsightsReport computeInsights(InsightsInput input) {
   final List<double> calendarDayPs = <double>[
     for (final CalendarDay c in calendarDay) ?c.pValue,
   ];
+  final List<double> placePs = <double>[
+    for (final AtPlace a in places) ?a.pValue,
+  ];
   final List<double> replacementPs = <double>[
     for (final Replacement r in replacements) ?r.pValue,
   ];
@@ -532,6 +564,7 @@ InsightsReport computeInsights(InsightsInput input) {
       ...followsPs,
       ...calendarPs,
       ...calendarDayPs,
+      ...placePs,
       ...shiftPs,
       ...payoffPs,
       ...replacementPs,
@@ -566,6 +599,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...triggerPs,
         ...calendarPs,
         ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -580,6 +614,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -596,6 +631,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -610,6 +646,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...replacementPs,
         ...recoveryPs,
@@ -625,6 +662,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...recoveryPs,
@@ -635,6 +673,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...calendarDayPs,
         ...afterPs,
+        ...placePs,
         ...beforePs,
         ...triggerPs,
         ...followsPs,
@@ -650,6 +689,22 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...placePs,
+        ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    atPlace: judgeAtPlace(
+      places,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...triggerPs,
+        ...calendarDayPs,
         ...followsPs,
         ...calendarPs,
         ...shiftPs,
@@ -669,6 +724,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...followsPs,
               ...calendarPs,
               ...calendarDayPs,
+              ...placePs,
               ...payoffPs,
               ...replacementPs,
               ...recoveryPs,
@@ -685,6 +741,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -1549,9 +1606,15 @@ String findingBasis(
         'From ${finding.usableDays} days, $used of them with $habit',
     },
   };
-  return finding.heldFixed.contains(cyclePhaseId)
-      ? '$basis, compared within the same phase of your cycle'
-      : basis;
+  final bool phase = finding.heldFixed.contains(cyclePhaseId);
+  final bool daylight = finding.heldFixed.contains(dayLengthId);
+  return switch ((phase, daylight)) {
+    (true, true) =>
+      '$basis, compared within the same phase of your cycle and length of day',
+    (true, false) => '$basis, compared within the same phase of your cycle',
+    (false, true) => '$basis, compared at the same length of day',
+    (false, false) => basis,
+  };
 }
 
 String _stepWaking(HabitFinding finding) => switch (finding.stepWakingDays) {

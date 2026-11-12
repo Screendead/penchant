@@ -57,6 +57,10 @@
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Penchant learns the places you spend time, such as home and work, to see which habits you log more at each. Places and visits stay on this device, encrypted, and are never sent anywhere.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Penchant learns the places you spend time, such as home and work, to see which habits you log more at each. Places and visits stay on this device, encrypted, and are never sent anywhere. Always lets Penchant note a visit while the app is closed.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Penchant reads sleep, heart, activity, workout, mindfulness and mood data from Health to compare with your journal, and your period days to compare like with like. It stays on this device.</string>
 	<key>UIApplicationSceneManifest</key>

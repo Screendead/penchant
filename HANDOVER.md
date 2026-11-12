@@ -139,7 +139,32 @@ The list this run works from, sorted before any building. Tick or strike here as
 4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
    on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
-   signing probe only.
+   signing probe only. State: places and daylight built (#280, merged with master's why-not lines, triggers and
+   steps waking, then with calendar days (#286); saved report format 5); Focus, music and Journaling Suggestions
+   wait for a paid Apple team; none of #280 has run on a device.
+   - Focus: set aside 2026-11-12. The free team cannot sign `com.apple.developer.focus-status` (signed iOS build
+     with provisioning updates: "Entitlement com.apple.developer.focus-status not found and could not be included
+     in profile"); nothing built. Waits for a paid team.
+   - Places: built 2026-11-12 (#280, with Focus's note). Not proven on a device: the location prompts
+     (When In Use, then Always), visits arriving while the app is closed, and the Swift channel beyond the PR's
+     Native build. Visits wait in Swift memory only until sealed, so one reported while no key is loaded is lost if
+     the process ends first. Defaults to put to Jack: waking hours fixed at 07:00-23:00, 150 m places, 5 places
+     judged, 10-point floor. The "why not" list under What sets it off counts a place card as shown and can give a
+     place comparison's refusal ("At Place 2: not enough days of visits yet: 5 of 14").
+   - Daylight: built 2026-11-12 (#280). Sunrise, sunset and day length on the device from the most-visited place
+     to whole degrees, else the time zone's city; day length held fixed in the day-after comparisons only where
+     the month terms miss it (rarely, by design). No "use after sunset" comparison: the clock hour confounds it
+     (an evening habit would look tied to darkness in winter alone); an honest one compares the same clock hours
+     dark and light, and waits for a call. Not proven on a device: the time zone read through `flutter_timezone`
+     inside Insights (tests answer it with none).
+   - Music: set aside 2026-11-12. MusicKit is an App Service ticked on the App ID in Certificates, Identifiers &
+     Profiles, which a personal team cannot open (Apple grants it on enrolment), and it has no entitlement a build
+     could probe; without it the developer token, and so recently played, fails at run time. Nothing built. Waits
+     for a paid team. (MediaPlayer's `lastPlayedDate` needs no service but keeps only each song's last play: no
+     daily minutes, no "music before a use".)
+   - Journaling Suggestions: probed 2026-11-12, the free team cannot sign it. Signed iOS build with provisioning
+     updates: "Personal development teams, including [the team owner's name], do not support the Journaling Suggestions
+     capability." Entitlement reverted; waits for a paid team.
 5. ~~Calendar's rest~~ (built: feat/calendar-rest, PR #286; `ideas/insights/calendar-integration.md`, Needs Jack:
    no): the macOS EventKit channel, per-day calendar features, "Work → Meeting" suggestions in the trigger picker.
    Not its "findings without Health" item (round 14 `no-health` A).

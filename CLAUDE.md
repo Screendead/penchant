@@ -370,10 +370,11 @@ Health-derived values are sealed too (`lib/crypto/sealed_files.dart`): `Caches/s
 loaded, and then nothing is read or written; a file that will not open is deleted and read as absent. A user's first
 use deletes other users' folders; each launch deletes the plaintext `health-daily.json` of earlier builds; sign-out and deletion clear
 it all. In it: `health-daily` (the Health daily store) and `samples-<random>` (one settled hours-after span each, steps over the nights Health lacks among them,
-`lib/insights/health_sample_cache.dart`; random names, since spans follow use times), and `last-report` (the last
+`lib/insights/health_sample_cache.dart`; random names, since spans follow use times), `last-report` (the last
 Insights view with a computed report, `lib/insights/last_report_file.dart` over `report_codec.dart`; a cold open with
 no view in the session shows it, updating, until the fresh one lands; raise `insightsViewFormat` with any change to
-the report's types). The Swift-written
+the report's types), and `places` (Places' visits and names, which nothing can read again: Caches being emptied
+restarts them). The Swift-written
 `Caches/health-sync.json` (anchors and changed days, no values) stays plaintext. Most of `integration_test/` pumps `e2eApp()` (`integration_test/support.dart`):
 `MyApp` sealing with `e2eSealer`, a fixed-key `FakeSealer`, and the first-launch migrator off so it cannot seal a test's
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
@@ -542,10 +543,36 @@ What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, ca
 tagged entries (untagged ones say nothing, so they are left out, and the card says how many were tagged), each day's
 mean per entry as the unit, in the page's false-discovery family. A trigger counts under its tree path, its top-level
 area, or as its free-text label; `HabitUse.triggers` carries them from the opened entries, so a locked entry reads as
-untagged. Each unarchived habit on no before-a-use, pair (either side), calendar or trigger card gets one reason, on a
+untagged. Each unarchived habit on no before-a-use, pair (either side), calendar, place or trigger card gets one reason, on a
 drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
 (`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
 has no entries or nothing to compare against.
+
+**Places** (iOS only; Core Location visits, opt-in from a card on Insights: When In Use first, then the upgrade to
+Always, which Apple shows at most once; `NSLocation...UsageDescription` strings, no background mode or paid
+capability). `ios/Runner/PlacesChannel.swift` makes its `CLLocationManager` in `didFinishLaunching`, since the system
+relaunches the app for a visit, and holds each visit (arrival, departure, coordinates, accuracy) in memory only, never
+on disk, until Dart takes it (`lib/insights/places_source.dart`: `take`, then `ack` once sealed; `reported` on each
+visit). `placesProvider` (`lib/providers/places_provider.dart`, built at launch by `MyApp`) drains them at launch, on
+each report and on resume, once a key is loaded, into the sealed device file `places`: `PlaceStore`
+(`lib/insights/places.dart`) clusters visits within 150 m into places numbered from 1 ("Place n" until renamed on the
+card) and keeps the stays. A visit reported while no key is loaded is lost if the process ends first. `atPlace`
+compares, per habit and per place (the 5 with the most waking time), the share of a day's 07:00-23:00 entries logged
+during a stay there with the share of those hours spent there, by day, on days with an entry and an hour both there
+and elsewhere: 14 days at least, in the report's false-discovery family, floor 10 points. Findings show under What
+sets it off; names stay out of the engine and the report codec (results carry the place id).
+
+**Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
+held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city
+(`deviceTimeZoneProvider`, `flutter_timezone`, 2 s timeout; `lib/insights/zone_locations.dart`, generated from the
+system's `zone.tab` by `tools/zone-locations.py`); an unknown zone gives none. One location serves the whole span
+(travel ignored). `sunTimes` is the sunrise equation with NOAA's terms (upper limb, refraction), polar days 24 or 0
+hours. `dayLengths` is a `DayCondition.measure` (a quantity, not levels) in `InsightsInput.conditions`: `_timeTerms`
+adds it as one centred column only when every day has a value, its own inflation against the trend, month and shift
+terms and the habit's column's beside them are both within `maxVarianceInflation`, so it never turns a comparison into
+a refusal by itself. Over months it is nearly all month levels and trend and seldom joins; a finding that held it says
+"compared at the same length of day". No "after sunset" comparison: at a fixed clock hour, a habit logged in the
+evening would look tied to darkness through winter alone.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and

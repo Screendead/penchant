@@ -27,7 +27,7 @@ class AfterEventCardView extends StatelessWidget {
   final double top;
 
   @override
-  Widget build(BuildContext context) => _CalendarCard(
+  Widget build(BuildContext context) => SourceFindingCard(
     habit: habit,
     mark: mark,
     top: top,
@@ -55,7 +55,7 @@ class CalendarDayCardView extends StatelessWidget {
   final double top;
 
   @override
-  Widget build(BuildContext context) => _CalendarCard(
+  Widget build(BuildContext context) => SourceFindingCard(
     habit: habit,
     mark: mark,
     top: top,
@@ -69,8 +69,11 @@ class CalendarDayCardView extends StatelessWidget {
   );
 }
 
-class _CalendarCard extends StatelessWidget {
-  const _CalendarCard({
+/// One habit's finding against a source read on the device: the habit, a
+/// sentence, then smaller lines.
+class SourceFindingCard extends StatelessWidget {
+  const SourceFindingCard({
+    super.key,
     required this.habit,
     required this.mark,
     required this.top,

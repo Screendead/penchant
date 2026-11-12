@@ -4,6 +4,7 @@ import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
 import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
@@ -70,9 +71,11 @@ InsightsReport _report({
   List<AfterEvent> afterEvent = const <AfterEvent>[],
   List<CalendarDay> calendarDays = const <CalendarDay>[],
   List<HabitTriggers> triggers = const <HabitTriggers>[],
+  List<AtPlace> atPlace = const <AtPlace>[],
 }) => InsightsReport(
   triggers: triggers,
   calendarDays: calendarDays,
+  atPlace: atPlace,
   findings: const <HabitFinding>[],
   refused: const <HabitRefusal>[],
   beforeUse: beforeUse,
@@ -108,6 +111,16 @@ TriggerAmount _trigger(
   pValue: verdict == TriggerVerdict.tooFewDays ? null : 0.3,
   verdict: verdict,
 );
+
+AtPlace _place(String habit, RefusalReason? refusal, {int days = 30}) =>
+    AtPlace(
+      habitId: habit,
+      placeId: 2,
+      days: days,
+      useShare: 0.3,
+      timeShare: 0.3,
+      refusal: refusal,
+    );
 
 String _name(String id) => switch (id) {
   'coffee' => 'Coffee',
@@ -353,5 +366,63 @@ void main() {
     );
 
     expect(got.single.calendarDay, isNull);
+  });
+
+  test('a habit with a place card gets no line', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        afterEvent: <AfterEvent>[
+          _calendar('coffee', RefusalReason.withinNoise),
+          _calendar('tea', RefusalReason.withinNoise),
+        ],
+        atPlace: <AtPlace>[_place('coffee', null)],
+      ),
+      shown: <String>{'coffee'},
+    );
+
+    expect(got.map((r) => r.habitId), <String>['tea']);
+  });
+
+  test('a place refusal names the place, with its count of days where '
+      'that stopped it', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        atPlace: <AtPlace>[
+          _place('coffee', RefusalReason.tooFewDays, days: 5),
+          _place('tea', RefusalReason.tooSmall),
+        ],
+      ),
+    );
+
+    expect(
+      got.map((r) => setsOffReason(r, _name, placeOf: (id) => 'Home #$id')),
+      <String>[
+        'At Home #2: not enough days of visits yet: 5 of 14',
+        'At Home #2: too small to matter, under 10 points more or less than '
+            'your time there',
+      ],
+    );
+    expect(_why(got.first), startsWith('At Place 2: '));
+  });
+
+  test('a calendar refusal comes before a place one of the same kind, and a '
+      'place one before a trigger one', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        afterEvent: <AfterEvent>[_calendar('coffee', RefusalReason.chance)],
+        atPlace: <AtPlace>[
+          _place('coffee', RefusalReason.chance),
+          _place('tea', RefusalReason.chance),
+        ],
+        triggers: <HabitTriggers>[
+          _tagged('tea', <TriggerAmount>[
+            _trigger('work', TriggerVerdict.chance),
+          ]),
+        ],
+      ),
+    );
+
+    expect(got.first.calendar, isNotNull);
+    expect(got.last.place, isNotNull);
   });
 }

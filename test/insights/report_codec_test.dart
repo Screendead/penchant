@@ -9,6 +9,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/report_codec.dart';
@@ -308,6 +309,26 @@ InsightsReport everySection() => InsightsReport(
       refusal: RefusalReason.tooFewDays,
     ),
   ],
+  atPlace: const <AtPlace>[
+    AtPlace(
+      habitId: 'coffee',
+      placeId: 2,
+      days: 31,
+      useShare: 0.6,
+      timeShare: 0.35,
+      effect: 0.25,
+      interval: Interval(0.12, 0.38),
+      pValue: 0.001,
+    ),
+    AtPlace(
+      habitId: 'tea',
+      placeId: 1,
+      days: 3,
+      useShare: 0,
+      timeShare: 0.5,
+      refusal: RefusalReason.tooFewDays,
+    ),
+  ],
   recovery: const <Recovery>[
     Recovery(
       habitId: 'coffee',
@@ -412,6 +433,8 @@ void main() {
       CalendarDayFeature.meetingMinutes,
     );
     expect(report.calendarDays.last.refusal, RefusalReason.tooFewDays);
+    expect(report.atPlace.first.placeId, 2);
+    expect(report.atPlace.last.refusal, RefusalReason.tooFewDays);
     expect(report.triggers.single.triggers[1].trigger, 'Bored at the bus stop');
     expect(report.triggers.single.triggers.first.verdict, TriggerVerdict.found);
   });
