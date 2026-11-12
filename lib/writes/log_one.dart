@@ -109,6 +109,7 @@ Future<void> logOne(
       ref,
       activityID: activityID,
       vice: vice,
+      at: at,
       cancelled: () => undone,
       entry: entry,
       onUndone: () => undone = true,

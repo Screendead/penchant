@@ -4,6 +4,8 @@ import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/after_event_copy.dart';
+import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -23,6 +25,64 @@ class AfterEventCardView extends StatelessWidget {
   final HabitMark mark;
   final String locale;
   final double top;
+
+  @override
+  Widget build(BuildContext context) => _CalendarCard(
+    habit: habit,
+    mark: mark,
+    top: top,
+    sentence: afterEventSentence(finding, habit, locale),
+    lines: <String>[afterEventRange(finding, locale), afterEventBasis(finding)],
+  );
+}
+
+/// One habit's findings of how often it is used on days with more of a
+/// calendar feature.
+class CalendarDayCardView extends StatelessWidget {
+  const CalendarDayCardView({
+    super.key,
+    required this.card,
+    required this.habit,
+    required this.mark,
+    required this.locale,
+    required this.top,
+  });
+
+  final CalendarDayCard card;
+  final String habit;
+  final HabitMark mark;
+  final String locale;
+  final double top;
+
+  @override
+  Widget build(BuildContext context) => _CalendarCard(
+    habit: habit,
+    mark: mark,
+    top: top,
+    sentence: calendarDaySentence(card.headline, habit, locale),
+    lines: <String>[
+      calendarDayRange(card.headline, locale),
+      calendarDayBasis(card.headline),
+      for (final CalendarDay other in card.others)
+        calendarDayLine(other, locale),
+    ],
+  );
+}
+
+class _CalendarCard extends StatelessWidget {
+  const _CalendarCard({
+    required this.habit,
+    required this.mark,
+    required this.top,
+    required this.sentence,
+    required this.lines,
+  });
+
+  final String habit;
+  final HabitMark mark;
+  final double top;
+  final String sentence;
+  final List<String> lines;
 
   @override
   Widget build(BuildContext context) {
@@ -51,12 +111,11 @@ class AfterEventCardView extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                afterEventSentence(finding, habit, locale),
+                sentence,
                 style: DialTypeScale.bodyL.copyWith(color: scheme.onSurface),
               ),
               const SizedBox(height: DialSpace.xs),
-              Text(afterEventRange(finding, locale), style: small),
-              Text(afterEventBasis(finding), style: small),
+              for (final String line in lines) Text(line, style: small),
             ],
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
@@ -67,15 +68,27 @@ InsightsReport _report({
   List<BeforeUse> beforeUse = const <BeforeUse>[],
   List<HabitFollows> follows = const <HabitFollows>[],
   List<AfterEvent> afterEvent = const <AfterEvent>[],
+  List<CalendarDay> calendarDays = const <CalendarDay>[],
   List<HabitTriggers> triggers = const <HabitTriggers>[],
 }) => InsightsReport(
   triggers: triggers,
+  calendarDays: calendarDays,
   findings: const <HabitFinding>[],
   refused: const <HabitRefusal>[],
   beforeUse: beforeUse,
   follows: follows,
   afterEvent: afterEvent,
 );
+
+CalendarDay _day(String habit, RefusalReason? refusal, {int days = 90}) =>
+    CalendarDay(
+      habitId: habit,
+      feature: CalendarDayFeature.events,
+      cut: 2,
+      usableDays: days,
+      moreDays: 40,
+      refusal: refusal,
+    );
 
 HabitTriggers _tagged(String habit, List<TriggerAmount> triggers) =>
     HabitTriggers(habitId: habit, entries: 40, tagged: 12, triggers: triggers);
@@ -291,5 +304,54 @@ void main() {
     );
 
     expect(got.single.calendar, isNotNull);
+  });
+
+  test('a calendar-day refusal is a reason, worded as the calendar-day copy '
+      'says, and outranks a less telling one', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        beforeUse: <BeforeUse>[_before('coffee', RefusalReason.withinNoise)],
+        calendarDays: <CalendarDay>[
+          _day('coffee', RefusalReason.chance),
+          _day('tea', RefusalReason.tooFewDays, days: 12),
+        ],
+      ),
+    );
+
+    expect(got.map(_why), <String>[
+      'Days with 3 or more calendar events: a difference that could be '
+          'chance, among everything this page checks',
+      'Your calendar: too few days with it yet, 12 of 21',
+    ]);
+  });
+
+  test('on a tie, a calendar-day refusal comes after the calendar and '
+      'before a trigger', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        afterEvent: <AfterEvent>[_calendar('coffee', RefusalReason.chance)],
+        calendarDays: <CalendarDay>[
+          _day('coffee', RefusalReason.chance),
+          _day('tea', RefusalReason.chance),
+        ],
+        triggers: <HabitTriggers>[
+          _tagged('tea', <TriggerAmount>[
+            _trigger('work', TriggerVerdict.chance),
+          ]),
+        ],
+      ),
+    );
+
+    expect(got.first.calendar, isNotNull);
+    expect(got.last.calendarDay, isNotNull);
+  });
+
+  test('a found calendar-day comparison is no reason', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(calendarDays: <CalendarDay>[_day('coffee', null)]),
+      habits: <String>['coffee'],
+    );
+
+    expect(got.single.calendarDay, isNull);
   });
 }

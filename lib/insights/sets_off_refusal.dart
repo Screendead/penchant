@@ -3,30 +3,43 @@ import 'dart:math';
 import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 /// Why a habit has nothing under "What sets it off": the most telling of its
-/// refused before-a-use, pair, calendar and trigger comparisons, or, with
+/// refused before-a-use, pair, calendar, calendar-day and trigger
+/// comparisons, or, with
 /// none of them, whether it has entries at all.
 class SetsOffRefusal {
   const SetsOffRefusal.before(this.habitId, BeforeUse this.before)
     : pair = null,
       calendar = null,
+      calendarDay = null,
       tagging = null,
       trigger = null,
       logged = true;
   const SetsOffRefusal.pair(this.habitId, HabitFollows this.pair)
     : before = null,
       calendar = null,
+      calendarDay = null,
       tagging = null,
       trigger = null,
       logged = true;
   const SetsOffRefusal.calendar(this.habitId, AfterEvent this.calendar)
     : before = null,
       pair = null,
+      calendarDay = null,
+      tagging = null,
+      trigger = null,
+      logged = true;
+  const SetsOffRefusal.calendarDay(this.habitId, CalendarDay this.calendarDay)
+    : before = null,
+      pair = null,
+      calendar = null,
       tagging = null,
       trigger = null,
       logged = true;
@@ -37,11 +50,13 @@ class SetsOffRefusal {
   ) : before = null,
       pair = null,
       calendar = null,
+      calendarDay = null,
       logged = true;
   const SetsOffRefusal.nothing(this.habitId, {required this.logged})
     : before = null,
       pair = null,
       calendar = null,
+      calendarDay = null,
       tagging = null,
       trigger = null;
 
@@ -49,6 +64,7 @@ class SetsOffRefusal {
   final BeforeUse? before;
   final HabitFollows? pair;
   final AfterEvent? calendar;
+  final CalendarDay? calendarDay;
 
   /// With [trigger]: the habit's tagging as a whole.
   final HabitTriggers? tagging;
@@ -60,6 +76,7 @@ class SetsOffRefusal {
   RefusalReason? get reason =>
       before?.refusal ??
       calendar?.refusal ??
+      calendarDay?.refusal ??
       switch (pair?.verdict) {
         FollowsVerdict.tooFewDays => RefusalReason.tooFewDays,
         FollowsVerdict.chance => RefusalReason.chance,
@@ -78,6 +95,7 @@ class SetsOffRefusal {
       before?.usableDays ??
       pair?.days ??
       calendar?.eventDays ??
+      calendarDay?.usableDays ??
       trigger?.withDays ??
       0;
 
@@ -87,14 +105,17 @@ class SetsOffRefusal {
       ? 1
       : calendar != null
       ? 2
-      : 3;
+      : calendarDay != null
+      ? 3
+      : 4;
 }
 
 /// One [SetsOffRefusal] for each of [habitIds] (the unarchived habits shown,
 /// in order) that no card in [shown] names, from [report]'s before-a-use,
-/// pair, calendar and trigger comparisons; [logged] holds the habits with entries in
-/// the span read. Ranked as [refusalRank], then before-a-use, pair,
-/// calendar and trigger, then the comparison from the most days.
+/// pair, calendar, calendar-day and trigger comparisons; [logged] holds the
+/// habits with entries in the span read. Ranked as [refusalRank], then
+/// before-a-use, pair, calendar, calendar-day and trigger, then the
+/// comparison from the most days.
 List<SetsOffRefusal> setsOffRefusals({
   required Iterable<String> habitIds,
   required InsightsReport report,
@@ -121,6 +142,9 @@ List<SetsOffRefusal> setsOffRefusals({
   }
   for (final AfterEvent a in report.afterEvent) {
     add(SetsOffRefusal.calendar(a.habitId, a));
+  }
+  for (final CalendarDay c in report.calendarDays) {
+    add(SetsOffRefusal.calendarDay(c.habitId, c));
   }
   for (final HabitTriggers h in report.triggers) {
     for (final TriggerAmount t in h.triggers) {
@@ -164,6 +188,9 @@ String setsOffReason(
   }
   if (refusal.calendar case final AfterEvent a) {
     return 'After calendar events: ${_calendarReason(a, gates)}';
+  }
+  if (refusal.calendarDay case final CalendarDay c) {
+    return calendarDayRefusal(c, gates: gates);
   }
   if ((refusal.tagging, refusal.trigger) case (
     final HabitTriggers h,

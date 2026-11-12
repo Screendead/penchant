@@ -520,13 +520,22 @@ round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`Metri
 pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
 
 **Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
-the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start
-and end alone (`lib/insights/calendar_source.dart`, a year per read), which `lib/insights/after_event.dart` compares
-with the hour after. `ios/Runner/RemindersChannel.swift` gives each reminder's due and completion times alone
+the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start,
+end and number of people listed, never who (`lib/insights/calendar_source.dart`, a year per read), which
+`lib/insights/after_event.dart` compares with the hour after, and `lib/insights/calendar_days.dart` makes into daily
+features (time in meetings, events, back-to-back runs, events of `calendarCrowdedAttendees` or more people, events over
+`calendarLongMinutes`), each judged from `calendarDayMinDays` days above 0: whether a habit is used on more of the days
+above the feature's median, with weekend, trend, period and the day before's use held fixed, in the page's family with a
+10-point floor (`CalendarDay`, `report.calendarDays`, cards under What sets it off). The features never become
+outcomes, so nothing compares meetings after a use. `ios/Runner/RemindersChannel.swift` gives each reminder's due and completion times alone
 (`lib/insights/reminders_source.dart`), made into two daily outcomes beside Health's: reminders completed that day
 (`remindersCompleted`) and due that day but not done by its end (`remindersMissed`), each from its first day above 0
 and judged only with `minSessionDays` such days. Both providers turn a failure or a 30 s timeout into nothing, since
-provider errors reach Crashlytics. Like everything in Insights they wait for Health values.
+provider errors reach Crashlytics. Like everything in Insights they wait for Health values. Outside Insights, the
+trigger picker (`showTriggerPicker`'s `at`: the record sheet and editor pass the sheet's time, `logOne`'s "What was
+going on?" the log's; the widget's prompt passes none) reads the hour before the entry once as it opens, only with full
+access already granted, and offers `work/meeting` first under "Suggested from your calendar" when an event of 15 minutes
+or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped).
 
 What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, cards in
 `lib/widgets/trigger_amounts_card.dart`): per habit, the amount per entry on entries tagged a trigger against its other

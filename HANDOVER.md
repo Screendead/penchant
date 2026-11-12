@@ -140,9 +140,23 @@ The list this run works from, sorted before any building. Tick or strike here as
    places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
    on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
    signing probe only.
-5. Calendar's rest (`ideas/insights/calendar-integration.md`, Needs Jack: no): the macOS EventKit channel, per-day
-   calendar features, "Work → Meeting" suggestions in the trigger picker. Not its "findings without Health" item
-   (round 14 `no-health` A).
+5. ~~Calendar's rest~~ (built: feat/calendar-rest, PR #286; `ideas/insights/calendar-integration.md`, Needs Jack:
+   no): the macOS EventKit channel, per-day calendar features, "Work → Meeting" suggestions in the trigger picker.
+   Not its "findings without Health" item (round 14 `no-health` A).
+   - [x] Per-day calendar features (this branch): time in meetings, events, back-to-back runs, meetings of 5 or more
+     people, meetings over 45 minutes, each a day above the person's median against the rest, under What sets it off.
+     The channel now sends each event's number of people listed (never who). Not proven on a device: the Swift
+     compiles only in CI; real calendars' attendee counts and plausible cards on real data.
+   - [ ] ~~macOS EventKit channel~~ set aside: the Mac computes no Insights without Health, so it would read events
+     nothing uses and add a prompt that does nothing.
+   - [x] "Work → Meeting" suggestions (this branch): an entry logged in the hour after a calendar event of 15 minutes
+     or more ended gets Work › Meeting first in the trigger picker, under "Suggested from your calendar", never picked
+     until tapped; only with calendar access already granted; no titles read. The widget's later prompt offers none
+     (it carries no entry time). Not proven on a device: the EventKit read as the picker opens.
+   - [x] Why-not lines take the calendar days: a habit with a calendar-day card counts as shown; one without can
+     give the calendar-day refusal (`calendarDayRefusal`), ranked by refusal, then after the hour-after-event
+     comparison and before triggers. Calendar-day and trigger comparisons now count in each other's family. Saved
+     report format 4. Not proven on a device: unit and widget tests only.
 6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
    the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
    trigger breakdowns over time, spend).
@@ -258,6 +272,9 @@ the iPhone-to-Mac journal key sync is being investigated again (P2).
 - Calendar (#239): hour after an event ends against nearby event-free days; 60-min window, events under 15 min out,
   gaps under 10 min merged, controls clear 2 h before and 1 h after within 14 days, 14 days a side, 10 points;
   weekday/weekend matching only; iOS only; footer does not mention the calendar.
+- Calendar days (fifth run): a feature is judged only with 14 days above 0; "more" is above the person's median day
+  (counts read as whole thresholds); use that day on the feature, weekend, trend, period levels and the day before's
+  use; 10-point floor; crowded is 5 or more people listed; long is over 45 minutes; whether only, not amount or time.
 - Step changes (#241): shift cards use the habit-effect floors; 14 days a side, at most 3 per measure; a habit named
   beside a shift at 1.5x and p < 0.01 over 28 days a side, outside the family; power cost accepted (185 to 123 of 200
   on one-day amount jumps); the existing "uneven" refusal reused; card wording "From March 12, 2026, your resting heart
