@@ -203,13 +203,14 @@ The list this run works from, sorted before any building. Tick or strike here as
   2026-11-09" (third run) disagrees with `CLAUDE.md`'s "the 4 production indexes ... stay"; only the console or
   such a check settles it.
 - No "What was going on?" prompt after a Siri or Shortcuts log (Jack ruled only on Control Centre).
-- Claude's as-built defaults from the fourth run (list above) were never put to Jack; the page lists them once.
+- Claude's as-built defaults from the fourth run (list below) were never put to Jack and are not on round 17's
+  page, which lists only this run's.
 
 **State at the end of the run (2026-11-12 night):** merged #281 (why-not lines, trigger analysis, steps waking),
 #284 (Reduce motion over framework animations), #286 (calendar days, Meeting suggestion), #280 (Places, Daylight;
 Focus, Music and Journaling Suggestions need a paid team). The macOS calendar channel was not built. Held for round
 17: #282, #287, #283, #285. Refused to Claude here, so Jack's: closing issue #9, deleting the spare Flutter clones
-in `~/development/tracker-tools` (a hook leaves disk clean-up to claude-reaper). iPhone: `master` at #280.
+in `~/development/tracker-tools` (a hook leaves disk clean-up to claude-reaper). iPhone: `master` at #280 (6ad60c0, build 1500), installed 2026-11-12; the Mac stays on 1422 for #252.
 
 **Blocked or Jack's:** #252 waits on Jack saying the menu-bar log reached the iPhone
 (`~/Library/Containers/com.screendead.penchant.sync` now exists, created 2026-11-12 18:11, so PenchantSync has
