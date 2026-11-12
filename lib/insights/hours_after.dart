@@ -139,9 +139,8 @@ const int wakingStillBinSteps = 10;
 /// Steps in the 30 minutes from a stretch that are sustained: up and about.
 const int wakingSustainedSteps = 100;
 
-/// The shortest and longest still span taken for a night, in minutes.
+/// The shortest still span taken for a night, in minutes.
 const int wakingMinStillMinutes = 180;
-const int wakingMaxStillMinutes = 16 * 60;
 
 /// The steps [wakingFromSteps] reads for [day]: from 18:00 the evening
 /// before up to 15:00 on it, so one day's span never overlaps another's.
@@ -154,10 +153,11 @@ const int wakingMaxStillMinutes = 16 * 60;
 /// Health holds no night for, as a span like [HealthSampleMetric.bed]'s:
 /// over [wakingStepsSpan], the longest still stretch (10-minute bins under
 /// [wakingStillBinSteps], or not followed by [wakingSustainedSteps] in 30
-/// minutes) that has sustained steps on both sides and lasts from
-/// [wakingMinStillMinutes] to [wakingMaxStillMinutes]; waking is the first
-/// step sample of the sustained steps after it. Null with no such stretch: a
-/// phone left off or out of reach is not a night.
+/// minutes) of at least [wakingMinStillMinutes], ended by sustained steps
+/// and with steps before it: sustained ones, or [wakingSustainedSteps] in
+/// all from 18:00. Waking is the first step sample of the sustained steps
+/// after it. Null with no such stretch: a phone left off or out of reach is
+/// not a night.
 ///
 /// Steps start later than waking (a lie-in, a phone left on the nightstand),
 /// so this waking runs late; [planHoursAfter] never sets a moment timed from
@@ -200,12 +200,11 @@ HealthSample? wakingFromSteps(List<HealthSample> steps, DateTime day) {
     while (k < n && !up[k]) {
       k++;
     }
-    final int minutes = (k - from) * _bin.inMinutes;
-    if (from > 0 &&
-        k < n &&
-        minutes >= wakingMinStillMinutes &&
-        minutes <= wakingMaxStillMinutes &&
-        (best == null || k - from > best.to - best.from)) {
+    if (k < n &&
+        (k - from) * _bin.inMinutes >= wakingMinStillMinutes &&
+        (best == null || k - from > best.to - best.from) &&
+        (from > 0 ||
+            bins.take(k).fold(0.0, (a, b) => a + b) >= wakingSustainedSteps)) {
       best = (from: from, to: k);
     }
   }

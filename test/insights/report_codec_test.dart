@@ -108,6 +108,7 @@ InsightsReport everySection() => InsightsReport(
       standardized: 0.8,
       pValue: 0.0001,
       sameBedtime: _bedtimeRefusal,
+      stepWakingDays: 14,
     ),
     const HabitFinding(
       habitId: 'tea',
@@ -378,6 +379,8 @@ void main() {
     final InsightsReport report = (back.result! as InsightsComputed).report;
     expect(report.findings[2].window, (start: 60, end: 120));
     expect(report.findings[2].sameBedtime, isA<HabitRefusal>());
+    expect(report.findings[2].stepWakingDays, 14);
+    expect(report.findings[0].stepWakingDays, 0);
     expect(report.findings[3].heldFixed, <String>{'cyclePhase'});
     expect(report.findings[0].heldFixed, isEmpty);
     expect(report.refused.first.raw!.interval.high, double.infinity);
