@@ -87,12 +87,59 @@ void main() {
       bed: bed,
     );
     expect(report.hoursAfterChecks, greaterThan(0));
-    // The time in bed in one call, then a call a span per measure.
+    // The time in bed in one call, steps for each night it lacks (here only
+    // tonight's), then a call a span per measure.
+    final int nights = insightsWakingReads(
+      s.uses,
+      insightsToday,
+      bed: bed,
+    ).length;
+    expect(nights, 1);
     expect(
       health.sampleCalls,
-      1 + insightsSampleMetrics.length * plan.reads.length,
+      1 + nights + insightsSampleMetrics.length * plan.reads.length,
     );
     expect(plan.reads.length, lessThanOrEqualTo(365));
+  });
+
+  test('with no night in Health, reads steps over each night first', () async {
+    final Synthetic year = insightsHoursYear();
+    final Synthetic s = Synthetic(year.uses, <String, List<hs.HealthSample>>{
+      for (final MapEntry<String, List<hs.HealthSample>> e
+          in year.samples.entries)
+        if (e.key != hs.HealthSampleMetric.bed.id) e.key: e.value,
+    }, year.through);
+    final FakeHealthSource health = FakeHealthSource(
+      read: daily(),
+      sampleData: served(s),
+    );
+    final InsightsReport report =
+        ((await run(health, s)).result! as InsightsComputed).report;
+    final List<({DateTime start, DateTime end})> nights = insightsWakingReads(
+      s.uses,
+      insightsToday,
+    );
+    expect(nights.length, greaterThan(250));
+    final List<hs.HealthSample> steps =
+        s.samples[hs.HealthSampleMetric.stepCount.id]!;
+    final HoursAfterPlan plan = insightsHoursAfterPlan(
+      s.uses,
+      insightsToday,
+      wakingSteps: <hs.HealthSample>[
+        for (final hs.HealthSample x in steps)
+          if (nights.any(
+            (n) => !x.start.isBefore(n.start) && x.start.isBefore(n.end),
+          ))
+            x,
+      ],
+    );
+    expect(plan.points, isNotEmpty);
+    expect(plan.points.every((p) => p.estimated), isTrue);
+    expect(
+      health.sampleCalls,
+      1 + nights.length + insightsSampleMetrics.length * plan.reads.length,
+    );
+    expect(report.hoursAfterChecks, greaterThan(0));
   });
 
   test('the daily report shows while the sample read is going', () async {

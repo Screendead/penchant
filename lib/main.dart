@@ -38,6 +38,7 @@ import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
+import 'package:tracker/design/motion_binding.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
@@ -47,7 +48,7 @@ import 'package:tracker/writes/category_migration.dart';
 import 'package:tracker/writes/quit_when_synced.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+  PenchantBinding.ensureInitialized();
   installErrorHandlers();
   registerFontLicence();
   startApp();

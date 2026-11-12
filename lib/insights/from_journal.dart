@@ -9,5 +9,6 @@ Iterable<HabitUse> habitUsesFrom(Iterable<ViceActivity> activities) =>
         habitId: a.viceID,
         at: a.createdAt.toDate(),
         amount: a.measure,
+        triggers: a.triggers,
       ),
     );

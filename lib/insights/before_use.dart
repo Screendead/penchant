@@ -474,8 +474,10 @@ int _varyingPeriods(List<double> x, List<int> period) {
 /// part of what may come before a use. A moment, use or control, is left out
 /// when another habit was used in the [hoursAfterClearMinutes] before it
 /// (its effect would read as this habit's lead-up), when the hour holds
-/// under [HoursAfterGates.minSamples] readings, or when it or the
-/// [HoursAfterGates.activityLingerMinutes] before it hold a walk.
+/// under [HoursAfterGates.minSamples] readings, when it or the
+/// [HoursAfterGates.activityLingerMinutes] before it hold a walk, or when its
+/// waking was guessed from steps ([HoursAfterPoint.estimated]), which no copy
+/// here says.
 List<BeforeUse> hourBefore({
   required HoursAfterPlan plan,
   required List<HabitUse> uses,
@@ -522,6 +524,10 @@ List<BeforeUse> hourBefore({
     void drop(HoursAfterShortfall why, HoursAfterPoint p) =>
         drops[(why, p.control)] = (drops[(why, p.control)] ?? 0) + 1;
     for (final HoursAfterPoint p in byHabit[id] ?? const <HoursAfterPoint>[]) {
+      if (p.estimated) {
+        drop(HoursAfterShortfall.noSleep, p);
+        continue;
+      }
       final DateTime from = p.at.subtract(hour);
       if (usesOf.entries.any(
         (e) => e.key != id && anyTimeIn(e.value, p.at.subtract(clear), p.at),

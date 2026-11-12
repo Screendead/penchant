@@ -9,11 +9,16 @@ class HabitUse {
     required this.habitId,
     required this.at,
     required this.amount,
+    this.triggers = const <String>[],
   });
 
   final String habitId;
   final DateTime at;
   final num amount;
+
+  /// As stored on the entry (lib/data/activity_triggers.dart); empty when
+  /// untagged or locked.
+  final List<String> triggers;
 }
 
 /// One value of an outcome (a night's sleep, a day's resting heart rate) for

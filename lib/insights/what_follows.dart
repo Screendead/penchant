@@ -319,6 +319,7 @@ class HabitFinding extends HabitInsight {
     this.spread,
     this.sameBedtime,
     this.heldFixed = const <String>{},
+    this.stepWakingDays = 0,
   });
 
   /// The outcome's difference after a day with the habit, or per [step] more
@@ -354,6 +355,10 @@ class HabitFinding extends HabitInsight {
   /// The [DayCondition.id]s the comparison held fixed: its days were compared
   /// within each level of these.
   final Set<String> heldFixed;
+
+  /// For [InsightKind.hoursAfter]: of [usableDays], those timed from a waking
+  /// guessed from steps, Health holding no night for them.
+  final int stepWakingDays;
 }
 
 class HabitRefusal extends HabitInsight {
