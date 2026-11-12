@@ -559,7 +559,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
      First step built (#274, 2026-11-11): workout and mindful minutes a day as outcomes, read
      types version 3 (the Insights card offers the sheet again). A session metric is left out when no day of the
      person's reaches its literature floor (habit-blind; coordinator's call, 2026-11-11). Not run on a device.
-     State of Mind built (2026-11-12, PR "Insights: mood from Apple Health's State of Mind"): one valence a day
+     State of Mind built (#278, 2026-11-12): one valence a day
      (daily mood preferred over momentary emotions), counted from 14 days with a log, floor half the person's own SD
      of daily valence (`mood-floor` A), copy in words; read types version 4. Not run on a device. Next: cycle
      tracking, then places.

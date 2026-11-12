@@ -1080,8 +1080,9 @@ String? metricEvidence(String metricId) => switch (metricId) {
     '13 min of meditation a day for 8 weeks lowered negative mood against a '
         'podcast (Basso 2019).',
   'moodValence' =>
-    'Half of your own day-to-day spread is about the smallest change people '
-        'notice in how they rate their wellbeing (Norman 2003).',
+    'Half a standard deviation is the usual rule for the smallest change '
+        'people notice in rated wellbeing (Norman 2003); here, half your own '
+        'day-to-day spread.',
   _ => null,
 };
 

@@ -45,7 +45,7 @@ Workout and mindful time count a day without a session as 0, so a person whose l
 cannot show a difference of it either way; the engine leaves such a metric out rather than add its comparisons to
 the false-discovery family (`withSessionZeros`). The rule reads the person's days alone, never which followed a habit.
 
-| Mood (State of Mind valence) | half the SD of the person's daily valence | Decision (own spread) | Norman, Sloan and Wyrwich 2003 (Medical Care, "the remarkable universality of half a standard deviation"): across 38 studies of health-related quality of life, the smallest change patients rated as important came to about half a standard deviation of the measure. That is a spread between people on validated scales; Jack applied it to one person's own day-to-day spread of Health's -1 to 1 valence (round 16 `mood-floor` A, 2026-11-12). No study gives a smallest change on Apple's scale. Not re-read for this row; the pitch quoted it (added 2026-11-12). |
+| Mood (State of Mind valence) | half the SD of the person's daily valence | Decision (own spread) | Norman, Sloan and Wyrwich 2003 (Medical Care, "the remarkable universality of half a standard deviation"): half a standard deviation is the most-cited general rule for the smallest change people notice in self-rated wellbeing. The paper's standard deviations are of health-related quality-of-life scores; Jack applied the rule to one person's own day-to-day spread of Health's -1 to 1 valence (round 16 `mood-floor` A, 2026-11-12). No study gives a smallest change on Apple's scale. The paper was not re-read for this row; the summary is the round 16 pitch's (added 2026-11-12). |
 
 Mood's SD is taken over every day with a mood log (`FloorRule.ownSpread`), not only next-door days, since most
 people log it now and then; the noise check below may still raise it. Mood counts only from 14 days with a log, and
@@ -94,8 +94,8 @@ floor rounded up at the digits shown ("under 22 min" for 21.4; "under 0.4 ms" fo
 - Active energy: "About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower mortality (Strain 2020)."
 - Workout time: "About 15 min of exercise a day went with 14% lower mortality than none (Wen 2011)."
 - Mindful time: "13 min of meditation a day for 8 weeks lowered negative mood against a podcast (Basso 2019)."
-- Mood: "Half of your own day-to-day spread is about the smallest change people notice in how they rate their
-  wellbeing (Norman 2003)." Mood cards and refusals use words, never numbers: "slightly", "noticeably" or "much"
+- Mood: "Half a standard deviation is the usual rule for the smallest change people notice in rated wellbeing
+  (Norman 2003); here, half your own day-to-day spread." Mood cards and refusals use words, never numbers: "slightly", "noticeably" or "much"
   more or less pleasant (under 1/7, under 3/7, else, against Health's seven labels 2/7 apart; our cut-offs), levels
   as Health's labels, and "under half your usual day-to-day swing in mood".
 
