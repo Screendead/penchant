@@ -9,6 +9,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -18,6 +19,7 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/daylight_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
 import 'package:tracker/providers/device_files_provider.dart';
@@ -368,6 +370,7 @@ final _engineProvider = FutureProvider.autoDispose
           events: key.events,
           reminders: key.reminders,
           stays: key.stays,
+          location: key.location,
           archived: <String>{
             if (key.archived.isNotEmpty)
               ...key.archived.split(_archivedSeparator),
@@ -504,6 +507,10 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     if (reminders == null) return waiting();
     final PlacesState places = ref.watch(placesProvider);
     if (!places.ready) return waiting();
+    final AsyncValue<RoughLocation?> location = ref.watch(
+      roughLocationProvider,
+    );
+    if (location.isLoading) return waiting();
     InsightsResult? report(Map<String, List<HealthSample>> read) {
       final EngineInputs inputs = EngineInputs(
         activities: journal,
@@ -514,6 +521,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         events: events,
         reminders: reminders,
         stays: places.store.stays,
+        location: location.value,
       );
       if (session?.resultFor(inputs) case final InsightsResult kept) {
         insightsTimingLog('Insights engine: reused');

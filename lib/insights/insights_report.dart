@@ -8,6 +8,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/cycle_phase.dart';
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
@@ -105,12 +106,18 @@ class InsightsInput {
     List<CalendarEvent> events = const <CalendarEvent>[],
     Iterable<hs.DailyOutcome> reminders = const <hs.DailyOutcome>[],
     List<PlaceStay> stays = const <PlaceStay>[],
+    RoughLocation? location,
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
+    // A locked entry counts: its vice and quantity are plaintext.
+    final List<HabitUse> uses = habitUsesFrom(activities).toList();
+    DateTime? firstUse;
+    for (final HabitUse u in uses) {
+      if (firstUse == null || u.at.isBefore(firstUse)) firstUse = u.at;
+    }
     return InsightsInput(
-      // A locked entry counts: its vice and quantity are plaintext.
-      uses: habitUsesFrom(activities).toList(),
+      uses: uses,
       outcomes: withEnoughMood(
         withSessionZeros(<DailyOutcome>[
           for (final hs.DailyOutcome o in <hs.DailyOutcome>[
@@ -138,6 +145,8 @@ class InsightsInput {
             if (o.metricId == hs.HealthMetric.menstrualFlow.id && o.value > 0)
               o.date,
         ]),
+        if (location != null && firstUse != null)
+          dayLengths(location, from: firstUse, through: range.end),
       ],
     );
   }
@@ -163,7 +172,8 @@ class InsightsInput {
   final List<PlaceStay> stays;
 
   /// What the day-after comparisons hold fixed where there are enough days:
-  /// the cycle's phase ([cyclePhases]), never an outcome of its own.
+  /// the cycle's phase ([cyclePhases]) and the day's length ([dayLengths]),
+  /// never outcomes of their own.
   final List<DayCondition> conditions;
 }
 
@@ -1500,9 +1510,15 @@ String findingBasis(
         'From ${finding.usableDays} days, $used of them with $habit',
     },
   };
-  return finding.heldFixed.contains(cyclePhaseId)
-      ? '$basis, compared within the same phase of your cycle'
-      : basis;
+  final bool phase = finding.heldFixed.contains(cyclePhaseId);
+  final bool daylight = finding.heldFixed.contains(dayLengthId);
+  return switch ((phase, daylight)) {
+    (true, true) =>
+      '$basis, compared within the same phase of your cycle and length of day',
+    (true, false) => '$basis, compared within the same phase of your cycle',
+    (false, true) => '$basis, compared at the same length of day',
+    (false, false) => basis,
+  };
 }
 
 /// Why a habit has no finding, in plain words; for an amount or a time, said

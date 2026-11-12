@@ -1469,6 +1469,20 @@ List<DateTime> _shiftDates(OutcomeSeries outcomes, String metricId) =>
   }
   final Set<String> held = <String>{};
   for (final DayCondition condition in judged.conditions) {
+    if (condition.isMeasure) {
+      final List<double>? column = _measureColumn(
+        condition,
+        judged,
+        terms,
+        gates,
+      );
+      if (column == null) continue;
+      for (int r = 0; r < days.length; r++) {
+        terms[r] = <double>[...terms[r], column[r]];
+      }
+      held.add(condition.id);
+      continue;
+    }
     final List<int?> level = <int?>[
       for (final DateTime day in days)
         condition.level(addDays(day, judged.lagDays)),
@@ -1501,6 +1515,55 @@ List<DateTime> _shiftDates(OutcomeSeries outcomes, String metricId) =>
     held.add(condition.id);
   }
   return (terms: terms, held: held);
+}
+
+// A measure condition's column, centred, when every day has a value and it
+// adds what [terms] miss: its own inflation against them, and the habit's
+// column's beside them all, within [InsightGates.maxVarianceInflation], so
+// holding it never turns a comparison into a refusal by itself. Day length
+// over a span of months is nearly all month levels and trend, so it seldom
+// joins there.
+List<double>? _measureColumn(
+  DayCondition condition,
+  _Judged judged,
+  List<List<double>> terms,
+  InsightGates gates,
+) {
+  final List<double> raw = <double>[];
+  for (final DateTime day in judged.days) {
+    final double? v = condition.value(addDays(day, judged.lagDays));
+    if (v == null) return null;
+    raw.add(v);
+  }
+  final double m = mean(raw);
+  final List<double> column = <double>[for (final double v in raw) v - m];
+  double squares(List<double> v) {
+    final double mv = mean(v);
+    return v.fold<double>(0, (s, e) => s + (e - mv) * (e - mv));
+  }
+
+  final double ss = squares(column);
+  if (ss < 1e-9) return null;
+  final List<List<double>>? own = invert(
+    gram(<List<double>>[
+      for (int r = 0; r < column.length; r++)
+        <double>[1, ...terms[r], column[r]],
+    ]),
+  );
+  if (own == null) return null;
+  final int last = terms.first.length + 1;
+  if (own[last][last] * ss > gates.maxVarianceInflation) return null;
+  final double ssx = squares(judged.x);
+  final List<List<double>>? withHabit = invert(
+    gram(<List<double>>[
+      for (int r = 0; r < column.length; r++)
+        <double>[1, judged.x[r], ...terms[r], column[r]],
+    ]),
+  );
+  if (withHabit == null || withHabit[1][1] * ssx > gates.maxVarianceInflation) {
+    return null;
+  }
+  return column;
 }
 
 /// [insights] with every finding that fails Benjamini-Hochberg at
