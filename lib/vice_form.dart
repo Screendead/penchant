@@ -52,11 +52,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   late final TextEditingController unitLabelController = TextEditingController(
     text: opened?.unitLabel,
   );
+  // Shown to three places, so an untouched field keeps the stored cost
+  // rather than its rounding.
+  late final String openedCostText = switch (opened?.costPerUnit) {
+    final double cost => formatAmount(cost),
+    null => '',
+  };
   late final TextEditingController costController = TextEditingController(
-    text: switch (opened?.costPerUnit) {
-      final double cost => formatAmount(cost),
-      null => '',
-    },
+    text: openedCostText,
   );
   late final TextEditingController currencyController;
   bool saving = false;
@@ -90,7 +93,10 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
   UnitAndPrice get _unitAndPrice {
     final String label = unitLabelController.text.trim();
-    final double? cost = parseAmount(costController.text.trim())?.toDouble();
+    final String costText = costController.text.trim();
+    final double? cost = costText == openedCostText
+        ? opened?.costPerUnit
+        : parseAmount(costText)?.toDouble();
     return (
       unitLabel: label.isEmpty ? null : label,
       costPerUnit: cost,
@@ -292,7 +298,10 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                             : 'per ${unitLabelController.text.trim()}',
                       ),
                       onChanged: (_) => setState(() {}),
-                      validator: costPerUnitError,
+                      validator: (String? value) =>
+                          value?.trim() == openedCostText
+                          ? null
+                          : costPerUnitError(value),
                     ),
                   ),
                   if (costController.text.trim().isNotEmpty) ...<Widget>[

@@ -327,6 +327,38 @@ void main() {
       expect(find.text('Not saved. $noJournalKeyMessage'), findsOneWidget);
     });
 
+    testWidgets('a rename keeps a price finer than the field shows', (
+      WidgetTester tester,
+    ) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith(
+          (ref) => AsyncData([
+            Vice(
+              id: 'coffee',
+              name: 'Coffee',
+              unit: Unit.drink,
+              ownerID: ownerID,
+              createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+              archived: false,
+              costPerUnit: 0.0004,
+              currency: 'GBP',
+            ),
+          ]),
+        ),
+      ], const EditVice(viceID: 'coffee'));
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Coffee'),
+        'Espresso',
+      );
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'name': 'Espresso',
+        }),
+      ]);
+    });
+
     testWidgets('clears a price, keeping the label', (
       WidgetTester tester,
     ) async {
