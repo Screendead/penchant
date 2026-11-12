@@ -496,6 +496,15 @@ acknowledges the generation once the store is written. `HKObserverQuery`s with h
 (`com.apple.developer.healthkit.background-delivery`), started in `didFinishLaunching`, mark changes while the app is
 closed. The Health sheet resets the anchors; a store over 30 days old is read again in full.
 
+**Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
+the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start
+and end alone (`lib/insights/calendar_source.dart`, a year per read), which `lib/insights/after_event.dart` compares
+with the hour after. `ios/Runner/RemindersChannel.swift` gives each reminder's due and completion times alone
+(`lib/insights/reminders_source.dart`), made into two daily outcomes beside Health's: reminders completed that day
+(`remindersCompleted`) and due that day but not done by its end (`remindersMissed`), each from its first day above 0
+and judged only with `minSessionDays` such days. Both providers turn a failure or a 30 s timeout into nothing, since
+provider errors reach Crashlytics. Like everything in Insights they wait for Health values.
+
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
 writes, above). `ViceActivity.pending` carries `hasPendingWrites`; the day and history providers listen with

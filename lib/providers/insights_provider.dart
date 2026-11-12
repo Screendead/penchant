@@ -18,6 +18,7 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/reminders_provider.dart';
 import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
 import 'package:tracker/providers/today_provider.dart';
@@ -362,6 +363,7 @@ final _engineProvider = FutureProvider.autoDispose
           today: key.today,
           samples: key.samples,
           events: key.events,
+          reminders: key.reminders,
           archived: <String>{
             if (key.archived.isNotEmpty)
               ...key.archived.split(_archivedSeparator),
@@ -490,6 +492,12 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
               .watch(calendarEventsProvider((from: firstDay, today: today)))
               .value;
     if (events == null) return waiting();
+    // Likewise for Reminders, which answer at once without access.
+    final List<DailyOutcome>? reminders =
+        ref.watch(remindersSourceProvider) == null
+        ? noReminderOutcomes
+        : ref.watch(reminderOutcomesProvider(today)).value;
+    if (reminders == null) return waiting();
     InsightsResult? report(Map<String, List<HealthSample>> read) {
       final EngineInputs inputs = EngineInputs(
         activities: journal,
@@ -498,6 +506,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         today: today,
         archived: archived,
         events: events,
+        reminders: reminders,
       );
       if (session?.resultFor(inputs) case final InsightsResult kept) {
         insightsTimingLog('Insights engine: reused');
