@@ -216,16 +216,16 @@ TriggerAmount _trigger(
   );
 }
 
+// Welch's statistic on the conservative degrees of freedom, the smaller group
+// less one: day means of skewed amounts in small groups ran a little over
+// their nominal rate on Welch-Satterthwaite's (trigger_amounts_test.dart).
 double _welchTwoSided(List<double> x, List<double> y) {
-  final double vx = sampleVariance(x) / x.length;
-  final double vy = sampleVariance(y) / y.length;
-  final double se = sqrt(vx + vy);
+  final double se = sqrt(
+    sampleVariance(x) / x.length + sampleVariance(y) / y.length,
+  );
   final double difference = mean(x) - mean(y);
   if (se == 0) return difference == 0 ? 1 : 0;
-  final double df =
-      pow(vx + vy, 2) /
-      (pow(vx, 2) / (x.length - 1) + pow(vy, 2) / (y.length - 1));
-  return studentTTwoSided(difference / se, df);
+  return studentTTwoSided(difference / se, min(x.length, y.length) - 1.0);
 }
 
 /// [habits] with each trigger's verdict. A trigger is found only when it

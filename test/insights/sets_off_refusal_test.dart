@@ -4,6 +4,7 @@ import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 BeforeUse _before(
@@ -66,12 +67,33 @@ InsightsReport _report({
   List<BeforeUse> beforeUse = const <BeforeUse>[],
   List<HabitFollows> follows = const <HabitFollows>[],
   List<AfterEvent> afterEvent = const <AfterEvent>[],
+  List<HabitTriggers> triggers = const <HabitTriggers>[],
 }) => InsightsReport(
+  triggers: triggers,
   findings: const <HabitFinding>[],
   refused: const <HabitRefusal>[],
   beforeUse: beforeUse,
   follows: follows,
   afterEvent: afterEvent,
+);
+
+HabitTriggers _tagged(String habit, List<TriggerAmount> triggers) =>
+    HabitTriggers(habitId: habit, entries: 40, tagged: 12, triggers: triggers);
+
+TriggerAmount _trigger(
+  String trigger,
+  TriggerVerdict verdict, {
+  int withDays = 9,
+  int withoutDays = 8,
+}) => TriggerAmount(
+  trigger: trigger,
+  entries: 10,
+  withDays: withDays,
+  withoutDays: withoutDays,
+  withMean: 2,
+  withoutMean: 2,
+  pValue: verdict == TriggerVerdict.tooFewDays ? null : 0.3,
+  verdict: verdict,
 );
 
 String _name(String id) => switch (id) {
@@ -202,7 +224,7 @@ void main() {
     expect(
       _why(got.single),
       'Nothing to compare it with yet: no sleep or heart readings in Health, '
-      'no calendar events and no other habit logged',
+      'no calendar events, no other habit logged and no triggers tagged',
     );
   });
 
@@ -230,5 +252,44 @@ void main() {
       _why(_pick(_report(), habits: <String>['coffee'], logged: {}).single),
       'No entries yet in the time Insights reads',
     );
+  });
+
+  test('a trigger says how much is tagged where tagging stopped it', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        triggers: <HabitTriggers>[
+          _tagged('coffee', <TriggerAmount>[
+            _trigger('work', TriggerVerdict.tooFewDays, withDays: 3),
+          ]),
+          _tagged('tea', <TriggerAmount>[
+            _trigger('social/friends', TriggerVerdict.tooSmall),
+            _trigger('Bored', TriggerVerdict.chance),
+          ]),
+        ],
+      ),
+    );
+
+    expect(got.map(_why), <String>[
+      'Tagged Work: too few days with it yet: 3 of 7 (12 of 40 entries '
+          'tagged)',
+      'Tagged Social › With friends: too small to matter, under 20% more or less '
+          'than on your other tagged entries',
+    ]);
+  });
+
+  test('a calendar refusal comes before a trigger one of the same kind', () {
+    final List<SetsOffRefusal> got = _pick(
+      _report(
+        afterEvent: <AfterEvent>[_calendar('coffee', RefusalReason.chance)],
+        triggers: <HabitTriggers>[
+          _tagged('coffee', <TriggerAmount>[
+            _trigger('work', TriggerVerdict.chance),
+          ]),
+        ],
+      ),
+      habits: <String>['coffee'],
+    );
+
+    expect(got.single.calendar, isNotNull);
   });
 }

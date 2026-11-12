@@ -13,6 +13,7 @@ import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/report_codec.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/step_changes.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
@@ -318,6 +319,34 @@ InsightsReport everySection() => InsightsReport(
       refusal: RefusalReason.tooFewDays,
     ),
   ],
+  triggers: const <HabitTriggers>[
+    HabitTriggers(
+      habitId: 'coffee',
+      entries: 120,
+      tagged: 64,
+      triggers: <TriggerAmount>[
+        TriggerAmount(
+          trigger: 'social/friends',
+          entries: 30,
+          withDays: 18,
+          withoutDays: 25,
+          withMean: 2.9,
+          withoutMean: 2,
+          pValue: 0.001,
+          verdict: TriggerVerdict.found,
+        ),
+        TriggerAmount(
+          trigger: 'Bored at the bus stop',
+          entries: 2,
+          withDays: 2,
+          withoutDays: 30,
+          withMean: 1,
+          withoutMean: 2.1,
+          pValue: null,
+        ),
+      ],
+    ),
+  ],
 );
 
 InsightsView _view(InsightsReport report, {bool hoursPending = false}) => (
@@ -354,6 +383,8 @@ void main() {
     expect(report.refused.first.raw!.interval.high, double.infinity);
     expect(report.recovery.first.nights[1].effect, isNaN);
     expect(report.payoffs.first.fall.day, _day);
+    expect(report.triggers.single.triggers[1].trigger, 'Bored at the bus stop');
+    expect(report.triggers.single.triggers.first.verdict, TriggerVerdict.found);
   });
 
   test('a computed report round trips', () {
