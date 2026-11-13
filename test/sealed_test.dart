@@ -2,12 +2,15 @@
 // without a Firestore instance.
 // ignore_for_file: subtype_of_sealed_class
 
+import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/activity_content.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -204,6 +207,27 @@ void main() {
       expect(mistyped.unitSingular, isNull);
       expect(mistyped.costPerUnit, isNull);
       expect(mistyped.currency, isNull);
+
+      final Vice lined = await open(<String, Object?>{
+        'name': 'Wine',
+        'unit': 'drink',
+        'lineAmount': 2.5,
+        'linePeriod': 'day',
+      });
+      expect(lined.line, const HabitLine(2.5, LinePeriod.day));
+      expect(lined.line!.words(lined.units), '2.5 drinks a day');
+      expect(resealed.line, isNull);
+      // Half a line, or one out of bounds, is no line.
+      for (final Map<String, Object?> bad in <Map<String, Object?>>[
+        <String, Object?>{'lineAmount': 3},
+        <String, Object?>{'linePeriod': 'week'},
+        <String, Object?>{'lineAmount': 0, 'linePeriod': 'week'},
+        <String, Object?>{'lineAmount': '3', 'linePeriod': 'week'},
+        <String, Object?>{'lineAmount': 3, 'linePeriod': 'month'},
+        <String, Object?>{'lineAmount': maxLineAmount + 1, 'linePeriod': 'day'},
+      ]) {
+        expect((await open(bad)).line, isNull, reason: '$bad');
+      }
     });
 
     test('a sealed vice opens to its name and unit', () async {
@@ -319,7 +343,11 @@ void main() {
 
     setUp(() {
       store = _Store();
-      writes = TrackerWrites(store.firestore, sealer: sealer);
+      writes = TrackerWrites(
+        store.firestore,
+        sealer: sealer,
+        zone: () => 'Europe/Paris',
+      );
     });
 
     test(
@@ -459,6 +487,44 @@ void main() {
       );
     });
 
+    test('updateVice seals a line, keeps it through a rename and clears it '
+        'on request', () async {
+      Future<Map<String, Object?>> sealed() => sealer.open(
+        (store.updates['vices/coffee']![sealedField]! as Blob).bytes,
+        context: 'vices/coffee',
+      );
+      await writes
+          .updateVice(
+            _vice(),
+            line: (line: const HabitLine(30, LinePeriod.week)),
+          )
+          .done;
+      expect(await sealed(), <String, Object?>{
+        'name': 'Coffee',
+        'unit': 'drink',
+        'category': 'other',
+        'lineAmount': 30.0,
+        'linePeriod': 'week',
+      });
+
+      final Vice lined = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: 'owner',
+        createdAt: _at,
+        archived: false,
+        line: const HabitLine(3, LinePeriod.day),
+      );
+      await writes.updateVice(lined, name: 'Espresso').done;
+      expect((await sealed())['lineAmount'], 3.0);
+      expect((await sealed())['linePeriod'], 'day');
+
+      await writes.updateVice(lined, line: (line: null)).done;
+      expect(await sealed(), isNot(contains('lineAmount')));
+      expect(await sealed(), isNot(contains('linePeriod')));
+    });
+
     test('updateVice refuses to write back a locked vice', () {
       expect(
         () => writes.updateVice(_vice(locked: true), name: 'x'),
@@ -484,18 +550,25 @@ void main() {
       },
     );
 
-    test('an activity seals its triggers alone', () async {
-      await writes
-          .recordActivity(
-            'a',
-            ownerID: 'owner',
-            viceID: 'coffee',
-            quantity: 2,
-            amount: 1.5,
-            createdAt: _at.toDate(),
-            triggers: const <String>['social'],
-          )
-          .done;
+    test('an activity seals its content: triggers, answers and where and '
+        'how it was logged', () async {
+      await withClock(
+        Clock.fixed(DateTime.utc(2026, 1, 2, 9)),
+        () => writes
+            .recordActivity(
+              'a',
+              ownerID: 'owner',
+              viceID: 'coffee',
+              quantity: 2,
+              amount: 1.5,
+              createdAt: _at.toDate(),
+              triggers: const <String>['social'],
+              urge: 4,
+              note: 'Long day',
+              loggedVia: LoggedVia.sheet,
+            )
+            .done,
+      );
       final Map<String, Object?> stored = store.sets['activities/a']!;
       expect(stored.keys.toSet(), <String>{
         sealedField,
@@ -514,6 +587,11 @@ void main() {
         ),
         <String, Object?>{
           'triggers': <Object?>['social'],
+          'urge': 4,
+          'note': 'Long day',
+          'zone': 'Europe/Paris',
+          'writtenAt': DateTime.utc(2026, 1, 2, 9).millisecondsSinceEpoch,
+          'loggedVia': 'sheet',
         },
       );
     });
@@ -535,11 +613,18 @@ void main() {
           (stored[sealedField]! as Blob).bytes,
           context: 'activities/a',
         ),
-        <String, Object?>{'triggers': <Object?>[]},
+        allOf(
+          containsPair('triggers', <Object?>[]),
+          containsPair('zone', 'Europe/Paris'),
+          contains('writtenAt'),
+          isNot(contains('urge')),
+          isNot(contains('note')),
+        ),
       );
     });
 
-    test('updateActivity reseals only for new triggers', () async {
+    test('updateActivity reseals only for new content, and keeps what the '
+        'user cannot edit', () async {
       final DateTime moved = DateTime(2026, 1, 3);
       await writes.updateActivity('a', quantity: 4, createdAt: moved).done;
       expect(store.updates['activities/a'], <Object, Object?>{
@@ -550,7 +635,16 @@ void main() {
       final SentWrite write = writes.updateActivity(
         'b',
         quantity: 3,
-        triggers: const <String>['Long day'],
+        content:
+            ActivityContent(
+              zone: 'Asia/Tokyo',
+              writtenAt: DateTime.utc(2026, 1, 1),
+              loggedVia: LoggedVia.oneTap,
+            ).withAnswers(
+              triggers: const <String>['Long day'],
+              urge: 2,
+              note: 'After work',
+            ),
       );
       await write.done;
       final Map<Object, Object?> update = store.updates['activities/b']!;
@@ -564,6 +658,11 @@ void main() {
         ),
         <String, Object?>{
           'triggers': <Object?>['Long day'],
+          'urge': 2,
+          'note': 'After work',
+          'zone': 'Asia/Tokyo',
+          'writtenAt': DateTime.utc(2026, 1, 1).millisecondsSinceEpoch,
+          'loggedVia': 'oneTap',
         },
       );
     });
@@ -645,6 +744,17 @@ void main() {
       expect(store.updates['vices/coffee'], <Object, Object?>{
         'name': 'Espresso',
       });
+
+      // A legacy entry's triggers may still change in plaintext; an urge or
+      // note never goes out unsealed.
+      const ActivityContent answered = ActivityContent(urge: 3);
+      expect(writes.canWrite(answered), isFalse);
+      await expectLater(
+        writes.updateActivity('a', content: answered).done,
+        throwsA(isA<FirebaseException>()),
+      );
+      expect(store.updates.containsKey('activities/a'), isFalse);
+      expect(writes.canWrite(const ActivityContent()), isTrue);
     },
   );
 

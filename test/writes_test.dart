@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/widgets/urge_note_fields.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -303,6 +306,62 @@ void main() {
             currency: 'GBP',
           ),
         }),
+      ]);
+    });
+
+    testWidgets('writes a line a day, stepped from 1', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final Finder day = find.text('A day');
+      await tester.ensureVisible(day);
+      await tester.tap(day);
+      await tester.pumpAndSettle();
+      expect(find.text('drinks a day'), findsNothing);
+      expect(find.text('drink a day'), findsOneWidget);
+      await tester.tap(find.byTooltip('Raise line'));
+      await tester.tap(find.byTooltip('Raise line'));
+      await tester.pump();
+      expect(find.text('drinks a day'), findsOneWidget);
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'line': HabitLine(3, LinePeriod.day),
+        }),
+      ]);
+    });
+
+    testWidgets('an untouched line writes nothing; None clears it', (
+      WidgetTester tester,
+    ) async {
+      final Vice lined = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+        line: const HabitLine(2.5, LinePeriod.week),
+      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([lined])),
+      ], const EditVice(viceID: 'coffee'));
+      expect(find.text('2.5'), findsOneWidget);
+      expect(find.text('drinks a week'), findsOneWidget);
+      await save(tester);
+      expect(writes.writes, isEmpty);
+
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([lined])),
+      ], const EditVice(viceID: 'coffee'));
+      final Finder none = find.text(ViceForm.lineNone);
+      await tester.ensureVisible(none);
+      await tester.tap(none);
+      await tester.pumpAndSettle();
+      await save(tester);
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{'line': null}),
       ]);
     });
 
@@ -768,6 +827,10 @@ void main() {
     testWidgets('records the activity, closes, and Undo deletes that same '
         'activity', (WidgetTester tester) async {
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -793,6 +856,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '1.5',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -801,8 +868,37 @@ void main() {
       expect(write.fields['amount'], 1.5);
     });
 
+    testWidgets('records the urge and a trimmed note, as logged from the '
+        'sheet', (WidgetTester tester) async {
+      await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(UrgeField.keyFor(2)));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byKey(UrgeField.keyFor(2)));
+      await tester.enterText(
+        find.byKey(NoteField.fieldKey),
+        ' Meeting ran on ',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(record);
+      await tester.pumpAndSettle();
+
+      final Write write = writes.writes.single;
+      expect(write.fields['urge'], 2);
+      expect(write.fields['note'], 'Meeting ran on');
+      expect(write.fields['loggedVia'], LoggedVia.sheet);
+    });
+
     testWidgets('a whole number writes no amount', (WidgetTester tester) async {
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -826,13 +922,21 @@ void main() {
           of: sheet,
           matching: find.text(label),
         );
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
         await tester.ensureVisible(target);
         await tester.tap(target);
         await tester.pumpAndSettle();
       }
       await tester.tap(find.descendant(of: sheet, matching: find.text('Done')));
       await tester.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
       await tester.ensureVisible(record);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -845,6 +949,10 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -852,7 +960,13 @@ void main() {
       expect(find.text('Not recorded. $_offline'), findsOneWidget);
 
       writes.respond = null;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
       await tester.ensureVisible(record);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -866,6 +980,10 @@ void main() {
         'then saves once the key loads', (WidgetTester tester) async {
       writes.canCreate = false;
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -874,7 +992,13 @@ void main() {
       expect(find.text('Not recorded. $noJournalKeyMessage'), findsOneWidget);
 
       writes.canCreate = true;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
       await tester.ensureVisible(record);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -888,6 +1012,10 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('permission-denied'));
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -899,6 +1027,10 @@ void main() {
         'it will sync', (WidgetTester tester) async {
       writes.respond = _never;
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pump();
 
@@ -921,6 +1053,14 @@ void main() {
       await fill(tester);
       expect(find.semantics.byLabel('Record'), findsOneWidget);
 
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      await tester.pump();
+
+      await tester.ensureVisible(record);
+
+      await tester.pump(const Duration(seconds: 1));
+
       await tester.tap(record);
       await tester.pump();
 
@@ -935,6 +1075,10 @@ void main() {
       WidgetTester tester,
     ) async {
       await fill(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(record);
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -975,6 +1119,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '3',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
@@ -990,6 +1138,10 @@ void main() {
       WidgetTester tester,
     ) async {
       await open(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -1038,6 +1190,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
@@ -1055,6 +1211,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '0.25',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
@@ -1074,6 +1234,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump(writeTimeout - const Duration(seconds: 1));
       expect(editor, findsOneWidget);
@@ -1089,6 +1253,10 @@ void main() {
     testWidgets('deletes the activity, closes, and Undo writes it back, '
         'triggers included', (WidgetTester tester) async {
       await open(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -1113,6 +1281,10 @@ void main() {
       WidgetTester tester,
     ) async {
       await open(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -1130,6 +1302,10 @@ void main() {
     ) async {
       writes.respond = _never;
       await open(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pumpAndSettle();
       expect(editor, findsNothing);
@@ -1146,6 +1322,10 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
       await open(tester);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pumpAndSettle();
 
@@ -1188,6 +1368,10 @@ void main() {
         ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
 
     Future<void> save(WidgetTester tester) async {
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(find.byType(ViceActivityEditorPage), findsNothing);
@@ -1477,6 +1661,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '2',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pump();
       await waitOutTimeout(tester);
@@ -1596,6 +1784,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump();
 
@@ -1633,6 +1825,10 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump();
       await waitOutTimeout(tester);

@@ -317,6 +317,26 @@ describe('vices', () => {
       await assertFails(updateDoc(ref, { unitSingular: deleteField() }));
     });
 
+    it('bounds a plaintext line amount and period', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertSucceeds(updateDoc(ref, { lineAmount: 2.5 }));
+      await assertSucceeds(updateDoc(ref, { lineAmount: 100000 }));
+      await assertSucceeds(updateDoc(ref, { linePeriod: 'day' }));
+      await assertSucceeds(updateDoc(ref, { linePeriod: 'week' }));
+      for (const bad of [
+        { lineAmount: 0 },
+        { lineAmount: -1 },
+        { lineAmount: 100001 },
+        { lineAmount: '2' },
+        { linePeriod: 'month' },
+        { linePeriod: 'Day' },
+        { linePeriod: '' },
+        { linePeriod: 1 },
+      ]) {
+        await assertFails(updateDoc(ref, bad));
+      }
+    });
+
     it('denies renaming to more than 60 characters', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: 'x'.repeat(61) }));
       await assertFails(
@@ -1021,6 +1041,13 @@ describe('sealing plaintext on first launch', () => {
     );
   });
 
+  it('denies a line in plaintext beside the envelope', async () => {
+    await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice()));
+    for (const extra of [{ lineAmount: 3 }, { linePeriod: 'day' }]) {
+      await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), extra));
+    }
+  });
+
   it('denies sealing that keeps any plaintext', async () => {
     await assertFails(
       updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: sealed(), unit: deleteField() }),
@@ -1113,6 +1140,12 @@ describe('sealed documents', () => {
 
     it('refuses a sealed vice that carries a plaintext unit label or price', async () => {
       for (const extra of [{ unitLabel: 'cups' }, { unitSingular: 'cup' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
+        await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice(extra)));
+      }
+    });
+
+    it('refuses a sealed vice that carries a plaintext line', async () => {
+      for (const extra of [{ lineAmount: 3 }, { linePeriod: 'day' }]) {
         await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice(extra)));
       }
     });

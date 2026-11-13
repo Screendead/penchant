@@ -72,6 +72,16 @@ service cloud.firestore {
       return currency is string && currency.matches('[A-Z]{3}');
     }
 
+    // A habit's own line, an amount a day or a week. Written only sealed by this app; these
+    // bound a plaintext write and must match lib/data/limits.dart.
+    function validLineAmount(amount) {
+      return amount is number && amount > 0 && amount <= 100000;
+    }
+
+    function validLinePeriod(period) {
+      return period is string && period in ['day', 'week'];
+    }
+
     // Must match the names of the ViceCategory enum in lib/data/category.dart.
     function validCategory(category) {
       return category in ['alcohol', 'caffeine', 'nicotine', 'cannabis', 'food', 'gambling', 'other'];
@@ -103,7 +113,7 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
 
       // Sealed only (Jack, 2026-11-09, `plaintext-creates` C): a new vice's
-      // content (name, unit, category, unit label, price) exists only inside
+      // content (name, unit, category, unit label, price, line) exists only inside
       // the envelope. Plaintext
       // vices written earlier stay readable and editable below.
       allow create: if createsOwn()
@@ -114,7 +124,7 @@ service cloud.firestore {
         && validSealed(request.resource.data.sealed);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'unitLabel', 'unitSingular', 'costPerUnit', 'currency', 'sealed'])
+        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'unitLabel', 'unitSingular', 'costPerUnit', 'currency', 'lineAmount', 'linePeriod', 'sealed'])
         && changedContent('name', validName(request.resource.data.get('name', null)))
         && changedContent('unit', validUnit(request.resource.data.get('unit', null)))
         && changedContent('category', validCategory(request.resource.data.get('category', null)))
@@ -122,8 +132,10 @@ service cloud.firestore {
         && changedContent('unitSingular', validUnitLabel(request.resource.data.get('unitSingular', null)))
         && changedContent('costPerUnit', validCostPerUnit(request.resource.data.get('costPerUnit', null)))
         && changedContent('currency', validCurrency(request.resource.data.get('currency', null)))
+        && changedContent('lineAmount', validLineAmount(request.resource.data.get('lineAmount', null)))
+        && changedContent('linePeriod', validLinePeriod(request.resource.data.get('linePeriod', null)))
         && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
-        && sealedAlone(request.resource.data, ['name', 'unit', 'category', 'unitLabel', 'unitSingular', 'costPerUnit', 'currency'])
+        && sealedAlone(request.resource.data, ['name', 'unit', 'category', 'unitLabel', 'unitSingular', 'costPerUnit', 'currency', 'lineAmount', 'linePeriod'])
         && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
     }
 

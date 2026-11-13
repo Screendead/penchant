@@ -115,6 +115,10 @@ void main() {
 
     await tester.enterText(_field('Habit Name'), 'x' * 61);
     // No unit is selected, so validation runs but nothing is written.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.ensureVisible(find.text('Save'));
+    await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.text('Save'));
     await tester.pump();
 
@@ -132,6 +136,10 @@ void main() {
 
     await tester.enterText(_field('Quantity'), '0');
     // No vice is selected, so validation runs but nothing is written.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+    await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
     await tester.pump();
 
@@ -190,6 +198,10 @@ void main() {
       await pumpEditor(tester, 2);
 
       await tester.enterText(_field('Quantity'), '0');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.text('Save'));
       await tester.pump();
 

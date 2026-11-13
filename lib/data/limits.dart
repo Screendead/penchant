@@ -101,5 +101,59 @@ String? costPerUnitError(String? value) {
   return null;
 }
 
+// An activity's urge, sealed, so only these validators guard it.
+const int minUrge = 1;
+const int maxUrge = 5;
+
+// An activity's note: one line, sealed, so only this validator guards it.
+const int maxNoteLength = 500;
+
+String? noteError(String? value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (value.contains('\n') || value.contains('\r')) {
+    return 'Keep the note to one line';
+  }
+
+  if (value.length > maxNoteLength) {
+    return 'Use $maxNoteLength characters or fewer';
+  }
+
+  return null;
+}
+
 // An ISO 4217 code, as intl's currency formats take it.
 final RegExp currencyCodePattern = RegExp(r'^[A-Z]{3}$');
+
+// A habit's line lives only inside its sealed envelope, like the unit label;
+// firestore.rules repeats the bound for a plaintext write.
+const double maxLineAmount = 100000;
+
+String? lineAmountError(String? value) {
+  final num? amount = value == null ? null : parseAmount(value);
+
+  if (amount == null) {
+    return 'Please enter a valid number';
+  }
+
+  if (amount <= 0) {
+    return 'Please enter more than 0';
+  }
+
+  if (amount > maxLineAmount) {
+    return 'Please enter ${formatCount(maxLineAmount)} or less';
+  }
+
+  return null;
+}
+
+// Sealer.bucketFor's largest bucket less its two length bytes: the most JSON
+// one envelope holds. Ordinary triggers and a full note fit well inside it;
+// escaped or multi-byte characters can still overflow it.
+const int maxSealedJsonBytes = 4094;
+
+String? sealedLengthError(int jsonBytes) => jsonBytes > maxSealedJsonBytes
+    ? 'The note and triggers are too long to save together. Shorten the note.'
+    : null;

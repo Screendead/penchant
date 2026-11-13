@@ -297,9 +297,24 @@ Days).
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
 collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
-`unitLabel`, `unitSingular`, `costPerUnit`, `currency`) and
-`activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `triggers`); a third, `summaries`,
-is server-written (Server side, below).
+`unitLabel`, `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) and
+`activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount`, and sealed content: `triggers` and
+the optional `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); a third, `summaries`, is server-written (Server side,
+below).
+
+An activity's sealed content is `ActivityContent` (`lib/data/activity_content.dart`, capture detail C, Jack,
+2026-11-13), the one place it is read and written: `urge` an int 1 to 5 (Barely to Couldn't not); `note` one line of
+at most 500 UTF-16 code units, trimmed, absent when empty; `zone` the device's IANA time zone at logging
+(`logZoneProvider`, read at launch and resume, never awaited by a log, so absent until it answers); `writtenAt` the
+device clock in epoch milliseconds when the entry was first written (not server time, which would stamp a queued
+offline log with its sync time); `loggedVia` `oneTap`, `sheet` or `widget` (onboarding's first logs count as
+`sheet`). A missing or mistyped value parses as absent; `zone`, `writtenAt` and `loggedVia` are set on create and
+never edited. The amount sheet and editor (`AmountFields`) and the picker after a log (`askWhatWasGoingOn`) ask for
+urge and note (`lib/widgets/urge_note_fields.dart`); the sheet's own picker asks triggers only. `answersTooLong`
+refuses answers whose JSON beside the longest silent fields would pass the envelope's 4094 bytes. Insights does not
+yet read any of them (it still places an entry abroad on the viewer's hour); the export appends `urge`, `note`,
+`time_zone`, `written_at`, `logged_via` after `triggers`. An older build that edits an entry's triggers rebuilds the
+envelope from its triggers alone and drops the rest (accepted, Jack, 2026-11-13).
 
 `triggers`: at most 10 strings of 1 to 60 UTF-16 code units, each a node-id path in the starter tree
 (`lib/data/trigger_tree.dart`, e.g. `work/meeting`; shipped ids never change) or a free-text label. Only
@@ -347,14 +362,27 @@ habit's `measure` total times its price (`Vice.spendOf`): Trends shows it under 
 edit of the habit there drops the label and price (archiving does not reseal); null falls back to the preset and no
 spend. No per-entry cost yet.
 
+**A habit's line** (Jack, 2026-11-13, round 17 `goals` C). Optional `lineAmount` (above 0, at most 100,000, decimals
+as an entry's amount) and `linePeriod` (`day` or `week`), sealed only like the price, read together as `Vice.line`
+(`HabitLine`, `lib/data/habit_line.dart`; half a line or a value out of bounds reads as none, and an older build's edit
+drops it). Set in the habit form (None / A day / A week and a stepper; off by default) or from Insights: a card whose
+finding is a line in the amount (`doseLine`) offers "Mark 3 a day as Wine's line" (`LineOffer`,
+`lib/widgets/line_offer.dart`) on an unarchived, unlocked habit, offers to change another line showing it, and says
+so once set; its state is the stored line, so every card agrees. It is a mark to read totals against, never a goal: no
+colour change, alert or streak past it. Today's tally row reads "of 3" (a week line "22 of 30 · 7 days", the 7 days
+ending on the shown day, `viceActivityWeekProvider`, queried only while a habit has a week line) over a bar with a tick
+three quarters along; Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
+period and not in Spend (else a caption says which view shows it), and "Over your line" replaces Peak.
+
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
-`unitSingular`, `costPerUnit`, `currency`) in one `sealed` bytes
+`unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
 field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphertext | tag` around JSON padded to
 64/256/1024/4096 bytes), the document path as associated data, so only the user's key opens it, only on that document.
-An activity seals only `triggers`; `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext (Jack,
+An activity seals its content (`triggers`, `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext (Jack,
 2026-11-06: a server job aggregates amounts), and `monthlySummaries` reads only `viceID` and `quantity`. A vice's
 `ownerID`, `createdAt` and `archived` stay plaintext, so queries, indexes and `count()` are unchanged. A new content
-field joins both `contentFields` (`lib/data/sealed.dart`) and the rules' `sealedAlone` and `changedContent` calls.
+field joins `contentFields` (`lib/data/sealed.dart`) and the rules' `sealedAlone` and `changedContent` calls, unless
+the rules' create and update key lists refuse it in plaintext, as they do an activity's fields after `triggers`.
 Rules refuse a create without `sealed` or with content beside it (Jack, 2026-11-09, `plaintext-creates` C), bound
 `sealed` to 30 to 4125 bytes, refuse removing it, still let legacy plaintext documents be read and edited, and let an
 update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They
@@ -370,8 +398,11 @@ turning it off would strand every sealed journal and leave nothing creatable) an
 provider over its snapshots (`asyncMap`) and by the export. It never throws: a document that will not open parses as
 `locked`, with a placeholder name and default content, reported once per listener. With a sealer, `TrackerWrites`
 reseals all content on a vice update (`updateVice` takes the `Vice`, refuses a locked one), seals every new activity,
-even without triggers, and reseals an activity update only when triggers change (the editor never sends a locked
-entry's triggers). A locked vice counts as `categoryStored`; `fillViceCategory` skips sealed vices. `SentWrite.fields`
+even without triggers, and reseals an activity update only when its triggers, urge or note change, sealing the whole
+`ActivityContent` again (`ViceActivity.content` with the answers changed, or after a log `cachedContent`, the
+device's copy, so `zone`, `writtenAt` and `loggedVia` survive; the editor never sends a locked entry's content).
+Without a key only a legacy entry's triggers may change, in plaintext (`canWrite`); anything else fails as a refused
+save. A locked vice counts as `categoryStored`; `fillViceCategory` skips sealed vices. `SentWrite.fields`
 holds only plaintext fields, since the envelope does not exist yet when the write is handed back. Tests override
 `sealerProvider` with `test/fake_sealer.dart` (real envelope, fixed key). First-launch sealing
 (`lib/crypto/plaintext_migrator.dart`) uses the same conversion: once `sealerProvider` has a key and `offlineProvider`

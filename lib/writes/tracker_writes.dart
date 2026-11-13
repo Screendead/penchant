@@ -1,9 +1,12 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -41,6 +44,10 @@ Map<String, Object?> _unitAndPriceContent(UnitAndPrice value) =>
       'costPerUnit': ?value.costPerUnit,
       'currency': ?value.currency,
     };
+
+// A change to a habit's line: `(line: null)` removes it. Sealed content only,
+// like [UnitAndPrice].
+typedef LineChange = ({HabitLine? line});
 
 // A write handed to the SDK: its future, and the document it leaves behind.
 // [fields] holds what an update sets, through [comparableValue], so that the
@@ -81,12 +88,17 @@ class TrackerWrites {
     this._firestore, {
     void Function()? onWrite,
     FieldSealer? sealer,
+    String? Function()? zone,
   }) : _onWrite = onWrite,
-       _sealer = sealer;
+       _sealer = sealer,
+       _zone = zone;
 
   final FirebaseFirestore _firestore;
   final void Function()? _onWrite;
   final FieldSealer? _sealer;
+  // The device's time zone as last read, or null while unknown; a log never
+  // waits for it.
+  final String? Function()? _zone;
 
   // The SDK sees the write only once the envelope exists, so an offline
   // write still queues, a moment later.
@@ -119,6 +131,11 @@ class TrackerWrites {
   /// loaded. Callers check first and tell the user rather than lose input.
   bool get canCreate => _sealer != null;
 
+  /// Whether [updateActivity] can write [content]: anything but a legacy
+  /// entry's triggers needs the journal key.
+  bool canWrite(ActivityContent content) =>
+      _sealer != null || content.triggersAlone;
+
   FieldSealer _createSealer() {
     final FieldSealer? sealer = _sealer;
     if (sealer == null) {
@@ -144,6 +161,7 @@ class TrackerWrites {
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
     UnitAndPrice unitAndPrice = noUnitAndPrice,
+    HabitLine? line,
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
@@ -159,6 +177,7 @@ class TrackerWrites {
             'unit': unit.name,
             'category': category.name,
             ..._unitAndPriceContent(unitAndPrice),
+            ...?line?.content,
           },
           (Blob envelope) => vice.set({
             sealedField: envelope,
@@ -177,18 +196,22 @@ class TrackerWrites {
   // Sealed, the whole content is written again, so [vice] supplies what is
   // unchanged, and a legacy vice's plaintext fields are removed. A null
   // [unitAndPrice] keeps the vice's; a given one replaces all three, so a
-  // null inside it clears that value.
+  // null inside it clears that value. [line] likewise: null keeps the vice's.
   SentWrite updateVice(
     Vice vice, {
     String? name,
     Unit? unit,
     ViceCategory? category,
     UnitAndPrice? unitAndPrice,
+    LineChange? line,
   }) {
     final FieldSealer? sealer = _sealer;
     if (sealer == null) {
       if (unitAndPrice != null && unitAndPrice != unitAndPriceOf(vice)) {
         throw StateError('no journal key to seal a unit label or price with');
+      }
+      if (line != null && line.line != vice.line) {
+        throw StateError('no journal key to seal a line with');
       }
       return _update(_vices, vice.id, {
         'name': ?name,
@@ -204,6 +227,7 @@ class TrackerWrites {
       'unit': (unit ?? vice.unit).name,
       'category': (category ?? vice.category).name,
       ..._unitAndPriceContent(unitAndPrice ?? unitAndPriceOf(vice)),
+      ...?(line == null ? vice.line : line.line)?.content,
     });
   }
 
@@ -234,6 +258,9 @@ class TrackerWrites {
   // id across retries and every retry writes the same document.
   String newActivityID() => _activities.doc().id;
 
+  // A new entry's sealed content also says where and how it was logged:
+  // the device's time zone, the device clock now, and [loggedVia]. A
+  // [restoring] entry's content (an undone delete) is written back as it was.
   SentWrite recordActivity(
     String activityID, {
     required String ownerID,
@@ -242,19 +269,33 @@ class TrackerWrites {
     double? amount,
     required DateTime createdAt,
     List<String> triggers = const <String>[],
+    int? urge,
+    String? note,
+    LoggedVia? loggedVia,
+    ActivityContent? restoring,
   }) {
     final FieldSealer sealer = _createSealer();
     final DocumentReference<Map<String, dynamic>> activity = _activities.doc(
       activityID,
     );
+    final ActivityContent content =
+        restoring ??
+        ActivityContent(
+          triggers: triggers,
+          urge: urge,
+          note: note,
+          zone: _zone?.call(),
+          writtenAt: clock.now(),
+          loggedVia: loggedVia,
+        );
     return _issued(
       SentWrite(
-        // Sealed even when empty, so the stored shape does not say whether
-        // the entry has triggers.
+        // Sealed even without triggers, so the stored shape does not say
+        // whether the entry has any.
         _sealing(
           sealer,
           activity,
-          <String, Object?>{triggersField: writeTriggers(triggers)},
+          content.toMap(),
           (Blob envelope) => activity.set({
             'amount': ?amount,
             'createdAt': createdAt,
@@ -272,16 +313,18 @@ class TrackerWrites {
   }
 
   // Only the given fields are written: an untouched field may hold a legacy
-  // value that the parser shows as a default. The triggers are the only
-  // sealed activity field (the quantity, amount and time stay plaintext,
-  // Jack 2026-11-06), so new triggers replace the whole envelope, and
-  // [triggers] must be null for an entry whose envelope would not open.
+  // value that the parser shows as a default. The quantity, amount and time
+  // stay plaintext (Jack 2026-11-06); [content] is the whole new envelope
+  // (ViceActivity.content with the answers changed), so what the user cannot
+  // edit survives, and must be null for an entry whose envelope would not
+  // open. Without a key only a legacy entry's triggers can change, in
+  // plaintext; any other content fails like a refused save.
   SentWrite updateActivity(
     String activityID, {
     int? quantity,
     double? amount,
     DateTime? createdAt,
-    List<String>? triggers,
+    ActivityContent? content,
   }) {
     final Map<String, Object> plaintext = <String, Object>{
       'amount': ?amount,
@@ -289,10 +332,26 @@ class TrackerWrites {
       'quantity': ?quantity,
     };
     final FieldSealer? sealer = _sealer;
-    if (sealer == null || triggers == null) {
+    if (sealer == null && content != null && !content.triggersAlone) {
+      return _issued(
+        SentWrite(
+          Future<void>.error(
+            FirebaseException(
+              plugin: 'sealer',
+              code: 'failed-precondition',
+              message: 'The journal key has not loaded',
+            ),
+          ),
+          collection: _activities.id,
+          id: activityID,
+          op: WriteOp.update,
+        ),
+      );
+    }
+    if (sealer == null || content == null) {
       return _update(_activities, activityID, {
         ...plaintext,
-        if (triggers != null) triggersField: writeTriggers(triggers),
+        if (content != null) triggersField: writeTriggers(content.triggers),
       });
     }
     final DocumentReference<Map<String, dynamic>> doc = _activities.doc(
@@ -303,7 +362,7 @@ class TrackerWrites {
         _sealing(
           sealer,
           doc,
-          <String, Object?>{triggersField: writeTriggers(triggers)},
+          content.toMap(),
           (Blob envelope) => doc.update({
             ...plaintext,
             sealedField: envelope,
@@ -320,6 +379,34 @@ class TrackerWrites {
         },
       ),
     );
+  }
+
+  // The content of an entry as this device holds it (a write it just queued
+  // included), to seal again whole when its answers change; null when it is
+  // not on the device, will not open, or no key has loaded.
+  Future<ActivityContent?> cachedContent(String activityID) async {
+    final FieldSealer? sealer = _sealer;
+    if (sealer == null) {
+      return null;
+    }
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> doc = await _activities
+          .doc(activityID)
+          .get(const GetOptions(source: Source.cache));
+      final Map<String, dynamic>? data = doc.data();
+      if (data == null) {
+        return null;
+      }
+      final Map<String, Object?>? opened = await SealedOpener(
+        sealer,
+      ).open(_activities.id, activityID, data);
+      if (isSealed(data) && opened == null) {
+        return null;
+      }
+      return ActivityContent.read(contentOf(data, opened));
+    } on FirebaseException {
+      return null;
+    }
   }
 
   SentWrite deleteActivity(String activityID) {

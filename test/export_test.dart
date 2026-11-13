@@ -48,13 +48,41 @@ AccountData _data() => AccountData(
 void main() {
   test('the CSV has one row per activity, oldest first, quoted per RFC 4180, '
       'keeps an activity whose vice is gone, leaves a missing amount blank, '
-      'and joins triggers', () {
+      'and joins triggers, with the later columns at the end', () {
     expect(
       exportCsv(_data()),
-      'time,vice,quantity,amount,unit,vice_id,entry_id,triggers\r\n'
+      'time,vice,quantity,amount,unit,vice_id,entry_id,triggers,'
+      'urge,note,time_zone,written_at,logged_via\r\n'
       '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,,drink,v1,a1,'
-      '"work/meeting; Late, ""very"""\r\n'
-      '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2,\r\n',
+      '"work/meeting; Late, ""very""",,kept although no field list names it,'
+      ',,\r\n'
+      '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2,,,,,,\r\n',
+    );
+  });
+
+  test('the CSV writes urge, zone, write time and source as stored', () {
+    final String csv = exportCsv(
+      AccountData(
+        vices: const <StoredDocument>[],
+        activities: <StoredDocument>[
+          (
+            id: 'a',
+            data: <String, dynamic>{
+              'viceID': 'v',
+              'quantity': 1,
+              'createdAt': Timestamp.fromDate(_monday),
+              'urge': 4,
+              'zone': 'Europe/London',
+              'writtenAt': DateTime.utc(2026, 11, 2, 21).millisecondsSinceEpoch,
+              'loggedVia': 'sheet',
+            },
+          ),
+        ],
+      ),
+    );
+    expect(
+      csv.split('\r\n')[1],
+      endsWith(',4,,Europe/London,2026-11-02T21:00:00.000Z,sheet'),
     );
   });
 

@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/vice.dart';
@@ -18,8 +18,11 @@ import 'package:tracker/writes/tracker_writes.dart';
 
 const String whatWasGoingOnLabel = 'What was going on?';
 
-/// Opens the trigger picker for the saved entry [activityID] of [vice] and
-/// writes what is picked to it; dismissing the picker writes nothing.
+/// Opens the trigger picker, with the urge and note, for the saved entry
+/// [activityID] of [vice] and writes what is picked to it; dismissing the
+/// picker writes nothing. The rest of the entry's sealed content (its zone,
+/// write time and source) is read from the device and sealed again with the
+/// answers; if the entry is not on the device, the answers are written alone.
 /// [cancelled], asked once the picker closes, stops the write (an entry undone
 /// meanwhile). [entry] names the entry if the server refuses the change. The
 /// picker's Undo log deletes the entry through [undoLog], then calls
@@ -45,11 +48,12 @@ Future<void> askWhatWasGoingOn(
   final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
   final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
 
-  final List<String>? picked = await showTriggerPicker(
+  final TriggerPick? picked = await showTriggerPicker(
     context,
     viceID: vice.id,
     viceName: vice.name,
     initial: initial,
+    answers: (urge: null, note: null),
     at: at,
     onUndoLog: messenger == null
         ? null
@@ -64,20 +68,33 @@ Future<void> askWhatWasGoingOn(
             );
           },
   );
+  final ActivityContent asked = ActivityContent(triggers: initial);
+  final ActivityContent answered = asked.withAnswers(
+    triggers: picked?.triggers ?? initial,
+    urge: picked?.answers?.urge,
+    note: picked?.answers?.note,
+  );
   if (picked == null ||
-      listEquals(picked, initial) ||
+      !answered.answersDiffer(asked) ||
       (cancelled?.call() ?? false) ||
       // The banner already says the entry was not saved.
       rejected.createRefused(activityID)) {
     return;
   }
+  final ActivityContent content =
+      (await writes.cachedContent(activityID))?.withAnswers(
+        triggers: answered.triggers,
+        urge: answered.urge,
+        note: answered.note,
+      ) ??
+      answered;
 
   try {
     final bool synced = await rejected.settle(
-      writes.updateActivity(activityID, triggers: picked),
+      writes.updateActivity(activityID, content: content),
       'Change not saved: ${entry ?? vice.name}',
     );
-    countFreeTextUses(freeText, uid, picked, already: initial);
+    countFreeTextUses(freeText, uid, content.triggers, already: initial);
     if (!synced && messenger != null && messenger.mounted) {
       showUndoBar(messenger, const TextSpan(text: queuedMessage));
     }

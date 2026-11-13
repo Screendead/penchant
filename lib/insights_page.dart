@@ -51,6 +51,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/weekly_review_page.dart';
+import 'package:tracker/widgets/line_offer.dart';
 import 'package:tracker/widgets/after_event_card.dart';
 import 'package:tracker/widgets/at_place_card.dart';
 import 'package:tracker/widgets/bead_painter.dart';
@@ -1726,6 +1727,16 @@ class _FindingCard extends ConsumerWidget {
                   },
                   style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
                 ),
+              if (<HabitFinding>[finding, ...card.others]
+                      .where(
+                        (HabitFinding f) =>
+                            f.kind == InsightKind.doseLine && f.cut != null,
+                      )
+                      .firstOrNull
+                  case final HabitFinding line) ...<Widget>[
+                const SizedBox(height: DialSpace.s),
+                LineOffer(habitId: card.habitId, cut: line.cut!),
+              ],
               if (testable)
                 ExperimentButton(
                   onPressed: () => Navigator.of(context).push(
