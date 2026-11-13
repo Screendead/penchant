@@ -98,7 +98,12 @@ class DayDial extends ConsumerStatefulWidget {
     this.storedTypicals = const <String, double>{},
     this.onBeadTap,
     this.onSwipe,
+    this.shadeFromMinute,
   });
+
+  /// Shades the face from this minute of the day to midnight: the evening a
+  /// running experiment's "none" day covers. The strip above says so.
+  final int? shadeFromMinute;
 
   final DateTime day;
   final DateTime today;
@@ -887,6 +892,7 @@ class _DayDialState extends ConsumerState<DayDial>
           child: CustomPaint(
             size: size,
             painter: DialFacePainter(
+              shadeFromMinute: widget.shadeFromMinute,
               colors: colors,
               surface: scheme.surfaceContainerLow,
               numeralStyle: type.dialNumeral,

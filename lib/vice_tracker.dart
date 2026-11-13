@@ -4,6 +4,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/formats.dart';
+import 'package:tracker/experiment_page.dart';
+import 'package:tracker/insights/experiment.dart';
+import 'package:tracker/providers/experiment_provider.dart';
+import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/account/guest_expiry.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/data/day.dart';
@@ -318,6 +323,35 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
           );
     final DialColors colors = DialColors.of(context);
+    // A running experiment: its strip on the days it covers and the day
+    // before it starts, and the evening shaded on its "none" days.
+    final ExperimentPlan? plan = ref.watch(experimentProvider).value?.active;
+    final String? planHabit = plan == null
+        ? null
+        : <Vice>[
+            ...?allVices,
+          ].where((Vice v) => v.id == plan.habitId).firstOrNull?.name;
+    final bool planShown =
+        plan != null &&
+        planHabit != null &&
+        (plan.indexOf(day) != null ||
+            (day == today && plan.start.isAfter(today)));
+    final Widget? experimentStrip = planShown
+        ? ExperimentStrip(
+            plan: plan,
+            habit: planHabit,
+            day: day,
+            locale: formatLocale,
+            onTap: () => Navigator.of(context).push(
+              ExperimentPage.route(
+                ExperimentPage.running(running: plan, habit: planHabit),
+              ),
+            ),
+          )
+        : null;
+    final int? shadeFrom = planShown && plan.noneOn(day) == true
+        ? plan.fromHour * 60
+        : null;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -416,6 +450,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                           ),
                         ),
                         const SizedBox(height: 6),
+                        ?experimentStrip,
                         // The dial's geometry is drawn for its 320 pt size, so
                         // a larger dial is that one scaled.
                         Center(
@@ -432,6 +467,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                                   offline: offline,
                                   storedTypicals: storedTypicals,
                                   onBeadTap: _openEntry,
+                                  shadeFromMinute: shadeFrom,
                                   onSwipe: (int days) =>
                                       _selectDay(addDays(day, days)),
                                 ),
