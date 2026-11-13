@@ -8,7 +8,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/insights/calendar_suggestion.dart';
-import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/mac_calendar_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
@@ -87,7 +87,7 @@ class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
       }, onError: (Object _) {});
     }
     if (widget.at case final DateTime at) {
-      readCalendarSuggestions(ref.read(calendarSourceProvider), at).then((
+      readCalendarSuggestions(ref.read(pickerCalendarSourceProvider), at).then((
         List<String> s,
       ) {
         if (mounted && s.isNotEmpty) setState(() => suggested = s);

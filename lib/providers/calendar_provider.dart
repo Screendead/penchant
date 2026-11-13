@@ -9,7 +9,8 @@ import 'package:tracker/insights/insights_timing.dart';
 // provider failure to Crashlytics, so nothing here may fail. Each failure is
 // a value instead.
 
-/// Null where the app reads no calendar: everywhere but iOS.
+/// The calendar Insights reads; null everywhere but iOS. The Mac's picker
+/// reads its own (lib/providers/mac_calendar_provider.dart).
 final calendarSourceProvider = Provider<CalendarSource?>(
   (ref) => defaultTargetPlatform == TargetPlatform.iOS
       ? ChannelCalendarSource()

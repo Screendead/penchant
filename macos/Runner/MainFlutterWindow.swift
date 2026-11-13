@@ -49,6 +49,7 @@ class MainFlutterWindow: NSWindow {
     SecretPasteboard.register(with: flutterViewController.registrar(forPlugin: "SecretPasteboard").messenger)
     DeviceAuth.register(with: flutterViewController.registrar(forPlugin: "DeviceAuth").messenger)
     EntryPrompt.register(with: flutterViewController.registrar(forPlugin: "EntryPrompt"))
+    CalendarChannel.register(with: flutterViewController.registrar(forPlugin: "CalendarChannel"))
   }
 }
 
