@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/key_service.dart';
 import 'package:tracker/crypto/key_wiring.dart';
@@ -207,6 +208,7 @@ void main() {
         'viceID': 'coffee',
         'quantity': 1,
         'createdAt': tapped,
+        'loggedVia': LoggedVia.widget,
       });
       expect(bridge.queue.map((QueuedLog l) => l.id), <String>['young']);
       expect(next, isNotNull);

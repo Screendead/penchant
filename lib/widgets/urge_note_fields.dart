@@ -101,8 +101,15 @@ class UrgeField extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text(urgeLowLabel, style: ends),
-                Text(urgeHighLabel, style: ends),
+                Flexible(child: Text(urgeLowLabel, style: ends)),
+                const SizedBox(width: DialSpace.s),
+                Flexible(
+                  child: Text(
+                    urgeHighLabel,
+                    style: ends,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
               ],
             ),
           ),
