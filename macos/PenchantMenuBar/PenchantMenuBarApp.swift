@@ -247,14 +247,26 @@ struct MenuContent: View {
 // and the app's registration leaves that process running the old code from
 // wherever the old bundle went, the Trash included. Penchant
 // posts showMenuBarNotification at each launch; a helper whose bundle on disk
-// is gone or another build then exits, and the app opens its own helper.
+// is gone or another build then exits, and the app opens its own helper. So
+// does one inside another copy of Penchant left on disk: it would launch that
+// copy's code, or Penchant itself, to write its logs.
 enum Staleness {
   static let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
 
   static func exitIfReplaced() {
     let info = NSDictionary(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
-    guard info?["CFBundleVersion"] as? String != build else { return }
+    guard info?["CFBundleVersion"] as? String != build || launchedFromAnotherCopy() else { return }
     exit(0)
+  }
+
+  private static func launchedFromAnotherCopy() -> Bool {
+    let enclosing = Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent()
+      .deletingLastPathComponent().deletingLastPathComponent()
+    guard Bundle(url: enclosing)?.bundleIdentifier == mainAppID else { return false }
+    let running = NSRunningApplication.runningApplications(withBundleIdentifier: mainAppID)
+      .compactMap { $0.bundleURL?.standardizedFileURL.resolvingSymlinksInPath() }
+    let own = enclosing.standardizedFileURL.resolvingSymlinksInPath()
+    return !running.isEmpty && !running.contains(own)
   }
 }
 
