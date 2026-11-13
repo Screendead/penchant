@@ -536,7 +536,13 @@ provider errors reach Crashlytics. Like everything in Insights they wait for Hea
 trigger picker (`showTriggerPicker`'s `at`: the record sheet and editor pass the sheet's time, `logOne`'s "What was
 going on?" the log's; the widget's prompt passes none) reads the hour before the entry once as it opens, only with full
 access already granted, and offers `work/meeting` first under "Suggested from your calendar" when an event of 15 minutes
-or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped).
+or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped). On macOS
+that suggestion is the calendar's only use (no Insights there): the macOS Runner compiles the same
+`CalendarChannel.swift` (sandbox entitlement `com.apple.security.personal-information.calendars`, Runner only), and
+the picker reads `pickerCalendarSourceProvider` (`lib/providers/mac_calendar_provider.dart`), which there answers
+no access until Settings' macOS-only "Suggest tags from Calendar" switch is on (per device, off by default; turning
+it on asks for access, a refusal points to System Settings); `calendarSourceProvider`, which Insights reads, stays
+iOS-only.
 
 What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, cards in
 `lib/widgets/trigger_amounts_card.dart`): per habit, the amount per entry on entries tagged a trigger against its other

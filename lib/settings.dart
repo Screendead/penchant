@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/account.dart';
@@ -11,6 +12,8 @@ import 'package:tracker/appearance_settings.dart';
 import 'package:tracker/account/sign_out.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/insights/calendar_source.dart';
+import 'package:tracker/providers/mac_calendar_provider.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
@@ -59,6 +62,15 @@ class Settings extends ConsumerStatefulWidget {
       'Set a passcode on this device to use App lock.';
   static const String lockNotConfirmed = 'App lock stays off.';
 
+  static const String calendarLabel = 'Suggest tags from Calendar';
+  static const String calendarBody =
+      'Get Meeting suggested when you log just after an event. Penchant reads '
+      'only when each event starts and ends and how many people it lists, on '
+      'this Mac, never writes to your calendar, and sends none of it anywhere.';
+  static const String calendarDenied =
+      'To get Meeting suggested, give Penchant full access to Calendars in '
+      'System Settings › Privacy & Security.';
+
   @override
   ConsumerState<Settings> createState() => _SettingsState();
 }
@@ -67,6 +79,24 @@ class _SettingsState extends ConsumerState<Settings> {
   bool _signingOut = false;
   bool _exporting = false;
   final GlobalKey _exportRow = GlobalKey();
+  // Access may be granted in System Settings while this page stays open.
+  AppLifecycleListener? _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      _lifecycle = AppLifecycleListener(
+        onResume: () => ref.invalidate(macCalendarAccessProvider),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    super.dispose();
+  }
 
   Future<void> _setLock(bool on) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
@@ -201,6 +231,32 @@ class _SettingsState extends ConsumerState<Settings> {
     );
   }
 
+  // Off until turned on here, which asks macOS for access.
+  Widget _calendarRow() {
+    final bool chosen = ref.watch(calendarSuggestionsProvider);
+    final CalendarAccess? access = ref.watch(macCalendarAccessProvider).value;
+    final bool on = chosen && access == CalendarAccess.full;
+    final bool refused =
+        chosen &&
+        access != null &&
+        access != CalendarAccess.full &&
+        access != CalendarAccess.notDetermined;
+    void set(bool value) =>
+        ref.read(calendarSuggestionsProvider.notifier).choose(value);
+    return MergeSemantics(
+      child: CardRow(
+        label: Settings.calendarLabel,
+        subtitle: refused ? Settings.calendarDenied : Settings.calendarBody,
+        onTap: () => set(!on),
+        trailing: Switch.adaptive(
+          value: on,
+          activeTrackColor: Theme.of(context).colorScheme.primary,
+          onChanged: set,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String? version = ref
@@ -271,6 +327,7 @@ class _SettingsState extends ConsumerState<Settings> {
               },
             ),
             _lockRow(),
+            if (defaultTargetPlatform == TargetPlatform.macOS) _calendarRow(),
             CardRow(
               label: 'Reminder',
               value: Text(
