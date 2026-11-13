@@ -95,6 +95,7 @@ class FakePhotos implements PhotosSource {
     required double latitude,
     required double longitude,
     required double radius,
+    required List<(DateTime, DateTime)> during,
     required int limit,
     required int pixels,
   }) async {

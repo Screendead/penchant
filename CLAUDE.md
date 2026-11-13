@@ -661,8 +661,8 @@ sets it off; names stay out of the engine and the report codec (results carry th
 asks PhotoKit for read access and `ios/Runner/PhotosChannel.swift` reads each user-library asset's creation date and
 location alone, off the main thread; limited access reads only the shared photos. Tapping a place on the card opens
 `PlaceSheet` (`lib/widgets/place_sheet.dart`; Jack, 2026-11-13) to name it: when the person was there, from the stays,
-and, only with photo access already given (it never asks), thumbnails of up to 12 photos taken within the place's
-150 m (the channel's `near`, in memory only, never kept). Its "Show on map" asks `PlacesChannel`'s `mapSnapshot`
+and, only with photo access already given (it never asks), thumbnails of up to 12 photos taken during its stays (a fetch by date:
+reading every asset's location took seconds) and within the place's 150 m (the channel's `near`, in memory only, never kept). Its "Show on map" asks `PlacesChannel`'s `mapSnapshot`
 (`MKMapSnapshotter`) only on the tap: the one time a place's coordinates leave the device, to Apple, and the sheet
 says so first. No address lookup. The card lists the places the engine judges, then the 5 others with the most time,
 photo stays included. `photoRuns`
