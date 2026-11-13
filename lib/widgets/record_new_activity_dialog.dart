@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -19,6 +20,7 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/undo_bar.dart' as undo_bar;
+import 'package:tracker/widgets/urge_note_fields.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -71,6 +73,8 @@ class _RecordNewActivityDialogState
     text: formatAmount(defaultQuantity),
   );
   List<String> triggers = const <String>[];
+  int? urge;
+  final TextEditingController noteController = TextEditingController();
   bool loading = false;
   bool _initialApplied = false;
 
@@ -93,6 +97,13 @@ class _RecordNewActivityDialogState
         error = 'You are signed out';
       });
 
+      return;
+    }
+
+    final String? note = storedNote(noteController.text);
+    if (answersTooLong(triggers: triggers, urge: urge, note: note)
+        case final String tooLong) {
+      setState(() => error = tooLong);
       return;
     }
 
@@ -137,6 +148,9 @@ class _RecordNewActivityDialogState
           amount: measure.amount,
           createdAt: date,
           triggers: triggers,
+          urge: urge,
+          note: note,
+          loggedVia: LoggedVia.sheet,
         ),
         'Not saved: $entry',
       );
@@ -315,6 +329,10 @@ class _RecordNewActivityDialogState
                             setState(() => triggers = picked),
                         viceID: chosen?.id,
                         viceName: chosen?.name ?? '',
+                        urge: urge,
+                        onUrgeChanged: (int? value) =>
+                            setState(() => urge = value),
+                        noteController: noteController,
                         enabled: !loading,
                         error: error,
                       ),
@@ -384,6 +402,7 @@ class _RecordNewActivityDialogState
   void dispose() {
     timeController.dispose();
     quantityController.dispose();
+    noteController.dispose();
     super.dispose();
   }
 }
