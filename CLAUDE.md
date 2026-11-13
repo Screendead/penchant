@@ -520,7 +520,7 @@ with a log (`withEnoughMood`), floors it at half the SD of the person's daily va
 round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`MetricCopy.inWords`: "slightly less
 pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
 
-**Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
+**Calendar and Reminders** (iOS, plus the Mac's tag picker below; EventKit, full access asked from a card on Insights, read-only, nothing kept on
 the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start,
 end and number of people listed, never who (`lib/insights/calendar_source.dart`, a year per read), which
 `lib/insights/after_event.dart` compares with the hour after, and `lib/insights/calendar_days.dart` makes into daily
