@@ -274,7 +274,12 @@ class ExperimentResultCard extends StatelessWidget {
                   Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
-                      Text('${words.shortBasis(result)} · ', style: small),
+                      Text(
+                        onRunOn == null
+                            ? words.shortBasis(result)
+                            : '${words.shortBasis(result)} · ',
+                        style: small,
+                      ),
                       if (onRunOn != null)
                         Semantics(
                           button: true,
