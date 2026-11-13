@@ -221,6 +221,50 @@ CalendarDay _judge(
   DateTime through,
   InsightGates gates,
 ) {
+  final DayIndicatorFit fit = fitDayIndicator(
+    id,
+    <DateTime, bool>{
+      for (final MapEntry<DateTime, double> e in values.entries)
+        e.key: e.value > cut,
+    },
+    habits,
+    through,
+    gates,
+  );
+  return CalendarDay(
+    habitId: id,
+    feature: feature,
+    cut: cut,
+    usableDays: fit.usableDays,
+    moreDays: fit.moreDays,
+    effect: fit.effect,
+    interval: fit.interval,
+    pValue: fit.pValue,
+    refusal: fit.refusal,
+  );
+}
+
+/// [fitDayIndicator]'s answer: a finding when [refusal] is null.
+typedef DayIndicatorFit = ({
+  int usableDays,
+  int moreDays,
+  double? effect,
+  Interval? interval,
+  double? pValue,
+  RefusalReason? refusal,
+});
+
+/// Whether habit [id] is used on more or fewer of the days [indicator] marks
+/// true than of the days it marks false, over the habit's span up to
+/// [through], with weekend, trend, period and the day before's use held
+/// fixed ([calendarDays] says why each).
+DayIndicatorFit fitDayIndicator(
+  String id,
+  Map<DateTime, bool> indicator,
+  DailyHabitSeries habits,
+  DateTime through,
+  InsightGates gates,
+) {
   final List<DateTime> days = <DateTime>[];
   final List<double> x = <double>[];
   final List<double> y = <double>[];
@@ -229,23 +273,20 @@ CalendarDay _judge(
   if (start != null && last != null) {
     final DateTime end = last.isBefore(through) ? last : through;
     for (final DateTime day in daysFrom(start, end)) {
-      final double? value = values[day];
-      if (value == null) continue;
+      final bool? marked = indicator[day];
+      if (marked == null) continue;
       days.add(day);
-      x.add(value > cut ? 1 : 0);
+      x.add(marked ? 1 : 0);
       y.add(habits.lateDayTotal(id, day) > 0 ? 1 : 0);
     }
   }
   final int more = x.where((v) => v == 1).length;
-  CalendarDay result({
+  DayIndicatorFit result({
     RefusalReason? refusal,
     double? effect,
     Interval? interval,
     double? pValue,
-  }) => CalendarDay(
-    habitId: id,
-    feature: feature,
-    cut: cut,
+  }) => (
     usableDays: days.length,
     moreDays: more,
     effect: effect,
@@ -253,7 +294,6 @@ CalendarDay _judge(
     pValue: pValue,
     refusal: refusal,
   );
-
   if (days.length < gates.minDays ||
       more < gates.minExposedDays ||
       days.length - more < gates.minUnexposedDays) {
