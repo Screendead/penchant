@@ -165,9 +165,8 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   Future<void> _save(User user) async {
     // A locked vice's name and unit are placeholders, never to be saved.
     if (opened?.locked ?? false) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text(ViceForm.lockedMessage)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text(ViceForm.lockedMessage)));
       return;
     }
     if (!formKey.currentState!.validate() || unit == null) {
@@ -473,11 +472,7 @@ extension on _ViceFormState {
           segments: <({LinePeriod? value, String label, String spoken})>[
             (value: null, label: ViceForm.lineNone, spoken: 'No line'),
             for (final LinePeriod p in LinePeriod.values)
-              (
-                value: p,
-                label: 'A ${p.name}',
-                spoken: 'A line ${p.words}',
-              ),
+              (value: p, label: 'A ${p.name}', spoken: 'A line ${p.words}'),
           ],
           selected: period,
           onChanged: (LinePeriod? value) => setState(() {
