@@ -1048,11 +1048,10 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-One call, round 19 (`docs/pitch/round-19/tally-rows/index.html`, https://claude.ai/artifact/9NyyLbvt7fc5k66AAp9UUd),
-raised by Jack on 2026-11-13 (the line text in Today's habit rows is hard to read at a glance): `tally-rows`, A fixed
-total and unit columns with the line on its own row (Claude's recommendation, built on `design/tally-rows`, unmerged),
-B every row 52 pt with a big number over its unit, C a tile per habit two across. The PR waits for his pick; B or C
-replaces the build.
+Nothing is waiting. Round 19 (`docs/pitch/round-19/tally-rows/index.html`,
+https://claude.ai/artifact/9NyyLbvt7fc5k66AAp9UUd): `tally-rows` C, picked by Jack on 2026-11-13, "C, but greyed out
+if they're 0": Today's habits as tiles two across, a habit at zero keeping its name grey (#301). Not yet seen on a
+device.
 
 Round 18 (`docs/pitch/round-18/index.html`,
 https://claude.ai/artifact/9cDnMB8RnA2SS1pB21o4Ah, `picks`), all eleven picked by Jack on 2026-11-13 (round 17's

@@ -12,7 +12,58 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/writes/log_one.dart';
 
-// One habit's total for the shown day, with a + that logs one now.
+// The day's habits as tiles, two across: one across at large text, where
+// half the width no longer holds a name beside the +.
+class TallyGrid extends StatelessWidget {
+  const TallyGrid({super.key, required this.children});
+
+  final List<Widget> children;
+
+  static const double gap = 8;
+  static const double oneColumnAbove = 1.3;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool oneColumn =
+        MediaQuery.textScalerOf(context).scale(100) > 100 * oneColumnAbove;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (oneColumn)
+          for (final (int i, Widget child) in children.indexed)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+              child: child,
+            )
+        else
+          for (int i = 0; i < children.length; i += 2)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+              // Both tiles of a row are as tall as the taller.
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(child: children[i]),
+                    const SizedBox(width: gap),
+                    Expanded(
+                      child: i + 1 < children.length
+                          ? children[i + 1]
+                          : const SizedBox(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+// One habit's total for the shown day as a tile, with a + that logs one now.
+// Nothing in it may be a LayoutBuilder: TallyGrid asks for its intrinsic
+// height.
 class TallyRow extends StatefulWidget {
   const TallyRow({
     super.key,
@@ -23,7 +74,6 @@ class TallyRow extends StatefulWidget {
     required this.onLog,
     this.trailing,
     this.lineTotal,
-    this.unitWidth = minUnitWidth,
   });
 
   final Vice vice;
@@ -38,34 +88,6 @@ class TallyRow extends StatefulWidget {
   // What the habit's line is read against: the day's total for a day line,
   // the last 7 days' for a week line. Null shows no line, as while it loads.
   final num? lineTotal;
-
-  // The unit column's width, the same for every row of a list so that their
-  // totals end on one edge.
-  final double unitWidth;
-
-  static const double minUnitWidth = 58;
-  static const double maxUnitWidth = 92;
-
-  static const TextStyle _unitStyle = TextStyle(fontSize: 13.5);
-
-  // Wide enough for the widest of [units], within the column's bounds; a
-  // longer unit pushes only its own row's total left.
-  static double unitColumnWidth(BuildContext context, Iterable<String> units) {
-    double widest = minUnitWidth;
-    for (final String unit in units) {
-      final TextPainter painter = TextPainter(
-        text: TextSpan(
-          text: unit,
-          style: DialTypeScale.bodyS.merge(_unitStyle),
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
-      )..layout();
-      widest = max(widest, painter.width.ceilToDouble());
-      painter.dispose();
-    }
-    return min(widest, maxUnitWidth);
-  }
 
   static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.units.label(total)}';
@@ -155,63 +177,63 @@ class _TallyRowState extends State<TallyRow>
         ? null
         : widget.lineTotal;
 
-    final Widget totals = Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: <Widget>[
-        AnimatedSwitcher(
-          duration: reduced ? DialMotion.reducedFade : DialMotion.tallyRoll,
-          switchInCurve: const Cubic(0.2, 0.8, 0.2, 1),
-          switchOutCurve: const Cubic(0.2, 0.8, 0.2, 1),
-          transitionBuilder: (Widget child, Animation<double> a) =>
-              _roll(child, a, reduced),
-          child: Text(
-            total == null ? '' : formatCount(total),
-            key: ValueKey<num?>(total),
-            style: type.monoM.copyWith(
-              fontSize: 18,
-              color: zero ? colors.muted : colors.habitInk(widget.mark),
+    // At large text the total shrinks before it leaves the tile.
+    final Widget totals = FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: AlignmentDirectional.centerStart,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: <Widget>[
+          AnimatedSwitcher(
+            duration: reduced ? DialMotion.reducedFade : DialMotion.tallyRoll,
+            switchInCurve: const Cubic(0.2, 0.8, 0.2, 1),
+            switchOutCurve: const Cubic(0.2, 0.8, 0.2, 1),
+            transitionBuilder: (Widget child, Animation<double> a) =>
+                _roll(child, a, reduced),
+            child: Text(
+              total == null ? '' : formatCount(total),
+              key: ValueKey<num?>(total),
+              style: type.monoL.copyWith(
+                color: zero ? colors.muted : colors.habitInk(widget.mark),
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 6),
-        ConstrainedBox(
-          constraints: BoxConstraints(minWidth: widget.unitWidth),
-          child: Text(
+          const SizedBox(width: 6),
+          Text(
             total == null ? '' : widget.vice.units.nameFor(total),
-            style: DialTypeScale.bodyS
-                .merge(TallyRow._unitStyle)
-                .copyWith(color: colors.muted),
+            style: DialTypeScale.bodyS.copyWith(color: colors.muted),
           ),
-        ),
-      ],
+        ],
+      ),
     );
 
-    return _TallSemantics(
+    return _TileSemantics(
       child: AnimatedBuilder(
         animation: _flash,
         builder: (BuildContext context, Widget? child) => DecoratedBox(
           decoration: BoxDecoration(
-            color: hue.withValues(
-              alpha:
-                  0.16 *
-                  (1 - Curves.easeIn.transform(_flash.value)) *
-                  (_flash.isAnimating ? 1 : 0),
+            color: Color.alphaBlend(
+              hue.withValues(
+                alpha:
+                    0.16 *
+                    (1 - Curves.easeIn.transform(_flash.value)) *
+                    (_flash.isAnimating ? 1 : 0),
+              ),
+              theme.colorScheme.surfaceContainerLow,
             ),
-            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.line),
+            borderRadius: BorderRadius.circular(DialRadius.tile),
           ),
           child: child,
         ),
         child: Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: _withLineBar(
-            line,
-            lineTotal,
-            hue,
-            reduced,
-            ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: DialSize.tallyRow),
-              child: Row(
+          padding: const EdgeInsets.fromLTRB(12, 9, 4, 9),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
                 children: <Widget>[
                   Expanded(
                     child: Semantics(
@@ -222,41 +244,35 @@ class _TallyRowState extends State<TallyRow>
                           : '${TallyRow.label(widget.vice, total)}, '
                                 '${TallyRow.lineSpoken(widget.vice, line!, lineTotal)}',
                       excludeSemantics: true,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: LayoutBuilder(
-                          builder: (BuildContext context, BoxConstraints box) =>
-                              Row(
-                                children: <Widget>[
-                                  HabitPip(mark: widget.mark, dim: zero),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      widget.vice.name,
-                                      style: theme.textTheme.bodyLarge
-                                          ?.copyWith(fontSize: 15.5),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  // At large text the total shrinks before it
-                                  // crowds the name out.
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: box.maxWidth * 0.55,
-                                    ),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: AlignmentDirectional.centerEnd,
-                                      child: totals,
-                                    ),
-                                  ),
-                                ],
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Padding(
+                                padding: const EdgeInsets.only(top: 5),
+                                child: HabitPip(mark: widget.mark, dim: zero),
                               ),
-                        ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  widget.vice.name,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontSize: 14.5,
+                                    height: 20 / 14.5,
+                                    color: zero ? colors.muted : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          totals,
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
                   if (widget.trailing case final Widget trailing)
                     trailing
                   else if (widget.onLog case final void Function(Offset) onLog)
@@ -265,114 +281,86 @@ class _TallyRowState extends State<TallyRow>
                       onPressed: onLog,
                     )
                   else
-                    const SizedBox(width: DialSize.minTapTarget),
+                    const SizedBox(width: 8),
                 ],
               ),
-            ),
+              if (line != null) _lineBar(line, lineTotal, hue, reduced),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Under the name and total, a row about the line alone: a track with a
-  // tick at the line, then the total it is read against in words. The line
-  // sits three quarters along until the total passes the track's end; past
-  // the line the fill runs on in the same colour.
-  Widget _withLineBar(
-    HabitLine? line,
-    num? lineTotal,
-    Color hue,
-    bool reduced,
-    Widget row,
-  ) {
-    // While the total loads the track still shows, so the row keeps its
-    // height.
-    if (line == null) return row;
+  // Along the tile's foot, the line alone: the total it is read against in
+  // words, over a track with a tick at the line. The line sits three
+  // quarters along until the total passes the track's end; past the line the
+  // fill runs on in the same colour.
+  Widget _lineBar(HabitLine line, num? lineTotal, Color hue, bool reduced) {
     final DialColors colors = DialColors.of(context);
     final DialType type = DialType.of(context);
     final Color ink = Theme.of(context).colorScheme.onSurface;
     final num scale = TallyRow.lineScale(line, lineTotal ?? 0);
     final TextStyle words = DialTypeScale.bodyS.copyWith(
       fontSize: 12.5,
+      height: 16 / 12.5,
       color: colors.muted,
     );
-    final TextStyle figures = type.monoM.copyWith(fontSize: 12.5, color: ink);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        row,
-        Padding(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 4 + DialSize.minTapTarget,
-            bottom: 8,
-          ),
-          child: ExcludeSemantics(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints box) => Row(
-                children: <Widget>[
-                  Expanded(
-                    child: TweenAnimationBuilder<Offset>(
-                      tween: Tween<Offset>(
-                        end: Offset(
-                          (lineTotal ?? 0) / scale,
-                          line.amount / scale,
-                        ),
-                      ),
-                      duration: reduced ? Duration.zero : DialMotion.tallyRoll,
-                      curve: const Cubic(0.2, 0.8, 0.2, 1),
-                      builder: (BuildContext context, Offset value, _) =>
-                          SizedBox(
-                            height: 12,
-                            width: double.infinity,
-                            child: CustomPaint(
-                              painter: LineBarPainter(
-                                fraction: value.dx,
-                                tickAt: value.dy,
-                                track: colors.line,
-                                fill: hue.withValues(alpha: 0.8),
-                                tick: ink.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ),
-                    ),
-                  ),
-                  if (lineTotal != null) ...<Widget>[
-                    const SizedBox(width: 12),
-                    // At large text the words shrink before they crowd the
-                    // track out.
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: box.maxWidth * 0.6),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: Text.rich(
-                          TextSpan(
-                            style: words,
-                            children: <InlineSpan>[
-                              TextSpan(
-                                text: formatCount(lineTotal),
-                                style: figures,
-                              ),
-                              const TextSpan(text: ' of '),
-                              TextSpan(
-                                text: formatCount(line.amount),
-                                style: figures,
-                              ),
-                              TextSpan(text: ' ${TallyRow._linePeriod(line)}'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+    final TextStyle figures = type.monoM.copyWith(
+      fontSize: 12.5,
+      height: 16 / 12.5,
+      color: ink,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, right: 8),
+      child: ExcludeSemantics(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // While the total loads the words' space and the track still
+            // show, so the tile keeps its height.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text.rich(
+                TextSpan(
+                  style: words,
+                  children: <InlineSpan>[
+                    if (lineTotal != null) ...<InlineSpan>[
+                      TextSpan(text: formatCount(lineTotal), style: figures),
+                      const TextSpan(text: ' of '),
+                      TextSpan(text: formatCount(line.amount), style: figures),
+                      TextSpan(text: ' ${TallyRow._linePeriod(line)}'),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 3),
+            TweenAnimationBuilder<Offset>(
+              tween: Tween<Offset>(
+                end: Offset((lineTotal ?? 0) / scale, line.amount / scale),
+              ),
+              duration: reduced ? Duration.zero : DialMotion.tallyRoll,
+              curve: const Cubic(0.2, 0.8, 0.2, 1),
+              builder: (BuildContext context, Offset value, _) => SizedBox(
+                height: 12,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: LineBarPainter(
+                    fraction: value.dx,
+                    tickAt: value.dy,
+                    track: colors.line,
+                    fill: hue.withValues(alpha: 0.8),
+                    tick: ink.withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -429,28 +417,21 @@ class LineBarPainter extends CustomPainter {
       old.tick != tick;
 }
 
-// The row is one screen-reader stop, its name and total with the + as its
-// tap. The row is 38 pt, so the stop's frame is stretched to 44 pt about its
-// middle, overlapping its neighbours' by 3 pt, as the +'s ink does.
-class _TallSemantics extends SingleChildRenderObjectWidget {
-  const _TallSemantics({required Widget super.child});
+// The tile is one screen-reader stop, its name and total with the + as its
+// tap.
+class _TileSemantics extends SingleChildRenderObjectWidget {
+  const _TileSemantics({required Widget super.child});
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderTallSemantics();
+      _RenderTileSemantics();
 }
 
-class _RenderTallSemantics extends RenderProxyBox {
+class _RenderTileSemantics extends RenderProxyBox {
   @override
   void describeSemanticsConfiguration(SemanticsConfiguration config) {
     super.describeSemanticsConfiguration(config);
     config.isSemanticBoundary = true;
-  }
-
-  @override
-  Rect get semanticBounds {
-    final double extra = max(0, DialSize.minTapTarget - size.height) / 2;
-    return Rect.fromLTRB(0, -extra, size.width, size.height + extra);
   }
 }
 
@@ -465,14 +446,10 @@ class _PlusButton extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
 
-    // 32 pt drawn in a 38 pt row, as the mock-up has it. The ink is 44 pt
-    // square, but hit testing stops at the row's bounds, so a touch lands on
-    // a 44 x 38 target; the rows' targets meet with no gap between them.
-    return SizedBox(
-      width: DialSize.minTapTarget,
-      height: DialSize.tallyRow,
-      child: OverflowBox(
-        maxHeight: DialSize.minTapTarget,
+    // 32 pt drawn in a 44 pt target.
+    return SizedBox.square(
+      dimension: DialSize.minTapTarget,
+      child: Center(
         child: Tooltip(
           message: label,
           child: SizedBox.square(
@@ -489,7 +466,7 @@ class _PlusButton extends StatelessWidget {
                 child: Center(
                   child: DecoratedBox(
                     decoration: ShapeDecoration(
-                      color: scheme.surfaceContainerLow,
+                      color: scheme.surfaceContainerHigh,
                       shape: CircleBorder(side: BorderSide(color: colors.line)),
                     ),
                     child: SizedBox.square(

@@ -1048,10 +1048,8 @@ void main() {
       writes: writes,
     );
 
-    testWidgets("list every habit in order with the day's total, a zero in "
-        'the muted colour under a name at full strength', (
-      WidgetTester tester,
-    ) async {
+    testWidgets("list every habit in order with the day's total, zeros in "
+        'the muted colour', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       await _pumpApp(tester, overrides(), const ViceTracker());
 
@@ -1061,11 +1059,10 @@ void main() {
       final Color muted = DialColors.of(
         tester.element(find.byType(ViceTracker)),
       ).muted;
-      expect(tester.widget<Text>(find.text('0')).style?.color, muted);
-      expect(tester.widget<Text>(find.text('3')).style?.color, isNot(muted));
+      expect(tester.widget<Text>(find.text('Tea')).style?.color, muted);
       expect(
-        tester.widget<Text>(find.text('Tea')).style?.color,
         tester.widget<Text>(find.text('Coffee')).style?.color,
+        isNot(muted),
       );
       semantics.dispose();
       await tester.pumpAndSettle();
@@ -1337,9 +1334,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(TriggerPickerSheet), findsNothing);
 
-        ProviderScope.containerOf(tester.element(find.byType(ViceTracker)))
-            .read(_vicesSlot.notifier)
-            .load(<Vice>[coffee, tea]);
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).read(_vicesSlot.notifier).load(<Vice>[coffee, tea]);
         await tester.pumpAndSettle();
         expect(find.byType(TriggerPickerSheet), findsOneWidget);
         expect(writes.writes, isEmpty, reason: 'already written');
@@ -1354,8 +1351,9 @@ void main() {
         bridge = FakeWidgetBridge();
         await _pumpApp(tester, widgetOverrides(), const ViceTracker());
         // Running already, as MyApp keeps it, so its first flush has passed.
-        ProviderScope.containerOf(tester.element(find.byType(ViceTracker)))
-            .listen(widgetLogFlushProvider, (_, _) {});
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).listen(widgetLogFlushProvider, (_, _) {});
         await tester.pump();
         bridge.queue = <QueuedLog>[
           queuedLog('w1', tapped, uid: ownerID, viceID: tea.id),

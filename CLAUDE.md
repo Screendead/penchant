@@ -369,11 +369,11 @@ drops it). Set in the habit form (None / A day / A week and a stepper; off by de
 finding is a line in the amount (`doseLine`) offers "Mark 3 a day as Wine's line" (`LineOffer`,
 `lib/widgets/line_offer.dart`) on an unarchived, unlocked habit, offers to change another line showing it, and says
 so once set; its state is the stored line, so every card agrees. It is a mark to read totals against, never a goal: no
-colour change, alert or streak past it. Today's tally row gains a second row about the line alone: a bar with a tick
-at the line, three quarters along until the total passes the bar's end (`TallyRow.lineScale`), then "2 of 3 a day" (a
-week line "22 of 30 in 7 days", the 7 days ending on the shown day, `viceActivityWeekProvider`, queried only while a
-habit has a week line). A list's rows share one unit column (`TallyRow.unitColumnWidth`), so their totals end on one
-edge. Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
+colour change, alert or streak past it. Today's habits are tiles two across (`TallyGrid`, one across past 1.3× text; `TallyRow` is
+the tile: name, total, +, a zero's name and number greyed). A tile with a line reads "2 of 3 a day" (a week line "22 of
+30 in 7 days", the 7 days ending on the shown day, `viceActivityWeekProvider`, queried only while a habit has a week
+line) over a bar with a tick at the line, three quarters along until the total passes the bar's end
+(`TallyRow.lineScale`). Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
 period and not in Spend (else a caption says which view shows it), and "Over your line" replaces Peak.
 
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
