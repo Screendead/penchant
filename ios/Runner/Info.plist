@@ -64,7 +64,7 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Penchant learns the places you spend time, such as home and work, to see which habits you log more at each. Places and visits stay on this device, encrypted, and are never sent anywhere. Always lets Penchant note a visit while the app is closed.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Penchant reads only when and where your photos and videos were taken, never the pictures themselves, to add the places you spent time before Places was on. What it finds stays on this device, encrypted, and is never sent anywhere.</string>
+	<string>Penchant reads when and where your photos and videos were taken, to add the places you spent time before Places was on, and shows you the photos taken at a place when you name it. What it finds stays on this device, encrypted, and nothing from your photos is sent anywhere.</string>
 	<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>

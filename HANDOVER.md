@@ -1059,6 +1059,9 @@ mock-up before it is called done:
 - `calendar` B: keep the busy-day cards and the Meeting suggestion; build the Mac calendar reader for the
   suggestion (`feat/mac-calendar-suggestion`).
 - `places` A, `daylight` A: keep as built.
+- Seeing a place before naming it (Jack, 2026-11-13, "both, with the map behind a tap"): the naming sheet shows
+  the photos taken there and when he was there, on the device, and a map only on a "Show on map" tap, since
+  drawing it sends the place's coordinates to Apple (`feat/place-look`). No address lookup. Not yet run on a device.
 - `capture-detail` C: silent fields (time zone, written-at, how logged) plus an urge row (1 to 5) and a one-line
   note on the amount sheet, editor and tag picker (`feat/capture-detail`).
 - `goals` C: an optional line per habit, per day or week, and Insights' "where's the line" card offers to set it

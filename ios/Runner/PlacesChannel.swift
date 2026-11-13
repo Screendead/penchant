@@ -1,5 +1,6 @@
 import CoreLocation
 import Flutter
+import MapKit
 import UIKit
 
 // The Dart side is lib/insights/places_source.dart, which clusters visits and
@@ -51,8 +52,52 @@ enum PlacesChannel {
         let count = ((call.arguments as? [String: Any])?["count"] as? NSNumber)?.intValue ?? 0
         m.pending.removeFirst(min(max(count, 0), m.pending.count))
         result(nil)
+      case "mapSnapshot":
+        mapSnapshot(call.arguments as? [String: Any], result: result)
       default:
         result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  // Held until each completes: a released snapshotter never calls back.
+  private static var snapshotters: [MKMapSnapshotter] = []
+
+  // The only place a place's coordinates leave the device (to Apple's map
+  // service), and only on the person's tap. A PNG, or nil on any failure.
+  private static func mapSnapshot(_ args: [String: Any]?, result: @escaping FlutterResult) {
+    guard let lat = (args?["lat"] as? NSNumber)?.doubleValue,
+      let lon = (args?["lon"] as? NSNumber)?.doubleValue,
+      let span = (args?["span"] as? NSNumber)?.doubleValue,
+      let width = (args?["width"] as? NSNumber)?.doubleValue,
+      let height = (args?["height"] as? NSNumber)?.doubleValue,
+      let scale = (args?["scale"] as? NSNumber)?.doubleValue,
+      span > 0, width > 0, height > 0, scale > 0
+    else {
+      result(nil)
+      return
+    }
+    let centre = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    guard CLLocationCoordinate2DIsValid(centre) else {
+      result(nil)
+      return
+    }
+    let dark = (args?["dark"] as? Bool) ?? false
+    let options = MKMapSnapshotter.Options()
+    options.region = MKCoordinateRegion(center: centre, latitudinalMeters: span, longitudinalMeters: span)
+    options.size = CGSize(width: width, height: height)
+    options.traitCollection = UITraitCollection(traitsFrom: [
+      UITraitCollection(userInterfaceStyle: dark ? .dark : .light),
+      UITraitCollection(displayScale: CGFloat(scale)),
+    ])
+    let snapshotter = MKMapSnapshotter(options: options)
+    snapshotters.append(snapshotter)
+    snapshotter.start(with: .main) { snapshot, _ in
+      PlacesChannel.snapshotters.removeAll { $0 === snapshotter }
+      if let png = snapshot?.image.pngData() {
+        result(FlutterStandardTypedData(bytes: png))
+      } else {
+        result(nil)
       }
     }
   }

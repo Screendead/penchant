@@ -6,11 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/photo_stays.dart';
 import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/places_source.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
+import 'package:tracker/widgets/place_sheet.dart';
 
 import 'fake_places.dart';
 import 'insights_harness.dart';
@@ -120,6 +122,7 @@ void main() {
 
     await tester.tap(find.text('Place 2'));
     await tester.pumpAndSettle();
+    expect(find.text(PlaceSheet.title), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'Gym');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -127,5 +130,39 @@ void main() {
     expect(renames, <(int, String)>[(2, 'Gym')]);
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('Place 2'), findsNothing);
+  });
+
+  testWidgets('the card lists every place a finding can name before places '
+      'with more time from photos', (WidgetTester tester) async {
+    final DateTime old = DateTime.now().subtract(const Duration(days: 60));
+    final DateTime morning = DateTime(old.year, old.month, old.day, 10);
+    final PlaceStore store = const PlaceStore()
+        .withVisits(<PlaceVisit>[
+          for (int i = 0; i < placeMaxPlaces; i++)
+            _visit(morning.add(Duration(hours: i * 25)), i * 0.02),
+        ])
+        .withPhotoRuns(<PhotoRun>[
+          PhotoRun(
+            from: morning.subtract(const Duration(days: 10)),
+            to: morning.subtract(const Duration(days: 9)),
+            latitude: 1,
+            longitude: 0,
+            photos: 30,
+          ),
+        ], photos: 30);
+    expect(store.places, hasLength(placeMaxPlaces + 1));
+    await _pump(
+      tester,
+      FakePlaces(PlacesAccess.always),
+      kept: _KeptPlaces(store, <(int, String)>[]),
+    );
+
+    for (final int id in judgedPlaces(
+      store.stays,
+      through: DateTime.now().subtract(const Duration(days: 1)),
+    )) {
+      expect(find.text('Place $id'), findsOneWidget);
+    }
+    expect(find.text('Place ${placeMaxPlaces + 1}'), findsNothing);
   });
 }

@@ -66,6 +66,7 @@ import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/widgets/payoff_card.dart';
+import 'package:tracker/widgets/place_sheet.dart';
 import 'package:tracker/widgets/recovery_card.dart';
 import 'package:tracker/widgets/replacement_card.dart';
 import 'package:tracker/widgets/settings_card.dart';
@@ -180,16 +181,16 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String placesEarly =
       'Places have no history before you connected them, so findings start '
       'after a few weeks of visits.';
-  static const String placesRenameHint = 'Tap a place to name it.';
-  static const String placesRenameTitle = 'Name this place';
+  static const String placesRenameHint = 'Tap a place to see it and name it.';
   static const String placesRenameFailed = 'The name couldn’t be kept.';
   static const String placesFailed = 'Location couldn’t be opened.';
 
   static const String photosLabel = 'Add history from your photos';
   static const String photosBody =
-      'Finds the places you spent time before Places was on, so you can name '
-      'them now, from when and where your photos were taken. Penchant never '
-      'reads the pictures, and findings still come from visits.';
+      'Finds the places you spent time before Places was on, from when and '
+      'where your photos were taken, and shows you the photos taken at a '
+      'place when you name it. Nothing from your photos leaves this iPhone, '
+      'and findings still come from visits.';
   static const String photosReading = 'Reading your photos';
   static const String photosTitle = 'From your photos';
   static const String photosOffValue = 'Off';
@@ -455,9 +456,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   Future<void> _renamePlace(Place place) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final PlacesSync places = ref.read(placesProvider.notifier);
-    final String? name = await showDialog<String>(
-      context: context,
-      builder: (_) => _RenamePlaceDialog(place: place),
+    final String? name = await showPlaceSheet(
+      context,
+      place: place,
+      stays: ref.read(placesProvider).store.stays,
     );
     if (name == null) return;
     if (!await places.rename(place.id, name)) {
@@ -1618,8 +1620,12 @@ class _PlacesCard extends StatelessWidget {
     final bool early =
         since == null ||
         DateTime.now().difference(since) < InsightsPage.placesEarlyFor;
-    // The engine judges the places with the most time spent, so the card
-    // offers those for naming.
+    // Every place a finding can name comes first, in the engine's order,
+    // then the rest by all time spent, photo stays included.
+    final List<int> judged = judgedPlaces(
+      store.stays,
+      through: addDays(startOfDay(DateTime.now()), -1),
+    );
     final Map<int, Duration> spent = <int, Duration>{};
     for (final PlaceStay s in store.stays) {
       if (s.departure case final DateTime left) {
@@ -1627,12 +1633,20 @@ class _PlacesCard extends StatelessWidget {
             (spent[s.placeId] ?? Duration.zero) + left.difference(s.arrival);
       }
     }
+    int rank(Place p) {
+      final int i = judged.indexOf(p.id);
+      return i < 0 ? judged.length : i;
+    }
+
     final List<Place> shown = List<Place>.of(store.places)
-      ..sort(
-        (a, b) => (spent[b.id] ?? Duration.zero).compareTo(
+      ..sort((a, b) {
+        final int byJudged = rank(a).compareTo(rank(b));
+        if (byJudged != 0) return byJudged;
+        final int byTime = (spent[b.id] ?? Duration.zero).compareTo(
           spent[a.id] ?? Duration.zero,
-        ),
-      );
+        );
+        return byTime != 0 ? byTime : a.id.compareTo(b.id);
+      });
     return DialCard(
       children: <Widget>[
         switch (access) {
@@ -1690,49 +1704,6 @@ class _PlacesCard extends StatelessWidget {
 }
 
 enum _PhotosChoice { again, remove }
-
-class _RenamePlaceDialog extends StatefulWidget {
-  const _RenamePlaceDialog({required this.place});
-
-  final Place place;
-
-  @override
-  State<_RenamePlaceDialog> createState() => _RenamePlaceDialogState();
-}
-
-class _RenamePlaceDialogState extends State<_RenamePlaceDialog> {
-  late final TextEditingController _name = TextEditingController(
-    text: widget.place.name ?? '',
-  );
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _save() => Navigator.of(context).pop(_name.text);
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text(InsightsPage.placesRenameTitle),
-    content: TextField(
-      controller: _name,
-      autofocus: true,
-      maxLength: placeNameMaxLength,
-      textCapitalization: TextCapitalization.sentences,
-      decoration: InputDecoration(hintText: 'Place ${widget.place.id}'),
-      onSubmitted: (_) => _save(),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
-      TextButton(onPressed: _save, child: const Text('Save')),
-    ],
-  );
-}
 
 class _MessageCard extends StatelessWidget {
   const _MessageCard(this.title, {this.body, this.busy = false, this.onRetry});
