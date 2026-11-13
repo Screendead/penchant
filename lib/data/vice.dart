@@ -15,6 +15,10 @@ class Vice {
     this.locked = false,
     this.category = ViceCategory.fallback,
     this.categoryStored = true,
+    this.unitLabel,
+    this.unitSingular,
+    this.costPerUnit,
+    this.currency,
   });
 
   final String id;
@@ -31,6 +35,23 @@ class Vice {
   // migration fills in. An unknown name counts as stored: a later version
   // wrote it. A locked vice counts as stored, so nothing writes to it.
   final bool categoryStored;
+  // Optional, sealed only. An older build that edits the name, unit or
+  // category reseals without them, so each may vanish: null falls back to the
+  // preset's words and no spend.
+  final String? unitLabel;
+  // [unitLabel]'s form for one (cup for cups); ignored without a label.
+  final String? unitSingular;
+  final double? costPerUnit;
+  // ISO 4217; a cost without one is shown as a plain number.
+  final String? currency;
+
+  UnitWords get units => UnitWords(unit, unitLabel, unitSingular);
+
+  // What [measure] of this habit cost, or null when it has no price.
+  double? spendOf(double measure) {
+    final double? cost = costPerUnit;
+    return cost == null ? null : measure * cost;
+  }
 
   factory Vice.fromJson({
     required String id,
@@ -50,6 +71,10 @@ class Vice {
       locked: locked,
       category: ViceCategory.fromString(content['category']),
       categoryStored: locked || content['category'] is String,
+      unitLabel: readUnitLabel(content['unitLabel']),
+      unitSingular: readUnitLabel(content['unitSingular']),
+      costPerUnit: readCostPerUnit(content['costPerUnit']),
+      currency: readCurrency(content['currency']),
     );
   }
 

@@ -1879,7 +1879,7 @@ List<YesterdayLine> yesterdayLines(
       (
         mark: marks[v.id],
         text:
-            'Yesterday: ${v.name} ${v.unit.label(used[v.id]!.total)}, '
+            'Yesterday: ${v.name} ${v.units.label(used[v.id]!.total)}, '
             'last at ${formatTime(used[v.id]!.last, alwaysUse24HourFormat: alwaysUse24HourFormat)}',
       ),
   ];

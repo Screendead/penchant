@@ -240,7 +240,7 @@ class _ViceActivityHistoryPageState
       title: vice.name,
       leading: HabitPip(mark: mark, size: 16),
       subtitle: <String>[
-        vice.unit.nameFor(2),
+        vice.units.nameFor(2),
         if (count != null) ManageData.countText(count),
         if (vice.archived) 'archived',
       ].join(' · '),
@@ -279,7 +279,7 @@ class _ViceActivityHistoryPageState
           for (final (DateTime day, List<ViceActivity> entries) in days) ...[
             SectionLabel(
               ViceActivityHistoryPage.dayLabel(day, today),
-              trailing: vice.unit.label(
+              trailing: vice.units.label(
                 entries.fold<num>(0, (num s, ViceActivity a) => s + a.measure),
               ),
             ),
@@ -407,7 +407,7 @@ class _ViceActivityHistoryPageState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Text(
-                          vice.unit.label(activity.measure),
+                          vice.units.label(activity.measure),
                           style: DialTypeScale.body.copyWith(
                             fontWeight: FontWeight.w500,
                             color: theme.colorScheme.onSurface,
@@ -527,7 +527,7 @@ class _SummaryCard extends StatelessWidget {
                               ),
                               if (total != null)
                                 TextSpan(
-                                  text: vice.unit.nameFor(total),
+                                  text: vice.units.nameFor(total),
                                   style: DialTypeScale.label.copyWith(
                                     fontSize: 13,
                                     height: 1,

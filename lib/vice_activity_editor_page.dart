@@ -336,7 +336,7 @@ class _ViceActivityEditorPageState
                       const SizedBox(height: 18),
                       AmountFields(
                         quantityController: quantityController,
-                        unit: vice.unit,
+                        unit: vice.units,
                         timeController: timeController,
                         editing: activity.id,
                         triggers: editedTriggers ?? activity.triggers,

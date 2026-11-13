@@ -182,9 +182,10 @@ The list this run works from, sorted before any building. Tick or strike here as
      give the calendar-day refusal (`calendarDayRefusal`), ranked by refusal, then after the hour-after-event
      comparison and before triggers. Calendar-day and trigger comparisons now count in each other's family. Saved
      report format 4. Not proven on a device: unit and widget tests only.
-6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
-   the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
-   trigger breakdowns over time, spend).
+6. ~~Units and cost per unit~~ (`feat/units-and-cost`): a habit's own unit label, cost per unit and currency, sealed;
+   spend for the last 7 days and the range in Trends. Not proven on a device; an older build editing a habit drops
+   its label and price. Left: per-entry cost, spend trend lines. Then the rest of trend views (Health under the habit
+   lines, trigger breakdowns over time, spend).
 7. [x] Reduce motion "Full" over framework animations: built (`PenchantBinding`, `lib/design/motion_binding.dart`;
    widget-tested on a modal sheet both ways). Not proven on a device with iOS or macOS Reduce Motion on.
 8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends

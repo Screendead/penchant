@@ -129,7 +129,7 @@ class DayDial extends ConsumerStatefulWidget {
         : formatDay(day);
     final String parts = [
       for (int i = 0; i < habits.length; i++)
-        '${habits[i].name} ${habits[i].unit.label(totals[i])}',
+        '${habits[i].name} ${habits[i].units.label(totals[i])}',
     ].join(', ');
     String time(DateTime t) =>
         formatTime(t, alwaysUse24HourFormat: alwaysUse24HourFormat);
@@ -143,7 +143,7 @@ class DayDial extends ConsumerStatefulWidget {
   }
 
   static String beadLabel(DialEntry entry, {required bool alwaysUse24Hour}) =>
-      '${entry.vice.name}, ${entry.vice.unit.label(entry.quantity)} at '
+      '${entry.vice.name}, ${entry.vice.units.label(entry.quantity)} at '
       '${formatTime(entry.at, alwaysUse24HourFormat: alwaysUse24Hour)}'
       '${entry.pending ? ', not yet synced' : ''}';
 
@@ -254,7 +254,7 @@ class DayDial extends ConsumerStatefulWidget {
     );
     final String habits = <String>[
       for (final s in arcShares(entries))
-        '${s.vice.name} ${s.vice.unit.label(s.total)}',
+        '${s.vice.name} ${s.vice.units.label(s.total)}',
     ].join(', ');
     final int pending = entries.where((DialEntry e) => e.pending).length;
     return '${formatCount(entries.length)} entries from ${time(hour)} to '

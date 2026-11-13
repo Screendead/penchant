@@ -2,6 +2,12 @@
 
 **Priority:** monetisation
 
+## Shipped
+
+Option B, free (`feat/units-and-cost`): `unitLabel`, `costPerUnit` and `currency` on the vice, sealed, with the
+enum kept as presets; Trends shows spend for the last 7 days and the range. Currency is per habit, prefilled from
+another habit or the device region. Left below: an entry's own `cost`, and spend trend lines.
+
 ## What
 
 Today `Unit` is a closed six-value enum serialised by name. This adds, on each vice:

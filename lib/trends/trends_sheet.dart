@@ -127,6 +127,8 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const String title = 'Trends';
   static const String openHint = 'Opens Trends';
   static const String closeLabel = 'Close Trends';
+  static const String spentWeek = 'Spent, last 7 days';
+  static const String spentRange = 'Spent in all';
   static const String shorterAverage = 'Shorter average';
   static const String longerAverage = 'Longer average';
   static const List<int> ranges = <int>[7, 30, 90, 365];
@@ -199,7 +201,7 @@ class TrendsSheet extends ConsumerStatefulWidget {
 
   static String peekLabel(Vice vice, int days, double? perDay) =>
       '$title. ${vice.name}, last ${formatCount(days)} days'
-      '${perDay == null ? '' : ': ${formatAverage(perDay)} ${vice.unit.plural} a day'}';
+      '${perDay == null ? '' : ': ${formatAverage(perDay)} ${vice.units.plural} a day'}';
 
   // In the pane a tapped day moves Today's dial beside it.
   static String hint(int stepDays, {bool pane = false}) => stepDays != 1
@@ -885,7 +887,7 @@ class _Peek extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${vice.unit.plural} a day',
+                                '${vice.units.plural} a day',
                                 style: small,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1125,6 +1127,10 @@ class _TrendsPanel extends StatelessWidget {
       body = <Widget>[
         const SizedBox(height: DialSpace.s),
         _Stats(vice: vice, range: range, stats: s.stats, totals: s.totals),
+        if (vice.costPerUnit != null) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          _Spend(vice: vice, range: range, stats: s.stats, totals: s.totals),
+        ],
         const SizedBox(height: DialSpace.s),
         if (empty)
           chartBox(
@@ -1310,6 +1316,55 @@ class _HabitChip extends StatelessWidget {
   }
 }
 
+// What the habit's entries cost at its price: the last 7 days, and the
+// whole range when it is longer.
+class _Spend extends StatelessWidget {
+  const _Spend({
+    required this.vice,
+    required this.range,
+    required this.stats,
+    required this.totals,
+  });
+
+  final Vice vice;
+  final UsageRange range;
+  final UsageStats stats;
+  final List<double> totals;
+
+  @override
+  Widget build(BuildContext context) {
+    final double? week = lastSevenDaysTotal(range, totals);
+    final String? currency = vice.currency;
+    final String perUnit =
+        '${formatMoney(vice.costPerUnit!, currency)} per ${vice.units.singular}';
+    return Semantics(
+      container: true,
+      child: Row(
+        children: <Widget>[
+          if (week != null)
+            Expanded(
+              child: _StatTile(
+                label: TrendsSheet.spentWeek,
+                value: formatMoney(vice.spendOf(week)!, currency),
+                detail: perUnit,
+              ),
+            ),
+          if (range.days > 7) ...<Widget>[
+            const SizedBox(width: DialSpace.xs),
+            Expanded(
+              child: _StatTile(
+                label: TrendsSheet.spentRange,
+                value: formatMoney(vice.spendOf(stats.total)!, currency),
+                detail: 'last ${formatCount(range.days)} days',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _Stats extends StatelessWidget {
   const _Stats({
     required this.vice,
@@ -1333,7 +1388,7 @@ class _Stats extends StatelessWidget {
       _StatTile(
         label: 'Total',
         value: formatCount(total),
-        unit: vice.unit.nameFor(total),
+        unit: vice.units.nameFor(total),
         detail: 'last ${formatCount(range.days)} days',
       ),
       _StatTile(

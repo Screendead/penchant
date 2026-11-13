@@ -189,3 +189,38 @@ num? parseAmount(String text, {String? locale}) {
   );
   return parsed != null && parsed.isFinite ? parsed : null;
 }
+
+// Money in the habit's currency with the region's digits; a cost stored
+// without a currency is a plain two-place number.
+String formatMoney(double value, String? currency) => currency == null
+    ? NumberFormat('#,##0.00', formatLocale).format(value)
+    : NumberFormat.simpleCurrency(
+        locale: formatLocale,
+        name: currency,
+      ).format(value);
+
+// The currency a new price starts in: the device region's, which
+// [formatLocale] can lose (it keeps English regions only).
+String deviceCurrency([List<Locale>? deviceLocales]) {
+  final List<Locale> locales =
+      deviceLocales ??
+      debugFormatLocales ??
+      PlatformDispatcher.instance.locales;
+  for (final Locale locale in locales) {
+    final String? country = locale.countryCode;
+    if (country == null) continue;
+    // intl keeps most regions only under their language (de, not de_DE).
+    for (final String candidate in <String>[
+      '${locale.languageCode}_$country',
+      'en_$country',
+      if (locale.languageCode != 'en') locale.languageCode,
+    ]) {
+      if (NumberFormat.localeExists(candidate)) {
+        return NumberFormat.simpleCurrency(locale: candidate).currencyName ??
+            'USD';
+      }
+    }
+  }
+  return NumberFormat.simpleCurrency(locale: formatLocale).currencyName ??
+      'USD';
+}

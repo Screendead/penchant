@@ -101,6 +101,18 @@ UsageStats usageStats(UsageRange range, List<double> totals) {
   );
 }
 
+// The total of the range's last 7 days, today included: the last 7 day
+// buckets, or the last week bucket, which ends today. Null for a range
+// shorter than a week.
+double? lastSevenDaysTotal(UsageRange range, List<double> totals) {
+  if (range.days < 7 || totals.isEmpty) {
+    return null;
+  }
+  return range.stepDays == 1
+      ? totals.skip(totals.length - 7).fold<double>(0, (a, b) => a + b)
+      : totals.last;
+}
+
 // The most days the hour-of-day profile looks back over.
 const int hourProfileMaxDays = 90;
 

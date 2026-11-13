@@ -23,7 +23,7 @@ InlineSpan deletedMessage(
 }) => TextSpan(
   children: <InlineSpan>[
     const TextSpan(text: 'Deleted '),
-    TextSpan(text: vice.unit.label(activity.measure), style: undoBarBold),
+    TextSpan(text: vice.units.label(activity.measure), style: undoBarBold),
     const TextSpan(text: ' at '),
     TextSpan(
       text: formatTime(

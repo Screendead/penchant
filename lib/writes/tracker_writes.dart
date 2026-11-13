@@ -10,6 +10,38 @@ import 'package:tracker/data/vice.dart';
 
 enum WriteOp { create, update, delete }
 
+// A habit's own unit label (with its singular) and price, each optional. Sealed content only:
+// without a journal key none of it is written.
+typedef UnitAndPrice = ({
+  String? unitLabel,
+  String? unitSingular,
+  double? costPerUnit,
+  String? currency,
+});
+
+const UnitAndPrice noUnitAndPrice = (
+  unitLabel: null,
+  unitSingular: null,
+  costPerUnit: null,
+  currency: null,
+);
+
+UnitAndPrice unitAndPriceOf(Vice vice) => (
+  unitLabel: vice.unitLabel,
+  unitSingular: vice.unitSingular,
+  costPerUnit: vice.costPerUnit,
+  currency: vice.currency,
+);
+
+// Absent values are left out of the envelope, never written as null.
+Map<String, Object?> _unitAndPriceContent(UnitAndPrice value) =>
+    <String, Object?>{
+      'unitLabel': ?value.unitLabel,
+      'unitSingular': ?value.unitSingular,
+      'costPerUnit': ?value.costPerUnit,
+      'currency': ?value.currency,
+    };
+
 // A write handed to the SDK: its future, and the document it leaves behind.
 // [fields] holds what an update sets, through [comparableValue], so that the
 // server's copy can later be checked for it.
@@ -111,6 +143,7 @@ class TrackerWrites {
     required String name,
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
+    UnitAndPrice unitAndPrice = noUnitAndPrice,
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
@@ -125,6 +158,7 @@ class TrackerWrites {
             'name': name,
             'unit': unit.name,
             'category': category.name,
+            ..._unitAndPriceContent(unitAndPrice),
           },
           (Blob envelope) => vice.set({
             sealedField: envelope,
@@ -141,15 +175,21 @@ class TrackerWrites {
   }
 
   // Sealed, the whole content is written again, so [vice] supplies what is
-  // unchanged, and a legacy vice's plaintext fields are removed.
+  // unchanged, and a legacy vice's plaintext fields are removed. A null
+  // [unitAndPrice] keeps the vice's; a given one replaces all three, so a
+  // null inside it clears that value.
   SentWrite updateVice(
     Vice vice, {
     String? name,
     Unit? unit,
     ViceCategory? category,
+    UnitAndPrice? unitAndPrice,
   }) {
     final FieldSealer? sealer = _sealer;
     if (sealer == null) {
+      if (unitAndPrice != null && unitAndPrice != unitAndPriceOf(vice)) {
+        throw StateError('no journal key to seal a unit label or price with');
+      }
       return _update(_vices, vice.id, {
         'name': ?name,
         'unit': ?unit?.name,
@@ -163,6 +203,7 @@ class TrackerWrites {
       'name': name ?? vice.name,
       'unit': (unit ?? vice.unit).name,
       'category': (category ?? vice.category).name,
+      ..._unitAndPriceContent(unitAndPrice ?? unitAndPriceOf(vice)),
     });
   }
 

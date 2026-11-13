@@ -656,7 +656,7 @@ class _FirstLogRow extends StatelessWidget {
                 style: DialTypeScale.label.copyWith(color: scheme.onSurface),
               ),
               Text(
-                vice.unit.label(quantity),
+                vice.units.label(quantity),
                 style: DialTypeScale.bodyS.copyWith(color: colors.muted),
               ),
             ],
@@ -697,7 +697,7 @@ class _FirstLogRow extends StatelessWidget {
             child: Text(
               OnboardingCopy.log,
               semanticsLabel:
-                  'Log ${vice.unit.label(quantity)} of ${vice.name}',
+                  'Log ${vice.units.label(quantity)} of ${vice.name}',
             ),
           ),
         ],

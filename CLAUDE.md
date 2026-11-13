@@ -279,7 +279,8 @@ Days).
 
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
-collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`) and
+collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
+`unitLabel`, `unitSingular`, `costPerUnit`, `currency`) and
 `activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `triggers`); a third, `summaries`,
 is server-written (Server side, below).
 
@@ -317,7 +318,20 @@ snapshot is cached and on a second device can predate a category picked elsewher
 snapshot or launch retries; nothing queues. An archived vice leaves recording and Today's dial, tallies and Log fan;
 Manage Data still opens its history and Trends lists it last (Today and Trends, below).
 
-**Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`) in one `sealed` bytes
+**Units and price.** A vice may carry its own unit label (`unitLabel`, 1 to 20 UTF-16 code units, in place of the
+`Unit` preset's words: `Vice.units`, a `UnitWords`) with its form for one (`unitSingular`, same bounds, ignored
+without a label; a count of 1 and "per" use it, else the label serves for both), a `costPerUnit` (above 0, at
+most 100,000) and its ISO 4217 `currency`, all optional and sealed only: this build never writes them in plaintext, so
+the habit form refuses a label or price change while no journal key is loaded. `lib/data/limits.dart` bounds them
+(the rules repeat the bounds for a plaintext write) and `json_fields.dart` reads a missing or out-of-range one as null.
+The form starts a price in another habit's currency, else the device region's (`deviceCurrency`). Spend is the
+habit's `measure` total times its price (`Vice.spendOf`): Trends shows it under the stats for the last 7 days
+(`lastSevenDaysTotal`) and the range. An older build's `updateVice` reseals only `name`, `unit` and `category`, so an
+edit of the habit there drops the label and price (archiving does not reseal); null falls back to the preset and no
+spend. No per-entry cost yet.
+
+**Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
+`unitSingular`, `costPerUnit`, `currency`) in one `sealed` bytes
 field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphertext | tag` around JSON padded to
 64/256/1024/4096 bytes), the document path as associated data, so only the user's key opens it, only on that document.
 An activity seals only `triggers`; `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext (Jack,

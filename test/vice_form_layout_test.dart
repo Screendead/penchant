@@ -39,6 +39,13 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(tester.takeException(), isNull);
+
+    // An own unit brings its singular beside it, still within the width.
+    expect(find.byKey(ViceForm.unitSingularKey), findsNothing);
+    await tester.enterText(find.byKey(ViceForm.unitLabelKey), 'glasses');
+    await tester.pump();
+    expect(find.byKey(ViceForm.unitSingularKey), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Save on a locked habit says why it cannot save', (tester) async {
