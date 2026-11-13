@@ -40,12 +40,14 @@ class RoughLocation {
   int get hashCode => Object.hash(latitude, longitude);
 }
 
-/// The place with the most time spent there, rounded; null with none.
+/// The place with the most time spent there in visits, rounded; null with
+/// none. Photo-derived stays count for nothing: an import could make a
+/// holiday or a former home the place.
 RoughLocation? roughLocationOfPlaces(PlaceStore store) {
   final Map<int, int> minutes = <int, int>{};
   for (final PlaceStay s in store.stays) {
     final DateTime? left = s.departure;
-    if (left == null) continue;
+    if (left == null || s.fromPhotos) continue;
     minutes[s.placeId] =
         (minutes[s.placeId] ?? 0) + left.difference(s.arrival).inMinutes;
   }

@@ -6,9 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/crypto/journal_field_sealer.dart';
 import 'package:tracker/crypto/sealed_files.dart';
 import 'package:tracker/crypto/sealer.dart';
+import 'package:tracker/insights/photo_stays.dart';
+import 'package:tracker/insights/photos_source.dart';
 import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/places_source.dart';
 import 'package:tracker/providers/device_files_provider.dart';
+import 'package:tracker/providers/photos_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
 
 import 'fake_places.dart';
@@ -113,4 +116,63 @@ void main() {
     expect(c.read(placesProvider).store.places.length, 1);
     expect(source.pending, isEmpty);
   });
+
+  test('an import from photos adds photo stays to the sealed file, and '
+      'removing them leaves the visits', () async {
+    final ProviderContainer c = ProviderContainer(
+      overrides: [
+        placesSourceProvider.overrideWithValue(FakePlaces(PlacesAccess.always)),
+        sealedFilesProvider.overrideWithValue(files),
+        photosSourceProvider.overrideWithValue(_FakePhotos()),
+      ],
+    );
+    addTearDown(c.dispose);
+    c.listen(placesProvider, (_, _) {});
+    await settled(c);
+    final List<(int, int)> progress = <(int, int)>[];
+    final PhotosImport outcome = await importPlacesFromPhotos(
+      c,
+      onProgress: (int done, int total) => progress.add((done, total)),
+    );
+    expect(outcome, isA<PhotosImported>());
+    final PhotosImported imported = outcome as PhotosImported;
+    expect(imported.places, 1);
+    expect(imported.photos, 2);
+    expect(imported.since, DateTime(2025, 6, 1, 19));
+    expect(imported.limited, isTrue);
+    expect(progress, <(int, int)>[(2, 2)]);
+    final PlaceStore kept = PlaceStore.decode((await files.read(placesFileName))!)!;
+    expect(kept.stays.single.fromPhotos, isTrue);
+
+    expect(await removePlacesFromPhotos(c), isTrue);
+    final PlaceStore removed = PlaceStore.decode(
+      (await files.read(placesFileName))!,
+    )!;
+    expect(removed.stays, isEmpty);
+    expect(removed.places, isEmpty);
+  });
+}
+
+class _FakePhotos implements PhotosSource {
+  @override
+  Future<PhotosAccess> access() async => PhotosAccess.notDetermined;
+
+  @override
+  Future<PhotosAccess> requestAccess() async => PhotosAccess.limited;
+
+  @override
+  Future<List<PhotoPoint>> read({
+    void Function(int done, int total)? onProgress,
+  }) async {
+    onProgress?.call(2, 2);
+    return <PhotoPoint>[
+      for (final int minute in <int>[0, 40])
+        PhotoPoint(
+          at: DateTime(2025, 6, 1, 19, minute),
+          latitude: 51.5,
+          longitude: 0,
+          accuracy: 10,
+        ),
+    ];
+  }
 }

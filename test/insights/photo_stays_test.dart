@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/photo_stays.dart';
 import 'package:tracker/insights/photos_source.dart';
 import 'package:tracker/insights/places.dart';
@@ -80,6 +81,11 @@ void main() {
     expect(store.since, _at(9), reason: 'since is the first visit');
     expect(store.photosSince, _at(19, 0, addDays(_day, -30)));
     expect(store.photosRead, 4);
+    expect(
+      roughLocationOfPlaces(store),
+      roughLocationOfPlaces(visited),
+      reason: 'photo stays never choose the location',
+    );
 
     // Named, then read again: the same ids and the name stay.
     final PlaceStore again = store

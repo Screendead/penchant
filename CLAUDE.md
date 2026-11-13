@@ -569,8 +569,8 @@ apart, spanning 15 minutes or more; a lone photo gives nothing. `PlaceStore.with
 (source `photos` in the file, format 2; format 1 still opens), joins them to the same places without moving a visited
 one, and `withoutPhotos` removes them and the places only photos gave. `atPlace` ignores photo stays: time outside
 them is unknown, and in simulation (#296) photos set off by a habit raised false cards above the family's rate even
-counting only the hours they cover, with too few days to find a real difference. They name places and feed
-`roughLocationOfPlaces`.
+counting only the hours they cover, with too few days to find a real difference. They only find and name places;
+`roughLocationOfPlaces` ignores them too.
 
 **Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
 held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city
