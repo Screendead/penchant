@@ -768,6 +768,8 @@ void main() {
     testWidgets('records the activity, closes, and Undo deletes that same '
         'activity', (WidgetTester tester) async {
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -793,6 +795,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '1.5',
       );
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -803,6 +807,8 @@ void main() {
 
     testWidgets('a whole number writes no amount', (WidgetTester tester) async {
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -833,6 +839,8 @@ void main() {
       await tester.tap(find.descendant(of: sheet, matching: find.text('Done')));
       await tester.pumpAndSettle();
       await tester.ensureVisible(record);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -845,6 +853,8 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -853,6 +863,8 @@ void main() {
 
       writes.respond = null;
       await tester.ensureVisible(record);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -866,6 +878,8 @@ void main() {
         'then saves once the key loads', (WidgetTester tester) async {
       writes.canCreate = false;
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -875,6 +889,8 @@ void main() {
 
       writes.canCreate = true;
       await tester.ensureVisible(record);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -888,6 +904,8 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('permission-denied'));
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -899,6 +917,8 @@ void main() {
         'it will sync', (WidgetTester tester) async {
       writes.respond = _never;
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pump();
 
@@ -921,6 +941,10 @@ void main() {
       await fill(tester);
       expect(find.semantics.byLabel('Record'), findsOneWidget);
 
+      await tester.ensureVisible(record);
+
+      await tester.pumpAndSettle();
+
       await tester.tap(record);
       await tester.pump();
 
@@ -935,6 +959,8 @@ void main() {
       WidgetTester tester,
     ) async {
       await fill(tester);
+      await tester.ensureVisible(record);
+      await tester.pumpAndSettle();
       await tester.tap(record);
       await tester.pumpAndSettle();
 
@@ -975,6 +1001,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '3',
       );
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
@@ -990,6 +1018,8 @@ void main() {
       WidgetTester tester,
     ) async {
       await open(tester);
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -1038,6 +1068,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
@@ -1055,6 +1087,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '0.25',
       );
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
 
@@ -1074,6 +1108,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump(writeTimeout - const Duration(seconds: 1));
       expect(editor, findsOneWidget);
@@ -1089,6 +1125,8 @@ void main() {
     testWidgets('deletes the activity, closes, and Undo writes it back, '
         'triggers included', (WidgetTester tester) async {
       await open(tester);
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -1113,6 +1151,8 @@ void main() {
       WidgetTester tester,
     ) async {
       await open(tester);
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -1130,6 +1170,8 @@ void main() {
     ) async {
       writes.respond = _never;
       await open(tester);
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pumpAndSettle();
       expect(editor, findsNothing);
@@ -1146,6 +1188,8 @@ void main() {
     ) async {
       writes.respond = (_) => Future.error(_firebaseError('unavailable'));
       await open(tester);
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
       await tester.pumpAndSettle();
 
@@ -1188,6 +1232,8 @@ void main() {
         ], ViceActivityEditorPage(viceID: coffee.id, activityID: activity.id));
 
     Future<void> save(WidgetTester tester) async {
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(find.byType(ViceActivityEditorPage), findsNothing);
@@ -1477,6 +1523,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '2',
       );
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pump();
       await waitOutTimeout(tester);
@@ -1596,6 +1644,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump();
 
@@ -1633,6 +1683,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Quantity'),
         '5',
       );
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pump();
       await waitOutTimeout(tester);

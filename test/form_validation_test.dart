@@ -115,6 +115,8 @@ void main() {
 
     await tester.enterText(_field('Habit Name'), 'x' * 61);
     // No unit is selected, so validation runs but nothing is written.
+    await tester.ensureVisible(find.text('Save'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pump();
 
@@ -132,6 +134,8 @@ void main() {
 
     await tester.enterText(_field('Quantity'), '0');
     // No vice is selected, so validation runs but nothing is written.
+    await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
     await tester.pump();
 
@@ -190,6 +194,8 @@ void main() {
       await pumpEditor(tester, 2);
 
       await tester.enterText(_field('Quantity'), '0');
+      await tester.ensureVisible(find.text('Save'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pump();
 

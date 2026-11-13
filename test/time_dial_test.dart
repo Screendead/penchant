@@ -157,6 +157,10 @@ void main() {
       );
       expect(find.text('Log 1 drink at 21:10'), findsOneWidget);
 
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+
+      await tester.pumpAndSettle();
+
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pumpAndSettle();
       expect(writes.writes.single.fields['createdAt'], _now);
@@ -182,6 +186,10 @@ void main() {
       expect(at.isBefore(DateTime(2026, 11, 5, 18)), isTrue);
       expect(at.minute % TimeDial.step, 0);
       expect(find.textContaining('min ago'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+
+      await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pumpAndSettle();
@@ -373,6 +381,8 @@ void main() {
 
       await tester.tapAt(_at(tester, 9 * 60));
       await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(writes.writes.single.op, 'updateActivity');
@@ -391,6 +401,8 @@ void main() {
       );
       await tester.tap(find.byTooltip('More'));
       await tester.pump();
+      await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
       await tester.pumpAndSettle();
       expect(writes.writes.single.fields, <String, Object?>{'quantity': 4});

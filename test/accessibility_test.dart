@@ -203,6 +203,10 @@ void main() {
             find.byKey(RecordNewActivityDialog.submitKey),
           );
           await tester.pumpAndSettle();
+          await tester.ensureVisible(
+            find.byKey(RecordNewActivityDialog.submitKey),
+          );
+          await tester.pump();
           await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
           await tester.pumpAndSettle();
         }

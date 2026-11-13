@@ -13,10 +13,10 @@ class LogZone extends Notifier<String?> {
   /// Replaced by tests, which have no platform channel.
   static Future<String?> Function() read = _readDevice;
 
+  // No timeout: nothing waits on the answer, since a log reads the state
+  // as it stands.
   static Future<String?> _readDevice() async =>
-      (await FlutterTimezone.getLocalTimezone().timeout(
-        const Duration(seconds: 2),
-      )).identifier;
+      (await FlutterTimezone.getLocalTimezone()).identifier;
 
   @override
   String? build() {

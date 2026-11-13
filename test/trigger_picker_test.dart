@@ -286,6 +286,8 @@ void main() {
 
     expect(find.widgetWithText(InputChip, 'Pitch review'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextFormField, 'Quantity'), '1');
+    await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
     await tester.pumpAndSettle();
 

@@ -519,6 +519,8 @@ void main() {
           find.widgetWithText(TextFormField, 'Quantity'),
           '7',
         );
+        await tester.ensureVisible(find.text('Save'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Save'));
         await tester.pump();
         activity.add(changed(7, stored.createdAt.toDate(), pending: true));
@@ -549,6 +551,8 @@ void main() {
 
         writes.respond = null;
         await tester.ensureVisible(find.text('Save'));
+        await tester.ensureVisible(find.text('Save'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Save'));
         await tester.pump();
         expect(writes.writes, <Write>[
