@@ -657,7 +657,13 @@ and elsewhere: 14 days at least, in the report's false-discovery family, floor 1
 sets it off; names stay out of the engine and the report codec (results carry the place id). Once location is on, the card's
 "Add history from your photos" (`lib/providers/photos_provider.dart`, on request only, never observing the library)
 asks PhotoKit for read access and `ios/Runner/PhotosChannel.swift` reads each user-library asset's creation date and
-location alone, off the main thread; limited access reads only the shared photos. `photoRuns`
+location alone, off the main thread; limited access reads only the shared photos. Tapping a place on the card opens
+`PlaceSheet` (`lib/widgets/place_sheet.dart`; Jack, 2026-11-13) to name it: when the person was there, from the stays,
+and, only with photo access already given (it never asks), thumbnails of up to 12 photos taken within the place's
+150 m (the channel's `near`, in memory only, never kept). Its "Show on map" asks `PlacesChannel`'s `mapSnapshot`
+(`MKMapSnapshotter`) only on the tap: the one time a place's coordinates leave the device, to Apple, and the sheet
+says so first. No address lookup. The card lists the places the engine judges, then the 5 others with the most time,
+photo stays included. `photoRuns`
 (`lib/insights/photo_stays.dart`) makes a stay of two or more photos within 150 m on one day, at most 90 minutes
 apart, spanning 15 minutes or more; a lone photo gives nothing. `PlaceStore.withPhotoRuns` replaces the photo stays
 (source `photos` in the file, format 2; format 1 still opens), joins them to the same places without moving a visited

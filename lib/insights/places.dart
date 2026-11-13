@@ -532,6 +532,59 @@ Duration _overlap(DateTime a0, DateTime a1, DateTime b0, DateTime b1) {
   return to.isAfter(from) ? to.difference(from) : Duration.zero;
 }
 
+List<PlaceStay> _closedVisits(List<PlaceStay> stays) => <PlaceStay>[
+  for (final PlaceStay s in stays)
+    if (s.departure != null && !s.fromPhotos) s,
+]..sort((a, b) => a.arrival.compareTo(b.arrival));
+
+/// Per day from [first] to [last], minutes of waking time at each place.
+Map<DateTime, Map<int, int>> _wakingMinutes(
+  List<PlaceStay> closed,
+  DateTime first,
+  DateTime last,
+) {
+  final Map<DateTime, Map<int, int>> minutesAt = <DateTime, Map<int, int>>{};
+  for (DateTime d = first; !d.isAfter(last); d = addDays(d, 1)) {
+    final DateTime w0 = DateTime(d.year, d.month, d.day, placeWakingFromHour);
+    final DateTime w1 = DateTime(d.year, d.month, d.day, placeWakingToHour);
+    final Map<int, int> day = <int, int>{};
+    for (final PlaceStay s in closed) {
+      if (!s.arrival.isBefore(w1)) break;
+      final int m = _overlap(s.arrival, s.departure!, w0, w1).inMinutes;
+      if (m > 0) day[s.placeId] = (day[s.placeId] ?? 0) + m;
+    }
+    minutesAt[d] = day;
+  }
+  return minutesAt;
+}
+
+/// The place ids in [minutesAt], the most waking time first, then by id.
+List<int> _byWakingTime(Map<DateTime, Map<int, int>> minutesAt) {
+  final Map<int, int> totals = <int, int>{};
+  for (final Map<int, int> day in minutesAt.values) {
+    for (final MapEntry<int, int> e in day.entries) {
+      totals[e.key] = (totals[e.key] ?? 0) + e.value;
+    }
+  }
+  return totals.keys.toList()..sort((a, b) {
+    final int byTime = totals[b]!.compareTo(totals[a]!);
+    return byTime != 0 ? byTime : a.compareTo(b);
+  });
+}
+
+/// The places [atPlace] judges with [through] as its last day, the most
+/// waking time first.
+List<int> judgedPlaces(List<PlaceStay> stays, {required DateTime through}) {
+  final List<PlaceStay> closed = _closedVisits(stays);
+  if (closed.isEmpty) return const <int>[];
+  final DateTime first = startOfDay(closed.first.arrival);
+  final DateTime last = startOfDay(through);
+  if (last.isBefore(first)) return const <int>[];
+  return _byWakingTime(
+    _wakingMinutes(closed, first, last),
+  ).take(placeMaxPlaces).toList();
+}
+
 /// For each habit not in [skip] and each of the [placeMaxPlaces] places with
 /// the most waking time, whether its entries are logged there more or less
 /// often than the time spent there would give.
@@ -557,38 +610,19 @@ List<AtPlace> atPlace({
   Set<String> skip = const <String>{},
   InsightGates gates = const InsightGates(),
 }) {
-  final List<PlaceStay> closed = <PlaceStay>[
-    for (final PlaceStay s in stays)
-      if (s.departure != null && !s.fromPhotos) s,
-  ]..sort((a, b) => a.arrival.compareTo(b.arrival));
+  final List<PlaceStay> closed = _closedVisits(stays);
   if (closed.isEmpty) return const <AtPlace>[];
   final DateTime first = startOfDay(closed.first.arrival);
   final DateTime last = startOfDay(through);
   if (last.isBefore(first)) return const <AtPlace>[];
-
-  // Per day, minutes of waking time at each place.
-  final Map<DateTime, Map<int, int>> minutesAt = <DateTime, Map<int, int>>{};
-  final Map<int, int> totals = <int, int>{};
-  for (DateTime d = first; !d.isAfter(last); d = addDays(d, 1)) {
-    final DateTime w0 = DateTime(d.year, d.month, d.day, placeWakingFromHour);
-    final DateTime w1 = DateTime(d.year, d.month, d.day, placeWakingToHour);
-    final Map<int, int> day = <int, int>{};
-    for (final PlaceStay s in closed) {
-      if (!s.arrival.isBefore(w1)) break;
-      final int m = _overlap(s.arrival, s.departure!, w0, w1).inMinutes;
-      if (m > 0) day[s.placeId] = (day[s.placeId] ?? 0) + m;
-    }
-    minutesAt[d] = day;
-    for (final MapEntry<int, int> e in day.entries) {
-      totals[e.key] = (totals[e.key] ?? 0) + e.value;
-    }
-  }
-  final List<int> placeIds = totals.keys.toList()
-    ..sort((a, b) {
-      final int byTime = totals[b]!.compareTo(totals[a]!);
-      return byTime != 0 ? byTime : a.compareTo(b);
-    });
-  final List<int> judged = placeIds.take(placeMaxPlaces).toList()..sort();
+  final Map<DateTime, Map<int, int>> minutesAt = _wakingMinutes(
+    closed,
+    first,
+    last,
+  );
+  final List<int> judged = _byWakingTime(
+    minutesAt,
+  ).take(placeMaxPlaces).toList()..sort();
 
   int? placeAt(DateTime at) {
     for (final PlaceStay s in closed) {

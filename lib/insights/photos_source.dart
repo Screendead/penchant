@@ -4,9 +4,11 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:tracker/insights/photo_stays.dart';
 
-// The Swift side is ios/Runner/PhotosChannel.swift. It reads each photo's
-// creation time and location alone, never the picture, and nothing read
-// here leaves the device.
+// The Swift side is ios/Runner/PhotosChannel.swift. The import reads each
+// photo's creation time and location alone. [PhotosSource.near] reads small
+// thumbnails of one place's photos when the person opens it to name it, held
+// in memory only. Nothing read here leaves the device, and no error or log
+// may carry a coordinate.
 
 /// What the photo library lets the app read: [limited] is only the photos
 /// the person chose to share.
@@ -25,6 +27,25 @@ abstract interface class PhotosSource {
   Future<List<PhotoPoint>> read({
     void Function(int done, int total)? onProgress,
   });
+
+  /// Up to [limit] photos taken within [radius] metres of [latitude],
+  /// [longitude], newest first, each about [pixels] on its longer side. Empty
+  /// without access or on any failure; never throws.
+  Future<List<PlacePhoto>> near({
+    required double latitude,
+    required double longitude,
+    required double radius,
+    required int limit,
+    required int pixels,
+  });
+}
+
+/// A thumbnail of a photo taken at a place, and when.
+class PlacePhoto {
+  const PlacePhoto(this.at, this.jpeg);
+
+  final DateTime at;
+  final Uint8List jpeg;
 }
 
 class ChannelPhotosSource implements PhotosSource {
@@ -70,7 +91,42 @@ class ChannelPhotosSource implements PhotosSource {
       _progress = null;
     }
   }
+
+  @override
+  Future<List<PlacePhoto>> near({
+    required double latitude,
+    required double longitude,
+    required double radius,
+    required int limit,
+    required int pixels,
+  }) async {
+    try {
+      return placePhotosFrom(
+        await _channel.invokeMethod<Object?>('near', <String, Object>{
+          'lat': latitude,
+          'lon': longitude,
+          'radius': radius,
+          'limit': limit,
+          'pixels': pixels,
+        }),
+      );
+    } catch (_) {
+      return const <PlacePhoto>[];
+    }
+  }
 }
+
+/// The channel's answer to `near`: maps of `at`, microseconds since 1970, and
+/// `jpeg`. Anything malformed is left out.
+List<PlacePhoto> placePhotosFrom(Object? answer) => <PlacePhoto>[
+  if (answer is List<Object?>)
+    for (final Object? o in answer)
+      if (o case {
+        'at': final int at,
+        'jpeg': final Uint8List jpeg,
+      } when jpeg.isNotEmpty)
+        PlacePhoto(DateTime.fromMicrosecondsSinceEpoch(at), jpeg),
+];
 
 /// The channel's answer, four numbers a photo: creation time in microseconds
 /// since 1970, latitude, longitude and accuracy in metres.

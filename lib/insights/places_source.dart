@@ -31,6 +31,19 @@ abstract interface class PlacesSource {
 
   /// An event each time Core Location reports a visit.
   Stream<void> get reported;
+
+  /// A map [span] metres across centred on [latitude], [longitude], as a PNG
+  /// of [width] by [height] points at [scale]. Drawing it sends the place's
+  /// location to Apple. Null on any failure; never throws.
+  Future<Uint8List?> mapSnapshot({
+    required double latitude,
+    required double longitude,
+    required double span,
+    required double width,
+    required double height,
+    required double scale,
+    required bool dark,
+  });
 }
 
 class ChannelPlacesSource implements PlacesSource {
@@ -72,6 +85,33 @@ class ChannelPlacesSource implements PlacesSource {
   @override
   Future<void> ack(int count) =>
       _channel.invokeMethod<void>('ack', <String, int>{'count': count});
+
+  @override
+  Future<Uint8List?> mapSnapshot({
+    required double latitude,
+    required double longitude,
+    required double span,
+    required double width,
+    required double height,
+    required double scale,
+    required bool dark,
+  }) async {
+    try {
+      final Object? png = await _channel
+          .invokeMethod<Object?>('mapSnapshot', <String, Object>{
+            'lat': latitude,
+            'lon': longitude,
+            'span': span,
+            'width': width,
+            'height': height,
+            'scale': scale,
+            'dark': dark,
+          });
+      return png is Uint8List && png.isNotEmpty ? png : null;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// The channel's answer, five numbers a visit: arrival and departure in

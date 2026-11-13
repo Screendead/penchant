@@ -212,4 +212,13 @@ class _FakePhotos implements PhotosSource {
         ),
     ];
   }
+
+  @override
+  Future<List<PlacePhoto>> near({
+    required double latitude,
+    required double longitude,
+    required double radius,
+    required int limit,
+    required int pixels,
+  }) async => const <PlacePhoto>[];
 }
