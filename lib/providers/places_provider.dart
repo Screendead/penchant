@@ -49,6 +49,7 @@ class PlacesSync extends Notifier<PlacesState> {
   SealedFiles? _files;
   PlacesSource? _source;
   bool _allowed = false;
+  bool _started = false;
 
   @override
   PlacesState build() {
@@ -56,9 +57,20 @@ class PlacesSync extends Notifier<PlacesState> {
     // Where no location is read, the key and the files are never asked for.
     if (source == null) return _none;
     final SealedFiles? files = _files = ref.watch(sealedFilesProvider);
-    final PlacesAccess? access = ref.watch(placesAccessProvider).value;
-    final bool allowed = _allowed =
-        access == PlacesAccess.always || access == PlacesAccess.whenInUse;
+    _started = false;
+    // Listened, not watched: the Insights page re-reads access on every
+    // resume, and a rebuild would read the file again and hold Insights
+    // back until it had.
+    ref.listen<AsyncValue<PlacesAccess?>>(placesAccessProvider, (
+      _,
+      AsyncValue<PlacesAccess?> next,
+    ) {
+      final PlacesAccess? access = next.value;
+      final bool was = _allowed;
+      _allowed =
+          access == PlacesAccess.always || access == PlacesAccess.whenInUse;
+      if (_allowed && !was && _files != null) unawaited(_begin());
+    }, fireImmediately: true);
     if (files == null) return _none;
     final AppLifecycleListener lifecycle = AppLifecycleListener(
       onResume: drain,
@@ -70,33 +82,44 @@ class PlacesSync extends Notifier<PlacesState> {
       lifecycle.dispose();
       reported.cancel();
     });
-    unawaited(_load(files, start: allowed));
+    unawaited(_load(files));
     return (ready: false, store: const PlaceStore());
   }
 
-  Future<void> _load(SealedFiles files, {required bool start}) =>
-      _queue = _queue
-          .then((_) async {
-            final Uint8List? bytes = await files.read(placesFileName);
-            if (!identical(files, _files)) return;
-            final PlaceStore store =
-                (bytes == null ? null : PlaceStore.decode(bytes)) ??
-                const PlaceStore();
-            state = (ready: true, store: store);
-            if (start) {
-              try {
-                await _source?.start();
-              } catch (_) {
-                // Tried again on the next launch.
-              }
-              await _drain();
-            }
-          })
-          .catchError((Object _) {
-            if (identical(files, _files)) {
-              state = (ready: true, store: state.store);
-            }
-          });
+  Future<void> _load(SealedFiles files) => _queue = _queue
+      .then((_) async {
+        final Uint8List? bytes = await files.read(placesFileName);
+        if (!identical(files, _files)) return;
+        final PlaceStore store =
+            (bytes == null ? null : PlaceStore.decode(bytes)) ??
+            const PlaceStore();
+        state = (ready: true, store: store);
+        if (_allowed) await _startAndDrain();
+      })
+      .catchError((Object _) {
+        if (identical(files, _files)) {
+          state = (ready: true, store: state.store);
+        }
+      });
+
+  // Access granted after the file was read; before, the load starts them.
+  Future<void> _begin() => _queue = _queue
+      .then((_) async {
+        if (state.ready) await _startAndDrain();
+      })
+      .catchError((Object _) {});
+
+  Future<void> _startAndDrain() async {
+    if (!_started) {
+      _started = true;
+      try {
+        await _source?.start();
+      } catch (_) {
+        // Tried again on the next launch.
+      }
+    }
+    await _drain();
+  }
 
   /// Adds the visits Core Location reported since the last drain. Never
   /// throws.

@@ -274,12 +274,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       listen: false,
     );
     setState(() => _connectingCalendar = true);
-    final bool granted = await connectCalendar(container);
+    await connectCalendar(container);
     if (!mounted) return;
     setState(() => _connectingCalendar = false);
-    if (!granted &&
-        await container.read(calendarAccessProvider.future) ==
-            CalendarAccess.notDetermined) {
+    // Granted or not, a prompt that left access undecided gets a word: the
+    // card would otherwise look as if the tap did nothing.
+    if (await container.read(calendarAccessProvider.future) ==
+        CalendarAccess.notDetermined) {
       messenger.showSnackBar(
         const SnackBar(content: Text(InsightsPage.calendarFailed)),
       );
@@ -293,12 +294,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       listen: false,
     );
     setState(() => _connectingReminders = true);
-    final bool granted = await connectReminders(container);
+    await connectReminders(container);
     if (!mounted) return;
     setState(() => _connectingReminders = false);
-    if (!granted &&
-        await container.read(remindersAccessProvider.future) ==
-            CalendarAccess.notDetermined) {
+    // Granted or not, a prompt that left access undecided gets a word: the
+    // card would otherwise look as if the tap did nothing.
+    if (await container.read(remindersAccessProvider.future) ==
+        CalendarAccess.notDetermined) {
       messenger.showSnackBar(
         const SnackBar(content: Text(InsightsPage.remindersFailed)),
       );

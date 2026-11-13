@@ -5,6 +5,8 @@ import 'package:tracker/insights/calendar_source.dart';
 import 'package:tracker/insights/health_source.dart' show DailyOutcome;
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/insights/reminders_source.dart';
+import 'package:tracker/providers/calendar_provider.dart'
+    show eventKitPromptTimeout;
 
 // Reminders stay on the device: ReportProviderErrors sends every provider
 // failure to Crashlytics, so nothing here may fail. Each failure is a value
@@ -64,7 +66,7 @@ Future<bool> connectReminders(ProviderContainer container) async {
   if (source == null) return false;
   bool granted;
   try {
-    granted = await source.requestAccess();
+    granted = await source.requestAccess().timeout(eventKitPromptTimeout);
   } catch (_) {
     granted = false;
   }
