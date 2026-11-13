@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/widgets/urge_note_fields.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/dial_layout.dart';
@@ -1140,6 +1142,50 @@ void main() {
       expect(await const FreeTextTriggers().uses(ownerID), <String, int>{
         'Pitch review': 1,
       });
+    });
+
+    testWidgets('the picker after a log also asks for the urge and a note, '
+        'and seals them with where and how the entry was logged', (
+      WidgetTester tester,
+    ) async {
+      await _pumpApp(tester, overrides(), const ViceTracker());
+
+      await tester.tap(_button(logOneLabel(tea)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final Write logged = writes.writes.single;
+      expect(logged.fields['loggedVia'], LoggedVia.oneTap);
+      final ActivityContent stored = ActivityContent(
+        zone: 'Asia/Tokyo',
+        writtenAt: DateTime.utc(2026, 11, 12, 12),
+        loggedVia: LoggedVia.oneTap,
+      );
+      writes.cached[logged.id] = stored;
+
+      await tester.tap(find.widgetWithText(TextButton, whatWasGoingOnLabel));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(UrgeField.keyFor(4)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(UrgeField.keyFor(4)));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(NoteField.fieldKey),
+        '  After the call ',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      final Write update = writes.writes.last;
+      expect((update.op, update.id), ('updateActivity', logged.id));
+      final ActivityContent sealed = writes.sealed[logged.id]!;
+      expect(sealed.urge, 4);
+      expect(sealed.note, 'After the call');
+      expect(sealed.triggers, isEmpty);
+      expect(sealed.zone, 'Asia/Tokyo');
+      expect(sealed.writtenAt, stored.writtenAt);
+      expect(sealed.loggedVia, LoggedVia.oneTap);
     });
 
     testWidgets(

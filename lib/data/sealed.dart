@@ -10,10 +10,11 @@ import 'package:tracker/errors/report_error.dart';
 /// createdAt, viceID, archived) stay beside it in plaintext.
 const String sealedField = 'sealed';
 
-/// The content fields each collection seals. firestore.rules lists the same
-/// fields (`sealedAlone`, `changedContent`), and so must every content field
-/// added later. An activity's quantity and decimal amount stay plaintext
-/// (Jack, 2026-11-06), so a server-side job can aggregate them.
+/// The content fields each collection seals. firestore.rules lists a vice's
+/// and an activity's `triggers` (`sealedAlone`, `changedContent`); an
+/// activity's later fields were sealed from the start, and the rules' create
+/// and update key lists refuse them in plaintext. An activity's quantity and decimal amount stay plaintext (Jack,
+/// 2026-11-06), so a server-side job can aggregate them.
 const List<String> viceContentFields = <String>[
   'name',
   'unit',
@@ -23,7 +24,14 @@ const List<String> viceContentFields = <String>[
   'costPerUnit',
   'currency',
 ];
-const List<String> activityContentFields = <String>['triggers'];
+const List<String> activityContentFields = <String>[
+  'triggers',
+  'urge',
+  'note',
+  'zone',
+  'writtenAt',
+  'loggedVia',
+];
 
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,

@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
@@ -134,6 +135,7 @@ Future<void> logOne(
     viceID: vice.id,
     quantity: defaultQuantity,
     createdAt: at,
+    loggedVia: LoggedVia.oneTap,
   );
   if (offerUndo == null) {
     showBar(

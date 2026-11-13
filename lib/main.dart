@@ -21,6 +21,7 @@ import 'package:tracker/insights_page.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/deleted_habit_page.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/log_zone_provider.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -114,6 +115,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final User? user = userValue.value;
     ref.watch(categoryMigrationProvider);
     ref.listen(placesProvider, (_, _) {});
+    ref.listen(logZoneProvider, (_, _) {});
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen. The root messenger

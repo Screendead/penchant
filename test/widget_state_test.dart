@@ -519,6 +519,10 @@ void main() {
           find.widgetWithText(TextFormField, 'Quantity'),
           '7',
         );
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
+        await tester.ensureVisible(find.text('Save'));
+        await tester.pump(const Duration(seconds: 1));
         await tester.tap(find.text('Save'));
         await tester.pump();
         activity.add(changed(7, stored.createdAt.toDate(), pending: true));
@@ -548,7 +552,13 @@ void main() {
         expect(_fieldText(tester, 'Quantity'), '7');
 
         writes.respond = null;
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
         await tester.ensureVisible(find.text('Save'));
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
+        await tester.ensureVisible(find.text('Save'));
+        await tester.pump(const Duration(seconds: 1));
         await tester.tap(find.text('Save'));
         await tester.pump();
         expect(writes.writes, <Write>[

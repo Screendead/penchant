@@ -147,7 +147,7 @@ Future<void> _restore(
             quantity: activity.quantity,
             amount: activity.amount,
             createdAt: activity.createdAt.toDate(),
-            triggers: activity.triggers,
+            restoring: activity.content,
           ),
           'Not restored: $entry',
         )
