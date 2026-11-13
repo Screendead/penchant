@@ -1070,8 +1070,9 @@ mock-up before it is called done:
 
 Also from Jack on 2026-11-13: the Mac background sync check passed (a menu-bar log with Penchant quit reached the
 iPhone) but Penchant itself opened behind the other apps, which he questions; #252 stays a draft until that is
-explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Claude may
-read the functions' logs with `gcloud logging read` (read-only; nothing else in production): six nightly
+explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Jack let Claude read
+the clean-up job's logs with `gcloud` once, then made it standing (the rule and his words are in `CLAUDE.md`, Hard
+rules): six nightly
 `dailyOrphanCleanup` runs, 2026-11-08 to 11-13, each scanned 1 owner, found 0 missing, 0 candidates, no errors, so
 the delete path has never had anything to act on. Reported by Jack on build 1500: Insights was slow after turning
 on Places and Reminders, and Connect Reminders stays shown and dead after access is granted
