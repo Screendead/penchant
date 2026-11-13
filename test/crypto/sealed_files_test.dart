@@ -295,6 +295,56 @@ void main() {
     );
   });
 
+  group('kept files', () {
+    late Directory support;
+    late DeviceFiles both;
+
+    setUp(() async {
+      support = await Directory.systemTemp.createTemp('sealed-support-test');
+      both = DeviceFiles(
+        caches: () async => caches,
+        support: () async => support,
+      );
+    });
+
+    tearDown(() async {
+      if (await support.exists()) await support.delete(recursive: true);
+    });
+
+    Future<List<File>> kept() async => <File>[
+      await for (final FileSystemEntity e in support.list(recursive: true))
+        if (e is File) e,
+    ];
+
+    test('live in Application Support, sealed, apart from Caches', () async {
+      final SealedFiles files = both.keptForUser('alice', _sealer());
+      await files.write('experiment', utf8.encode('habit-1 sleepDeep'));
+      expect(utf8.decode((await files.read('experiment'))!), 'habit-1 sleepDeep');
+      expect(await filesOnDisk(), isEmpty);
+      expect(await kept(), hasLength(1));
+      expect(
+        utf8.decode(await (await kept()).single.readAsBytes(), allowMalformed: true),
+        isNot(contains('sleepDeep')),
+      );
+      expect(await both.forUser('alice', _sealer()).read('experiment'), isNull);
+    });
+
+    test('another user\'s first use removes them', () async {
+      await both.keptForUser('alice', _sealer()).write('experiment', <int>[1]);
+      final SealedFiles bob = both.keptForUser('bob', _sealer());
+      expect(await bob.read('experiment'), isNull);
+      expect(await kept(), isEmpty);
+    });
+
+    test('clearAll removes them with the Caches ones', () async {
+      await both.keptForUser('alice', _sealer()).write('experiment', <int>[1]);
+      await both.forUser('alice', _sealer()).write('note', <int>[1]);
+      await both.clearAll();
+      expect(await kept(), isEmpty);
+      expect(await filesOnDisk(), isEmpty);
+    });
+  });
+
   test('deleteLegacy removes the plaintext store alone', () async {
     await File('${caches.path}/health-daily.json').writeAsString('{}');
     await File('${caches.path}/health-daily.json.next').writeAsString('{}');
