@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -204,6 +205,27 @@ void main() {
       expect(mistyped.unitSingular, isNull);
       expect(mistyped.costPerUnit, isNull);
       expect(mistyped.currency, isNull);
+
+      final Vice lined = await open(<String, Object?>{
+        'name': 'Wine',
+        'unit': 'drink',
+        'lineAmount': 2.5,
+        'linePeriod': 'day',
+      });
+      expect(lined.line, const HabitLine(2.5, LinePeriod.day));
+      expect(lined.line!.words(lined.units), '2.5 drinks a day');
+      expect(resealed.line, isNull);
+      // Half a line, or one out of bounds, is no line.
+      for (final Map<String, Object?> bad in <Map<String, Object?>>[
+        <String, Object?>{'lineAmount': 3},
+        <String, Object?>{'linePeriod': 'week'},
+        <String, Object?>{'lineAmount': 0, 'linePeriod': 'week'},
+        <String, Object?>{'lineAmount': '3', 'linePeriod': 'week'},
+        <String, Object?>{'lineAmount': 3, 'linePeriod': 'month'},
+        <String, Object?>{'lineAmount': maxLineAmount + 1, 'linePeriod': 'day'},
+      ]) {
+        expect((await open(bad)).line, isNull, reason: '$bad');
+      }
     });
 
     test('a sealed vice opens to its name and unit', () async {
@@ -457,6 +479,44 @@ void main() {
           'unitLabel': 'cups',
         },
       );
+    });
+
+    test('updateVice seals a line, keeps it through a rename and clears it '
+        'on request', () async {
+      Future<Map<String, Object?>> sealed() => sealer.open(
+        (store.updates['vices/coffee']![sealedField]! as Blob).bytes,
+        context: 'vices/coffee',
+      );
+      await writes
+          .updateVice(
+            _vice(),
+            line: (line: const HabitLine(30, LinePeriod.week)),
+          )
+          .done;
+      expect(await sealed(), <String, Object?>{
+        'name': 'Coffee',
+        'unit': 'drink',
+        'category': 'other',
+        'lineAmount': 30.0,
+        'linePeriod': 'week',
+      });
+
+      final Vice lined = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: 'owner',
+        createdAt: _at,
+        archived: false,
+        line: const HabitLine(3, LinePeriod.day),
+      );
+      await writes.updateVice(lined, name: 'Espresso').done;
+      expect((await sealed())['lineAmount'], 3.0);
+      expect((await sealed())['linePeriod'], 'day');
+
+      await writes.updateVice(lined, line: (line: null)).done;
+      expect(await sealed(), isNot(contains('lineAmount')));
+      expect(await sealed(), isNot(contains('linePeriod')));
     });
 
     test('updateVice refuses to write back a locked vice', () {
