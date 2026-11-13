@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/app_lock/app_lock.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -79,7 +80,11 @@ class AppMenuBar extends ConsumerWidget {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
       return child;
     }
-    final List<Vice>? listed = ref.watch(unarchivedViceListProvider).value;
+    // The Log menu names habits, so it goes while the app is locked.
+    final List<Vice>? listed =
+        ref.watch(appLockProvider.select((AppLockState s) => s.covered))
+        ? null
+        : ref.watch(unarchivedViceListProvider).value;
     final List<Vice>? all = ref.watch(viceListProvider).value;
     final List<Vice> habits = listed == null
         ? const <Vice>[]

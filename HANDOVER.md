@@ -194,7 +194,8 @@ The list this run works from, sorted before any building. Tick or strike here as
 
 - Capture detail: which of the granular-logging fields a log can carry and the detail sheet after a one-tap log
   (`r2-data-model` B decided the mechanism, not the fields or the sheet).
-- App lock and discreet mode now, or still parked with the store work (`r2-applock` decided free, not when).
+- App lock and discreet mode now, or still parked with the store work (`r2-applock` decided free, not when). App lock
+  built as an option (draft PR `feat/app-lock`, stills in `docs/pitch/round-17/app-lock/`); discreet mode not built.
 - Optional goals and limits: timing was only Claude's "after 1.1".
 - Self-experiments (randomised n-of-1 trials of a finding): whether to build.
 - Weather from an outside service that would see a rough location, or wait for WeatherKit and a paid team.

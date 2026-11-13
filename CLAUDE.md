@@ -643,6 +643,17 @@ A habit's colour is its creation order, oldest first, archived included (equal `
 `style` is filled for habits 1-5, a ring for 6-10, a dotted ring for 11-15, then repeats. Pass `viceListProvider`'s
 full list, not the unarchived one, or archiving recolours later habits. Computed on device; stores nothing.
 
+**App lock** (`lib/app_lock/`, off by default; built for a pitch, `r2-applock`). Settings > App lock turns on only
+after one successful Face ID, Touch ID or passcode check; the choice is per device in shared_preferences (`appLock`),
+read by `startApp` before `runApp` (`appLockSavedProvider`, false in tests) so a locked journal never flashes.
+`AppLockGate`, in `MaterialApp.builder` above the menu bar, the rejected-writes banner and `RecoveryKeyGate`, keeps
+the app mounted but covered (no semantics, focus, pointer or tickers) while locked or obscured. It locks at launch and on a return after `AppLock.grace` (1 minute) hidden or paused; inactive alone
+(the system's own auth sheet) starts no clock. On iOS inactive obscures with a plain cover for the app switcher; the
+Mac does not (it turns inactive on every focus change). The lock screen asks once by itself, then waits for its button.
+A device with no passcode left opens and turns the lock off. The macOS Log menu drops its habits while covered. Native
+side: `DeviceAuth` (LocalAuthentication's device-owner policy) in `ios/Runner/AppDelegate.swift` and
+`macos/Runner/MainFlutterWindow.swift`, channel `com.screendead.penchant/device_auth`; no plugin.
+
 **Native auth fields on macOS.** Flutter's macOS text input has no real AutoFill: the engine's
 `shell/platform/darwin/macos/framework/Source/FlutterTextInputPlugin.mm` only sets an `NSTextContentType` on a
 zero-frame `NSTextView`, with no autofill groups or `finishAutofillContext`, so Passwords never offers to fill. On
