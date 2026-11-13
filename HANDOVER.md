@@ -1043,8 +1043,31 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
+Round 18 (`docs/pitch/round-18/index.html`, https://claude.ai/artifact/9cDnMB8RnA2SS1pB21o4Ah, `picks` collection),
+published 2026-11-13, none picked yet. It replaces round 17's page as the one to answer: Jack answered the fifth
+run's heads-up with "pitch them" (units and cost, the calendar additions, the Trends views, Places, Daylight) after
+#286 and #280 were already merged and on the iPhone, so those are put as keep or take out. Round 17's six other
+calls are carried over unchanged (below); its `units-cost` is replaced by the first two here. Picks may land on
+either page: read both. Stills are in `docs/pitch/round-18/stills/` (from `test/pitch_stills_render_test.dart` on
+`feat/trends-rest`). A backlog file's "Needs Jack: no" is Claude's recommendation, never a decision: new features
+from one stay unmerged until Jack picks. Recommendations are Claude's:
+
+- `units-cost`: #282, as below, now with "do not ship". **A** merge and install on the iPhone now (recommended); B
+  merge when the Mac can update; C close it. Before merging: a singular form for an own unit label (the label is
+  used as typed, so "1 glasses", "per glasses"; `UnitWords`, `lib/data/unit.dart`), about an hour.
+- `trends-views`: #287. **A** merge all three views (needs `units-cost` yes; recommended); B trigger bars (and spend
+  if units is yes) without the Health line; C close it. In Spend the Total, Average and Peak tiles still count
+  units; the Health line is scaled to the full chart height, so it crosses the habit line.
+- `calendar` (merged, #286): **A** keep (recommended); B keep and build the Mac reader for the Meeting suggestion;
+  C remove the Meeting suggestion only; D take both out (a revert of 632d376 alone conflicts with #280's merge;
+  with 6ad60c0 reverted too it applies and analyzes clean; tests not run).
+- `places` (merged, #280): **A** keep (recommended); B never ask for Always (Apple's authorization page: an app with
+  When In Use is not relaunched for visits; untested how few arrive); C take out (`git revert -m 1 6ad60c0` applies
+  and analyzes clean on bfc5f4a, tests not run; it also removes Daylight; raise `insightsViewFormat` to 6).
+- `daylight` (merged, #280): **A** keep (recommended); B take out, by hand unless Places goes too.
+
 Round 17 (`docs/pitch/round-17/index.html`, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, `picks` collection),
-published 2026-11-12, none picked yet. Each option's mock-up and notes are in `docs/pitch/round-17/<call>/`.
+published 2026-11-12, none picked when round 18 went out; superseded by it. Each option's mock-up and notes are in `docs/pitch/round-17/<call>/`.
 Recommendations are Claude's:
 
 - `capture-detail`: what extra detail a log carries. A leave; B silent fields (time zone, written-at, how logged);
