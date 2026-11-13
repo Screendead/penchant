@@ -116,6 +116,41 @@ void main() {
     expect(c.read(placesProvider).store.places.length, 1);
     expect(source.pending, isEmpty);
   });
+  test('re-reading access keeps the places loaded', () async {
+    final FakePlaces source = FakePlaces(PlacesAccess.whenInUse, <PlaceVisit>[
+      _visit(2),
+    ]);
+    final ProviderContainer c = container(source);
+    expect((await settled(c)).store.places.length, 1);
+    final List<bool> seen = <bool>[];
+    c.listen(placesProvider, (_, PlacesState s) => seen.add(s.ready));
+
+    // What the Insights page does on every resume short of Always.
+    c.invalidate(placesAccessProvider);
+    await c.read(placesAccessProvider.future);
+    await settled(c);
+
+    expect(seen, isNot(contains(false)));
+    expect(c.read(placesProvider).store.places.length, 1);
+  });
+
+  test('access granted later starts visits and drains them', () async {
+    final FakePlaces source = FakePlaces(
+      PlacesAccess.notDetermined,
+      <PlaceVisit>[_visit(2)],
+    );
+    final ProviderContainer c = container(source);
+    await settled(c);
+    expect(source.starts, 0);
+
+    expect(await connectPlaces(c), PlacesAccess.always);
+    await c.read(placesAccessProvider.future);
+    await settled(c);
+
+    expect(source.starts, 1);
+    expect(c.read(placesProvider).store.places.length, 1);
+    expect(source.pending, isEmpty);
+  });
 
   test('an import from photos adds photo stays to the sealed file, and '
       'removing them leaves the visits', () async {
@@ -141,7 +176,9 @@ void main() {
     expect(imported.since, DateTime(2025, 6, 1, 19));
     expect(imported.limited, isTrue);
     expect(progress, <(int, int)>[(2, 2)]);
-    final PlaceStore kept = PlaceStore.decode((await files.read(placesFileName))!)!;
+    final PlaceStore kept = PlaceStore.decode(
+      (await files.read(placesFileName))!,
+    )!;
     expect(kept.stays.single.fromPhotos, isTrue);
 
     expect(await removePlacesFromPhotos(c), isTrue);

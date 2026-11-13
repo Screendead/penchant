@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -9,6 +11,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/insights/reminders_source.dart';
+import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
 
@@ -21,14 +24,24 @@ class _FakeReminders implements RemindersSource {
   int asked = 0;
   int reads = 0;
 
+  /// The access the prompt leaves.
+  CalendarAccess answer = CalendarAccess.full;
+
+  /// The prompt's reply never comes, though its answer is taken.
+  bool neverReplies = false;
+
+  /// What the prompt replies, whatever access it left.
+  bool? replies;
+
   @override
   Future<CalendarAccess> access() async => state;
 
   @override
-  Future<bool> requestAccess() async {
+  Future<bool> requestAccess() {
     asked++;
-    state = CalendarAccess.full;
-    return state == CalendarAccess.full;
+    state = answer;
+    if (neverReplies) return Completer<bool>().future;
+    return Future<bool>.value(replies ?? state == CalendarAccess.full);
   }
 
   @override
@@ -119,5 +132,40 @@ void main() {
 
     expect(reminders.reads, reads);
     expect(runs, before);
+  });
+  testWidgets('a prompt whose reply never comes still lets the card go', (
+    WidgetTester tester,
+  ) async {
+    final _FakeReminders reminders = _FakeReminders(
+      CalendarAccess.notDetermined,
+    )..neverReplies = true;
+    await _pump(tester, reminders);
+
+    await tester.tap(find.text(InsightsPage.remindersLabel));
+    await tester.pump();
+    await tester.pump(eventKitPromptTimeout);
+    await tester.pumpAndSettle();
+
+    expect(find.text(InsightsPage.remindersLabel), findsNothing);
+    expect(reminders.reads, greaterThan(0));
+  });
+
+  testWidgets('a prompt that leaves access undecided says so', (
+    WidgetTester tester,
+  ) async {
+    final _FakeReminders reminders =
+        _FakeReminders(CalendarAccess.notDetermined)
+          ..answer = CalendarAccess.notDetermined
+          ..replies = true;
+    await _pump(tester, reminders);
+
+    await tester.tap(find.text(InsightsPage.remindersLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.text(InsightsPage.remindersFailed), findsOneWidget);
+    // The card stays, and a second tap asks again.
+    await tester.tap(find.text(InsightsPage.remindersLabel));
+    await tester.pumpAndSettle();
+    expect(reminders.asked, 2);
   });
 }

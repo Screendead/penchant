@@ -183,7 +183,7 @@ class _RecordNewActivityDialogState
         : <(String, bool)>[
             ('Log ', false),
             (formatCount(typed), true),
-            (' ${vice.unit.nameFor(typed)}', false),
+            (' ${vice.units.nameFor(typed)}', false),
           ];
     return <(String, bool)>[
       ...runs,
@@ -308,7 +308,7 @@ class _RecordNewActivityDialogState
                       const SizedBox(height: 18),
                       AmountFields(
                         quantityController: quantityController,
-                        unit: chosen?.unit ?? Unit.item,
+                        unit: chosen?.units ?? const UnitWords(Unit.item),
                         timeController: timeController,
                         triggers: triggers,
                         onTriggersChanged: (List<String> picked) =>

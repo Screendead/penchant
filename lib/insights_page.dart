@@ -21,6 +21,8 @@ import 'package:tracker/insights/before_use_copy.dart';
 import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/insights/calendar_source.dart';
+import 'package:tracker/insights/experiment.dart';
+import 'package:tracker/insights/experiment_copy.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/hours_after.dart';
@@ -39,7 +41,9 @@ import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
 import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
+import 'package:tracker/experiment_page.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/experiment_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
 import 'package:tracker/insights/photos_source.dart';
@@ -54,6 +58,7 @@ import 'package:tracker/widgets/after_event_card.dart';
 import 'package:tracker/widgets/at_place_card.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
+import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/trigger_amounts_card.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -315,12 +320,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       listen: false,
     );
     setState(() => _connectingCalendar = true);
-    final bool granted = await connectCalendar(container);
+    await connectCalendar(container);
     if (!mounted) return;
     setState(() => _connectingCalendar = false);
-    if (!granted &&
-        await container.read(calendarAccessProvider.future) ==
-            CalendarAccess.notDetermined) {
+    // Granted or not, a prompt that left access undecided gets a word: the
+    // card would otherwise look as if the tap did nothing.
+    if (await container.read(calendarAccessProvider.future) ==
+        CalendarAccess.notDetermined) {
       messenger.showSnackBar(
         const SnackBar(content: Text(InsightsPage.calendarFailed)),
       );
@@ -334,12 +340,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       listen: false,
     );
     setState(() => _connectingReminders = true);
-    final bool granted = await connectReminders(container);
+    await connectReminders(container);
     if (!mounted) return;
     setState(() => _connectingReminders = false);
-    if (!granted &&
-        await container.read(remindersAccessProvider.future) ==
-            CalendarAccess.notDetermined) {
+    // Granted or not, a prompt that left access undecided gets a word: the
+    // card would otherwise look as if the tap did nothing.
+    if (await container.read(remindersAccessProvider.future) ==
+        CalendarAccess.notDetermined) {
       messenger.showSnackBar(
         const SnackBar(content: Text(InsightsPage.remindersFailed)),
       );
@@ -704,6 +711,25 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       else if (view.hoursPending)
         const CardFoot(InsightsPage.hoursAfterPending),
       _LastNightSection(vices: vices, marks: costs.marks),
+      if (ref.watch(experimentResultsProvider)
+          case final List<ExperimentCard> experiments
+          when experiments.isNotEmpty) ...<Widget>[
+        const CardSectionLabel(ExperimentWords.resultHeading),
+        for (final (int i, ExperimentCard e) in experiments.indexed)
+          ExperimentResultCard(
+            plan: e.plan,
+            result: e.result,
+            habit: costs.nameOf(e.plan.habitId),
+            mark: costs.marks[e.plan.habitId] ?? const HabitMark(0),
+            locale: formatLocale,
+            top: i == 0 ? 0 : DialSpace.xs,
+            onRunOn:
+                e.result.clear ||
+                    ref.watch(experimentProvider).value?.active != null
+                ? null
+                : () => ref.read(experimentProvider.notifier).runOn(e.plan),
+          ),
+      ],
       const CardSectionLabel(InsightsPage.costsHeading),
       if (costCards.isEmpty) costs.emptyBox(),
       for (int i = 0; i < shown; i++) costCards[i](i == 0 ? 0 : DialSpace.xs),
@@ -1772,7 +1798,7 @@ class _MessageCard extends StatelessWidget {
   }
 }
 
-class _FindingCard extends StatelessWidget {
+class _FindingCard extends ConsumerWidget {
   const _FindingCard({
     required this.card,
     required this.habit,
@@ -1792,13 +1818,21 @@ class _FindingCard extends StatelessWidget {
   final Recovery? Function(HabitFinding line) recoveryOf;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
     final HabitFinding finding = card.headline;
     final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
     final String? bedtime = bedtimeLine(finding, locale, unit: unit);
     final Recovery? after = recoveryOf(finding);
+    // One experiment at a time, and only once the plan can be kept sealed.
+    final ExperimentStore? experiments = ref.watch(experimentProvider).value;
+    final bool testable =
+        after == null &&
+        canExperiment(finding) &&
+        experiments != null &&
+        experiments.active == null &&
+        ref.watch(experimentFileProvider) != null;
     return DialCard(
       top: top,
       children: <Widget>[
@@ -1888,6 +1922,14 @@ class _FindingCard extends StatelessWidget {
                     null => findingLine(other, locale, unit: unit),
                   },
                   style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
+                ),
+              if (testable)
+                ExperimentButton(
+                  onPressed: () => Navigator.of(context).push(
+                    ExperimentPage.route(
+                      ExperimentPage.plan(finding: finding, habit: habit),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -2076,7 +2118,7 @@ List<YesterdayLine> yesterdayLines(
       (
         mark: marks[v.id],
         text:
-            'Yesterday: ${v.name} ${v.unit.label(used[v.id]!.total)}, '
+            'Yesterday: ${v.name} ${v.units.label(used[v.id]!.total)}, '
             'last at ${formatTime(used[v.id]!.last, alwaysUse24HourFormat: alwaysUse24HourFormat)}',
       ),
   ];

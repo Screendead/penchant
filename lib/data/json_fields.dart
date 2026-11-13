@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracker/data/limits.dart';
 
 // Firestore documents are untyped, and legacy ones predate the rules that now
 // fix field types, so every read falls back to a value instead of throwing.
@@ -33,3 +34,19 @@ Timestamp readTimestamp(Object? value, {required bool pending}) {
   if (value is DateTime) return Timestamp.fromDate(value);
   return pending ? Timestamp.now() : epoch;
 }
+
+// A habit's own unit label, or its singular: null when missing, mistyped, blank or past
+// [maxUnitLabelLength], so the preset's words show instead.
+String? readUnitLabel(Object? value) {
+  if (value is! String) return null;
+  final String label = value.trim();
+  return label.isEmpty || label.length > maxUnitLabelLength ? null : label;
+}
+
+double? readCostPerUnit(Object? value) =>
+    value is num && value.isFinite && value > 0 && value <= maxCostPerUnit
+    ? value.toDouble()
+    : null;
+
+String? readCurrency(Object? value) =>
+    value is String && currencyCodePattern.hasMatch(value) ? value : null;

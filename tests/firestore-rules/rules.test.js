@@ -288,6 +288,35 @@ describe('vices', () => {
       await assertSucceeds(updateDoc(ref, { name: 'x'.repeat(60) }));
     });
 
+    // Mirrors lib/data/limits.dart; the app writes these only sealed.
+    it('bounds a plaintext unit label, its singular, cost per unit and currency', async () => {
+      const ref = doc(asAlice(), 'vices/aliceVice');
+      await assertSucceeds(updateDoc(ref, { unitLabel: 'x'.repeat(20) }));
+      await assertSucceeds(updateDoc(ref, { unitSingular: 'x'.repeat(20) }));
+      await assertSucceeds(updateDoc(ref, { costPerUnit: 2.5 }));
+      await assertSucceeds(updateDoc(ref, { costPerUnit: 100000 }));
+      await assertSucceeds(updateDoc(ref, { currency: 'GBP' }));
+      for (const bad of [
+        { unitLabel: '' },
+        { unitLabel: 'x'.repeat(21) },
+        { unitLabel: 3 },
+        { unitSingular: '' },
+        { unitSingular: 'x'.repeat(21) },
+        { unitSingular: 3 },
+        { costPerUnit: 0 },
+        { costPerUnit: -1 },
+        { costPerUnit: 100001 },
+        { costPerUnit: '2' },
+        { currency: 'gbp' },
+        { currency: 'GBPX' },
+        { currency: 'GB' },
+      ]) {
+        await assertFails(updateDoc(ref, bad));
+      }
+      await assertFails(updateDoc(ref, { unitLabel: deleteField() }));
+      await assertFails(updateDoc(ref, { unitSingular: deleteField() }));
+    });
+
     it('denies renaming to more than 60 characters', async () => {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), { name: 'x'.repeat(61) }));
       await assertFails(
@@ -943,6 +972,55 @@ describe('sealing plaintext on first launch', () => {
     await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceLegacyVice'), { name: 'Tea' }));
   });
 
+  // lib/writes/tracker_writes.dart's sealed update deletes every content
+  // field, the unit label and price included, whether or not they exist.
+  it('allows a sealed update that also deletes an absent unit label and price', async () => {
+    await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice()));
+    await assertSucceeds(
+      updateDoc(
+        doc(asAlice(), 'vices/aliceVice'),
+        sealVice({
+          unitLabel: deleteField(),
+          unitSingular: deleteField(),
+          costPerUnit: deleteField(),
+          currency: deleteField(),
+        }),
+      ),
+    );
+  });
+
+  it('denies a unit label or price in plaintext beside the envelope', async () => {
+    await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice()));
+    for (const extra of [{ unitLabel: 'cups' }, { unitSingular: 'cup' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
+      await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), extra));
+    }
+  });
+
+  it('converts a vice holding a plaintext unit label and price', async () => {
+    await testEnv.withSecurityRulesDisabled((context) =>
+      setDoc(doc(context.firestore(), 'vices/alicePriced'), {
+        ...vice({ createdAt }),
+        unitLabel: 'cups',
+        unitSingular: 'cup',
+        costPerUnit: 3.2,
+        currency: 'GBP',
+      }),
+    );
+    const ref = doc(asAlice(), 'vices/alicePriced');
+    await assertFails(updateDoc(ref, sealVice()));
+    await assertSucceeds(
+      updateDoc(
+        ref,
+        sealVice({
+          unitLabel: deleteField(),
+          unitSingular: deleteField(),
+          costPerUnit: deleteField(),
+          currency: deleteField(),
+        }),
+      ),
+    );
+  });
+
   it('denies sealing that keeps any plaintext', async () => {
     await assertFails(
       updateDoc(doc(asAlice(), 'vices/aliceVice'), { sealed: sealed(), unit: deleteField() }),
@@ -1031,6 +1109,12 @@ describe('sealed documents', () => {
     it('refuses a sealed vice that also carries a plaintext name or unit', async () => {
       await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ name: 'Coffee' })));
       await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice({ unit: 'drink' })));
+    });
+
+    it('refuses a sealed vice that carries a plaintext unit label or price', async () => {
+      for (const extra of [{ unitLabel: 'cups' }, { unitSingular: 'cup' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
+        await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice(extra)));
+      }
     });
 
     it('refuses a sealed vice without its structural fields', async () => {

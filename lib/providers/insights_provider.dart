@@ -510,19 +510,23 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         : ref
               .watch(calendarEventsProvider((from: firstDay, today: today)))
               .value;
-    if (events == null) return waiting();
-    // Likewise for Reminders, which answer at once without access.
+    // Likewise for Reminders, which answer at once without access. Every
+    // source is watched before any is waited for, so their reads overlap
+    // rather than each timing out after the last.
     final List<DailyOutcome>? reminders =
         ref.watch(remindersSourceProvider) == null
         ? noReminderOutcomes
         : ref.watch(reminderOutcomesProvider(today)).value;
-    if (reminders == null) return waiting();
     final PlacesState places = ref.watch(placesProvider);
-    if (!places.ready) return waiting();
     final AsyncValue<RoughLocation?> location = ref.watch(
       roughLocationProvider,
     );
-    if (location.isLoading) return waiting();
+    if (events == null ||
+        reminders == null ||
+        !places.ready ||
+        location.isLoading) {
+      return waiting();
+    }
     InsightsResult? report(Map<String, List<HealthSample>> read) {
       final EngineInputs inputs = EngineInputs(
         activities: journal,

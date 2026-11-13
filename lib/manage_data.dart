@@ -215,7 +215,7 @@ class _ManageDataState extends ConsumerState<ManageData> {
                         // A re-run keeps the last count until the new one
                         // arrives.
                         final String text = <String>[
-                          vice.unit.nameFor(2),
+                          vice.units.nameFor(2),
                           switch (count.value) {
                             final ActivityCount value => ManageData.countText(
                               value,

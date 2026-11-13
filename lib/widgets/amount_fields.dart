@@ -38,7 +38,7 @@ class AmountFields extends ConsumerWidget {
       typical != null && typical >= 10 ? 5 : 1;
 
   final TextEditingController quantityController;
-  final Unit unit;
+  final UnitWords unit;
   final EntryTimeController timeController;
   // The id of the entry being edited, which the dial leaves off its faded
   // entries.

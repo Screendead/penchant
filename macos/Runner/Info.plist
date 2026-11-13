@@ -41,6 +41,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Penchant reads when your calendar events start and end and how many people each lists, to suggest Meeting when you log just after one. It never reads or keeps their titles or who is invited, never writes to your calendar, and nothing leaves this Mac.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Penchant reads when your calendar events start and end and how many people each lists, to suggest Meeting when you log just after one. It never reads or keeps their titles or who is invited, never writes to your calendar, and nothing leaves this Mac.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>

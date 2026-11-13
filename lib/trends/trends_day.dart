@@ -53,7 +53,7 @@ class TrendsDay extends ConsumerWidget {
 
   static String subtitle(int entries, Vice vice, num total) =>
       '${formatCount(entries)} ${pluralWord(entries, one: 'entry', other: 'entries')}'
-      ' · ${vice.name} ${vice.unit.label(total)}';
+      ' · ${vice.name} ${vice.units.label(total)}';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

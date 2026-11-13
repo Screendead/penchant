@@ -98,7 +98,12 @@ class DayDial extends ConsumerStatefulWidget {
     this.storedTypicals = const <String, double>{},
     this.onBeadTap,
     this.onSwipe,
+    this.shadeFromMinute,
   });
+
+  /// Shades the face from this minute of the day to midnight: the evening a
+  /// running experiment's "none" day covers. The strip above says so.
+  final int? shadeFromMinute;
 
   final DateTime day;
   final DateTime today;
@@ -129,7 +134,7 @@ class DayDial extends ConsumerStatefulWidget {
         : formatDay(day);
     final String parts = [
       for (int i = 0; i < habits.length; i++)
-        '${habits[i].name} ${habits[i].unit.label(totals[i])}',
+        '${habits[i].name} ${habits[i].units.label(totals[i])}',
     ].join(', ');
     String time(DateTime t) =>
         formatTime(t, alwaysUse24HourFormat: alwaysUse24HourFormat);
@@ -143,7 +148,7 @@ class DayDial extends ConsumerStatefulWidget {
   }
 
   static String beadLabel(DialEntry entry, {required bool alwaysUse24Hour}) =>
-      '${entry.vice.name}, ${entry.vice.unit.label(entry.quantity)} at '
+      '${entry.vice.name}, ${entry.vice.units.label(entry.quantity)} at '
       '${formatTime(entry.at, alwaysUse24HourFormat: alwaysUse24Hour)}'
       '${entry.pending ? ', not yet synced' : ''}';
 
@@ -254,7 +259,7 @@ class DayDial extends ConsumerStatefulWidget {
     );
     final String habits = <String>[
       for (final s in arcShares(entries))
-        '${s.vice.name} ${s.vice.unit.label(s.total)}',
+        '${s.vice.name} ${s.vice.units.label(s.total)}',
     ].join(', ');
     final int pending = entries.where((DialEntry e) => e.pending).length;
     return '${formatCount(entries.length)} entries from ${time(hour)} to '
@@ -887,6 +892,7 @@ class _DayDialState extends ConsumerState<DayDial>
           child: CustomPaint(
             size: size,
             painter: DialFacePainter(
+              shadeFromMinute: widget.shadeFromMinute,
               colors: colors,
               surface: scheme.surfaceContainerLow,
               numeralStyle: type.dialNumeral,

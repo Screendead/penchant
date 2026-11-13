@@ -15,6 +15,22 @@ ViceActivity _at(int daysAgo, int quantity, {int hour = 12}) => fakeActivity(
 );
 
 void main() {
+  group('lastSevenDaysTotal', () {
+    test('sums the last 7 day buckets, today included', () {
+      final UsageRange range = usageRange(_today, 14, 1);
+      final List<double> totals = List<double>.generate(14, (int i) => i + 1);
+      expect(
+        lastSevenDaysTotal(range, totals),
+        8.0 + 9 + 10 + 11 + 12 + 13 + 14,
+      );
+    });
+
+    test('takes the last week bucket, which ends today', () {
+      final UsageRange range = usageRange(_today, 28, 7);
+      expect(lastSevenDaysTotal(range, <double>[1, 2, 3, 4]), 4);
+    });
+  });
+
   group('usageRange', () {
     test('daily ranges are one bucket a day, ending today', () {
       for (final int days in const [7, 14, 30, 90, 180, 365]) {

@@ -31,6 +31,15 @@ extension UsageRangeDays on UsageRange {
   DateTime get end => addDays(start, days);
 
   DateTime bucketStart(int index) => addDays(start, index * stepDays);
+
+  // The bucket holding the local day of [time], or null outside the range.
+  int? bucketOf(DateTime time) {
+    final int offset = daysBetween(start, time);
+    if (offset < 0 || offset >= days) {
+      return null;
+    }
+    return bucketCount - 1 - (days - 1 - offset) ~/ stepDays;
+  }
 }
 
 // The total quantity recorded in each bucket of [range]. Activities outside
@@ -40,12 +49,10 @@ List<double> bucketTotals(UsageRange range, Iterable<ViceActivity> activities) {
   final List<double> totals = List<double>.filled(bucketCount, 0);
 
   for (final ViceActivity activity in activities) {
-    final int offset = daysBetween(range.start, activity.createdAt.toDate());
-    if (offset < 0 || offset >= range.days) {
-      continue;
+    final int? bucket = range.bucketOf(activity.createdAt.toDate());
+    if (bucket != null) {
+      totals[bucket] += activity.measure;
     }
-    final int daysAgo = range.days - 1 - offset;
-    totals[bucketCount - 1 - daysAgo ~/ range.stepDays] += activity.measure;
   }
 
   return totals;
@@ -99,6 +106,18 @@ UsageStats usageStats(UsageRange range, List<double> totals) {
     average: per == 0 ? 0 : total / per,
     peakIndex: peakIndex,
   );
+}
+
+// The total of the range's last 7 days, today included: the last 7 day
+// buckets, or the last week bucket, which ends today. Null for a range
+// shorter than a week.
+double? lastSevenDaysTotal(UsageRange range, List<double> totals) {
+  if (range.days < 7 || totals.isEmpty) {
+    return null;
+  }
+  return range.stepDays == 1
+      ? totals.skip(totals.length - 7).fold<double>(0, (a, b) => a + b)
+      : totals.last;
 }
 
 // The most days the hour-of-day profile looks back over.

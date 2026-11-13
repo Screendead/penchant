@@ -1,17 +1,13 @@
-# Show the journal's trends: Health under the habit lines, triggers and spend
+# Decide which trend views are Pro
 
 **Priority:** insights (1.0 free, deeper views Pro)
 
 ## What
 
-Grow the Trends sheet (overhaul step 1c, which replaced the Graph tab):
-
-- **Shipped in the Trends sheet, free:** each vice's daily and weekly totals over a range with a moving average, its
-  stats, an hour-of-day ring, an hour-of-day × weekday grid, and up to three other vices overlaid on one time axis
-  (Compare). Built free per Jack's 2026-11-08 "build it free for me, we can paywall later"; the overlays are the Pro
-  candidate if a paywall comes.
-- **Still to come (Pro in 1.1):** Health outcomes drawn under the vice lines (for example nightly HRV under evening
-  drinks), trigger breakdowns over time, and spend.
+Every trend view is built free in the Trends sheet: daily and weekly totals with a moving average, stats, an
+hour-of-day ring, an average week, Compare (up to three other habits), spend for a priced habit, a Health measure under
+the habit line (iOS), and tagged entries by trigger area over time. Built free per Jack's 2026-11-08 "build it free
+for me, we can paywall later". Left is only which of them a paywall would hold back.
 
 ## Why
 
@@ -23,7 +19,7 @@ Grow the Trends sheet (overhaul step 1c, which replaced the Graph tab):
 
 ## Options
 
-- **A.** As above: descriptive views free, overlays and Health Pro.
+- **A.** Descriptive views free; Compare, Health under the line and trigger areas Pro.
 - **B.** All trend views free; only engine-backed insights Pro.
 - **C.** All trend views Pro beyond 30 days.
 
@@ -32,7 +28,7 @@ Grow the Trends sheet (overhaul step 1c, which replaced the Graph tab):
 Claude's recommendation: **A.** A journal that hides your own history looks hostile (C17's "free 1.0" sets that
 expectation), but overlays with Health are the visual teaser for the engine's cards.
 
-**Effort:** M
+**Effort:** S (a gate on built views)
 
 **Revenue impact:** Medium: the free views drive retention; the overlays sell Pro.
 

@@ -182,9 +182,13 @@ The list this run works from, sorted before any building. Tick or strike here as
      give the calendar-day refusal (`calendarDayRefusal`), ranked by refusal, then after the hour-after-event
      comparison and before triggers. Calendar-day and trigger comparisons now count in each other's family. Saved
      report format 4. Not proven on a device: unit and widget tests only.
-6. Units and cost per unit (`ideas/monetisation/units-and-cost-per-unit.md`, option B, Needs Jack: no; C18 covers
-   the fields; they join the sealed content fields), then the rest of trend views (Health under the habit lines,
-   trigger breakdowns over time, spend).
+6. ~~Units and cost per unit~~ (`feat/units-and-cost`): a habit's own unit label, cost per unit and currency, sealed;
+   spend for the last 7 days and the range in Trends. Not proven on a device; an older build editing a habit drops
+   its label and price. Left: per-entry cost.
+   ~~The rest of trend views~~ (`feat/trends-rest`, stacked on `feat/units-and-cost`): a Count/Spend switch on the
+   Trends chart for a priced habit, a Health measure under the habit line (iOS, behind a Health chip), and What set
+   it off (tagged entries by trigger area per bucket). Not proven on a device: Health under the line is tested only
+   against a faked Health read, never a real iPhone's.
 7. [x] Reduce motion "Full" over framework animations: built (`PenchantBinding`, `lib/design/motion_binding.dart`;
    widget-tested on a modal sheet both ways). Not proven on a device with iOS or macOS Reduce Motion on.
 8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
@@ -1066,8 +1070,9 @@ mock-up before it is called done:
 
 Also from Jack on 2026-11-13: the Mac background sync check passed (a menu-bar log with Penchant quit reached the
 iPhone) but Penchant itself opened behind the other apps, which he questions; #252 stays a draft until that is
-explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Claude may
-read the functions' logs with `gcloud logging read` (read-only; nothing else in production): six nightly
+explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Jack let Claude read
+the clean-up job's logs with `gcloud` once, then made it standing (the rule and his words are in `CLAUDE.md`, Hard
+rules): six nightly
 `dailyOrphanCleanup` runs, 2026-11-08 to 11-13, each scanned 1 owner, found 0 missing, 0 candidates, no errors, so
 the delete path has never had anything to act on. Reported by Jack on build 1500: Insights was slow after turning
 on Places and Reminders, and Connect Reminders stays shown and dead after access is granted
