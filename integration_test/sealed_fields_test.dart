@@ -80,14 +80,21 @@ void main() {
       'viceID',
       'createdAt',
     });
+    final Map<String, Object?> entry = await sealer.open(
+      (activities.single.data()[sealedField] as Blob).bytes,
+      context: sealContext('activities', activities.single.id),
+    );
+    expect(entry['triggers'], <Object?>['work/meeting']);
+    expect(entry['loggedVia'], 'sheet');
+    expect(entry['writtenAt'], isA<int>());
     expect(
-      await sealer.open(
-        (activities.single.data()[sealedField] as Blob).bytes,
-        context: sealContext('activities', activities.single.id),
-      ),
-      <String, Object?>{
-        'triggers': <Object?>['work/meeting'],
-      },
+      entry.keys.toSet().difference(<String>{
+        'triggers',
+        'loggedVia',
+        'writtenAt',
+        'zone',
+      }),
+      isEmpty,
     );
     expect(
       activities.single.data()['viceID'],
