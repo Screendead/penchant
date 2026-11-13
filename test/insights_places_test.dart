@@ -163,6 +163,6 @@ void main() {
     )) {
       expect(find.text('Place $id'), findsOneWidget);
     }
-    expect(find.text('Place ${placeMaxPlaces + 1}'), findsNothing);
+    expect(find.text('Place ${placeMaxPlaces + 1}'), findsOneWidget);
   });
 }

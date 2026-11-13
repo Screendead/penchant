@@ -167,7 +167,8 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String placesBody =
       'See which habits you log more at home, at work or elsewhere. Penchant '
       'notes the places you spend time, keeps them encrypted on this iPhone '
-      'and sends none of it anywhere. Allow location Always so visits are '
+      'and sends none of it anywhere unless you ask to see a place on a map. '
+      'Allow location Always so visits are '
       'noted while Penchant is closed.';
   static const String placesTitle = 'Places';
   static const String placesWhileUsing = 'While using';
@@ -1621,7 +1622,7 @@ class _PlacesCard extends StatelessWidget {
         since == null ||
         DateTime.now().difference(since) < InsightsPage.placesEarlyFor;
     // Every place a finding can name comes first, in the engine's order,
-    // then the rest by all time spent, photo stays included.
+    // then placeMaxPlaces of the rest by all time spent, photo stays included.
     final List<int> judged = judgedPlaces(
       store.stays,
       through: addDays(startOfDay(DateTime.now()), -1),
@@ -1685,7 +1686,7 @@ class _PlacesCard extends StatelessWidget {
           ),
         },
         if (access == PlacesAccess.always || access == PlacesAccess.whenInUse)
-          for (final Place p in shown.take(placeMaxPlaces))
+          for (final Place p in shown.take(judged.length + placeMaxPlaces))
             CardRow(
               label: p.label,
               value: Text(switch (p.visits) {
