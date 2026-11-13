@@ -40,6 +40,8 @@ import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/design/motion_binding.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
+import 'package:tracker/app_lock/app_lock.dart';
+import 'package:tracker/app_lock/app_lock_gate.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
 import 'package:tracker/crypto/sealed_files.dart';
@@ -73,13 +75,23 @@ Future<void> backgroundFlushMain() async {
 // main() without the global error handlers, which flutter_test owns.
 void startApp() {
   unawaited(DeviceFiles().deleteLegacy());
-  runApp(
-    ProviderScope(
-      observers: const [ReportProviderErrors()],
-      overrides: keyServiceOverrides,
-      // Every provider reaches Firebase when first read, and nothing reads one
-      // until MyApp builds, after Firebase has started.
-      child: const Bootstrap(initialize: initializeFirebase, child: MyApp()),
+  unawaited(
+    readAppLockChoice().then(
+      (bool locked) => runApp(
+        ProviderScope(
+          observers: const [ReportProviderErrors()],
+          overrides: [
+            ...keyServiceOverrides,
+            appLockSavedProvider.overrideWithValue(locked),
+          ],
+          // Every provider reaches Firebase when first read, and nothing reads
+          // one until MyApp builds, after Firebase has started.
+          child: const Bootstrap(
+            initialize: initializeFirebase,
+            child: MyApp(),
+          ),
+        ),
+      ),
     ),
   );
 }
@@ -150,10 +162,12 @@ class _MyAppState extends ConsumerState<MyApp> {
         onGenerateRoute: generateRoute,
         builder: (BuildContext context, Widget? child) => KeyboardInsetClamp(
           child: ReduceMotionScope(
-            child: AppMenuBar(
-              child: rejectedWritesBuilder(
-                context,
-                RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+            child: AppLockGate(
+              child: AppMenuBar(
+                child: rejectedWritesBuilder(
+                  context,
+                  RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+                ),
               ),
             ),
           ),

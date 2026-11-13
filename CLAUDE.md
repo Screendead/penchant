@@ -280,7 +280,7 @@ Days).
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
 collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
-`unitLabel`, `costPerUnit`, `currency`) and
+`unitLabel`, `unitSingular`, `costPerUnit`, `currency`) and
 `activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `triggers`); a third, `summaries`,
 is server-written (Server side, below).
 
@@ -318,8 +318,9 @@ snapshot is cached and on a second device can predate a category picked elsewher
 snapshot or launch retries; nothing queues. An archived vice leaves recording and Today's dial, tallies and Log fan;
 Manage Data still opens its history and Trends lists it last (Today and Trends, below).
 
-**Units and price.** A vice may carry its own unit label (`unitLabel`, 1 to 20 UTF-16 code units, used as typed
-whatever the count, in place of the `Unit` preset's words: `Vice.units`, a `UnitWords`), a `costPerUnit` (above 0, at
+**Units and price.** A vice may carry its own unit label (`unitLabel`, 1 to 20 UTF-16 code units, in place of the
+`Unit` preset's words: `Vice.units`, a `UnitWords`) with its form for one (`unitSingular`, same bounds, ignored
+without a label; a count of 1 and "per" use it, else the label serves for both), a `costPerUnit` (above 0, at
 most 100,000) and its ISO 4217 `currency`, all optional and sealed only: this build never writes them in plaintext, so
 the habit form refuses a label or price change while no journal key is loaded. `lib/data/limits.dart` bounds them
 (the rules repeat the bounds for a plaintext write) and `json_fields.dart` reads a missing or out-of-range one as null.
@@ -330,7 +331,7 @@ edit of the habit there drops the label and price (archiving does not reseal); n
 spend. No per-entry cost yet.
 
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
-`costPerUnit`, `currency`) in one `sealed` bytes
+`unitSingular`, `costPerUnit`, `currency`) in one `sealed` bytes
 field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphertext | tag` around JSON padded to
 64/256/1024/4096 bytes), the document path as associated data, so only the user's key opens it, only on that document.
 An activity seals only `triggers`; `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext (Jack,
@@ -663,6 +664,17 @@ A habit's colour is its creation order, oldest first, archived included (equal `
 `habitMarks(vices)` (`lib/design/habit_mark.dart`) maps each vice id to a `HabitMark`: `slot` picks `data1`-`data5`;
 `style` is filled for habits 1-5, a ring for 6-10, a dotted ring for 11-15, then repeats. Pass `viceListProvider`'s
 full list, not the unarchived one, or archiving recolours later habits. Computed on device; stores nothing.
+
+**App lock** (`lib/app_lock/`, off by default; built for a pitch, `r2-applock`). Settings > App lock turns on only
+after one successful Face ID, Touch ID or passcode check; the choice is per device in shared_preferences (`appLock`),
+read by `startApp` before `runApp` (`appLockSavedProvider`, false in tests) so a locked journal never flashes.
+`AppLockGate`, in `MaterialApp.builder` above the menu bar, the rejected-writes banner and `RecoveryKeyGate`, keeps
+the app mounted but covered (no semantics, focus, pointer or tickers) while locked or obscured. It locks at launch and on a return after `AppLock.grace` (1 minute) hidden or paused; inactive alone
+(the system's own auth sheet) starts no clock. On iOS inactive obscures with a plain cover for the app switcher; the
+Mac does not (it turns inactive on every focus change). The lock screen asks once by itself, then waits for its button.
+A device with no passcode left opens and turns the lock off. The macOS Log menu drops its habits while covered. Native
+side: `DeviceAuth` (LocalAuthentication's device-owner policy) in `ios/Runner/AppDelegate.swift` and
+`macos/Runner/MainFlutterWindow.swift`, channel `com.screendead.penchant/device_auth`; no plugin.
 
 **Native auth fields on macOS.** Flutter's macOS text input has no real AutoFill: the engine's
 `shell/platform/darwin/macos/framework/Source/FlutterTextInputPlugin.mm` only sets an `NSTextContentType` on a

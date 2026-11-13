@@ -289,9 +289,10 @@ describe('vices', () => {
     });
 
     // Mirrors lib/data/limits.dart; the app writes these only sealed.
-    it('bounds a plaintext unit label, cost per unit and currency', async () => {
+    it('bounds a plaintext unit label, its singular, cost per unit and currency', async () => {
       const ref = doc(asAlice(), 'vices/aliceVice');
       await assertSucceeds(updateDoc(ref, { unitLabel: 'x'.repeat(20) }));
+      await assertSucceeds(updateDoc(ref, { unitSingular: 'x'.repeat(20) }));
       await assertSucceeds(updateDoc(ref, { costPerUnit: 2.5 }));
       await assertSucceeds(updateDoc(ref, { costPerUnit: 100000 }));
       await assertSucceeds(updateDoc(ref, { currency: 'GBP' }));
@@ -299,6 +300,9 @@ describe('vices', () => {
         { unitLabel: '' },
         { unitLabel: 'x'.repeat(21) },
         { unitLabel: 3 },
+        { unitSingular: '' },
+        { unitSingular: 'x'.repeat(21) },
+        { unitSingular: 3 },
         { costPerUnit: 0 },
         { costPerUnit: -1 },
         { costPerUnit: 100001 },
@@ -310,6 +314,7 @@ describe('vices', () => {
         await assertFails(updateDoc(ref, bad));
       }
       await assertFails(updateDoc(ref, { unitLabel: deleteField() }));
+      await assertFails(updateDoc(ref, { unitSingular: deleteField() }));
     });
 
     it('denies renaming to more than 60 characters', async () => {
@@ -974,14 +979,19 @@ describe('sealing plaintext on first launch', () => {
     await assertSucceeds(
       updateDoc(
         doc(asAlice(), 'vices/aliceVice'),
-        sealVice({ unitLabel: deleteField(), costPerUnit: deleteField(), currency: deleteField() }),
+        sealVice({
+          unitLabel: deleteField(),
+          unitSingular: deleteField(),
+          costPerUnit: deleteField(),
+          currency: deleteField(),
+        }),
       ),
     );
   });
 
   it('denies a unit label or price in plaintext beside the envelope', async () => {
     await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceVice'), sealVice()));
-    for (const extra of [{ unitLabel: 'cups' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
+    for (const extra of [{ unitLabel: 'cups' }, { unitSingular: 'cup' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
       await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), extra));
     }
   });
@@ -991,6 +1001,7 @@ describe('sealing plaintext on first launch', () => {
       setDoc(doc(context.firestore(), 'vices/alicePriced'), {
         ...vice({ createdAt }),
         unitLabel: 'cups',
+        unitSingular: 'cup',
         costPerUnit: 3.2,
         currency: 'GBP',
       }),
@@ -1000,7 +1011,12 @@ describe('sealing plaintext on first launch', () => {
     await assertSucceeds(
       updateDoc(
         ref,
-        sealVice({ unitLabel: deleteField(), costPerUnit: deleteField(), currency: deleteField() }),
+        sealVice({
+          unitLabel: deleteField(),
+          unitSingular: deleteField(),
+          costPerUnit: deleteField(),
+          currency: deleteField(),
+        }),
       ),
     );
   });
@@ -1096,7 +1112,7 @@ describe('sealed documents', () => {
     });
 
     it('refuses a sealed vice that carries a plaintext unit label or price', async () => {
-      for (const extra of [{ unitLabel: 'cups' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
+      for (const extra of [{ unitLabel: 'cups' }, { unitSingular: 'cup' }, { costPerUnit: 4.5 }, { currency: 'GBP' }]) {
         await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice(extra)));
       }
     });

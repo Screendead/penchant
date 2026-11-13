@@ -198,7 +198,8 @@ The list this run works from, sorted before any building. Tick or strike here as
 
 - Capture detail: which of the granular-logging fields a log can carry and the detail sheet after a one-tap log
   (`r2-data-model` B decided the mechanism, not the fields or the sheet).
-- App lock and discreet mode now, or still parked with the store work (`r2-applock` decided free, not when).
+- App lock and discreet mode now, or still parked with the store work (`r2-applock` decided free, not when). App lock
+  built as an option (draft PR `feat/app-lock`, stills in `docs/pitch/round-17/app-lock/`); discreet mode not built.
 - Optional goals and limits: timing was only Claude's "after 1.1".
 - Self-experiments (randomised n-of-1 trials of a finding): whether to build.
 - Weather from an outside service that would see a rough location, or wait for WeatherKit and a paid team.
@@ -207,13 +208,14 @@ The list this run works from, sorted before any building. Tick or strike here as
   2026-11-09" (third run) disagrees with `CLAUDE.md`'s "the 4 production indexes ... stay"; only the console or
   such a check settles it.
 - No "What was going on?" prompt after a Siri or Shortcuts log (Jack ruled only on Control Centre).
-- Claude's as-built defaults from the fourth run (list above) were never put to Jack; the page lists them once.
+- Claude's as-built defaults from the fourth run (list below) were never put to Jack and are not on round 17's
+  page, which lists only this run's.
 
 **State at the end of the run (2026-11-12 night):** merged #281 (why-not lines, trigger analysis, steps waking),
 #284 (Reduce motion over framework animations), #286 (calendar days, Meeting suggestion), #280 (Places, Daylight;
 Focus, Music and Journaling Suggestions need a paid team). The macOS calendar channel was not built. Held for round
 17: #282, #287, #283, #285. Refused to Claude here, so Jack's: closing issue #9, deleting the spare Flutter clones
-in `~/development/tracker-tools` (a hook leaves disk clean-up to claude-reaper). iPhone: `master` at #280.
+in `~/development/tracker-tools` (a hook leaves disk clean-up to claude-reaper). iPhone: `master` at #280 (6ad60c0, build 1500), installed 2026-11-12; the Mac stays on 1422 for #252.
 
 **Blocked or Jack's:** #252 waits on Jack saying the menu-bar log reached the iPhone
 (`~/Library/Containers/com.screendead.penchant.sync` now exists, created 2026-11-12 18:11, so PenchantSync has
@@ -1046,28 +1048,37 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 17 (`docs/pitch/round-17/index.html`, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, `picks` collection),
-published 2026-11-12, none picked yet. Each option's mock-up and notes are in `docs/pitch/round-17/<call>/`.
-Recommendations are Claude's:
+Nothing is waiting. Round 18 (`docs/pitch/round-18/index.html`,
+https://claude.ai/artifact/9cDnMB8RnA2SS1pB21o4Ah, `picks`), all eleven picked by Jack on 2026-11-13 (round 17's
+page, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, was superseded by it and holds no picks). Mock-ups and
+notes for the four product calls are in `docs/pitch/round-17/<call>/`; the built result is compared with the picked
+mock-up before it is called done:
 
-- `capture-detail`: what extra detail a log carries. A leave; B silent fields (time zone, written-at, how logged);
-  **C** B plus an urge row and a note on the existing sheets (recommended); D a full detail sheet after a one-tap log.
-- `goals`: an optional limit per habit. A never; **B** a quiet line per habit (recommended); C B plus Insights
-  offering its line.
-- `self-experiments`: randomised trials of a finding. A no; B from a finding card, in the app only; **C** B plus a
-  daily notification (recommended).
-- `weather`: **A** none, daylight only (recommended); B Open-Meteo, opt-in, whole-degree location; C wait for a paid
-  team.
-- `app-lock`: draft #283 is built and green. **A** merge (recommended); B leave parked; C drop.
-- `units-cost`: #282 (unit label, cost per unit, currency on the habit; rules change) and #287 (Trends: spend,
-  Health under the line, trigger areas over time; stacked on #282) are green and held unmerged, because installing
-  them is a shape change and the Mac's older build drops the new fields when it edits a habit. **A** merge and
-  install on the iPhone now (recommended); B hold until the Mac can update too. Both need `master` merged in first.
-- `index-check`: draft #285, a weekly read-only job listing production's indexes against the file. **A** merge
-  (recommended); B leave.
+- `units-cost` A: merge #282 and install on the iPhone now (a singular form for an own unit label goes in first).
+- `trends-views` A: merge #287 (spend, the Health line, trigger bars) once #282 is in.
+- `calendar` B: keep the busy-day cards and the Meeting suggestion; build the Mac calendar reader for the
+  suggestion (`feat/mac-calendar-suggestion`).
+- `places` A, `daylight` A: keep as built.
+- `capture-detail` C: silent fields (time zone, written-at, how logged) plus an urge row (1 to 5) and a one-line
+  note on the amount sheet, editor and tag picker (`feat/capture-detail`).
+- `goals` C: an optional line per habit, per day or week, and Insights' "where's the line" card offers to set it
+  (starts once #282 is merged, since both add habit fields).
+- `self-experiments` C: an experiment from a finding card, with a daily notification (`feat/self-experiments`).
+- `weather` C: wait for a paid Apple team; nothing built.
+- `app-lock` A: #283 merged 2026-11-13 (off by default; not yet run on a device).
+- `index-check` B: leave; #285 closed, branch `chore/index-drift-check` kept.
 
-Not put as calls, listed on the page as defaults: the thresholds of the trigger, places and calendar-day
-comparisons, waking from steps, no "after sunset" finding, no prompt after a Siri or Shortcuts log.
+Also from Jack on 2026-11-13: the Mac background sync check passed (a menu-bar log with Penchant quit reached the
+iPhone) but Penchant itself opened behind the other apps, which he questions; #252 stays a draft until that is
+explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Claude may
+read the functions' logs with `gcloud logging read` (read-only; nothing else in production): six nightly
+`dailyOrphanCleanup` runs, 2026-11-08 to 11-13, each scanned 1 owner, found 0 missing, 0 candidates, no errors, so
+the delete path has never had anything to act on. Reported by Jack on build 1500: Insights was slow after turning
+on Places and Reminders, and Connect Reminders stays shown and dead after access is granted
+(`fix/insights-stall-reminders`).
+
+A backlog file's "Needs Jack: no" is Claude's recommendation, never a decision: new features from one stay
+unmerged until Jack picks.
 
 Round 16 (`docs/pitch/round-16/index.html`, https://claude.ai/artifact/DkKHDabq8g6XaDUmB5XcE4, `picks`), all
 picked by Jack on 2026-11-12: `mood-floor` A (a State of Mind change is reported only when at least half the

@@ -350,6 +350,35 @@ void main() {
       }
     });
 
+    testWidgets('words one of an own unit, and its price, singular', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester);
+      final Vice water = Vice(
+        id: 'water',
+        name: 'Water',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        archived: false,
+        unitLabel: 'glasses',
+        unitSingular: 'glass',
+        costPerUnit: 2.5,
+        currency: 'GBP',
+      );
+      await _pump(
+        tester,
+        <ViceActivity>[_daysAgo(3, 1, vice: water)],
+        vices: <Vice>[water],
+      );
+
+      expect(inTrends(find.text('£2.50 per glass')), findsOneWidget);
+      expect(
+        inTrends(find.text('1 glass', findRichText: true)),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('states the total, the average per day and the peak', (
       WidgetTester tester,
     ) async {

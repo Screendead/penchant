@@ -114,15 +114,16 @@ service cloud.firestore {
         && validSealed(request.resource.data.sealed);
 
       allow update: if ownsExisting()
-        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'unitLabel', 'costPerUnit', 'currency', 'sealed'])
+        && changedKeys().hasOnly(['name', 'unit', 'archived', 'category', 'unitLabel', 'unitSingular', 'costPerUnit', 'currency', 'sealed'])
         && changedContent('name', validName(request.resource.data.get('name', null)))
         && changedContent('unit', validUnit(request.resource.data.get('unit', null)))
         && changedContent('category', validCategory(request.resource.data.get('category', null)))
         && changedContent('unitLabel', validUnitLabel(request.resource.data.get('unitLabel', null)))
+        && changedContent('unitSingular', validUnitLabel(request.resource.data.get('unitSingular', null)))
         && changedContent('costPerUnit', validCostPerUnit(request.resource.data.get('costPerUnit', null)))
         && changedContent('currency', validCurrency(request.resource.data.get('currency', null)))
         && (!('sealed' in changedKeys()) || validSealed(request.resource.data.get('sealed', null)))
-        && sealedAlone(request.resource.data, ['name', 'unit', 'category', 'unitLabel', 'costPerUnit', 'currency'])
+        && sealedAlone(request.resource.data, ['name', 'unit', 'category', 'unitLabel', 'unitSingular', 'costPerUnit', 'currency'])
         && (!('archived' in changedKeys()) || request.resource.data.archived is bool);
     }
 

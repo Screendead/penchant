@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -88,6 +89,12 @@ void main() {
       expect(unitLabelError('cups'), isNull);
       expect(unitLabelError('x' * maxUnitLabelLength), isNull);
       expect(unitLabelError('x' * 21), 'Use 20 characters or fewer');
+    });
+
+    test('its singular is bounded the same way', () {
+      expect(maxUnitLabelLength, 20);
+      expect(readUnitLabel(' cup '), 'cup');
+      expect(readUnitLabel('x' * 21), isNull);
     });
 
     test('a cost is optional, above 0 and at most 100,000', () {

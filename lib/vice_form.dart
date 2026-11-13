@@ -25,6 +25,9 @@ class ViceForm extends ConsumerStatefulWidget {
       'name and unit cannot be changed here.';
 
   static const Key unitLabelKey = ValueKey<String>('vice-form-unit-label');
+  static const Key unitSingularKey = ValueKey<String>(
+    'vice-form-unit-singular',
+  );
   static const Key costKey = ValueKey<String>('vice-form-cost');
   static const Key currencyKey = ValueKey<String>('vice-form-currency');
 
@@ -52,6 +55,8 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   late final TextEditingController unitLabelController = TextEditingController(
     text: opened?.unitLabel,
   );
+  late final TextEditingController unitSingularController =
+      TextEditingController(text: opened?.unitSingular);
   // Shown to three places, so an untouched field keeps the stored cost
   // rather than its rounding.
   late final String openedCostText = switch (opened?.costPerUnit) {
@@ -86,6 +91,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   void dispose() {
     viceNameController.dispose();
     unitLabelController.dispose();
+    unitSingularController.dispose();
     costController.dispose();
     currencyController.dispose();
     super.dispose();
@@ -93,12 +99,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
 
   UnitAndPrice get _unitAndPrice {
     final String label = unitLabelController.text.trim();
+    final String one = unitSingularController.text.trim();
     final String costText = costController.text.trim();
     final double? cost = costText == openedCostText
         ? opened?.costPerUnit
         : parseAmount(costText)?.toDouble();
     return (
       unitLabel: label.isEmpty ? null : label,
+      unitSingular: label.isEmpty || one.isEmpty ? null : one,
       costPerUnit: cost,
       currency: cost == null
           ? null
@@ -268,16 +276,43 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                key: ViceForm.unitLabelKey,
-                controller: unitLabelController,
-                decoration: InputDecoration(
-                  labelText: 'Own unit (optional)',
-                  hintText: 'cups, mg, sessions',
-                  helperText: 'Shown in place of ${unit?.plural ?? 'the unit'}',
-                ),
-                onChanged: (_) => setState(() {}),
-                validator: unitLabelError,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      key: ViceForm.unitLabelKey,
+                      controller: unitLabelController,
+                      decoration: InputDecoration(
+                        labelText: 'Own unit (optional)',
+                        hintText: 'cups, mg, sessions',
+                        helperText:
+                            'Shown in place of ${unit?.plural ?? 'the unit'}',
+                        helperMaxLines: 2,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: unitLabelError,
+                    ),
+                  ),
+                  if (unitLabelController.text.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        key: ViceForm.unitSingularKey,
+                        controller: unitSingularController,
+                        decoration: const InputDecoration(
+                          labelText: 'For one',
+                          hintText: 'cup',
+                          helperText: 'Optional',
+                        ),
+                        onChanged: (_) => setState(() {}),
+                        validator: unitLabelError,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 16),
               Row(
@@ -295,7 +330,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                         helperText: 'For what you spend',
                         suffixText: unitLabelController.text.trim().isEmpty
                             ? null
-                            : 'per ${unitLabelController.text.trim()}',
+                            : 'per ${_unitAndPrice.unitSingular ?? unitLabelController.text.trim()}',
                       ),
                       onChanged: (_) => setState(() {}),
                       validator: (String? value) =>

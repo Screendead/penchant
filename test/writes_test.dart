@@ -286,8 +286,11 @@ void main() {
     testWidgets('writes a unit label and price', (WidgetTester tester) async {
       await open(tester);
       await tester.enterText(find.byKey(ViceForm.unitLabelKey), ' cups ');
+      await tester.pump();
+      await tester.enterText(find.byKey(ViceForm.unitSingularKey), ' cup ');
       await tester.enterText(find.byKey(ViceForm.costKey), '2.5');
       await tester.pump();
+      expect(find.text('per cup'), findsOneWidget);
       await tester.enterText(find.byKey(ViceForm.currencyKey), 'gbp');
       await save(tester);
 
@@ -295,6 +298,7 @@ void main() {
         const Write('updateVice', 'coffee', <String, Object?>{
           'unitAndPrice': (
             unitLabel: 'cups',
+            unitSingular: 'cup',
             costPerUnit: 2.5,
             currency: 'GBP',
           ),
@@ -387,6 +391,7 @@ void main() {
         const Write('updateVice', 'coffee', <String, Object?>{
           'unitAndPrice': (
             unitLabel: 'cups',
+            unitSingular: null,
             costPerUnit: null,
             currency: null,
           ),

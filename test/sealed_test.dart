@@ -106,6 +106,7 @@ class _FailingSealer implements FieldSealer {
 Vice _vice({
   bool locked = false,
   String? unitLabel,
+  String? unitSingular,
   double? costPerUnit,
   String? currency,
 }) => Vice(
@@ -117,6 +118,7 @@ Vice _vice({
   archived: false,
   locked: locked,
   unitLabel: unitLabel,
+  unitSingular: unitSingular,
   costPerUnit: costPerUnit,
   currency: currency,
 );
@@ -170,11 +172,14 @@ void main() {
         'name': 'Coffee',
         'unit': 'drink',
         'unitLabel': ' cups ',
+        'unitSingular': ' cup ',
         'costPerUnit': 3,
         'currency': 'GBP',
       });
       expect(priced.unitLabel, 'cups');
+      expect(priced.unitSingular, 'cup');
       expect(priced.units.label(2), '2 cups');
+      expect(priced.units.label(1), '1 cup');
       expect(priced.costPerUnit, 3.0);
       expect(priced.currency, 'GBP');
       expect(priced.spendOf(2.5), 7.5);
@@ -191,10 +196,12 @@ void main() {
       final Vice mistyped = await open(<String, Object?>{
         'name': 'Coffee',
         'unitLabel': 'x' * (maxUnitLabelLength + 1),
+        'unitSingular': 3,
         'costPerUnit': -1,
         'currency': 'gbp',
       });
       expect(mistyped.unitLabel, isNull);
+      expect(mistyped.unitSingular, isNull);
       expect(mistyped.costPerUnit, isNull);
       expect(mistyped.currency, isNull);
     });
@@ -372,7 +379,12 @@ void main() {
         ownerID: 'owner',
         name: 'Coffee',
         unit: Unit.drink,
-        unitAndPrice: (unitLabel: 'cups', costPerUnit: 2.5, currency: 'GBP'),
+        unitAndPrice: (
+          unitLabel: 'cups',
+          unitSingular: 'cup',
+          costPerUnit: 2.5,
+          currency: 'GBP',
+        ),
       );
       await write.done;
       final Map<String, Object?> stored = store.sets['vices/${write.id}']!;
@@ -386,6 +398,7 @@ void main() {
           'unit': 'drink',
           'category': 'other',
           'unitLabel': 'cups',
+          'unitSingular': 'cup',
           'costPerUnit': 2.5,
           'currency': 'GBP',
         },
@@ -395,6 +408,7 @@ void main() {
     test('updateVice keeps a unit label and price through a rename', () async {
       final Vice priced = _vice(
         unitLabel: 'cups',
+        unitSingular: 'cup',
         costPerUnit: 2.5,
         currency: 'GBP',
       );
@@ -414,6 +428,7 @@ void main() {
           'unit': 'drink',
           'category': 'other',
           'unitLabel': 'cups',
+          'unitSingular': 'cup',
           'costPerUnit': 2.5,
           'currency': 'GBP',
         },
@@ -424,6 +439,7 @@ void main() {
             priced,
             unitAndPrice: (
               unitLabel: 'cups',
+              unitSingular: null,
               costPerUnit: null,
               currency: null,
             ),
@@ -612,7 +628,12 @@ void main() {
       expect(
         () => writes.updateVice(
           _vice(),
-          unitAndPrice: (unitLabel: 'cups', costPerUnit: null, currency: null),
+          unitAndPrice: (
+            unitLabel: 'cups',
+            unitSingular: null,
+            costPerUnit: null,
+            currency: null,
+          ),
         ),
         throwsStateError,
       );
