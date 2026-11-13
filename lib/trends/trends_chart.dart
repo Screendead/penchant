@@ -25,6 +25,17 @@ typedef TrendsOverlay = ({
   List<double> line,
 });
 
+// A Health measure drawn under the habit's line on a scale of its own:
+// [values] per bucket, null where Health has none.
+typedef TrendsHealth = ({
+  String name,
+  String Function(double value) format,
+  List<double?> values,
+});
+
+// The chart's values are money in [currency] rather than the habit's units.
+typedef TrendsMoney = ({String? currency});
+
 // One habit's totals over a range as a line, its moving average as a curve
 // over a tint, and a cursor with a readout on one bucket. Dragging, the arrow
 // keys or a screen reader's adjust move the cursor; tapping a day, Enter or a
@@ -44,6 +55,8 @@ class TrendsChart extends StatelessWidget {
     this.focusNode,
     this.fill = false,
     this.overlays = const <TrendsOverlay>[],
+    this.health,
+    this.money,
   });
 
   final Vice vice;
@@ -62,6 +75,9 @@ class TrendsChart extends StatelessWidget {
   final bool fill;
   // Each the length of [totals].
   final List<TrendsOverlay> overlays;
+  // Each the length of [totals].
+  final TrendsHealth? health;
+  final TrendsMoney? money;
 
   static const String focusLabel = 'Trends chart';
   static const double plotHeight = 220;
@@ -70,8 +86,34 @@ class TrendsChart extends StatelessWidget {
   // fl_chart tests every spot's distance to the touch; this always picks one.
   static const double _anyDistance = 1e9;
 
-  static String seriesName(int stepDays) =>
-      stepDays == 1 ? 'Daily total' : 'Weekly total';
+  static String seriesName(int stepDays, {bool money = false}) =>
+      '${stepDays == 1 ? 'Daily' : 'Weekly'} ${money ? 'spend' : 'total'}';
+
+  static String amount(Vice vice, double value, TrendsMoney? money) =>
+      money == null
+      ? vice.units.label(value)
+      : formatMoney(value, money.currency);
+
+  static String _axisLabel(int value, TrendsMoney? money) => money == null
+      ? formatCount(value)
+      : formatMoney(value.toDouble(), money.currency);
+
+  // The lowest and highest of [values] that are there, or null for none.
+  static ({double low, double high})? healthSpan(List<double?> values) {
+    final Iterable<double> there = values.whereType<double>();
+    if (there.isEmpty) {
+      return null;
+    }
+    return (low: there.reduce(min), high: there.reduce(max));
+  }
+
+  static String _healthSummary(TrendsHealth h) {
+    final ({double low, double high})? span = healthSpan(h.values);
+    return span == null
+        ? ' Under it, ${h.name}: no values in this range.'
+        : ' Under it, ${h.name}, from ${h.format(span.low)} to '
+              '${h.format(span.high)}.';
+  }
 
   static String averageName(int stepDays, int window) =>
       '${formatCount(window)}-${stepDays == 1 ? 'day' : 'week'} average';
@@ -82,6 +124,8 @@ class TrendsChart extends StatelessWidget {
     required List<double> totals,
     required int smoothingWindow,
     List<TrendsOverlay> overlays = const <TrendsOverlay>[],
+    TrendsHealth? health,
+    TrendsMoney? money,
   }) {
     final int stepDays = range.stepDays;
     final UsageStats stats = usageStats(range, totals);
@@ -97,10 +141,17 @@ class TrendsChart extends StatelessWidget {
             return '${o.vice.name}, ${o.vice.units.label(sum)} in all';
           }).join('; ')}.';
 
-    return '${seriesName(stepDays)}s of ${vice.name} over the last '
-        '${formatCount(range.days)} days: ${vice.units.label(total)} in all. The most was '
-        '${vice.units.label(totals[stats.peakIndex])} '
-        '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average$compared';
+    final String under = health == null ? '' : _healthSummary(health);
+
+    final String what = money == null
+        ? '${seriesName(stepDays)}s of'
+        : '${seriesName(stepDays, money: true)} on';
+    return '$what ${vice.name} '
+        'over the last ${formatCount(range.days)} days: '
+        '${amount(vice, total, money)} in all. The most was '
+        '${amount(vice, totals[stats.peakIndex], money)} '
+        '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average$compared'
+        '$under';
   }
 
   // The date under bucket [index], and in the readout.
@@ -135,19 +186,25 @@ class TrendsChart extends StatelessWidget {
     required int window,
     required int index,
     List<TrendsOverlay> overlays = const <TrendsOverlay>[],
+    TrendsHealth? health,
+    TrendsMoney? money,
   }) {
     final String date = readoutLabel(range, index, addDays(range.end, -1));
-    String one(Vice v, List<double> totals, List<double> line) {
-      final String amount = v.units.label(totals[index]);
-      return window > 1
-          ? '$amount, average ${formatAverage(line[index])}'
-          : amount;
+    String one(Vice v, List<double> totals, List<double> line, TrendsMoney? m) {
+      final String said = amount(v, totals[index], m);
+      final String average = m == null
+          ? formatAverage(line[index])
+          : formatMoney(line[index], m.currency);
+      return window > 1 ? '$said, average $average' : said;
     }
 
+    final double? h = health?.values[index];
     return <String>[
-      '$date, ${one(vice, totals, smoothed)}',
+      '$date, ${one(vice, totals, smoothed, money)}',
       for (final TrendsOverlay o in overlays)
-        '${o.vice.name} ${one(o.vice, o.totals, o.line)}',
+        '${o.vice.name} ${one(o.vice, o.totals, o.line, null)}',
+      if (health != null)
+        '${health.name} ${h == null ? 'none' : health.format(h)}',
     ].join('; ');
   }
 
@@ -190,6 +247,8 @@ class TrendsChart extends StatelessWidget {
       window: window,
       index: index,
       overlays: overlays,
+      health: health,
+      money: money,
     );
 
     KeyEventResult onKey(FocusNode node, KeyEvent event) {
@@ -224,6 +283,8 @@ class TrendsChart extends StatelessWidget {
         totals: totals,
         smoothingWindow: window,
         overlays: overlays,
+        health: health,
+        money: money,
       ),
       value: spoken(shown),
       decreasedValue: earlier == null ? null : spoken(shown - 1),
@@ -297,7 +358,11 @@ class TrendsChart extends StatelessWidget {
       ),
     );
     final double leftTitlesWidth =
-        chartLabelSize(context, formatCount(yScale.top), axisStyle).width +
+        chartLabelSize(
+          context,
+          _axisLabel(yScale.top, money),
+          axisStyle,
+        ).width +
         labelGap;
     final double minX = n == 1 ? -0.5 : 0;
     final double maxX = n == 1 ? 0.5 : (n - 1).toDouble();
@@ -371,8 +436,16 @@ class TrendsChart extends StatelessWidget {
                           touchSpotThreshold: _anyDistance,
                           touchCallback:
                               (FlTouchEvent event, LineTouchResponse? r) {
-                                final int? index =
-                                    r?.lineBarSpots?.firstOrNull?.spotIndex;
+                                final int? index = r?.lineBarSpots
+                                    ?.where(
+                                      (TouchLineBarSpot s) =>
+                                          s.barIndex ==
+                                          (health != null && morph == null
+                                              ? 1
+                                              : 0),
+                                    )
+                                    .firstOrNull
+                                    ?.spotIndex;
                                 if (index == null) {
                                   return;
                                 }
@@ -398,7 +471,7 @@ class TrendsChart extends StatelessWidget {
                                       right: labelGap,
                                     ),
                                     child: Text(
-                                      formatCount(value.round()),
+                                      _axisLabel(value.round(), money),
                                       style: axisStyle,
                                       textAlign: TextAlign.end,
                                     ),
@@ -435,6 +508,15 @@ class TrendsChart extends StatelessWidget {
                           ),
                         ),
                         lineBarsData: <LineChartBarData>[
+                          // First, so under the habit's line.
+                          if (health != null && morph == null)
+                            _healthBar(
+                              health!,
+                              shown,
+                              yScale.top.toDouble(),
+                              scheme,
+                              surface,
+                            ),
                           LineChartBarData(
                             spots: morph == null
                                 ? <FlSpot>[
@@ -515,7 +597,7 @@ class TrendsChart extends StatelessWidget {
                     ),
               ),
             ),
-            if (overlays.isNotEmpty) ...<Widget>[
+            if (overlays.isNotEmpty || health != null) ...<Widget>[
               const SizedBox(height: DialSpace.xs),
               _legend(context, shown, colors, type),
             ],
@@ -562,6 +644,46 @@ class TrendsChart extends StatelessWidget {
     );
   }
 
+  LineChartBarData _healthBar(
+    TrendsHealth h,
+    int shown,
+    double top,
+    ColorScheme scheme,
+    Color surface,
+  ) {
+    final ({double low, double high})? span = healthSpan(h.values);
+    // Its own scale: lowest at a tenth of the plot, highest at nine tenths.
+    double y(double v) => span == null || span.high == span.low
+        ? top / 2
+        : top * (0.1 + 0.8 * (v - span.low) / (span.high - span.low));
+    final Color ink = scheme.outline;
+    return LineChartBarData(
+      spots: <FlSpot>[
+        for (int i = 0; i < h.values.length; i++)
+          if (h.values[i] case final double v)
+            FlSpot(i.toDouble(), y(v))
+          else
+            FlSpot.nullSpot,
+      ],
+      isCurved: true,
+      preventCurveOverShooting: true,
+      color: ink.withValues(alpha: 0.7),
+      barWidth: 1.5,
+      dashArray: const <int>[4, 3],
+      belowBarData: BarAreaData(show: true, color: ink.withValues(alpha: 0.08)),
+      dotData: FlDotData(
+        checkToShowDot: (FlSpot spot, LineChartBarData _) => spot.x == shown,
+        getDotPainter: (FlSpot spot, double _, LineChartBarData _, int _) =>
+            FlDotCirclePainter(
+              radius: 3,
+              color: surface,
+              strokeWidth: 1.5,
+              strokeColor: ink,
+            ),
+      ),
+    );
+  }
+
   // The value under the cursor of each line drawn, the chosen habit first.
   Widget _legend(
     BuildContext context,
@@ -594,6 +716,7 @@ class TrendsChart extends StatelessWidget {
         ),
       ],
     );
+    final double? under = health?.values[index];
 
     return Wrap(
       spacing: DialSpace.m,
@@ -601,6 +724,28 @@ class TrendsChart extends StatelessWidget {
       children: <Widget>[
         entry(vice, mark, window > 1 ? smoothed : totals),
         for (final TrendsOverlay o in overlays) entry(o.vice, o.mark, o.line),
+        if (health case final TrendsHealth h)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                width: 10,
+                height: 2,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  h.name,
+                  style: words,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(under == null ? '–' : h.format(under), style: number),
+            ],
+          ),
       ],
     );
   }
@@ -624,11 +769,13 @@ class TrendsChart extends StatelessWidget {
       children: <InlineSpan>[
         TextSpan(text: readoutLabel(range, index, today)),
         const TextSpan(text: '  '),
-        TextSpan(text: vice.units.label(value), style: strong),
+        TextSpan(text: amount(vice, value, money), style: strong),
         if (window > 1) ...<InlineSpan>[
           const TextSpan(text: '  avg '),
           TextSpan(
-            text: formatAverage(smoothed[index]),
+            text: money == null
+                ? formatAverage(smoothed[index])
+                : formatMoney(smoothed[index], money!.currency),
             style: type.monoM.copyWith(fontSize: 13),
           ),
         ],

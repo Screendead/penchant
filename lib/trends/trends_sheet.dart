@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/trend_breakdowns.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -18,12 +20,16 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/trends/hour_ring.dart';
 import 'package:tracker/trends/pane_fill.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
+import 'package:tracker/trends/trigger_bars.dart';
 import 'package:tracker/trends/weekday_grid.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/circle_button.dart';
@@ -37,6 +43,9 @@ typedef TrendsSelection = ({
   int pickedWindow,
   bool comparing,
   List<String> compared,
+  bool spend,
+  bool healthOn,
+  String? healthMetric,
 });
 
 // What the chart shows for one habit and range, once its entries are in.
@@ -49,6 +58,7 @@ typedef TrendsSeries = ({
   UsageStats stats,
   HourProfile hours,
   WeekdayHours week,
+  TriggerShares triggers,
 });
 
 // A sheet controller's moves, passed on outside a build. The sheet resets its
@@ -232,6 +242,51 @@ class TrendsSheet extends ConsumerStatefulWidget {
   }
 
   static const String compareLabel = 'Compare';
+  static const String healthLabel = 'Health';
+  static const String countLabel = 'Count';
+  static const String spendLabel = 'Spend';
+  static const String triggersTitle = 'What set it off';
+
+  static String healthNote(HealthState? state) => switch (state) {
+    null => 'Reading Health…',
+    HealthReady() => 'Health has nothing for this range.',
+    HealthNotConnected() => 'Connect Health in Insights to draw it here.',
+    HealthLocked() => 'Health is locked until this iPhone is unlocked.',
+    _ => 'Health could not be read.',
+  };
+
+  static String triggersBody(Vice vice) =>
+      'Entries of ${vice.name} you tagged, split by area.';
+
+  // The Health measures Trends can draw: each with a name and a level it can
+  // print. Mood is said in words, never numbers, so it is left out.
+  static List<String> healthMetrics(Iterable<DailyOutcome> values) {
+    final Set<String> there = <String>{for (final v in values) v.metricId};
+    return <String>[
+      for (final HealthMetric m in HealthMetric.values)
+        if (there.contains(m.id) && !(metricCopy(m.id)?.inWords ?? true)) m.id,
+    ];
+  }
+
+  static String healthName(String metricId) {
+    final String name = metricCopy(metricId)!.name;
+    return '${name[0].toUpperCase()}${name.substring(1)}';
+  }
+
+  static String Function(double) healthFormat(String metricId) {
+    final MetricCopy c = metricCopy(metricId)!;
+    final NumberFormat f = NumberFormat.decimalPatternDigits(
+      locale: formatLocale,
+      decimalDigits: c.decimals,
+    );
+    final String unit = c.scale == 100 ? '%' : c.unit;
+    return (double v) => unit.isEmpty
+        ? f.format(v * c.scale)
+        : unit == '%'
+        ? '${f.format(v * c.scale)}%'
+        : '${f.format(v * c.scale)} $unit';
+  }
+
   // Each compared habit is another range query.
   static const int maxCompared = 3;
 
@@ -260,6 +315,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   int stepDays = 1;
   int pickedWindow = defaultWindow(1);
   bool comparing = false;
+  bool spend = false;
+  bool healthOn = false;
+  String? healthMetric;
   // Habits drawn over the chosen one, in the order picked.
   List<String> compared = const <String>[];
   // The bucket the readout describes; null is the newest.
@@ -298,6 +356,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       pickedWindow = saved.pickedWindow;
       comparing = saved.comparing;
       compared = saved.compared;
+      spend = saved.spend;
+      healthOn = saved.healthOn;
+      healthMetric = saved.healthMetric;
     }
   }
 
@@ -310,6 +371,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       pickedWindow: pickedWindow,
       comparing: comparing,
       compared: compared,
+      spend: spend,
+      healthOn: healthOn,
+      healthMetric: healthMetric,
     );
     PageStorage.maybeOf(
       context,
@@ -396,6 +460,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       stats: usageStats(range, _totals),
       hours: hourProfile(range, activities),
       week: weekdayHours(range, activities),
+      triggers: triggerShares(range, activities),
     );
   }
 
@@ -513,6 +578,33 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
     }
     // The range the series on screen covers.
     final UsageRange shown = series?.range ?? range;
+    final bool healthHere = defaultTargetPlatform == TargetPlatform.iOS;
+    // Watched only once asked for: it reads Health.
+    final HealthState? healthState = healthHere && healthOn
+        ? ref.watch(healthStateProvider).value
+        : null;
+    List<String> healthMetrics = const <String>[];
+    TrendsHealth? health;
+    if (healthState case HealthReady(:final List<DailyOutcome> values)) {
+      final List<DailyOutcome> inRange = <DailyOutcome>[
+        for (final DailyOutcome v in values)
+          if (shown.bucketOf(v.date) != null) v,
+      ];
+      healthMetrics = TrendsSheet.healthMetrics(inRange);
+      final String? metric = healthMetrics.contains(healthMetric)
+          ? healthMetric
+          : healthMetrics.firstOrNull;
+      if (metric != null && series != null) {
+        health = (
+          name: TrendsSheet.healthName(metric),
+          format: TrendsSheet.healthFormat(metric),
+          values: bucketHealth(shown, inRange, metric),
+        );
+      }
+      if (metric != null && metric != healthMetric) {
+        healthMetric = metric;
+      }
+    }
 
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
@@ -548,6 +640,13 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             overlays: overlays,
             comparing: comparing,
             compared: compared,
+            spend: spend && vice.costPerUnit != null,
+            healthShown: healthHere,
+            healthOn: healthHere && healthOn,
+            healthState: healthState,
+            healthMetrics: healthMetrics,
+            healthMetric: healthMetric,
+            health: health,
             error: error,
             cursor: cursor,
             onClose: controller == null ? null : _close,
@@ -562,6 +661,9 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
               cursor = null;
             }),
             onCompare: () => _update(() => comparing = !comparing),
+            onSpend: (bool on) => _update(() => spend = on),
+            onHealth: () => _update(() => healthOn = !healthOn),
+            onHealthMetric: (String id) => _update(() => healthMetric = id),
             onCompared: (Vice v) => _update(
               () => compared = compared.contains(v.id)
                   ? <String>[
@@ -1015,6 +1117,13 @@ class _TrendsPanel extends StatelessWidget {
     required this.overlays,
     required this.comparing,
     required this.compared,
+    required this.spend,
+    required this.healthShown,
+    required this.healthOn,
+    required this.healthState,
+    required this.healthMetrics,
+    required this.healthMetric,
+    required this.health,
     required this.error,
     required this.cursor,
     required this.onClose,
@@ -1022,6 +1131,9 @@ class _TrendsPanel extends StatelessWidget {
     required this.chartFocus,
     required this.onHabit,
     required this.onCompare,
+    required this.onSpend,
+    required this.onHealth,
+    required this.onHealthMetric,
     required this.onCompared,
     required this.onRange,
     required this.onStep,
@@ -1047,6 +1159,16 @@ class _TrendsPanel extends StatelessWidget {
   final List<TrendsOverlay> overlays;
   final bool comparing;
   final List<String> compared;
+  // The chart in money; only for a habit with a price.
+  final bool spend;
+  // Health can be drawn here (iOS).
+  final bool healthShown;
+  final bool healthOn;
+  final HealthState? healthState;
+  // The measures Health has for the range, and the one drawn.
+  final List<String> healthMetrics;
+  final String? healthMetric;
+  final TrendsHealth? health;
   final Object? error;
   final int? cursor;
   // Null in the pane, which has no Close.
@@ -1055,6 +1177,9 @@ class _TrendsPanel extends StatelessWidget {
   final FocusNode chartFocus;
   final ValueChanged<Vice> onHabit;
   final VoidCallback onCompare;
+  final ValueChanged<bool> onSpend;
+  final VoidCallback onHealth;
+  final ValueChanged<String> onHealthMetric;
   final ValueChanged<Vice> onCompared;
   final ValueChanged<int> onRange;
   final ValueChanged<int> onStep;
@@ -1109,20 +1234,27 @@ class _TrendsPanel extends StatelessWidget {
     } else {
       final int limit = smoothingLimit(range.bucketCount);
       final bool empty = s.stats.total == 0;
+      final double? price = spend ? vice.costPerUnit : null;
+      List<double> priced(List<double> values) => price == null
+          ? values
+          : <double>[for (final double v in values) v * price];
       Widget chart() => TrendsChart(
         key: ValueKey<String>('chart-${vice.id}'),
         vice: vice,
         mark: mark,
         range: range,
-        totals: s.totals,
-        smoothed: s.smoothed,
+        totals: priced(s.totals),
+        smoothed: priced(s.smoothed),
         window: s.window,
         cursor: cursor ?? s.totals.length - 1,
         onCursor: onCursor,
         onOpenBucket: onOpenDay,
         focusNode: chartFocus,
         fill: fill,
-        overlays: overlays,
+        // Compared habits keep their own units, so they are left out of spend.
+        overlays: price == null ? overlays : const <TrendsOverlay>[],
+        health: health,
+        money: price == null ? null : (currency: vice.currency),
       );
       body = <Widget>[
         const SizedBox(height: DialSpace.s),
@@ -1156,6 +1288,17 @@ class _TrendsPanel extends StatelessWidget {
         if (s.week.total > 0) ...<Widget>[
           const SizedBox(height: DialSpace.s),
           _WeekCard(vice: vice, mark: mark, range: range, week: s.week),
+        ],
+        if (s.triggers.areas.isNotEmpty) ...<Widget>[
+          const SizedBox(height: DialSpace.s),
+          _TriggerCard(
+            vice: vice,
+            mark: mark,
+            range: range,
+            shares: s.triggers,
+            cursor: cursor ?? s.totals.length - 1,
+            onCursor: onCursor,
+          ),
         ],
         const SizedBox(height: DialSpace.s),
         Text(
@@ -1198,8 +1341,45 @@ class _TrendsPanel extends StatelessWidget {
               onPressed: () => onHabit(v),
             ),
           if (habits.length > 1)
-            _CompareToggle(selected: comparing, onPressed: onCompare),
+            _ToggleChip(
+              label: TrendsSheet.compareLabel,
+              selected: comparing,
+              onPressed: onCompare,
+            ),
+          if (healthShown)
+            _ToggleChip(
+              label: TrendsSheet.healthLabel,
+              selected: healthOn,
+              onPressed: onHealth,
+            ),
         ]),
+        if (healthOn) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          if (healthMetrics.isEmpty)
+            Text(
+              TrendsSheet.healthNote(healthState),
+              style: theme.textTheme.bodySmall?.copyWith(color: colors.muted),
+            )
+          else
+            chips(<Widget>[
+              for (final String id in healthMetrics)
+                PillToggle(
+                  selected: id == healthMetric,
+                  onPressed: () => onHealthMetric(id),
+                  color: colors.surface2,
+                  selectedColor: colors.surface2,
+                  selectedSide: BorderSide(
+                    color: theme.colorScheme.outline,
+                    width: 1.5,
+                  ),
+                  restForeground: theme.colorScheme.onSurface,
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: 12,
+                  ),
+                  child: Text(TrendsSheet.healthName(id)),
+                ),
+            ]),
+        ],
         if (comparing && habits.length > 1) ...<Widget>[
           const SizedBox(height: DialSpace.xs),
           chips(<Widget>[
@@ -1244,6 +1424,23 @@ class _TrendsPanel extends StatelessWidget {
               selected: stepDays,
               onChanged: onStep,
             ),
+            if (vice.costPerUnit != null)
+              PillSegments<bool>(
+                segments: const <({bool value, String label, String spoken})>[
+                  (
+                    value: false,
+                    label: TrendsSheet.countLabel,
+                    spoken: 'Chart the amount',
+                  ),
+                  (
+                    value: true,
+                    label: TrendsSheet.spendLabel,
+                    spoken: 'Chart the spend',
+                  ),
+                ],
+                selected: spend,
+                onChanged: onSpend,
+              ),
           ],
         ),
         ...body,
@@ -1636,9 +1833,14 @@ class _WhenCard extends StatelessWidget {
   }
 }
 
-class _CompareToggle extends StatelessWidget {
-  const _CompareToggle({required this.selected, required this.onPressed});
+class _ToggleChip extends StatelessWidget {
+  const _ToggleChip({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
 
+  final String label;
   final bool selected;
   final VoidCallback onPressed;
 
@@ -1661,7 +1863,7 @@ class _CompareToggle extends StatelessWidget {
         children: <Widget>[
           Icon(selected ? Icons.remove : Icons.add, size: 16),
           const SizedBox(width: 5),
-          const Text(TrendsSheet.compareLabel),
+          Text(label),
         ],
       ),
     );
@@ -1713,6 +1915,68 @@ class _WeekCard extends StatelessWidget {
               WeekdayGrid(cells: week.cells, mark: mark),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TriggerCard extends StatelessWidget {
+  const _TriggerCard({
+    required this.vice,
+    required this.mark,
+    required this.range,
+    required this.shares,
+    required this.cursor,
+    required this.onCursor,
+  });
+
+  final Vice vice;
+  final HabitMark mark;
+  final UsageRange range;
+  final TriggerShares shares;
+  final int cursor;
+  final ValueChanged<int> onCursor;
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ThemeData theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface2,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              TrendsSheet.triggersTitle,
+              style: DialTypeScale.label.copyWith(
+                fontSize: 14,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ExcludeSemantics(
+              child: Text(
+                TrendsSheet.triggersBody(vice),
+                style: theme.textTheme.bodySmall?.copyWith(color: colors.muted),
+              ),
+            ),
+            const SizedBox(height: DialSpace.s),
+            TriggerBars(
+              vice: vice,
+              mark: mark,
+              range: range,
+              shares: shares,
+              cursor: cursor,
+              onCursor: onCursor,
+            ),
+          ],
         ),
       ),
     );

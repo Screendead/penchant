@@ -184,8 +184,11 @@ The list this run works from, sorted before any building. Tick or strike here as
      report format 4. Not proven on a device: unit and widget tests only.
 6. ~~Units and cost per unit~~ (`feat/units-and-cost`): a habit's own unit label, cost per unit and currency, sealed;
    spend for the last 7 days and the range in Trends. Not proven on a device; an older build editing a habit drops
-   its label and price. Left: per-entry cost, spend trend lines. Then the rest of trend views (Health under the habit
-   lines, trigger breakdowns over time, spend).
+   its label and price. Left: per-entry cost.
+   ~~The rest of trend views~~ (`feat/trends-rest`, stacked on `feat/units-and-cost`): a Count/Spend switch on the
+   Trends chart for a priced habit, a Health measure under the habit line (iOS, behind a Health chip), and What set
+   it off (tagged entries by trigger area per bucket). Not proven on a device: Health under the line is tested only
+   against a faked Health read, never a real iPhone's.
 7. [x] Reduce motion "Full" over framework animations: built (`PenchantBinding`, `lib/design/motion_binding.dart`;
    widget-tested on a modal sheet both ways). Not proven on a device with iOS or macOS Reduce Motion on.
 8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
