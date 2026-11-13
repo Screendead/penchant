@@ -40,6 +40,7 @@ class Person {
 
   /// How much more likely a use is on a day away.
   final double awayLift;
+  double awayUsedOdds = 0.9;
   final Map<DateTime, Set<DayCell>> cells = <DateTime, Set<DayCell>>{};
   final List<HabitUse> uses = <HabitUse>[];
   int trulyAway = 0;
@@ -92,7 +93,7 @@ class Person {
       }
       final double photoOdds = switch ((photos, away)) {
         (Photos.withUseAtHome, false) => used ? 0.6 : 0.15,
-        (Photos.withUseAway, true) => used ? 0.9 : 0.3,
+        (Photos.withUseAway, true) => used ? awayUsedOdds : 0.3,
         (_, false) => 0.3,
         (_, true) => 0.6,
       };
@@ -117,16 +118,20 @@ void rate(
   Photos photos, {
   double tripOdds = 0.06,
   double awayLift = 0,
+  double awayUsedOdds = 0.9,
 }) {
   int withCard = 0, tested = 0;
   final List<int> detected = <int>[], truly = <int>[];
   for (int seed = 0; seed < people; seed++) {
-    final Person p = Person(
-      seed * 7919 + photos.index,
-      photos,
-      tripOdds: tripOdds,
-      awayLift: awayLift,
-    )..live();
+    final Person p =
+        Person(
+            seed * 7919 + photos.index,
+            photos,
+            tripOdds: tripOdds,
+            awayLift: awayLift,
+          )
+          ..awayUsedOdds = awayUsedOdds
+          ..live();
     final DateTime through = addDays(start, span - 1);
     final Map<DateTime, bool> away = daysAwayFrom(p.cells, through: through);
     detected.add(away.values.where((a) => a).length);
@@ -151,7 +156,12 @@ void main() {
   test('days away', () {
     rate('a null, independent photos', Photos.independent);
     rate('b null, photos with use at home', Photos.withUseAtHome);
-    rate('c null, photos with use away', Photos.withUseAway);
+    rate('c null, photos with use away (0.9 against 0.3)', Photos.withUseAway);
+    rate(
+      'c null, photos with use away (0.45 against 0.3)',
+      Photos.withUseAway,
+      awayUsedOdds: 0.45,
+    );
     for (final (int days, double odds) in <(int, double)>[
       (15, 0.012),
       (30, 0.025),

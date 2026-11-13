@@ -41,8 +41,10 @@ const int _homeBlockDays = 30;
 
 /// A run of this many days or fewer with no photo or visit at all, between
 /// two away days, is away too: a trip goes on through the days nothing was
-/// photographed.
-const int awayFillDays = 2;
+/// photographed, until a photo at home ends it. In calibration a two-day
+/// fill left more of the away days with no use uncounted when photos come
+/// with use (tools/insights-calibration/days_away_test.dart).
+const int awayFillDays = 14;
 
 /// The fewest away days before any habit is set against them, as for a
 /// calendar feature ([calendarDayMinDays]).
