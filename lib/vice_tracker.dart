@@ -100,6 +100,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       (bool? _, bool pending) => _openWeeklyReview(pending),
       fireImmediately: true,
     );
+    ref.listenManual<bool>(
+      pendingExperimentProvider,
+      (bool? _, bool pending) => _showExperiment(pending),
+      fireImmediately: true,
+    );
     ref.listenManual<EntryPrompt?>(
       entryPromptReadyProvider,
       (EntryPrompt? _, EntryPrompt? prompt) => _openEntryPrompt(prompt),
@@ -201,6 +206,22 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       Navigator.of(context)
         ..popUntil((Route<dynamic> r) => r.isFirst)
         ..pushNamed(WeeklyReviewPage.route);
+    });
+  }
+
+  // An experiment notification's tap: back to Today on today, where the
+  // strip shows the day's plan.
+  void _showExperiment(bool pending) {
+    if (!pending) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(pendingExperimentProvider)) {
+        return;
+      }
+      ref.read(pendingExperimentProvider.notifier).clear();
+      Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+      _selectDay(ref.read(todayProvider));
     });
   }
 

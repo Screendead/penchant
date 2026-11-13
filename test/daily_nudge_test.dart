@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/insights/experiment.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -55,6 +56,12 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelWeeklyReview() async => reviewCancels++;
+
+  @override
+  Future<void> scheduleExperiment(List<ExperimentNotice> notices) async {}
+
+  @override
+  Future<void> cancelExperiment() async {}
 }
 
 Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>

@@ -179,7 +179,7 @@ class ExperimentWords {
         'planned';
   }
 
-  String missedLegend(String habit) => '$habit on a none day';
+  static String missedLegend(String habit) => '$habit on a none day';
 
   /// The finding tested, turned to the experiment's direction (after none
   /// days less after as-usual ones).
