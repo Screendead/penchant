@@ -16,7 +16,10 @@ a decision) stays one until Jack decides.
 - **Production Firestore is untouchable.** Never read or write `screendead-vice-tracker`'s live data or run a
   `firebase` or `gcloud` command that could contact it (no `deploy`, no `firestore:*`, no
   `--project screendead-vice-tracker`). `flutter run` without the `USE_FIREBASE_EMULATORS` define talks to
-  production; develop against the emulators.
+  production; develop against the emulators. One exception (Jack, 2026-11-13): "you are permitted to make readonly
+  (and only ever readonly!) calls via gcloud, for this specific project and no other", e.g. `gcloud logging read
+  --project screendead-vice-tracker`. Nothing that writes, deploys, deletes or changes configuration, and no
+  `firebase` command; the users' journal documents stay unread (Claude's reading of the rule above, not Jack's words).
 - **Data shape stays compatible** with existing documents: optional fields are fine; a mandatory one ships only with a
   migrator that adds it to existing records on first launch (Jack, 2026-11-03, C18 `goals-fields`).
 - **Rules and indexes reach production only through CI on merge to `master`** (Jack, 2026-11-03, C1 `rules-deploy`),
