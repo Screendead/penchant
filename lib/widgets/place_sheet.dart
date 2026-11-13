@@ -36,6 +36,9 @@ class PlaceSheet extends ConsumerStatefulWidget {
   final List<PlaceStay> stays;
 
   static const String title = 'Name this place';
+
+  /// The most stays whose photos are looked for, spread across time.
+  static const int photoSpans = 60;
   static const String showOnMap = 'Show on map';
   static const String mapCaption =
       'Shows this place on Apple Maps. Its location is sent to Apple to draw '
@@ -116,10 +119,31 @@ class _PlaceSheetState extends ConsumerState<PlaceSheet> {
       latitude: widget.place.latitude,
       longitude: widget.place.longitude,
       radius: placeRadiusMeters,
+      during: _stays(),
       limit: PlaceSheet.photoLimit,
       pixels: PlaceSheet.photoPixels,
     );
     if (mounted) setState(() => _photos = photos);
+  }
+
+  // The library is asked only for photos taken during the place's stays:
+  // reading every photo's location took seconds on a large library.
+  List<(DateTime, DateTime)> _stays() {
+    final DateTime now = DateTime.now();
+    final List<(DateTime, DateTime)> all = <(DateTime, DateTime)>[
+      for (final PlaceStay s in widget.stays)
+        if (s.placeId == widget.place.id)
+          (
+            s.arrival.subtract(const Duration(seconds: 1)),
+            (s.departure ?? now).add(const Duration(seconds: 1)),
+          ),
+    ]..sort((a, b) => b.$1.compareTo(a.$1));
+    const int most = PlaceSheet.photoSpans;
+    if (all.length <= most) return all;
+    return <(DateTime, DateTime)>[
+      for (int i = 0; i < most; i++)
+        all[(i * (all.length - 1) / (most - 1)).round()],
+    ];
   }
 
   Future<void> _showMap(Size size) async {
@@ -272,9 +296,15 @@ class _PhotosPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     height: _PhotoStrip.thumb,
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: Text(PlaceSheet.photosLoading, style: style),
+    child: Row(
+      spacing: DialSpace.s,
+      children: <Widget>[
+        const SizedBox.square(
+          dimension: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        Flexible(child: Text(PlaceSheet.photosLoading, style: style)),
+      ],
     ),
   );
 }

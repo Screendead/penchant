@@ -94,8 +94,10 @@ enum PhotosChannel {
     }
   }
 
-  // Up to `limit` photos within `radius` metres of one point, newest first,
-  // spread evenly across time so years of visits show, each as
+  // Up to `limit` photos taken in one of `spans` (pairs of microseconds since
+  // 1970: the fetch is by date, since reading every asset's location takes
+  // seconds on a large library) and within `radius` metres of one point,
+  // newest first, spread evenly across time so years of visits show, each as
   // {"at": microseconds since 1970, "jpeg": bytes}. Only photos already on the
   // device: none is downloaded from iCloud.
   private static func near(_ args: [String: Any]?, result: @escaping FlutterResult) {
@@ -105,6 +107,7 @@ enum PhotosChannel {
       let lat = (args?["lat"] as? NSNumber)?.doubleValue,
       let lon = (args?["lon"] as? NSNumber)?.doubleValue,
       let radius = (args?["radius"] as? NSNumber)?.doubleValue,
+      let spans = args?["spans"] as? [NSNumber], spans.count >= 2,
       let limit = (args?["limit"] as? NSNumber)?.intValue,
       let pixels = (args?["pixels"] as? NSNumber)?.intValue,
       CLLocationCoordinate2DIsValid(CLLocationCoordinate2D(latitude: lat, longitude: lon)),
@@ -117,20 +120,18 @@ enum PhotosChannel {
       let centre = CLLocation(latitude: lat, longitude: lon)
       let options = PHFetchOptions()
       options.includeAssetSourceTypes = [.typeUserLibrary]
-      let assets = PHAsset.fetchAssets(with: options)
-      let total = assets.count
+      options.predicate = NSCompoundPredicate(orPredicateWithSubpredicates:
+        stride(from: 0, to: spans.count - 1, by: 2).map { i in
+          NSPredicate(
+            format: "creationDate >= %@ AND creationDate <= %@",
+            Date(timeIntervalSince1970: spans[i].doubleValue / 1e6) as NSDate,
+            Date(timeIntervalSince1970: spans[i + 1].doubleValue / 1e6) as NSDate)
+        })
       var matches: [(date: Date, asset: PHAsset)] = []
-      var start = 0
-      while start < total {
-        let end = min(start + batch, total)
-        autoreleasepool {
-          assets.enumerateObjects(at: IndexSet(integersIn: start..<end), options: []) { asset, _, _ in
-            guard let date = asset.creationDate, let location = asset.location else { return }
-            guard CLLocationCoordinate2DIsValid(location.coordinate) else { return }
-            if location.distance(from: centre) <= radius { matches.append((date: date, asset: asset)) }
-          }
-        }
-        start = end
+      PHAsset.fetchAssets(with: options).enumerateObjects { asset, _, _ in
+        guard let date = asset.creationDate, let location = asset.location else { return }
+        guard CLLocationCoordinate2DIsValid(location.coordinate) else { return }
+        if location.distance(from: centre) <= radius { matches.append((date: date, asset: asset)) }
       }
       matches.sort { $0.date > $1.date }
       let chosen: [(date: Date, asset: PHAsset)]
@@ -149,23 +150,27 @@ enum PhotosChannel {
       request.deliveryMode = .highQualityFormat
       request.resizeMode = .fast
       let size = CGSize(width: pixels, height: pixels)
-      var photos: [[String: Any]] = []
-      for match in chosen {
+      var slots = [[String: Any]?](repeating: nil, count: chosen.count)
+      let lock = NSLock()
+      DispatchQueue.concurrentPerform(iterations: chosen.count) { i in
         autoreleasepool {
+          let match = chosen[i]
           var jpeg: Data?
           PHImageManager.default().requestImage(
             for: match.asset, targetSize: size, contentMode: .aspectFill, options: request
           ) { image, _ in
             jpeg = image?.jpegData(compressionQuality: 0.8)
           }
-          if let jpeg {
-            photos.append([
-              "at": Int64((match.date.timeIntervalSince1970 * 1e6).rounded()),
-              "jpeg": FlutterStandardTypedData(bytes: jpeg),
-            ])
-          }
+          guard let jpeg else { return }
+          lock.lock()
+          slots[i] = [
+            "at": Int64((match.date.timeIntervalSince1970 * 1e6).rounded()),
+            "jpeg": FlutterStandardTypedData(bytes: jpeg),
+          ]
+          lock.unlock()
         }
       }
+      let photos = slots.compactMap { $0 }
       DispatchQueue.main.async { result(photos) }
     }
   }

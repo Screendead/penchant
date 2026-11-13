@@ -28,13 +28,14 @@ abstract interface class PhotosSource {
     void Function(int done, int total)? onProgress,
   });
 
-  /// Up to [limit] photos taken within [radius] metres of [latitude],
-  /// [longitude], newest first, each about [pixels] on its longer side. Empty
+  /// Up to [limit] photos taken in one of the spans [during] and within
+  /// [radius] metres of [latitude], [longitude], newest first, each about [pixels] on its longer side. Empty
   /// without access or on any failure; never throws.
   Future<List<PlacePhoto>> near({
     required double latitude,
     required double longitude,
     required double radius,
+    required List<(DateTime, DateTime)> during,
     required int limit,
     required int pixels,
   });
@@ -97,6 +98,7 @@ class ChannelPhotosSource implements PhotosSource {
     required double latitude,
     required double longitude,
     required double radius,
+    required List<(DateTime, DateTime)> during,
     required int limit,
     required int pixels,
   }) async {
@@ -106,6 +108,12 @@ class ChannelPhotosSource implements PhotosSource {
           'lat': latitude,
           'lon': longitude,
           'radius': radius,
+          'spans': <int>[
+            for (final (DateTime from, DateTime to) in during) ...<int>[
+              from.microsecondsSinceEpoch,
+              to.microsecondsSinceEpoch,
+            ],
+          ],
           'limit': limit,
           'pixels': pixels,
         }),
