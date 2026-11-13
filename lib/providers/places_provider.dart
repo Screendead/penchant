@@ -134,6 +134,26 @@ class PlacesSync extends Notifier<PlacesState> {
         });
     return done.future;
   }
+
+  /// Replaces the store with [change] of it, in turn with every other write.
+  /// False when the result could not be kept.
+  Future<bool> update(Future<PlaceStore> Function(PlaceStore) change) {
+    final Completer<bool> done = Completer<bool>();
+    _queue = _queue
+        .then((_) async {
+          final SealedFiles? files = _files;
+          if (files == null || !state.ready) return done.complete(false);
+          final PlaceStore next = await change(state.store);
+          await files.write(placesFileName, next.encode());
+          if (!identical(files, _files)) return done.complete(false);
+          state = (ready: true, store: next);
+          done.complete(true);
+        })
+        .catchError((Object _) {
+          if (!done.isCompleted) done.complete(false);
+        });
+    return done.future;
+  }
 }
 
 /// Built at launch by [MyApp], so visits reported while the app was closed

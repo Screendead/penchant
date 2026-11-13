@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -41,6 +42,8 @@ import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/calendar_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
+import 'package:tracker/insights/photos_source.dart';
+import 'package:tracker/providers/photos_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
@@ -176,6 +179,42 @@ class InsightsPage extends ConsumerStatefulWidget {
   static const String placesRenameFailed = 'The name couldn’t be kept.';
   static const String placesFailed = 'Location couldn’t be opened.';
 
+  static const String photosLabel = 'Add history from your photos';
+  static const String photosBody =
+      'Finds the places you spent time before Places was on, so you can name '
+      'them now, from when and where your photos were taken. Penchant never '
+      'reads the pictures, and findings still come from visits.';
+  static const String photosReading = 'Reading your photos';
+  static const String photosTitle = 'From your photos';
+  static const String photosOffValue = 'Off';
+  static const String photosOffBody =
+      'To add history from your photos, allow Penchant to read Photos in '
+      'Settings.';
+  static const String photosLimited =
+      'Only the photos you shared with Penchant were read.';
+  static const String photosFailed = 'Your photos couldn’t be read.';
+  static const String photosAgain = 'Read photos again';
+  static const String photosRemove = 'Remove photo history';
+  static const String photosRemoveFailed =
+      'The photo history couldn’t be removed.';
+
+  /// "12 places from 3,400 photos, back to March 2019".
+  static String photosSummary(int places, int photos, DateTime? since) {
+    final NumberFormat count = NumberFormat.decimalPattern(formatLocale);
+    final String found =
+        '${count.format(places)} ${places == 1 ? 'place' : 'places'} from '
+        '${count.format(photos)} ${photos == 1 ? 'photo' : 'photos'}';
+    return since == null
+        ? found
+        : '$found, back to ${DateFormat.yMMMM(formatLocale).format(since)}';
+  }
+
+  /// "Looked at 12,000 of 48,000".
+  static String photosProgress(int done, int total) {
+    final NumberFormat count = NumberFormat.decimalPattern(formatLocale);
+    return 'Looked at ${count.format(done)} of ${count.format(total)}';
+  }
+
   /// How long after the first visit the card stops saying findings are
   /// weeks away.
   static const Duration placesEarlyFor = Duration(days: 28);
@@ -215,6 +254,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connectingCalendar = false;
   bool _connectingReminders = false;
   bool _connectingPlaces = false;
+  bool _readingPhotos = false;
+  ({int done, int total})? _photosProgress;
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -322,6 +363,87 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
   }
 
+  Future<void> _addPhotos() async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    setState(() {
+      _readingPhotos = true;
+      _photosProgress = null;
+    });
+    final PhotosImport outcome = await importPlacesFromPhotos(
+      container,
+      onProgress: (int done, int total) {
+        if (mounted) {
+          setState(() => _photosProgress = (done: done, total: total));
+        }
+      },
+    );
+    container.invalidate(photosAccessProvider);
+    if (!mounted) return;
+    setState(() => _readingPhotos = false);
+    final String message = switch (outcome) {
+      PhotosImported(
+        :final places,
+        :final photos,
+        :final since,
+        :final limited,
+      ) =>
+        [
+          InsightsPage.photosSummary(places, photos, since),
+          if (limited) InsightsPage.photosLimited,
+        ].join('. '),
+      PhotosImportFailed(
+        access: PhotosAccess.denied || PhotosAccess.restricted,
+      ) =>
+        InsightsPage.photosOffBody,
+      PhotosImportFailed() => InsightsPage.photosFailed,
+    };
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _photoOptions() async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    final _PhotosChoice? choice = await showDialog<_PhotosChoice>(
+      context: context,
+      builder: (BuildContext context) => SimpleDialog(
+        title: const Text(InsightsPage.photosTitle),
+        children: <Widget>[
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop(_PhotosChoice.again),
+            child: const Text(InsightsPage.photosAgain),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop(_PhotosChoice.remove),
+            child: Text(
+              InsightsPage.photosRemove,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case _PhotosChoice.again:
+        await _addPhotos();
+      case _PhotosChoice.remove:
+        if (!await removePlacesFromPhotos(container)) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text(InsightsPage.photosRemoveFailed)),
+          );
+        }
+      case null:
+        break;
+    }
+  }
+
   Future<void> _renamePlace(Place place) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final PlacesSync places = ref.read(placesProvider.notifier);
@@ -357,6 +479,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     final CalendarAccess? reminders = ref.watch(remindersAccessProvider).value;
     final PlacesAccess? placesAccess = ref.watch(placesAccessProvider).value;
     final PlacesState places = ref.watch(placesProvider);
+    final PhotosAccess? photosAccess = ref.watch(photosAccessProvider).value;
 
     return CardPage(
       title: InsightsPage.title,
@@ -399,6 +522,11 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             connecting: _connectingPlaces,
             onConnect: _connectPlaces,
             onRename: _renamePlace,
+            photos: photosAccess,
+            readingPhotos: _readingPhotos,
+            photosProgress: _photosProgress,
+            onAddPhotos: _addPhotos,
+            onPhotoOptions: _photoOptions,
           ),
         ...switch (view) {
           AsyncError() => <Widget>[
@@ -1388,6 +1516,11 @@ class _PlacesCard extends StatelessWidget {
     required this.connecting,
     required this.onConnect,
     required this.onRename,
+    required this.photos,
+    required this.readingPhotos,
+    required this.photosProgress,
+    required this.onAddPhotos,
+    required this.onPhotoOptions,
   });
 
   final PlacesAccess access;
@@ -1395,6 +1528,62 @@ class _PlacesCard extends StatelessWidget {
   final bool connecting;
   final VoidCallback onConnect;
   final ValueChanged<Place> onRename;
+
+  /// Null where there is no photo library.
+  final PhotosAccess? photos;
+  final bool readingPhotos;
+  final ({int done, int total})? photosProgress;
+  final VoidCallback onAddPhotos;
+  final VoidCallback onPhotoOptions;
+
+  Widget? _photosRow() {
+    final PhotosAccess? photos = this.photos;
+    if (photos == null) return null;
+    if (readingPhotos) {
+      final ({int done, int total})? progress = photosProgress;
+      return CardRow(
+        label: InsightsPage.photosReading,
+        subtitle: progress == null
+            ? null
+            : InsightsPage.photosProgress(progress.done, progress.total),
+        enabled: false,
+        trailing: const SizedBox.square(
+          dimension: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (store.hasPhotos) {
+      return CardRow(
+        label: InsightsPage.photosTitle,
+        subtitle: <String>[
+          InsightsPage.photosSummary(
+            store.places.where((p) => p.photoStays > 0).length,
+            store.photosRead,
+            store.photosSince,
+          ),
+          if (photos == PhotosAccess.limited) InsightsPage.photosLimited,
+        ].join('. '),
+        glyph: DialGlyph.right,
+        onTap: onPhotoOptions,
+      );
+    }
+    if (photos == PhotosAccess.denied || photos == PhotosAccess.restricted) {
+      return const CardRow(
+        label: InsightsPage.photosLabel,
+        subtitle: InsightsPage.photosOffBody,
+        value: Text(InsightsPage.photosOffValue),
+      );
+    }
+    return CardRow(
+      label: InsightsPage.photosLabel,
+      subtitle: photos == PhotosAccess.limited
+          ? '${InsightsPage.photosBody} ${InsightsPage.photosLimited}'
+          : InsightsPage.photosBody,
+      glyph: DialGlyph.right,
+      onTap: onAddPhotos,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1458,14 +1647,22 @@ class _PlacesCard extends StatelessWidget {
           for (final Place p in shown.take(placeMaxPlaces))
             CardRow(
               label: p.label,
-              value: Text(p.visits == 1 ? '1 visit' : '${p.visits} visits'),
+              value: Text(switch (p.visits) {
+                0 => 'From photos',
+                1 => '1 visit',
+                final int n => '$n visits',
+              }),
               glyph: DialGlyph.right,
               onTap: () => onRename(p),
             ),
+        if (access == PlacesAccess.always || access == PlacesAccess.whenInUse)
+          ?_photosRow(),
       ],
     );
   }
 }
+
+enum _PhotosChoice { again, remove }
 
 class _RenamePlaceDialog extends StatefulWidget {
   const _RenamePlaceDialog({required this.place});

@@ -328,9 +328,7 @@ class PlaceStore {
               );
         placeId = p.id;
       }
-      stays.add(
-        PlaceStay(placeId, r.from, r.to, source: PlaceSource.photos),
-      );
+      stays.add(PlaceStay(placeId, r.from, r.to, source: PlaceSource.photos));
     }
     stays.sort((a, b) => a.arrival.compareTo(b.arrival));
     return PlaceStore(
@@ -491,15 +489,10 @@ class AtPlace {
     this.interval,
     this.pValue,
     this.refusal,
-    this.fromPhotos = false,
   });
 
   final String habitId;
   final int placeId;
-
-  /// Judged from photo-derived stays alone ([atPlace]): only the hours those
-  /// stays cover count, on days before the first visit.
-  final bool fromPhotos;
 
   /// Days with an entry in waking hours and time both at the place and
   /// elsewhere.
@@ -530,7 +523,6 @@ class AtPlace {
     interval: interval,
     pValue: pValue,
     refusal: reason,
-    fromPhotos: fromPhotos,
   );
 }
 
@@ -551,6 +543,13 @@ Duration _overlap(DateTime a0, DateTime a1, DateTime b0, DateTime b1) {
 /// entry and at least [placeMinMinutes] both at the place and elsewhere.
 /// Time not at a known place, travelling included, counts as elsewhere. An
 /// intercept-only fit gives the mean difference and its interval.
+///
+/// Only Core Location's visits count. Photo-derived stays
+/// ([PlaceSource.photos]) are left out: time outside them is unknown, not
+/// elsewhere, and photos are taken on occasions that go with some habits.
+/// Restricting a day to the hours its photo stays cover still let photos set
+/// off by a habit raise false cards above the family's rate in simulation,
+/// and left too few days to find a real difference.
 List<AtPlace> atPlace({
   required List<HabitUse> uses,
   required List<PlaceStay> stays,
@@ -558,21 +557,14 @@ List<AtPlace> atPlace({
   Set<String> skip = const <String>{},
   InsightGates gates = const InsightGates(),
 }) {
-  final List<AtPlace> fromPhotos = _atPlaceFromPhotos(
-    uses: uses,
-    stays: stays,
-    through: through,
-    skip: skip,
-    gates: gates,
-  );
   final List<PlaceStay> closed = <PlaceStay>[
     for (final PlaceStay s in stays)
       if (s.departure != null && !s.fromPhotos) s,
   ]..sort((a, b) => a.arrival.compareTo(b.arrival));
-  if (closed.isEmpty) return fromPhotos;
+  if (closed.isEmpty) return const <AtPlace>[];
   final DateTime first = startOfDay(closed.first.arrival);
   final DateTime last = startOfDay(through);
-  if (last.isBefore(first)) return fromPhotos;
+  if (last.isBefore(first)) return const <AtPlace>[];
 
   // Per day, minutes of waking time at each place.
   final Map<DateTime, Map<int, int>> minutesAt = <DateTime, Map<int, int>>{};
@@ -645,185 +637,47 @@ List<AtPlace> atPlace({
         );
         timeShares.add(there / waking);
       }
-      results.add(
-        _fitAtPlace(
-          habitId: id,
-          placeId: placeId,
-          useShares: useShares,
-          timeShares: timeShares,
-          least: least,
-          gates: gates,
-        ),
+      final List<double> y = <double>[
+        for (int i = 0; i < useShares.length; i++) useShares[i] - timeShares[i],
+      ];
+      AtPlace result({
+        RefusalReason? refusal,
+        double? effect,
+        Interval? interval,
+        double? pValue,
+      }) => AtPlace(
+        habitId: id,
+        placeId: placeId,
+        days: y.length,
+        useShare: useShares.isEmpty ? 0 : mean(useShares),
+        timeShare: timeShares.isEmpty ? 0 : mean(timeShares),
+        effect: effect,
+        interval: interval,
+        pValue: pValue,
+        refusal: refusal,
       );
-    }
-  }
-  return <AtPlace>[...results, ...fromPhotos];
-}
-
-/// The days' differences between [useShares] and [timeShares] fitted to
-/// their mean, or why not.
-AtPlace _fitAtPlace({
-  required String habitId,
-  required int placeId,
-  required List<double> useShares,
-  required List<double> timeShares,
-  required int least,
-  required InsightGates gates,
-  bool fromPhotos = false,
-}) {
-  final List<double> y = <double>[
-    for (int i = 0; i < useShares.length; i++) useShares[i] - timeShares[i],
-  ];
-  AtPlace result({
-    RefusalReason? refusal,
-    double? effect,
-    Interval? interval,
-    double? pValue,
-  }) => AtPlace(
-    habitId: habitId,
-    placeId: placeId,
-    days: y.length,
-    useShare: useShares.isEmpty ? 0 : mean(useShares),
-    timeShare: timeShares.isEmpty ? 0 : mean(timeShares),
-    effect: effect,
-    interval: interval,
-    pValue: pValue,
-    refusal: refusal,
-    fromPhotos: fromPhotos,
-  );
-  if (y.length < least) return result(refusal: RefusalReason.tooFewDays);
-  if (sampleVariance(y) < 1e-12) {
-    return result(refusal: RefusalReason.withinNoise);
-  }
-  final LinearFit? fit = fitLeastSquares(<List<double>>[
-    for (int r = 0; r < y.length; r++) const <double>[1],
-  ], y);
-  if (fit == null) return result(refusal: RefusalReason.tooFewDays);
-  final Interval interval = fit.interval(0, level: gates.level);
-  return result(
-    refusal: interval.crossesZero ? RefusalReason.withinNoise : null,
-    effect: fit.coefficients[0],
-    interval: interval,
-    pValue: fit.pValue(0),
-  );
-}
-
-/// A day counts for a place in the photo comparison when its photo stays
-/// cover at least this long there, and as long at other places.
-const int placePhotoMinMinutes = 15;
-
-/// [atPlace] for photo-derived stays, which say where the person was only
-/// while photos were being taken: time outside them is unknown, not
-/// elsewhere. So a day's waking time is only the minutes its photo stays
-/// cover, and its entries only those logged within them: the share of those
-/// entries logged during a stay at the place, less the share of those
-/// minutes spent there, on days with such an entry and at least
-/// [placePhotoMinMinutes] covered both there and at another place. Under
-/// logging that does not depend on place, each day's difference averages
-/// zero however the photo occasions fall. Only days before the first visit's
-/// day count, so no day is judged from both sources.
-List<AtPlace> _atPlaceFromPhotos({
-  required List<HabitUse> uses,
-  required List<PlaceStay> stays,
-  required DateTime through,
-  required Set<String> skip,
-  required InsightGates gates,
-}) {
-  DateTime? firstVisit;
-  for (final PlaceStay s in stays) {
-    if (s.fromPhotos) continue;
-    final DateTime d = startOfDay(s.arrival);
-    if (firstVisit == null || d.isBefore(firstVisit)) firstVisit = d;
-  }
-  final DateTime last = startOfDay(through);
-  // Per day, the waking parts of its photo stays.
-  final Map<DateTime, List<PlaceStay>> covered = <DateTime, List<PlaceStay>>{};
-  for (final PlaceStay s in stays) {
-    final DateTime? left = s.departure;
-    if (!s.fromPhotos || left == null) continue;
-    final DateTime d = startOfDay(s.arrival);
-    if (d.isAfter(last) || (firstVisit != null && !d.isBefore(firstVisit))) {
-      continue;
-    }
-    final DateTime w0 = DateTime(d.year, d.month, d.day, placeWakingFromHour);
-    final DateTime w1 = DateTime(d.year, d.month, d.day, placeWakingToHour);
-    final DateTime from = s.arrival.isAfter(w0) ? s.arrival : w0;
-    final DateTime to = left.isBefore(w1) ? left : w1;
-    if (!to.isAfter(from)) continue;
-    covered
-        .putIfAbsent(d, () => <PlaceStay>[])
-        .add(PlaceStay(s.placeId, from, to, source: PlaceSource.photos));
-  }
-  if (covered.isEmpty) return const <AtPlace>[];
-  final Map<int, int> totals = <int, int>{};
-  for (final List<PlaceStay> day in covered.values) {
-    for (final PlaceStay s in day) {
-      totals[s.placeId] =
-          (totals[s.placeId] ?? 0) + s.departure!.difference(s.arrival).inMinutes;
-    }
-  }
-  final List<int> judged =
-      (totals.keys.toList()..sort((a, b) {
-            final int byTime = totals[b]!.compareTo(totals[a]!);
-            return byTime != 0 ? byTime : a.compareTo(b);
-          }))
-          .take(placeMaxPlaces)
-          .toList()
-        ..sort();
-
-  final Map<String, List<DateTime>> usesOf = <String, List<DateTime>>{};
-  for (final HabitUse u in uses) {
-    if (u.amount > 0) usesOf.putIfAbsent(u.habitId, () => []).add(u.at);
-  }
-  final List<String> ids =
-      usesOf.keys.where((id) => !skip.contains(id)).toList()..sort();
-  final int least = max(placeMinDays, gates.minExposedDays);
-  final List<AtPlace> results = <AtPlace>[];
-  for (final String id in ids) {
-    final List<DateTime> times = usesOf[id]!..sort();
-    final DateTime start = startOfDay(times.first);
-    final DateTime end = startOfDay(times.last);
-    // Per day, the place of each entry logged during a photo stay.
-    final Map<DateTime, List<int>> logged = <DateTime, List<int>>{};
-    for (final DateTime t in times) {
-      final List<PlaceStay>? day = covered[startOfDay(t)];
-      if (day == null) continue;
-      for (final PlaceStay s in day) {
-        if (!t.isBefore(s.arrival) && t.isBefore(s.departure!)) {
-          logged.putIfAbsent(startOfDay(t), () => <int>[]).add(s.placeId);
-          break;
-        }
+      if (y.length < least) {
+        results.add(result(refusal: RefusalReason.tooFewDays));
+        continue;
       }
-    }
-    for (final int placeId in judged) {
-      final List<double> useShares = <double>[], timeShares = <double>[];
-      for (final MapEntry<DateTime, List<PlaceStay>> e in covered.entries) {
-        final DateTime d = e.key;
-        if (d.isBefore(start) || d.isAfter(end)) continue;
-        final List<int>? at = logged[d];
-        if (at == null) continue;
-        int all = 0, there = 0;
-        for (final PlaceStay s in e.value) {
-          final int m = s.departure!.difference(s.arrival).inMinutes;
-          all += m;
-          if (s.placeId == placeId) there += m;
-        }
-        if (there < placePhotoMinMinutes ||
-            all - there < placePhotoMinMinutes) {
-          continue;
-        }
-        useShares.add(at.where((p) => p == placeId).length / at.length);
-        timeShares.add(there / all);
+      if (sampleVariance(y) < 1e-12) {
+        results.add(result(refusal: RefusalReason.withinNoise));
+        continue;
       }
+      final LinearFit? fit = fitLeastSquares(<List<double>>[
+        for (int r = 0; r < y.length; r++) const <double>[1],
+      ], y);
+      if (fit == null) {
+        results.add(result(refusal: RefusalReason.tooFewDays));
+        continue;
+      }
+      final Interval interval = fit.interval(0, level: gates.level);
       results.add(
-        _fitAtPlace(
-          habitId: id,
-          placeId: placeId,
-          useShares: useShares,
-          timeShares: timeShares,
-          least: least,
-          gates: gates,
-          fromPhotos: true,
+        result(
+          refusal: interval.crossesZero ? RefusalReason.withinNoise : null,
+          effect: fit.coefficients[0],
+          interval: interval,
+          pValue: fit.pValue(0),
         ),
       );
     }
