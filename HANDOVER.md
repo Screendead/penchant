@@ -1044,51 +1044,37 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 18 (`docs/pitch/round-18/index.html`, https://claude.ai/artifact/9cDnMB8RnA2SS1pB21o4Ah, `picks` collection),
-published 2026-11-13, none picked yet. It replaces round 17's page as the one to answer: Jack answered the fifth
-run's heads-up with "pitch them" (units and cost, the calendar additions, the Trends views, Places, Daylight) after
-#286 and #280 were already merged and on the iPhone, so those are put as keep or take out. Round 17's six other
-calls are carried over unchanged (below); its `units-cost` is replaced by the first two here. Picks may land on
-either page: read both. Stills are in `docs/pitch/round-18/stills/` (from `test/pitch_stills_render_test.dart` on
-`feat/trends-rest`). A backlog file's "Needs Jack: no" is Claude's recommendation, never a decision: new features
-from one stay unmerged until Jack picks. Recommendations are Claude's:
+Nothing is waiting. Round 18 (`docs/pitch/round-18/index.html`,
+https://claude.ai/artifact/9cDnMB8RnA2SS1pB21o4Ah, `picks`), all eleven picked by Jack on 2026-11-13 (round 17's
+page, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, was superseded by it and holds no picks). Mock-ups and
+notes for the four product calls are in `docs/pitch/round-17/<call>/`; the built result is compared with the picked
+mock-up before it is called done:
 
-- `units-cost`: #282, as below, now with "do not ship". **A** merge and install on the iPhone now (recommended); B
-  merge when the Mac can update; C close it. Before merging: a singular form for an own unit label (the label is
-  used as typed, so "1 glasses", "per glasses"; `UnitWords`, `lib/data/unit.dart`), about an hour.
-- `trends-views`: #287. **A** merge all three views (needs `units-cost` yes; recommended); B trigger bars (and spend
-  if units is yes) without the Health line; C close it. In Spend the Total, Average and Peak tiles still count
-  units; the Health line is scaled to the full chart height, so it crosses the habit line.
-- `calendar` (merged, #286): **A** keep (recommended); B keep and build the Mac reader for the Meeting suggestion;
-  C remove the Meeting suggestion only; D take both out (a revert of 632d376 alone conflicts with #280's merge;
-  with 6ad60c0 reverted too it applies and analyzes clean; tests not run).
-- `places` (merged, #280): **A** keep (recommended); B never ask for Always (Apple's authorization page: an app with
-  When In Use is not relaunched for visits; untested how few arrive); C take out (`git revert -m 1 6ad60c0` applies
-  and analyzes clean on bfc5f4a, tests not run; it also removes Daylight; raise `insightsViewFormat` to 6).
-- `daylight` (merged, #280): **A** keep (recommended); B take out, by hand unless Places goes too.
+- `units-cost` A: merge #282 and install on the iPhone now (a singular form for an own unit label goes in first).
+- `trends-views` A: merge #287 (spend, the Health line, trigger bars) once #282 is in.
+- `calendar` B: keep the busy-day cards and the Meeting suggestion; build the Mac calendar reader for the
+  suggestion (`feat/mac-calendar-suggestion`).
+- `places` A, `daylight` A: keep as built.
+- `capture-detail` C: silent fields (time zone, written-at, how logged) plus an urge row (1 to 5) and a one-line
+  note on the amount sheet, editor and tag picker (`feat/capture-detail`).
+- `goals` C: an optional line per habit, per day or week, and Insights' "where's the line" card offers to set it
+  (starts once #282 is merged, since both add habit fields).
+- `self-experiments` C: an experiment from a finding card, with a daily notification (`feat/self-experiments`).
+- `weather` C: wait for a paid Apple team; nothing built.
+- `app-lock` A: #283 merged 2026-11-13 (off by default; not yet run on a device).
+- `index-check` B: leave; #285 closed, branch `chore/index-drift-check` kept.
 
-Round 17 (`docs/pitch/round-17/index.html`, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, `picks` collection),
-published 2026-11-12, none picked when round 18 went out; superseded by it. Each option's mock-up and notes are in `docs/pitch/round-17/<call>/`.
-Recommendations are Claude's:
+Also from Jack on 2026-11-13: the Mac background sync check passed (a menu-bar log with Penchant quit reached the
+iPhone) but Penchant itself opened behind the other apps, which he questions; #252 stays a draft until that is
+explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Claude may
+read the functions' logs with `gcloud logging read` (read-only; nothing else in production): six nightly
+`dailyOrphanCleanup` runs, 2026-11-08 to 11-13, each scanned 1 owner, found 0 missing, 0 candidates, no errors, so
+the delete path has never had anything to act on. Reported by Jack on build 1500: Insights was slow after turning
+on Places and Reminders, and Connect Reminders stays shown and dead after access is granted
+(`fix/insights-stall-reminders`).
 
-- `capture-detail`: what extra detail a log carries. A leave; B silent fields (time zone, written-at, how logged);
-  **C** B plus an urge row and a note on the existing sheets (recommended); D a full detail sheet after a one-tap log.
-- `goals`: an optional limit per habit. A never; **B** a quiet line per habit (recommended); C B plus Insights
-  offering its line.
-- `self-experiments`: randomised trials of a finding. A no; B from a finding card, in the app only; **C** B plus a
-  daily notification (recommended).
-- `weather`: **A** none, daylight only (recommended); B Open-Meteo, opt-in, whole-degree location; C wait for a paid
-  team.
-- `app-lock`: draft #283 is built and green. **A** merge (recommended); B leave parked; C drop.
-- `units-cost`: #282 (unit label, cost per unit, currency on the habit; rules change) and #287 (Trends: spend,
-  Health under the line, trigger areas over time; stacked on #282) are green and held unmerged, because installing
-  them is a shape change and the Mac's older build drops the new fields when it edits a habit. **A** merge and
-  install on the iPhone now (recommended); B hold until the Mac can update too. Both need `master` merged in first.
-- `index-check`: draft #285, a weekly read-only job listing production's indexes against the file. **A** merge
-  (recommended); B leave.
-
-Not put as calls, listed on the page as defaults: the thresholds of the trigger, places and calendar-day
-comparisons, waking from steps, no "after sunset" finding, no prompt after a Siri or Shortcuts log.
+A backlog file's "Needs Jack: no" is Claude's recommendation, never a decision: new features from one stay
+unmerged until Jack picks.
 
 Round 16 (`docs/pitch/round-16/index.html`, https://claude.ai/artifact/DkKHDabq8g6XaDUmB5XcE4, `picks`), all
 picked by Jack on 2026-11-12: `mood-floor` A (a State of Mind change is reported only when at least half the
