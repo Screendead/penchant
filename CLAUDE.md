@@ -280,7 +280,7 @@ Days).
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
 collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
-`unitLabel`, `unitSingular`, `costPerUnit`, `currency`) and
+`unitLabel`, `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) and
 `activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `triggers`); a third, `summaries`,
 is server-written (Server side, below).
 
@@ -330,8 +330,20 @@ habit's `measure` total times its price (`Vice.spendOf`): Trends shows it under 
 edit of the habit there drops the label and price (archiving does not reseal); null falls back to the preset and no
 spend. No per-entry cost yet.
 
+**A habit's line** (Jack, 2026-11-13, round 17 `goals` C). Optional `lineAmount` (above 0, at most 100,000, decimals
+as an entry's amount) and `linePeriod` (`day` or `week`), sealed only like the price, read together as `Vice.line`
+(`HabitLine`, `lib/data/habit_line.dart`; half a line or a value out of bounds reads as none, and an older build's edit
+drops it). Set in the habit form (None / A day / A week and a stepper; off by default) or from Insights: a card whose
+finding is a line in the amount (`doseLine`) offers "Mark 3 a day as Wine's line" (`LineOffer`,
+`lib/widgets/line_offer.dart`) on an unarchived, unlocked habit, offers to change another line showing it, and says
+so once set; its state is the stored line, so every card agrees. It is a mark to read totals against, never a goal: no
+colour change, alert or streak past it. Today's tally row reads "of 3" (a week line "22 of 30 · 7 days", the 7 days
+ending on the shown day, `viceActivityWeekProvider`, queried only while a habit has a week line) over a bar with a tick
+three quarters along; Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
+period and not in Spend (else a caption says which view shows it), and "Over your line" replaces Peak.
+
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
-`unitSingular`, `costPerUnit`, `currency`) in one `sealed` bytes
+`unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
 field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphertext | tag` around JSON padded to
 64/256/1024/4096 bytes), the document path as associated data, so only the user's key opens it, only on that document.
 An activity seals only `triggers`; `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext (Jack,
