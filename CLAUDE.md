@@ -654,7 +654,17 @@ card) and keeps the stays. A visit reported while no key is loaded is lost if th
 compares, per habit and per place (the 5 with the most waking time), the share of a day's 07:00-23:00 entries logged
 during a stay there with the share of those hours spent there, by day, on days with an entry and an hour both there
 and elsewhere: 14 days at least, in the report's false-discovery family, floor 10 points. Findings show under What
-sets it off; names stay out of the engine and the report codec (results carry the place id).
+sets it off; names stay out of the engine and the report codec (results carry the place id). Once location is on, the card's
+"Add history from your photos" (`lib/providers/photos_provider.dart`, on request only, never observing the library)
+asks PhotoKit for read access and `ios/Runner/PhotosChannel.swift` reads each user-library asset's creation date and
+location alone, off the main thread; limited access reads only the shared photos. `photoRuns`
+(`lib/insights/photo_stays.dart`) makes a stay of two or more photos within 150 m on one day, at most 90 minutes
+apart, spanning 15 minutes or more; a lone photo gives nothing. `PlaceStore.withPhotoRuns` replaces the photo stays
+(source `photos` in the file, format 2; format 1 still opens), joins them to the same places without moving a visited
+one, and `withoutPhotos` removes them and the places only photos gave. `atPlace` ignores photo stays: time outside
+them is unknown, and in simulation (#296) photos set off by a habit raised false cards above the family's rate even
+counting only the hours they cover, with too few days to find a real difference. They only find and name places;
+`roughLocationOfPlaces` ignores them too.
 
 **Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
 held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city
