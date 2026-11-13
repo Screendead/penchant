@@ -1,0 +1,77 @@
+<!-- Option B, silent fields only: static mock-up, 390 px phones; no scripts or external assets. -->
+<div class="cdB">
+<style>
+.cdB{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--outline:#1D1C1A8C;--accent:#1D1C1A;--onAccent:#F6F4EF;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--snack:#1D1C1A;--onSnack:#F6F4EF;
+ --fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;--fm:"Red Hat Mono",ui-monospace,"SF Mono",Menlo,monospace;
+ display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:var(--ft);color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.cdB{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--outline:#F3F0EA66;--accent:#F3F0EA;--onAccent:#1D1C1A;--d3:#E95963;--snack:#F3F0EA;--onSnack:#1D1C1A}}
+.cdB *{box-sizing:border-box}
+.cdB .ph{width:390px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cdB .cap{font:600 11px/1.3 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 22px 0}
+.cdB .today{padding:14px 18px 8px;position:relative}
+.cdB .dial{width:180px;height:180px;border-radius:50%;margin:6px auto 12px;border:1.5px solid var(--line);position:relative;background:var(--surface)}
+.cdB .bead{position:absolute;border-radius:50%;width:14px;height:14px}
+.cdB .row{display:flex;align-items:center;gap:10px;height:48px;border-top:1px solid var(--line);font:500 16px/22px var(--ft)}
+.cdB .row .n{flex:1}.cdB .row .c{font:500 15px/1 var(--fm);color:var(--muted)}
+.cdB .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.cdB .plus{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 18px/1 var(--ft)}
+.cdB .snack{margin:10px 12px 14px;background:var(--snack);color:var(--onSnack);border-radius:14px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;font:400 14px/1.35 var(--ft)}
+.cdB .snack b{font-weight:600}.cdB .snack .m{flex:1}
+.cdB .snack .act{display:block;margin-top:4px;font:600 14px/1 var(--ft);text-decoration:underline;text-underline-offset:3px}
+.cdB .undo{border:1.5px solid currentColor;border-radius:999px;padding:9px 14px;font:600 13px/1 var(--ft);white-space:nowrap}
+.cdB .sheet{background:var(--surface);border-radius:32px 32px 0 0;border-top:1px solid var(--line);padding:12px 22px 26px;margin-top:auto}
+.cdB .grab{width:38px;height:5px;border-radius:3px;background:var(--text);opacity:.18;margin:0 auto 14px}
+.cdB .hdr{display:flex;align-items:center;gap:10px;font:900 26px/32px var(--fd);letter-spacing:-.3px}
+.cdB .hdr .x{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font:500 16px/1 var(--ft);color:var(--muted);flex:none}
+.cdB .stepper{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.cdB .sb{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--outline);display:grid;place-items:center;font:500 26px/1 var(--ft)}
+.cdB .amt{text-align:center}.cdB .amt .v{font:500 42px/1 var(--fm)}.cdB .amt .u{font:400 14px/1.4 var(--ft);color:var(--muted)}
+.cdB .time{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:16px;padding:10px 14px}
+.cdB .mini{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--outline);position:relative;flex:none}
+.cdB .mini::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:18px;background:var(--text);transform-origin:top;transform:rotate(145deg)}
+.cdB .time .t{font:500 20px/1 var(--fm)}.cdB .time .d{font:400 13px/1.4 var(--ft);color:var(--muted)}
+.cdB .lbl{font:600 11px/1 var(--ft);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.cdB .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cdB .chip{height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font:600 13px/1 var(--ft);background:var(--surface2);border:1.5px solid transparent;white-space:nowrap}
+.cdB .chip.on{background:var(--accent);color:var(--onAccent)}
+.cdB .chip.ghost{background:transparent;border-color:var(--outline)}
+.cdB .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cdB .scale span{height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;font:500 16px/1 var(--fm)}
+.cdB .scale span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.cdB .ends{display:flex;justify-content:space-between;font:400 12px/1.6 var(--ft);color:var(--muted)}
+.cdB .note{min-height:44px;border-radius:14px;background:var(--surface2);padding:12px 14px;font:400 15px/1.4 var(--ft);color:var(--muted)}
+.cdB .note.filled{color:var(--text)}
+.cdB .seg{display:flex;gap:6px;flex-wrap:wrap}
+.cdB .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cdB .field{border-radius:14px;background:var(--surface2);padding:10px 14px;font:500 16px/1.2 var(--fm)}
+.cdB .field small{display:block;font:400 12px/1.4 var(--ft);color:var(--muted)}
+.cdB .go{margin-top:18px;height:52px;border-radius:999px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;font:600 16px/1 var(--ft)}
+.cdB .go .mn{font-family:var(--fm);font-size:17px}
+.cdB .pair{display:flex;gap:10px;margin-top:18px}.cdB .pair .go{flex:1;margin:0}
+.cdB .ghostbtn{height:52px;border-radius:999px;border:1.5px solid var(--outline);display:grid;place-items:center;font:600 15px/1 var(--ft);padding:0 18px}
+.cdB .sub{font:400 14px/1.4 var(--ft);color:var(--muted);margin:2px 0 0}
+.cdB .new{outline:2px dashed var(--outline);outline-offset:6px;border-radius:12px;margin-top:6px}
+.cdB .tag{font:600 10px/1 var(--ft);letter-spacing:.06em;color:var(--muted);margin-left:6px}
+.cdB .silent{width:390px;max-width:100%;margin:0;align-self:flex-start;border:1px dashed var(--outline);border-radius:14px;padding:12px 14px;font:400 13px/1.5 var(--ft)}
+.cdB .silent dt{font:600 11px/1 var(--ft);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.cdB .silent dd{margin:2px 0 0;font:500 13px/1.4 var(--fm)}
+.cdB .legend{width:100%;max-width:800px;text-align:center;font:400 13px/1.4 var(--ft);color:var(--muted);margin:0}
+</style>
+<div class="ph"><div class="cap">One tap on Wine +, screen unchanged</div><div class="today">
+  <div class="dial"><span class="bead" style="background:var(--d1);left:118px;top:22px"></span><span class="bead" style="background:var(--d1);left:142px;top:52px"></span><span class="bead" style="background:var(--d2);left:62px;top:146px;width:12px;height:12px"></span><span class="bead" style="background:var(--d3);left:20px;top:110px;width:16px;height:16px"></span></div>
+  <div class="row"><span class="dot" style="background:var(--d1)"></span><span class="n">Coffee</span><span class="c">2</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d2)"></span><span class="n">Cigarettes</span><span class="c">1</span><span class="plus">+</span></div>
+  <div class="row"><span class="dot" style="background:var(--d3)"></span><span class="n">Wine</span><span class="c">1</span><span class="plus">+</span></div>
+</div>
+<div class="snack"><div class="m">Logged <b>1 glass</b> of Wine at <b>21:40</b><span class="act">What was going on?</span></div><span class="undo">Undo 8</span></div></div><div class="ph"><div class="cap">Amount sheet, unchanged</div><div class="sheet"><div class="grab"></div>
+  <div class="hdr"><span class="dot" style="background:var(--d3);width:16px;height:16px"></span>Wine<span class="x">&#x2715;</span></div>
+  <div class="stepper"><span class="sb">&minus;</span><div class="amt"><div class="v">1</div><div class="u">glass</div></div><span class="sb">+</span></div>
+  <div class="time"><span class="mini"></span><div><div class="t">21:40</div><div class="d">Today, Thursday 12 November</div></div></div>
+  <div class="chips" style="margin-top:12px"><span class="chip ghost">What was going on? (optional)</span></div>
+  <div class="go"><span>Log <span class="mn">1</span> glass at <span class="mn">21:40</span></span></div>
+</div></div><dl class="silent"><dt style="margin-top:0">Stored with each new entry, never shown</dt>
+<dt>Time zone</dt><dd>Europe/London</dd>
+<dt>Written at</dt><dd>21:40:12, live (not filled in later)</dd>
+<dt>How it was logged</dt><dd>one tap on a tally</dd></dl>
+<p class="legend">Nothing on screen changes. The dashed box beside the phones is a caption for this page, not part of the app.</p>
+</div>

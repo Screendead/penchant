@@ -65,7 +65,7 @@ class WeeklyReviewPage extends ConsumerWidget {
     final double? usual = habit.usual;
     if (usual == null) return 'New in the last four weeks';
     final num rounded = (usual * 10).round() / 10;
-    return 'Usually ${habit.vice.unit.label(rounded)} a week';
+    return 'Usually ${habit.vice.units.label(rounded)} a week';
   }
 
   static String entries(int n) =>
@@ -179,7 +179,7 @@ class _HabitWeekRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
-    final Unit unit = habit.vice.unit;
+    final UnitWords unit = habit.vice.units;
     final String usual = WeeklyReviewPage.usual(habit);
     final String total = unit.label(habit.total);
     return MergeSemantics(

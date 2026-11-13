@@ -1,9 +1,15 @@
 import EventKit
-import Flutter
+
+#if os(macOS)
+  import FlutterMacOS
+#else
+  import Flutter
+#endif
 
 // The Dart side is lib/insights/calendar_source.dart. Read-only: nothing here
-// writes to the calendar. Each event crosses the channel as its start and end
-// alone; titles, notes, places and attendees are never read into the answer.
+// writes to the calendar. Each event crosses the channel as its start, its end
+// and how many people it lists; titles, notes, places and who the attendees
+// are never enter the answer. The macOS app compiles this file too.
 enum CalendarChannel {
   static let channelName = "com.screendead.penchant/calendar"
   private static let store = EKEventStore()
@@ -13,7 +19,12 @@ enum CalendarChannel {
   private static let maxSpan: TimeInterval = 4 * 365 * 24 * 3600
 
   static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: channelName, binaryMessenger: registrar.messenger())
+    #if os(macOS)
+      let messenger = registrar.messenger
+    #else
+      let messenger = registrar.messenger()
+    #endif
+    let channel = FlutterMethodChannel(name: channelName, binaryMessenger: messenger)
     channel.setMethodCallHandler { call, result in
       switch call.method {
       case "access":
@@ -30,7 +41,7 @@ enum CalendarChannel {
 
   private static func access() -> String {
     let status = EKEventStore.authorizationStatus(for: .event)
-    if #available(iOS 17.0, *) {
+    if #available(iOS 17.0, macOS 14.0, *) {
       switch status {
       case .fullAccess: return "full"
       case .writeOnly: return "writeOnly"
@@ -55,14 +66,15 @@ enum CalendarChannel {
       store.reset()
       done(granted)
     }
-    if #available(iOS 17.0, *) {
+    if #available(iOS 17.0, macOS 14.0, *) {
       store.requestFullAccessToEvents(completion: completion)
     } else {
       store.requestAccess(to: .event, completion: completion)
     }
   }
 
-  // Answers [start, end, ...] in microseconds since 1970, sorted by start.
+  // Answers [start, end, attendees, ...], times in microseconds since 1970,
+  // sorted by start.
   // Drops all-day and cancelled events, and events the person declined.
   private static func events(_ arguments: Any?, result: @escaping FlutterResult) {
     guard let args = arguments as? [String: Any],
@@ -94,6 +106,7 @@ enum CalendarChannel {
         guard let s = event.startDate, let e = event.endDate, s < e else { continue }
         flat.append((s.timeIntervalSince1970 * 1e6).rounded())
         flat.append((e.timeIntervalSince1970 * 1e6).rounded())
+        flat.append(Double(event.attendees?.count ?? 0))
       }
       let typed = FlutterStandardTypedData(float64: flat.withUnsafeBufferPointer { Data(buffer: $0) })
       DispatchQueue.main.async { result(typed) }

@@ -521,7 +521,7 @@ class _Wedge extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onHold;
 
-  static String amount(Unit unit) =>
+  static String amount(UnitWords unit) =>
       '+${unit.label(defaultQuantity)}'.replaceAll(RegExp(r'minutes?'), 'min');
 
   @override
@@ -546,7 +546,7 @@ class _WedgeState extends State<_Wedge> {
     final String name = vice?.name ?? 'More';
     final String detail = vice == null
         ? 'all habits'
-        : _Wedge.amount(vice.unit);
+        : _Wedge.amount(vice.units);
     final double chord =
         2 * FanGeometry.label * scale * sin(pi / max(count, 2)) * 0.9;
 

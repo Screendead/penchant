@@ -9,7 +9,8 @@ import 'package:tracker/insights/insights_timing.dart';
 // provider failure to Crashlytics, so nothing here may fail. Each failure is
 // a value instead.
 
-/// Null where the app reads no calendar: everywhere but iOS.
+/// The calendar Insights reads; null everywhere but iOS. The Mac's picker
+/// reads its own (lib/providers/mac_calendar_provider.dart).
 final calendarSourceProvider = Provider<CalendarSource?>(
   (ref) => defaultTargetPlatform == TargetPlatform.iOS
       ? ChannelCalendarSource()
@@ -70,6 +71,11 @@ final calendarEventsProvider = FutureProvider.autoDispose
       }
     });
 
+/// How long a Calendar or Reminders prompt may go unanswered before the
+/// card asks EventKit again: a reply that never comes would leave the card
+/// busy, its tap doing nothing, while access may already be granted.
+const Duration eventKitPromptTimeout = Duration(seconds: 60);
+
 /// Shows the calendar prompt from the Insights screen. Takes the container
 /// rather than a page's ref, which may be disposed by the time it closes.
 Future<bool> connectCalendar(ProviderContainer container) async {
@@ -77,7 +83,7 @@ Future<bool> connectCalendar(ProviderContainer container) async {
   if (source == null) return false;
   bool granted;
   try {
-    granted = await source.requestAccess();
+    granted = await source.requestAccess().timeout(eventKitPromptTimeout);
   } catch (_) {
     granted = false;
   }

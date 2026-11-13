@@ -700,5 +700,66 @@ do {
   check("state round-trips", (try? JSONDecoder().decode(HealthDays.SyncState.self, from: encoded)) == state)
 }
 
+// sessionMinuteRows: merged across sources, cut at midnight and the window.
+do {
+  let rows = HealthDays.sessionMinuteRows(
+    [
+      (at(2026, 11, 7, 23, 30), at(2026, 11, 8, 0, 30)),
+      (at(2026, 11, 8, 0, 0), at(2026, 11, 8, 0, 45)),
+      (at(2026, 11, 8, 18), at(2026, 11, 8, 18, 20)),
+      (at(2026, 11, 9, 7), at(2026, 11, 9, 7)),
+      (at(2026, 11, 10, 23), at(2026, 11, 11, 1)),
+    ], metric: "workoutMinutes", start: at(2026, 11, 8), end: at(2026, 11, 11), calendar)
+  let got = values(rows)
+  check("a session over midnight is cut at the window's start", got["2026-11-07 workoutMinutes"] == nil, "\(got)")
+  check("overlapping sessions count once", got["2026-11-08 workoutMinutes"] == 65, "\(got)")
+  check("an empty session is no day", got["2026-11-09 workoutMinutes"] == nil, "\(got)")
+  check("a session is cut at the window's end", got["2026-11-10 workoutMinutes"] == 60, "\(got)")
+  check("only touched days have rows", rows.count == 2, "\(got)")
+  let dst = values(
+    HealthDays.sessionMinuteRows(
+      [(at(2026, 10, 24, 23, 30), at(2026, 10, 25, 1, 30))], metric: "m", start: at(2026, 10, 20),
+      end: at(2026, 10, 30), calendar))
+  check("cut at local midnight", dst["2026-10-24 m"] == 30 && dst["2026-10-25 m"] == 90, "\(dst)")
+}
+
+// moodRows: daily mood over momentary emotions, by the log's local day.
+do {
+  let rows = HealthDays.moodRows(
+    [
+      (at: at(2026, 11, 8, 9), daily: false, valence: -0.6),
+      (at: at(2026, 11, 8, 21), daily: true, valence: 0.2),
+      (at: at(2026, 11, 8, 22), daily: true, valence: 0.4),
+      (at: at(2026, 11, 9, 8), daily: false, valence: -0.2),
+      (at: at(2026, 11, 9, 23, 30), daily: false, valence: 0.6),
+      (at: at(2026, 11, 7, 23), daily: true, valence: 1),
+      (at: at(2026, 11, 11), daily: true, valence: 1),
+    ], metric: "moodValence", start: at(2026, 11, 8), end: at(2026, 11, 11), calendar)
+  let got = values(rows)
+  check("daily mood wins over momentary emotions", abs(got["2026-11-08 moodValence"]! - 0.3) < 1e-9, "\(got)")
+  check("momentary emotions alone are averaged", abs(got["2026-11-09 moodValence"]! - 0.2) < 1e-9, "\(got)")
+  check("only logs inside the window count", rows.count == 2, "\(got)")
+}
+
+// flowDayRows: a day with flow, once, keyed to its start; "none" is no flow.
+do {
+  let rows = HealthDays.flowDayRows(
+    [
+      (start: at(2026, 11, 7), value: 2),
+      (start: at(2026, 11, 8), value: 4),
+      (start: at(2026, 11, 8, 9), value: 1),
+      (start: at(2026, 11, 9), value: HealthDays.noFlow),
+      (start: at(2026, 11, 10, 23, 30), value: 3),
+      (start: at(2026, 11, 11), value: 2),
+    ], metric: "menstrualFlow", start: at(2026, 11, 8), end: at(2026, 11, 11), calendar)
+  let got = values(rows)
+  check("flow before the window is left out", got["2026-11-07 menstrualFlow"] == nil, "\(got)")
+  check("two samples on one day are one day of 1", got["2026-11-08 menstrualFlow"] == 1, "\(got)")
+  check("no flow is no day", got["2026-11-09 menstrualFlow"] == nil, "\(got)")
+  check("a sample is the day it starts", got["2026-11-10 menstrualFlow"] == 1, "\(got)")
+  check("flow at the window's end is left out", got["2026-11-11 menstrualFlow"] == nil, "\(got)")
+  check("only flow days have rows", rows.count == 2, "\(got)")
+}
+
 if failures > 0 { exit(1) }
 print("ok")

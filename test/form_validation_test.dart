@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/vice_form.dart';
+import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -79,6 +80,31 @@ void main() {
     test("accepts a legacy activity's unchanged out-of-range quantity", () {
       expect(quantityError('0', unchanged: 0), isNull);
       expect(quantityError('-1', unchanged: 0), 'Please enter more than 0');
+    });
+  });
+
+  group('unit label and cost per unit', () {
+    test('a label is optional and at most 20 characters', () {
+      expect(unitLabelError(''), isNull);
+      expect(unitLabelError('cups'), isNull);
+      expect(unitLabelError('x' * maxUnitLabelLength), isNull);
+      expect(unitLabelError('x' * 21), 'Use 20 characters or fewer');
+    });
+
+    test('its singular is bounded the same way', () {
+      expect(maxUnitLabelLength, 20);
+      expect(readUnitLabel(' cup '), 'cup');
+      expect(readUnitLabel('x' * 21), isNull);
+    });
+
+    test('a cost is optional, above 0 and at most 100,000', () {
+      expect(costPerUnitError(''), isNull);
+      expect(costPerUnitError('2.50'), isNull);
+      expect(costPerUnitError('100000'), isNull);
+      expect(costPerUnitError('0'), 'Please enter more than 0');
+      expect(costPerUnitError('-1'), 'Please enter more than 0');
+      expect(costPerUnitError('100001'), 'Please enter 100,000 or less');
+      expect(costPerUnitError('two'), 'Please enter a valid amount');
     });
   });
 

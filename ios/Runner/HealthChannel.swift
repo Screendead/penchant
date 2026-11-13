@@ -56,6 +56,32 @@ enum HealthChannel {
     "appleSleepingWristTemperature", "stepCount", "activeEnergyBurned",
   ]
 
+  // Session types, read as minutes a day (HealthDays.sessionMinuteRows): only
+  // each session's start and end, never a workout's type, route or metadata.
+  private static func sessionType(_ metric: String) -> HKSampleType? {
+    switch metric {
+    case "workoutMinutes": return HKObjectType.workoutType()
+    case "mindfulMinutes": return HKCategoryType(.mindfulSession)
+    default: return nil
+    }
+  }
+
+  private static let sessionMetrics = ["workoutMinutes", "mindfulMinutes"]
+
+  // State of Mind, iOS 18 and later, read as one valence a day
+  // (HealthDays.moodRows): only each log's start, kind and valence, never its
+  // labels or associations. Older systems lack the type and read no rows.
+  static let moodMetric = "moodValence"
+
+  static var stateOfMindType: HKSampleType? {
+    guard #available(iOS 18.0, *) else { return nil }
+    return HKSampleType.stateOfMindType()
+  }
+
+  // Days with menstrual flow (HealthDays.flowDayRows), for the insights engine
+  // to infer cycle phase from and hold fixed; never an outcome or shown.
+  private static let menstrualFlow = "menstrualFlow"
+
   // Raw samples, for the hours around an entry. Units as the daily path's.
   private static func sampleType(_ metric: String) -> (type: HKQuantityType, unit: HKUnit)? {
     switch metric {
@@ -79,6 +105,11 @@ enum HealthChannel {
     for metric in quantityMetrics {
       if let s = statistic(metric) { types.insert(s.type) }
     }
+    for metric in sessionMetrics {
+      if let type = sessionType(metric) { types.insert(type) }
+    }
+    types.insert(HKCategoryType(.menstrualFlow))
+    if let type = stateOfMindType { types.insert(type) }
     return types
   }
 
@@ -213,6 +244,10 @@ enum HealthChannel {
     (error as? HKError)?.code == .errorNoData
   }
 
+  private static func isNotDetermined(_ error: Error) -> Bool {
+    (error as? HKError)?.code == .errorAuthorizationNotDetermined
+  }
+
   private static var calendar: Calendar { Calendar.current }
 
   // Each row is ["date": "yyyy-MM-dd", "metric": id, "value": Double]. A day
@@ -259,6 +294,63 @@ enum HealthChannel {
           found.append(["date": date, "metric": metric, "value": quantity.doubleValue(for: s.unit)])
         }
         finish(found, error)
+      }
+      store.execute(query)
+    }
+
+    for metric in metrics {
+      guard let type = sessionType(metric) else { continue }
+      group.enter()
+      let query = HKSampleQuery(
+        sampleType: type, predicate: HKQuery.predicateForSamples(withStart: start, end: end),
+        limit: HKObjectQueryNoLimit, sortDescriptors: nil
+      ) { _, samples, error in
+        // Someone who connected Health before this type joined readTypes has
+        // not been asked for it; taken to fail as not determined (unchecked on
+        // a device), which costs this metric alone until the sheet is shown.
+        if let error, isNotDetermined(error) {
+          finish([], nil)
+          return
+        }
+        let sessions = (samples ?? []).map { ($0.startDate, $0.endDate) }
+        finish(HealthDays.sessionMinuteRows(sessions, metric: metric, start: start, end: end, calendar), error)
+      }
+      store.execute(query)
+    }
+
+    if metrics.contains(moodMetric), #available(iOS 18.0, *) {
+      group.enter()
+      let query = HKSampleQuery(
+        sampleType: HKSampleType.stateOfMindType(), predicate: HKQuery.predicateForSamples(withStart: start, end: end),
+        limit: HKObjectQueryNoLimit, sortDescriptors: nil
+      ) { _, samples, error in
+        // Not asked for yet, as the session types above.
+        if let error, isNotDetermined(error) {
+          finish([], nil)
+          return
+        }
+        let logs = (samples ?? []).compactMap { $0 as? HKStateOfMind }.map {
+          (at: $0.startDate, daily: $0.kind == .dailyMood, valence: $0.valence)
+        }
+        finish(HealthDays.moodRows(logs, metric: moodMetric, start: start, end: end, calendar), error)
+      }
+      store.execute(query)
+    }
+
+    if metrics.contains(menstrualFlow) {
+      group.enter()
+      let query = HKSampleQuery(
+        sampleType: HKCategoryType(.menstrualFlow), predicate: HKQuery.predicateForSamples(withStart: start, end: end),
+        limit: HKObjectQueryNoLimit, sortDescriptors: nil
+      ) { _, samples, error in
+        // As for the session types: asked of someone who connected before it
+        // joined readTypes, it costs this metric alone.
+        if let error, isNotDetermined(error) {
+          finish([], nil)
+          return
+        }
+        let days = (samples ?? []).compactMap { $0 as? HKCategorySample }.map { (start: $0.startDate, value: $0.value) }
+        finish(HealthDays.flowDayRows(days, metric: menstrualFlow, start: start, end: end, calendar), error)
       }
       store.execute(query)
     }
@@ -444,6 +536,9 @@ extension HealthChannel {
 
     private static func types(for metric: String) -> [HKSampleType] {
       if let s = HealthChannel.statistic(metric) { return [s.type] }
+      if let type = HealthChannel.sessionType(metric) { return [type] }
+      if metric == HealthChannel.menstrualFlow { return [HKCategoryType(.menstrualFlow)] }
+      if metric == HealthChannel.moodMetric { return HealthChannel.stateOfMindType.map { [$0] } ?? [] }
       let sleep = HKCategoryType(.sleepAnalysis)
       if metric == HealthChannel.sleepingHeartRate { return [sleep, HKQuantityType(.heartRate)] }
       if HealthDays.sleepMetrics.contains(where: { $0.id == metric }) || HealthDays.sleepTimingMetrics.contains(metric) {
@@ -494,7 +589,7 @@ extension HealthChannel {
         let seed = anchored(
           type, predicate: HKQuery.predicateForSamples(withStart: since, end: nil), anchor: nil,
           limit: HKObjectQueryNoLimit)
-        if let error = seed.error, !HealthChannel.isNoData(error) { return error }
+        if let error = seed.error, !tolerated(error) { return error }
         state.markWhole(metrics)
         if let next = seed.anchor,
           let data = try? NSKeyedArchiver.archivedData(withRootObject: next, requiringSecureCoding: true)
@@ -505,7 +600,7 @@ extension HealthChannel {
       }
       while true {
         let page = anchored(type, predicate: nil, anchor: anchor, limit: pageLimit)
-        if let error = page.error { return HealthChannel.isNoData(error) ? nil : error }
+        if let error = page.error { return tolerated(error) ? nil : error }
         if page.deleted > 0 { state.markWhole(metrics) }
         var keys = Set<String>()
         for sample in page.samples {
@@ -521,6 +616,13 @@ extension HealthChannel {
         save(state)
         if page.samples.count + page.deleted < pageLimit || page.anchor == nil { return nil }
       }
+    }
+
+    // A type never asked for (one added to readTypes since the sheet was last
+    // shown) leaves its metrics whole with no anchor; its daily read answers
+    // for it, so one such type does not fail every other's changes.
+    private static func tolerated(_ error: Error) -> Bool {
+      HealthChannel.isNoData(error) || HealthChannel.isNotDetermined(error)
     }
 
     // ["generation": Int, "days": [metric: [day key]], "whole": [metric]]:

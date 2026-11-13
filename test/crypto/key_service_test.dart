@@ -23,6 +23,9 @@ class FakeKeyStore extends Fake implements KeyStore {
   /// Thrown by the next read, as by a keychain that refuses it once.
   Exception? nextReadError;
 
+  int saves = 0;
+  int deletes = 0;
+
   @override
   Future<StoredKey?> read(String uid) async {
     final Exception? error = nextReadError;
@@ -37,6 +40,7 @@ class FakeKeyStore extends Fake implements KeyStore {
     required JournalKey journalKey,
     Uint8List? recoveryKey,
   }) async {
+    saves++;
     final StoredKey? existing = keys[uid];
     if (existing != null && !existing.journalKey.sameAs(journalKey)) {
       throw KeyConflictException(uid);
@@ -49,7 +53,10 @@ class FakeKeyStore extends Fake implements KeyStore {
   }
 
   @override
-  Future<void> delete(String uid) async => keys.remove(uid);
+  Future<void> delete(String uid) async {
+    deletes++;
+    keys.remove(uid);
+  }
 }
 
 class FakeKeyDirectory implements KeyDirectory {
@@ -62,6 +69,9 @@ class FakeKeyDirectory implements KeyDirectory {
 
   /// Lands just before this device's create, as from another device.
   KeyRecord? racing;
+
+  int creates = 0;
+  int replaces = 0;
 
   @override
   Future<KeyRecord?> fetch(String uid) async {
@@ -76,6 +86,7 @@ class FakeKeyDirectory implements KeyDirectory {
 
   @override
   Future<KeyRecord> createIfAbsent(String uid, KeyRecord record) async {
+    creates++;
     if (createUnavailable) {
       throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
     }
@@ -87,8 +98,10 @@ class FakeKeyDirectory implements KeyDirectory {
   }
 
   @override
-  Future<void> replace(String uid, KeyRecord record) async =>
-      records[uid] = record;
+  Future<void> replace(String uid, KeyRecord record) async {
+    replaces++;
+    records[uid] = record;
+  }
 
   @override
   Future<void> setFlags(String uid, {bool? saved, bool? cardDismissed}) async {
@@ -225,6 +238,35 @@ void main() {
 
     expect(states.first, isA<KeyReady>());
     expect(states.last, isA<KeyNeedsRecovery>());
+  });
+
+  test('no key here, against a record, says no other key is here', () async {
+    final StoredKey elsewhere = StoredKey(
+      journalKey: JournalKey.generate(),
+      recoveryKey: RecoveryKey.generate(),
+      location: KeyLocation.synced,
+    );
+    directory.records[uid] = await recordOf(service, elsewhere);
+
+    final List<JournalKeyState> states = await service.resolve(uid).toList();
+
+    expect((states.single as KeyNeedsRecovery).otherKeyHere, isFalse);
+    expect(store.saves, 0);
+    expect(directory.creates, 0);
+  });
+
+  test('another key here than the record says so', () async {
+    await store.save(uid, journalKey: JournalKey.generate());
+    final StoredKey elsewhere = StoredKey(
+      journalKey: JournalKey.generate(),
+      recoveryKey: RecoveryKey.generate(),
+      location: KeyLocation.synced,
+    );
+    directory.records[uid] = await recordOf(service, elsewhere);
+
+    final List<JournalKeyState> states = await service.resolve(uid).toList();
+
+    expect((states.last as KeyNeedsRecovery).otherKeyHere, isTrue);
   });
 
   group('while locked, the keychain is read again', () {
@@ -601,6 +643,62 @@ void main() {
 
       await pumpUntil(() => container.read(sealerProvider) != null);
       expect(container.read(journalNeedsRecoveryKeyProvider), isFalse);
+    });
+
+    test('with E2EE on and no key here, the gate waits for iCloud Keychain, '
+        'then opens with nothing typed or written', () async {
+      final StreamController<void> recheck = StreamController<void>.broadcast();
+      addTearDown(recheck.close);
+      service = serviceOver(store, directory, rechecks: () => recheck.stream);
+      final StoredKey elsewhere = StoredKey(
+        journalKey: JournalKey.generate(),
+        recoveryKey: RecoveryKey.generate(),
+        location: KeyLocation.synced,
+      );
+      directory.records[uid] = await recordOf(service, elsewhere);
+      final ProviderContainer container = containerWith(enabled: true);
+      addTearDown(container.dispose);
+      container.listen(sealerProvider, (_, _) {});
+      container.listen(journalNeedsRecoveryKeyProvider, (_, _) {});
+      container.listen(journalKeyAwaitingSyncProvider, (_, _) {});
+      await pumpUntil(() => container.read(journalNeedsRecoveryKeyProvider));
+      expect(container.read(journalKeyAwaitingSyncProvider), isTrue);
+
+      recheck.add(null);
+      await pumpEventQueue();
+      expect(container.read(journalKeyAwaitingSyncProvider), isTrue);
+      expect(container.read(sealerProvider), isNull);
+
+      // As iCloud Keychain delivers it: not a write by this app.
+      store.keys[uid] = elsewhere;
+      recheck.add(null);
+
+      await pumpUntil(() => container.read(sealerProvider) != null);
+      expect(container.read(journalNeedsRecoveryKeyProvider), isFalse);
+      expect(container.read(journalKeyAwaitingSyncProvider), isFalse);
+      expect(store.saves, 0);
+      expect(store.deletes, 0);
+      expect(directory.creates, 0);
+      expect(directory.replaces, 0);
+      expect(directory.records[uid]!.keyID, keyIDOf(elsewhere.journalKey));
+    });
+
+    test('with E2EE on and another key here, the gate asks for the recovery '
+        'key at once', () async {
+      await store.save(uid, journalKey: JournalKey.generate());
+      final StoredKey elsewhere = StoredKey(
+        journalKey: JournalKey.generate(),
+        recoveryKey: RecoveryKey.generate(),
+        location: KeyLocation.synced,
+      );
+      directory.records[uid] = await recordOf(service, elsewhere);
+      final ProviderContainer container = containerWith(enabled: true);
+      addTearDown(container.dispose);
+      container.listen(journalNeedsRecoveryKeyProvider, (_, _) {});
+      container.listen(journalKeyAwaitingSyncProvider, (_, _) {});
+
+      await pumpUntil(() => container.read(journalNeedsRecoveryKeyProvider));
+      expect(container.read(journalKeyAwaitingSyncProvider), isFalse);
     });
 
     test('with E2EE on, a lost key gives way to a new journal', () async {

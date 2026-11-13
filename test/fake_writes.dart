@@ -78,6 +78,7 @@ class FakeTrackerWrites implements TrackerWrites {
     required String name,
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
+    UnitAndPrice unitAndPrice = noUnitAndPrice,
   }) {
     _requireKey();
     return _write(
@@ -86,6 +87,7 @@ class FakeTrackerWrites implements TrackerWrites {
         'name': name,
         'unit': unit,
         'category': category,
+        if (unitAndPrice != noUnitAndPrice) 'unitAndPrice': unitAndPrice,
       }),
       collection: 'vices',
       op: WriteOp.create,
@@ -98,11 +100,13 @@ class FakeTrackerWrites implements TrackerWrites {
     String? name,
     Unit? unit,
     ViceCategory? category,
+    UnitAndPrice? unitAndPrice,
   }) => _write(
     Write('updateVice', vice.id, <String, Object?>{
       'name': ?name,
       'unit': ?unit,
       'category': ?category,
+      'unitAndPrice': ?unitAndPrice,
     }),
     collection: 'vices',
     op: WriteOp.update,

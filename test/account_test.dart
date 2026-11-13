@@ -275,6 +275,8 @@ void main() {
       final FakeAccount account = FakeAccount()
         ..respond = (_) => signedOut.future;
       await openSettings(tester, account);
+      await tester.ensureVisible(find.text('Sign out'));
+      await tester.pump();
       await tester.tap(find.text('Sign out'));
       await tester.pump();
       expect(find.byType(Settings), findsOneWidget);

@@ -22,7 +22,7 @@ const int defaultQuantity = 1;
 const String removedMessage = 'Activity removed';
 
 String logOneLabel(Vice vice) =>
-    'Log ${vice.unit.label(defaultQuantity)} of ${vice.name}';
+    'Log ${vice.units.label(defaultQuantity)} of ${vice.name}';
 
 InlineSpan loggedMessage(
   Vice vice,
@@ -32,7 +32,7 @@ InlineSpan loggedMessage(
 }) => TextSpan(
   children: <InlineSpan>[
     const TextSpan(text: 'Logged '),
-    TextSpan(text: vice.unit.label(quantity), style: undoBarBold),
+    TextSpan(text: vice.units.label(quantity), style: undoBarBold),
     TextSpan(text: ' of ${vice.name} at '),
     TextSpan(
       text: formatTime(at, alwaysUse24HourFormat: alwaysUse24HourFormat),
@@ -109,6 +109,7 @@ Future<void> logOne(
       ref,
       activityID: activityID,
       vice: vice,
+      at: at,
       cancelled: () => undone,
       entry: entry,
       onUndone: () => undone = true,

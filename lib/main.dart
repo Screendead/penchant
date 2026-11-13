@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,6 +23,7 @@ import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/deleted_habit_page.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/appearance_provider.dart';
+import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
@@ -37,7 +39,10 @@ import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
+import 'package:tracker/design/motion_binding.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
+import 'package:tracker/app_lock/app_lock.dart';
+import 'package:tracker/app_lock/app_lock_gate.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/crypto/key_wiring.dart';
 import 'package:tracker/crypto/sealed_files.dart';
@@ -47,7 +52,7 @@ import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/quit_when_synced.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+  PenchantBinding.ensureInitialized();
   installErrorHandlers();
   registerFontLicence();
   startApp();
@@ -85,13 +90,23 @@ Future<void> _flushInBackground({required bool diskCache}) async {
 // main() without the global error handlers, which flutter_test owns.
 void startApp() {
   unawaited(DeviceFiles().deleteLegacy());
-  runApp(
-    ProviderScope(
-      observers: const [ReportProviderErrors()],
-      overrides: keyServiceOverrides,
-      // Every provider reaches Firebase when first read, and nothing reads one
-      // until MyApp builds, after Firebase has started.
-      child: const Bootstrap(initialize: initializeFirebase, child: MyApp()),
+  unawaited(
+    readAppLockChoice().then(
+      (bool locked) => runApp(
+        ProviderScope(
+          observers: const [ReportProviderErrors()],
+          overrides: [
+            ...keyServiceOverrides,
+            appLockSavedProvider.overrideWithValue(locked),
+          ],
+          // Every provider reaches Firebase when first read, and nothing reads
+          // one until MyApp builds, after Firebase has started.
+          child: const Bootstrap(
+            initialize: initializeFirebase,
+            child: MyApp(),
+          ),
+        ),
+      ),
     ),
   );
 }
@@ -113,6 +128,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final AsyncValue<User?> userValue = ref.watch(userProvider);
     final User? user = userValue.value;
     ref.watch(categoryMigrationProvider);
+    ref.listen(placesProvider, (_, _) {});
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen. The root messenger
@@ -161,10 +177,12 @@ class _MyAppState extends ConsumerState<MyApp> {
         onGenerateRoute: generateRoute,
         builder: (BuildContext context, Widget? child) => KeyboardInsetClamp(
           child: ReduceMotionScope(
-            child: AppMenuBar(
-              child: rejectedWritesBuilder(
-                context,
-                RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+            child: AppLockGate(
+              child: AppMenuBar(
+                child: rejectedWritesBuilder(
+                  context,
+                  RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
+                ),
               ),
             ),
           ),

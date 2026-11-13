@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 
@@ -92,6 +94,9 @@ class EngineInputs {
     required this.today,
     required this.archived,
     required this.events,
+    this.reminders = const <DailyOutcome>[],
+    this.stays = const <PlaceStay>[],
+    this.location,
   });
 
   final List<ViceActivity> activities;
@@ -101,6 +106,15 @@ class EngineInputs {
   final String archived;
   final List<CalendarEvent> events;
 
+  /// [reminderOutcomes]; empty without Reminders access.
+  final List<DailyOutcome> reminders;
+
+  /// [PlaceStore.stays]; empty without location access.
+  final List<PlaceStay> stays;
+
+  /// Where day length is worked out; null when unknown.
+  final RoughLocation? location;
+
   @override
   bool operator ==(Object other) =>
       other is EngineInputs &&
@@ -109,7 +123,10 @@ class EngineInputs {
       _sameUses(other.activities, activities) &&
       listEquals(other.health, health) &&
       _sameSamples(other.samples, samples) &&
-      _sameEvents(other.events, events);
+      _sameEvents(other.events, events) &&
+      listEquals(other.reminders, reminders) &&
+      listEquals(other.stays, stays) &&
+      other.location == location;
 
   @override
   int get hashCode => Object.hash(
@@ -119,6 +136,9 @@ class EngineInputs {
     health.length,
     samples.length,
     events.length,
+    reminders.length,
+    stays.length,
+    location,
   );
 }
 

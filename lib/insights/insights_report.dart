@@ -7,6 +7,9 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/cycle_phase.dart';
+import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
@@ -14,9 +17,11 @@ import 'package:tracker/insights/health_source.dart' as hs;
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
+import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/stats.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 /// The earliest day an entry can be dated (the date picker's floor), so the
@@ -89,6 +94,8 @@ class InsightsInput {
     this.samples = const <String, List<hs.HealthSample>>{},
     this.archived = const <String>{},
     this.events = const <CalendarEvent>[],
+    this.stays = const <PlaceStay>[],
+    this.conditions = const <DayCondition>[],
   });
 
   factory InsightsInput.from({
@@ -99,26 +106,50 @@ class InsightsInput {
         const <String, List<hs.HealthSample>>{},
     Set<String> archived = const <String>{},
     List<CalendarEvent> events = const <CalendarEvent>[],
+    Iterable<hs.DailyOutcome> reminders = const <hs.DailyOutcome>[],
+    List<PlaceStay> stays = const <PlaceStay>[],
+    RoughLocation? location,
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
+    // A locked entry counts: its vice and quantity are plaintext.
+    final List<HabitUse> uses = habitUsesFrom(activities).toList();
+    DateTime? firstUse;
+    for (final HabitUse u in uses) {
+      if (firstUse == null || u.at.isBefore(firstUse)) firstUse = u.at;
+    }
     return InsightsInput(
-      // A locked entry counts: its vice and quantity are plaintext.
-      uses: habitUsesFrom(activities).toList(),
-      outcomes: <DailyOutcome>[
-        for (final hs.DailyOutcome o in health)
-          // Today's day totals and averages cover only part of it; the night
-          // that ended today is whole.
-          if (o.date.isBefore(unfinished) ||
-              (metricCopy(o.metricId)?.night ?? false) ||
-              o.metricId == sleepOnsetId)
-            DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
-      ],
+      uses: uses,
+      outcomes: withEnoughMood(
+        withSessionZeros(<DailyOutcome>[
+          for (final hs.DailyOutcome o in <hs.DailyOutcome>[
+            ...health,
+            ...reminders,
+          ])
+            // Today's day totals and averages cover only part of it; the night
+            // that ended today is whole.
+            if (o.metricId != hs.HealthMetric.menstrualFlow.id &&
+                (o.date.isBefore(unfinished) ||
+                    (metricCopy(o.metricId)?.night ?? false) ||
+                    o.metricId == sleepOnsetId))
+              DailyOutcome(date: o.date, metricId: o.metricId, value: o.value),
+        ], through: addDays(unfinished, -1)),
+      ),
       from: range.start,
       through: addDays(range.end, -1),
       samples: samples,
       archived: archived,
       events: events,
+      stays: stays,
+      conditions: <DayCondition>[
+        cyclePhases(<DateTime>[
+          for (final hs.DailyOutcome o in health)
+            if (o.metricId == hs.HealthMetric.menstrualFlow.id && o.value > 0)
+              o.date,
+        ]),
+        if (location != null && firstUse != null)
+          dayLengths(location, from: firstUse, through: range.end),
+      ],
     );
   }
 
@@ -138,15 +169,124 @@ class InsightsInput {
   /// The calendar's timed events over the journal's span; empty without
   /// calendar access.
   final List<CalendarEvent> events;
+
+  /// Time spent at the person's own places; empty without location access.
+  final List<PlaceStay> stays;
+
+  /// What the day-after comparisons hold fixed where there are enough days:
+  /// the cycle's phase ([cyclePhases]) and the day's length ([dayLengths]),
+  /// never outcomes of their own.
+  final List<DayCondition> conditions;
+}
+
+/// The fewest days with a session a [hs.sessionMetricIds] outcome needs to be
+/// judged at all: under it, a series of nearly all zeros would only add
+/// comparisons to the false-discovery family that cannot find anything.
+const int minSessionDays = 14;
+
+/// [outcomes] with each [hs.sessionMetricIds] metric's days without a session
+/// as 0, from its first day with one through [through]. Without the metric
+/// when it has fewer than [minSessionDays] days with a session, or when its
+/// floor ([metricFloors]) cannot be reached: no day's total reaches it. Every
+/// day lies between 0 and that largest day, so no two sets of days can differ
+/// by the floor in either direction, and its comparisons would only enlarge
+/// the false-discovery family. The rule reads the metric's own days alone,
+/// never which days followed a habit, so it cannot favour a finding. It is
+/// exact for the with-and-without comparisons and conservative (it keeps
+/// some unreachable metrics) since the person's floor is never under the
+/// literature's; an amount or time slope across a habit's range is taken to
+/// stay inside the days' range too. A person with none has no rows, which
+/// stays no data: Health answers a refused read with nothing, the same as an
+/// empty one.
+List<DailyOutcome> withSessionZeros(
+  List<DailyOutcome> outcomes, {
+  required DateTime through,
+}) {
+  final Map<String, Set<DateTime>> sessionDays = <String, Set<DateTime>>{};
+  final Map<String, double> largest = <String, double>{};
+  for (final DailyOutcome o in outcomes) {
+    if (hs.sessionMetricIds.contains(o.metricId) && o.value > 0) {
+      (sessionDays[o.metricId] ??= <DateTime>{}).add(o.date);
+      largest[o.metricId] = max(largest[o.metricId] ?? 0, o.value);
+    }
+  }
+  final Set<String> judged = <String>{
+    for (final MapEntry<String, Set<DateTime>> metric in sessionDays.entries)
+      if (metric.value.length >= minSessionDays &&
+          largest[metric.key]! >= (metricFloors[metric.key]?.floor ?? 0))
+        metric.key,
+  };
+  final List<DailyOutcome> filled = <DailyOutcome>[
+    for (final DailyOutcome o in outcomes)
+      if (!hs.sessionMetricIds.contains(o.metricId) ||
+          judged.contains(o.metricId))
+        o,
+  ];
+  for (final MapEntry<String, Set<DateTime>> metric in sessionDays.entries) {
+    if (!judged.contains(metric.key)) continue;
+    final Set<DateTime> known = <DateTime>{
+      for (final DailyOutcome o in outcomes)
+        if (o.metricId == metric.key) o.date,
+    };
+    for (
+      DateTime day = metric.value.reduce((a, b) => a.isBefore(b) ? a : b);
+      !day.isAfter(through);
+      day = addDays(day, 1)
+    ) {
+      if (!known.contains(day)) {
+        filled.add(DailyOutcome(date: day, metricId: metric.key, value: 0));
+      }
+    }
+  }
+  return filled;
+}
+
+/// The fewest days with a mood log before [hs.HealthMetric.moodValence] is
+/// judged at all (Jack, round 16 `mood-floor` A): most people log mood now and
+/// then, and a handful of days would only add comparisons to the
+/// false-discovery family.
+const int minMoodDays = 14;
+
+/// [outcomes] without [hs.HealthMetric.moodValence] when it has fewer than
+/// [minMoodDays] days or every day's value is the same, so it has no spread
+/// to set its floor ([FloorRule.ownSpread]) and nothing could differ. Reads
+/// the person's days alone, never which followed a habit.
+List<DailyOutcome> withEnoughMood(List<DailyOutcome> outcomes) {
+  final String mood = hs.HealthMetric.moodValence.id;
+  final List<double> days = <double>[
+    for (final DailyOutcome o in outcomes)
+      if (o.metricId == mood) o.value,
+  ];
+  if (days.isEmpty) return outcomes;
+  final bool judged =
+      days.length >= minMoodDays && days.any((v) => v != days.first);
+  return judged
+      ? outcomes
+      : <DailyOutcome>[
+          for (final DailyOutcome o in outcomes)
+            if (o.metricId != mood) o,
+        ];
 }
 
 /// The moments around uses whose samples Insights reads, with every window
-/// ended by the start of [today], given [bed] ([hs.HealthSampleMetric.bed]).
+/// ended by the start of [today], given [bed] ([hs.HealthSampleMetric.bed])
+/// and, for days with no night in it, [wakingSteps] read over
+/// [insightsWakingReads].
 HoursAfterPlan insightsHoursAfterPlan(
   List<HabitUse> uses,
   DateTime today, {
   List<hs.HealthSample> bed = const <hs.HealthSample>[],
-}) => planHoursAfter(uses, startOfDay(today), bed: bed);
+  List<hs.HealthSample> wakingSteps = const <hs.HealthSample>[],
+}) =>
+    planHoursAfter(uses, startOfDay(today), bed: bed, wakingSteps: wakingSteps);
+
+/// The spans of steps [insightsHoursAfterPlan] guesses waking from: one per
+/// day near a use that [bed] holds no night for.
+List<({DateTime start, DateTime end})> insightsWakingReads(
+  List<HabitUse> uses,
+  DateTime today, {
+  List<hs.HealthSample> bed = const <hs.HealthSample>[],
+}) => hoursAfterWakingReads(uses, startOfDay(today), bed: bed);
 
 /// Where [insightsHoursAfterPlan] reads [hs.HealthSampleMetric.bed] from: the
 /// evening before the first day a use can be judged.
@@ -173,8 +313,20 @@ class InsightsReport {
     this.replacements = const <Replacement>[],
     this.shifts = const <MeasureShift>[],
     this.afterEvent = const <AfterEvent>[],
+    this.calendarDays = const <CalendarDay>[],
+    this.atPlace = const <AtPlace>[],
     this.recovery = const <Recovery>[],
+    this.triggers = const <HabitTriggers>[],
   });
+
+  /// Whether each habit is used on more of the days with more of each
+  /// calendar feature, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<CalendarDay> calendarDays;
+
+  /// Each habit's tagged triggers against its other tagged entries, findings
+  /// and refusals, judged in the same family as [findings].
+  final List<HabitTriggers> triggers;
 
   /// Each habit's measures over the nights after its heavy days, findings
   /// and refusals, judged in the same family as [findings].
@@ -195,6 +347,11 @@ class InsightsReport {
   /// Whether each habit follows calendar events, findings and refusals,
   /// judged in the same family as [findings].
   final List<AfterEvent> afterEvent;
+
+  /// Whether each habit is logged at each place more than the time spent
+  /// there would give, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<AtPlace> atPlace;
 
   /// Every pair of habits shown, one following the other within minutes,
   /// each with its verdict, judged in the same family as [findings].
@@ -237,6 +394,7 @@ typedef _Comparison =
       DateTime? from,
       DateTime? through,
       InsightGates gates,
+      List<DayCondition> conditions,
     });
 
 const List<_Comparison> _comparisons = <_Comparison>[
@@ -257,6 +415,8 @@ InsightsReport computeInsights(InsightsInput input) {
           bed:
               input.samples[hs.HealthSampleMetric.bed.id] ??
               const <hs.HealthSample>[],
+          wakingSteps:
+              input.samples[wakingStepsKey] ?? const <hs.HealthSample>[],
         );
   final List<HabitInsight> hours = plan == null
       ? const <HabitInsight>[]
@@ -268,8 +428,8 @@ InsightsReport computeInsights(InsightsInput input) {
       <String, List<HabitRefusal>>{};
   // The family for false-discovery control is the whole page: every habit it
   // shows against every outcome, by use, amount and time and a line in each,
-  // what came before each use and each night after a heavy day, not one at a
-  // time.
+  // what came before each use, each night after a heavy day and each tagged
+  // trigger, not one at a time.
   // An archived habit's comparisons are never shown, so they are not counted.
   final List<HabitInsight> after = <HabitInsight>[
     for (final String metricId in outcomes.metricIds)
@@ -282,6 +442,7 @@ InsightsReport computeInsights(InsightsInput input) {
             lagDays: insightsLagDays,
             from: input.from,
             through: input.through,
+            conditions: input.conditions,
           ))
             if (!input.archived.contains(result.habitId)) result,
     for (final HabitInsight result in hours)
@@ -333,6 +494,18 @@ InsightsReport computeInsights(InsightsInput input) {
     through: addDays(input.through, -1),
     skip: input.archived,
   );
+  final List<CalendarDay> calendarDay = calendarDays(
+    uses: input.uses,
+    events: input.events,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<AtPlace> places = atPlace(
+    uses: input.uses,
+    stays: input.stays,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<HabitFollows> follows = habitFollows(
     uses: input.uses,
     through: addDays(input.through, -1),
@@ -341,9 +514,15 @@ InsightsReport computeInsights(InsightsInput input) {
         input.samples[hs.HealthSampleMetric.bed.id] ??
         const <hs.HealthSample>[],
   );
+  final List<HabitTriggers> triggered = triggerAmounts(
+    uses: input.uses,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
   final List<double> afterPs = <double>[
     for (final HabitInsight i in after) ?insightPValue(i),
   ];
+  final List<double> triggerPs = triggerPValues(triggered);
   final List<double> beforePs = <double>[
     for (final BeforeUse b in before) ?b.pValue,
   ];
@@ -355,6 +534,12 @@ InsightsReport computeInsights(InsightsInput input) {
   ];
   final List<double> calendarPs = <double>[
     for (final AfterEvent a in calendar) ?a.pValue,
+  ];
+  final List<double> calendarDayPs = <double>[
+    for (final CalendarDay c in calendarDay) ?c.pValue,
+  ];
+  final List<double> placePs = <double>[
+    for (final AtPlace a in places) ?a.pValue,
   ];
   final List<double> replacementPs = <double>[
     for (final Replacement r in replacements) ?r.pValue,
@@ -375,8 +560,11 @@ InsightsReport computeInsights(InsightsInput input) {
     after,
     alongside: <double>[
       ...beforePs,
+      ...triggerPs,
       ...followsPs,
       ...calendarPs,
+      ...calendarDayPs,
+      ...placePs,
       ...shiftPs,
       ...payoffPs,
       ...replacementPs,
@@ -408,7 +596,10 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -419,8 +610,11 @@ InsightsReport computeInsights(InsightsInput input) {
       before,
       alongside: <double>[
         ...afterPs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -433,8 +627,11 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -445,8 +642,11 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...replacementPs,
         ...recoveryPs,
@@ -458,8 +658,11 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
         ...followsPs,
         ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
         ...shiftPs,
         ...payoffPs,
         ...recoveryPs,
@@ -468,9 +671,42 @@ InsightsReport computeInsights(InsightsInput input) {
     afterEvent: judgeAfterEvent(
       calendar,
       alongside: <double>[
+        ...calendarDayPs,
+        ...afterPs,
+        ...placePs,
+        ...beforePs,
+        ...triggerPs,
+        ...followsPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    calendarDays: judgeCalendarDays(
+      calendarDay,
+      alongside: <double>[
         ...afterPs,
         ...beforePs,
+        ...triggerPs,
+        ...placePs,
         ...followsPs,
+        ...calendarPs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    atPlace: judgeAtPlace(
+      places,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...triggerPs,
+        ...calendarDayPs,
+        ...followsPs,
+        ...calendarPs,
         ...shiftPs,
         ...payoffPs,
         ...replacementPs,
@@ -484,8 +720,11 @@ InsightsReport computeInsights(InsightsInput input) {
               ...shifted.searched,
               ...afterPs,
               ...beforePs,
+              ...triggerPs,
               ...followsPs,
               ...calendarPs,
+              ...calendarDayPs,
+              ...placePs,
               ...payoffPs,
               ...replacementPs,
               ...recoveryPs,
@@ -494,6 +733,21 @@ InsightsReport computeInsights(InsightsInput input) {
             q: const InsightGates().falseDiscoveryRate,
           ).where((MeasureShift s) => s.found).toList()
           ..sort((a, b) => a.shift.at.compareTo(b.shift.at)),
+    triggers: judgeTriggerAmounts(
+      triggered,
+      alongside: <double>[
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
     findings: shown,
     refused: <HabitRefusal>[
       for (final String id in refusedIds) _mostTelling(refusals[id]!),
@@ -555,7 +809,10 @@ enum MetricFamily {
   heart('heart'),
   breathing('breathing'),
   temperature('temperature'),
-  activity('activity');
+  activity('activity'),
+  mindfulness('mindfulness'),
+  reminders('reminders'),
+  mood('mood');
 
   const MetricFamily(this.label);
 
@@ -574,6 +831,12 @@ enum FloorRule {
   /// [noiseShare] of the person's own night-to-night variation alone; the
   /// floor as it stands when there are too few nights to measure it.
   ownNoise,
+
+  /// [noiseShare] of the standard deviation of the person's daily values,
+  /// over every day with one (not only next-door days, which a measure logged
+  /// now and then seldom has); the floor as it stands under [minNoisePairs]
+  /// days.
+  ownSpread,
 }
 
 /// The smallest difference in each outcome worth a card, in its stored units,
@@ -648,13 +911,47 @@ metricFloors = <String, ({double floor, MetricFamily family, FloorRule rule})>{
     family: MetricFamily.activity,
     rule: FloorRule.fixed,
   ),
+  // Inferred: Wen 2011's 15 min of exercise a day, self-reported.
+  'workoutMinutes': (
+    floor: 15,
+    family: MetricFamily.activity,
+    rule: FloorRule.fixed,
+  ),
+  // Inferred: Basso 2019's 13 min of meditation a day for 8 weeks.
+  'mindfulMinutes': (
+    floor: 13,
+    family: MetricFamily.mindfulness,
+    rule: FloorRule.fixed,
+  ),
+  // Kept: no source sizes a change in reminders done or missed; one whole
+  // reminder a day, raised to the person's own noise as every floor is.
+  'remindersCompleted': (
+    floor: 1,
+    family: MetricFamily.reminders,
+    rule: FloorRule.fixed,
+  ),
+  'remindersMissed': (
+    floor: 1,
+    family: MetricFamily.reminders,
+    rule: FloorRule.fixed,
+  ),
+  // Jack's call (round 16 `mood-floor` A): half the person's own SD of daily
+  // valence, after Norman 2003's half a standard deviation. The 2 here, the
+  // scale's whole width, would show nothing; withEnoughMood leaves mood out
+  // before it could apply.
+  'moodValence': (
+    floor: 2,
+    family: MetricFamily.mood,
+    rule: FloorRule.ownSpread,
+  ),
 };
 
 /// Leary 2020's step: 5 percentage points of the night in REM.
 const double remShareOfNight = 0.05;
 
 /// The share of the person's night-to-night variation no floor goes under:
-/// half, the smallest worthwhile change Javaloyes 2019 acts on.
+/// half, the smallest worthwhile change Javaloyes 2019 acts on, and half of
+/// [FloorRule.ownSpread]'s standard deviation (Norman 2003).
 const double noiseShare = 0.5;
 
 /// The fewest pairs of next-door days [typicalError] needs.
@@ -699,6 +996,14 @@ Map<String, double> resolveFloors(OutcomeSeries outcomes) {
             remShareOfNight * median(asleep.values.toList()),
           FloorRule.shareOfNight => metric.value.floor,
           FloorRule.ownNoise => noise ?? metric.value.floor,
+          FloorRule.ownSpread => switch (outcomes
+              .days(metric.key)
+              .values
+              .toList()) {
+            final List<double> days when days.length >= minNoisePairs =>
+              noiseShare * sqrt(sampleVariance(days)),
+            _ => metric.value.floor,
+          },
         };
         final double resolved = noise == null ? floor : max(floor, noise);
         return resolved > 0 ? resolved : metric.value.floor;
@@ -776,22 +1081,27 @@ List<InsightCard> insightCards(
   });
 }
 
+/// How much a refusal says, lowest first: too small to matter, then
+/// entangled, then possibly chance, then logged unevenly, then resting on one
+/// day, then within the noise, then a steady amount or time or a time that
+/// follows the amount, then too few days.
+int refusalRank(RefusalReason reason) => switch (reason) {
+  RefusalReason.tooSmall => -1,
+  RefusalReason.entangled => 0,
+  RefusalReason.chance => 1,
+  RefusalReason.uneven => 2,
+  RefusalReason.oneDay => 3,
+  RefusalReason.withinNoise => 4,
+  RefusalReason.steadyAmount ||
+  RefusalReason.steadyTiming ||
+  RefusalReason.followsAmount ||
+  RefusalReason.followsBedtime => 5,
+  RefusalReason.tooFewDays => 6,
+};
+
 HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
-  int rank(RefusalReason reason) => switch (reason) {
-    RefusalReason.tooSmall => -1,
-    RefusalReason.entangled => 0,
-    RefusalReason.chance => 1,
-    RefusalReason.uneven => 2,
-    RefusalReason.oneDay => 3,
-    RefusalReason.withinNoise => 4,
-    RefusalReason.steadyAmount ||
-    RefusalReason.steadyTiming ||
-    RefusalReason.followsAmount ||
-    RefusalReason.followsBedtime => 5,
-    RefusalReason.tooFewDays => 6,
-  };
   return refusals.reduce((a, b) {
-    final int byReason = rank(a.reason).compareTo(rank(b.reason));
+    final int byReason = refusalRank(a.reason).compareTo(refusalRank(b.reason));
     if (byReason != 0) return byReason < 0 ? a : b;
     final int byKind = a.kind.index.compareTo(b.kind.index);
     if (byKind != 0) return byKind < 0 ? a : b;
@@ -799,7 +1109,14 @@ HabitRefusal _mostTelling(List<HabitRefusal> refusals) {
   });
 }
 
-enum DirectionWords { moreLess, higherLower }
+enum DirectionWords {
+  moreLess,
+  higherLower,
+
+  /// "more pleasant", "less pleasant"; amounts and levels in words, never
+  /// numbers ([measureAmount], [measureLevel]).
+  pleasantness,
+}
 
 /// How one outcome is named and measured on a card.
 class MetricCopy {
@@ -823,9 +1140,14 @@ class MetricCopy {
   final double scale;
   final DirectionWords _words;
 
+  /// Shown in words rather than numbers.
+  bool get inWords => _words == DirectionWords.pleasantness;
+
   String direction(double effect) => switch (_words) {
     DirectionWords.moreLess => effect < 0 ? 'less' : 'more',
     DirectionWords.higherLower => effect < 0 ? 'lower' : 'higher',
+    DirectionWords.pleasantness =>
+      effect < 0 ? 'less pleasant' : 'more pleasant',
   };
 }
 
@@ -881,6 +1203,35 @@ MetricCopy? metricCopy(String metricId) => switch (metricId) {
     unit: 'kcal',
     words: DirectionWords.moreLess,
   ),
+  'workoutMinutes' => const MetricCopy(
+    'workout time',
+    night: false,
+    unit: 'min',
+    words: DirectionWords.moreLess,
+  ),
+  'mindfulMinutes' => const MetricCopy(
+    'mindful time',
+    night: false,
+    unit: 'min',
+    words: DirectionWords.moreLess,
+  ),
+  'remindersCompleted' => const MetricCopy(
+    'completed-reminder count',
+    night: false,
+    decimals: 1,
+    words: DirectionWords.moreLess,
+  ),
+  'remindersMissed' => const MetricCopy(
+    'missed-reminder count',
+    night: false,
+    decimals: 1,
+    words: DirectionWords.moreLess,
+  ),
+  'moodValence' => const MetricCopy(
+    'mood',
+    night: false,
+    words: DirectionWords.pleasantness,
+  ),
   _ => null,
 };
 
@@ -915,6 +1266,16 @@ String? metricEvidence(String metricId) => switch (metricId) {
   'activeEnergyBurned' =>
     'About 85 kcal more a day (5 kJ per kg at 70 kg) went with 21% lower '
         'mortality (Strain 2020).',
+  'workoutMinutes' =>
+    'About 15 min of exercise a day went with 14% lower mortality than '
+        'none (Wen 2011).',
+  'mindfulMinutes' =>
+    '13 min of meditation a day for 8 weeks lowered negative mood against a '
+        'podcast (Basso 2019).',
+  'moodValence' =>
+    'Half your own day-to-day spread, after the usual rule that half a '
+        'standard deviation is the smallest change people notice in rated '
+        'wellbeing (Norman 2003).',
   _ => null,
 };
 
@@ -928,11 +1289,60 @@ String? findingEvidence(HabitFinding finding) =>
 MetricCopy _minutes(String name) =>
     MetricCopy(name, night: true, unit: 'min', words: DirectionWords.moreLess);
 
-String _amount(double value, MetricCopy copy, int decimals, String locale) {
+String _amount(double value, MetricCopy copy, int decimals, String locale) =>
+    measureAmount(value, copy, decimals, locale);
+
+/// The size of a difference of [value] in [copy]'s units: "18 min"; for a
+/// measure shown in words, a size word on the mood scale, whose seven labels
+/// in Health are 2/7 apart: under half a label "slightly", up to a label and
+/// a half "noticeably", beyond it "much". The cut-offs are ours; no source
+/// gives them.
+String measureAmount(
+  double value,
+  MetricCopy copy,
+  int decimals,
+  String locale,
+) {
+  if (copy.inWords) {
+    final double size = value.abs();
+    return size < 1 / 7
+        ? 'slightly'
+        : size < 3 / 7
+        ? 'noticeably'
+        : 'much';
+  }
   final String number = NumberFormat.decimalPatternDigits(
     locale: locale,
     decimalDigits: decimals,
   ).format(value.abs() * copy.scale);
+  return copy.unit.isEmpty ? number : '$number ${copy.unit}';
+}
+
+/// [value] as a level in [copy]'s units: "58 bpm"; for a measure shown in
+/// words, the label Health gives that valence ("slightly pleasant"), its
+/// seven equal bands from -1 to 1.
+String measureLevel(
+  double value,
+  MetricCopy copy,
+  int decimals,
+  String locale,
+) {
+  if (copy.inWords) {
+    const List<String> labels = <String>[
+      'very unpleasant',
+      'unpleasant',
+      'slightly unpleasant',
+      'neutral',
+      'slightly pleasant',
+      'pleasant',
+      'very pleasant',
+    ];
+    return labels[((value + 1) * 3.5).floor().clamp(0, 6)];
+  }
+  final String number = NumberFormat.decimalPatternDigits(
+    locale: locale,
+    decimalDigits: decimals,
+  ).format(value * copy.scale);
   return copy.unit.isEmpty ? number : '$number ${copy.unit}';
 }
 
@@ -1128,8 +1538,28 @@ String findingChange(HabitFinding finding, String locale) {
 }
 
 /// "Range: 7 to 29 min less"; both ends share a sign, so one word serves.
+/// In words, "Range: slightly to noticeably less pleasant", or "Range:
+/// noticeably less pleasant at both ends".
 String findingRange(HabitFinding finding, String locale) {
   final MetricCopy copy = metricCopy(finding.metricId)!;
+  if (copy.inWords) {
+    final String low = measureAmount(
+      min(finding.interval.low.abs(), finding.interval.high.abs()),
+      copy,
+      0,
+      locale,
+    );
+    final String high = measureAmount(
+      max(finding.interval.low.abs(), finding.interval.high.abs()),
+      copy,
+      0,
+      locale,
+    );
+    final String direction = copy.direction(finding.effect);
+    return low == high
+        ? 'Range: $low $direction at both ends'
+        : 'Range: $low to $high $direction';
+  }
   final int digits = _digits(finding, copy);
   final double near = finding.effect < 0
       ? finding.interval.high
@@ -1154,29 +1584,47 @@ String findingBasis(
   String locale = 'en',
   Unit unit = Unit.fallback,
 }) {
-  if (finding.kind == InsightKind.doseLine) {
-    return 'From ${finding.usableDays} days with $habit, '
-        '${finding.exposedDays} of them with '
-        '${cutAmount(finding.cut!, unit, locale)} or more';
-  }
-  if (finding.kind == InsightKind.lastUseLine) {
-    return 'From ${finding.usableDays} days with $habit, '
-        '${finding.exposedDays} of them with the last use at '
-        '${_cutClock(finding.cut!)} or later';
-  }
-  if (finding.kind == InsightKind.hoursAfter) {
-    return 'From ${finding.exposedDays} days with $habit, against '
-        '${finding.usableDays - finding.exposedDays} days at the same time '
-        'after waking with none of it within 4 hours';
-  }
-  if (finding.kind != InsightKind.use) {
-    return 'From ${finding.usableDays} days with $habit';
-  }
-  final int? used = finding.raw?.exposedDays;
-  return used == null
-      ? 'From ${finding.usableDays} days'
-      : 'From ${finding.usableDays} days, $used of them with $habit';
+  final String basis = switch (finding.kind) {
+    InsightKind.doseLine =>
+      'From ${finding.usableDays} days with $habit, '
+          '${finding.exposedDays} of them with '
+          '${cutAmount(finding.cut!, unit, locale)} or more',
+    InsightKind.lastUseLine =>
+      'From ${finding.usableDays} days with $habit, '
+          '${finding.exposedDays} of them with the last use at '
+          '${_cutClock(finding.cut!)} or later',
+    InsightKind.hoursAfter =>
+      'From ${finding.exposedDays} days with $habit, against '
+          '${finding.usableDays - finding.exposedDays} days at the same time '
+          'after waking with none of it within 4 hours'
+          '${_stepWaking(finding)}',
+    InsightKind.dose ||
+    InsightKind.lastUse => 'From ${finding.usableDays} days with $habit',
+    InsightKind.use => switch (finding.raw?.exposedDays) {
+      null => 'From ${finding.usableDays} days',
+      final int used =>
+        'From ${finding.usableDays} days, $used of them with $habit',
+    },
+  };
+  final bool phase = finding.heldFixed.contains(cyclePhaseId);
+  final bool daylight = finding.heldFixed.contains(dayLengthId);
+  return switch ((phase, daylight)) {
+    (true, true) =>
+      '$basis, compared within the same phase of your cycle and length of day',
+    (true, false) => '$basis, compared within the same phase of your cycle',
+    (false, true) => '$basis, compared at the same length of day',
+    (false, false) => basis,
+  };
 }
+
+String _stepWaking(HabitFinding finding) => switch (finding.stepWakingDays) {
+  0 => '',
+  final int n when n == finding.usableDays =>
+    '; waking estimated from steps, with no night in Health',
+  final int n =>
+    '; waking estimated from steps on $n of these days, with no night in '
+        'Health',
+};
 
 /// Why a habit has no finding, in plain words; for an amount or a time, said
 /// to be about that.
@@ -1209,8 +1657,9 @@ String _hoursAfterRefusal(HabitRefusal refusal, Map<String, double> floors) {
       HoursAfterShortfall.uses ||
       null => 'too few uses with none of it in the 4 hours before yet: $days',
       HoursAfterShortfall.noSleep =>
-        'needs your sleep in Health, to time each use from waking: most uses '
-            'have no night recorded before them',
+        'needs your sleep in Health, or steps through the morning, to time '
+            'each use from waking: most uses have no night recorded before '
+            'them',
       HoursAfterShortfall.nearSleep =>
         'most uses come within an hour of waking or within 4 hours of bed, '
             'when $name moves anyway',
@@ -1316,9 +1765,17 @@ String _useRefusal(
 // "under 22 min a night of REM sleep", "under 500 a day of step count". A
 // person's floor (21.4 min, 0.35 ms) is rounded up at the digits shown, so
 // "under" stays true of every refused finding and never reads "under 0".
-String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
-  final MetricCopy copy = metricCopy(refusal.metricId)!;
-  final double shown = metricFloor(refusal.metricId, floors) * copy.scale;
+String _underFloor(HabitRefusal refusal, Map<String, double> floors) =>
+    underFloor(refusal.metricId, floors);
+
+/// "under 22 min a night of REM sleep", as [refusalReason] says a difference
+/// too small to matter on [metricId].
+String underFloor(String metricId, Map<String, double> floors) {
+  final MetricCopy copy = metricCopy(metricId)!;
+  if (copy.inWords) {
+    return 'under half your usual day-to-day swing in ${copy.name}';
+  }
+  final double shown = metricFloor(metricId, floors) * copy.scale;
   final int digits = _digitsToShow(shown, copy.decimals);
   final num scale = pow(10, digits);
   final String floor = NumberFormat.decimalPatternDigits(
@@ -1326,9 +1783,11 @@ String _underFloor(HabitRefusal refusal, Map<String, double> floors) {
     decimalDigits: digits,
   ).format((shown * scale - 1e-9).ceil() / scale);
   final String unit = copy.unit.isEmpty ? '' : ' ${copy.unit}';
-  final String per = switch (metricFloors[refusal.metricId]?.family) {
+  final String per = switch (metricFloors[metricId]?.family) {
     MetricFamily.sleep => ' a night',
-    MetricFamily.activity => ' a day',
+    MetricFamily.activity ||
+    MetricFamily.mindfulness ||
+    MetricFamily.reminders => ' a day',
     _ => '',
   };
   return 'under $floor$unit$per of ${copy.name}';

@@ -6,8 +6,9 @@
 
 Two privacy features under "Your data" in Settings:
 
-- An optional Face ID, Touch ID or passcode lock (Touch ID on the Mac).
-- Discreet mode: neutral notification text, a neutral widget, and an alternate app icon.
+- An optional Face ID, Touch ID or passcode lock (Touch ID on the Mac): built behind a draft PR for the round 17 pitch
+  (`feat/app-lock`); not merged.
+- Discreet mode, not built: neutral notification text, a neutral widget, and an alternate app icon.
 
 ## Why
 

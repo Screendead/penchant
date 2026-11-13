@@ -318,6 +318,8 @@ class HabitFinding extends HabitInsight {
     required this.pValue,
     this.spread,
     this.sameBedtime,
+    this.heldFixed = const <String>{},
+    this.stepWakingDays = 0,
   });
 
   /// The outcome's difference after a day with the habit, or per [step] more
@@ -349,6 +351,14 @@ class HabitFinding extends HabitInsight {
   /// describes a finding already made, so it is not one of the report's
   /// comparisons.
   final HabitInsight? sameBedtime;
+
+  /// The [DayCondition.id]s the comparison held fixed: its days were compared
+  /// within each level of these.
+  final Set<String> heldFixed;
+
+  /// For [InsightKind.hoursAfter]: of [usableDays], those timed from a waking
+  /// guessed from steps, Health holding no night for them.
+  final int stepWakingDays;
 }
 
 class HabitRefusal extends HabitInsight {
@@ -434,6 +444,7 @@ List<HabitInsight> whatFollows({
   DateTime? from,
   DateTime? through,
   InsightGates gates = const InsightGates(),
+  List<DayCondition> conditions = const <DayCondition>[],
 }) {
   final List<String> habitIds = habits.habitIds.toList()..sort();
   return <HabitInsight>[
@@ -448,6 +459,7 @@ List<HabitInsight> whatFollows({
         from: from,
         through: through,
         gates: gates,
+        conditions: conditions,
       ),
   ];
 }
@@ -484,6 +496,7 @@ class _Judged {
     this.step = 1,
     this.cut,
     this.shifts = const <DateTime>[],
+    this.conditions = const <DayCondition>[],
   });
 
   final String id;
@@ -495,6 +508,9 @@ class _Judged {
 
   // When the outcome's level shifted, by the outcome's date.
   final List<DateTime> shifts;
+
+  // Held fixed when there are enough days of each level ([_timeTerms]).
+  final List<DayCondition> conditions;
 
   // The habit's column: 0/1 use, the day's amount, or minutes after midnight.
   final List<double> x;
@@ -564,6 +580,7 @@ HabitInsight _whatFollowsOne(
   required DateTime? from,
   required DateTime? through,
   required InsightGates gates,
+  required List<DayCondition> conditions,
 }) {
   final (:DateTime? start, :DateTime? end) = _span(
     habits.firstUse(id),
@@ -594,6 +611,7 @@ HabitInsight _whatFollowsOne(
     exposed: x.where((v) => v == 1).length,
     raw: _welch(x, y, gates.level),
     shifts: _shiftDates(outcomes, metricId),
+    conditions: conditions,
   );
 
   if (days.length < gates.minDays || !_clearsSampleGates(x, gates)) {
@@ -675,6 +693,7 @@ List<HabitInsight> doseFollows({
   DateTime? from,
   DateTime? through,
   InsightGates gates = const InsightGates(),
+  List<DayCondition> conditions = const <DayCondition>[],
 }) {
   final List<String> habitIds = habits.habitIds.toList()..sort();
   return <HabitInsight>[
@@ -690,6 +709,7 @@ List<HabitInsight> doseFollows({
         from: from,
         through: through,
         gates: gates,
+        conditions: conditions,
       ),
   ];
 }
@@ -715,6 +735,7 @@ List<HabitInsight> lastUseFollows({
   DateTime? from,
   DateTime? through,
   InsightGates gates = const InsightGates(),
+  List<DayCondition> conditions = const <DayCondition>[],
 }) {
   final List<String> habitIds = habits.habitIds.toList()..sort();
   return <HabitInsight>[
@@ -730,6 +751,7 @@ List<HabitInsight> lastUseFollows({
         from: from,
         through: through,
         gates: gates,
+        conditions: conditions,
       ),
   ];
 }
@@ -760,6 +782,7 @@ List<HabitInsight> doseLineFollows({
   DateTime? from,
   DateTime? through,
   InsightGates gates = const InsightGates(),
+  List<DayCondition> conditions = const <DayCondition>[],
 }) {
   final List<String> habitIds = habits.habitIds.toList()..sort();
   return <HabitInsight>[
@@ -775,6 +798,7 @@ List<HabitInsight> doseLineFollows({
         from: from,
         through: through,
         gates: gates,
+        conditions: conditions,
       ),
   ];
 }
@@ -791,6 +815,7 @@ List<HabitInsight> lastUseLineFollows({
   DateTime? from,
   DateTime? through,
   InsightGates gates = const InsightGates(),
+  List<DayCondition> conditions = const <DayCondition>[],
 }) {
   final List<String> habitIds = habits.habitIds.toList()..sort();
   return <HabitInsight>[
@@ -806,6 +831,7 @@ List<HabitInsight> lastUseLineFollows({
         from: from,
         through: through,
         gates: gates,
+        conditions: conditions,
       ),
   ];
 }
@@ -821,6 +847,7 @@ HabitInsight _amongDaysOfUse(
   required DateTime? from,
   required DateTime? through,
   required InsightGates gates,
+  required List<DayCondition> conditions,
 }) {
   final bool timing =
       kind == InsightKind.lastUse || kind == InsightKind.lastUseLine;
@@ -862,6 +889,7 @@ HabitInsight _amongDaysOfUse(
     raw: null,
     step: step,
     shifts: _shiftDates(outcomes, metricId),
+    conditions: conditions,
   );
   final List<int> all = <int>[for (int r = 0; r < days.length; r++) r];
   final HabitInsight total = _amongDaysJudged(
@@ -900,6 +928,7 @@ HabitInsight _amongDaysOfUse(
     pValue: total.pValue,
     spread: total.spread,
     sameBedtime: held,
+    heldFixed: total.heldFixed,
   );
 }
 
@@ -1000,7 +1029,13 @@ HabitInsight _amongDaysJudged(
   }
   final double at = cuts.length == 1
       ? cuts.single
-      : _clearestCut(cuts, x, judged.y, _timeTerms(judged, period, gates), own);
+      : _clearestCut(
+          cuts,
+          x,
+          judged.y,
+          _timeTerms(judged, period, gates).terms,
+          own,
+        );
   final List<double> over = <double>[for (final double v in x) v >= at ? 1 : 0];
   final _Judged sides = _Judged(
     id: judged.id,
@@ -1014,6 +1049,7 @@ HabitInsight _amongDaysJudged(
     raw: null,
     cut: at,
     shifts: judged.shifts,
+    conditions: judged.conditions,
   );
   // Only a cut handed in can fail this: the grid's all pass.
   if (!_clearsSampleGates(over, gates)) {
@@ -1202,7 +1238,8 @@ HabitInsight _attribute(
 }) {
   final List<DateTime> days = judged.days;
   final List<double> x = judged.x, y = judged.y;
-  final List<List<double>> time = _timeTerms(judged, period, gates);
+  final (terms: List<List<double>> time, held: Set<String> heldFixed) =
+      _timeTerms(judged, period, gates);
   // Bonferroni over the cuts tried, for the interval and so for every gate
   // that reads it.
   final double level = 1 - (1 - gates.level) / searched;
@@ -1367,6 +1404,7 @@ HabitInsight _attribute(
     standardized: sd == 0 ? 0 : perDeviation / sd,
     pValue: pValue,
     spread: _sides(judged.kind) ? null : interquartileRange(x),
+    heldFixed: heldFixed,
   );
 }
 
@@ -1387,8 +1425,11 @@ List<DateTime> _shiftDates(OutcomeSeries outcomes, String metricId) =>
 // the outcome's shifts on. A shift joins only with
 // [InsightGates.minExposedDays] of the days on each side of it, and only
 // while the terms stay solvable: one at a month's edge repeats that month's
-// level.
-List<List<double>> _timeTerms(
+// level. Then each of [_Judged.conditions] whose every level is on
+// [InsightGates.minExposedDays] of the outcome's days: a level for each but
+// the first, and one for the days of none, so days are compared within a
+// level, while the terms stay solvable. Which conditions joined is [held].
+({List<List<double>> terms, Set<String> held}) _timeTerms(
   _Judged judged,
   List<int> period,
   InsightGates gates,
@@ -1431,7 +1472,103 @@ List<List<double>> _timeTerms(
       terms[r] = wider[r];
     }
   }
-  return terms;
+  final Set<String> held = <String>{};
+  for (final DayCondition condition in judged.conditions) {
+    if (condition.isMeasure) {
+      final List<double>? column = _measureColumn(
+        condition,
+        judged,
+        terms,
+        gates,
+      );
+      if (column == null) continue;
+      for (int r = 0; r < days.length; r++) {
+        terms[r] = <double>[...terms[r], column[r]];
+      }
+      held.add(condition.id);
+      continue;
+    }
+    final List<int?> level = <int?>[
+      for (final DateTime day in days)
+        condition.level(addDays(day, judged.lagDays)),
+    ];
+    final List<int> counts = List<int>.filled(condition.levels, 0);
+    for (final int? l in level) {
+      if (l != null) counts[l]++;
+    }
+    if (counts.any((int n) => n < gates.minExposedDays)) continue;
+    final bool unknown = level.contains(null);
+    final List<List<double>> wider = <List<double>>[
+      for (int r = 0; r < days.length; r++)
+        <double>[
+          ...terms[r],
+          for (int k = 1; k < condition.levels; k++) level[r] == k ? 1 : 0,
+          if (unknown) level[r] == null ? 1 : 0,
+        ],
+    ];
+    final bool solvable =
+        invert(
+          gram(<List<double>>[
+            for (final List<double> row in wider) <double>[1, ...row],
+          ]),
+        ) !=
+        null;
+    if (!solvable) continue;
+    for (int r = 0; r < days.length; r++) {
+      terms[r] = wider[r];
+    }
+    held.add(condition.id);
+  }
+  return (terms: terms, held: held);
+}
+
+// A measure condition's column, centred, when every day has a value and it
+// adds what [terms] miss: its own inflation against them, and the habit's
+// column's beside them all, within [InsightGates.maxVarianceInflation], so
+// holding it never turns a comparison into a refusal by itself. Day length
+// over a span of months is nearly all month levels and trend, so it seldom
+// joins there.
+List<double>? _measureColumn(
+  DayCondition condition,
+  _Judged judged,
+  List<List<double>> terms,
+  InsightGates gates,
+) {
+  final List<double> raw = <double>[];
+  for (final DateTime day in judged.days) {
+    final double? v = condition.value(addDays(day, judged.lagDays));
+    if (v == null) return null;
+    raw.add(v);
+  }
+  final double m = mean(raw);
+  final List<double> column = <double>[for (final double v in raw) v - m];
+  double squares(List<double> v) {
+    final double mv = mean(v);
+    return v.fold<double>(0, (s, e) => s + (e - mv) * (e - mv));
+  }
+
+  final double ss = squares(column);
+  if (ss < 1e-9) return null;
+  final List<List<double>>? own = invert(
+    gram(<List<double>>[
+      for (int r = 0; r < column.length; r++)
+        <double>[1, ...terms[r], column[r]],
+    ]),
+  );
+  if (own == null) return null;
+  final int last = terms.first.length + 1;
+  if (own[last][last] * ss > gates.maxVarianceInflation) return null;
+  final double ssx = squares(judged.x);
+  final List<List<double>>? withHabit = invert(
+    gram(<List<double>>[
+      for (int r = 0; r < column.length; r++)
+        <double>[1, judged.x[r], ...terms[r], column[r]],
+    ]),
+  );
+  if (withHabit == null || withHabit[1][1] * ssx > gates.maxVarianceInflation) {
+    return null;
+  }
+  return column;
 }
 
 /// [insights] with every finding that fails Benjamini-Hochberg at

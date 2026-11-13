@@ -24,14 +24,24 @@ String _baseName(FileSystemEntity e) =>
 
 /// The device's files that hold journal content, findings or Health-derived
 /// values: Caches/sealed, one folder per user, each file sealed with that
-/// user's journal key. Caches is left out of backups.
+/// user's journal key. Caches is left out of backups. Files that must not
+/// vanish when iOS empties Caches (a running experiment's plan) go in the
+/// same layout under Application Support instead ([keptForUser]).
 class DeviceFiles {
-  DeviceFiles({Future<Directory> Function()? caches})
-    : _caches = caches ?? getApplicationCacheDirectory;
+  DeviceFiles({
+    Future<Directory> Function()? caches,
+    Future<Directory> Function()? support,
+  }) : _caches = caches ?? getApplicationCacheDirectory,
+       _support = support ?? getApplicationSupportDirectory;
 
   final Future<Directory> Function() _caches;
+  final Future<Directory> Function() _support;
 
   static const String folder = 'sealed';
+
+  int _cleared = 0;
+  int _clearing = 0;
+  final Set<Future<void>> _writing = <Future<void>>{};
 
   /// The plaintext store builds before sealing wrote; deleted, never read.
   static const List<String> legacy = <String>[
@@ -41,13 +51,25 @@ class DeviceFiles {
 
   /// Sign-out and account deletion. Never throws.
   Future<void> clearAll() async {
+    _cleared++;
+    _clearing++;
     try {
+      // A rename landing mid-delete would survive it.
+      await Future.wait(<Future<void>>[
+        for (final Future<void> w in _writing) w.catchError((Object _) {}),
+      ]);
       final Directory caches = await _caches();
-      final Directory sealed = Directory('${caches.path}/$folder');
-      if (await sealed.exists()) await sealed.delete(recursive: true);
+      await _deleteSealed(caches);
       await _deleteLegacy(caches);
     } catch (_) {
       // Left for the next sign-in's first use, which removes other users'.
+    }
+    try {
+      await _deleteSealed(await _support());
+    } catch (_) {
+      // Likewise.
+    } finally {
+      _clearing--;
     }
   }
 
@@ -61,12 +83,17 @@ class DeviceFiles {
   }
 
   SealedFiles forUser(String uid, FileSealer sealer) =>
-      SealedFiles._(this, uid, sealer);
+      SealedFiles._(this, uid, sealer, kept: false);
 
-  Future<Directory> _userFolder(String uid) async {
+  /// As [forUser], under Application Support, which iOS never empties.
+  SealedFiles keptForUser(String uid, FileSealer sealer) =>
+      SealedFiles._(this, uid, sealer, kept: true);
+
+  Future<Directory> _userFolder(String uid, {required bool kept}) async {
     final Directory caches = await _caches();
+    final Directory root = kept ? await _support() : caches;
     final String mine = _folderName(uid);
-    final Directory sealed = Directory('${caches.path}/$folder');
+    final Directory sealed = Directory('${root.path}/$folder');
     // Another user's files go on this user's first use: a uid change.
     if (await sealed.exists()) {
       await for (final FileSystemEntity e in sealed.list(followLinks: false)) {
@@ -77,6 +104,11 @@ class DeviceFiles {
     }
     await _deleteLegacy(caches);
     return Directory('${sealed.path}/$mine');
+  }
+
+  static Future<void> _deleteSealed(Directory root) async {
+    final Directory sealed = Directory('${root.path}/$folder');
+    if (await sealed.exists()) await sealed.delete(recursive: true);
   }
 
   static Future<void> _deleteLegacy(Directory caches) async {
@@ -93,14 +125,17 @@ class DeviceFiles {
 /// One user's sealed device files. Every read treats a missing, corrupt or
 /// unopenable file as absent and deletes it.
 class SealedFiles {
-  SealedFiles._(this._files, this.uid, this._sealer);
+  SealedFiles._(this._files, this.uid, this._sealer, {required bool kept})
+    : _kept = kept;
 
   final DeviceFiles _files;
   final String uid;
   final FileSealer _sealer;
+  final bool _kept;
   Directory? _dir;
 
-  Future<Directory> _folder() async => _dir ??= await _files._userFolder(uid);
+  Future<Directory> _folder() async =>
+      _dir ??= await _files._userFolder(uid, kept: _kept);
 
   File _file(Directory dir, String name) {
     if (!_fileName.hasMatch(name)) {
@@ -129,8 +164,19 @@ class SealedFiles {
     }
   }
 
-  /// Replaces [name] whole or not at all. Throws when it cannot.
-  Future<void> write(String name, List<int> bytes) async {
+  /// Replaces [name] whole or not at all. Throws when it cannot. A write
+  /// that a [DeviceFiles.clearAll] overtakes leaves nothing behind.
+  Future<void> write(String name, List<int> bytes) {
+    if (_files._clearing > 0) {
+      return Future<void>.error(StateError('device files are being cleared'));
+    }
+    final Future<void> w = _write(name, bytes);
+    _files._writing.add(w);
+    return w.whenComplete(() => _files._writing.remove(w));
+  }
+
+  Future<void> _write(String name, List<int> bytes) async {
+    final int cleared = _files._cleared;
     final Uint8List sealed = await _sealer.sealFile(
       bytes,
       context: deviceFileContext(uid, name),
@@ -140,6 +186,10 @@ class SealedFiles {
     final File file = _file(dir, name);
     final File next = File('${file.path}.next');
     await next.writeAsBytes(sealed, flush: true);
+    if (_files._cleared != cleared) {
+      await next.delete();
+      throw StateError('device files cleared during the write');
+    }
     await next.rename(file.path);
   }
 

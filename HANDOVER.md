@@ -91,8 +91,15 @@ Devices have 0.2.0 (build 1377, `master` at #261), installed 2026-11-11; Jack re
   reorderings (`PayoffGates.searchSignificance` 0.02, 1 restores the old rule). Measured (400 seeds; 3 / 1 / 0.5 a
   day): steady false 1.0 / 2.8 / 2.0% (was 1.8 / 11.3 / 11.8); halving at 8 weeks 98.5 / 67 / 35% (was 99 / 93 /
   76). `master` merged in (#259's pairs half already there).
+- #273 built for round 15 `key-promotion` C (Jack, 2026-11-11: the iPhone's key is in iCloud
+  Keychain; the Mac looked before it arrived). A device with no key, where `keys/{uid}` exists, shows "Waiting for
+  your journal key from iCloud Keychain…" and keeps reading the keychain (every 5 s and on resume), opening the
+  journal when the right key lands; "Enter recovery key instead" is always there, and after 2 minutes the wording
+  says it can take a while. A different key here still goes straight to recovery entry. iOS and macOS alike. No new
+  keychain writes. Key change: Jack is asked before it is installed. Not proven on a device: the Mac app seeing the
+  synced item without a relaunch, and how long iCloud Keychain takes.
 - #256 closed: round 15 `key-promotion` C (Jack, 2026-11-11 11:05 UTC), the Mac gate waiting for the synced key, no
-  keychain write; being built in a separate PR. #128 (old keychain probe) closed.
+  keychain write; built in #273. #128 (old keychain probe) closed.
 - #252 (draft) `mac-background` C part 2: PenchantSync.app, a background-only nested app
   (`com.screendead.penchant.sync`, target from `tools/add-mac-sync-target.rb`) running `macSyncFlushMain` with a
   memory-only Firestore cache and an in-memory write journal, so sign-out leaves nothing in its container. Compiles in
@@ -106,17 +113,113 @@ needed unless that wait proves long.
 
 **Left:**
 
-- The sealed last report is only ever replaced by another computed report, so after Health is disconnected the old
-  findings return at each cold open until the fresh view lands. Suggested: delete the file on `HealthNotConnected`
-  or `HealthUnsupported` only. Also unproven: stutter when a multi-year view is encoded and sealed on the UI isolate.
-- A save of the last report in flight at sign-out can write the sealed file back after the folder is cleared; it
-  stays sealed and goes at another user's first use (the sample cache has the same exposure).
+- Unproven: stutter when a multi-year Insights view is encoded and sealed on the UI isolate.
 - `~/development/tracker-tools/flutter-3.47.9` (a staged SDK checkout) can go; `trash` refuses a repository.
 - Insights slow open: which stage dominates is unmeasured on a device (read the "Insights …" timing lines).
-- The steps-based waking fallback for hours-after; "why not" lines under What sets it off.
 - The Mac recovery key on Universal Clipboard (register).
 - Process: at most about five workers, each verifying once at the end on only the tests it touched; never
   `xcrun simctl shutdown all`; a stacked PR merges into its base branch.
+
+## Fifth run (`/finish-and-pitch`, started 2026-11-12 evening)
+
+The list this run works from, sorted before any building. Tick or strike here as each lands.
+
+**DECIDED (build, PR, merge on green):**
+
+1. ~~"Why not" lines under What sets it off~~ (built: feat/insights-sets-off; unseen on a device).
+2. ~~Trigger analysis under What sets it off~~ (built: feat/insights-sets-off; unseen on a device, and untried on a
+   journal with real tags).
+3. ~~Steps-based waking fallback for hours-after, for a day with no night recorded~~ (built: feat/insights-sets-off;
+   synthetic data only, unseen on a device and untried on a Watch charged overnight: how late real first steps run
+   after waking is a guess, 0 to 30 minutes in the tests). One calibration run, 40 seeds, every night missing, steps
+   0-30 min late: per-window false rate 0-5% before correction (Coffee 1-2 h after waking, the band a late guess
+   could bias: 0-5%, against 0-7.5% with nights recorded); Coffee within an hour of waking and at 22:30 refused in
+   words; 0 of 40 whole reports with an hours-after finding in each. Hour-before skips such moments. Not measured: a
+   first open with no nights reads steps one night at a time, up to about 366 reads, inside the 60 s read limit.
+4. More sources (queue 7h, Jack: "add them all"), one at a time since each takes a read-types or codec step: Focus,
+   places, daylight (after places: it needs the rough location), music. Music and Focus start with a signing probe
+   on the free team; a source the team cannot sign is set aside with the reason. Journaling Suggestions: the
+   signing probe only. State: places and daylight built (#280, merged with master's why-not lines, triggers and
+   steps waking, then with calendar days (#286); saved report format 5); Focus, music and Journaling Suggestions
+   wait for a paid Apple team; none of #280 has run on a device.
+   - Focus: set aside 2026-11-12. The free team cannot sign `com.apple.developer.focus-status` (signed iOS build
+     with provisioning updates: "Entitlement com.apple.developer.focus-status not found and could not be included
+     in profile"); nothing built. Waits for a paid team.
+   - Places: built 2026-11-12 (#280, with Focus's note). Not proven on a device: the location prompts
+     (When In Use, then Always), visits arriving while the app is closed, and the Swift channel beyond the PR's
+     Native build. Visits wait in Swift memory only until sealed, so one reported while no key is loaded is lost if
+     the process ends first. Defaults to put to Jack: waking hours fixed at 07:00-23:00, 150 m places, 5 places
+     judged, 10-point floor. The "why not" list under What sets it off counts a place card as shown and can give a
+     place comparison's refusal ("At Place 2: not enough days of visits yet: 5 of 14").
+   - Daylight: built 2026-11-12 (#280). Sunrise, sunset and day length on the device from the most-visited place
+     to whole degrees, else the time zone's city; day length held fixed in the day-after comparisons only where
+     the month terms miss it (rarely, by design). No "use after sunset" comparison: the clock hour confounds it
+     (an evening habit would look tied to darkness in winter alone); an honest one compares the same clock hours
+     dark and light, and waits for a call. Not proven on a device: the time zone read through `flutter_timezone`
+     inside Insights (tests answer it with none).
+   - Music: set aside 2026-11-12. MusicKit is an App Service ticked on the App ID in Certificates, Identifiers &
+     Profiles, which a personal team cannot open (Apple grants it on enrolment), and it has no entitlement a build
+     could probe; without it the developer token, and so recently played, fails at run time. Nothing built. Waits
+     for a paid team. (MediaPlayer's `lastPlayedDate` needs no service but keeps only each song's last play: no
+     daily minutes, no "music before a use".)
+   - Journaling Suggestions: probed 2026-11-12, the free team cannot sign it. Signed iOS build with provisioning
+     updates: "Personal development teams, including [the team owner's name], do not support the Journaling Suggestions
+     capability." Entitlement reverted; waits for a paid team.
+5. ~~Calendar's rest~~ (built: feat/calendar-rest, PR #286; `ideas/insights/calendar-integration.md`, Needs Jack:
+   no): the macOS EventKit channel, per-day calendar features, "Work → Meeting" suggestions in the trigger picker.
+   Not its "findings without Health" item (round 14 `no-health` A).
+   - [x] Per-day calendar features (this branch): time in meetings, events, back-to-back runs, meetings of 5 or more
+     people, meetings over 45 minutes, each a day above the person's median against the rest, under What sets it off.
+     The channel now sends each event's number of people listed (never who). Not proven on a device: the Swift
+     compiles only in CI; real calendars' attendee counts and plausible cards on real data.
+   - [ ] ~~macOS EventKit channel~~ set aside: the Mac computes no Insights without Health, so it would read events
+     nothing uses and add a prompt that does nothing.
+   - [x] "Work → Meeting" suggestions (this branch): an entry logged in the hour after a calendar event of 15 minutes
+     or more ended gets Work › Meeting first in the trigger picker, under "Suggested from your calendar", never picked
+     until tapped; only with calendar access already granted; no titles read. The widget's later prompt offers none
+     (it carries no entry time). Not proven on a device: the EventKit read as the picker opens.
+   - [x] Why-not lines take the calendar days: a habit with a calendar-day card counts as shown; one without can
+     give the calendar-day refusal (`calendarDayRefusal`), ranked by refusal, then after the hour-after-event
+     comparison and before triggers. Calendar-day and trigger comparisons now count in each other's family. Saved
+     report format 4. Not proven on a device: unit and widget tests only.
+6. ~~Units and cost per unit~~ (`feat/units-and-cost`): a habit's own unit label, cost per unit and currency, sealed;
+   spend for the last 7 days and the range in Trends. Not proven on a device; an older build editing a habit drops
+   its label and price. Left: per-entry cost.
+   ~~The rest of trend views~~ (`feat/trends-rest`, stacked on `feat/units-and-cost`): a Count/Spend switch on the
+   Trends chart for a priced habit, a Health measure under the habit line (iOS, behind a Health chip), and What set
+   it off (tagged entries by trigger area per bucket). Not proven on a device: Health under the line is tested only
+   against a faked Health read, never a real iPhone's.
+7. [x] Reduce motion "Full" over framework animations: built (`PenchantBinding`, `lib/design/motion_binding.dart`;
+   widget-tested on a modal sheet both ways). Not proven on a device with iOS or macOS Reduce Motion on.
+8. Housekeeping: idea files that lag the code; the staged Flutter SDK in `tracker-tools`; issue #9 (the Trends
+   sheet is its graph); iPhone-only install of `master` at the end (the Mac stays on 1422 for #252).
+
+**UNDECIDED (built as options, then pitched on a new page, round 17):**
+
+- Capture detail: which of the granular-logging fields a log can carry and the detail sheet after a one-tap log
+  (`r2-data-model` B decided the mechanism, not the fields or the sheet).
+- App lock and discreet mode now, or still parked with the store work (`r2-applock` decided free, not when). App lock
+  built as an option (draft PR `feat/app-lock`, stills in `docs/pitch/round-17/app-lock/`); discreet mode not built.
+- Optional goals and limits: timing was only Claude's "after 1.1".
+- Self-experiments (randomised n-of-1 trials of a finding): whether to build.
+- Weather from an outside service that would see a rough location, or wait for WeatherKit and a paid team.
+- A read-only check in CI of the live project's indexes against `firestore.indexes.json` (the last open register
+  item; Claude may not read production). Line "unlisted production indexes were removed by a forced deploy on
+  2026-11-09" (third run) disagrees with `CLAUDE.md`'s "the 4 production indexes ... stay"; only the console or
+  such a check settles it.
+- No "What was going on?" prompt after a Siri or Shortcuts log (Jack ruled only on Control Centre).
+- Claude's as-built defaults from the fourth run (list below) were never put to Jack and are not on round 17's
+  page, which lists only this run's.
+
+**State at the end of the run (2026-11-12 night):** merged #281 (why-not lines, trigger analysis, steps waking),
+#284 (Reduce motion over framework animations), #286 (calendar days, Meeting suggestion), #280 (Places, Daylight;
+Focus, Music and Journaling Suggestions need a paid team). The macOS calendar channel was not built. Held for round
+17: #282, #287, #283, #285. Refused to Claude here, so Jack's: closing issue #9, deleting the spare Flutter clones
+in `~/development/tracker-tools` (a hook leaves disk clean-up to claude-reaper). iPhone: `master` at #280 (6ad60c0, build 1500), installed 2026-11-12; the Mac stays on 1422 for #252.
+
+**Blocked or Jack's:** #252 waits on Jack saying the menu-bar log reached the iPhone
+(`~/Library/Containers/com.screendead.penchant.sync` now exists, created 2026-11-12 18:11, so PenchantSync has
+run; that alone proves no write); the device checks; `DELETE_ORPHANED_DATA`; the paid team and release items.
 
 ## After the fourth run (2026-11-11)
 
@@ -194,6 +297,11 @@ the iPhone-to-Mac journal key sync is being investigated again (P2).
   clip and fade, not an `OpenContainer`; back is a plain fade.
 - One habit after another (#236): one family at q = 0.1; 15-minute window, 21 days with both, 7 followed, 10 points
   over chance; "more often" only, stronger direction only; refused pairs not listed.
+- Triggers (fifth run): the amount per entry on tagged entries with a trigger against the habit's other tagged
+  entries, untagged ones left out; days as the unit (each day's mean per entry), 7 days a side, Welch on the smaller
+  side's days less one, two-sided, joining the page's family at q = 0.1; 20% of the other entries' mean as the floor;
+  more or less both shown; top-level areas and paths, a free-text label as itself, an area dropped where it covers
+  the same entries as one path under it.
 - Recovery time (#240): heavy day against the usual mix of nights; heavy = at or over the upper quartile and over the
   median of use days; a rebound night is not mentioned; three measures, three nights.
 - Editor as a sheet (#238): new-entry layout with red text Delete and full-width Save, no delete confirmation (Undo);
@@ -201,6 +309,9 @@ the iPhone-to-Mac journal key sync is being investigated again (P2).
 - Calendar (#239): hour after an event ends against nearby event-free days; 60-min window, events under 15 min out,
   gaps under 10 min merged, controls clear 2 h before and 1 h after within 14 days, 14 days a side, 10 points;
   weekday/weekend matching only; iOS only; footer does not mention the calendar.
+- Calendar days (fifth run): a feature is judged only with 14 days above 0; "more" is above the person's median day
+  (counts read as whole thresholds); use that day on the feature, weekend, trend, period levels and the day before's
+  use; 10-point floor; crowded is 5 or more people listed; long is over 45 minutes; whether only, not amount or time.
 - Step changes (#241): shift cards use the habit-effect floors; 14 days a side, at most 3 per measure; a habit named
   beside a shift at 1.5x and p < 0.01 over 28 days a side, outside the family; power cost accepted (185 to 123 of 200
   on one-day amount jumps); the existing "uneven" refusal reused; card wording "From March 12, 2026, your resting heart
@@ -227,6 +338,9 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
   page 0.10% of checks, 8.0% of reports. A straight-line effect also yields a line.
 - One habit after another (#236): noise found 0 to 0.3%; 20% following found 83% (30 days) and 99% (120); 10% mostly
   refused. Shared waking anchor: 100% found.
+- Triggers (fifth run, 2000 noise journals of 90 days, own family): 4.7% of tests under 0.05, a card on 7.9% of
+  journals; Welch-Satterthwaite's degrees of freedom gave 5.5% and 11.5%, so the smaller side's days less one.
+  Power not measured.
 - Recovery time (#240, draft): reverse cause with AR(1) 0.6 averages 6.7% (other AR lines about 5.2%), to rerun and
   fix; power 1 sd one night 95 to 97%, 0.5 sd 52 to 53%; page 0.1% of checks, 0.8% of reports.
 - Step changes (#241): day-50 step case 19.2% to 4.0%; card check on noise 0.2 to 1.8%; planted 1 sd 50% by card (97%
@@ -263,9 +377,8 @@ comparison joins the one page-wide family, so earlier per-page rates here predat
 
 - Recovery time #240 (draft): rerun the reverse-cause AR(1) 0.6 line beside an AR(1)-alone control; fix the method if
   it holds near 7%.
-- The steps-based waking fallback for hours-after: not built (#241's report), and the page still does not say why a
-  day with no night recorded gives nothing.
-- "Why not" lines under What sets it off.
+- Hours-after with no night recorded and no steps either: the page still does not say why it gives nothing (the
+  steps-based waking fallback is built, fifth run).
 - Cut 0.2.0 (`r10-release` B: gates met; not cut this run).
 - The Mac recovery key on Universal Clipboard (register).
 - Process for the next run: a ten-worker fan-out drove this Mac to load 189 and Jack stopped it. Cap at about five
@@ -497,7 +610,7 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
        hour of waking, or anything within 4 h of bed, is refused in words; a day with no night recorded gives no
        moment (a Watch charged overnight gives no hours-after at all, and the page does not say why: the "needs your
        sleep" refusal exists, but with nothing planned the provider reads no heart rate and the engine skips the
-       comparison; steps-based waking is the named fallback, not built). A window is dropped when another habit was used from its baseline to its end, the habit again before
+       comparison; steps-based waking, built in the fifth run, now covers a day with steps through the morning). A window is dropped when another habit was used from its baseline to its end, the habit again before
        its end, under 3 readings in baseline or window, or a walk (any 10 min over 60 steps a minute in the
        baseline, or from 30 min before the window to its end); the change in steps a minute is a covariate.
        Moments are averaged per day, one OLS per window on days (intercept, use, steps); at least 10 days each side.
@@ -553,6 +666,18 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
    - **h. More sources** (Jack, 2026-11-08: "add them all to the roadmap";
      `ideas/insights/more-data-sources.md`): Health beyond sleep and heart rate, places, daylight, music, Reminders
      and Focus first; Journaling Suggestions, weather, Screen Time and spending carry the blockers in that file.
+     First step built (#274, 2026-11-11): workout and mindful minutes a day as outcomes, read
+     types version 3 (the Insights card offers the sheet again). A session metric is left out when no day of the
+     person's reaches its literature floor (habit-blind; coordinator's call, 2026-11-11). Not run on a device.
+     Reminders built (#276, 2026-11-12; iOS only, as Calendar): reminders completed a day and reminders missed (due
+     that day, not done by its end), outcomes beside Health's, asked for from an Insights card like Calendar's; floor
+     1 a day, kept (no source). Not run on a device. Focus is left.
+     Cycle tracking built (#277, 2026-11-12): menstrual flow days, read types version 4, the
+     phase inferred on the device and held fixed in the five day-after comparisons (not hours-after, before-use,
+     recovery, payoffs or shifts); a finding so compared says so in its basis line. Not run on a device.
+     State of Mind built (#278, 2026-11-12): one valence a day (daily mood preferred over momentary emotions),
+     counted from 14 days with a log, floor half the person's own SD of daily valence (`mood-floor` A), copy in
+     words; read types version 5. Not run on a device. Next: places.
 
 ### Third run (`/finish-and-pitch`, 2026-11-09)
 
@@ -650,8 +775,8 @@ Effort: S under a day, M a day or two, L more.
   `AnimationController` runs at 5% length and no release-mode API turns that off. So Full covers the app's own
   controllers (`AnimationBehavior.preserve`: dial, log fan, tallies, day picker, Undo timer, status pills
   (`PillDrop`), the Trends range morph (`RangeMorph`)) and pushed pages (`DialPageRoute`); sheets, dialogs and
-  implicit animations (segment thumbs, label fades) follow the system, as the page's foot copy says. Open: a custom
-  `WidgetsFlutterBinding` overriding `SemanticsBinding.disableAnimations` would cover the rest (inferred, untested).
+  implicit animations (segment thumbs, label fades) followed the system until the fifth run's binding override
+  (`MotionOverride`), which now carries the choice to every `AnimationController`.
 
 **Were UNDECIDED; all decided in round 10 (2026-11-08)** (U1 to U8; picks in Jack's calls, round 10):
 
@@ -923,12 +1048,55 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-None open.
+Nothing is waiting. Round 18 (`docs/pitch/round-18/index.html`,
+https://claude.ai/artifact/9cDnMB8RnA2SS1pB21o4Ah, `picks`), all eleven picked by Jack on 2026-11-13 (round 17's
+page, https://claude.ai/artifact/TBYTkS8zciMvfoS43gGLz7, was superseded by it and holds no picks). Mock-ups and
+notes for the four product calls are in `docs/pitch/round-17/<call>/`; the built result is compared with the picked
+mock-up before it is called done:
+
+- `units-cost` A: merge #282 and install on the iPhone now (a singular form for an own unit label goes in first).
+- `trends-views` A: merge #287 (spend, the Health line, trigger bars) once #282 is in.
+- `calendar` B: keep the busy-day cards and the Meeting suggestion; build the Mac calendar reader for the
+  suggestion (`feat/mac-calendar-suggestion`).
+- `places` A, `daylight` A: keep as built.
+- `capture-detail` C: silent fields (time zone, written-at, how logged) plus an urge row (1 to 5) and a one-line
+  note on the amount sheet, editor and tag picker (`feat/capture-detail`).
+- `goals` C: an optional line per habit, per day or week, and Insights' "where's the line" card offers to set it
+  (starts once #282 is merged, since both add habit fields).
+- `self-experiments` C: an experiment from a finding card, with a daily notification (`feat/self-experiments`).
+- `weather` C: wait for a paid Apple team; nothing built.
+- `app-lock` A: #283 merged 2026-11-13 (off by default; not yet run on a device).
+- `index-check` B: leave; #285 closed, branch `chore/index-drift-check` kept.
+
+Also from Jack on 2026-11-13: the Mac background sync check passed (a menu-bar log with Penchant quit reached the
+iPhone) but Penchant itself opened behind the other apps, which he questions; #252 stays a draft until that is
+explained. The Places prompts (While Using, then Always) both appeared on the iPhone. Issue #9 closed. Jack let Claude read
+the clean-up job's logs with `gcloud` once, then made it standing (the rule and his words are in `CLAUDE.md`, Hard
+rules): six nightly
+`dailyOrphanCleanup` runs, 2026-11-08 to 11-13, each scanned 1 owner, found 0 missing, 0 candidates, no errors, so
+the delete path has never had anything to act on. Reported by Jack on build 1500: Insights was slow after turning
+on Places and Reminders, and Connect Reminders stays shown and dead after access is granted
+(`fix/insights-stall-reminders`).
+
+A backlog file's "Needs Jack: no" is Claude's recommendation, never a decision: new features from one stay
+unmerged until Jack picks.
+
+Round 16 (`docs/pitch/round-16/index.html`, https://claude.ai/artifact/DkKHDabq8g6XaDUmB5XcE4, `picks`), all
+picked by Jack on 2026-11-12: `mood-floor` A (a State of Mind change is reported only when at least half the
+person's own day-to-day SD of daily valence, Norman, Sloan and Wyrwich 2003; counted only after 14 days with a mood
+log), `key-rotation` A (leave: a new recovery key re-wraps the same journal key; the register note stays as an
+accepted limit), `mac-copy` A (keep Copy on the Mac; register note stays as an accepted limit), `probe-pr` A (#128
+closed). Also 2026-11-12: Jack OK'd installing the key change (#273); iPhone has master bd2d1cf (build 1425).
 
 Round 15's two (`fall-test` A, `key-promotion` C) and round 14's seven were picked on 2026-11-11; every earlier
 call is picked.
 
 ## For Jack to do (not decisions)
+
+- **#252 Mac background sync, one real check.** Jack reported the checks "seem fine" (2026-11-12), and its
+  container `~/Library/Containers/com.screendead.penchant.sync` exists since 2026-11-12 18:11, so PenchantSync has run;
+  whether the entry reached the server is unseen from here. Asked: Cmd+Q Penchant, log from the menu bar, wait 30 s, see the entry on the iPhone before reopening
+  the Mac app. Merge #252 only after that passes; the Mac stays on 1422 until then.
 
 - **From the night of 2026-11-11** (also on round 15's page): reopen Penchant on the Mac after an install; for the
   Mac background app (#252), create the development profile for `com.screendead.penchant.sync`

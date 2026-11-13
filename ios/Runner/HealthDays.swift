@@ -303,6 +303,62 @@ enum HealthDays {
     merged(intervals).reduce(0) { $0 + $1.1.timeIntervalSince($1.0) } / 60
   }
 
+  // Sessions (workouts, mindful sessions) as minutes a day: merged across
+  // sources so an overlap counts once, then cut at local midnights and at
+  // [start, end). A day no session touches has no row.
+  static func sessionMinuteRows(
+    _ sessions: [(Date, Date)], metric: String, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    var minutes: [String: Double] = [:]
+    for (from, to) in merged(sessions.filter { $0.1 > $0.0 }) {
+      var day = calendar.startOfDay(for: from)
+      while day < to {
+        let next = adding(days: 1, to: day, calendar)
+        let lower = max(from, day, start)
+        let upper = min(to, next, end)
+        if lower < upper { minutes[key(day, calendar), default: 0] += upper.timeIntervalSince(lower) / 60 }
+        day = next
+      }
+    }
+    return minutes.keys.sorted().map { ["date": $0, "metric": metric, "value": minutes[$0]!] }
+  }
+
+  // State of Mind as one valence (-1 to 1) a day: the mean of the day's
+  // daily-mood logs, or of its momentary emotions when it has no daily mood.
+  // A log counts on the local day of its start, inside [start, end).
+  static func moodRows(
+    _ logs: [(at: Date, daily: Bool, valence: Double)], metric: String, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    var byDay: [String: (daily: [Double], momentary: [Double])] = [:]
+    for log in logs where log.at >= start && log.at < end {
+      let day = key(log.at, calendar)
+      if log.daily { byDay[day, default: ([], [])].daily.append(log.valence) }
+      else { byDay[day, default: ([], [])].momentary.append(log.valence) }
+    }
+    return byDay.keys.sorted().map { day in
+      let (daily, momentary) = byDay[day]!
+      let chosen = daily.isEmpty ? momentary : daily
+      return ["date": day, "metric": metric, "value": chosen.reduce(0, +) / Double(chosen.count)]
+    }
+  }
+
+  // HKCategoryValueVaginalBleeding.none (iOS 18), HKCategoryValueMenstrualFlow.none
+  // before it: a day logged without flow.
+  static let noFlow = 5
+
+  // Days with menstrual flow, one row each with value 1: only that the day had
+  // flow, never how much. A sample is the local day it starts on, inside
+  // [start, end).
+  static func flowDayRows(
+    _ samples: [(start: Date, value: Int)], metric: String, start: Date, end: Date, _ calendar: Calendar
+  ) -> [[String: Any]] {
+    var days = Set<String>()
+    for sample in samples where sample.value != noFlow && sample.start >= start && sample.start < end {
+      days.insert(key(sample.start, calendar))
+    }
+    return days.sorted().map { ["date": $0, "metric": metric, "value": 1.0] }
+  }
+
   // Each night's asleep time (no in bed, no awake), from the night's one source.
   static func asleepIntervals(_ byNight: [String: [SleepSample]]) -> [String: [(Date, Date)]] {
     var result: [String: [(Date, Date)]] = [:]

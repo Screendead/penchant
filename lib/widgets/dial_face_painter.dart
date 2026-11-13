@@ -16,7 +16,10 @@ class DialFacePainter extends CustomPainter {
     required this.clear,
     required this.shadows,
     required this.ringAlpha,
+    this.shadeFromMinute,
   });
+
+  final int? shadeFromMinute;
 
   final List<BoxShadow> shadows;
   final double ringAlpha;
@@ -50,6 +53,17 @@ class DialFacePainter extends CustomPainter {
         ..strokeWidth = 1
         ..color = colors.line,
     );
+
+    if (shadeFromMinute case final int from) {
+      final double start = dialAngle(from.toDouble());
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset.zero, radius: DialFace.disc),
+        start,
+        dialAngle(minutesPerDay.toDouble()) - start,
+        true,
+        Paint()..color = colors.surface2.withValues(alpha: 0.9),
+      );
+    }
 
     if (clear > 0) {
       canvas.drawCircle(
@@ -117,6 +131,7 @@ class DialFacePainter extends CustomPainter {
   @override
   bool shouldRepaint(DialFacePainter old) =>
       old.clear != clear ||
+      old.shadeFromMinute != shadeFromMinute ||
       old.ringAlpha != ringAlpha ||
       !listEquals(old.shadows, shadows) ||
       old.colors != colors ||

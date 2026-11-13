@@ -15,9 +15,13 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/after_event_copy.dart';
-import 'package:tracker/insights/before_use_copy.dart';
 import 'package:tracker/insights/before_use.dart';
+import 'package:tracker/insights/before_use_copy.dart';
+import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/insights/calendar_source.dart';
+import 'package:tracker/insights/experiment.dart';
+import 'package:tracker/insights/experiment_copy.dart';
 import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/hours_after.dart';
@@ -26,28 +30,40 @@ import 'package:tracker/insights/last_night.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/payoff.dart';
 import 'package:tracker/insights/payoff_copy.dart';
+import 'package:tracker/insights/places.dart';
+import 'package:tracker/insights/places_copy.dart';
+import 'package:tracker/insights/places_source.dart';
 import 'package:tracker/insights/recovery.dart';
 import 'package:tracker/insights/recovery_copy.dart';
 import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
+import 'package:tracker/insights/sets_off_refusal.dart';
+import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
+import 'package:tracker/experiment_page.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/experiment_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/last_night_provider.dart';
+import 'package:tracker/providers/places_provider.dart';
+import 'package:tracker/providers/reminders_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/after_event_card.dart';
+import 'package:tracker/widgets/at_place_card.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/before_use_card.dart';
+import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
+import 'package:tracker/widgets/trigger_amounts_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
 import 'package:tracker/widgets/payoff_card.dart';
 import 'package:tracker/widgets/recovery_card.dart';
 import 'package:tracker/widgets/replacement_card.dart';
-import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 /// What follows each habit, from the whole journal and Apple Health, worked
@@ -110,21 +126,64 @@ class InsightsPage extends ConsumerStatefulWidget {
       'with it: your sleep and heart against before, and any habit that rose '
       'around the same time.';
   static const String setsOffTitle = 'Nothing to show yet';
+  static const String setsOffWhyNot = 'Habits with nothing here';
   static const String setsOffBody =
       'This will show what tends to come before each habit, such as a short '
-      'night or another habit.';
+      'night, another habit or a trigger you tag.';
 
   static const String calendarLabel = 'Connect Calendar';
   static const String calendarBody =
-      'See which habits follow your events. Penchant reads only when each '
-      'event starts and ends, on this iPhone, never writes to your calendar, '
-      'and sends none of it anywhere.';
+      'See which habits follow your events or come with busy days, and get '
+      'Meeting suggested when you log just after one. Penchant '
+      'reads only when each event starts and ends and how many people it '
+      'lists, on this iPhone, never writes to your calendar, and sends none of '
+      'it anywhere.';
   static const String calendarOffLabel = 'Calendar';
   static const String calendarOffValue = 'Off';
   static const String calendarOffBody =
       'To see which habits follow your events, give Penchant full access to '
       'Calendars in Settings.';
   static const String calendarFailed = 'The calendar couldn’t be opened.';
+
+  static const String remindersLabel = 'Connect Reminders';
+  static const String remindersBody =
+      'See which habits come before days you complete or miss more '
+      'reminders. Penchant reads only when each reminder is due and when it '
+      'was completed, on this iPhone, never changes your reminders, and '
+      'sends none of it anywhere.';
+  static const String remindersOffLabel = 'Reminders';
+  static const String remindersOffValue = 'Off';
+  static const String remindersOffBody =
+      'To compare your habits with your reminders, give Penchant full access '
+      'to Reminders in Settings.';
+  static const String remindersFailed = 'Reminders couldn’t be opened.';
+
+  static const String placesLabel = 'Connect Places';
+  static const String placesBody =
+      'See which habits you log more at home, at work or elsewhere. Penchant '
+      'notes the places you spend time, keeps them encrypted on this iPhone '
+      'and sends none of it anywhere. Allow location Always so visits are '
+      'noted while Penchant is closed.';
+  static const String placesTitle = 'Places';
+  static const String placesWhileUsing = 'While using';
+  static const String placesWhileUsingBody =
+      'Penchant notes visits only while it is open. To note them while it is '
+      'closed, allow location Always for Penchant in Settings.';
+  static const String placesOffValue = 'Off';
+  static const String placesOffBody =
+      'To see which habits you log more at each place, allow location for '
+      'Penchant in Settings.';
+  static const String placesEarly =
+      'Places have no history before you connected them, so findings start '
+      'after a few weeks of visits.';
+  static const String placesRenameHint = 'Tap a place to name it.';
+  static const String placesRenameTitle = 'Name this place';
+  static const String placesRenameFailed = 'The name couldn’t be kept.';
+  static const String placesFailed = 'Location couldn’t be opened.';
+
+  /// How long after the first visit the card stops saying findings are
+  /// weeks away.
+  static const Duration placesEarlyFor = Duration(days: 28);
 
   static const String copied = 'Insights copied';
   static const String foot =
@@ -159,6 +218,8 @@ class InsightsPage extends ConsumerStatefulWidget {
 class _InsightsPageState extends ConsumerState<InsightsPage> {
   bool _connecting = false;
   bool _connectingCalendar = false;
+  bool _connectingReminders = false;
+  bool _connectingPlaces = false;
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -172,6 +233,12 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         // asking again would read the calendar and run the engine anew.
         if (ref.read(calendarAccessProvider).value != CalendarAccess.full) {
           ref.invalidate(calendarAccessProvider);
+        }
+        if (ref.read(remindersAccessProvider).value != CalendarAccess.full) {
+          ref.invalidate(remindersAccessProvider);
+        }
+        if (ref.read(placesAccessProvider).value != PlacesAccess.always) {
+          ref.invalidate(placesAccessProvider);
         }
         if (ref.read(healthStateProvider).value case HealthReady(
           :final values,
@@ -212,14 +279,67 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       listen: false,
     );
     setState(() => _connectingCalendar = true);
-    final bool granted = await connectCalendar(container);
+    await connectCalendar(container);
     if (!mounted) return;
     setState(() => _connectingCalendar = false);
-    if (!granted &&
-        await container.read(calendarAccessProvider.future) ==
-            CalendarAccess.notDetermined) {
+    // Granted or not, a prompt that left access undecided gets a word: the
+    // card would otherwise look as if the tap did nothing.
+    if (await container.read(calendarAccessProvider.future) ==
+        CalendarAccess.notDetermined) {
       messenger.showSnackBar(
         const SnackBar(content: Text(InsightsPage.calendarFailed)),
+      );
+    }
+  }
+
+  Future<void> _connectReminders() async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    setState(() => _connectingReminders = true);
+    await connectReminders(container);
+    if (!mounted) return;
+    setState(() => _connectingReminders = false);
+    // Granted or not, a prompt that left access undecided gets a word: the
+    // card would otherwise look as if the tap did nothing.
+    if (await container.read(remindersAccessProvider.future) ==
+        CalendarAccess.notDetermined) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(InsightsPage.remindersFailed)),
+      );
+    }
+  }
+
+  Future<void> _connectPlaces() async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final ProviderContainer container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    setState(() => _connectingPlaces = true);
+    final PlacesAccess? access = await connectPlaces(container);
+    if (!mounted) return;
+    setState(() => _connectingPlaces = false);
+    if (access == null || access == PlacesAccess.notDetermined) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(InsightsPage.placesFailed)),
+      );
+    }
+  }
+
+  Future<void> _renamePlace(Place place) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final PlacesSync places = ref.read(placesProvider.notifier);
+    final String? name = await showDialog<String>(
+      context: context,
+      builder: (_) => _RenamePlaceDialog(place: place),
+    );
+    if (name == null) return;
+    if (!await places.rename(place.id, name)) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(InsightsPage.placesRenameFailed)),
       );
     }
   }
@@ -241,6 +361,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         view.value?.health ?? ref.watch(healthStateProvider).value;
     final bool askAgain = ref.watch(healthAskAgainProvider).value ?? false;
     final CalendarAccess? calendar = ref.watch(calendarAccessProvider).value;
+    final CalendarAccess? reminders = ref.watch(remindersAccessProvider).value;
+    final PlacesAccess? placesAccess = ref.watch(placesAccessProvider).value;
+    final PlacesState places = ref.watch(placesProvider);
 
     return CardPage(
       title: InsightsPage.title,
@@ -255,10 +378,34 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             onConnect: _connect,
           ),
         if (calendar != null && calendar != CalendarAccess.full)
-          _CalendarCard(
+          _EventKitCard(
             access: calendar,
             connecting: _connectingCalendar,
             onConnect: _connectCalendar,
+            label: InsightsPage.calendarLabel,
+            body: InsightsPage.calendarBody,
+            offLabel: InsightsPage.calendarOffLabel,
+            offValue: InsightsPage.calendarOffValue,
+            offBody: InsightsPage.calendarOffBody,
+          ),
+        if (reminders != null && reminders != CalendarAccess.full)
+          _EventKitCard(
+            access: reminders,
+            connecting: _connectingReminders,
+            onConnect: _connectReminders,
+            label: InsightsPage.remindersLabel,
+            body: InsightsPage.remindersBody,
+            offLabel: InsightsPage.remindersOffLabel,
+            offValue: InsightsPage.remindersOffValue,
+            offBody: InsightsPage.remindersOffBody,
+          ),
+        if (placesAccess != null)
+          _PlacesCard(
+            access: placesAccess,
+            store: places.store,
+            connecting: _connectingPlaces,
+            onConnect: _connectPlaces,
+            onRename: _renamePlace,
           ),
         ...switch (view) {
           AsyncError() => <Widget>[
@@ -327,7 +474,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           _MessageCard(
             'How it works',
             body:
-                'Insights compare your sleep, heart and activity after days '
+                'Insights compare your sleep, heart, activity, mindfulness, '
+                'reminders and mood after days '
                 'with each habit against days without it. Connect Apple '
                 'Health to start.',
           ),
@@ -375,7 +523,11 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         ),
       ];
     }
-    final _Costs costs = _Costs(result as InsightsComputed, vices);
+    final _Costs costs = _Costs(
+      result as InsightsComputed,
+      vices,
+      places: ref.watch(placesProvider).store,
+    );
     final List<Widget Function(double top)> costCards =
         <Widget Function(double top)>[
           for (final InsightCard card in costs.cards)
@@ -431,6 +583,25 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       else if (view.hoursPending)
         const CardFoot(InsightsPage.hoursAfterPending),
       _LastNightSection(vices: vices, marks: costs.marks),
+      if (ref.watch(experimentResultsProvider)
+          case final List<ExperimentCard> experiments
+          when experiments.isNotEmpty) ...<Widget>[
+        const CardSectionLabel(ExperimentWords.resultHeading),
+        for (final (int i, ExperimentCard e) in experiments.indexed)
+          ExperimentResultCard(
+            plan: e.plan,
+            result: e.result,
+            habit: costs.nameOf(e.plan.habitId),
+            mark: costs.marks[e.plan.habitId] ?? const HabitMark(0),
+            locale: formatLocale,
+            top: i == 0 ? 0 : DialSpace.xs,
+            onRunOn:
+                e.result.clear ||
+                    ref.watch(experimentProvider).value?.active != null
+                ? null
+                : () => ref.read(experimentProvider.notifier).runOn(e.plan),
+          ),
+      ],
       const CardSectionLabel(InsightsPage.costsHeading),
       if (costCards.isEmpty) costs.emptyBox(),
       for (int i = 0; i < shown; i++) costCards[i](i == 0 ? 0 : DialSpace.xs),
@@ -460,7 +631,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       const CardSectionLabel(InsightsPage.setsOffHeading),
       if (costs.before.isEmpty &&
           costs.follows.isEmpty &&
-          costs.calendar.isEmpty)
+          costs.calendar.isEmpty &&
+          costs.calendarDays.isEmpty &&
+          costs.places.isEmpty &&
+          costs.triggers.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -490,6 +664,67 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           top: i == 0 && costs.before.isEmpty && costs.follows.isEmpty
               ? 0
               : DialSpace.xs,
+        ),
+      for (final (int i, CalendarDayCard card) in costs.calendarDays.indexed)
+        CalendarDayCardView(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      for (final (int i, AtPlace finding) in costs.places.indexed)
+        AtPlaceCardView(
+          finding: finding,
+          habit: costs.nameOf(finding.habitId),
+          place: costs.placeOf(finding.placeId),
+          mark: costs.marks[finding.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty &&
+                  costs.calendarDays.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      for (final (int i, TriggerCard card) in costs.triggers.indexed)
+        TriggerAmountsCard(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty &&
+                  costs.calendarDays.isEmpty &&
+                  costs.places.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      if (costs.setsOffRefused.isNotEmpty)
+        DialCard(
+          top: DialSpace.xs,
+          children: <Widget>[
+            CardRow(
+              label: InsightsPage.setsOffWhyNot,
+              value: Text('${costs.setsOffRefused.length}'),
+              glyph: DialGlyph.right,
+              onTap: () => Navigator.of(context).push(
+                DialPageRoute<void>(
+                  builder: (_) => const InsightsSetsOffPage(),
+                ),
+              ),
+            ),
+          ],
         ),
       DialCard(
         children: <Widget>[
@@ -548,7 +783,8 @@ class InsightsCostsPage extends ConsumerWidget {
   const InsightsCostsPage({super.key});
 
   static const String lede =
-      'What follows each habit in your sleep, heart and activity';
+      'What follows each habit in your sleep, heart, activity, mindfulness, '
+      'reminders and mood';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -621,14 +857,54 @@ class InsightsCostsPage extends ConsumerWidget {
   ];
 }
 
+/// "What sets it off" for the habits with nothing there: why, one line each.
+class InsightsSetsOffPage extends ConsumerWidget {
+  const InsightsSetsOffPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final InsightsView? view = ref.watch(insightsProvider).value;
+    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final InsightsResult? result = view?.result;
+    final _Costs? costs = result is InsightsComputed && vices != null
+        ? _Costs(result, vices)
+        : null;
+    return CardPage(
+      title: InsightsPage.setsOffHeading,
+      children: <Widget>[
+        if (costs == null)
+          const _MessageCard(InsightsPage.loadingLabel, busy: true)
+        else if (costs.setsOffRefused.isNotEmpty) ...<Widget>[
+          const CardSectionLabel(InsightsPage.refusedHeading),
+          DialCard(
+            top: 0,
+            children: <Widget>[
+              for (final SetsOffRefusal r in costs.setsOffRefused)
+                CardRow(
+                  label: costs.nameOf(r.habitId),
+                  subtitle: costs.setsOffReasonOf(r),
+                ),
+            ],
+          ),
+        ],
+        const CardFoot(InsightsPage.foot),
+      ],
+    );
+  }
+}
+
 // The report as both "What it costs" views show it: the habits the page
 // knows, by name, unit and mark.
 class _Costs {
-  _Costs(InsightsComputed computed, List<Vice> vices)
-    : report = computed.report,
-      marks = habitMarks(vices),
-      _names = <String, String>{for (final Vice v in vices) v.id: v.name},
-      _units = <String, Unit>{for (final Vice v in vices) v.id: v.unit} {
+  _Costs(
+    InsightsComputed computed,
+    List<Vice> vices, {
+    PlaceStore places = const PlaceStore(),
+  }) : report = computed.report,
+       _places = places,
+       marks = habitMarks(vices),
+       _names = <String, String>{for (final Vice v in vices) v.id: v.name},
+       _units = <String, Unit>{for (final Vice v in vices) v.id: v.unit} {
     cards = insightCards(<HabitFinding>[
       for (final HabitFinding f in report.findings)
         if (_names.containsKey(f.habitId)) f,
@@ -685,6 +961,18 @@ class _Costs {
       for (final AfterEvent a in report.afterEvent)
         if (_names.containsKey(a.habitId)) a,
     ]);
+    calendarDays = calendarDayCards(<CalendarDay>[
+      for (final CalendarDay c in report.calendarDays)
+        if (_names.containsKey(c.habitId)) c,
+    ]);
+    this.places = atPlaceCards(<AtPlace>[
+      for (final AtPlace a in report.atPlace)
+        if (_names.containsKey(a.habitId)) a,
+    ]);
+    triggers = triggerCards(<HabitTriggers>[
+      for (final HabitTriggers h in report.triggers)
+        if (_names.containsKey(h.habitId)) h,
+    ]);
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -700,6 +988,26 @@ class _Costs {
     // A legacy entry of a vice that is gone would date the span from a habit
     // the page doesn't show.
     firstDay = insightsFirstDay(computed.firstDays, _names.containsKey);
+    setsOffRefused = setsOffRefusals(
+      habitIds: <String>[
+        for (final Vice v in vices)
+          if (!v.archived) v.id,
+      ],
+      report: report,
+      shown: <String>{
+        for (final BeforeUseCard c in before) c.habitId,
+        for (final FollowsCard c in follows)
+          for (final HabitFollows f in <HabitFollows>[
+            c.headline,
+            ...c.others,
+          ]) ...<String>[f.leadId, f.followerId],
+        for (final AfterEvent a in calendar) a.habitId,
+        for (final CalendarDayCard c in calendarDays) c.habitId,
+        for (final AtPlace a in this.places) a.habitId,
+        for (final TriggerCard c in triggers) c.habitId,
+      },
+      logged: computed.firstDays.keys.toSet(),
+    )..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
   }
 
   final InsightsReport report;
@@ -727,12 +1035,23 @@ class _Costs {
   /// Rises with no payoff card for the same fall, each a card of its own.
   late final List<ReplacementCard> replacements;
   late final List<AfterEvent> calendar;
+  late final List<CalendarDayCard> calendarDays;
+  late final List<AtPlace> places;
+  final PlaceStore _places;
   late final List<FollowsCard> follows;
+  late final List<TriggerCard> triggers;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
 
+  /// The unarchived habits with nothing under "What sets it off", and why.
+  late final List<SetsOffRefusal> setsOffRefused;
+
+  String setsOffReasonOf(SetsOffRefusal r) =>
+      setsOffReason(r, nameOf, placeOf: placeOf, floors: report.floors);
+
   String nameOf(String id) => _names[id] ?? 'a removed habit';
   Unit unitOf(String id) => _units[id] ?? Unit.fallback;
+  String placeOf(int id) => _places.labelOf(id);
 
   Widget card(InsightCard card, {required double top}) => _FindingCard(
     card: card,
@@ -834,6 +1153,16 @@ class _Costs {
         for (final FollowsCard card in follows) followsText(card, nameOf),
         for (final AfterEvent a in calendar)
           afterEventText(a, nameOf(a.habitId), formatLocale),
+        for (final CalendarDayCard c in calendarDays)
+          calendarDayText(c, nameOf(c.habitId), formatLocale),
+        for (final AtPlace a in places)
+          atPlaceText(a, nameOf(a.habitId), placeOf(a.placeId), formatLocale),
+        for (final TriggerCard card in triggers)
+          triggerText(card, nameOf(card.habitId)),
+      ],
+      setsOffRefused: <String>[
+        for (final SetsOffRefusal r in setsOffRefused)
+          '${nameOf(r.habitId)}: ${setsOffReasonOf(r)}',
       ],
       shifts: <List<String>>[
         for (final MeasureShift s in shifts)
@@ -860,6 +1189,7 @@ String insightsText({
   List<List<String>> recovery = const <List<String>>[],
   List<List<String>> cuttingDown = const <List<String>>[],
   List<List<String>> setsOff = const <List<String>>[],
+  List<String> setsOffRefused = const <String>[],
   List<List<String>> shifts = const <List<String>>[],
 }) {
   final StringBuffer out = StringBuffer(InsightsPage.title);
@@ -932,10 +1262,16 @@ String insightsText({
       out.write('\n${card.join('\n')}\n');
     }
   }
-  if (setsOff.isNotEmpty) {
+  if (setsOff.isNotEmpty || setsOffRefused.isNotEmpty) {
     out.write('\n${InsightsPage.setsOffHeading}\n');
     for (final List<String> card in setsOff) {
       out.write('\n${card.join('\n')}\n');
+    }
+  }
+  if (setsOffRefused.isNotEmpty) {
+    out.write('\n${InsightsPage.refusedHeading}\n');
+    for (final String line in setsOffRefused) {
+      out.write('$line\n');
     }
   }
   out.write('\n${InsightsPage.foot}\n');
@@ -1023,25 +1359,36 @@ class _HealthCard extends StatelessWidget {
   }
 }
 
-/// Asks for calendar access, or says where to allow it once refused.
-class _CalendarCard extends StatelessWidget {
-  const _CalendarCard({
+/// Asks for calendar or Reminders access, or says where to allow it once
+/// refused.
+class _EventKitCard extends StatelessWidget {
+  const _EventKitCard({
     required this.access,
     required this.connecting,
     required this.onConnect,
+    required this.label,
+    required this.body,
+    required this.offLabel,
+    required this.offValue,
+    required this.offBody,
   });
 
   final CalendarAccess access;
   final bool connecting;
   final VoidCallback onConnect;
+  final String label;
+  final String body;
+  final String offLabel;
+  final String offValue;
+  final String offBody;
 
   @override
   Widget build(BuildContext context) => DialCard(
     children: <Widget>[
       if (access == CalendarAccess.notDetermined)
         CardRow(
-          label: InsightsPage.calendarLabel,
-          subtitle: InsightsPage.calendarBody,
+          label: label,
+          subtitle: body,
           enabled: !connecting,
           glyph: connecting ? null : DialGlyph.right,
           trailing: connecting
@@ -1053,11 +1400,138 @@ class _CalendarCard extends StatelessWidget {
           onTap: onConnect,
         )
       else
-        const CardRow(
-          label: InsightsPage.calendarOffLabel,
-          subtitle: InsightsPage.calendarOffBody,
-          value: Text(InsightsPage.calendarOffValue),
+        CardRow(label: offLabel, subtitle: offBody, value: Text(offValue)),
+    ],
+  );
+}
+
+/// Asks for location, says where to allow it, and lists the places found,
+/// each tapped to name it.
+class _PlacesCard extends StatelessWidget {
+  const _PlacesCard({
+    required this.access,
+    required this.store,
+    required this.connecting,
+    required this.onConnect,
+    required this.onRename,
+  });
+
+  final PlacesAccess access;
+  final PlaceStore store;
+  final bool connecting;
+  final VoidCallback onConnect;
+  final ValueChanged<Place> onRename;
+
+  @override
+  Widget build(BuildContext context) {
+    final DateTime? since = store.since;
+    final bool early =
+        since == null ||
+        DateTime.now().difference(since) < InsightsPage.placesEarlyFor;
+    // The engine judges the places with the most time spent, so the card
+    // offers those for naming.
+    final Map<int, Duration> spent = <int, Duration>{};
+    for (final PlaceStay s in store.stays) {
+      if (s.departure case final DateTime left) {
+        spent[s.placeId] =
+            (spent[s.placeId] ?? Duration.zero) + left.difference(s.arrival);
+      }
+    }
+    final List<Place> shown = List<Place>.of(store.places)
+      ..sort(
+        (a, b) => (spent[b.id] ?? Duration.zero).compareTo(
+          spent[a.id] ?? Duration.zero,
         ),
+      );
+    return DialCard(
+      children: <Widget>[
+        switch (access) {
+          PlacesAccess.notDetermined => CardRow(
+            label: InsightsPage.placesLabel,
+            subtitle: InsightsPage.placesBody,
+            enabled: !connecting,
+            glyph: connecting ? null : DialGlyph.right,
+            trailing: connecting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
+            onTap: onConnect,
+          ),
+          PlacesAccess.whenInUse => CardRow(
+            label: InsightsPage.placesTitle,
+            subtitle: InsightsPage.placesWhileUsingBody,
+            value: const Text(InsightsPage.placesWhileUsing),
+            enabled: !connecting,
+            onTap: onConnect,
+          ),
+          PlacesAccess.always => CardRow(
+            label: InsightsPage.placesTitle,
+            subtitle: early
+                ? InsightsPage.placesEarly
+                : shown.isEmpty
+                ? null
+                : InsightsPage.placesRenameHint,
+          ),
+          PlacesAccess.denied || PlacesAccess.restricted => const CardRow(
+            label: InsightsPage.placesTitle,
+            subtitle: InsightsPage.placesOffBody,
+            value: Text(InsightsPage.placesOffValue),
+          ),
+        },
+        if (access == PlacesAccess.always || access == PlacesAccess.whenInUse)
+          for (final Place p in shown.take(placeMaxPlaces))
+            CardRow(
+              label: p.label,
+              value: Text(p.visits == 1 ? '1 visit' : '${p.visits} visits'),
+              glyph: DialGlyph.right,
+              onTap: () => onRename(p),
+            ),
+      ],
+    );
+  }
+}
+
+class _RenamePlaceDialog extends StatefulWidget {
+  const _RenamePlaceDialog({required this.place});
+
+  final Place place;
+
+  @override
+  State<_RenamePlaceDialog> createState() => _RenamePlaceDialogState();
+}
+
+class _RenamePlaceDialogState extends State<_RenamePlaceDialog> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.place.name ?? '',
+  );
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _save() => Navigator.of(context).pop(_name.text);
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text(InsightsPage.placesRenameTitle),
+    content: TextField(
+      controller: _name,
+      autofocus: true,
+      maxLength: placeNameMaxLength,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: InputDecoration(hintText: 'Place ${widget.place.id}'),
+      onSubmitted: (_) => _save(),
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      TextButton(onPressed: _save, child: const Text('Save')),
     ],
   );
 }
@@ -1127,7 +1601,7 @@ class _MessageCard extends StatelessWidget {
   }
 }
 
-class _FindingCard extends StatelessWidget {
+class _FindingCard extends ConsumerWidget {
   const _FindingCard({
     required this.card,
     required this.habit,
@@ -1147,13 +1621,21 @@ class _FindingCard extends StatelessWidget {
   final Recovery? Function(HabitFinding line) recoveryOf;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
     final HabitFinding finding = card.headline;
     final TextStyle small = DialTypeScale.bodyS.copyWith(color: colors.muted);
     final String? bedtime = bedtimeLine(finding, locale, unit: unit);
     final Recovery? after = recoveryOf(finding);
+    // One experiment at a time, and only once the plan can be kept sealed.
+    final ExperimentStore? experiments = ref.watch(experimentProvider).value;
+    final bool testable =
+        after == null &&
+        canExperiment(finding) &&
+        experiments != null &&
+        experiments.active == null &&
+        ref.watch(experimentFileProvider) != null;
     return DialCard(
       top: top,
       children: <Widget>[
@@ -1243,6 +1725,14 @@ class _FindingCard extends StatelessWidget {
                     null => findingLine(other, locale, unit: unit),
                   },
                   style: DialTypeScale.bodyS.copyWith(color: scheme.onSurface),
+                ),
+              if (testable)
+                ExperimentButton(
+                  onPressed: () => Navigator.of(context).push(
+                    ExperimentPage.route(
+                      ExperimentPage.plan(finding: finding, habit: habit),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -1431,7 +1921,7 @@ List<YesterdayLine> yesterdayLines(
       (
         mark: marks[v.id],
         text:
-            'Yesterday: ${v.name} ${v.unit.label(used[v.id]!.total)}, '
+            'Yesterday: ${v.name} ${v.units.label(used[v.id]!.total)}, '
             'last at ${formatTime(used[v.id]!.last, alwaysUse24HourFormat: alwaysUse24HourFormat)}',
       ),
   ];

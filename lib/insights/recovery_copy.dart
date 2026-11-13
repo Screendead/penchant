@@ -135,6 +135,9 @@ String _changes(Recovery finding, String locale) {
 }
 
 String _back(Recovery finding, String locale) => switch (finding.backBy) {
+  final int night when metricCopy(finding.metricId)!.inWords =>
+    'By ${_when(night, ofNight: false)} it is back to your usual, within '
+        'half its usual day-to-day swing.',
   final int night =>
     'By ${_when(night, ofNight: metricCopy(finding.metricId)!.night)} it is '
         'back within ${_floorWords(finding, locale)} of your usual.',

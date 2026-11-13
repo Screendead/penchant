@@ -84,6 +84,28 @@ enum HealthMetric {
   /// The day's total, in kilocalories.
   activeEnergyBurned('activeEnergyBurned'),
 
+  /// The day's workouts, in minutes, merged across sources so an overlap
+  /// counts once and cut at midnight. Only each workout's start and end are
+  /// read. A day without one has no value here, as everywhere in this file;
+  /// the engine reads it as 0 once the person has logged any
+  /// ([sessionMetricIds]).
+  workoutMinutes('workoutMinutes'),
+
+  /// The day's mindful sessions, in minutes, as [workoutMinutes] counts.
+  mindfulMinutes('mindfulMinutes'),
+
+  /// State of Mind (iOS 18 and later): the mean valence, -1 (very unpleasant)
+  /// to 1 (very pleasant), of the day's daily-mood logs, or of its momentary
+  /// emotions when it has no daily mood, each on the local day of its start.
+  /// A day without a log has no value; earlier systems have none at all.
+  moodValence('moodValence'),
+
+  /// 1 on each day with menstrual flow logged (any amount); a day logged
+  /// without flow, or not logged, has no value. Not an outcome: the insights
+  /// engine infers the cycle's phase from these days alone and holds it
+  /// fixed (`lib/insights/cycle_phase.dart`).
+  menstrualFlow('menstrualFlow'),
+
   /// The plain mean of the heart rate samples inside the night's asleep time
   /// (core, deep, REM or unspecified; not in bed or awake), keyed to the night
   /// like the sleep metrics, in beats per minute. A sample is inside when its
@@ -95,6 +117,13 @@ enum HealthMetric {
 
   final String id;
 }
+
+/// The [HealthMetric]s counted in sessions, where a day without one is a
+/// day of none rather than a day unmeasured, once there has been any.
+const Set<String> sessionMetricIds = <String>{
+  'workoutMinutes',
+  'mindfulMinutes',
+};
 
 /// What [HealthSource.samples] reads, timestamped rather than per day.
 enum HealthSampleMetric {

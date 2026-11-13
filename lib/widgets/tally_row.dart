@@ -34,7 +34,7 @@ class TallyRow extends StatefulWidget {
   final Widget? trailing;
 
   static String label(Vice vice, num total) =>
-      '${vice.name}, ${vice.unit.label(total)}';
+      '${vice.name}, ${vice.units.label(total)}';
 
   @override
   State<TallyRow> createState() => _TallyRowState();
@@ -120,7 +120,7 @@ class _TallyRowState extends State<TallyRow>
         ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 58),
           child: Text(
-            total == null ? '' : widget.vice.unit.nameFor(total),
+            total == null ? '' : widget.vice.units.nameFor(total),
             style: DialTypeScale.bodyS.copyWith(
               color: colors.muted,
               fontSize: 13.5,

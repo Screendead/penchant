@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -102,7 +103,13 @@ class _FailingSealer implements FieldSealer {
   }) => Future<Map<String, Object?>>.error(StateError('no key'));
 }
 
-Vice _vice({bool locked = false}) => Vice(
+Vice _vice({
+  bool locked = false,
+  String? unitLabel,
+  String? unitSingular,
+  double? costPerUnit,
+  String? currency,
+}) => Vice(
   id: 'coffee',
   name: 'Coffee',
   unit: Unit.drink,
@@ -110,6 +117,10 @@ Vice _vice({bool locked = false}) => Vice(
   createdAt: _at,
   archived: false,
   locked: locked,
+  unitLabel: unitLabel,
+  unitSingular: unitSingular,
+  costPerUnit: costPerUnit,
+  currency: currency,
 );
 
 final Blob _garbage = Blob(Uint8List.fromList(List<int>.filled(40, 9)));
@@ -141,6 +152,60 @@ void main() {
   };
 
   group('parsers', () {
+    test('a sealed vice opens to its unit label and price', () async {
+      Future<Vice> open(Map<String, Object?> content) async =>
+          (await Vice.openQuerySnapshot(
+            _snapshot(<String, Map<String, dynamic>>{
+              'coffee': <String, dynamic>{
+                sealedField: Blob(
+                  await sealer.seal(content, context: 'vices/coffee'),
+                ),
+                'ownerID': 'owner',
+                'createdAt': _at,
+                'archived': false,
+              },
+            }),
+            SealedOpener(sealer),
+          )).single;
+
+      final Vice priced = await open(<String, Object?>{
+        'name': 'Coffee',
+        'unit': 'drink',
+        'unitLabel': ' cups ',
+        'unitSingular': ' cup ',
+        'costPerUnit': 3,
+        'currency': 'GBP',
+      });
+      expect(priced.unitLabel, 'cups');
+      expect(priced.unitSingular, 'cup');
+      expect(priced.units.label(2), '2 cups');
+      expect(priced.units.label(1), '1 cup');
+      expect(priced.costPerUnit, 3.0);
+      expect(priced.currency, 'GBP');
+      expect(priced.spendOf(2.5), 7.5);
+
+      // What an older build's reseal leaves: the preset's words, no spend.
+      final Vice resealed = await open(<String, Object?>{
+        'name': 'Coffee',
+        'unit': 'drink',
+      });
+      expect(resealed.unitLabel, isNull);
+      expect(resealed.units.label(1), '1 drink');
+      expect(resealed.spendOf(2), isNull);
+
+      final Vice mistyped = await open(<String, Object?>{
+        'name': 'Coffee',
+        'unitLabel': 'x' * (maxUnitLabelLength + 1),
+        'unitSingular': 3,
+        'costPerUnit': -1,
+        'currency': 'gbp',
+      });
+      expect(mistyped.unitLabel, isNull);
+      expect(mistyped.unitSingular, isNull);
+      expect(mistyped.costPerUnit, isNull);
+      expect(mistyped.currency, isNull);
+    });
+
     test('a sealed vice opens to its name and unit', () async {
       final List<Vice> vices = await Vice.openQuerySnapshot(
         _snapshot(<String, Map<String, dynamic>>{
@@ -305,6 +370,91 @@ void main() {
           'name': 'Espresso',
           'unit': 'drink',
           'category': 'other',
+        },
+      );
+    });
+
+    test('addVice seals a unit label and price', () async {
+      final SentWrite write = writes.addVice(
+        ownerID: 'owner',
+        name: 'Coffee',
+        unit: Unit.drink,
+        unitAndPrice: (
+          unitLabel: 'cups',
+          unitSingular: 'cup',
+          costPerUnit: 2.5,
+          currency: 'GBP',
+        ),
+      );
+      await write.done;
+      final Map<String, Object?> stored = store.sets['vices/${write.id}']!;
+      expect(
+        await sealer.open(
+          (stored[sealedField]! as Blob).bytes,
+          context: 'vices/${write.id}',
+        ),
+        <String, Object?>{
+          'name': 'Coffee',
+          'unit': 'drink',
+          'category': 'other',
+          'unitLabel': 'cups',
+          'unitSingular': 'cup',
+          'costPerUnit': 2.5,
+          'currency': 'GBP',
+        },
+      );
+    });
+
+    test('updateVice keeps a unit label and price through a rename', () async {
+      final Vice priced = _vice(
+        unitLabel: 'cups',
+        unitSingular: 'cup',
+        costPerUnit: 2.5,
+        currency: 'GBP',
+      );
+      await writes.updateVice(priced, name: 'Espresso').done;
+      final Map<Object, Object?> update = store.updates['vices/coffee']!;
+
+      for (final String field in viceContentFields) {
+        expect(update[field], FieldValue.delete());
+      }
+      expect(
+        await sealer.open(
+          (update[sealedField]! as Blob).bytes,
+          context: 'vices/coffee',
+        ),
+        <String, Object?>{
+          'name': 'Espresso',
+          'unit': 'drink',
+          'category': 'other',
+          'unitLabel': 'cups',
+          'unitSingular': 'cup',
+          'costPerUnit': 2.5,
+          'currency': 'GBP',
+        },
+      );
+
+      await writes
+          .updateVice(
+            priced,
+            unitAndPrice: (
+              unitLabel: 'cups',
+              unitSingular: null,
+              costPerUnit: null,
+              currency: null,
+            ),
+          )
+          .done;
+      expect(
+        await sealer.open(
+          (store.updates['vices/coffee']![sealedField]! as Blob).bytes,
+          context: 'vices/coffee',
+        ),
+        <String, Object?>{
+          'name': 'Coffee',
+          'unit': 'drink',
+          'category': 'other',
+          'unitLabel': 'cups',
         },
       );
     });
@@ -475,7 +625,21 @@ void main() {
         ),
         throwsStateError,
       );
-      await writes.updateVice(_vice(), name: 'Espresso').done;
+      expect(
+        () => writes.updateVice(
+          _vice(),
+          unitAndPrice: (
+            unitLabel: 'cups',
+            unitSingular: null,
+            costPerUnit: null,
+            currency: null,
+          ),
+        ),
+        throwsStateError,
+      );
+      await writes
+          .updateVice(_vice(), name: 'Espresso', unitAndPrice: noUnitAndPrice)
+          .done;
 
       expect(store.sets, isEmpty);
       expect(store.updates['vices/coffee'], <Object, Object?>{

@@ -9,6 +9,39 @@ void main() {
 
   setUpAll(() => formatLocale);
 
+  group('money', () {
+    test('formats in the habit currency with the region digits', () {
+      expect(formatMoney(1234.5, 'GBP'), '£1,234.50');
+      expect(formatMoney(2, null), '2.00');
+    });
+
+    test('a new price starts in the device region currency', () {
+      expect(deviceCurrency(const <Locale>[Locale('en', 'GB')]), 'GBP');
+      expect(deviceCurrency(const <Locale>[Locale('de', 'DE')]), 'EUR');
+      expect(deviceCurrency(const <Locale>[Locale('ja', 'JP')]), 'JPY');
+    });
+  });
+
+  group('UnitWords', () {
+    test('an own label is used as typed whatever the count', () {
+      expect(const UnitWords(Unit.drink, 'mg').label(1), '1 mg');
+      expect(const UnitWords(Unit.drink, 'mg').label(250), '250 mg');
+      expect(const UnitWords(Unit.drink).label(1), '1 drink');
+      expect(const UnitWords(Unit.drink).plural, 'drinks');
+    });
+
+    test('an own singular words one and "per"', () {
+      const UnitWords glasses = UnitWords(Unit.drink, 'glasses', 'glass');
+      expect(glasses.label(1), '1 glass');
+      expect(glasses.label(2), '2 glasses');
+      expect(glasses.label(0.5), '0.5 glasses');
+      expect(glasses.singular, 'glass');
+      expect(glasses.plural, 'glasses');
+      // Without a label the singular is ignored.
+      expect(const UnitWords(Unit.drink, null, 'glass').label(1), '1 drink');
+    });
+  });
+
   group('localeForFormatting', () {
     test('keeps an English variant the device lists', () {
       expect(localeForFormatting(const [Locale('en', 'GB')]), 'en_GB');

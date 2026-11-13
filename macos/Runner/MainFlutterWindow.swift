@@ -1,5 +1,6 @@
 import Cocoa
 import FlutterMacOS
+import LocalAuthentication
 
 class MainFlutterWindow: NSWindow {
   // Wider than the 900 pt where the split view starts, so a new window shows it.
@@ -35,7 +36,9 @@ class MainFlutterWindow: NSWindow {
     AuthFieldsFactory.register(with: flutterViewController)
     QueueListener.start(WidgetBridge.register(with: flutterViewController.registrar(forPlugin: "WidgetBridge")))
     SecretPasteboard.register(with: flutterViewController.registrar(forPlugin: "SecretPasteboard").messenger)
+    DeviceAuth.register(with: flutterViewController.registrar(forPlugin: "DeviceAuth").messenger)
     EntryPrompt.register(with: flutterViewController.registrar(forPlugin: "EntryPrompt"))
+    CalendarChannel.register(with: flutterViewController.registrar(forPlugin: "CalendarChannel"))
     super.awakeFromNib()
   }
 }
@@ -72,6 +75,57 @@ enum SecretPasteboard {
         }
       }
       result(nil)
+    }
+  }
+}
+
+// The Dart side is lib/app_lock/device_auth.dart. The device-owner policy
+// falls back to the passcode when biometrics fail or are not set up.
+enum DeviceAuth {
+  static func register(with messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "com.screendead.penchant/device_auth", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "status":
+        let context = LAContext()
+        var error: NSError?
+        let available = context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
+        // biometryType is set only once canEvaluatePolicy has run.
+        result(["available": available, "biometry": biometryName(context.biometryType)])
+      case "authenticate":
+        guard let args = call.arguments as? [String: Any], let reason = args["reason"] as? String
+        else {
+          result(FlutterMethodNotImplemented)
+          return
+        }
+        LAContext().evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) {
+          success, error in
+          let outcome = success ? "success" : outcomeName(error)
+          DispatchQueue.main.async { result(outcome) }
+        }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  static func biometryName(_ type: LABiometryType) -> String {
+    switch type {
+    case .faceID: return "faceID"
+    case .touchID: return "touchID"
+    default: return "none"
+    }
+  }
+
+  static func outcomeName(_ error: Error?) -> String {
+    switch (error as? LAError)?.code {
+    case .userCancel?, .systemCancel?, .appCancel?, .userFallback?, .notInteractive?:
+      return "cancelled"
+    case .passcodeNotSet?:
+      return "unavailable"
+    default:
+      return "failed"
     }
   }
 }
