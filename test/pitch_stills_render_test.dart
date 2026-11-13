@@ -57,6 +57,7 @@ Vice _habit(
   int order,
   ViceCategory category, {
   String? unitLabel,
+  String? unitSingular,
   double? cost,
 }) => Vice(
   id: id,
@@ -67,6 +68,7 @@ Vice _habit(
   archived: false,
   category: category,
   unitLabel: unitLabel,
+  unitSingular: unitSingular,
   costPerUnit: cost,
   currency: cost == null ? null : 'GBP',
 );
@@ -85,6 +87,7 @@ final Vice _wine = _habit(
   2,
   ViceCategory.alcohol,
   unitLabel: 'glasses',
+  unitSingular: 'glass',
   cost: 2.5,
 );
 final Vice _cigarettes = _habit(
