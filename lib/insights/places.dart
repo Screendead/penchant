@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/photo_stays.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/what_follows.dart';
 
@@ -41,13 +42,19 @@ class Place {
     required this.longitude,
     required this.visits,
     this.name,
+    this.photoStays = 0,
   });
 
   /// From 1, in the order the places were first visited; never reused.
   final int id;
+
+  /// Placed by its visits; by its photo stays only while it has none.
   final double latitude;
   final double longitude;
   final int visits;
+
+  /// Stays derived from photos ([PlaceSource.photos]).
+  final int photoStays;
 
   /// What the person called it; null until renamed.
   final String? name;
@@ -59,34 +66,55 @@ class Place {
     double? longitude,
     int? visits,
     String? Function()? name,
+    int? photoStays,
   }) => Place(
     id: id,
     latitude: latitude ?? this.latitude,
     longitude: longitude ?? this.longitude,
     visits: visits ?? this.visits,
     name: name == null ? this.name : name(),
+    photoStays: photoStays ?? this.photoStays,
   );
+}
+
+/// What a stay was learnt from.
+enum PlaceSource {
+  /// Core Location's visits: every stay from the first visit on, so time
+  /// outside them is elsewhere.
+  visits,
+
+  /// A run of photos ([photoRuns]): time outside such stays is unknown.
+  photos,
 }
 
 /// Time spent at one of the places. Sendable to another isolate.
 class PlaceStay {
-  const PlaceStay(this.placeId, this.arrival, this.departure);
+  const PlaceStay(
+    this.placeId,
+    this.arrival,
+    this.departure, {
+    this.source = PlaceSource.visits,
+  });
 
   final int placeId;
   final DateTime arrival;
 
   /// Null while the person is still there.
   final DateTime? departure;
+  final PlaceSource source;
+
+  bool get fromPhotos => source == PlaceSource.photos;
 
   @override
   bool operator ==(Object other) =>
       other is PlaceStay &&
       other.placeId == placeId &&
       other.arrival == arrival &&
-      other.departure == departure;
+      other.departure == departure &&
+      other.source == source;
 
   @override
-  int get hashCode => Object.hash(placeId, arrival, departure);
+  int get hashCode => Object.hash(placeId, arrival, departure, source);
 }
 
 /// Visits this far from a place's centre, or nearer, are at that place.
@@ -101,7 +129,7 @@ const Duration _sameVisit = Duration(minutes: 1);
 /// The longest name a place may be given.
 const int placeNameMaxLength = 40;
 
-double _distanceMeters(double lat1, double lon1, double lat2, double lon2) {
+double distanceMeters(double lat1, double lon1, double lat2, double lon2) {
   const double earth = 6371000;
   double rad(double d) => d * pi / 180;
   final double dLat = rad(lat2 - lat1), dLon = rad(lon2 - lon1);
@@ -117,6 +145,8 @@ class PlaceStore {
   const PlaceStore({
     this.places = const <Place>[],
     this.stays = const <PlaceStay>[],
+    this.lastId = 0,
+    this.photosRead = 0,
   });
 
   final List<Place> places;
@@ -124,10 +154,36 @@ class PlaceStore {
   /// Sorted by arrival.
   final List<PlaceStay> stays;
 
-  static const int format = 1;
+  /// The highest place id ever given, so a removed place's id is never given
+  /// again.
+  final int lastId;
 
-  /// When the first visit was kept: no stay is known before it.
-  DateTime? get since => stays.isEmpty ? null : stays.first.arrival;
+  /// How many photos the last import from the photo library read.
+  final int photosRead;
+
+  /// Format 1 had no stay sources, [lastId] or [photosRead]; it still opens.
+  static const int format = 2;
+
+  /// When the first visit was kept: no visit is known before it.
+  DateTime? get since {
+    for (final PlaceStay s in stays) {
+      if (!s.fromPhotos) return s.arrival;
+    }
+    return null;
+  }
+
+  /// Whether photo-derived stays are kept.
+  bool get hasPhotos => stays.any((s) => s.fromPhotos);
+
+  /// The earliest photo-derived stay's arrival.
+  DateTime? get photosSince {
+    for (final PlaceStay s in stays) {
+      if (s.fromPhotos) return s.arrival;
+    }
+    return null;
+  }
+
+  int get _nextId => places.fold<int>(lastId, (m, p) => max(m, p.id)) + 1;
 
   String labelOf(int placeId) =>
       <int, String>{for (final Place p in places) p.id: p.label}[placeId] ??
@@ -144,7 +200,7 @@ class PlaceStore {
       int? nearest;
       double best = placeRadiusMeters;
       for (int i = 0; i < places.length; i++) {
-        final double d = _distanceMeters(
+        final double d = distanceMeters(
           places[i].latitude,
           places[i].longitude,
           v.latitude,
@@ -160,7 +216,10 @@ class PlaceStore {
         // Only a departure: it closes the last open stay at that place.
         if (nearest == null || v.departure == null) continue;
         final int open = stays.lastIndexWhere(
-          (s) => s.placeId == places[nearest!].id && s.departure == null,
+          (s) =>
+              !s.fromPhotos &&
+              s.placeId == places[nearest!].id &&
+              s.departure == null,
         );
         if (open >= 0 && stays[open].arrival.isBefore(v.departure!)) {
           stays[open] = PlaceStay(
@@ -173,7 +232,8 @@ class PlaceStore {
       }
       if (v.departure != null && !v.departure!.isAfter(arrival)) continue;
       final int seen = stays.indexWhere(
-        (s) => s.arrival.difference(arrival).abs() <= _sameVisit,
+        (s) =>
+            !s.fromPhotos && s.arrival.difference(arrival).abs() <= _sameVisit,
       );
       if (seen >= 0) {
         if (v.departure != null) {
@@ -187,7 +247,7 @@ class PlaceStore {
       }
       final int placeId;
       if (nearest == null) {
-        placeId = places.fold<int>(0, (m, p) => max(m, p.id)) + 1;
+        placeId = places.fold<int>(lastId, (m, p) => max(m, p.id)) + 1;
         places.add(
           Place(
             id: placeId,
@@ -209,8 +269,94 @@ class PlaceStore {
       stays.add(PlaceStay(placeId, arrival, v.departure));
     }
     stays.sort((a, b) => a.arrival.compareTo(b.arrival));
-    return PlaceStore(places: places, stays: stays);
+    return PlaceStore(
+      places: places,
+      stays: stays,
+      lastId: lastId,
+      photosRead: photosRead,
+    );
   }
+
+  /// The photo-derived stays replaced by [runs], read from [photos] photos:
+  /// each run to the nearest place within [placeRadiusMeters], or to a new
+  /// one. Photos never move a place a visit has placed, and a place that
+  /// only photos placed sits at the mean of its runs; ids and names stay.
+  PlaceStore withPhotoRuns(Iterable<PhotoRun> runs, {required int photos}) {
+    final PlaceStore base = withoutPhotos(keepPlaces: true);
+    final List<Place> places = <Place>[
+      for (final Place p in base.places) p.copyWith(photoStays: 0),
+    ];
+    final List<PlaceStay> stays = List<PlaceStay>.of(base.stays);
+    int next = base._nextId;
+    for (final PhotoRun r in runs) {
+      if (!r.to.isAfter(r.from)) continue;
+      int? nearest;
+      double best = placeRadiusMeters;
+      for (int i = 0; i < places.length; i++) {
+        final double d = distanceMeters(
+          places[i].latitude,
+          places[i].longitude,
+          r.latitude,
+          r.longitude,
+        );
+        if (d <= best) {
+          best = d;
+          nearest = i;
+        }
+      }
+      final int placeId;
+      if (nearest == null) {
+        placeId = next++;
+        places.add(
+          Place(
+            id: placeId,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            visits: 0,
+            photoStays: 1,
+          ),
+        );
+      } else {
+        final Place p = places[nearest];
+        final int n = p.photoStays + 1;
+        places[nearest] = p.visits > 0
+            ? p.copyWith(photoStays: n)
+            : p.copyWith(
+                latitude: p.latitude + (r.latitude - p.latitude) / n,
+                longitude: p.longitude + (r.longitude - p.longitude) / n,
+                photoStays: n,
+              );
+        placeId = p.id;
+      }
+      stays.add(
+        PlaceStay(placeId, r.from, r.to, source: PlaceSource.photos),
+      );
+    }
+    stays.sort((a, b) => a.arrival.compareTo(b.arrival));
+    return PlaceStore(
+      places: <Place>[
+        for (final Place p in places)
+          if (p.visits > 0 || p.photoStays > 0) p,
+      ],
+      stays: stays,
+      lastId: max(next - 1, base.lastId),
+      photosRead: photos,
+    );
+  }
+
+  /// Every photo-derived stay removed, and the places only photos gave
+  /// unless [keepPlaces].
+  PlaceStore withoutPhotos({bool keepPlaces = false}) => PlaceStore(
+    places: <Place>[
+      for (final Place p in places)
+        if (keepPlaces || p.visits > 0) p.copyWith(photoStays: 0),
+    ],
+    stays: <PlaceStay>[
+      for (final PlaceStay s in stays)
+        if (!s.fromPhotos) s,
+    ],
+    lastId: _nextId - 1,
+  );
 
   /// [placeId] named [name], trimmed; an empty name clears it.
   PlaceStore renamed(int placeId, String name) {
@@ -224,12 +370,16 @@ class PlaceStore {
           p.id == placeId ? p.copyWith(name: () => kept) : p,
       ],
       stays: stays,
+      lastId: lastId,
+      photosRead: photosRead,
     );
   }
 
   List<int> encode() => utf8.encode(
     jsonEncode(<String, Object?>{
       'format': format,
+      'lastId': _nextId - 1,
+      if (photosRead > 0) 'photosRead': photosRead,
       'places': <Object?>[
         for (final Place p in places)
           <String, Object?>{
@@ -238,6 +388,7 @@ class PlaceStore {
             'lon': p.longitude,
             'visits': p.visits,
             if (p.name != null) 'name': p.name,
+            if (p.photoStays > 0) 'photoStays': p.photoStays,
           },
       ],
       'stays': <Object?>[
@@ -246,6 +397,7 @@ class PlaceStore {
             s.placeId,
             s.arrival.microsecondsSinceEpoch,
             s.departure?.microsecondsSinceEpoch,
+            if (s.fromPhotos) PlaceSource.photos.index,
           ],
       ],
     }),
@@ -256,8 +408,10 @@ class PlaceStore {
     try {
       final Map<String, Object?> m =
           jsonDecode(utf8.decode(bytes)) as Map<String, Object?>;
-      if (m['format'] != format) return null;
+      if (m['format'] != 1 && m['format'] != format) return null;
       return PlaceStore(
+        lastId: (m['lastId'] as int?) ?? 0,
+        photosRead: (m['photosRead'] as int?) ?? 0,
         places: <Place>[
           for (final Object? o in m['places']! as List<Object?>)
             if (o case final Map<String, Object?> p)
@@ -267,6 +421,7 @@ class PlaceStore {
                 longitude: (p['lon']! as num).toDouble(),
                 visits: p['visits']! as int,
                 name: p['name'] as String?,
+                photoStays: (p['photoStays'] as int?) ?? 0,
               )
             else
               throw const FormatException(),
@@ -280,6 +435,18 @@ class PlaceStore {
                 departure == null
                     ? null
                     : DateTime.fromMicrosecondsSinceEpoch(departure),
+              )
+            else if (o case [
+              final int id,
+              final int arrival,
+              final int departure,
+              final int source,
+            ] when source == PlaceSource.photos.index)
+              PlaceStay(
+                id,
+                DateTime.fromMicrosecondsSinceEpoch(arrival),
+                DateTime.fromMicrosecondsSinceEpoch(departure),
+                source: PlaceSource.photos,
               )
             else
               throw const FormatException(),
@@ -324,10 +491,15 @@ class AtPlace {
     this.interval,
     this.pValue,
     this.refusal,
+    this.fromPhotos = false,
   });
 
   final String habitId;
   final int placeId;
+
+  /// Judged from photo-derived stays alone ([atPlace]): only the hours those
+  /// stays cover count, on days before the first visit.
+  final bool fromPhotos;
 
   /// Days with an entry in waking hours and time both at the place and
   /// elsewhere.
@@ -358,6 +530,7 @@ class AtPlace {
     interval: interval,
     pValue: pValue,
     refusal: reason,
+    fromPhotos: fromPhotos,
   );
 }
 
@@ -385,14 +558,21 @@ List<AtPlace> atPlace({
   Set<String> skip = const <String>{},
   InsightGates gates = const InsightGates(),
 }) {
+  final List<AtPlace> fromPhotos = _atPlaceFromPhotos(
+    uses: uses,
+    stays: stays,
+    through: through,
+    skip: skip,
+    gates: gates,
+  );
   final List<PlaceStay> closed = <PlaceStay>[
     for (final PlaceStay s in stays)
-      if (s.departure != null) s,
+      if (s.departure != null && !s.fromPhotos) s,
   ]..sort((a, b) => a.arrival.compareTo(b.arrival));
-  if (closed.isEmpty) return const <AtPlace>[];
+  if (closed.isEmpty) return fromPhotos;
   final DateTime first = startOfDay(closed.first.arrival);
   final DateTime last = startOfDay(through);
-  if (last.isBefore(first)) return const <AtPlace>[];
+  if (last.isBefore(first)) return fromPhotos;
 
   // Per day, minutes of waking time at each place.
   final Map<DateTime, Map<int, int>> minutesAt = <DateTime, Map<int, int>>{};
@@ -465,47 +645,185 @@ List<AtPlace> atPlace({
         );
         timeShares.add(there / waking);
       }
-      final List<double> y = <double>[
-        for (int i = 0; i < useShares.length; i++) useShares[i] - timeShares[i],
-      ];
-      AtPlace result({
-        RefusalReason? refusal,
-        double? effect,
-        Interval? interval,
-        double? pValue,
-      }) => AtPlace(
-        habitId: id,
-        placeId: placeId,
-        days: y.length,
-        useShare: useShares.isEmpty ? 0 : mean(useShares),
-        timeShare: timeShares.isEmpty ? 0 : mean(timeShares),
-        effect: effect,
-        interval: interval,
-        pValue: pValue,
-        refusal: refusal,
-      );
-      if (y.length < least) {
-        results.add(result(refusal: RefusalReason.tooFewDays));
-        continue;
-      }
-      if (sampleVariance(y) < 1e-12) {
-        results.add(result(refusal: RefusalReason.withinNoise));
-        continue;
-      }
-      final LinearFit? fit = fitLeastSquares(<List<double>>[
-        for (int r = 0; r < y.length; r++) const <double>[1],
-      ], y);
-      if (fit == null) {
-        results.add(result(refusal: RefusalReason.tooFewDays));
-        continue;
-      }
-      final Interval interval = fit.interval(0, level: gates.level);
       results.add(
-        result(
-          refusal: interval.crossesZero ? RefusalReason.withinNoise : null,
-          effect: fit.coefficients[0],
-          interval: interval,
-          pValue: fit.pValue(0),
+        _fitAtPlace(
+          habitId: id,
+          placeId: placeId,
+          useShares: useShares,
+          timeShares: timeShares,
+          least: least,
+          gates: gates,
+        ),
+      );
+    }
+  }
+  return <AtPlace>[...results, ...fromPhotos];
+}
+
+/// The days' differences between [useShares] and [timeShares] fitted to
+/// their mean, or why not.
+AtPlace _fitAtPlace({
+  required String habitId,
+  required int placeId,
+  required List<double> useShares,
+  required List<double> timeShares,
+  required int least,
+  required InsightGates gates,
+  bool fromPhotos = false,
+}) {
+  final List<double> y = <double>[
+    for (int i = 0; i < useShares.length; i++) useShares[i] - timeShares[i],
+  ];
+  AtPlace result({
+    RefusalReason? refusal,
+    double? effect,
+    Interval? interval,
+    double? pValue,
+  }) => AtPlace(
+    habitId: habitId,
+    placeId: placeId,
+    days: y.length,
+    useShare: useShares.isEmpty ? 0 : mean(useShares),
+    timeShare: timeShares.isEmpty ? 0 : mean(timeShares),
+    effect: effect,
+    interval: interval,
+    pValue: pValue,
+    refusal: refusal,
+    fromPhotos: fromPhotos,
+  );
+  if (y.length < least) return result(refusal: RefusalReason.tooFewDays);
+  if (sampleVariance(y) < 1e-12) {
+    return result(refusal: RefusalReason.withinNoise);
+  }
+  final LinearFit? fit = fitLeastSquares(<List<double>>[
+    for (int r = 0; r < y.length; r++) const <double>[1],
+  ], y);
+  if (fit == null) return result(refusal: RefusalReason.tooFewDays);
+  final Interval interval = fit.interval(0, level: gates.level);
+  return result(
+    refusal: interval.crossesZero ? RefusalReason.withinNoise : null,
+    effect: fit.coefficients[0],
+    interval: interval,
+    pValue: fit.pValue(0),
+  );
+}
+
+/// A day counts for a place in the photo comparison when its photo stays
+/// cover at least this long there, and as long at other places.
+const int placePhotoMinMinutes = 15;
+
+/// [atPlace] for photo-derived stays, which say where the person was only
+/// while photos were being taken: time outside them is unknown, not
+/// elsewhere. So a day's waking time is only the minutes its photo stays
+/// cover, and its entries only those logged within them: the share of those
+/// entries logged during a stay at the place, less the share of those
+/// minutes spent there, on days with such an entry and at least
+/// [placePhotoMinMinutes] covered both there and at another place. Under
+/// logging that does not depend on place, each day's difference averages
+/// zero however the photo occasions fall. Only days before the first visit's
+/// day count, so no day is judged from both sources.
+List<AtPlace> _atPlaceFromPhotos({
+  required List<HabitUse> uses,
+  required List<PlaceStay> stays,
+  required DateTime through,
+  required Set<String> skip,
+  required InsightGates gates,
+}) {
+  DateTime? firstVisit;
+  for (final PlaceStay s in stays) {
+    if (s.fromPhotos) continue;
+    final DateTime d = startOfDay(s.arrival);
+    if (firstVisit == null || d.isBefore(firstVisit)) firstVisit = d;
+  }
+  final DateTime last = startOfDay(through);
+  // Per day, the waking parts of its photo stays.
+  final Map<DateTime, List<PlaceStay>> covered = <DateTime, List<PlaceStay>>{};
+  for (final PlaceStay s in stays) {
+    final DateTime? left = s.departure;
+    if (!s.fromPhotos || left == null) continue;
+    final DateTime d = startOfDay(s.arrival);
+    if (d.isAfter(last) || (firstVisit != null && !d.isBefore(firstVisit))) {
+      continue;
+    }
+    final DateTime w0 = DateTime(d.year, d.month, d.day, placeWakingFromHour);
+    final DateTime w1 = DateTime(d.year, d.month, d.day, placeWakingToHour);
+    final DateTime from = s.arrival.isAfter(w0) ? s.arrival : w0;
+    final DateTime to = left.isBefore(w1) ? left : w1;
+    if (!to.isAfter(from)) continue;
+    covered
+        .putIfAbsent(d, () => <PlaceStay>[])
+        .add(PlaceStay(s.placeId, from, to, source: PlaceSource.photos));
+  }
+  if (covered.isEmpty) return const <AtPlace>[];
+  final Map<int, int> totals = <int, int>{};
+  for (final List<PlaceStay> day in covered.values) {
+    for (final PlaceStay s in day) {
+      totals[s.placeId] =
+          (totals[s.placeId] ?? 0) + s.departure!.difference(s.arrival).inMinutes;
+    }
+  }
+  final List<int> judged =
+      (totals.keys.toList()..sort((a, b) {
+            final int byTime = totals[b]!.compareTo(totals[a]!);
+            return byTime != 0 ? byTime : a.compareTo(b);
+          }))
+          .take(placeMaxPlaces)
+          .toList()
+        ..sort();
+
+  final Map<String, List<DateTime>> usesOf = <String, List<DateTime>>{};
+  for (final HabitUse u in uses) {
+    if (u.amount > 0) usesOf.putIfAbsent(u.habitId, () => []).add(u.at);
+  }
+  final List<String> ids =
+      usesOf.keys.where((id) => !skip.contains(id)).toList()..sort();
+  final int least = max(placeMinDays, gates.minExposedDays);
+  final List<AtPlace> results = <AtPlace>[];
+  for (final String id in ids) {
+    final List<DateTime> times = usesOf[id]!..sort();
+    final DateTime start = startOfDay(times.first);
+    final DateTime end = startOfDay(times.last);
+    // Per day, the place of each entry logged during a photo stay.
+    final Map<DateTime, List<int>> logged = <DateTime, List<int>>{};
+    for (final DateTime t in times) {
+      final List<PlaceStay>? day = covered[startOfDay(t)];
+      if (day == null) continue;
+      for (final PlaceStay s in day) {
+        if (!t.isBefore(s.arrival) && t.isBefore(s.departure!)) {
+          logged.putIfAbsent(startOfDay(t), () => <int>[]).add(s.placeId);
+          break;
+        }
+      }
+    }
+    for (final int placeId in judged) {
+      final List<double> useShares = <double>[], timeShares = <double>[];
+      for (final MapEntry<DateTime, List<PlaceStay>> e in covered.entries) {
+        final DateTime d = e.key;
+        if (d.isBefore(start) || d.isAfter(end)) continue;
+        final List<int>? at = logged[d];
+        if (at == null) continue;
+        int all = 0, there = 0;
+        for (final PlaceStay s in e.value) {
+          final int m = s.departure!.difference(s.arrival).inMinutes;
+          all += m;
+          if (s.placeId == placeId) there += m;
+        }
+        if (there < placePhotoMinMinutes ||
+            all - there < placePhotoMinMinutes) {
+          continue;
+        }
+        useShares.add(at.where((p) => p == placeId).length / at.length);
+        timeShares.add(there / all);
+      }
+      results.add(
+        _fitAtPlace(
+          habitId: id,
+          placeId: placeId,
+          useShares: useShares,
+          timeShares: timeShares,
+          least: least,
+          gates: gates,
+          fromPhotos: true,
         ),
       );
     }
