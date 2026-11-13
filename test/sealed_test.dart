@@ -575,15 +575,16 @@ void main() {
       final SentWrite write = writes.updateActivity(
         'b',
         quantity: 3,
-        content: ActivityContent(
-          zone: 'Asia/Tokyo',
-          writtenAt: DateTime.utc(2026, 1, 1),
-          loggedVia: LoggedVia.oneTap,
-        ).withAnswers(
-          triggers: const <String>['Long day'],
-          urge: 2,
-          note: 'After work',
-        ),
+        content:
+            ActivityContent(
+              zone: 'Asia/Tokyo',
+              writtenAt: DateTime.utc(2026, 1, 1),
+              loggedVia: LoggedVia.oneTap,
+            ).withAnswers(
+              triggers: const <String>['Long day'],
+              urge: 2,
+              note: 'After work',
+            ),
       );
       await write.done;
       final Map<Object, Object?> update = store.updates['activities/b']!;

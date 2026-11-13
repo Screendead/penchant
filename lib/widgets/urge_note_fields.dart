@@ -151,10 +151,7 @@ class _UrgeBox extends StatelessWidget {
         color: selected ? scheme.primary : Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(
-            color: selected ? scheme.primary : line,
-            width: 1.5,
-          ),
+          side: BorderSide(color: selected ? scheme.primary : line, width: 1.5),
         ),
         child: InkWell(
           borderRadius: radius,
@@ -180,11 +177,7 @@ class _UrgeBox extends StatelessWidget {
 
 /// A one-line note of up to [maxNoteLength] UTF-16 code units.
 class NoteField extends StatelessWidget {
-  const NoteField({
-    super.key,
-    required this.controller,
-    this.enabled = true,
-  });
+  const NoteField({super.key, required this.controller, this.enabled = true});
 
   static const Key fieldKey = ValueKey<String>('entry-note');
 
@@ -216,7 +209,9 @@ class NoteField extends StatelessWidget {
           inputFormatters: <TextInputFormatter>[
             FilteringTextInputFormatter.deny(RegExp('[\r\n]')),
           ],
-          style: DialTypeScale.body.copyWith(color: theme.colorScheme.onSurface),
+          style: DialTypeScale.body.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
           decoration: InputDecoration(
             hintText: noteHint,
             semanticCounterText: '',

@@ -191,8 +191,7 @@ class FakeTrackerWrites implements TrackerWrites {
       cached[activityID];
 
   @override
-  bool canWrite(ActivityContent content) =>
-      canCreate || content.triggersAlone;
+  bool canWrite(ActivityContent content) => canCreate || content.triggersAlone;
 
   @override
   SentWrite updateActivity(
@@ -204,22 +203,22 @@ class FakeTrackerWrites implements TrackerWrites {
   }) {
     if (content != null) sealed[activityID] = content;
     return _write(
-    Write('updateActivity', activityID, <String, Object?>{
-      'quantity': ?quantity,
-      'amount': ?amount,
-      'createdAt': ?createdAt,
-      'triggers': ?content?.triggers,
-      'urge': ?content?.urge,
-      'note': ?content?.note,
-    }),
-    collection: 'activities',
-    op: WriteOp.update,
-    fields: <String, Object>{
-      'quantity': ?quantity,
-      'amount': ?amount,
-      'createdAt': ?createdAt,
-    },
-  );
+      Write('updateActivity', activityID, <String, Object?>{
+        'quantity': ?quantity,
+        'amount': ?amount,
+        'createdAt': ?createdAt,
+        'triggers': ?content?.triggers,
+        'urge': ?content?.urge,
+        'note': ?content?.note,
+      }),
+      collection: 'activities',
+      op: WriteOp.update,
+      fields: <String, Object>{
+        'quantity': ?quantity,
+        'amount': ?amount,
+        'createdAt': ?createdAt,
+      },
+    );
   }
 
   @override

@@ -173,8 +173,7 @@ class TriggerPickerSheet extends StatefulWidget {
   // With [answers], the sheet also asks for the urge and note, and Done
   // calls [onAnswered] rather than [onDone].
   final PickerAnswers? answers;
-  final void Function(List<String> triggers, PickerAnswers answers)?
-  onAnswered;
+  final void Function(List<String> triggers, PickerAnswers answers)? onAnswered;
   final VoidCallback? onUndoLog;
 
   static const String calendarLabel = 'Suggested from your calendar';
@@ -451,7 +450,9 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
                   const SizedBox(height: DialSpace.xs),
                   Text(
                     error,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],
