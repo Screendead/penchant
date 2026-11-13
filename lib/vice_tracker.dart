@@ -505,24 +505,30 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                             child: Center(child: CircularProgressIndicator()),
                           )
                         else
-                          for (final Vice vice in vices)
-                            TallyRow(
-                              key: ValueKey<String>('tally-${vice.id}'),
-                              vice: vice,
-                              mark: markOf(vice),
-                              total: entries == null ? null : totals[vice.id],
-                              day: day,
-                              onLog: (Offset from) => _log(vice, from),
-                              lineTotal: switch (vice.line?.period) {
-                                null => null,
-                                LinePeriod.day =>
-                                  entries == null ? null : totals[vice.id],
-                                LinePeriod.week =>
-                                  weekTotals == null
+                          TallyGrid(
+                            children: <Widget>[
+                              for (final Vice vice in vices)
+                                TallyRow(
+                                  key: ValueKey<String>('tally-${vice.id}'),
+                                  vice: vice,
+                                  mark: markOf(vice),
+                                  total: entries == null
                                       ? null
-                                      : weekTotals[vice.id] ?? 0,
-                              },
-                            ),
+                                      : totals[vice.id],
+                                  day: day,
+                                  onLog: (Offset from) => _log(vice, from),
+                                  lineTotal: switch (vice.line?.period) {
+                                    null => null,
+                                    LinePeriod.day =>
+                                      entries == null ? null : totals[vice.id],
+                                    LinePeriod.week =>
+                                      weekTotals == null
+                                          ? null
+                                          : weekTotals[vice.id] ?? 0,
+                                  },
+                                ),
+                            ],
+                          ),
                       ],
                     ),
                   ),

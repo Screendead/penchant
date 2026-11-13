@@ -191,15 +191,19 @@ class TrendsDay extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: DialSpace.s),
-            for (final Vice v in shown)
-              TallyRow(
-                key: ValueKey<String>('trends-tally-${v.id}'),
-                vice: v,
-                mark: markOf(v),
-                total: entries == null ? null : totals[v.id] ?? 0,
-                day: day,
-                onLog: null,
-              ),
+            TallyGrid(
+              children: <Widget>[
+                for (final Vice v in shown)
+                  TallyRow(
+                    key: ValueKey<String>('trends-tally-${v.id}'),
+                    vice: v,
+                    mark: markOf(v),
+                    total: entries == null ? null : totals[v.id] ?? 0,
+                    day: day,
+                    onLog: null,
+                  ),
+              ],
+            ),
           ],
         );
       },

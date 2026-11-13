@@ -1,0 +1,184 @@
+<title>Penchant Tally Rows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column. The call, then today's rows, then each option as the same four habits drawn at phone size in dark and light, then the awkward cases. */
+:root{
+  --paper:#f6f5f2; --card:#ffffff; --ink:#1b1c1f; --muted:#5d606a; --rule:#dcdbd6; --rec:#2f6b4f;
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --rec:#7cc4a0; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#141518; --card:#1d1f23; --ink:#ecebe7; --muted:#a3a6ae; --rule:#33363c; --rec:#7cc4a0; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:820px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0;max-width:68ch}
+ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:68ch}
+.lede{color:var(--muted)}
+.sec{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:14px;min-width:0}
+.sec.pick{border-color:var(--rec);border-width:2px}
+.tag{font-family:var(--mono);font-size:12px;color:var(--rec)}
+.cost{color:var(--muted);font-size:14px}
+.pair{display:flex;flex-wrap:wrap;gap:12px}
+.recline{border-left:3px solid var(--rec);padding-left:10px}
+
+/* The app, at its own sizes and colours (lib/design/tokens.json). */
+.ph{width:390px;max-width:100%;box-sizing:border-box;padding:14px 16px;border-radius:22px;background:var(--bg);color:var(--text);font-family:var(--text);font-variant-numeric:tabular-nums;min-width:0}
+.ph *{box-sizing:border-box}
+.dk{--bg:#151412;--surface:#1F1D1B;--surface2:#2A2825;--text:#F3F0EA;--muted:#ACA79D;--line:#F3F0EA1F;--tick:#F3F0EAB3;--d1:#FFB347;--d2:#FF7A59;--d3:#E95963;--d5:#4D96FF;--i1:#FFB347;--i2:#FF7A59;--i3:#F0737C;--i5:#4D96FF;--glow:1}
+.lt{--bg:#F6F4EF;--surface:#FFFFFF;--surface2:#EFECE5;--text:#1D1C1A;--muted:#635E56;--line:#1D1C1A1A;--tick:#1D1C1AB3;--d1:#FFB347;--d2:#FF7A59;--d3:#E8505B;--d5:#4D96FF;--i1:#8F5600;--i2:#B03E1C;--i3:#B42A37;--i5:#1D5FC2;--glow:0;border:1px solid var(--rule)}
+.pip{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.dk .pip{box-shadow:0 0 6px color-mix(in srgb,var(--c) 45%,transparent)}
+.lt .pip{box-shadow:inset 0 0 0 1.25px var(--ci)}
+.zero .pip{opacity:.45;box-shadow:none}
+.nm{font-weight:500;font-size:15.5px;line-height:22px;min-width:0;overflow-wrap:anywhere}
+.plus{width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--line);position:relative;justify-self:end;flex:none}
+.plus::before,.plus::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:1.6px;border-radius:1px;background:var(--text);transform:translate(-50%,-50%)}
+.plus::after{transform:translate(-50%,-50%) rotate(90deg)}
+.meter{position:relative;height:4px;border-radius:2px;background:var(--line);flex:1;min-width:40px}
+.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--c);opacity:.8}
+.meter b{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;border-radius:1px;background:var(--tick)}
+.cap{font-size:12.5px;line-height:16px;color:var(--muted);white-space:nowrap}
+.cap em{font-style:normal;font-family:var(--mono);font-weight:500;color:var(--text)}
+
+/* Today's rows, as shipped. */
+.now .r{display:flex;align-items:center;gap:10px;min-height:38px;padding-left:10px}
+.now .nm{flex:1}
+.now .zero .nm{color:var(--muted)}
+.now .tot{display:flex;align-items:baseline;gap:6px}
+.now .n{font-family:var(--mono);font-weight:500;font-size:15px;color:var(--ci)}
+.now .zero .n{color:var(--muted)}
+.now .u{font-size:13.5px;color:var(--muted);min-width:58px}
+.now .of{font-family:var(--mono);font-weight:500;font-size:12px;color:var(--muted);white-space:nowrap}
+.now .bar{margin:2px 48px 10px 30px;display:flex}
+.now .meter{height:3px}.now .meter b{width:1.5px}.now .meter i{opacity:.75}
+.now .plus{margin-left:2px;margin-right:6px}
+
+/* A. Two columns that never move: the number, then its unit. A line gets its own second row. */
+.A{display:grid;grid-template-columns:10px minmax(0,1fr) auto fit-content(92px) 44px;column-gap:10px;padding-left:10px}
+.A .r{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;min-height:38px}
+.A .n{font-family:var(--mono);font-weight:500;font-size:18px;line-height:22px;color:var(--ci);text-align:right}
+.A .zero .n{color:var(--muted)}
+.A .u{font-size:13.5px;line-height:16px;color:var(--muted);min-width:58px}
+.A .ln{grid-column:2/5;display:flex;align-items:center;gap:12px;margin:-2px 0 10px}
+
+/* B. Every row the same height: a big number over its unit at the right, the line under the name. */
+.B{display:grid;grid-template-columns:10px minmax(0,1fr) fit-content(104px) 44px;column-gap:10px;padding-left:10px}
+.B .r{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;min-height:52px}
+.B .mid{display:grid;gap:5px;min-width:0}
+.B .ln{display:flex;align-items:center;gap:10px}
+.B .st{display:grid;justify-items:end;text-align:right}
+.B .n{font-family:var(--mono);font-weight:500;font-size:22px;line-height:24px;color:var(--ci);min-height:24px}
+.B .zero .n{color:var(--muted)}
+.B .u{font-size:12px;line-height:15px;color:var(--muted);min-height:15px}
+
+/* C. A tile per habit, two across. */
+.C{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.C .r{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:11px 8px 11px 12px;display:grid;grid-template-columns:minmax(0,1fr) 36px;column-gap:4px;row-gap:2px;align-content:start}
+.C .hd{display:flex;align-items:center;gap:8px;grid-column:1/-1;min-width:0}
+.C .nm{font-size:14.5px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.C .tot{display:flex;align-items:baseline;gap:6px;min-width:0;align-self:center}
+.C .n{font-family:var(--mono);font-weight:500;font-size:26px;line-height:32px;color:var(--ci);min-height:32px}
+.C .zero .n{color:var(--muted)}
+.C .u{font-size:13px;color:var(--muted);min-width:0;overflow-wrap:anywhere;line-height:15px}
+.C .plus{align-self:center}
+.C .ln{grid-column:1/-1;display:grid;gap:7px;margin:4px 4px 2px 0}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h3>One call · 13 November · picked: C, with a habit at zero keeping its name grey</h3>
+    <h1>Today's habit rows are hard to read. Which layout replaces them?</h1>
+    <p class="lede">Under the dial, each habit has a row: its name, the day's total and a + that logs one. Since habits could carry a line (a number a day or a week to read totals against), a row with one has also carried "of 2" or "5 of 4 · 7 days" and a thin bar. You said that text is unclear at a glance. Three replacements are drawn below at phone size with made-up habits. Reply A, B or C.</p>
+  </header>
+
+  <section class="sec">
+    <h2>Today</h2>
+    <div class="pair"><div class="ph dk now" data-set="main"></div><div class="ph lt now" data-set="main"></div></div>
+    <ul>
+      <li>Wine's row holds two totals side by side, today's (1) and the last 7 days' (12, against a line of 10). The bar belongs to the second, the coloured number to the first, and nothing says so.</li>
+      <li>In Beer's row the unit sits between the total and its line: "0 drinks of 2".</li>
+      <li>A line pushes its row's number left, so the totals no longer share a column.</li>
+      <li>The line's text is 12 pt monospace in grey, words included. The bar's tick has no label, and a habit at zero with a line looks switched off.</li>
+    </ul>
+  </section>
+
+  <section class="sec pick">
+    <div><span class="tag">RECOMMENDED</span><h2>A. Fixed columns, the line on its own row</h2></div>
+    <div class="pair"><div class="ph dk A" data-set="main"></div><div class="ph lt A" data-set="main"></div></div>
+    <p>The top row is the same for every habit: name, total, unit, +. Totals share one column and are larger. A habit with a line gets a second row that is only about the line: the bar, then "12 of 10 in 7 days" or "0 of 2 a day" in the text face with the two numbers picked out.</p>
+    <p class="cost">Cost: the row widget and its tests, about half a day, built on a branch and waiting for your pick. Height: a row without a line is unchanged; one with a line is 3 pt taller than today. Risk: low. It is today's row put in order, so it is the least striking of the three.</p>
+  </section>
+
+  <section class="sec">
+    <h2>B. Every row the same height, a big number over its unit</h2>
+    <div class="pair"><div class="ph dk B" data-set="main"></div><div class="ph lt B" data-set="main"></div></div>
+    <p>The total becomes the largest thing in the row, with its unit beneath it. The line sits under the name, so every row is the same height whether or not it has one.</p>
+    <p class="cost">Cost: about the same as A. Height: every row grows from 38 to 52 pt, so four habits take 56 pt more of the screen below the dial and a fifth habit starts to scroll sooner. Risk: the unit drops to 12 pt, and a row without a line has empty space under its name.</p>
+  </section>
+
+  <section class="sec">
+    <h2>C. A tile per habit, two across</h2>
+    <div class="pair"><div class="ph dk C" data-set="main"></div><div class="ph lt C" data-set="main"></div></div>
+    <p>The list becomes a grid. Each tile has the name, a large total, the + and, with a line, the bar along its foot.</p>
+    <p class="cost">Cost: one to two days. Today's layout, the bead's flight from the +, the screen-reader order and the end-to-end tests that find rows all change. Height: about the same as today for an even number of habits. Risk: names over about 14 letters are cut short, an odd habit leaves a hole, and at large text sizes it has to fall back to one column.</p>
+  </section>
+
+  <section class="sec">
+    <h2>The awkward cases</h2>
+    <p class="lede">An emoji for a name, a long name with a long decimal unit, a habit at three times its line, and a total still loading.</p>
+    <h3>A</h3><div class="pair"><div class="ph dk A" data-set="edge"></div><div class="ph lt A" data-set="edge"></div></div>
+    <h3>B</h3><div class="pair"><div class="ph dk B" data-set="edge"></div><div class="ph lt B" data-set="edge"></div></div>
+    <h3>C</h3><div class="pair"><div class="ph dk C" data-set="edge"></div><div class="ph lt C" data-set="edge"></div></div>
+  </section>
+
+  <section class="sec">
+    <h2>The same in all three</h2>
+    <ul>
+      <li>The line stays a mark and not a goal, as you chose on 13 November: nothing changes colour, warns or counts streaks past it.</li>
+      <li>The bar keeps its tick three quarters along. One change: far past the line the scale now stretches so the bar still shows how far (today it stops at a third over, so 9 against a line of 3 looks the same as 4).</li>
+      <li>A habit at zero keeps its name at full strength. Only its number and dot go grey.</li>
+      <li>One screen-reader stop per habit, the 44 pt + target, and the number's roll and the row's flash on a log.</li>
+    </ul>
+    <p class="recline"><b>Recommendation: A.</b> It fixes every fault in the list above without costing height or changing where anything is, and it copes best with long names and units. B is the better-looking row for someone with three or four habits and no long names; pick it if you would rather trade screen height for bigger numbers.</p>
+    <p class="cost">Why now: you raised it today. Nothing else waits on it. A is built on a branch (its render is above) and will not merge until you pick; if you pick B or C that build is replaced. If you do nothing, the app keeps today's rows.</p>
+  </section>
+</div>
+
+<script>
+const SETS = {
+  main: [
+    {name:'Wine', c:2, n:'1', unit:'glass', line:{total:12, of:10, week:true}},
+    {name:'Beer', c:5, n:'0', unit:'drinks', line:{total:0, of:2}},
+    {name:'Coffee', c:1, n:'1', unit:'cup'},
+    {name:'Cigarettes', c:3, n:'4', unit:'cigarettes'},
+  ],
+  edge: [
+    {name:'😅', c:3, n:'1', unit:'time', line:{total:5, of:4, week:true}},
+    {name:'Evening walk round the reservoir', c:5, n:'2.5', unit:'kilometres walked', line:{total:2.5, of:3}},
+    {name:'Snus', c:1, n:'9', unit:'pouches', line:{total:9, of:3}},
+    {name:'Tea', c:2, n:null, unit:''},
+  ],
+};
+const esc = s => s.replace(/[&<>]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch]));
+const hue = h => `--c:var(--d${h.c});--ci:var(--i${h.c})`;
+const cls = h => 'r' + (h.n === '0' ? ' zero' : '');
+function meter(l, stretch) {
+  const max = stretch ? Math.max(l.of * 4 / 3, l.total) : l.of * 4 / 3;
+  return `<span class="meter"><i style="width:${Math.min(1, l.total / max) * 100}%"></i><b style="left:${l.of / max * 100}%"></b></span>`;
+}
+const cap = l => `<span class="cap"><em>${l.total}</em> of <em>${l.of}</em> ${l.week ? 'in 7 days' : 'a day'}</span>`;
+const DRAW = {
+  now: h => `<div class="${cls(h)}" style="${hue(h)}"><span class="pip"></span><span class="nm">${esc(h.name)}</span><span class="tot"><span class="n">${h.n ?? ''}</span><span class="u">${h.unit}</span>${h.line ? `<span class="of">${h.line.week ? `${h.line.total} of ${h.line.of} · 7 days` : `of ${h.line.of}`}</span>` : ''}</span><span class="plus"></span></div>${h.line ? `<div class="bar" style="${hue(h)}">${meter(h.line, false)}</div>` : ''}`,
+  A: h => `<div class="${cls(h)}" style="${hue(h)}"><span class="pip"></span><span class="nm">${esc(h.name)}</span><span class="n">${h.n ?? ''}</span><span class="u">${h.unit}</span><span class="plus"></span>${h.line ? `<div class="ln">${meter(h.line, true)}${cap(h.line)}</div>` : ''}</div>`,
+  B: h => `<div class="${cls(h)}" style="${hue(h)}"><span class="pip"></span><div class="mid"><span class="nm">${esc(h.name)}</span>${h.line ? `<div class="ln">${meter(h.line, true)}${cap(h.line)}</div>` : ''}</div><div class="st"><span class="n">${h.n ?? ''}</span><span class="u">${h.unit}</span></div><span class="plus"></span></div>`,
+  C: h => `<div class="${cls(h)}" style="${hue(h)}"><div class="hd"><span class="pip"></span><span class="nm">${esc(h.name)}</span></div><div class="tot"><span class="n">${h.n ?? ''}</span><span class="u">${h.unit}</span></div><span class="plus"></span>${h.line ? `<div class="ln">${cap(h.line)}${meter(h.line, true)}</div>` : ''}</div>`,
+};
+for (const el of document.querySelectorAll('.ph')) {
+  const kind = ['now', 'A', 'B', 'C'].find(k => el.classList.contains(k));
+  el.innerHTML = SETS[el.dataset.set].map(DRAW[kind]).join('');
+}
+</script>

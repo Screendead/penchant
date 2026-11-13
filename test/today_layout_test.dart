@@ -73,9 +73,12 @@ void main() {
     ];
     expect(rows, hasLength(5));
     expect(rows.first.top, 484);
-    for (final Rect row in rows) {
-      expect(row.height, 38);
+    // Tiles, two across: 58 pt tall, 8 pt apart.
+    for (final (int i, Rect row) in rows.indexed) {
+      expect(row.height, 58);
+      expect(row.top, 484 + (i ~/ 2) * 66);
     }
+    expect(rows[1].left - rows[0].right, 8);
     expect(tester.getRect(find.byType(LogButton)).top, 685);
     expect(TrendsSheet.peekHeight(tester.element(find.byType(LogButton))), 127);
   });
