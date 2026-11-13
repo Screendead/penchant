@@ -259,10 +259,12 @@ class _TallyRowState extends State<TallyRow>
     bool reduced,
     Widget row,
   ) {
-    if (line == null || lineTotal == null) return row;
+    // While the total loads the track still shows, so the row keeps its
+    // height.
+    if (line == null) return row;
     final DialColors colors = DialColors.of(context);
     final Color ink = Theme.of(context).colorScheme.onSurface;
-    final double fraction = (lineTotal / (line.amount * 4 / 3))
+    final double fraction = ((lineTotal ?? 0) / (line.amount * 4 / 3))
         .clamp(0, 1)
         .toDouble();
     return Column(
