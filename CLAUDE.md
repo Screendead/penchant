@@ -548,6 +548,24 @@ drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `sets
 (`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
 has no entries or nothing to compare against.
 
+**Self-experiments** (iOS only; round 17 option C, Jack, 2026-11-13). A "what follows" finding (`InsightKind.use`, lag
+of a day or more) on a sleep, heart or activity measure shown in numbers (`canExperiment`) offers "Test this for 6
+weeks" while no plan runs (one at a time). `ExperimentPage` sets 2, 4, 6 or 8 weeks, each with the 95% half-width to
+expect, t(2n − 2) × spread × √(2/n), the spread being the measure's SD over the last 90 days (14 values at least).
+The days come from a stored seed (`lib/insights/experiment.dart`, mulberry32, since `dart:math`'s `Random` promises no
+sequence across SDKs): each week draws 3 or 4 "none" days, each pair of weeks 4 and 3, every week from its own stream
+so "Run it 4 more weeks" keeps the days planned. The rule is always "none after 18:00" against "as usual", never "have
+it". Today shows the day's strip above the dial and shades 18:00 to midnight on "none" days. Once the last measure is
+in, Insights' "Your experiment" compares the measure after "none" days with after "as usual" days by a 95% Welch
+interval, intention to treat: a "none" day with the habit logged from 18:00 to 05:00 is a missed day and still counts
+as "none" (`analyseExperiment`; `test/experiment_test.dart` runs a null simulation and a planted effect). The plan
+(`ExperimentStore`, plans only; results are worked out again from Health and the journal on each open, so the report's
+types and `insightsViewFormat` are unchanged) is the sealed file `experiment` under Application Support, not Caches
+(`DeviceFiles.keptForUser`, same layout, other users' folders removed on first use, cleared with the rest on sign-out
+and deletion), so the Mac never sees it. Its optional notification (`experimentNotices`, ids from 1000, a week ahead,
+topped up on each launch, cancelled on stop, finish and sign-out) says "Experiment, day 9 of 42" and never names the
+habit; permission is asked only when it is turned on. Stopping removes the plan with no result.
+
 **Places** (iOS only; Core Location visits, opt-in from a card on Insights: When In Use first, then the upgrade to
 Always, which Apple shows at most once; `NSLocation...UsageDescription` strings, no background mode or paid
 capability). `ios/Runner/PlacesChannel.swift` makes its `CLLocationManager` in `didFinishLaunching`, since the system
