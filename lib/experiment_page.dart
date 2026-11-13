@@ -33,10 +33,8 @@ class ExperimentPage extends ConsumerStatefulWidget {
   final ExperimentPlan? running;
   final String habit;
 
-  static Route<void> route(ExperimentPage page) => MaterialPageRoute<void>(
-    fullscreenDialog: true,
-    builder: (_) => page,
-  );
+  static Route<void> route(ExperimentPage page) =>
+      MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => page);
 
   @override
   ConsumerState<ExperimentPage> createState() => _ExperimentPageState();
@@ -438,7 +436,9 @@ class _LengthChip extends StatelessWidget {
       child: Semantics(
         selected: selected,
         button: true,
-        label: plusMinus == null ? label : '$label, plus or minus ${plusMinus!.substring(1)}',
+        label: plusMinus == null
+            ? label
+            : '$label, plus or minus ${plusMinus!.substring(1)}',
         excludeSemantics: true,
         child: InkWell(
           onTap: onTap,

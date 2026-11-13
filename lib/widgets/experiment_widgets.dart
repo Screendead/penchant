@@ -5,7 +5,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/insights/experiment.dart';
 import 'package:tracker/insights/experiment_copy.dart';
 import 'package:tracker/insights/insights_report.dart';
-import 'package:tracker/insights/stats.dart';
+import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
@@ -201,7 +201,7 @@ class ExperimentResultCard extends StatelessWidget {
     final DialColors colors = DialColors.of(context);
     final TextStyle small = _small(context);
     final ExperimentWords words = ExperimentWords(plan.metricId, locale);
-    final Interval? interval = result.interval;
+    final stats.Interval? interval = result.interval;
     return DialCard(
       top: top,
       children: <Widget>[
@@ -229,7 +229,10 @@ class ExperimentResultCard extends StatelessWidget {
                   style: DialTypeScale.bodyL.copyWith(color: scheme.onSurface),
                 ),
                 const SizedBox(height: DialSpace.xs),
-                Text(words.basis(result, metricFloors[plan.metricId]?.family), style: small),
+                Text(
+                  words.basis(result, metricFloors[plan.metricId]?.family),
+                  style: small,
+                ),
               ] else ...<Widget>[
                 Text(
                   words.sentence(habit, result, plan.fromHour),
@@ -449,10 +452,7 @@ class ExperimentLegend extends StatelessWidget {
       children: <Widget>[
         item(ExperimentDay.none, ExperimentWords.noneLegend),
         item(ExperimentDay.usual, ExperimentWords.usualLegend),
-        item(
-          ExperimentDay.missed,
-          ExperimentWords.missedLegend(habit),
-        ),
+        item(ExperimentDay.missed, ExperimentWords.missedLegend(habit)),
       ],
     );
   }

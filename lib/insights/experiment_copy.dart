@@ -4,8 +4,7 @@ import 'package:tracker/insights/insights_report.dart';
 
 /// Words for the plan screen, Today's strip and the result cards.
 class ExperimentWords {
-  ExperimentWords(this.metricId, this.locale)
-    : copy = metricCopy(metricId)!;
+  ExperimentWords(this.metricId, this.locale) : copy = metricCopy(metricId)!;
 
   final String metricId;
   final String locale;
@@ -58,7 +57,8 @@ class ExperimentWords {
 
   String title(String habit) => 'Test $habit and $name';
 
-  String rule(String habit, int fromHour) => 'no $habit after ${hour(fromHour)}';
+  String rule(String habit, int fromHour) =>
+      'no $habit after ${hour(fromHour)}';
 
   /// Around the bold [rule].
   ({String before, String after}) body(String habit) => (
@@ -72,8 +72,7 @@ class ExperimentWords {
       'It reads what you log: a $habit entry after ${hour(fromHour)} on a none '
       'day counts as a missed day, not a failure. You can stop at any time.';
 
-  String plusMinus(double halfWidth) =>
-      '±${_number(halfWidth, copy.decimals)}';
+  String plusMinus(double halfWidth) => '±${_number(halfWidth, copy.decimals)}';
 
   String get _unitWords => copy.unit == 'min' ? 'minutes' : copy.unit;
 
@@ -95,8 +94,7 @@ class ExperimentWords {
         : chosen >= 0.4
         ? 'would tell that from no difference about half the time'
         : 'would seldom tell that from no difference';
-    final String two =
-        weeks != experimentLengths.first && shortest < 0.4
+    final String two = weeks != experimentLengths.first && shortest < 0.4
         ? '; ${experimentLengths.first} weeks seldom would'
         : '';
     return 'How sure the answer will be, in $_unitWords either way, from how '

@@ -24,8 +24,9 @@ final experimentFileProvider = Provider<ExperimentFile?>((ref) {
 /// The signed-in user's experiments, on this device only. Empty while no key
 /// is loaded. Each build moves a plan whose last measure is in to the
 /// finished ones and tops up its notifications.
-final experimentProvider =
-    AsyncNotifierProvider<Experiments, ExperimentStore>(Experiments.new);
+final experimentProvider = AsyncNotifierProvider<Experiments, ExperimentStore>(
+  Experiments.new,
+);
 
 class Experiments extends AsyncNotifier<ExperimentStore> {
   ExperimentFile? _file;
@@ -47,13 +48,8 @@ class Experiments extends AsyncNotifier<ExperimentStore> {
 
   ExperimentStore get _current => state.value ?? ExperimentStore.empty;
 
-  /// Whether a plan can be saved now: a key is loaded.
-  bool get canStart => _file != null;
-
   Future<void> start(ExperimentPlan plan) async {
-    await _commit(
-      ExperimentStore(active: plan, finished: _current.finished),
-    );
+    await _commit(ExperimentStore(active: plan, finished: _current.finished));
     await _schedule(plan);
   }
 

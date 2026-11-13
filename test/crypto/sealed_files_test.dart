@@ -319,11 +319,17 @@ void main() {
     test('live in Application Support, sealed, apart from Caches', () async {
       final SealedFiles files = both.keptForUser('alice', _sealer());
       await files.write('experiment', utf8.encode('habit-1 sleepDeep'));
-      expect(utf8.decode((await files.read('experiment'))!), 'habit-1 sleepDeep');
+      expect(
+        utf8.decode((await files.read('experiment'))!),
+        'habit-1 sleepDeep',
+      );
       expect(await filesOnDisk(), isEmpty);
       expect(await kept(), hasLength(1));
       expect(
-        utf8.decode(await (await kept()).single.readAsBytes(), allowMalformed: true),
+        utf8.decode(
+          await (await kept()).single.readAsBytes(),
+          allowMalformed: true,
+        ),
         isNot(contains('sleepDeep')),
       );
       expect(await both.forUser('alice', _sealer()).read('experiment'), isNull);

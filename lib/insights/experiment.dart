@@ -148,11 +148,12 @@ class ExperimentPlan {
   DateTime get lastOutcomeDay => addDays(end, lagDays);
 
   /// Every planned day in order, with whether it is a "none" day.
-  List<({DateTime day, bool none})> get schedule => <({DateTime day, bool none})>[
-    for (final (int w, DateTime from) in weekStarts.indexed)
-      for (final (int i, bool none) in experimentWeek(seed, w).indexed)
-        (day: addDays(from, i), none: none),
-  ];
+  List<({DateTime day, bool none})> get schedule =>
+      <({DateTime day, bool none})>[
+        for (final (int w, DateTime from) in weekStarts.indexed)
+          for (final (int i, bool none) in experimentWeek(seed, w).indexed)
+            (day: addDays(from, i), none: none),
+      ];
 
   /// [day]'s place in the plan from 0, or null when it is not a planned day.
   int? indexOf(DateTime day) {
@@ -293,7 +294,9 @@ class ExperimentStore {
     jsonEncode(<String, Object?>{
       'v': 1,
       'active': active?.toJson(),
-      'finished': <Object?>[for (final ExperimentPlan p in finished) p.toJson()],
+      'finished': <Object?>[
+        for (final ExperimentPlan p in finished) p.toJson(),
+      ],
     }),
   );
 
@@ -349,7 +352,8 @@ class ExperimentResult {
   final List<ExperimentDay> days;
 
   int get values => noneValues + usualValues;
-  int get missed => days.where((ExperimentDay d) => d == ExperimentDay.missed).length;
+  int get missed =>
+      days.where((ExperimentDay d) => d == ExperimentDay.missed).length;
   int get kept => days.length - missed;
 
   /// The range leaves out zero.

@@ -581,8 +581,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       else if (view.hoursPending)
         const CardFoot(InsightsPage.hoursAfterPending),
       _LastNightSection(vices: vices, marks: costs.marks),
-      if (ref.watch(experimentResultsProvider) case final List<ExperimentCard>
-          experiments when experiments.isNotEmpty) ...<Widget>[
+      if (ref.watch(experimentResultsProvider)
+          case final List<ExperimentCard> experiments
+          when experiments.isNotEmpty) ...<Widget>[
         const CardSectionLabel(ExperimentWords.resultHeading),
         for (final (int i, ExperimentCard e) in experiments.indexed)
           ExperimentResultCard(
@@ -592,7 +593,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             mark: costs.marks[e.plan.habitId] ?? const HabitMark(0),
             locale: formatLocale,
             top: i == 0 ? 0 : DialSpace.xs,
-            onRunOn: e.result.clear ||
+            onRunOn:
+                e.result.clear ||
                     ref.watch(experimentProvider).value?.active != null
                 ? null
                 : () => ref.read(experimentProvider.notifier).runOn(e.plan),

@@ -43,7 +43,8 @@ Map<DateTime, double> _outcomes(
   double spread = 16,
 }) => <DateTime, double>{
   for (final ({DateTime day, bool none}) d in plan.schedule)
-    addDays(d.day, plan.lagDays): 60 + spread * _normal(r) + (d.none ? effect : 0),
+    addDays(d.day, plan.lagDays):
+        60 + spread * _normal(r) + (d.none ? effect : 0),
 };
 
 void main() {
@@ -84,7 +85,9 @@ void main() {
     test('weekends fall on both sides across seeds', () {
       int noneWeekends = 0, usualWeekends = 0;
       for (int seed = 0; seed < 50; seed++) {
-        for (final ({DateTime day, bool none}) d in _plan(seed: seed).schedule) {
+        for (final ({DateTime day, bool none}) d in _plan(
+          seed: seed,
+        ).schedule) {
           if (d.day.weekday == DateTime.saturday) {
             d.none ? noneWeekends++ : usualWeekends++;
           }
@@ -112,7 +115,10 @@ void main() {
     test('round trips through the stored form', () {
       final ExperimentPlan plan = _plan().copyWith(notifyMinutes: () => 1050);
       final ExperimentStore store = ExperimentStore.decode(
-        ExperimentStore(active: plan, finished: <ExperimentPlan>[plan]).encode(),
+        ExperimentStore(
+          active: plan,
+          finished: <ExperimentPlan>[plan],
+        ).encode(),
       );
       expect(store.active!.toJson(), plan.toJson());
       expect(store.finished.single.toJson(), plan.toJson());
@@ -143,8 +149,7 @@ void main() {
         1,
       ).add(const Duration(hours: 1));
       final Map<DateTime, double> outcomes = <DateTime, double>{
-        for (final d in plan.schedule)
-          addDays(d.day, 1): d.none ? 70.0 : 60.0,
+        for (final d in plan.schedule) addDays(d.day, 1): d.none ? 70.0 : 60.0,
       };
       final ExperimentResult r = analyseExperiment(
         plan,
@@ -290,9 +295,12 @@ void main() {
       expect(words.range(-10, 22), 'Range: 10 min less to 22 min more');
       expect(words.range(-22, -2), 'Range: 2 to 22 min less');
       expect(words.plusMinus(9.98), '±10');
-      expect(words.before(_plan()), startsWith(
-        'Before the experiment your journal showed 14 min more (6 to 22).',
-      ));
+      expect(
+        words.before(_plan()),
+        startsWith(
+          'Before the experiment your journal showed 14 min more (6 to 22).',
+        ),
+      );
     });
   });
 }
