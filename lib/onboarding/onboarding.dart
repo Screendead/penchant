@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -137,6 +138,7 @@ class _OnboardingState extends ConsumerState<Onboarding> {
       viceID: vice.id,
       quantity: quantity,
       createdAt: at,
+      loggedVia: LoggedVia.sheet,
     );
     setState(() => logged.add(vice.id));
     final String entry = describeActivity(

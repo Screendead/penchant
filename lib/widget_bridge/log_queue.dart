@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/queued_log.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/errors/report_error.dart';
@@ -109,6 +110,7 @@ Future<_Written> _write(
       viceID: log.viceID,
       quantity: defaultQuantity,
       createdAt: log.createdAt,
+      loggedVia: LoggedVia.widget,
     ),
     QueuedLogOp.delete => writes.deleteActivity(log.id),
   };
