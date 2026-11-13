@@ -10,22 +10,25 @@ import 'package:tracker/data/vice.dart';
 
 enum WriteOp { create, update, delete }
 
-// A habit's own unit label and price, each optional. Sealed content only:
+// A habit's own unit label (with its singular) and price, each optional. Sealed content only:
 // without a journal key none of it is written.
 typedef UnitAndPrice = ({
   String? unitLabel,
+  String? unitSingular,
   double? costPerUnit,
   String? currency,
 });
 
 const UnitAndPrice noUnitAndPrice = (
   unitLabel: null,
+  unitSingular: null,
   costPerUnit: null,
   currency: null,
 );
 
 UnitAndPrice unitAndPriceOf(Vice vice) => (
   unitLabel: vice.unitLabel,
+  unitSingular: vice.unitSingular,
   costPerUnit: vice.costPerUnit,
   currency: vice.currency,
 );
@@ -34,6 +37,7 @@ UnitAndPrice unitAndPriceOf(Vice vice) => (
 Map<String, Object?> _unitAndPriceContent(UnitAndPrice value) =>
     <String, Object?>{
       'unitLabel': ?value.unitLabel,
+      'unitSingular': ?value.unitSingular,
       'costPerUnit': ?value.costPerUnit,
       'currency': ?value.currency,
     };

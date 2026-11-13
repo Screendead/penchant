@@ -64,7 +64,7 @@ String? triggersError(List<String> triggers) {
   return null;
 }
 
-// A habit's own unit label and cost per unit live only inside its sealed
+// A habit's own unit label (and its form for one) and cost per unit live only inside its sealed
 // envelope, so these are their only bounds; firestore.rules repeats them for a
 // plaintext write, which this build never makes.
 const int maxUnitLabelLength = 20;

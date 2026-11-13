@@ -35,7 +35,7 @@ Timestamp readTimestamp(Object? value, {required bool pending}) {
   return pending ? Timestamp.now() : epoch;
 }
 
-// A habit's own unit label: null when missing, mistyped, blank or past
+// A habit's own unit label, or its singular: null when missing, mistyped, blank or past
 // [maxUnitLabelLength], so the preset's words show instead.
 String? readUnitLabel(Object? value) {
   if (value is! String) return null;

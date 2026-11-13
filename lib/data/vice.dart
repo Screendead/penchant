@@ -16,6 +16,7 @@ class Vice {
     this.category = ViceCategory.fallback,
     this.categoryStored = true,
     this.unitLabel,
+    this.unitSingular,
     this.costPerUnit,
     this.currency,
   });
@@ -38,11 +39,13 @@ class Vice {
   // category reseals without them, so each may vanish: null falls back to the
   // preset's words and no spend.
   final String? unitLabel;
+  // [unitLabel]'s form for one (cup for cups); ignored without a label.
+  final String? unitSingular;
   final double? costPerUnit;
   // ISO 4217; a cost without one is shown as a plain number.
   final String? currency;
 
-  UnitWords get units => UnitWords(unit, unitLabel);
+  UnitWords get units => UnitWords(unit, unitLabel, unitSingular);
 
   // What [measure] of this habit cost, or null when it has no price.
   double? spendOf(double measure) {
@@ -69,6 +72,7 @@ class Vice {
       category: ViceCategory.fromString(content['category']),
       categoryStored: locked || content['category'] is String,
       unitLabel: readUnitLabel(content['unitLabel']),
+      unitSingular: readUnitLabel(content['unitSingular']),
       costPerUnit: readCostPerUnit(content['costPerUnit']),
       currency: readCurrency(content['currency']),
     );

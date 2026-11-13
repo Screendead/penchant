@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/errors/report_error.dart';
 
 /// The field that holds a document's content fields (a vice's name, unit,
-/// category, unit label, cost per unit and currency, an activity's triggers)
+/// category, unit label and its singular, cost per unit and currency, an activity's triggers)
 /// once sealed. The structural fields every query and rule needs (ownerID,
 /// createdAt, viceID, archived) stay beside it in plaintext.
 const String sealedField = 'sealed';
@@ -19,6 +19,7 @@ const List<String> viceContentFields = <String>[
   'unit',
   'category',
   'unitLabel',
+  'unitSingular',
   'costPerUnit',
   'currency',
 ];
