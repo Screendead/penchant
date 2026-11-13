@@ -103,3 +103,25 @@ String? costPerUnitError(String? value) {
 
 // An ISO 4217 code, as intl's currency formats take it.
 final RegExp currencyCodePattern = RegExp(r'^[A-Z]{3}$');
+
+// A habit's line lives only inside its sealed envelope, like the unit label;
+// firestore.rules repeats the bound for a plaintext write.
+const double maxLineAmount = 100000;
+
+String? lineAmountError(String? value) {
+  final num? amount = value == null ? null : parseAmount(value);
+
+  if (amount == null) {
+    return 'Please enter a valid number';
+  }
+
+  if (amount <= 0) {
+    return 'Please enter more than 0';
+  }
+
+  if (amount > maxLineAmount) {
+    return 'Please enter ${formatCount(maxLineAmount)} or less';
+  }
+
+  return null;
+}

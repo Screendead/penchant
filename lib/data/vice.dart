@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -19,6 +20,7 @@ class Vice {
     this.unitSingular,
     this.costPerUnit,
     this.currency,
+    this.line,
   });
 
   final String id;
@@ -44,6 +46,9 @@ class Vice {
   final double? costPerUnit;
   // ISO 4217; a cost without one is shown as a plain number.
   final String? currency;
+  // Optional, sealed only, and dropped the same way by an older build's edit:
+  // null shows nothing.
+  final HabitLine? line;
 
   UnitWords get units => UnitWords(unit, unitLabel, unitSingular);
 
@@ -75,6 +80,7 @@ class Vice {
       unitSingular: readUnitLabel(content['unitSingular']),
       costPerUnit: readCostPerUnit(content['costPerUnit']),
       currency: readCurrency(content['currency']),
+      line: HabitLine.read(content['lineAmount'], content['linePeriod']),
     );
   }
 

@@ -78,7 +78,7 @@ class AmountFields extends ConsumerWidget {
           listenable: quantityController,
           builder: (BuildContext context, _) => Row(
             children: [
-              _StepButton(
+              StepButton(
                 glyph: DialGlyph.minus,
                 tooltip: lessTooltip,
                 onPressed: enabled && _typed > 1
@@ -124,7 +124,7 @@ class AmountFields extends ConsumerWidget {
                   ],
                 ),
               ),
-              _StepButton(
+              StepButton(
                 glyph: DialGlyph.plus,
                 tooltip: moreTooltip,
                 onPressed: enabled ? () => _stepBy(step, 1) : null,
@@ -159,9 +159,10 @@ class AmountFields extends ConsumerWidget {
   }
 }
 
-// The stepper's 56 pt round buttons.
-class _StepButton extends StatelessWidget {
-  const _StepButton({
+// The stepper's 56 pt round buttons; Edit Habit's line takes them too.
+class StepButton extends StatelessWidget {
+  const StepButton({
+    super.key,
     required this.glyph,
     required this.tooltip,
     required this.onPressed,
