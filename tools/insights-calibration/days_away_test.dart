@@ -13,7 +13,7 @@ import 'package:tracker/data/day.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/days_away.dart';
 
-const int people = 400;
+const int people = 300;
 const int span = 365;
 final DateTime start = DateTime(2025, 1, 6);
 
@@ -44,6 +44,7 @@ class Person {
   final Map<DateTime, Set<DayCell>> cells = <DateTime, Set<DayCell>>{};
   final List<HabitUse> uses = <HabitUse>[];
   int trulyAway = 0;
+  final Map<DateTime, bool> truth = <DateTime, bool>{};
 
   void live() {
     // A small chance of moving house halfway, 300 km away.
@@ -74,6 +75,7 @@ class Person {
         }
       }
       final bool away = tripLeft > 0;
+      truth[d] = away;
       if (away) {
         tripLeft--;
         trulyAway++;
@@ -113,6 +115,30 @@ class Person {
   }
 }
 
+/// How away days are found from a person's cells.
+typedef Detect = Map<DateTime, bool> Function(Person p, DateTime through);
+
+final Map<String, Detect> detections = <String, Detect>{
+  'per day, 14-day fill': (p, t) => daysAwayFrom(p.cells, through: t),
+  'trip, lone as home': (p, t) => daysAwayByTrip(p.cells, through: t),
+  'trip, lone dropped': (p, t) => daysAwayByTrip(
+    p.cells,
+    through: t,
+    rule: (dropLone: true, dropEdges: false),
+  ),
+  'trip, lone as home, edges dropped': (p, t) => daysAwayByTrip(
+    p.cells,
+    through: t,
+    rule: (dropLone: false, dropEdges: true),
+  ),
+  'trip, lone and edges dropped': (p, t) => daysAwayByTrip(
+    p.cells,
+    through: t,
+    rule: (dropLone: true, dropEdges: true),
+  ),
+  'truth (no detection)': (p, t) => p.truth,
+};
+
 void rate(
   String name,
   Photos photos, {
@@ -120,8 +146,8 @@ void rate(
   double awayLift = 0,
   double awayUsedOdds = 0.9,
 }) {
-  int withCard = 0, tested = 0;
-  final List<int> detected = <int>[], truly = <int>[];
+  final Map<String, int> withCard = <String, int>{}, kept = <String, int>{};
+  final List<int> truly = <int>[];
   for (int seed = 0; seed < people; seed++) {
     final Person p =
         Person(
@@ -133,23 +159,27 @@ void rate(
           ..awayUsedOdds = awayUsedOdds
           ..live();
     final DateTime through = addDays(start, span - 1);
-    final Map<DateTime, bool> away = daysAwayFrom(p.cells, through: through);
-    detected.add(away.values.where((a) => a).length);
     truly.add(p.trulyAway);
-    final List<DaysAway> judged = judgeDaysAway(
-      daysAway(uses: p.uses, away: away, through: through),
-      alongside: const <double>[],
-    );
-    if (judged.any((d) => d.pValue != null)) tested++;
-    if (judged.any((d) => d.found)) withCard++;
+    for (final MapEntry<String, Detect> e in detections.entries) {
+      final Map<DateTime, bool> away = e.value(p, through);
+      kept[e.key] = (kept[e.key] ?? 0) + away.values.where((a) => a).length;
+      final List<DaysAway> judged = judgeDaysAway(
+        daysAway(uses: p.uses, away: away, through: through),
+        alongside: const <double>[],
+      );
+      if (judged.any((d) => d.found)) {
+        withCard[e.key] = (withCard[e.key] ?? 0) + 1;
+      }
+    }
   }
-  detected.sort();
   truly.sort();
-  stdout.writeln(
-    '$name: card ${(100 * withCard / people).toStringAsFixed(1)}% '
-    '(tested $tested of $people), away days detected median '
-    '${detected[people ~/ 2]}, truly away median ${truly[people ~/ 2]}',
-  );
+  stdout.writeln('$name (truly away median ${truly[people ~/ 2]}):');
+  for (final String k in detections.keys) {
+    stdout.writeln(
+      '  $k: card ${(100 * (withCard[k] ?? 0) / people).toStringAsFixed(1)}%, '
+      'away days kept mean ${((kept[k] ?? 0) / people).toStringAsFixed(1)}',
+    );
+  }
 }
 
 void main() {

@@ -63,59 +63,7 @@ Map<DateTime, bool> daysAwayFrom(
   Map<DateTime, Set<DayCell>> cells, {
   required DateTime through,
 }) {
-  final List<DateTime> known =
-      cells.keys.where((d) => cells[d]!.isNotEmpty).toList()..sort();
-  final DateTime last = startOfDay(through);
-  if (known.isEmpty || known.first.isAfter(last)) return <DateTime, bool>{};
-  final DateTime first = known.first;
-
-  DayCell? homeAround(DateTime centre, int window) {
-    final DateTime from = addDays(centre, -window);
-    final DateTime to = addDays(centre, window);
-    final List<Set<DayCell>> inWindow = <Set<DayCell>>[
-      for (final DateTime d in known)
-        if (!d.isBefore(from) && !d.isAfter(to)) cells[d]!,
-    ];
-    final Set<DayCell> candidates = <DayCell>{
-      for (final Set<DayCell> c in inWindow) ...c,
-    };
-    DayCell? best;
-    int bestDays = 0;
-    for (final DayCell c in candidates) {
-      int days = 0;
-      for (final Set<DayCell> day in inWindow) {
-        if (day.any((d) => _cellDistanceKm(c, d) <= _homeKm)) days++;
-      }
-      if (days > bestDays ||
-          (days == bestDays &&
-              best != null &&
-              (c.$1 < best.$1 || (c.$1 == best.$1 && c.$2 < best.$2)))) {
-        best = c;
-        bestDays = days;
-      }
-    }
-    return best;
-  }
-
-  final Map<DateTime, bool> away = <DateTime, bool>{};
-  DateTime blockStart = first;
-  while (!blockStart.isAfter(last)) {
-    final DayCell? home = homeAround(
-      addDays(blockStart, _homeBlockDays ~/ 2),
-      homeWindowDays,
-    );
-    for (int i = 0; i < _homeBlockDays; i++) {
-      final DateTime d = addDays(blockStart, i);
-      if (d.isAfter(last)) break;
-      final Set<DayCell>? day = cells[d];
-      away[d] =
-          home != null &&
-          day != null &&
-          day.any((c) => _cellDistanceKm(c, home) > awayKm);
-    }
-    blockStart = addDays(blockStart, _homeBlockDays);
-  }
-
+  final Map<DateTime, bool> away = _farDays(cells, through: through);
   // Fill short gaps with nothing known between two away days.
   final List<DateTime> days = away.keys.toList()..sort();
   for (int i = 0; i < days.length; i++) {
@@ -238,4 +186,121 @@ List<DaysAway> judgeDaysAway(
       else
         results[i],
   ];
+}
+
+/// Each day from the first with a cell through [through]: true when a cell
+/// that day lies more than [awayKm] from that day's home.
+Map<DateTime, bool> _farDays(
+  Map<DateTime, Set<DayCell>> cells, {
+  required DateTime through,
+}) {
+  final List<DateTime> known =
+      cells.keys.where((d) => cells[d]!.isNotEmpty).toList()..sort();
+  final DateTime last = startOfDay(through);
+  if (known.isEmpty || known.first.isAfter(last)) return <DateTime, bool>{};
+  final DateTime first = known.first;
+
+  DayCell? homeAround(DateTime centre, int window) {
+    final DateTime from = addDays(centre, -window);
+    final DateTime to = addDays(centre, window);
+    final List<Set<DayCell>> inWindow = <Set<DayCell>>[
+      for (final DateTime d in known)
+        if (!d.isBefore(from) && !d.isAfter(to)) cells[d]!,
+    ];
+    final Set<DayCell> candidates = <DayCell>{
+      for (final Set<DayCell> c in inWindow) ...c,
+    };
+    DayCell? best;
+    int bestDays = 0;
+    for (final DayCell c in candidates) {
+      int days = 0;
+      for (final Set<DayCell> day in inWindow) {
+        if (day.any((d) => _cellDistanceKm(c, d) <= _homeKm)) days++;
+      }
+      if (days > bestDays ||
+          (days == bestDays &&
+              best != null &&
+              (c.$1 < best.$1 || (c.$1 == best.$1 && c.$2 < best.$2)))) {
+        best = c;
+        bestDays = days;
+      }
+    }
+    return best;
+  }
+
+  final Map<DateTime, bool> away = <DateTime, bool>{};
+  DateTime blockStart = first;
+  while (!blockStart.isAfter(last)) {
+    final DayCell? home = homeAround(
+      addDays(blockStart, _homeBlockDays ~/ 2),
+      homeWindowDays,
+    );
+    for (int i = 0; i < _homeBlockDays; i++) {
+      final DateTime d = addDays(blockStart, i);
+      if (d.isAfter(last)) break;
+      final Set<DayCell>? day = cells[d];
+      away[d] =
+          home != null &&
+          day != null &&
+          day.any((c) => _cellDistanceKm(c, home) > awayKm);
+    }
+    blockStart = addDays(blockStart, _homeBlockDays);
+  }
+
+  return away;
+}
+
+/// How [daysAwayByTrip] treats what per-day detection cannot settle.
+typedef TripRule = ({bool dropLone, bool dropEdges});
+
+/// Away days found by trip rather than by day: far days ([awayKm]) at most
+/// [awayFillDays] apart, with no day of only home photos between them, make
+/// one trip, and a trip of two or more far days is away from its first far
+/// day to its last. A lone far day is home, or with [TripRule.dropLone] left
+/// out (absent from the map); with [TripRule.dropEdges] each trip's first
+/// and last day are left out too, since whether they count still hangs on
+/// that day's photos.
+Map<DateTime, bool> daysAwayByTrip(
+  Map<DateTime, Set<DayCell>> cells, {
+  required DateTime through,
+  TripRule rule = (dropLone: false, dropEdges: false),
+}) {
+  final Map<DateTime, bool> far = _farDays(cells, through: through);
+  final Map<DateTime, bool> away = <DateTime, bool>{
+    for (final DateTime d in far.keys) d: false,
+  };
+  final List<DateTime> days = far.keys.toList()..sort();
+  int i = 0;
+  while (i < days.length) {
+    if (!far[days[i]]!) {
+      i++;
+      continue;
+    }
+    // Chain far days into one trip.
+    int lastFar = i;
+    int j = i + 1;
+    while (j < days.length && j - lastFar - 1 <= awayFillDays) {
+      final Set<DayCell>? c = cells[days[j]];
+      if (far[days[j]]!) {
+        lastFar = j;
+      } else if (c != null && c.isNotEmpty) {
+        break; // Only home photos: back home.
+      }
+      j++;
+    }
+    if (lastFar > i) {
+      for (int k = i; k <= lastFar; k++) {
+        away[days[k]] = true;
+      }
+      if (rule.dropEdges) {
+        away
+          ..remove(days[i])
+          ..remove(days[lastFar]);
+      }
+    } else if (rule.dropLone) {
+      away.remove(days[i]);
+    }
+    i = lastFar + 1;
+  }
+  return away;
 }
