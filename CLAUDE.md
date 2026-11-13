@@ -355,9 +355,8 @@ field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphert
 An activity seals its content (`triggers`, `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext (Jack,
 2026-11-06: a server job aggregates amounts), and `monthlySummaries` reads only `viceID` and `quantity`. A vice's
 `ownerID`, `createdAt` and `archived` stay plaintext, so queries, indexes and `count()` are unchanged. A new content
-field joins `contentFields` (`lib/data/sealed.dart`), and, if it was ever stored in plaintext, the rules'
-`sealedAlone` and `changedContent` calls; an activity's fields after `triggers` never were, so the rules' create and
-update key lists refuse them in plaintext.
+field joins `contentFields` (`lib/data/sealed.dart`) and the rules' `sealedAlone` and `changedContent` calls, unless
+the rules' create and update key lists refuse it in plaintext, as they do an activity's fields after `triggers`.
 Rules refuse a create without `sealed` or with content beside it (Jack, 2026-11-09, `plaintext-creates` C), bound
 `sealed` to 30 to 4125 bytes, refuse removing it, still let legacy plaintext documents be read and edited, and let an
 update convert one by setting `sealed` and deleting the plaintext fields (a deleted field is an affected key). They
