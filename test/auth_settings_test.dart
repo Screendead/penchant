@@ -11,6 +11,7 @@ import 'package:tracker/widgets/auth_parts.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 import 'fake_account.dart';
+
 import 'package:tracker/providers/account_provider.dart';
 
 Future<void> _pumpAuth(WidgetTester tester) async {

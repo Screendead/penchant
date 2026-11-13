@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:tracker/errors/report_error.dart';
+import 'package:tracker/insights/experiment.dart';
 
 /// The words of the daily nudge, kept neutral (C16): no streaks, no guilt.
 class NudgeCopy {
@@ -25,13 +26,14 @@ class NudgeCopy {
 }
 
 /// What a press on the notification asks of the app.
-enum NudgeAction { log, clean, review }
+enum NudgeAction { log, clean, review, experiment }
 
 NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
     switch (actionId) {
       _logActionId => NudgeAction.log,
       _cleanActionId => NudgeAction.clean,
       _ when payload == _reviewPayload => NudgeAction.review,
+      _ when payload == _experimentPayload => NudgeAction.experiment,
       _ => null,
     };
 
@@ -42,6 +44,9 @@ const String _cleanActionId = 'clean';
 const int _notificationId = 1;
 const int _reviewNotificationId = 2;
 const String _reviewPayload = 'weekly-review';
+const String _experimentPayload = 'experiment';
+// Room for the longest plan run on many times over.
+const int _experimentIds = 1000;
 
 /// When the weekly review notification comes: Monday morning.
 const int reviewWeekday = DateTime.monday;
@@ -70,6 +75,11 @@ abstract class NudgeScheduler {
   Future<void> scheduleWeeklyReview();
 
   Future<void> cancelWeeklyReview();
+
+  /// Replaces the experiment's pending notifications with [notices].
+  Future<void> scheduleExperiment(List<ExperimentNotice> notices);
+
+  Future<void> cancelExperiment();
 }
 
 class LocalNudgeScheduler implements NudgeScheduler {
@@ -218,6 +228,41 @@ class LocalNudgeScheduler implements NudgeScheduler {
   @override
   Future<void> cancelWeeklyReview() =>
       _plugin.cancel(id: _reviewNotificationId);
+
+  @override
+  Future<void> scheduleExperiment(List<ExperimentNotice> notices) async {
+    await cancelExperiment();
+    if (notices.isEmpty) return;
+    await _setLocalZone();
+    const DarwinNotificationDetails darwin = DarwinNotificationDetails(
+      presentBadge: false,
+    );
+    for (final ExperimentNotice n in notices) {
+      await _plugin.zonedSchedule(
+        id: n.id,
+        title: n.title,
+        body: n.body,
+        payload: _experimentPayload,
+        scheduledDate: tz.TZDateTime.from(n.at, tz.local),
+        notificationDetails: const NotificationDetails(
+          iOS: darwin,
+          macOS: darwin,
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
+  @override
+  Future<void> cancelExperiment() async {
+    for (final PendingNotificationRequest p
+        in await _plugin.pendingNotificationRequests()) {
+      if (p.id >= experimentNoticeBase &&
+          p.id < experimentNoticeBase + _experimentIds) {
+        await _plugin.cancel(id: p.id);
+      }
+    }
+  }
 
   Future<void> _setLocalZone() async {
     tz_data.initializeTimeZones();
@@ -481,6 +526,20 @@ class PendingWeeklyReview extends Notifier<bool> {
   void clear() => state = false;
 }
 
+/// A tap on an experiment notification waiting for Today to show its strip.
+final pendingExperimentProvider = NotifierProvider<PendingExperiment, bool>(
+  PendingExperiment.new,
+);
+
+class PendingExperiment extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void request() => state = true;
+
+  void clear() => state = false;
+}
+
 /// A "Log something" press waiting for Today to open the Log. It waits through
 /// sign-in, so a press made while signed out opens it once Today shows.
 final pendingNudgeLogProvider = NotifierProvider<PendingNudgeLog, bool>(
@@ -510,6 +569,8 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
         ref.read(pendingNudgeLogProvider.notifier).request();
       case NudgeAction.review:
         ref.read(pendingWeeklyReviewProvider.notifier).request();
+      case NudgeAction.experiment:
+        ref.read(pendingExperimentProvider.notifier).request();
       case NudgeAction.clean:
         break;
     }

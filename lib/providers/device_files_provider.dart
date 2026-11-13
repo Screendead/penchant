@@ -33,3 +33,12 @@ final lastReportFileProvider = Provider<LastReportFile?>((ref) {
   final SealedFiles? files = ref.watch(sealedFilesProvider);
   return files == null ? null : LastReportFile(files);
 });
+
+/// As [sealedFilesProvider], under Application Support: files that must
+/// outlast iOS emptying Caches.
+final keptSealedFilesProvider = Provider<SealedFiles?>((ref) {
+  final String? uid = ref.watch(insightsUidProvider);
+  final FileSealer? sealer = ref.watch(fileSealerProvider);
+  if (uid == null || sealer == null) return null;
+  return ref.watch(deviceFilesProvider).keptForUser(uid, sealer);
+});
