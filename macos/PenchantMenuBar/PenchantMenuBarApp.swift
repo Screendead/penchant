@@ -290,7 +290,9 @@ enum FlushLauncher {
   private static let path = NWPathMonitor()
   private static var online: Bool?
   private static var heartbeat: Timer?
-  private static var run: NSKeyValueObservation?
+  // The app is held with its observation: an NSRunningApplication freed while
+  // still observed crashes in KVO's dealloc.
+  private static var run: (app: NSRunningApplication, observation: NSKeyValueObservation)?
 
   static private(set) var waiting = Waiting.briefly
 
@@ -461,13 +463,16 @@ enum FlushLauncher {
   // Watched by isTerminated, so hearing the quit does not rest on NSWorkspace
   // posting one for a background-only app.
   private static func watch(_ app: NSRunningApplication) {
-    run = app.observe(\.isTerminated, options: [.initial, .new]) { app, _ in
+    run?.observation.invalidate()
+    let observation = app.observe(\.isTerminated, options: [.initial, .new]) { app, _ in
       guard app.isTerminated else { return }
       DispatchQueue.main.async {
-        guard run != nil else { return }
+        guard let watched = run, watched.app == app else { return }
+        watched.observation.invalidate()
         run = nil
         ended()
       }
     }
+    run = (app, observation)
   }
 }
