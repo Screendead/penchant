@@ -228,7 +228,7 @@ class _TallyRowState extends State<TallyRow>
           child: child,
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 9, 4, 9),
+          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -312,7 +312,7 @@ class _TallyRowState extends State<TallyRow>
       color: ink,
     );
     return Padding(
-      padding: const EdgeInsets.only(top: 4, right: 8),
+      padding: const EdgeInsets.only(top: 2, right: 8),
       child: ExcludeSemantics(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -337,7 +337,7 @@ class _TallyRowState extends State<TallyRow>
                 ),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             TweenAnimationBuilder<Offset>(
               tween: Tween<Offset>(
                 end: Offset((lineTotal ?? 0) / scale, line.amount / scale),
@@ -345,7 +345,7 @@ class _TallyRowState extends State<TallyRow>
               duration: reduced ? Duration.zero : DialMotion.tallyRoll,
               curve: const Cubic(0.2, 0.8, 0.2, 1),
               builder: (BuildContext context, Offset value, _) => SizedBox(
-                height: 12,
+                height: 10,
                 width: double.infinity,
                 child: CustomPaint(
                   painter: LineBarPainter(
