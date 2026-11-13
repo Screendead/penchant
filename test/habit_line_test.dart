@@ -61,12 +61,12 @@ void main() {
       );
     });
 
-    testWidgets('a day line reads "of 3", spoken with the total', (
+    testWidgets('a day line reads "2 of 3 a day", spoken with the total', (
       tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       await pumpRow(tester, _wine(line: const HabitLine(3, LinePeriod.day)), 2);
-      expect(find.text('of 3'), findsOneWidget);
+      expect(find.text('2 of 3 a day'), findsOneWidget);
       expect(
         find.bySemanticsLabel('Wine, 2 glasses, your line 3 a day'),
         findsOneWidget,
@@ -81,7 +81,7 @@ void main() {
         _wine(line: const HabitLine(30, LinePeriod.week)),
         22,
       );
-      expect(find.text('22 of 30 · 7 days'), findsOneWidget);
+      expect(find.text('22 of 30 in 7 days'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
           'Wine, 2 glasses, 22 glasses in the last 7 days, your line 30 a '

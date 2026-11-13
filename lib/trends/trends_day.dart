@@ -182,8 +182,8 @@ class TrendsDay extends ConsumerWidget {
                                 MediaQuery.alwaysUse24HourFormatOf(context),
                           ),
                     offline: offline,
-                    onBeadTap: (DialEntry entry) =>
-                        Navigator.of(context).pushNamed(
+                    onBeadTap: (DialEntry entry) => Navigator.of(context)
+                        .pushNamed(
                           '/vices/${entry.vice.id}/activities/${entry.id}',
                         ),
                   ),
@@ -199,6 +199,10 @@ class TrendsDay extends ConsumerWidget {
                 total: entries == null ? null : totals[v.id] ?? 0,
                 day: day,
                 onLog: null,
+                unitWidth: TallyRow.unitColumnWidth(context, <String>[
+                  for (final Vice u in shown)
+                    u.units.nameFor(totals[u.id] ?? 0),
+                ]),
               ),
           ],
         );

@@ -93,9 +93,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void initState() {
     super.initState();
     _logTarget.add(_logNow);
-    pinnedDay =
-        PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
-            as DateTime?;
+    pinnedDay = PageStorage.maybeOf(
+      context,
+    )?.readState(context, identifier: _storageID) as DateTime?;
     ref.listenManual<bool>(
       pendingNudgeLogProvider,
       (bool? _, bool pending) => _openNudgeLog(pending),
@@ -155,9 +155,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     setState(() {
       pinnedDay = pinned;
     });
-    PageStorage.maybeOf(
-      context,
-    )?.writeState(context, pinned, identifier: _storageID);
+    PageStorage.maybeOf(context)
+        ?.writeState(context, pinned, identifier: _storageID);
   }
 
   // From the day shown now, not the one last built, so keys pressed within a
@@ -248,9 +247,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   }
 
   void _openEntry(DialEntry entry) {
-    Navigator.of(
-      context,
-    ).pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
+    Navigator.of(context)
+        .pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
   }
 
   @override
@@ -339,9 +337,10 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     final ExperimentPlan? plan = ref.watch(experimentProvider).value?.active;
     final String? planHabit = plan == null
         ? null
-        : <Vice>[
-            ...?allVices,
-          ].where((Vice v) => v.id == plan.habitId).firstOrNull?.name;
+        : <Vice>[...?allVices]
+              .where((Vice v) => v.id == plan.habitId)
+              .firstOrNull
+              ?.name;
     final bool planShown =
         plan != null &&
         planHabit != null &&
@@ -513,6 +512,13 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                               total: entries == null ? null : totals[vice.id],
                               day: day,
                               onLog: (Offset from) => _log(vice, from),
+                              unitWidth: TallyRow.unitColumnWidth(
+                                context,
+                                <String>[
+                                  for (final Vice v in vices)
+                                    v.units.nameFor(totals[v.id] ?? 0),
+                                ],
+                              ),
                               lineTotal: switch (vice.line?.period) {
                                 null => null,
                                 LinePeriod.day =>
