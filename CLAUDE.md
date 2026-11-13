@@ -16,7 +16,10 @@ a decision) stays one until Jack decides.
 - **Production Firestore is untouchable.** Never read or write `screendead-vice-tracker`'s live data or run a
   `firebase` or `gcloud` command that could contact it (no `deploy`, no `firestore:*`, no
   `--project screendead-vice-tracker`). `flutter run` without the `USE_FIREBASE_EMULATORS` define talks to
-  production; develop against the emulators.
+  production; develop against the emulators. One exception (Jack, 2026-11-13): "you are permitted to make readonly
+  (and only ever readonly!) calls via gcloud, for this specific project and no other", e.g. `gcloud logging read
+  --project screendead-vice-tracker`. Nothing that writes, deploys, deletes or changes configuration, and no
+  `firebase` command; the users' journal documents stay unread (Claude's reading of the rule above, not Jack's words).
 - **Data shape stays compatible** with existing documents: optional fields are fine; a mandatory one ships only with a
   migrator that adds it to existing records on first launch (Jack, 2026-11-03, C18 `goals-fields`).
 - **Rules and indexes reach production only through CI on merge to `master`** (Jack, 2026-11-03, C1 `rules-deploy`),
@@ -554,7 +557,7 @@ with a log (`withEnoughMood`), floors it at half the SD of the person's daily va
 round 16 `mood-floor` A, after Norman 2003) and words it without numbers (`MetricCopy.inWords`: "slightly less
 pleasant", Health's labels for levels). Each change to `readTypes` raises `healthReadTypesVersion`.
 
-**Calendar and Reminders** (iOS only; EventKit, full access asked from a card on Insights, read-only, nothing kept on
+**Calendar and Reminders** (iOS, plus the Mac's tag picker below; EventKit, full access asked from a card on Insights, read-only, nothing kept on
 the device or sent anywhere: each open reads again). `ios/Runner/CalendarChannel.swift` gives each timed event's start,
 end and number of people listed, never who (`lib/insights/calendar_source.dart`, a year per read), which
 `lib/insights/after_event.dart` compares with the hour after, and `lib/insights/calendar_days.dart` makes into daily
@@ -570,7 +573,13 @@ provider errors reach Crashlytics. Like everything in Insights they wait for Hea
 trigger picker (`showTriggerPicker`'s `at`: the record sheet and editor pass the sheet's time, `logOne`'s "What was
 going on?" the log's; the widget's prompt passes none) reads the hour before the entry once as it opens, only with full
 access already granted, and offers `work/meeting` first under "Suggested from your calendar" when an event of 15 minutes
-or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped).
+or more ended in that hour (`lib/insights/calendar_suggestion.dart`, 3 s timeout, never picked until tapped). On macOS
+that suggestion is the calendar's only use (no Insights there): the macOS Runner compiles the same
+`CalendarChannel.swift` (sandbox entitlement `com.apple.security.personal-information.calendars`, Runner only), and
+the picker reads `pickerCalendarSourceProvider` (`lib/providers/mac_calendar_provider.dart`), which there answers
+no access until Settings' macOS-only "Suggest tags from Calendar" switch is on (per device, off by default; turning
+it on asks for access, a refusal points to System Settings); `calendarSourceProvider`, which Insights reads, stays
+iOS-only.
 
 What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, cards in
 `lib/widgets/trigger_amounts_card.dart`): per habit, the amount per entry on entries tagged a trigger against its other
@@ -581,6 +590,24 @@ untagged. Each unarchived habit on no before-a-use, pair (either side), calendar
 drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
 (`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
 has no entries or nothing to compare against.
+
+**Self-experiments** (iOS only; round 17 option C, Jack, 2026-11-13). A "what follows" finding (`InsightKind.use`, lag
+of a day or more) on a sleep, heart or activity measure shown in numbers (`canExperiment`) offers "Test this for 6
+weeks" while no plan runs (one at a time). `ExperimentPage` sets 2, 4, 6 or 8 weeks, each with the 95% half-width to
+expect, t(2n − 2) × spread × √(2/n), the spread being the measure's SD over the last 90 days (14 values at least).
+The days come from a stored seed (`lib/insights/experiment.dart`, mulberry32, since `dart:math`'s `Random` promises no
+sequence across SDKs): each week draws 3 or 4 "none" days, each pair of weeks 4 and 3, every week from its own stream
+so "Run it 4 more weeks" keeps the days planned. The rule is always "none after 18:00" against "as usual", never "have
+it". Today shows the day's strip above the dial and shades 18:00 to midnight on "none" days. Once the last measure is
+in, Insights' "Your experiment" compares the measure after "none" days with after "as usual" days by a 95% Welch
+interval, intention to treat: a "none" day with the habit logged from 18:00 to 05:00 is a missed day and still counts
+as "none" (`analyseExperiment`; `test/experiment_test.dart` runs a null simulation and a planted effect). The plan
+(`ExperimentStore`, plans only; results are worked out again from Health and the journal on each open, so the report's
+types and `insightsViewFormat` are unchanged) is the sealed file `experiment` under Application Support, not Caches
+(`DeviceFiles.keptForUser`, same layout, other users' folders removed on first use, cleared with the rest on sign-out
+and deletion), so the Mac never sees it. Its optional notification (`experimentNotices`, ids from 1000, a week ahead,
+topped up on each launch, cancelled on stop, finish and sign-out) says "Experiment, day 9 of 42" and never names the
+habit; permission is asked only when it is turned on. Stopping removes the plan with no result.
 
 **Places** (iOS only; Core Location visits, opt-in from a card on Insights: When In Use first, then the upgrade to
 Always, which Apple shows at most once; `NSLocation...UsageDescription` strings, no background mode or paid

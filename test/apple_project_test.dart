@@ -140,4 +140,36 @@ void main() {
       expect(source, contains('tools/crashlytics-upload-symbols.sh'));
     });
   }
+
+  // The Mac's tag picker suggests Meeting after a calendar event; nothing
+  // else on the Mac reads the calendar.
+  test('the macOS Runner alone may read Calendar', () {
+    const String calendars =
+        'com.apple.security.personal-information.calendars';
+    for (final String config in <String>['DebugProfile', 'Release']) {
+      expect(
+        File('macos/Runner/$config.entitlements').readAsStringSync(),
+        contains('<key>$calendars</key>'),
+      );
+    }
+    for (final FileSystemEntity f in Directory(
+      'macos',
+    ).listSync(recursive: true)) {
+      if (f.path.endsWith('.entitlements') &&
+          !f.path.startsWith('macos/Runner/')) {
+        expect(File(f.path).readAsStringSync(), isNot(contains(calendars)));
+      }
+    }
+    final String plist = File('macos/Runner/Info.plist').readAsStringSync();
+    expect(plist, contains('<key>NSCalendarsFullAccessUsageDescription</key>'));
+    expect(plist, contains('<key>NSCalendarsUsageDescription</key>'));
+    final String source = File(
+      'macos/Runner.xcodeproj/project.pbxproj',
+    ).readAsStringSync();
+    final String runnerSources = RegExp(
+      r'33CC10E92044A3C60003C045 /\* Sources \*/ = \{(.*?)\};',
+      dotAll: true,
+    ).firstMatch(source)!.group(1)!;
+    expect(runnerSources, contains('CalendarChannel.swift in Sources'));
+  });
 }
