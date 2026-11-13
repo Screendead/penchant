@@ -165,8 +165,9 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   Future<void> _save(User user) async {
     // A locked vice's name and unit are placeholders, never to be saved.
     if (opened?.locked ?? false) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text(ViceForm.lockedMessage)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(ViceForm.lockedMessage)));
       return;
     }
     if (!formKey.currentState!.validate() || unit == null) {
@@ -444,9 +445,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
       ),
     );
   }
-}
 
-extension on _ViceFormState {
   Widget _lineField(BuildContext context) {
     final DialColors colors = DialColors.of(context);
     final ColorScheme scheme = Theme.of(context).colorScheme;

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/trend_breakdowns.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
@@ -245,6 +246,11 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const String healthLabel = 'Health';
   static const String countLabel = 'Count';
   static const String spendLabel = 'Spend';
+
+  // Under a chart whose buckets are not the line's period.
+  static String lineElsewhere(HabitLine line) =>
+      'Your line, ${line.short}, shows in the by-'
+      '${line.period.name} view.';
   static const String triggersTitle = 'What set it off';
 
   static String healthNote(HealthState? state) => switch (state) {
@@ -1235,6 +1241,13 @@ class _TrendsPanel extends StatelessWidget {
       final int limit = smoothingLimit(range.bucketCount);
       final bool empty = s.stats.total == 0;
       final double? price = spend ? vice.costPerUnit : null;
+      // A count, so never on spend; and only over buckets of its period.
+      final HabitLine? kept = price == null ? vice.line : null;
+      final HabitLine? line =
+          kept != null &&
+              (kept.period == LinePeriod.day) == (range.stepDays == 1)
+          ? kept
+          : null;
       List<double> priced(List<double> values) => price == null
           ? values
           : <double>[for (final double v in values) v * price];
@@ -1255,10 +1268,17 @@ class _TrendsPanel extends StatelessWidget {
         overlays: price == null ? overlays : const <TrendsOverlay>[],
         health: health,
         money: price == null ? null : (currency: vice.currency),
+        line: line,
       );
       body = <Widget>[
         const SizedBox(height: DialSpace.s),
-        _Stats(vice: vice, range: range, stats: s.stats, totals: s.totals),
+        _Stats(
+          vice: vice,
+          range: range,
+          stats: s.stats,
+          totals: s.totals,
+          line: line,
+        ),
         if (vice.costPerUnit != null) ...<Widget>[
           const SizedBox(height: DialSpace.xs),
           _Spend(vice: vice, range: range, stats: s.stats, totals: s.totals),
@@ -1276,6 +1296,15 @@ class _TrendsPanel extends StatelessWidget {
           Expanded(child: chart())
         else
           chart(),
+        if (kept != null && line == null) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          Text(
+            TrendsSheet.lineElsewhere(kept),
+            style: DialTypeScale.bodyS.copyWith(
+              color: DialColors.of(context).muted,
+            ),
+          ),
+        ],
         const SizedBox(height: DialSpace.s),
         _AverageStepper(
           window: s.window,
@@ -1568,16 +1597,20 @@ class _Stats extends StatelessWidget {
     required this.range,
     required this.stats,
     required this.totals,
+    this.line,
   });
 
   final Vice vice;
   final UsageRange range;
   final UsageStats stats;
   final List<double> totals;
+  // Drawn on the chart, it takes the peak's place.
+  final HabitLine? line;
 
   @override
   Widget build(BuildContext context) {
     final double total = stats.total;
+    final HabitLine? line = this.line;
     final double peak = totals[stats.peakIndex];
     final bool daily = range.stepDays == 1;
     final DateTime peakStart = range.bucketStart(stats.peakIndex);
@@ -1593,19 +1626,31 @@ class _Stats extends StatelessWidget {
         value: formatAverage(stats.average),
         detail: daily ? 'per day' : 'per week',
       ),
-      _StatTile(
-        label: 'Peak',
-        value: formatCount(peak),
-        detail: total == 0
-            ? 'none yet'
-            : daily
-            ? TrendsChart.readoutLabel(
-                range,
-                stats.peakIndex,
-                addDays(range.end, -1),
-              )
-            : 'week of ${formatShortDay(peakStart)}',
-      ),
+      if (line != null)
+        _StatTile(
+          label: 'Over your line',
+          value: formatCount(TrendsChart.overLine(totals, line)),
+          unit: pluralWord(
+            TrendsChart.overLine(totals, line),
+            one: daily ? 'day' : 'week',
+            other: daily ? 'days' : 'weeks',
+          ),
+          detail: 'line ${line.short}',
+        )
+      else
+        _StatTile(
+          label: 'Peak',
+          value: formatCount(peak),
+          detail: total == 0
+              ? 'none yet'
+              : daily
+              ? TrendsChart.readoutLabel(
+                  range,
+                  stats.peakIndex,
+                  addDays(range.end, -1),
+                )
+              : 'week of ${formatShortDay(peakStart)}',
+        ),
     ];
     // Three across stop fitting at large text sizes; stacked, each has the
     // width.
