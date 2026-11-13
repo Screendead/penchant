@@ -199,34 +199,52 @@ void main() {
           // A focused field scrolls itself back into view on each frame.
           FocusManager.instance.primaryFocus?.unfocus();
           await tester.pumpAndSettle();
+          FocusManager.instance.primaryFocus?.unfocus();
+          await tester.pump();
           await tester.ensureVisible(
             find.byKey(RecordNewActivityDialog.submitKey),
           );
           await tester.pumpAndSettle();
+          FocusManager.instance.primaryFocus?.unfocus();
+          await tester.pump();
+          await tester.ensureVisible(
+            find.byKey(RecordNewActivityDialog.submitKey),
+          );
+          await tester.pump();
           await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
           await tester.pumpAndSettle();
         }
 
         final Finder quantity = find.widgetWithText(TextFormField, 'Quantity');
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
         await tester.ensureVisible(quantity);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
         await tester.enterText(quantity, '0');
         await submit();
 
         expect(tester.takeException(), isNull);
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
         await tester.ensureVisible(find.text('Please select a habit'));
         expect(find.text('Please select a habit'), findsOneWidget);
         expect(find.text('Please enter more than 0'), findsOneWidget);
         expect(writes.writes, isEmpty);
 
+        FocusManager.instance.primaryFocus?.unfocus();
+
+        await tester.pump();
+
         await tester.ensureVisible(find.text('Select Habit'));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
         await tester.tap(find.text('Select Habit'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('beer').last);
         await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
         await tester.ensureVisible(quantity);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
         await tester.enterText(quantity, '2');
         await submit();
 

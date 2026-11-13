@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/sealed.dart';
 
@@ -25,6 +25,11 @@ class ViceActivity {
     required this.createdAt,
     this.amount,
     this.triggers = const <String>[],
+    this.urge,
+    this.note,
+    this.zone,
+    this.writtenAt,
+    this.loggedVia,
     this.pending = false,
     this.locked = false,
   });
@@ -40,6 +45,13 @@ class ViceActivity {
   // Paths in lib/data/trigger_tree.dart or free-text labels; empty for an
   // activity logged without any.
   final List<String> triggers;
+  // The rest of the sealed content (lib/data/activity_content.dart); each
+  // null when absent, as on every entry written before it existed.
+  final int? urge;
+  final String? note;
+  final String? zone;
+  final DateTime? writtenAt;
+  final LoggedVia? loggedVia;
   // A local write the server has not acknowledged yet.
   final bool pending;
   // Sealed fields this device could not open, which must never be written
@@ -56,6 +68,16 @@ class ViceActivity {
         : quantity;
   }
 
+  // Everything the envelope holds, to seal again whole when one part changes.
+  ActivityContent get content => ActivityContent(
+    triggers: triggers,
+    urge: urge,
+    note: note,
+    zone: zone,
+    writtenAt: writtenAt,
+    loggedVia: loggedVia,
+  );
+
   factory ViceActivity.fromJson({
     required String id,
     required Map<String, dynamic> json,
@@ -63,6 +85,9 @@ class ViceActivity {
     Map<String, Object?>? opened,
   }) {
     final bool locked = isSealed(json) && opened == null;
+    final ActivityContent content = ActivityContent.read(
+      contentOf(json, opened),
+    );
     return ViceActivity(
       id: id,
       viceID: readString(json['viceID']),
@@ -70,7 +95,12 @@ class ViceActivity {
       amount: readAmount(json['amount']),
       ownerID: readString(json['ownerID']),
       createdAt: readTimestamp(json['createdAt'], pending: pending),
-      triggers: readTriggers(contentOf(json, opened)[triggersField]),
+      triggers: content.triggers,
+      urge: content.urge,
+      note: content.note,
+      zone: content.zone,
+      writtenAt: content.writtenAt,
+      loggedVia: content.loggedVia,
       pending: pending,
       locked: locked,
     );

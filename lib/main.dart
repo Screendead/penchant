@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/appearance_settings.dart';
@@ -21,6 +22,7 @@ import 'package:tracker/insights_page.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/deleted_habit_page.dart';
 import 'package:tracker/manage_data.dart';
+import 'package:tracker/providers/log_zone_provider.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -47,6 +49,7 @@ import 'package:tracker/crypto/key_wiring.dart';
 import 'package:tracker/crypto/sealed_files.dart';
 import 'package:tracker/widgets/rejected_writes_banner.dart';
 import 'package:tracker/writes/category_migration.dart';
+import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/quit_when_synced.dart';
 
 void main() {
@@ -56,17 +59,30 @@ void main() {
   startApp();
 }
 
-/// The headless engine's entrypoint, for an iOS background refresh or a Mac
-/// flush-mode launch with the queue non-empty (ios/Runner/WidgetBridge.swift). It flushes once and tells
-/// native, which ends the task.
+/// The headless engine's entrypoint for an iOS background refresh
+/// (ios/Runner/WidgetBridge.swift) with the queue non-empty. It flushes once
+/// and tells native, which ends the task.
 @pragma('vm:entry-point')
-Future<void> backgroundFlushMain() async {
+Future<void> backgroundFlushMain() => _flushInBackground(diskCache: true);
+
+/// [backgroundFlushMain] for the Mac's PenchantSync (macos/PenchantSync),
+/// whose sandbox container sign-out in Penchant cannot clear: it keeps
+/// Firestore's cache and the write journal in memory, so nothing of the user's
+/// outlives the run. A log leaves the App Group queue only once the server has
+/// acknowledged it (flushQueuedLogs), so a run that ends offline loses nothing.
+@pragma('vm:entry-point')
+Future<void> macSyncFlushMain() => _flushInBackground(diskCache: false);
+
+Future<void> _flushInBackground({required bool diskCache}) async {
   WidgetsFlutterBinding.ensureInitialized();
   installErrorHandlers();
   const WidgetBridge bridge = WidgetBridge();
   final BackgroundFlushOutcome outcome = await runBackgroundFlush(
-    initialize: initializeFirebase,
-    overrides: keyServiceOverrides,
+    initialize: () => initializeFirebase(diskCache: diskCache),
+    overrides: <Override>[
+      ...keyServiceOverrides,
+      if (!diskCache) memoryJournal(),
+    ],
     now: DateTime.now,
   );
   await bridge.backgroundDone(outcome);
@@ -114,6 +130,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final User? user = userValue.value;
     ref.watch(categoryMigrationProvider);
     ref.listen(placesProvider, (_, _) {});
+    ref.listen(logZoneProvider, (_, _) {});
 
     // Swapping `home` leaves pushed routes on the stack, where the previous
     // session's pages would sit over the sign-in screen. The root messenger

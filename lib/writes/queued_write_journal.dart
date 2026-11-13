@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -116,6 +117,21 @@ List<QueuedWrite> refusedAmong(
 abstract interface class JournalStore {
   Future<String?> read();
   Future<void> write(String contents);
+}
+
+// The journal's file, held in memory.
+class MemoryJournalStore implements JournalStore {
+  MemoryJournalStore([this.contents]);
+
+  String? contents;
+
+  @override
+  Future<String?> read() async => contents;
+
+  @override
+  Future<void> write(String contents) async {
+    this.contents = contents;
+  }
 }
 
 // One file per Firebase project, so a run against the emulators never
@@ -265,3 +281,11 @@ final queuedWriteJournalProvider = Provider<QueuedWriteJournal>(
   (ref) =>
       QueuedWriteJournal(FileJournalStore(Firebase.app().options.projectId)),
 );
+
+/// A journal held in memory, one per container: for flutter test, where
+/// path_provider has no plugin, and for a process whose Firestore cache is in
+/// memory, whose queued writes end with it.
+Override memoryJournal([MemoryJournalStore? store]) =>
+    queuedWriteJournalProvider.overrideWith(
+      (ref) => QueuedWriteJournal(store ?? MemoryJournalStore()),
+    );

@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
-import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/data/activity_content.dart';
 
 @immutable
 class ExportFile {
@@ -46,6 +46,12 @@ const List<String> csvHeader = <String>[
   'vice_id',
   'entry_id',
   'triggers',
+  // Added later, so they come last and older columns keep their places.
+  'urge',
+  'note',
+  'time_zone',
+  'written_at',
+  'logged_via',
 ];
 
 // One row per activity, oldest first. An activity whose vice is gone keeps
@@ -64,6 +70,7 @@ String exportCsv(AccountData data) {
   for (final StoredDocument activity in activities) {
     final Object? viceID = activity.data['viceID'];
     final Map<String, dynamic>? vice = vices[viceID];
+    final ActivityContent content = ActivityContent.read(activity.data);
     csv.write(
       _csvRow(<Object?>[
         _plain(activity.data['createdAt']),
@@ -73,7 +80,12 @@ String exportCsv(AccountData data) {
         vice?['unit'],
         viceID,
         activity.id,
-        readTriggers(activity.data[triggersField]).join('; '),
+        content.triggers.join('; '),
+        content.urge,
+        content.note,
+        content.zone,
+        _plain(content.writtenAt),
+        content.loggedVia?.name,
       ]),
     );
   }

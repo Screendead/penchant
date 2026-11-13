@@ -247,20 +247,32 @@ struct MenuContent: View {
 // and the app's registration leaves that process running the old code from
 // wherever the old bundle went, the Trash included. Penchant
 // posts showMenuBarNotification at each launch; a helper whose bundle on disk
-// is gone or another build then exits, and the app opens its own helper.
+// is gone or another build then exits, and the app opens its own helper. So
+// does one inside another copy of Penchant left on disk: it would launch that
+// copy's code, or Penchant itself, to write its logs.
 enum Staleness {
   static let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
 
   static func exitIfReplaced() {
     let info = NSDictionary(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
-    guard info?["CFBundleVersion"] as? String != build else { return }
+    guard info?["CFBundleVersion"] as? String != build || launchedFromAnotherCopy() else { return }
     exit(0)
+  }
+
+  private static func launchedFromAnotherCopy() -> Bool {
+    let enclosing = Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent()
+      .deletingLastPathComponent().deletingLastPathComponent()
+    guard Bundle(url: enclosing)?.bundleIdentifier == mainAppID else { return false }
+    let running = NSRunningApplication.runningApplications(withBundleIdentifier: mainAppID)
+      .compactMap { $0.bundleURL?.standardizedFileURL.resolvingSymlinksInPath() }
+    let own = enclosing.standardizedFileURL.resolvingSymlinksInPath()
+    return !running.isEmpty && !running.contains(own)
   }
 }
 
 // A log queued with Penchant closed (here or in a widget, which posts the same
-// Darwin notification) launches Penchant once it is past its Undo hold, with
-// no window or Dock icon, to write it (FlushMode in ios/Runner/WidgetBridge.swift).
+// Darwin notification) launches PenchantSync (macos/PenchantSync), a
+// background-only app inside Penchant, once it is past its Undo hold, to write it.
 // Only the heartbeat runs while the queue is empty. A run that leaves logs for a retry
 // (offline, or the session or key slow to load) is tried again when the
 // network comes back, when the Mac wakes, and on a backoff that gives up after
@@ -278,6 +290,9 @@ enum FlushLauncher {
   private static let path = NWPathMonitor()
   private static var online: Bool?
   private static var heartbeat: Timer?
+  // The app is held with its observation: an NSRunningApplication freed while
+  // still observed crashes in KVO's dealloc.
+  private static var run: (app: NSRunningApplication, observation: NSKeyValueObservation)?
 
   static private(set) var waiting = Waiting.briefly
 
@@ -366,7 +381,7 @@ enum FlushLauncher {
     schedule()
   }
 
-  // Penchant quit, after a flush-mode run or the user's own session.
+  // PenchantSync's run ended, or the user's own session.
   private static func ended() {
     let logs = LogQueue.pending()
     guard !logs.isEmpty else {
@@ -427,23 +442,37 @@ enum FlushLauncher {
     due = nil
     guard !launching, !LogQueue.pending().isEmpty,
       NSRunningApplication.runningApplications(withBundleIdentifier: mainAppID).isEmpty,
-      let url = appURL, let defaults = UserDefaults(suiteName: appGroup)
+      NSRunningApplication.runningApplications(withBundleIdentifier: syncAppID).allSatisfy(\.isTerminated),
+      let url = appURL?.appendingPathComponent("Contents/Library/LoginItems/PenchantSync.app"),
+      let defaults = UserDefaults(suiteName: appGroup)
     else { return }
     launching = true
     lastLaunch = Date()
     defaults.removeObject(forKey: FlushHandoff.outcome)
-    defaults.set(Date().timeIntervalSince1970, forKey: FlushHandoff.launchedAt)
-    // The new process reads it before its window loads; a stamp it misses
-    // makes the launch a normal, focused one.
-    defaults.synchronize()
     let configuration = NSWorkspace.OpenConfiguration()
     configuration.activates = false
     configuration.addsToRecentItems = false
-    NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
+    NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, _ in
       DispatchQueue.main.async {
         launching = false
-        if error != nil { defaults.removeObject(forKey: FlushHandoff.launchedAt) }
+        if let app { watch(app) }
       }
     }
+  }
+
+  // Watched by isTerminated, so hearing the quit does not rest on NSWorkspace
+  // posting one for a background-only app.
+  private static func watch(_ app: NSRunningApplication) {
+    run?.observation.invalidate()
+    let observation = app.observe(\.isTerminated, options: [.initial, .new]) { app, _ in
+      guard app.isTerminated else { return }
+      DispatchQueue.main.async {
+        guard let watched = run, watched.app == app else { return }
+        watched.observation.invalidate()
+        run = nil
+        ended()
+      }
+    }
+    run = (app, observation)
   }
 }

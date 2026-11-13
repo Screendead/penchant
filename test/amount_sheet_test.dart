@@ -122,6 +122,14 @@ void main() {
       await tester.pump();
       expect(_shownQuantity(tester), '2');
 
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      await tester.pump();
+
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+
+      await tester.pump(const Duration(seconds: 1));
+
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pumpAndSettle();
       expect(writes.writes.single.op, 'recordActivity');
@@ -149,6 +157,10 @@ void main() {
       await _open(tester, writes);
 
       expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pump();
       expect(find.text('Please select a habit'), findsOneWidget);
@@ -170,6 +182,10 @@ void main() {
     await withClock(Clock.fixed(_now), () async {
       writes.respond = (_) => Completer<void>().future;
       await _open(tester, writes, initialViceID: _coffee.id);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
+      await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
       await tester.pump();
       await tester.drag(
@@ -202,6 +218,10 @@ void main() {
     await tester.tap(find.byTooltip(AmountFields.moreTooltip));
     await tester.pump();
     expect(_shownQuantity(tester), '4');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(ViceActivityEditorPage.saveKey));
+    await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.byKey(ViceActivityEditorPage.saveKey));
     await tester.pumpAndSettle();
 
@@ -312,6 +332,14 @@ void main() {
     );
     expect(find.text('Coffee'), findsOneWidget);
     expect(_shownQuantity(tester), '3');
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    await tester.pump();
+
+    await tester.ensureVisible(find.byKey(ViceActivityEditorPage.deleteKey));
+
+    await tester.pump(const Duration(seconds: 1));
 
     await tester.tap(find.byKey(ViceActivityEditorPage.deleteKey));
     await tester.pumpAndSettle();

@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/misc.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
-import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/tracker_writes.dart';
+
+export 'package:tracker/writes/queued_write_journal.dart'
+    show MemoryJournalStore, memoryJournal;
 
 @immutable
 class Write {
@@ -78,6 +81,7 @@ class FakeTrackerWrites implements TrackerWrites {
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
     UnitAndPrice unitAndPrice = noUnitAndPrice,
+    HabitLine? line,
   }) {
     _requireKey();
     return _write(
@@ -87,6 +91,7 @@ class FakeTrackerWrites implements TrackerWrites {
         'unit': unit,
         'category': category,
         if (unitAndPrice != noUnitAndPrice) 'unitAndPrice': unitAndPrice,
+        'line': ?line,
       }),
       collection: 'vices',
       op: WriteOp.create,
@@ -100,12 +105,14 @@ class FakeTrackerWrites implements TrackerWrites {
     Unit? unit,
     ViceCategory? category,
     UnitAndPrice? unitAndPrice,
+    LineChange? line,
   }) => _write(
     Write('updateVice', vice.id, <String, Object?>{
       'name': ?name,
       'unit': ?unit,
       'category': ?category,
       'unitAndPrice': ?unitAndPrice,
+      if (line != null) 'line': line.line,
     }),
     collection: 'vices',
     op: WriteOp.update,
@@ -153,8 +160,14 @@ class FakeTrackerWrites implements TrackerWrites {
     double? amount,
     required DateTime createdAt,
     List<String> triggers = const <String>[],
+    int? urge,
+    String? note,
+    LoggedVia? loggedVia,
+    ActivityContent? restoring,
   }) {
     _requireKey();
+    if (restoring != null) restored[activityID] = restoring;
+    final List<String> stored = restoring?.triggers ?? triggers;
     return _write(
       Write('recordActivity', activityID, <String, Object?>{
         'ownerID': ownerID,
@@ -162,12 +175,29 @@ class FakeTrackerWrites implements TrackerWrites {
         'quantity': quantity,
         'amount': ?amount,
         'createdAt': createdAt,
-        if (triggers.isNotEmpty) 'triggers': triggers,
+        if (stored.isNotEmpty) 'triggers': stored,
+        'urge': ?(restoring?.urge ?? urge),
+        'note': ?(restoring?.note ?? note),
+        'loggedVia': ?(restoring?.loggedVia ?? loggedVia),
       }),
       collection: 'activities',
       op: WriteOp.create,
     );
   }
+
+  // The whole content each create restored and each update sealed.
+  final Map<String, ActivityContent> restored = <String, ActivityContent>{};
+  final Map<String, ActivityContent> sealed = <String, ActivityContent>{};
+
+  // Stands for the device's copies of entries' sealed content.
+  final Map<String, ActivityContent> cached = <String, ActivityContent>{};
+
+  @override
+  Future<ActivityContent?> cachedContent(String activityID) async =>
+      cached[activityID];
+
+  @override
+  bool canWrite(ActivityContent content) => canCreate || content.triggersAlone;
 
   @override
   SentWrite updateActivity(
@@ -175,23 +205,27 @@ class FakeTrackerWrites implements TrackerWrites {
     int? quantity,
     double? amount,
     DateTime? createdAt,
-    List<String>? triggers,
-  }) => _write(
-    Write('updateActivity', activityID, <String, Object?>{
-      'quantity': ?quantity,
-      'amount': ?amount,
-      'createdAt': ?createdAt,
-      'triggers': ?triggers,
-    }),
-    collection: 'activities',
-    op: WriteOp.update,
-    fields: <String, Object>{
-      'quantity': ?quantity,
-      'amount': ?amount,
-      'createdAt': ?createdAt,
-      'triggers': ?triggers,
-    },
-  );
+    ActivityContent? content,
+  }) {
+    if (content != null) sealed[activityID] = content;
+    return _write(
+      Write('updateActivity', activityID, <String, Object?>{
+        'quantity': ?quantity,
+        'amount': ?amount,
+        'createdAt': ?createdAt,
+        'triggers': ?content?.triggers,
+        'urge': ?content?.urge,
+        'note': ?content?.note,
+      }),
+      collection: 'activities',
+      op: WriteOp.update,
+      fields: <String, Object>{
+        'quantity': ?quantity,
+        'amount': ?amount,
+        'createdAt': ?createdAt,
+      },
+    );
+  }
 
   @override
   SentWrite deleteActivity(String activityID) => _write(
@@ -214,27 +248,5 @@ class FakeTrackerWrites implements TrackerWrites {
       throw error;
     }
     return server['$collection/$id'];
-  }
-}
-
-// A journal held in memory, one per container: path_provider has no plugin
-// under flutter test.
-Override memoryJournal([MemoryJournalStore? store]) =>
-    queuedWriteJournalProvider.overrideWith(
-      (ref) => QueuedWriteJournal(store ?? MemoryJournalStore()),
-    );
-
-// The journal's file, held in memory.
-class MemoryJournalStore implements JournalStore {
-  MemoryJournalStore([this.contents]);
-
-  String? contents;
-
-  @override
-  Future<String?> read() async => contents;
-
-  @override
-  Future<void> write(String contents) async {
-    this.contents = contents;
   }
 }

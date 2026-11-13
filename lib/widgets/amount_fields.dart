@@ -9,9 +9,10 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
+import 'package:tracker/widgets/urge_note_fields.dart';
 
 // The amount sheet's fields: a stepper over a typed amount, the entry's time
-// on the mini dial, and its triggers. A new entry's sheet and the entry editor
+// on the mini dial, its triggers, and the optional urge and note. A new entry's sheet and the entry editor
 // both build them, inside their own Form.
 class AmountFields extends ConsumerWidget {
   const AmountFields({
@@ -24,6 +25,10 @@ class AmountFields extends ConsumerWidget {
     required this.onTriggersChanged,
     required this.viceID,
     required this.viceName,
+    required this.urge,
+    required this.onUrgeChanged,
+    required this.noteController,
+    this.answersEnabled = true,
     this.enabled = true,
     this.quantityValidator = quantityError,
     this.error,
@@ -47,6 +52,11 @@ class AmountFields extends ConsumerWidget {
   final ValueChanged<List<String>> onTriggersChanged;
   final String? viceID;
   final String viceName;
+  final int? urge;
+  final ValueChanged<int?> onUrgeChanged;
+  final TextEditingController noteController;
+  // False for a locked entry, whose urge and note are not known.
+  final bool answersEnabled;
   final bool enabled;
   final FormFieldValidator<String> quantityValidator;
   final String? error;
@@ -78,7 +88,7 @@ class AmountFields extends ConsumerWidget {
           listenable: quantityController,
           builder: (BuildContext context, _) => Row(
             children: [
-              _StepButton(
+              StepButton(
                 glyph: DialGlyph.minus,
                 tooltip: lessTooltip,
                 onPressed: enabled && _typed > 1
@@ -124,7 +134,7 @@ class AmountFields extends ConsumerWidget {
                   ],
                 ),
               ),
-              _StepButton(
+              StepButton(
                 glyph: DialGlyph.plus,
                 tooltip: moreTooltip,
                 onPressed: enabled ? () => _stepBy(step, 1) : null,
@@ -150,6 +160,17 @@ class AmountFields extends ConsumerWidget {
             enabled: enabled,
           ),
         ),
+        const SizedBox(height: DialSpace.s),
+        UrgeField(
+          value: urge,
+          onChanged: onUrgeChanged,
+          enabled: enabled && answersEnabled,
+        ),
+        const SizedBox(height: DialSpace.m),
+        NoteField(
+          controller: noteController,
+          enabled: enabled && answersEnabled,
+        ),
         if (error != null) ...[
           const SizedBox(height: 12),
           Text(error!, style: TextStyle(color: scheme.error)),
@@ -159,9 +180,10 @@ class AmountFields extends ConsumerWidget {
   }
 }
 
-// The stepper's 56 pt round buttons.
-class _StepButton extends StatelessWidget {
-  const _StepButton({
+// The stepper's 56 pt round buttons; Edit Habit's line takes them too.
+class StepButton extends StatelessWidget {
+  const StepButton({
+    super.key,
     required this.glyph,
     required this.tooltip,
     required this.onPressed,

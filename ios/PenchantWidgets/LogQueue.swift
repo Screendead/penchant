@@ -95,12 +95,13 @@ enum EntryLink {
 let queueChangedNotification = "com.screendead.penchant.log-queue-changed"
 
 #if os(macOS)
-  // App Group keys between the menu bar helper and Penchant's FlushMode
-  // (ios/Runner/WidgetBridge.swift). The helper sets launchedAt, in seconds
-  // since 1970, just before it launches Penchant to flush; that run leaves
-  // BackgroundFlushOutcome's name in outcome as it quits.
+  // The background-only app (macos/PenchantSync) the menu bar helper launches
+  // to write the queue while Penchant is closed.
+  let syncAppID = "com.screendead.penchant.sync"
+
+  // App Group key between the menu bar helper and PenchantSync, which leaves
+  // BackgroundFlushOutcome's name in it as it quits.
   enum FlushHandoff {
-    static let launchedAt = "menubar.flushLaunchAt"
     static let outcome = "menubar.flushOutcome"
   }
 
