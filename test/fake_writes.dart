@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -153,8 +154,14 @@ class FakeTrackerWrites implements TrackerWrites {
     double? amount,
     required DateTime createdAt,
     List<String> triggers = const <String>[],
+    int? urge,
+    String? note,
+    LoggedVia? loggedVia,
+    ActivityContent? restoring,
   }) {
     _requireKey();
+    if (restoring != null) restored[activityID] = restoring;
+    final List<String> stored = restoring?.triggers ?? triggers;
     return _write(
       Write('recordActivity', activityID, <String, Object?>{
         'ownerID': ownerID,
@@ -162,12 +169,30 @@ class FakeTrackerWrites implements TrackerWrites {
         'quantity': quantity,
         'amount': ?amount,
         'createdAt': createdAt,
-        if (triggers.isNotEmpty) 'triggers': triggers,
+        if (stored.isNotEmpty) 'triggers': stored,
+        'urge': ?(restoring?.urge ?? urge),
+        'note': ?(restoring?.note ?? note),
+        'loggedVia': ?(restoring?.loggedVia ?? loggedVia),
       }),
       collection: 'activities',
       op: WriteOp.create,
     );
   }
+
+  // The whole content each create restored and each update sealed.
+  final Map<String, ActivityContent> restored = <String, ActivityContent>{};
+  final Map<String, ActivityContent> sealed = <String, ActivityContent>{};
+
+  // Stands for the device's copies of entries' sealed content.
+  final Map<String, ActivityContent> cached = <String, ActivityContent>{};
+
+  @override
+  Future<ActivityContent?> cachedContent(String activityID) async =>
+      cached[activityID];
+
+  @override
+  bool canWrite(ActivityContent content) =>
+      canCreate || content.triggersAlone;
 
   @override
   SentWrite updateActivity(
@@ -175,13 +200,17 @@ class FakeTrackerWrites implements TrackerWrites {
     int? quantity,
     double? amount,
     DateTime? createdAt,
-    List<String>? triggers,
-  }) => _write(
+    ActivityContent? content,
+  }) {
+    if (content != null) sealed[activityID] = content;
+    return _write(
     Write('updateActivity', activityID, <String, Object?>{
       'quantity': ?quantity,
       'amount': ?amount,
       'createdAt': ?createdAt,
-      'triggers': ?triggers,
+      'triggers': ?content?.triggers,
+      'urge': ?content?.urge,
+      'note': ?content?.note,
     }),
     collection: 'activities',
     op: WriteOp.update,
@@ -189,9 +218,9 @@ class FakeTrackerWrites implements TrackerWrites {
       'quantity': ?quantity,
       'amount': ?amount,
       'createdAt': ?createdAt,
-      'triggers': ?triggers,
     },
   );
+  }
 
   @override
   SentWrite deleteActivity(String activityID) => _write(

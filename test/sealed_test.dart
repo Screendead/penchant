@@ -2,12 +2,14 @@
 // without a Firestore instance.
 // ignore_for_file: subtype_of_sealed_class
 
+import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -319,7 +321,11 @@ void main() {
 
     setUp(() {
       store = _Store();
-      writes = TrackerWrites(store.firestore, sealer: sealer);
+      writes = TrackerWrites(
+        store.firestore,
+        sealer: sealer,
+        zone: () => 'Europe/Paris',
+      );
     });
 
     test(
@@ -484,18 +490,25 @@ void main() {
       },
     );
 
-    test('an activity seals its triggers alone', () async {
-      await writes
-          .recordActivity(
-            'a',
-            ownerID: 'owner',
-            viceID: 'coffee',
-            quantity: 2,
-            amount: 1.5,
-            createdAt: _at.toDate(),
-            triggers: const <String>['social'],
-          )
-          .done;
+    test('an activity seals its content: triggers, answers and where and '
+        'how it was logged', () async {
+      await withClock(
+        Clock.fixed(DateTime.utc(2026, 1, 2, 9)),
+        () => writes
+            .recordActivity(
+              'a',
+              ownerID: 'owner',
+              viceID: 'coffee',
+              quantity: 2,
+              amount: 1.5,
+              createdAt: _at.toDate(),
+              triggers: const <String>['social'],
+              urge: 4,
+              note: 'Long day',
+              loggedVia: LoggedVia.sheet,
+            )
+            .done,
+      );
       final Map<String, Object?> stored = store.sets['activities/a']!;
       expect(stored.keys.toSet(), <String>{
         sealedField,
@@ -514,6 +527,11 @@ void main() {
         ),
         <String, Object?>{
           'triggers': <Object?>['social'],
+          'urge': 4,
+          'note': 'Long day',
+          'zone': 'Europe/Paris',
+          'writtenAt': DateTime.utc(2026, 1, 2, 9).millisecondsSinceEpoch,
+          'loggedVia': 'sheet',
         },
       );
     });
@@ -535,11 +553,18 @@ void main() {
           (stored[sealedField]! as Blob).bytes,
           context: 'activities/a',
         ),
-        <String, Object?>{'triggers': <Object?>[]},
+        allOf(
+          containsPair('triggers', <Object?>[]),
+          containsPair('zone', 'Europe/Paris'),
+          contains('writtenAt'),
+          isNot(contains('urge')),
+          isNot(contains('note')),
+        ),
       );
     });
 
-    test('updateActivity reseals only for new triggers', () async {
+    test('updateActivity reseals only for new content, and keeps what the '
+        'user cannot edit', () async {
       final DateTime moved = DateTime(2026, 1, 3);
       await writes.updateActivity('a', quantity: 4, createdAt: moved).done;
       expect(store.updates['activities/a'], <Object, Object?>{
@@ -550,7 +575,15 @@ void main() {
       final SentWrite write = writes.updateActivity(
         'b',
         quantity: 3,
-        triggers: const <String>['Long day'],
+        content: ActivityContent(
+          zone: 'Asia/Tokyo',
+          writtenAt: DateTime.utc(2026, 1, 1),
+          loggedVia: LoggedVia.oneTap,
+        ).withAnswers(
+          triggers: const <String>['Long day'],
+          urge: 2,
+          note: 'After work',
+        ),
       );
       await write.done;
       final Map<Object, Object?> update = store.updates['activities/b']!;
@@ -564,6 +597,11 @@ void main() {
         ),
         <String, Object?>{
           'triggers': <Object?>['Long day'],
+          'urge': 2,
+          'note': 'After work',
+          'zone': 'Asia/Tokyo',
+          'writtenAt': DateTime.utc(2026, 1, 1).millisecondsSinceEpoch,
+          'loggedVia': 'oneTap',
         },
       );
     });
@@ -645,6 +683,17 @@ void main() {
       expect(store.updates['vices/coffee'], <Object, Object?>{
         'name': 'Espresso',
       });
+
+      // A legacy entry's triggers may still change in plaintext; an urge or
+      // note never goes out unsealed.
+      const ActivityContent answered = ActivityContent(urge: 3);
+      expect(writes.canWrite(answered), isFalse);
+      await expectLater(
+        writes.updateActivity('a', content: answered).done,
+        throwsA(isA<FirebaseException>()),
+      );
+      expect(store.updates.containsKey('activities/a'), isFalse);
+      expect(writes.canWrite(const ActivityContent()), isTrue);
     },
   );
 
