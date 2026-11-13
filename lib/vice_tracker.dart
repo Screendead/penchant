@@ -12,6 +12,7 @@ import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/account/guest_expiry.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -300,6 +301,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       vices ?? const <Vice>[],
       entries ?? const <DialEntry>[],
     );
+    // Only a week line costs a query: the 7 days ending on the shown day.
+    final bool weekLines =
+        vices?.any((Vice v) => v.line?.period == LinePeriod.week) ?? false;
+    final List<ViceActivity>? week = weekLines
+        ? ref.watch(viceActivityWeekProvider(day)).value
+        : null;
+    final Map<String, num>? weekTotals = week == null ? null : <String, num>{};
+    for (final ViceActivity a in week ?? const <ViceActivity>[]) {
+      weekTotals![a.viceID] = (weekTotals[a.viceID] ?? 0) + a.measure;
+    }
     final bool offline = ref.watch(offlineProvider).value ?? false;
     final int? guestDaysLeft = ref.watch(guestDaysLeftProvider);
     final Widget? guestBanner =
@@ -502,6 +513,15 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                               total: entries == null ? null : totals[vice.id],
                               day: day,
                               onLog: (Offset from) => _log(vice, from),
+                              lineTotal: switch (vice.line?.period) {
+                                null => null,
+                                LinePeriod.day =>
+                                  entries == null ? null : totals[vice.id],
+                                LinePeriod.week =>
+                                  weekTotals == null
+                                      ? null
+                                      : weekTotals[vice.id] ?? 0,
+                              },
                             ),
                       ],
                     ),

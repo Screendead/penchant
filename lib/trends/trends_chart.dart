@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -57,6 +58,7 @@ class TrendsChart extends StatelessWidget {
     this.overlays = const <TrendsOverlay>[],
     this.health,
     this.money,
+    this.line,
   });
 
   final Vice vice;
@@ -78,6 +80,8 @@ class TrendsChart extends StatelessWidget {
   // Each the length of [totals].
   final TrendsHealth? health;
   final TrendsMoney? money;
+  // The habit's line, given only where its period matches the buckets.
+  final HabitLine? line;
 
   static const String focusLabel = 'Trends chart';
   static const double plotHeight = 220;
@@ -115,6 +119,13 @@ class TrendsChart extends StatelessWidget {
               '${h.format(span.high)}.';
   }
 
+  static String lineLabel(HabitLine line) =>
+      'your line ${formatCount(line.amount)}';
+
+  // How many buckets went past [line].
+  static int overLine(List<double> totals, HabitLine line) =>
+      totals.where((double t) => t > line.amount).length;
+
   static String averageName(int stepDays, int window) =>
       '${formatCount(window)}-${stepDays == 1 ? 'day' : 'week'} average';
 
@@ -126,6 +137,7 @@ class TrendsChart extends StatelessWidget {
     List<TrendsOverlay> overlays = const <TrendsOverlay>[],
     TrendsHealth? health,
     TrendsMoney? money,
+    HabitLine? line,
   }) {
     final int stepDays = range.stepDays;
     final UsageStats stats = usageStats(range, totals);
@@ -142,6 +154,11 @@ class TrendsChart extends StatelessWidget {
           }).join('; ')}.';
 
     final String under = health == null ? '' : _healthSummary(health);
+    final String marked = line == null
+        ? ''
+        : ' A dashed line marks your line, ${line.short}; '
+              '${formatCount(overLine(totals, line))} '
+              '${stepDays == 1 ? 'days' : 'weeks'} over it.';
 
     final String what = money == null
         ? '${seriesName(stepDays)}s of'
@@ -151,7 +168,7 @@ class TrendsChart extends StatelessWidget {
         '${amount(vice, total, money)} in all. The most was '
         '${amount(vice, totals[stats.peakIndex], money)} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average$compared'
-        '$under';
+        '$marked$under';
   }
 
   // The date under bucket [index], and in the readout.
@@ -285,6 +302,7 @@ class TrendsChart extends StatelessWidget {
         overlays: overlays,
         health: health,
         money: money,
+        line: line,
       ),
       value: spoken(shown),
       decreasedValue: earlier == null ? null : spoken(shown - 1),
@@ -344,6 +362,7 @@ class TrendsChart extends StatelessWidget {
         o.totals.reduce(max),
         o.line.reduce(max),
       ],
+      ?line?.amount,
     ].reduce(max);
     final int largest = max(1, (highest * 1.15).ceil());
     final ({int top, int step}) yScale = roundScale(
@@ -422,6 +441,10 @@ class TrendsChart extends StatelessWidget {
                         ),
                         borderData: FlBorderData(show: false),
                         extraLinesData: ExtraLinesData(
+                          horizontalLines: <HorizontalLine>[
+                            if (line case final HabitLine l)
+                              _lineMark(l, scheme, axisStyle),
+                          ],
                           verticalLines: <VerticalLine>[
                             VerticalLine(
                               x: shown.toDouble(),
@@ -606,6 +629,29 @@ class TrendsChart extends StatelessWidget {
       },
     );
   }
+
+  // Straight, in ink and labelled, where Health's measure is a curve in the
+  // outline colour with shorter dashes.
+  static HorizontalLine _lineMark(
+    HabitLine line,
+    ColorScheme scheme,
+    TextStyle axisStyle,
+  ) => HorizontalLine(
+    y: line.amount,
+    color: scheme.onSurface.withValues(alpha: 0.7),
+    strokeWidth: 1.25,
+    dashArray: const <int>[6, 4],
+    label: HorizontalLineLabel(
+      show: true,
+      alignment: Alignment.topRight,
+      padding: const EdgeInsets.only(right: 2, bottom: 3),
+      style: axisStyle.copyWith(
+        color: scheme.onSurface,
+        backgroundColor: scheme.surfaceContainerLow,
+      ),
+      labelResolver: (_) => ' ${lineLabel(line)} ',
+    ),
+  );
 
   // Habits sharing a hue (the 1st and 6th) tell apart by their mark's style.
   static List<int>? _dashes(HabitMark mark) => switch (mark.style) {

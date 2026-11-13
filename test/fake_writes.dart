@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
@@ -79,6 +80,7 @@ class FakeTrackerWrites implements TrackerWrites {
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
     UnitAndPrice unitAndPrice = noUnitAndPrice,
+    HabitLine? line,
   }) {
     _requireKey();
     return _write(
@@ -88,6 +90,7 @@ class FakeTrackerWrites implements TrackerWrites {
         'unit': unit,
         'category': category,
         if (unitAndPrice != noUnitAndPrice) 'unitAndPrice': unitAndPrice,
+        'line': ?line,
       }),
       collection: 'vices',
       op: WriteOp.create,
@@ -101,12 +104,14 @@ class FakeTrackerWrites implements TrackerWrites {
     Unit? unit,
     ViceCategory? category,
     UnitAndPrice? unitAndPrice,
+    LineChange? line,
   }) => _write(
     Write('updateVice', vice.id, <String, Object?>{
       'name': ?name,
       'unit': ?unit,
       'category': ?category,
       'unitAndPrice': ?unitAndPrice,
+      if (line != null) 'line': line.line,
     }),
     collection: 'vices',
     op: WriteOp.update,

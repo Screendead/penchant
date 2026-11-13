@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -43,6 +44,10 @@ Map<String, Object?> _unitAndPriceContent(UnitAndPrice value) =>
       'costPerUnit': ?value.costPerUnit,
       'currency': ?value.currency,
     };
+
+// A change to a habit's line: `(line: null)` removes it. Sealed content only,
+// like [UnitAndPrice].
+typedef LineChange = ({HabitLine? line});
 
 // A write handed to the SDK: its future, and the document it leaves behind.
 // [fields] holds what an update sets, through [comparableValue], so that the
@@ -156,6 +161,7 @@ class TrackerWrites {
     required Unit unit,
     ViceCategory category = ViceCategory.fallback,
     UnitAndPrice unitAndPrice = noUnitAndPrice,
+    HabitLine? line,
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
@@ -171,6 +177,7 @@ class TrackerWrites {
             'unit': unit.name,
             'category': category.name,
             ..._unitAndPriceContent(unitAndPrice),
+            ...?line?.content,
           },
           (Blob envelope) => vice.set({
             sealedField: envelope,
@@ -189,18 +196,22 @@ class TrackerWrites {
   // Sealed, the whole content is written again, so [vice] supplies what is
   // unchanged, and a legacy vice's plaintext fields are removed. A null
   // [unitAndPrice] keeps the vice's; a given one replaces all three, so a
-  // null inside it clears that value.
+  // null inside it clears that value. [line] likewise: null keeps the vice's.
   SentWrite updateVice(
     Vice vice, {
     String? name,
     Unit? unit,
     ViceCategory? category,
     UnitAndPrice? unitAndPrice,
+    LineChange? line,
   }) {
     final FieldSealer? sealer = _sealer;
     if (sealer == null) {
       if (unitAndPrice != null && unitAndPrice != unitAndPriceOf(vice)) {
         throw StateError('no journal key to seal a unit label or price with');
+      }
+      if (line != null && line.line != vice.line) {
+        throw StateError('no journal key to seal a line with');
       }
       return _update(_vices, vice.id, {
         'name': ?name,
@@ -216,6 +227,7 @@ class TrackerWrites {
       'unit': (unit ?? vice.unit).name,
       'category': (category ?? vice.category).name,
       ..._unitAndPriceContent(unitAndPrice ?? unitAndPriceOf(vice)),
+      ...?(line == null ? vice.line : line.line)?.content,
     });
   }
 

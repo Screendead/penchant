@@ -2,16 +2,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/design/dial_icons.dart';
+import 'package:tracker/design/dial_theme.dart';
+import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/widgets/amount_fields.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/pill_toggle.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -30,6 +37,13 @@ class ViceForm extends ConsumerStatefulWidget {
   );
   static const Key costKey = ValueKey<String>('vice-form-cost');
   static const Key currencyKey = ValueKey<String>('vice-form-currency');
+  static const Key lineAmountKey = ValueKey<String>('vice-form-line-amount');
+
+  static const String lineLabel = 'Your line (optional)';
+  static const String lineNone = 'None';
+  static const String lineHelp =
+      'Shown as a mark on Today and a dashed line in Trends. Nothing else '
+      'changes: no alerts, no streaks, no colour for going over.';
 
   final Vice? vice;
 
@@ -67,6 +81,16 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     text: openedCostText,
   );
   late final TextEditingController currencyController;
+  late LinePeriod? linePeriod = opened?.line?.period;
+  // As the cost: an untouched amount keeps the stored value, not its
+  // rounding.
+  late final String openedLineText = switch (opened?.line) {
+    final HabitLine line => formatAmount(line.amount),
+    null => '',
+  };
+  late final TextEditingController lineController = TextEditingController(
+    text: openedLineText,
+  );
   bool saving = false;
 
   // A price is in the habit's currency, else another habit's, else the
@@ -94,7 +118,31 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     unitSingularController.dispose();
     costController.dispose();
     currencyController.dispose();
+    lineController.dispose();
     super.dispose();
+  }
+
+  HabitLine? get _line {
+    final LinePeriod? period = linePeriod;
+    if (period == null) return null;
+    final String text = lineController.text.trim();
+    final double? amount = text == openedLineText && opened?.line != null
+        ? opened!.line!.amount
+        : parseAmount(text)?.toDouble();
+    return amount == null ? null : HabitLine(amount, period);
+  }
+
+  num get _lineTyped => parseAmount(lineController.text) ?? 0;
+
+  // As the amount sheet's stepper: a step of one keeps a typed fraction.
+  void _stepLine(int step, int direction) {
+    final num typed = _lineTyped;
+    final num next = step == 1
+        ? typed + direction
+        : direction > 0
+        ? ((typed / step).floor() + 1) * step
+        : ((typed / step).ceil() - 1) * step;
+    lineController.text = formatAmount(next < 1 ? 1 : next);
   }
 
   UnitAndPrice get _unitAndPrice {
@@ -131,10 +179,13 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     final UnitAndPrice unitAndPrice = _unitAndPrice;
     final bool unitAndPriceChanged =
         vice != null && unitAndPrice != unitAndPriceOf(vice);
+    final HabitLine? line = _line;
+    final bool lineChanged = vice != null && line != vice.line;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
-    // The label and price exist only sealed, so they wait for the key too.
-    if ((vice == null || unitAndPriceChanged) &&
+    // The label, price and line exist only sealed, so they wait for the key
+    // too.
+    if ((vice == null || unitAndPriceChanged || lineChanged) &&
         !ref.read(trackerWritesProvider).canCreate) {
       // The form stays open with what was typed.
       messenger.showSnackBar(
@@ -153,12 +204,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             unit: unit!,
             category: category,
             unitAndPrice: unitAndPrice,
+            line: line,
           );
     } else if (name != vice.name ||
         unit != vice.unit ||
         !vice.categoryStored ||
         category != vice.category ||
-        unitAndPriceChanged) {
+        unitAndPriceChanged ||
+        lineChanged) {
       // Only the changed fields are written: an untouched unit may be a
       // legacy value the parser shows as the fallback.
       write = ref
@@ -171,6 +224,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 ? null
                 : category,
             unitAndPrice: unitAndPriceChanged ? unitAndPrice : null,
+            line: lineChanged ? (line: line) : null,
           );
     } else {
       write = null;
@@ -383,10 +437,117 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 },
                 decoration: const InputDecoration(labelText: 'Category'),
               ),
+              const SizedBox(height: 20),
+              _lineField(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _lineField(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final LinePeriod? period = linePeriod;
+    final UnitAndPrice words = _unitAndPrice;
+    final UnitWords units = UnitWords(
+      unit ?? Unit.fallback,
+      words.unitLabel,
+      words.unitSingular,
+    );
+    final int step = AmountFields.stepFor(
+      ref.watch(storedTypicalsProvider)[opened?.id],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          ViceForm.lineLabel,
+          style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+        ),
+        const SizedBox(height: DialSpace.xs),
+        PillSegments<LinePeriod?>(
+          segments: <({LinePeriod? value, String label, String spoken})>[
+            (value: null, label: ViceForm.lineNone, spoken: 'No line'),
+            for (final LinePeriod p in LinePeriod.values)
+              (value: p, label: 'A ${p.name}', spoken: 'A line ${p.words}'),
+          ],
+          selected: period,
+          onChanged: (LinePeriod? value) => setState(() {
+            linePeriod = value;
+            if (value != null && lineController.text.trim().isEmpty) {
+              lineController.text = formatAmount(1);
+            }
+          }),
+        ),
+        if (period != null) ...<Widget>[
+          const SizedBox(height: DialSpace.s),
+          ListenableBuilder(
+            listenable: lineController,
+            builder: (BuildContext context, _) => Row(
+              children: <Widget>[
+                StepButton(
+                  glyph: DialGlyph.minus,
+                  tooltip: 'Lower line',
+                  onPressed: _lineTyped > 1 ? () => _stepLine(step, -1) : null,
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      TextFormField(
+                        key: ViceForm.lineAmountKey,
+                        controller: lineController,
+                        textAlign: TextAlign.center,
+                        style: DialTypeScale.monoXL.copyWith(
+                          fontSize: 28,
+                          color: scheme.onSurface,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Line',
+                          floatingLabelBehavior: FloatingLabelBehavior.never,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
+                        validator: (String? value) =>
+                            value?.trim() == openedLineText &&
+                                opened?.line != null
+                            ? null
+                            : lineAmountError(value),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${units.nameFor(_lineTyped)} ${period.words}',
+                        style: DialTypeScale.bodyS.copyWith(
+                          color: colors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                StepButton(
+                  glyph: DialGlyph.plus,
+                  tooltip: 'Raise line',
+                  onPressed: () => _stepLine(step, 1),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: DialSpace.xs),
+        Text(
+          ViceForm.lineHelp,
+          style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+        ),
+      ],
     );
   }
 }

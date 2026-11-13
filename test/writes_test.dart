@@ -10,6 +10,7 @@ import 'package:tracker/widgets/urge_note_fields.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -305,6 +306,62 @@ void main() {
             currency: 'GBP',
           ),
         }),
+      ]);
+    });
+
+    testWidgets('writes a line a day, stepped from 1', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final Finder day = find.text('A day');
+      await tester.ensureVisible(day);
+      await tester.tap(day);
+      await tester.pumpAndSettle();
+      expect(find.text('drinks a day'), findsNothing);
+      expect(find.text('drink a day'), findsOneWidget);
+      await tester.tap(find.byTooltip('Raise line'));
+      await tester.tap(find.byTooltip('Raise line'));
+      await tester.pump();
+      expect(find.text('drinks a day'), findsOneWidget);
+      await save(tester);
+
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'line': HabitLine(3, LinePeriod.day),
+        }),
+      ]);
+    });
+
+    testWidgets('an untouched line writes nothing; None clears it', (
+      WidgetTester tester,
+    ) async {
+      final Vice lined = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+        line: const HabitLine(2.5, LinePeriod.week),
+      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([lined])),
+      ], const EditVice(viceID: 'coffee'));
+      expect(find.text('2.5'), findsOneWidget);
+      expect(find.text('drinks a week'), findsOneWidget);
+      await save(tester);
+      expect(writes.writes, isEmpty);
+
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([lined])),
+      ], const EditVice(viceID: 'coffee'));
+      final Finder none = find.text(ViceForm.lineNone);
+      await tester.ensureVisible(none);
+      await tester.tap(none);
+      await tester.pumpAndSettle();
+      await save(tester);
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{'line': null}),
       ]);
     });
 

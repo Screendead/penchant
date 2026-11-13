@@ -128,3 +128,17 @@ final viceActivityRangeProvider = Provider.autoDispose
             viceActivityRangeForUserProvider((uid: uid, range: range)),
       );
     });
+
+// The 7 days ending with [day], for a week line's total on Today: the same
+// rolling week Trends counts back from its last day.
+final viceActivityWeekProvider = Provider.autoDispose
+    .family<AsyncValue<List<ViceActivity>>, DateTime>((ref, day) {
+      return watchForSignedInUser(
+        ref,
+        (String uid) => viceActivityRecentForUserProvider((
+          uid: uid,
+          today: startOfDay(day),
+          days: 7,
+        )),
+      );
+    });
