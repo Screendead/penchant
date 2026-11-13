@@ -26,10 +26,13 @@
 		0A5155C5D37EAEAAD45F0641 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B910D8E0F924E2F81F30D7 /* WidgetBridge.swift */; };
 		0C1AFAF212F662234B35FC85 /* PenchantMenuBar.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0DDDF4D0C5D6243847662058 /* PenchantWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F970E3CBCA0C2B733244E8B9 /* PenchantWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0E3C8E7F225492811572CFF6 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D012DFFBB7E971330F4C7C67 /* LogQueue.swift */; };
+		0E7923C9039487E3CCEEAB58 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 44B9FA05A1FF4A367D9A0514 /* FlutterGeneratedPluginSwiftPackage */; };
 		10CE09FC5145BB326A3F1656 /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9F877B16C2609B9FCACF66F3 /* RedHatMono-Variable.ttf */; };
 		111FE357B9DD4B8BC6EB4392 /* WeekDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78FC0142B54D7C48BC8D9D85 /* WeekDial.swift */; };
 		28073CA02C90B6C4FA5958C9 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B69315DCAE9E1922AE61DDC0 /* PenchantWidgets.swift */; };
 		28F4A88ABA52205C3FF10742 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBBB4471838389DFF0ADB8C4 /* SwiftUI.framework */; };
+		2DA2D6114624336A70373DDC /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
@@ -39,16 +42,22 @@
 		3CE4E13B2DA5F0EA115A872E /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A91B2B3BF4716F9EB880EE5 /* RedHatText-Variable.ttf */; };
 		44B2D5D0EC03B2195CFCD16F /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B12BA0415ED91B06E614F4 /* Theme.swift */; };
 		4963817F7AA5D7C3E1793372 /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D688D99C47DAF3EB6CE12 /* LogIntents.swift */; };
+		4F46903E451B01A805D57B66 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B910D8E0F924E2F81F30D7 /* WidgetBridge.swift */; };
 		62E3670E8675FF21878902FC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */; };
 		6631FEE5A115DB8E4A240EB6 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 940F06C599904E05C899CD50 /* AppShortcuts.swift */; };
+		74860D07450986DA0125B1F8 /* PenchantSync.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = F91C3D43B0F4984F93DB2E0F /* PenchantSync.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7AB4E74D5161B1364A6CD9DA /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D012DFFBB7E971330F4C7C67 /* LogQueue.swift */; };
 		7B97340733F85F87E42265E2 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 563854C0BE68885493DC8058 /* GoogleService-Info.plist */; };
+		7C226603A15C8783813050AB /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = E280143B1E3686494103E12C /* Snapshot.swift */; };
+		8955BD0644D8B0D02506DD0F /* PenchantSyncApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0CB3FFA44194100817370D /* PenchantSyncApp.swift */; };
 		89B5559629BA2E9CEA0F3F61 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */; };
 		8E89365D8F3A5A4568BFBC5E /* LogWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126DABE50E56F335151FD1A5 /* LogWidget.swift */; };
 		97DC1276358958BF4F290229 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D012DFFBB7E971330F4C7C67 /* LogQueue.swift */; };
 		A17E0F1C2EB0000100C0FFEE /* AuthFieldPlatformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */; };
+		A696396B27AC0CDC21FEDC71 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 563854C0BE68885493DC8058 /* GoogleService-Info.plist */; };
 		A7966F1D5090EE0F45C4BFA3 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = E280143B1E3686494103E12C /* Snapshot.swift */; };
+		ABFD946C3AB1B69034306F4E /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6531715F876930270497B5CF /* Cocoa.framework */; };
 		AC4852697D9BCD624DC8B456 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6531715F876930270497B5CF /* Cocoa.framework */; };
 		B960088E18CDD5BE0CEE242F /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D688D99C47DAF3EB6CE12 /* LogIntents.swift */; };
 		C5808D32BA2F065D210773D2 /* PenchantMenuBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB7CDA466D35C0B09436F8C /* PenchantMenuBarApp.swift */; };
@@ -86,12 +95,26 @@
 			remoteGlobalIDString = 1C52F8ED009055183C339AA0;
 			remoteInfo = PenchantWidgets;
 		};
+		5825C9D60958695F854E54B0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 33CC111A2044C6BA0003C045;
+			remoteInfo = "Flutter Assemble";
+		};
 		D7387F8438353502D5A19EE9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 02B3C9B69D66D9BA4340B89A;
 			remoteInfo = PenchantMenuBar;
+		};
+		EE124D6B9F1EE154303CFA8E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C9BE0B6EF36EBE751B5E096A;
+			remoteInfo = PenchantSync;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -113,6 +136,7 @@
 			dstSubfolderSpec = 1;
 			files = (
 				0C1AFAF212F662234B35FC85 /* PenchantMenuBar.app in Embed Login Items */,
+				74860D07450986DA0125B1F8 /* PenchantSync.app in Embed Login Items */,
 			);
 			name = "Embed Login Items";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -136,6 +160,7 @@
 		126DABE50E56F335151FD1A5 /* LogWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogWidget.swift; sourceTree = "<group>"; };
 		141210E32A3D56DC1D1DD35E /* PenchantWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWidgets.entitlements; sourceTree = "<group>"; };
 		1A91B2B3BF4716F9EB880EE5 /* RedHatText-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatText-Variable.ttf"; sourceTree = "<group>"; };
+		1C0CB3FFA44194100817370D /* PenchantSyncApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantSyncApp.swift; sourceTree = "<group>"; };
 		331C80D5294CF71000263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
@@ -156,6 +181,7 @@
 		38B910D8E0F924E2F81F30D7 /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		3F8FCB0B6B9E29D1D43F3151 /* PenchantMenuBar.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantMenuBar.entitlements; sourceTree = "<group>"; };
 		47E0B9A4F309EB1D41E89B6F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/WidgetKit.framework; sourceTree = DEVELOPER_DIR; };
+		538B37B42C01B610B9D4B472 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		550B6051F6493331E9DA4E96 /* RedHatDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatDisplay-Variable.ttf"; sourceTree = "<group>"; };
 		563854C0BE68885493DC8058 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		6531715F876930270497B5CF /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
@@ -169,12 +195,15 @@
 		9F877B16C2609B9FCACF66F3 /* RedHatMono-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatMono-Variable.ttf"; sourceTree = "<group>"; };
 		A17E0F1D2EB0000100C0FFEE /* AuthFieldPlatformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthFieldPlatformView.swift; sourceTree = "<group>"; };
 		A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PenchantMenuBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AAF8DAB33976E0317DD24442 /* DebugProfile.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DebugProfile.entitlements; sourceTree = "<group>"; };
+		AE92191EE9F630705D1A098E /* Release.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Release.entitlements; sourceTree = "<group>"; };
 		B69315DCAE9E1922AE61DDC0 /* PenchantWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantWidgets.swift; sourceTree = "<group>"; };
 		BBB7CDA466D35C0B09436F8C /* PenchantMenuBarApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantMenuBarApp.swift; sourceTree = "<group>"; };
 		CF4B074958F4F88A855F58A2 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D012DFFBB7E971330F4C7C67 /* LogQueue.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogQueue.swift; sourceTree = "<group>"; };
 		DBBB4471838389DFF0ADB8C4 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/SwiftUI.framework; sourceTree = DEVELOPER_DIR; };
 		E280143B1E3686494103E12C /* Snapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
+		F91C3D43B0F4984F93DB2E0F /* PenchantSync.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PenchantSync.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F970E3CBCA0C2B733244E8B9 /* PenchantWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PenchantWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -201,6 +230,15 @@
 				ED9DDDBCAC38F2AB2AFD9925 /* Cocoa.framework in Frameworks */,
 				62E3670E8675FF21878902FC /* WidgetKit.framework in Frameworks */,
 				D1628B5AA01D8D01437B7A22 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EFA3062637577EF8C7FFE05F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABFD946C3AB1B69034306F4E /* Cocoa.framework in Frameworks */,
+				0E7923C9039487E3CCEEAB58 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,6 +330,7 @@
 				131DA2E53F1780F5A350604B /* Frameworks */,
 				595A3786D236D578FEB06057 /* PenchantWidgets */,
 				978F838D922D902CE386CD07 /* PenchantMenuBar */,
+				6716BA80DF960829CCCBE7BD /* PenchantSync */,
 			);
 			sourceTree = "<group>";
 		};
@@ -302,6 +341,7 @@
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 				F970E3CBCA0C2B733244E8B9 /* PenchantWidgets.appex */,
 				A727A50F5B7AB43B6159D667 /* PenchantMenuBar.app */,
+				F91C3D43B0F4984F93DB2E0F /* PenchantSync.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -365,6 +405,18 @@
 			);
 			name = PenchantWidgets;
 			path = PenchantWidgets;
+			sourceTree = "<group>";
+		};
+		6716BA80DF960829CCCBE7BD /* PenchantSync */ = {
+			isa = PBXGroup;
+			children = (
+				1C0CB3FFA44194100817370D /* PenchantSyncApp.swift */,
+				538B37B42C01B610B9D4B472 /* Info.plist */,
+				AAF8DAB33976E0317DD24442 /* DebugProfile.entitlements */,
+				AE92191EE9F630705D1A098E /* Release.entitlements */,
+			);
+			name = PenchantSync;
+			path = PenchantSync;
 			sourceTree = "<group>";
 		};
 		978F838D922D902CE386CD07 /* PenchantMenuBar */ = {
@@ -453,6 +505,7 @@
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
 				CF3AEDCE833333F6021E2FD3 /* PBXTargetDependency */,
 				0920B04C58F85D0DA41F8D84 /* PBXTargetDependency */,
+				532DF72480B548E139E300CB /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -460,6 +513,28 @@
 			);
 			productName = Runner;
 			productReference = 33CC10ED2044A3C60003C045 /* Penchant.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C9BE0B6EF36EBE751B5E096A /* PenchantSync */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AE3828A4A7922BA7EDDB7A86 /* Build configuration list for PBXNativeTarget "PenchantSync" */;
+			buildPhases = (
+				873454AE16CD20ED91536A29 /* Sources */,
+				EFA3062637577EF8C7FFE05F /* Frameworks */,
+				57CF92EFDA86934BE000DBD9 /* Resources */,
+				447CB49EA39EB299FC036266 /* Strip Firebase plist for emulators */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8B5C736CEC331E3A758E26C5 /* PBXTargetDependency */,
+			);
+			name = PenchantSync;
+			packageProductDependencies = (
+				44B9FA05A1FF4A367D9A0514 /* FlutterGeneratedPluginSwiftPackage */,
+			);
+			productName = PenchantSync;
+			productReference = F91C3D43B0F4984F93DB2E0F /* PenchantSync.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -519,6 +594,18 @@
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Automatic;
 					};
+					C9BE0B6EF36EBE751B5E096A = {
+						CreatedOnToolsVersion = 27.2;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.Mac = {
+								enabled = 1;
+							};
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
+					};
 				};
 			};
 			buildConfigurationList = 33CC10E82044A3C60003C045 /* Build configuration list for PBXProject "Runner" */;
@@ -542,6 +629,7 @@
 				33CC111A2044C6BA0003C045 /* Flutter Assemble */,
 				1C52F8ED009055183C339AA0 /* PenchantWidgets */,
 				02B3C9B69D66D9BA4340B89A /* PenchantMenuBar */,
+				C9BE0B6EF36EBE751B5E096A /* PenchantSync */,
 			);
 		};
 /* End PBXProject section */
@@ -571,6 +659,14 @@
 				DF9056E8344FA340A40AE18E /* RedHatDisplay-Variable.ttf in Resources */,
 				009F905E7BB341DF35C50474 /* RedHatMono-Variable.ttf in Resources */,
 				3CE4E13B2DA5F0EA115A872E /* RedHatText-Variable.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57CF92EFDA86934BE000DBD9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A696396B27AC0CDC21FEDC71 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -624,6 +720,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh && touch Flutter/ephemeral/tripwire";
+		};
+		447CB49EA39EB299FC036266 /* Strip Firebase plist for emulators */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Firebase plist for emulators";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/../tools/strip-firebase-plist.sh\"\n";
 		};
 		5E1A7C0B2D4F4E8A9B3C6D11 /* Strip Firebase plist for emulators */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -688,6 +803,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		873454AE16CD20ED91536A29 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8955BD0644D8B0D02506DD0F /* PenchantSyncApp.swift in Sources */,
+				2DA2D6114624336A70373DDC /* GeneratedPluginRegistrant.swift in Sources */,
+				4F46903E451B01A805D57B66 /* WidgetBridge.swift in Sources */,
+				7C226603A15C8783813050AB /* Snapshot.swift in Sources */,
+				0E3C8E7F225492811572CFF6 /* LogQueue.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DB601AD502E9D54A2E3B7FB6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -732,6 +859,18 @@
 			isa = PBXTargetDependency;
 			target = 33CC111A2044C6BA0003C045 /* Flutter Assemble */;
 			targetProxy = 33CC111F2044C79F0003C045 /* PBXContainerItemProxy */;
+		};
+		532DF72480B548E139E300CB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PenchantSync;
+			target = C9BE0B6EF36EBE751B5E096A /* PenchantSync */;
+			targetProxy = EE124D6B9F1EE154303CFA8E /* PBXContainerItemProxy */;
+		};
+		8B5C736CEC331E3A758E26C5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "Flutter Assemble";
+			target = 33CC111A2044C6BA0003C045 /* Flutter Assemble */;
+			targetProxy = 5825C9D60958695F854E54B0 /* PBXContainerItemProxy */;
 		};
 		CF3AEDCE833333F6021E2FD3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1166,6 +1305,62 @@
 			};
 			name = Release;
 		};
+		4575D340B4B63970FF8FFBE2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantSync/Release.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantSync/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.sync;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) PENCHANT_SYNC";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		58660A239C1911A241D054D6 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantSync/DebugProfile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantSync/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.sync;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) PENCHANT_SYNC";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Profile;
+		};
 		6B89C8A48ADDC48CA8312135 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
@@ -1190,6 +1385,34 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = Profile;
+		};
+		9F1E5F37C2D51255D8B5299D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantSync/DebugProfile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantSync/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.sync;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) PENCHANT_SYNC";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
 		};
 		DBA0DA077D4771A685B00714 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1271,6 +1494,16 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		AE3828A4A7922BA7EDDB7A86 /* Build configuration list for PBXNativeTarget "PenchantSync" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4575D340B4B63970FF8FFBE2 /* Release */,
+				9F1E5F37C2D51255D8B5299D /* Debug */,
+				58660A239C1911A241D054D6 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FE1463485E56D8C138E4B497 /* Build configuration list for PBXNativeTarget "PenchantWidgets" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1291,6 +1524,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		44B9FA05A1FF4A367D9A0514 /* FlutterGeneratedPluginSwiftPackage */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FlutterGeneratedPluginSwiftPackage;
+		};
 		78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FlutterGeneratedPluginSwiftPackage;

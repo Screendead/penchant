@@ -16,18 +16,7 @@ class MainFlutterWindow: NSWindow {
       height: max(min(defaultContentSize.height, available.height), minimumContentSize.height))
   }
 
-  // In flush mode the window stays hidden and empty, so no second engine runs
-  // the app's main() beside the headless flush; becoming a normal app
-  // attaches Flutter then (AppDelegate.leaveFlushMode).
   override func awakeFromNib() {
-    if !FlushMode.active {
-      attachFlutter()
-    }
-    super.awakeFromNib()
-  }
-
-  func attachFlutter() {
-    guard !(contentViewController is FlutterViewController) else { return }
     let flutterViewController = FlutterViewController()
     self.contentViewController = flutterViewController
 
@@ -50,6 +39,7 @@ class MainFlutterWindow: NSWindow {
     DeviceAuth.register(with: flutterViewController.registrar(forPlugin: "DeviceAuth").messenger)
     EntryPrompt.register(with: flutterViewController.registrar(forPlugin: "EntryPrompt"))
     CalendarChannel.register(with: flutterViewController.registrar(forPlugin: "CalendarChannel"))
+    super.awakeFromNib()
   }
 }
 

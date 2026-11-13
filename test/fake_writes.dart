@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
-import 'package:tracker/writes/queued_write_journal.dart';
 import 'package:tracker/writes/tracker_writes.dart';
+
+export 'package:tracker/writes/queued_write_journal.dart'
+    show MemoryJournalStore, memoryJournal;
 
 @immutable
 class Write {
@@ -247,27 +248,5 @@ class FakeTrackerWrites implements TrackerWrites {
       throw error;
     }
     return server['$collection/$id'];
-  }
-}
-
-// A journal held in memory, one per container: path_provider has no plugin
-// under flutter test.
-Override memoryJournal([MemoryJournalStore? store]) =>
-    queuedWriteJournalProvider.overrideWith(
-      (ref) => QueuedWriteJournal(store ?? MemoryJournalStore()),
-    );
-
-// The journal's file, held in memory.
-class MemoryJournalStore implements JournalStore {
-  MemoryJournalStore([this.contents]);
-
-  String? contents;
-
-  @override
-  Future<String?> read() async => contents;
-
-  @override
-  Future<void> write(String contents) async {
-    this.contents = contents;
   }
 }

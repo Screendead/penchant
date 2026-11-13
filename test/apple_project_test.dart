@@ -107,8 +107,9 @@ void main() {
       final String pbxproj = '$platform/Runner.xcodeproj/project.pbxproj';
       final List<String> configs = _targetBuildSettings(pbxproj);
       // Runner and PenchantWidgets (and macOS's RunnerTests, Flutter
-      // Assemble and PenchantMenuBar), three configurations each.
-      expect(configs, hasLength(platform == 'ios' ? 6 : 15));
+      // Assemble, PenchantMenuBar and PenchantSync), three configurations
+      // each.
+      expect(configs, hasLength(platform == 'ios' ? 6 : 18));
       for (final String settings in configs) {
         expect(settings, contains('CODE_SIGN_STYLE = Automatic;'));
         expect(settings, contains('DEVELOPMENT_TEAM = $_team;'));

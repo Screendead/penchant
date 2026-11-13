@@ -176,6 +176,20 @@ Xcode 27's and Flutter's floor); `firebase_options.dart` throws elsewhere. Both 
 (`r2-mac-config`, 2026-11-05: the console offered no macOS app), so `macos/Runner/GoogleService-Info.plist` copies the
 iOS file and the macOS options carry its `ios` app id.
 
+**Mac background sync.** Penchant.app embeds two helpers at `Contents/Library/LoginItems`, each its own target in
+`macos/Runner.xcodeproj`: `PenchantMenuBar` (`com.screendead.penchant.menubar`, the login-item menu bar app) and
+`PenchantSync` (`com.screendead.penchant.sync`, `tools/add-mac-sync-target.rb`). With Penchant closed, the menu bar
+helper launches PenchantSync to write the widgets' queued logs: `LSBackgroundOnly`, prohibited activation, a headless
+`FlutterEngine` on `macSyncFlushMain` (`lib/main.dart`) over the enclosing app's `App.framework` and `FlutterMacOS.framework`. It
+links the plugins itself, copies `GoogleService-Info.plist` with the strip phase, and has no Crashlytics upload phase.
+Its entitlements files copy Runner's, keychain group included, so that it reads the Auth session and journal key (not
+yet confirmed in a signed build). Its sandbox container is its own, out of reach of sign-out's clearing, so that entry
+point keeps Firestore's cache in memory (`initializeFirebase(diskCache: false)`) and the write journal in memory
+(`memoryJournal()`): nothing of the user's outlives a run. A log leaves the App Group queue only once the server
+acknowledges it, so a run ending offline leaves it for the next. Its bundle ID is not among those the client API key allows (Client API key). While it runs, the app's `pendingLogs` answers
+empty and the app flushes once it quits (`SyncApp`, `ios/Runner/WidgetBridge.swift`). Penchant itself is a regular app
+that never activates itself.
+
 **Native dependencies come from Swift Package Manager, with no CocoaPods on either platform.** Every native plugin
 ships a `Package.swift`, so there is no Podfile. `pubspec.yaml` sets `flutter: config: enable-swift-package-manager:
 true`, beating a user-wide `flutter config --no-enable-swift-package-manager` (this machine has one). Flutter

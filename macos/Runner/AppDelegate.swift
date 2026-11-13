@@ -6,38 +6,21 @@ import ServiceManagement
 class AppDelegate: FlutterAppDelegate {
   static let menuBarHelperID = "com.screendead.penchant.menubar"
 
-  // A regular app, so Launch Services brings a launch the user made to the
-  // front: since macOS 14 an app may not activate itself over the active app,
-  // so an LSUIElement Penchant opened behind Safari. A flush-mode launch turns
-  // accessory here, before NSApplicationMain registers the process with the
-  // Dock; in applicationWillFinishLaunching its Dock icon had already flashed.
-  // Flush mode stays accessory rather than prohibited, which may not be
-  // activated, so the user's launch meanwhile can still bring it up.
-  static func main() {
-    if FlushMode.active {
-      NSApplication.shared.setActivationPolicy(.accessory)
-    }
-    _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
-  }
-
   // No super: FlutterAppDelegate does not implement this on macOS, so the call
   // raises "unrecognized selector", which AppKit swallows along with the rest
-  // of the method. Activation is Launch Services' call: `open -g` and a login
-  // launch stay behind.
+  // of the method. The app never activates itself: Launch Services activates
+  // a regular app's launch the user made and leaves `open -g` in the
+  // background.
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    if FlushMode.active {
-      FlushMode.start()
-    } else {
-      FlushMode.clearOutcome()
-      mainFlutterWindow?.makeKeyAndOrderFront(nil)
-      startMenuBarHelper()
-    }
+    SyncApp.clearOutcome()
+    SyncApp.flushOnceEnded()
+    mainFlutterWindow?.makeKeyAndOrderFront(nil)
+    startMenuBarHelper()
   }
 
   private var quitAsked = false
 
-  // The headless flush engine never answers a termination request. Otherwise
-  // the windows go at once, and FlutterAppDelegate asks Dart, which answers
+  // The windows go at once, and FlutterAppDelegate asks Dart, which answers
   // when the server has acknowledged every write or after 3 seconds
   // (lib/writes/quit_when_synced.dart); AppKit then asks here a second time.
   // The engine's and Firebase's own shutdown took seconds, so the process
@@ -45,26 +28,12 @@ class AppDelegate: FlutterAppDelegate {
   // if Dart never answers. A write unsent by then is in Firestore's queue on
   // disk and goes on the next launch.
   override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-    if FlushMode.active { return .terminateNow }
     for window in NSApp.windows { window.orderOut(nil) }
     DispatchQueue.global().asyncAfter(deadline: .now() + (quitAsked ? 0.5 : 4.5)) { exit(0) }
     quitAsked = true
     return super.applicationShouldTerminate(sender)
   }
 
-  // The user opened Penchant while it ran to flush: it becomes the normal app.
-  // An accessory app turned regular mid-session can keep the previous app's
-  // menus in the menu bar until it is activated again, so the window and the
-  // activation wait for the policy change to take, a runloop turn later.
-  private func leaveFlushMode() {
-    FlushMode.leave()
-    NSApp.setActivationPolicy(.regular)
-    (mainFlutterWindow as? MainFlutterWindow)?.attachFlutter()
-    DispatchQueue.main.async { self.showMainWindow() }
-    startMenuBarHelper()
-  }
-
-  // The window is hidden at launch (MainMenu.xib), for flush mode.
   private func showMainWindow() {
     mainFlutterWindow?.makeKeyAndOrderFront(nil)
     if #available(macOS 14.0, *) {
@@ -85,9 +54,14 @@ class AppDelegate: FlutterAppDelegate {
       NSApp.terminate(nil)
       return
     }
+    // A running helper whose item the user hid brings it back; one from
+    // another build or another copy of Penchant exits (Staleness).
+    CFNotificationCenterPostNotification(
+      CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(showMenuBarNotification as CFString), nil, nil,
+      true)
     // Registering launches it, before it shows up as running, so opening it
     // as well would start a second copy, and two helpers would both launch
-    // Penchant to flush.
+    // PenchantSync to flush.
     if service.status != .enabled {
       do {
         try service.register()
@@ -96,10 +70,6 @@ class AppDelegate: FlutterAppDelegate {
         NSLog("Penchant: menu bar helper not registered: \(error)")
       }
     }
-    // A running helper whose item the user hid brings it back.
-    CFNotificationCenterPostNotification(
-      CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(showMenuBarNotification as CFString), nil, nil,
-      true)
     // An item enabled earlier and quit since does not relaunch until the next
     // login, so the app opens it. A helper left over from an older build
     // exits on that notification (Staleness, PenchantMenuBarApp.swift), so
@@ -129,10 +99,6 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool)
     -> Bool
   {
-    if FlushMode.active {
-      leaveFlushMode()
-      return true
-    }
     if !flag {
       showMainWindow()
     }
@@ -147,11 +113,7 @@ class AppDelegate: FlutterAppDelegate {
     let others = urls.filter { !EntryPrompt.open($0) }
     if others.count < urls.count {
       DispatchQueue.main.async {
-        if FlushMode.active {
-          self.leaveFlushMode()
-        } else {
-          self.showMainWindow()
-        }
+        self.showMainWindow()
       }
     }
     if !others.isEmpty,
