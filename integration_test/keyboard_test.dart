@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
+import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
@@ -56,6 +57,20 @@ Future<void> scrollIntoViewOf(WidgetTester tester, Finder finder) async {
   await tester.pump();
 }
 
+// The number pad has no Done key, so a tap beside the field must put it away.
+Future<void> _tapAwayClosesKeyboard(
+  WidgetTester tester,
+  Finder beside,
+  String where,
+) async {
+  await tester.tap(beside);
+  await pumpUntilTrue(
+    tester,
+    () => tester.view.viewInsets.bottom == 0,
+    () => 'a tap on $where to close the number pad',
+  );
+}
+
 void main() {
   ensureE2EBinding();
 
@@ -95,6 +110,11 @@ void main() {
     await _focus(tester, quantity);
     await _expectAbove(tester, quantity, 'Quantity');
     await screenshot(tester, 'amount-quantity');
+    await _tapAwayClosesKeyboard(
+      tester,
+      find.descendant(of: sheet, matching: find.text('Coffee')),
+      'the amount sheet',
+    );
 
     final Finder note = find.byKey(NoteField.fieldKey);
     await _focus(tester, note);
@@ -136,5 +156,20 @@ void main() {
     await _expectAbove(tester, note, 'the picker\'s note');
     await _expectAbove(tester, done, 'the picker\'s Done');
     await screenshot(tester, 'picker-note');
+    await tap(tester, done);
+    await pumpUntil(tester, picker, present: false);
+
+    await openFromMenu(tester, Homepage.habitsItem);
+    await tap(tester, find.byTooltip('Add habit'));
+    await pumpUntil(tester, find.text('Add Habit'));
+    final Finder cost = find.byKey(ViceForm.costKey);
+    await _focus(tester, cost);
+    await _expectAbove(tester, cost, 'the habit form\'s cost');
+    await screenshot(tester, 'habit-cost');
+    await _tapAwayClosesKeyboard(
+      tester,
+      find.text('Add Habit'),
+      'the habit form',
+    );
   });
 }

@@ -10,6 +10,7 @@ import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
+import 'package:tracker/widgets/tap_away.dart';
 
 // The amount sheet's fields: a stepper over a typed amount, the entry's time
 // on the mini dial, its triggers, and the optional urge and note. A new entry's sheet and the entry editor
@@ -107,6 +108,7 @@ class AmountFields extends ConsumerWidget {
                         fontSize: 42,
                         color: scheme.onSurface,
                       ),
+                      onTapOutside: closeKeyboardOnTapOutside,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
