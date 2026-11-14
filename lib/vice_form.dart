@@ -22,6 +22,7 @@ import 'package:tracker/widgets/pill_toggle.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
+import 'package:tracker/widgets/tap_away.dart';
 
 // Adds a vice, or with [vice] edits that one.
 class ViceForm extends ConsumerStatefulWidget {
@@ -376,6 +377,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                     child: TextFormField(
                       key: ViceForm.costKey,
                       controller: costController,
+                      onTapOutside: closeKeyboardOnTapOutside,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
@@ -504,6 +506,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                           fontSize: 28,
                           color: scheme.onSurface,
                         ),
+                        onTapOutside: closeKeyboardOnTapOutside,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),

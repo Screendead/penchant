@@ -23,35 +23,39 @@ class AmountSheetFrame extends StatelessWidget {
     // Its own Material, so it also renders outside a sheet's.
     return Material(
       type: MaterialType.transparency,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          22,
-          12,
-          22,
-          // Clear of the home indicator, as the mock-up's sheet is, or of
-          // the keyboard while it is up (the padding drops to 0 then).
-          math.max(
-            MediaQuery.viewInsetsOf(context).bottom + 22,
+      // The keyboard's height goes outside the scroll view: inside it, the
+      // viewport still runs behind the keyboard and a focused field there
+      // counts as visible, so nothing scrolls it clear.
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            22,
+            12,
+            22,
+            // Clear of the home indicator, as the mock-up's sheet is.
             math.max(MediaQuery.paddingOf(context).bottom, 22),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: ink.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(3),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: ink.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
-            ),
-            child,
-          ],
+              child,
+            ],
+          ),
         ),
       ),
     );
