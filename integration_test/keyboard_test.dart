@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,9 +15,10 @@ import 'package:tracker/writes/what_was_going_on.dart';
 
 import 'support.dart';
 
-// Not in all_test.dart: it hands text input back to iOS so that the
-// simulator's own keyboard rises, and its timing is the simulator's. Run it
-// with tools/e2e-screenshots.sh to keep a still of each field.
+// Hands text input back to iOS so that the simulator's own keyboard rises.
+// A slow simulator shows it late, never not at all, so the waits on it are
+// long; only iOS has one to wait for.
+const Duration _keyboardWait = Duration(minutes: 3);
 
 double _keyboardTop(WidgetTester tester) =>
     (tester.view.physicalSize.height - tester.view.viewInsets.bottom) /
@@ -24,12 +27,17 @@ double _keyboardTop(WidgetTester tester) =>
 // Until iOS reports a keyboard and it has stopped rising.
 Future<void> _keyboardUp(WidgetTester tester) async {
   double last = -1;
-  await pumpUntilTrue(tester, () {
-    final double inset = tester.view.viewInsets.bottom;
-    final bool settled = inset > 0 && inset == last;
-    last = inset;
-    return settled;
-  }, () => 'the simulator keyboard to rise');
+  await pumpUntilTrue(
+    tester,
+    () {
+      final double inset = tester.view.viewInsets.bottom;
+      final bool settled = inset > 0 && inset == last;
+      last = inset;
+      return settled;
+    },
+    () => 'the simulator keyboard to rise',
+    wait: _keyboardWait,
+  );
   await pumpFor(tester, const Duration(milliseconds: 500));
 }
 
@@ -68,6 +76,7 @@ Future<void> _tapAwayClosesKeyboard(
     tester,
     () => tester.view.viewInsets.bottom == 0,
     () => 'a tap on $where to close the number pad',
+    wait: _keyboardWait,
   );
 }
 
@@ -171,5 +180,5 @@ void main() {
       find.text('Add Habit'),
       'the habit form',
     );
-  });
+  }, skip: !Platform.isIOS);
 }

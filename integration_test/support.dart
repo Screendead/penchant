@@ -134,9 +134,10 @@ Future<void> pumpUntilTrue(
   bool Function() condition,
   // Built only on failure: a finder's description reads its cached result,
   // whose elements may have unmounted since.
-  String Function() description,
-) async {
-  final DateTime deadline = DateTime.now().add(timeout);
+  String Function() description, {
+  Duration wait = timeout,
+}) async {
+  final DateTime deadline = DateTime.now().add(wait);
   while (!condition()) {
     if (DateTime.now().isAfter(deadline)) {
       throw TestFailure(
