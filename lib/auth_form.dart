@@ -282,6 +282,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text(AccountCopy.resetTitle),
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: Column(

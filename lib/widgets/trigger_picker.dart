@@ -284,52 +284,60 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
         ? null
         : widget.roots.where((TriggerNode n) => n.id == root).firstOrNull;
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              DialSpace.xl,
-              DialSpace.xl,
-              DialSpace.xl,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'What was going on?',
-                  style: theme.textTheme.headlineSmall,
+    final double height = MediaQuery.sizeOf(context).height;
+    final double keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    // Above a landscape phone's keyboard the title would leave the list no
+    // room for the field being typed in.
+    final bool cramped = keyboard > 0 && height - keyboard < 320;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: height * 0.85),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (!cramped)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DialSpace.xl,
+                  DialSpace.xl,
+                  DialSpace.xl,
+                  0,
                 ),
-                const SizedBox(height: DialSpace.xxs),
-                Text(
-                  'Optional. Tap any that fit.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: DialColors.of(context).muted,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'What was going on?',
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: DialSpace.xxs),
+                    Text(
+                      'Optional. Tap any that fit.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: DialColors.of(context).muted,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.fromLTRB(
-                DialSpace.m,
-                DialSpace.m,
-                DialSpace.m,
-                DialSpace.m,
               ),
-              children: open == null ? _levelOne(context) : _levelTwo(open),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(
+                  DialSpace.m,
+                  DialSpace.m,
+                  DialSpace.m,
+                  DialSpace.m,
+                ),
+                children: open == null ? _levelOne(context) : _levelTwo(open),
+              ),
             ),
-          ),
-          _footer(context),
-        ],
+            _footer(context),
+          ],
+        ),
       ),
     );
   }
