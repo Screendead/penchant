@@ -1049,20 +1049,22 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 ## Calls waiting on Jack (UNDECIDED)
 
 Round 21 (`docs/pitch/round-21/trigger-tree/pitch.html`, https://claude.ai/artifact/3xNRWLCyXA9nzSvWsVCDgw):
-`tag-list`, picked by Jack on 2026-11-15, "Adopt it all": 174 tags in 11 areas (the 40 shipped ones kept; new areas
-between people, what it was for, something happened, what I was doing; Social, Routine and Craving relabelled), with
-a search box in the picker. Being built.
+`tag-list`, picked by Jack on 2026-11-15, "Adopt it all": 174 tags in 11 areas with search in the picker. Built.
 
 Nothing is waiting. Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
 https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), all four picked by Jack on 2026-11-15: "Take all 4
-recommendations; but the time of that notification should be user-configurable." Being built:
+recommendations; but the time of that notification should be user-configurable." Built (CLAUDE.md: What was going
+on?, Note reader, Day notes, Heavy-day prompt). Jack's trial of Claude on the 12 notes: all answered, median 1.2 s,
+slowest 2.6 s. He set a $5 a month spend limit and 10 Haiku requests a minute on the workspace, and allowed device
+installs of the build with day notes. Not yet proven: the live token exchange from the deployed function (the
+federation rule's project field was left blank), whether the deploy account may make `readNote` publicly invocable,
+the notification on a device, and tag labels on a 390 pt phone. A follow-up worth pitching: Insights reading day-note
+tags.
 
-- `note-reader`: Claude Haiku through a Cloud Function, off until switched on; the function holds the key, caps calls
-  per account per day, and returns starter-tree triggers the person confirms before anything saves. Needs from Jack:
-  an Anthropic API key set as the function's secret (the function cannot deploy without it). Claude's speed and
-  quality are unmeasured (no key on the Mac). Apple's on-device model (`tools/note-tagging-trial.swift`: 12/12
-  answered, median 0.9 s, about half tagged well, a floor: one untuned prompt, plain-text answers) is not used;
-  Jack's iPhone 13 Pro Max cannot run it.
+- `note-reader`: Claude Haiku through a Cloud Function, off until switched on, returning starter-tree triggers the
+  person confirms before anything saves. Apple's on-device model (`tools/note-tagging-trial.swift`: 12/12 answered,
+  median 0.9 s, about half tagged well, a floor: one untuned prompt, plain-text answers) is not used; Jack's iPhone
+  13 Pro Max cannot run it.
 - `heavy-day`: a neutral notification naming no habit or amount, off by default, at a time the person sets (default
   21:00), on a day in the top tenth of a habit's last 90 days once it has 30 days of history.
 - `day-text`: a new sealed day-note document, one per day. Insights does not read its tags yet (new comparison work,
