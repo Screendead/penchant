@@ -52,7 +52,7 @@ void main() {
       tester,
       'Coffee',
       2,
-      triggerTaps: const <String>['Work', 'Meeting'],
+      triggerTaps: const <String>['Work or study', 'Meeting'],
     );
     await expectTallies(tester, const <String>{
       'Coffee (2 drinks)',

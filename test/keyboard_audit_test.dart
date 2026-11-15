@@ -421,20 +421,14 @@ void main() {
         ),
         fields: <_Field>[
           _Field(
-            'level-one free text',
-            _after(
-              find.text('Your own words'),
-              find.widgetWithText(TextField, 'In your own words'),
-            ),
+            'tag search',
+            _plain(find.widgetWithText(TextField, TriggerChoices.searchHint)),
           ),
           _Field(
-            'level-two free text',
+            'tag search in an area',
             _after(
               find.text(triggerTree.first.label),
-              find.widgetWithText(
-                TextField,
-                'Something else, in your own words',
-              ),
+              find.widgetWithText(TextField, TriggerChoices.searchHint),
             ),
           ),
         ],
@@ -466,20 +460,17 @@ void main() {
         fields: <_Field>[
           _Field('note', _plain(find.byKey(NoteField.fieldKey))),
           _Field(
-            'level-one free text',
-            onTags(
-              find.text('Your own words'),
-              find.widgetWithText(TextField, 'In your own words'),
+            'tag search',
+            _after(
+              find.byKey(WhatWasGoingOnSheet.nextKey),
+              find.widgetWithText(TextField, TriggerChoices.searchHint),
             ),
           ),
           _Field(
-            'level-two free text',
+            'tag search in an area',
             onTags(
               find.text(triggerTree.first.label),
-              find.widgetWithText(
-                TextField,
-                'Something else, in your own words',
-              ),
+              find.widgetWithText(TextField, TriggerChoices.searchHint),
             ),
           ),
         ],

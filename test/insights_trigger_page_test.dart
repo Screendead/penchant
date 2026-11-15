@@ -75,14 +75,14 @@ void main() {
     expect(find.byType(TriggerAmountsCard), findsOneWidget);
     expect(
       find.text(
-        'Entries of Coffee you tagged Social › With friends hold 45% more '
+        'Entries of Coffee you tagged Who was there › With friends hold 45% more '
         'than your other tagged ones: 2.9 against 2 on average.',
       ),
       findsOneWidget,
     );
     expect(
       find.text(
-        'Among the 64 entries you tagged, of 120; Social › With friends is '
+        'Among the 64 entries you tagged, of 120; Who was there › With friends is '
         'on 30 of them, over 18 days',
       ),
       findsOneWidget,

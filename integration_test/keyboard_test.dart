@@ -138,7 +138,7 @@ void main() {
     await pumpUntilRouteSettled(tester, picker);
     final Finder ownWords = find.descendant(
       of: picker,
-      matching: find.text('Your own words'),
+      matching: find.widgetWithText(TextField, TriggerChoices.searchHint),
     );
     await scrollIntoViewOf(tester, ownWords);
     await tap(tester, ownWords);

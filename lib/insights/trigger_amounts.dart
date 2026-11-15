@@ -318,7 +318,7 @@ String _amount(double value) => value == value.roundToDouble()
 String _direction(TriggerAmount t) =>
     '${_percent(t.relative.abs())} ${t.relative > 0 ? 'more' : 'less'}';
 
-/// "Entries of Cigarettes you tagged Social › Friends hold 45% more than your
+/// "Entries of Cigarettes you tagged Who was there › With friends hold 45% more than your
 /// other tagged ones: 2.9 against 2 on average." Says what goes together,
 /// never why.
 String triggerSentence(TriggerAmount t, String habit) =>
@@ -326,7 +326,7 @@ String triggerSentence(TriggerAmount t, String habit) =>
     '${_direction(t)} than your other tagged ones: ${_amount(t.withMean)} '
     'against ${_amount(t.withoutMean)} on average.';
 
-/// "Among the 64 entries you tagged, of 120; Social › Friends is on 30 of
+/// "Among the 64 entries you tagged, of 120; Who was there › With friends is on 30 of
 /// them, over 18 days". Tagging is optional, so only tagged entries are
 /// compared.
 String triggerBasis(HabitTriggers h, TriggerAmount t) =>

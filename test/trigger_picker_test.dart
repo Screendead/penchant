@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,7 +79,7 @@ void main() {
     });
 
     test('displays tree paths by label and free text as written', () {
-      expect(triggerDisplay('work/meeting'), 'Work › Meeting');
+      expect(triggerDisplay('work/meeting'), 'Work or study › Meeting');
       expect(triggerShortDisplay('work/meeting'), 'Meeting');
       expect(triggerDisplay('Pitch review'), 'Pitch review');
       expect(isFreeTextTrigger('work'), isFalse);
@@ -125,21 +126,24 @@ void main() {
     );
 
     expect(find.text('Areas of life'), findsOneWidget);
-    await tester.tap(find.text('Work'));
+    await tester.tap(find.text('Work or study'));
     await tester.pumpAndSettle();
 
     // Opening the area records it.
-    expect(find.widgetWithText(InputChip, 'Work'), findsOneWidget);
+    expect(find.widgetWithText(InputChip, 'Work or study'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'Meeting'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilterChip, 'Meeting'));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(InputChip, 'Work'), findsNothing);
-    expect(find.widgetWithText(InputChip, 'Work › Meeting'), findsOneWidget);
+    expect(find.widgetWithText(InputChip, 'Work or study'), findsNothing);
+    expect(
+      find.widgetWithText(InputChip, 'Work or study › Meeting'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('All areas'));
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Work, 1 picked'), findsOneWidget);
+    expect(find.bySemanticsLabel('Work or study, 1 picked'), findsOneWidget);
 
     await tester.tap(find.text('Done'));
     expect(done, <String>['work/meeting']);
@@ -165,12 +169,10 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Your own words'));
-    await tester.pumpAndSettle();
     // 31 characters for the field, 62 UTF-16 code units for the rules.
     final String emoji = '\u{1F44D}' * 31;
     await tester.enterText(
-      find.widgetWithText(TextField, 'In your own words'),
+      find.widgetWithText(TextField, TriggerChoices.searchHint),
       emoji,
     );
     await tester.tap(find.byTooltip('Add'));
@@ -270,13 +272,10 @@ void main() {
     expect(find.text('What was going on?'), findsOneWidget);
     // The record sheet and editor share this picker; the editor has Delete.
     expect(find.text(undoLogLabel), findsNothing);
-    expect(find.text('Your own words'), findsOneWidget);
     // Two uses so far: not yet a choice.
     expect(find.text('Your own'), findsNothing);
-    await tester.tap(find.text('Your own words'));
-    await tester.pumpAndSettle();
     await tester.enterText(
-      find.widgetWithText(TextField, 'In your own words'),
+      find.widgetWithText(TextField, TriggerChoices.searchHint),
       'Pitch review',
     );
     await tester.tap(find.byTooltip('Add'));
@@ -302,4 +301,168 @@ void main() {
     expect(find.text('Your own'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'Pitch review'), findsOneWidget);
   });
+
+  group('search', () {
+    Future<Future<List<String>?> Function()> pumpSheet(
+      WidgetTester tester, {
+      List<String> initial = const <String>[],
+    }) async {
+      List<String>? done;
+      tester.view
+        ..physicalSize = const Size(1179, 2556)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: Scaffold(
+            body: TriggerPickerSheet(
+              viceName: 'Coffee',
+              initial: initial,
+              onDone: (List<String> picked) => done = picked,
+            ),
+          ),
+        ),
+      );
+      return () async {
+        await tester.tap(find.text('Done'));
+        return done;
+      };
+    }
+
+    final Finder field = find.widgetWithText(
+      TextField,
+      TriggerChoices.searchHint,
+    );
+
+    testWidgets('matches across areas and picks from the results', (
+      tester,
+    ) async {
+      final done = await pumpSheet(tester);
+      await tester.enterText(field, 'work');
+      await tester.pump();
+
+      expect(find.text('Areas of life'), findsNothing);
+      expect(
+        find.widgetWithText(FilterChip, 'Place · At work'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(FilterChip, 'Work or study · Meeting'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('in your own words'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilterChip, 'Place · At work'));
+      await tester.pump();
+      expect(find.widgetWithText(InputChip, 'Place › At work'), findsOneWidget);
+      expect(await done(), <String>['place/at-work']);
+    });
+
+    testWidgets('a tag picked from the results replaces its bare area', (
+      tester,
+    ) async {
+      final done = await pumpSheet(tester, initial: const <String>['body']);
+      await tester.enterText(field, 'tired');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+      expect(await done(), <String>['body/tired']);
+    });
+
+    testWidgets('a label under two areas waits for a tap', (tester) async {
+      final done = await pumpSheet(tester);
+      await tester.enterText(field, 'Hard conversation');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(find.textContaining('in your own words'), findsNothing);
+      expect(find.byType(InputChip), findsNothing);
+      await tester.tap(
+        find.widgetWithText(FilterChip, 'Between people · Hard conversation'),
+      );
+      await tester.pump();
+      expect(await done(), <String>['people/hard-talk']);
+    });
+
+    testWidgets('no match adds the text in your own words', (tester) async {
+      final done = await pumpSheet(tester);
+      await tester.enterText(field, 'Late train');
+      await tester.pump();
+      expect(find.text('No tag matches'), findsOneWidget);
+      await tester.tap(find.text('Add "Late train" in your own words'));
+      await tester.pump();
+      expect(find.widgetWithText(InputChip, 'Late train'), findsOneWidget);
+      expect(find.text('Areas of life'), findsOneWidget);
+      expect(await done(), <String>['Late train']);
+    });
+
+    testWidgets('clearing the field brings the areas back', (tester) async {
+      await pumpSheet(tester);
+      await tester.enterText(field, 'sad');
+      await tester.pump();
+      expect(find.text('Areas of life'), findsNothing);
+      await tester.tap(find.byTooltip('Clear'));
+      await tester.pump();
+      expect(find.text('Areas of life'), findsOneWidget);
+      expect(find.text('Something happened'), findsOneWidget);
+    });
+
+    testWidgets('stops at $maxTriggers tags', (tester) async {
+      final done = await pumpSheet(
+        tester,
+        initial: <String>[for (int i = 0; i < maxTriggers; i++) 'own $i'],
+      );
+      await tester.enterText(field, 'tired');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilterChip, 'Body · Tired'));
+      await tester.pump();
+      expect(await done(), hasLength(maxTriggers));
+    });
+  });
+
+  for (final double scale in <double>[1, 2]) {
+    testWidgets('every area fits a phone at text scale $scale', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1170, 2532)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: MediaQuery.withClampedTextScaling(
+            minScaleFactor: scale,
+            maxScaleFactor: scale,
+            child: Scaffold(
+              body: TriggerPickerSheet(viceName: 'Coffee', onDone: (_) {}),
+            ),
+          ),
+        ),
+      );
+      final Finder list = find.byType(Scrollable).first;
+      for (final String label in <String>[
+        'Something happened',
+        'What I was doing',
+        'Time and routine',
+      ]) {
+        await tester.scrollUntilVisible(
+          find.text(label),
+          100,
+          scrollable: list,
+        );
+        final Text text = tester.widget<Text>(find.text(label));
+        final RenderParagraph p = tester.renderObject<RenderParagraph>(
+          find.text(label),
+        );
+        expect(p.didExceedMaxLines, isFalse, reason: label);
+        expect(text.maxLines, 2);
+      }
+      await tester.tap(find.text('Time and routine'));
+      await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(FilterChip, 'Middle of the night'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
