@@ -13,6 +13,8 @@ import 'package:tracker/widgets/reduce_motion_scope.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/bootstrap.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
+import 'package:tracker/data/day.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
@@ -42,6 +44,7 @@ import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/design/motion_binding.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
+import 'package:tracker/widgets/day_note_sheet.dart';
 import 'package:tracker/app_lock/app_lock.dart';
 import 'package:tracker/app_lock/app_lock_gate.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -224,7 +227,7 @@ class AuthStateFailure extends ConsumerWidget {
 
 Route<void> generateRoute(RouteSettings settings) {
   final Widget page = routePage(settings.name);
-  if (page is ViceActivityEditorPage) {
+  if (page is ViceActivityEditorPage || page is DayNoteSheet) {
     return ViceActivityEditorPage.route(settings, page);
   }
   // Forms that save or discard open as modals; pages to browse push.
@@ -235,7 +238,8 @@ Route<void> generateRoute(RouteSettings settings) {
   );
 }
 
-Widget routePage(String? name) {
+/// [now] decides which days are in the future; tests pass one.
+Widget routePage(String? name, {DateTime? now}) {
   final List<String> segments = Uri.parse(name ?? '').pathSegments;
 
   switch (segments) {
@@ -255,6 +259,12 @@ Widget routePage(String? name) {
       return const ManageData();
     case ['deleted-habit']:
       return const DeletedHabitPage();
+    case ['day-notes', final String key]:
+      final DateTime? day = parseDayKey(key);
+      if (day == null || day.isAfter(startOfDay(now ?? DateTime.now()))) {
+        return const NotFound();
+      }
+      return DayNoteSheet(day: day);
     case ['settings']:
       return const Settings();
     case ['settings', 'account']:

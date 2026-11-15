@@ -21,6 +21,18 @@ String dayKey(DateTime day) =>
 
 final RegExp dayKeyPattern = RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
 
+/// The local midnight [key] names, or null unless [dayKey] writes it so
+/// (`2026-02-30` would otherwise roll over into March).
+DateTime? parseDayKey(String key) {
+  if (!dayKeyPattern.hasMatch(key)) return null;
+  final DateTime day = DateTime(
+    int.parse(key.substring(0, 4)),
+    int.parse(key.substring(5, 7)),
+    int.parse(key.substring(8, 10)),
+  );
+  return dayKey(day) == key ? day : null;
+}
+
 /// One note per user per day: firestore.rules refuses a create under any
 /// other id. Firebase uids hold no `_`, and the day is a fixed 10 characters.
 String dayNoteID(String uid, String day) => '${uid}_$day';
