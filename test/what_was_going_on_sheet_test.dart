@@ -271,6 +271,8 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Areas of life'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Work or study'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Work or study'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(WhatWasGoingOnSheet.doneKey));

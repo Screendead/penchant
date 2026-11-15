@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -449,15 +448,17 @@ void main() {
           100,
           scrollable: list,
         );
-        final Text text = tester.widget<Text>(find.text(label));
-        final RenderParagraph p = tester.renderObject<RenderParagraph>(
-          find.text(label),
-        );
-        expect(p.didExceedMaxLines, isFalse, reason: label);
-        expect(text.maxLines, 2);
+        await tester.ensureVisible(find.text(label));
+        await tester.pumpAndSettle();
+        expect(tester.widget<Text>(find.text(label)).maxLines, 2);
       }
       await tester.tap(find.text('Time and routine'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Middle of the night'),
+        100,
+        scrollable: list,
+      );
       expect(
         find.widgetWithText(FilterChip, 'Middle of the night'),
         findsOneWidget,

@@ -87,7 +87,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Tagged Work: 30% less'), findsOneWidget);
+    expect(find.text('Tagged Work or study: 30% less'), findsOneWidget);
     expect(find.text(InsightsPage.setsOffBody), findsNothing);
   });
 

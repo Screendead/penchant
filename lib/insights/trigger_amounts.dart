@@ -334,7 +334,7 @@ String triggerBasis(HabitTriggers h, TriggerAmount t) =>
     '${triggerDisplay(t.trigger)} is on ${t.entries} of them, over '
     '${t.withDays} days';
 
-/// "Tagged Work: 30% less".
+/// "Tagged Work or study: 30% less".
 String triggerLine(TriggerAmount t) =>
     'Tagged ${triggerDisplay(t.trigger)}: ${_direction(t)}';
 

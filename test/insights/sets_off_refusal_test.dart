@@ -296,7 +296,7 @@ void main() {
     );
 
     expect(got.map(_why), <String>[
-      'Tagged Work: too few days with it yet: 3 of 7 (12 of 40 entries '
+      'Tagged Work or study: too few days with it yet: 3 of 7 (12 of 40 entries '
           'tagged)',
       'Tagged Who was there › With friends: too small to matter, under 20% more or less '
           'than on your other tagged entries',

@@ -126,7 +126,8 @@ void main() {
       expect(searchTriggers('couldnt'), <String>['body/no-sleep']);
       // A tag's own label first, then by its area's.
       final List<String> work = searchTriggers('work');
-      expect(work.take(2), <String>['work', 'work/work-drinks']);
+      expect(work.first, 'work');
+      expect(work, containsAll(<String>['work/work-drinks', 'doing/working']));
       expect(work, contains('place/at-work'));
       expect(work, contains('work/meeting'));
       expect(

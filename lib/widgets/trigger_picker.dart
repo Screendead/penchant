@@ -879,23 +879,22 @@ class _FreeTextField extends StatelessWidget {
         prefixIcon: const Icon(Icons.search),
         suffixIcon: ListenableBuilder(
           listenable: controller,
-          builder: (BuildContext context, _) => controller.text.isEmpty
-              ? const SizedBox.shrink()
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    IconButton(
-                      tooltip: 'Clear',
-                      onPressed: controller.clear,
-                      icon: const Icon(Icons.close),
-                    ),
-                    IconButton(
-                      tooltip: 'Add',
-                      onPressed: onSubmit,
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                  ],
+          builder: (BuildContext context, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (controller.text.isNotEmpty)
+                IconButton(
+                  tooltip: 'Clear',
+                  onPressed: controller.clear,
+                  icon: const Icon(Icons.close),
                 ),
+              IconButton(
+                tooltip: 'Add',
+                onPressed: onSubmit,
+                icon: const Icon(Icons.add_circle_outline),
+              ),
+            ],
+          ),
         ),
       ),
     );
