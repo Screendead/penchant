@@ -10,6 +10,8 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/insights/experiment.dart';
+import 'package:tracker/reminder/heavy_day.dart';
+import 'package:tracker/reminder/heavy_day_nudge.dart';
 
 /// The words of the daily nudge, kept neutral (C16): no streaks, no guilt.
 class NudgeCopy {
@@ -23,10 +25,29 @@ class NudgeCopy {
       'Notifications are off for Penchant, so the reminder won\'t arrive. '
       'Turn them on in the system Settings and it will start again.';
   static const String reviewBody = 'Last week’s review is ready.';
+  // Names no habit and no amount (Jack, round 20).
+  static const String heavyToday = 'Anything different about today?';
+  static const String heavyYesterday = 'Anything different about yesterday?';
 }
 
 /// What a press on the notification asks of the app.
-enum NudgeAction { log, clean, review, experiment }
+enum NudgeAction { log, clean, review, experiment, dayNote }
+
+/// A press on a notification, with the day a day-note one is about.
+@immutable
+class NudgeTap {
+  const NudgeTap(this.action, {this.day});
+
+  final NudgeAction action;
+  final DateTime? day;
+
+  @override
+  bool operator ==(Object other) =>
+      other is NudgeTap && other.action == action && other.day == day;
+
+  @override
+  int get hashCode => Object.hash(action, day);
+}
 
 NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
     switch (actionId) {
@@ -34,8 +55,31 @@ NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
       _cleanActionId => NudgeAction.clean,
       _ when payload == _reviewPayload => NudgeAction.review,
       _ when payload == _experimentPayload => NudgeAction.experiment,
+      _ when heavyDayOfPayload(payload) != null => NudgeAction.dayNote,
       _ => null,
     };
+
+NudgeTap? nudgeTapFor(String? actionId, {String? payload}) {
+  final NudgeAction? action = nudgeActionFor(actionId, payload: payload);
+  if (action == null) return null;
+  return NudgeTap(
+    action,
+    day: action == NudgeAction.dayNote ? heavyDayOfPayload(payload) : null,
+  );
+}
+
+const String _heavyDayPrefix = 'heavy-day:';
+
+String heavyDayPayload(DateTime day) =>
+    '$_heavyDayPrefix${localDateString(day)}';
+
+DateTime? heavyDayOfPayload(String? payload) {
+  if (payload == null || !payload.startsWith(_heavyDayPrefix)) return null;
+  final DateTime? d = DateTime.tryParse(
+    payload.substring(_heavyDayPrefix.length),
+  );
+  return d == null ? null : DateTime(d.year, d.month, d.day);
+}
 
 const String _category = 'daily-nudge';
 const String _logActionId = 'log';
@@ -43,6 +87,7 @@ const String _cleanActionId = 'clean';
 // One notification, so a reschedule replaces it rather than adding another.
 const int _notificationId = 1;
 const int _reviewNotificationId = 2;
+const int _heavyDayNotificationId = 3;
 const String _reviewPayload = 'weekly-review';
 const String _experimentPayload = 'experiment';
 // Room for the longest plan run on many times over.
@@ -55,10 +100,10 @@ const TimeOfDay reviewTime = TimeOfDay(hour: 9, minute: 0);
 /// The platform side of the nudge, faked in tests.
 abstract class NudgeScheduler {
   /// Declares the actions and starts hearing presses. Asks for nothing.
-  Future<void> start(void Function(NudgeAction action) onAction);
+  Future<void> start(void Function(NudgeTap tap) onTap);
 
-  /// The action that launched the app, if one did.
-  Future<NudgeAction?> launchAction();
+  /// The press that launched the app, if one did.
+  Future<NudgeTap?> launchAction();
 
   /// Shows the system prompt the first time; after that, the stored answer.
   Future<bool> requestPermission();
@@ -80,6 +125,11 @@ abstract class NudgeScheduler {
   Future<void> scheduleExperiment(List<ExperimentNotice> notices);
 
   Future<void> cancelExperiment();
+
+  /// Replaces the heavy-day notification with [prompt].
+  Future<void> scheduleHeavyDay(HeavyPrompt prompt);
+
+  Future<void> cancelHeavyDay();
 }
 
 class LocalNudgeScheduler implements NudgeScheduler {
@@ -110,7 +160,7 @@ class LocalNudgeScheduler implements NudgeScheduler {
       ];
 
   @override
-  Future<void> start(void Function(NudgeAction action) onAction) async {
+  Future<void> start(void Function(NudgeTap tap) onTap) async {
     final DarwinInitializationSettings darwin = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestSoundPermission: false,
@@ -120,25 +170,25 @@ class LocalNudgeScheduler implements NudgeScheduler {
     await _plugin.initialize(
       settings: InitializationSettings(iOS: darwin, macOS: darwin),
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        final NudgeAction? action = nudgeActionFor(
+        final NudgeTap? tap = nudgeTapFor(
           response.actionId,
           payload: response.payload,
         );
-        if (action != null) {
-          onAction(action);
+        if (tap != null) {
+          onTap(tap);
         }
       },
     );
   }
 
   @override
-  Future<NudgeAction?> launchAction() async {
+  Future<NudgeTap?> launchAction() async {
     final NotificationAppLaunchDetails? details = await _plugin
         .getNotificationAppLaunchDetails();
     if (details == null || !details.didNotificationLaunchApp) {
       return null;
     }
-    return nudgeActionFor(
+    return nudgeTapFor(
       details.notificationResponse?.actionId,
       payload: details.notificationResponse?.payload,
     );
@@ -263,6 +313,28 @@ class LocalNudgeScheduler implements NudgeScheduler {
       }
     }
   }
+
+  @override
+  Future<void> scheduleHeavyDay(HeavyPrompt prompt) async {
+    await _setLocalZone();
+    const DarwinNotificationDetails darwin = DarwinNotificationDetails(
+      presentBadge: false,
+    );
+    await _plugin.zonedSchedule(
+      id: _heavyDayNotificationId,
+      body: prompt.aboutToday ? NudgeCopy.heavyToday : NudgeCopy.heavyYesterday,
+      payload: heavyDayPayload(prompt.about),
+      scheduledDate: tz.TZDateTime.from(prompt.at, tz.local),
+      notificationDetails: const NotificationDetails(
+        iOS: darwin,
+        macOS: darwin,
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  @override
+  Future<void> cancelHeavyDay() => _plugin.cancel(id: _heavyDayNotificationId);
 
   Future<void> _setLocalZone() async {
     tz_data.initializeTimeZones();
@@ -555,6 +627,21 @@ class PendingNudgeLog extends Notifier<bool> {
   void clear() => state = false;
 }
 
+/// A tap on a heavy-day notification waiting for Today to open that day's
+/// note.
+final pendingDayNoteProvider = NotifierProvider<PendingHeavyDayNote, DateTime?>(
+  PendingHeavyDayNote.new,
+);
+
+class PendingHeavyDayNote extends Notifier<DateTime?> {
+  @override
+  DateTime? build() => null;
+
+  void request(DateTime day) => state = day;
+
+  void clear() => state = null;
+}
+
 /// Hears the notification's actions for the life of the app; MyApp keeps it
 /// alive. "Clean day" writes nothing: the press itself is the point.
 final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
@@ -563,14 +650,17 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
     return;
   }
   final NudgeScheduler scheduler = ref.read(nudgeSchedulerProvider);
-  void onAction(NudgeAction action) {
-    switch (action) {
+  void onAction(NudgeTap tap) {
+    switch (tap.action) {
       case NudgeAction.log:
         ref.read(pendingNudgeLogProvider.notifier).request();
       case NudgeAction.review:
         ref.read(pendingWeeklyReviewProvider.notifier).request();
       case NudgeAction.experiment:
         ref.read(pendingExperimentProvider.notifier).request();
+      case NudgeAction.dayNote:
+        final DateTime? day = tap.day;
+        if (day != null) ref.read(pendingDayNoteProvider.notifier).request(day);
       case NudgeAction.clean:
         break;
     }
@@ -578,7 +668,7 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
 
   try {
     await scheduler.start(onAction);
-    final NudgeAction? launched = await scheduler.launchAction();
+    final NudgeTap? launched = await scheduler.launchAction();
     if (launched != null) {
       onAction(launched);
     }
@@ -588,4 +678,11 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
   // Reads the saved setting, which schedules again if it is on.
   ref.read(dailyNudgeProvider);
   ref.read(weeklyReviewReminderProvider);
+  final HeavyDayNudge heavy = ref.read(heavyDayNudgeProvider.notifier);
+  ref.listen<HeavyDayVerdict?>(heavyDayVerdictProvider, (
+    HeavyDayVerdict? _,
+    HeavyDayVerdict? verdict,
+  ) {
+    if (verdict != null) unawaited(heavy.evaluate(verdict));
+  }, fireImmediately: true);
 });

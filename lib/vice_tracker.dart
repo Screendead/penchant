@@ -25,6 +25,7 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/notes/day_note_route.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/weekly_review_page.dart';
@@ -93,9 +94,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void initState() {
     super.initState();
     _logTarget.add(_logNow);
-    pinnedDay =
-        PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
-            as DateTime?;
+    pinnedDay = PageStorage.maybeOf(
+      context,
+    )?.readState(context, identifier: _storageID) as DateTime?;
     ref.listenManual<bool>(
       pendingNudgeLogProvider,
       (bool? _, bool pending) => _openNudgeLog(pending),
@@ -109,6 +110,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<bool>(
       pendingExperimentProvider,
       (bool? _, bool pending) => _showExperiment(pending),
+      fireImmediately: true,
+    );
+    ref.listenManual<DateTime?>(
+      pendingDayNoteProvider,
+      (DateTime? _, DateTime? day) => _openDayNote(day),
       fireImmediately: true,
     );
     ref.listenManual<EntryPrompt?>(
@@ -155,9 +161,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     setState(() {
       pinnedDay = pinned;
     });
-    PageStorage.maybeOf(
-      context,
-    )?.writeState(context, pinned, identifier: _storageID);
+    PageStorage.maybeOf(context)
+        ?.writeState(context, pinned, identifier: _storageID);
   }
 
   // From the day shown now, not the one last built, so keys pressed within a
@@ -231,6 +236,23 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     });
   }
 
+  // A heavy-day notification's tap: back to Today, then that day's note.
+  void _openDayNote(DateTime? day) {
+    if (day == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final DateTime? pending = ref.read(pendingDayNoteProvider);
+      if (!mounted || pending == null) {
+        return;
+      }
+      ref.read(pendingDayNoteProvider.notifier).clear();
+      Navigator.of(context)
+        ..popUntil((Route<dynamic> r) => r.isFirst)
+        ..pushNamed(dayNoteRoute(pending));
+    });
+  }
+
   // A widget's or the menu bar's "What was going on?": back to Today, then
   // the picker on that entry.
   void _openEntryPrompt(EntryPrompt? prompt) {
@@ -248,9 +270,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   }
 
   void _openEntry(DialEntry entry) {
-    Navigator.of(
-      context,
-    ).pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
+    Navigator.of(context)
+        .pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
   }
 
   @override
@@ -339,9 +360,10 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     final ExperimentPlan? plan = ref.watch(experimentProvider).value?.active;
     final String? planHabit = plan == null
         ? null
-        : <Vice>[
-            ...?allVices,
-          ].where((Vice v) => v.id == plan.habitId).firstOrNull?.name;
+        : <Vice>[...?allVices]
+              .where((Vice v) => v.id == plan.habitId)
+              .firstOrNull
+              ?.name;
     final bool planShown =
         plan != null &&
         planHabit != null &&
