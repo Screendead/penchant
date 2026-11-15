@@ -7,14 +7,19 @@ const { test } = require('node:test');
 
 const { NOTE_TAGS } = require('./note_tags.js');
 const {
+  DENIED_TERMS,
   DailyCap,
   LEAF_PATHS,
+  MAX_QUESTION,
+  MAX_QUOTE,
   MODEL,
+  checkQuestion,
   checkTags,
   messageRequest,
   parseMessage,
   readNote,
   validNote,
+  wantsQuestion,
 } = require('./note_reader.js');
 
 // Each TriggerNode('id', 'label', ...) in the Dart tree, as paths in order.
@@ -158,4 +163,155 @@ test('the cap allows 60 calls a uid a UTC day', () => {
   assert.equal(cap.take('a', morning), false);
   assert.equal(cap.take('b', morning), true);
   assert.equal(cap.take('a', new Date('2026-11-16T00:00:01Z')), true);
+});
+
+// The follow-up question, asked for in the same call as the tags.
+const NOTE = 'Rough one. Boss tore into the roadmap, went straight to the pub with Sam.';
+const QUOTE = 'went straight to the pub';
+
+test('without question the request is the tags-only one, unchanged', () => {
+  const plain = messageRequest(NOTE);
+  assert.deepEqual(messageRequest(NOTE, { question: false }), plain);
+  assert.equal(plain.max_tokens, 400);
+  assert.deepEqual(Object.keys(plain.output_config.format.schema.properties), ['tags']);
+  assert.ok(!plain.system.includes('question'));
+});
+
+test('with question the same single request also asks for question and quote', () => {
+  const asked = messageRequest(NOTE, { question: true });
+  const plain = messageRequest(NOTE);
+  assert.equal(asked.model, plain.model);
+  assert.deepEqual(asked.thinking, plain.thinking);
+  assert.equal(asked.output_config.effort, plain.output_config.effort);
+  assert.ok(asked.max_tokens > plain.max_tokens);
+  const schema = asked.output_config.format.schema;
+  assert.deepEqual(schema.required, ['tags', 'question', 'quote']);
+  assert.equal(schema.additionalProperties, false);
+  assert.deepEqual(schema.properties.tags, plain.output_config.format.schema.properties.tags);
+  for (const key of ['question', 'quote']) {
+    assert.deepEqual(schema.properties[key], { anyOf: [{ type: 'string' }, { type: 'null' }] });
+  }
+  assert.ok(asked.system.startsWith(plain.system));
+  for (const rule of ['at most 140 characters', 'Never about amounts', 'Never advice', 'never ask "why"', 'Never mention being an AI']) {
+    assert.ok(asked.system.includes(rule), rule);
+  }
+  assert.deepEqual(asked.messages, plain.messages);
+});
+
+test('wantsQuestion takes only a literal true', () => {
+  assert.equal(wantsQuestion({ note: 'x', question: true }), true);
+  for (const data of [null, {}, { question: 'true' }, { question: 1 }]) assert.equal(wantsQuestion(data), false);
+});
+
+test('a question that keeps every rule passes with its quote', () => {
+  assert.deepEqual(checkQuestion('Was that already the plan this morning?', QUOTE, NOTE), {
+    question: { question: 'Was that already the plan this morning?', quote: QUOTE },
+    drop: null,
+  });
+  assert.equal(checkQuestion('  Who else was there?  ', QUOTE, NOTE).question.question, 'Who else was there?');
+});
+
+test('each rule code can check drops the question', () => {
+  const drop = (q, quote = QUOTE, note = NOTE) => checkQuestion(q, quote, note).drop;
+  assert.equal(drop(null), 'none_given');
+  assert.equal(drop(''), 'none_given');
+  assert.equal(drop(42), 'mistyped');
+  assert.equal(drop('Who was there?', null), 'mistyped');
+  assert.equal(drop(`Who ${'was '.repeat(40)}there?`), 'too_long');
+  assert.equal(drop(`W${'h'.repeat(MAX_QUESTION - 2)}?`), null);
+  assert.equal(drop(`W${'h'.repeat(MAX_QUESTION - 1)}?`), 'too_long');
+  assert.equal(drop('Who was\nthere?'), 'line_break');
+  assert.equal(drop('Tell me who was there.'), 'no_question_mark');
+  assert.equal(drop('Who was there? Where?'), 'several_questions');
+  assert.equal(drop('Who was there?? '), 'several_questions');
+  assert.equal(drop('Was it after 6pm?'), 'digit');
+  assert.equal(drop('Who was there?', ''), 'quote_length');
+  assert.equal(drop('Who was there?', 'x'.repeat(MAX_QUOTE + 1), 'x'.repeat(MAX_QUOTE + 1)), 'quote_length');
+  assert.equal(drop('Who was there?', 'went to the pub'), 'quote_not_in_note');
+  assert.equal(drop('Who was there?', 'Went straight to the pub'), 'quote_not_in_note');
+});
+
+test('the deny-list drops amounts, advice, judgement, labels, the future, stopping and the model', () => {
+  const cases = {
+    'How much did you have?': 'how much',
+    'How many were there?': 'how many',
+    'Do you think you should stop?': 'should',
+    'Do you need to talk to someone?': 'need to',
+    'Have you tried to cut down?': 'cut down',
+    'Was that too much for you?': 'too much',
+    'Is this a problem for you?': 'problem',
+    'Do you worry about it?': 'worry',
+    'Was that a healthy choice?': 'healthy',
+    'Do you feel addicted?': 'addicted',
+    'Was it a bad night?': 'bad',
+    'Are you proud of yourself?': 'proud',
+    'Is that okay with you?': 'okay',
+    'Will you do it differently next time?': 'will you',
+    'What would make tomorrow different?': 'tomorrow',
+    'Have you thought about quitting?': 'quitting',
+    'Why did you go?': 'why',
+    'As an AI, may I ask who was there?': 'ai',
+    'Did Claude get that right?': 'claude',
+  };
+  for (const [question, term] of Object.entries(cases)) {
+    assert.equal(checkQuestion(question, QUOTE, NOTE).drop, `term:${term}`, question);
+  }
+  // Whole words only: "said" holds "ai", "stopped by" is not about stopping.
+  assert.equal(checkQuestion('What had Sam said just before?', QUOTE, NOTE).drop, null);
+  assert.equal(checkQuestion('Where were you when Sam asked?', QUOTE, NOTE).drop, null);
+  for (const term of ['should', 'problem', 'addiction', 'dependence', 'cut down', 'too much', 'healthy', 'worry']) {
+    assert.ok(DENIED_TERMS.includes(term), term);
+  }
+});
+
+test('asked for a question, the answer carries it beside the same tags', () => {
+  const answer = {
+    tags: [{ path: 'social/friends', quote: 'with Sam' }],
+    question: 'Was that already the plan this morning?',
+    quote: QUOTE,
+  };
+  const tagsOnly = parseMessage(text(answer), NOTE);
+  assert.deepEqual(Object.keys(tagsOnly), ['tags', 'dropped', 'reason']);
+  const asked = parseMessage(text(answer), NOTE, { question: true });
+  assert.deepEqual(asked.tags, tagsOnly.tags);
+  assert.equal(asked.reason, 'ok');
+  assert.deepEqual(asked.question, { question: answer.question, quote: QUOTE });
+  assert.equal(asked.questionDrop, null);
+});
+
+test('a missing, null or failing question never loses the tags', () => {
+  const tags = [{ path: 'social/friends', quote: 'with Sam' }];
+  for (const extra of [{}, { question: null, quote: null }, { question: 'Why did you go?', quote: QUOTE },
+    { question: 'Who was there?', quote: 'not in the note' }, { question: { nested: true }, quote: QUOTE }]) {
+    const result = parseMessage(text({ tags, ...extra }), NOTE, { question: true });
+    assert.deepEqual(result.tags, tags, JSON.stringify(extra));
+    assert.equal(result.reason, 'ok');
+    assert.equal(result.question, null);
+    assert.ok(typeof result.questionDrop === 'string');
+  }
+  const refused = parseMessage({ stop_reason: 'refusal', content: [] }, NOTE, { question: true });
+  assert.deepEqual(refused, { tags: [], dropped: 0, reason: 'refusal', question: null, questionDrop: 'no_answer' });
+});
+
+test('readNote asks for the question in its one call only when told to', async () => {
+  const sent = [];
+  const client = {
+    messages: {
+      create: async (request) => {
+        sent.push(request);
+        return text({ tags: [], question: 'Who else was there?', quote: QUOTE });
+      },
+    },
+  };
+  const asked = await readNote(client, NOTE, { question: true });
+  assert.equal(sent.length, 1);
+  assert.deepEqual(asked.question, { question: 'Who else was there?', quote: QUOTE });
+  const plain = await readNote(client, NOTE);
+  assert.equal(sent.length, 2);
+  assert.ok(!('question' in plain));
+  assert.ok(!('question' in sent[1].output_config.format.schema.properties));
+  const failing = { messages: { create: async () => { throw new Error('down'); } } };
+  assert.deepEqual(await readNote(failing, NOTE, { question: true }), {
+    tags: [], dropped: 0, reason: 'api_error', question: null, questionDrop: 'no_answer',
+  });
 });
