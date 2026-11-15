@@ -917,7 +917,7 @@ void main() {
       await tester.tap(find.text('What was going on? (optional)'));
       await tester.pumpAndSettle();
       final Finder sheet = find.byType(TriggerPickerSheet);
-      for (final String label in <String>['Work', 'Meeting']) {
+      for (final String label in <String>['Work or study', 'Meeting']) {
         final Finder target = find.descendant(
           of: sheet,
           matching: find.text(label),

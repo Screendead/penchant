@@ -58,7 +58,7 @@ void main() {
       expect(s.shares[1][0], closeTo(1.5 / 3, 1e-9));
       expect(s.shares[1][1], closeTo(1 / 3, 1e-9));
       expect(s.shares[1][2], closeTo(0.5 / 3, 1e-9));
-      expect(triggerAreaLabel('work'), 'Work');
+      expect(triggerAreaLabel('work'), 'Work or study');
       expect(triggerAreaLabel(ownWordsArea), 'Own words');
     });
 

@@ -80,7 +80,7 @@ void main() {
     final TriggerCard card = triggerCards(<HabitTriggers>[coffee]).single;
     expect(
       triggerBasis(card.habit, friends),
-      'Among the 90 entries you tagged, of 150; Social › With friends is on '
+      'Among the 90 entries you tagged, of 150; Who was there › With friends is on '
       '30 of them, over 30 days',
     );
   });
