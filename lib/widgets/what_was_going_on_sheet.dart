@@ -78,7 +78,6 @@ class WhatWasGoingOnSheet extends ConsumerStatefulWidget {
   static const Key nextKey = ValueKey<String>('panels-next');
   static const Key backKey = ValueKey<String>('panels-back');
   static const Key doneKey = ValueKey<String>('panels-done');
-  static const Key echoKey = ValueKey<String>('panels-note-echo');
   static const String noteTitle = 'In your own words';
   static const String readsHint = 'Next reads it into tags.';
   static const String tagsTitle = 'Does this look right?';
@@ -121,6 +120,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
   final Set<String> shown = <String>{};
   final Queue<ReadTag> arriving = Queue<ReadTag>();
   StreamSubscription<ReadTag>? reading;
+  Timer? waited;
   bool readFailed = false;
   ReadTag? lit;
   ({Rect from, Rect to})? flight;
@@ -139,6 +139,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
 
   @override
   void dispose() {
+    waited?.cancel();
     reading?.cancel();
     arrival.dispose();
     pages.dispose();
@@ -203,29 +204,35 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
     });
     final NoteReader? reader = ref.read(noteReaderProvider);
     if (reader == null || text == null) return;
+    void failed() {
+      if (!mounted) return;
+      stopReading(again: false);
+      setState(() => readFailed = true);
+    }
+
     reading = reader
         .read(text)
-        .timeout(WhatWasGoingOnSheet.readTimeout)
         .listen(
-          (ReadTag tag) => arrive(text, tag),
-          onError: (Object _) {
-            if (!mounted) return;
-            setState(() {
-              reading = null;
-              readFailed = true;
-            });
+          (ReadTag tag) {
+            waited?.cancel();
+            waited = Timer(WhatWasGoingOnSheet.readTimeout, failed);
+            arrive(text, tag);
           },
+          onError: (Object _) => failed(),
           onDone: () {
+            waited?.cancel();
             if (mounted) setState(() => reading = null);
           },
           cancelOnError: true,
         );
+    waited = Timer(WhatWasGoingOnSheet.readTimeout, failed);
     setState(() {});
   }
 
-  // Ends a read cut short, so the next visit reads the note again.
-  void stopReading() {
-    if (reading != null) readNote = null;
+  // Ends a read; one cut short is read [again] on the next visit.
+  void stopReading({bool again = true}) {
+    if (again && reading != null) readNote = null;
+    waited?.cancel();
     reading?.cancel();
     reading = null;
     arrival.stop();
