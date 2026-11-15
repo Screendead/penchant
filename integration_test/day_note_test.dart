@@ -11,6 +11,7 @@ import 'package:tracker/data/sealed.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/notes/day_note_route.dart';
+import 'package:tracker/notes/follow_up.dart';
 import 'package:tracker/notes/note_reader.dart';
 import 'package:tracker/widgets/day_note_line.dart';
 import 'package:tracker/widgets/day_note_sheet.dart';
@@ -20,17 +21,29 @@ import 'package:tracker/writes/rejected_writes.dart';
 import 'support.dart';
 
 // Reads each of [tags] whose quote the note holds, as the real reader only
-// emits quotes copied from the note.
-class _FakeNoteReader implements NoteReader {
-  const _FakeNoteReader(this.tags);
+// emits quotes copied from the note, and asks [asked] about a note holding
+// its quote.
+class _FakeNoteReader implements QuestioningNoteReader {
+  const _FakeNoteReader(this.tags, this.asked);
 
   final List<ReadTag> tags;
+  final NoteQuestion asked;
 
   @override
   Stream<ReadTag> read(String note) => Stream<ReadTag>.fromIterable(
     tags.where((ReadTag t) => note.contains(t.quote)),
   );
+
+  @override
+  Future<NoteQuestion?> question(String note) async =>
+      note.contains(asked.quote) ? asked : null;
 }
+
+const NoteQuestion _asked = (
+  question: 'What kept it going?',
+  quote: 'ran late',
+);
+const String _answer = 'Nobody wanted to be first to leave';
 
 const String _meeting = 'work/meeting';
 const String _friends = 'social/friends';
@@ -55,7 +68,7 @@ void main() {
             const _FakeNoteReader(<ReadTag>[
               (path: _meeting, quote: 'meeting'),
               (path: _friends, quote: 'friends'),
-            ]),
+            ], _asked),
           ),
         ],
       ),
@@ -147,10 +160,24 @@ void main() {
     await waitForChips(const <String>[_meetingChip, _friendsChip]);
     expect(tester.widget<FilterChip>(chip(_meetingChip)).selected, isTrue);
     expect(tester.widget<FilterChip>(chip(_friendsChip)).selected, isTrue);
+    // The question adds a panel after the tags; answer it.
+    await pumpUntil(tester, find.byKey(NotePanels.nextKey).hitTestable());
+    await tap(tester, find.byKey(NotePanels.nextKey));
+    final Finder answer = find.byKey(NotePanels.answerKey);
+    await pumpUntil(tester, answer.hitTestable());
+    expect(
+      find.text(askedLine(_asked.question, _asked.quote)).hitTestable(),
+      findsOneWidget,
+    );
+    await tester.enterText(answer, _answer);
+    await tester.pump();
     await doneAndSaved(DayNoteSheet.savedMessage);
     Map<String, Object?> content = await stored();
     expect(content[dayNoteTextField], first);
     expect(content['triggers'], <Object?>[_meeting, _friends]);
+    expect(content[followUpQuestionField], _asked.question);
+    expect(content[followUpQuoteField], _asked.quote);
+    expect(content[followUpAnswerField], _answer);
     await pumpUntil(tester, todayLine);
 
     // Update from Today's line: new text, one read tag dropped.
@@ -158,6 +185,22 @@ void main() {
     await tap(tester, todayLine);
     await pumpUntilRouteSettled(tester, sheet);
     await waitForField(first);
+    // The saved question and answer show under the note.
+    await pumpUntil(tester, find.byKey(DayNoteSheet.savedFollowUpKey));
+    expect(
+      find.descendant(
+        of: find.byKey(DayNoteSheet.savedFollowUpKey),
+        matching: find.text(askedLine(_asked.question, _asked.quote)),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(DayNoteSheet.savedFollowUpKey),
+        matching: find.text(_answer),
+      ),
+      findsOneWidget,
+    );
     await tester.enterText(field, second);
     await tester.pump();
     await tap(tester, find.byKey(NotePanels.nextKey));
