@@ -184,12 +184,18 @@ class _UrgeBox extends StatelessWidget {
 
 /// A one-line note of up to [maxNoteLength] UTF-16 code units.
 class NoteField extends StatelessWidget {
-  const NoteField({super.key, required this.controller, this.enabled = true});
+  const NoteField({
+    super.key,
+    required this.controller,
+    this.enabled = true,
+    this.label = noteLabel,
+  });
 
   static const Key fieldKey = ValueKey<String>('entry-note');
 
   final TextEditingController controller;
   final bool enabled;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +209,7 @@ class NoteField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const _OptionalLabel(noteLabel),
+        _OptionalLabel(label),
         TextFormField(
           key: fieldKey,
           controller: controller,
