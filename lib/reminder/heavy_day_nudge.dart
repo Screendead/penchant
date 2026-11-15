@@ -74,6 +74,7 @@ class HeavyDayNudge extends Notifier<NudgeSettings> {
   late Future<void> _loaded;
   List<HeavyPrompt> _prompts = <HeavyPrompt>[];
   HeavyDayVerdict? _last;
+  DateTime? _lastDay;
   // Evaluations run one at a time, so two cannot both schedule.
   Future<void> _queue = Future<void>.value();
 
@@ -110,6 +111,7 @@ class HeavyDayNudge extends Notifier<NudgeSettings> {
   /// Schedules or cancels the one notification for [verdict].
   Future<void> evaluate(HeavyDayVerdict verdict) {
     _last = verdict;
+    _lastDay = startOfDay(clock.now());
     return _enqueue(_apply);
   }
 
@@ -144,11 +146,16 @@ class HeavyDayNudge extends Notifier<NudgeSettings> {
     await _enqueue(_apply);
   }
 
-  /// On sign-out and deletion: the pending one goes, and with it the record.
+  /// On sign-out and deletion the pending one goes. Delivered ones stay, so
+  /// the device still sends at most one a day.
   Future<void> forget() => _enqueue(() async {
     await _loaded;
     _last = null;
-    _prompts = <HeavyPrompt>[];
+    final DateTime now = clock.now();
+    _prompts = <HeavyPrompt>[
+      for (final HeavyPrompt p in _prompts)
+        if (!p.at.isAfter(now)) p,
+    ];
     await _savePrompts();
     try {
       await ref.read(nudgeSchedulerProvider).cancelHeavyDay();
@@ -183,7 +190,8 @@ class HeavyDayNudge extends Notifier<NudgeSettings> {
     final HeavyPrompt? planned;
     if (!state.enabled) {
       planned = null;
-    } else if (verdict == null) {
+    } else if (verdict == null || _lastDay != startOfDay(now)) {
+      // A verdict from an earlier day says nothing of this one.
       return;
     } else {
       planned = plannedHeavyPrompt(

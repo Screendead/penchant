@@ -343,6 +343,22 @@ void main() {
       });
     });
 
+    test('a resume on a later day ignores the earlier verdict', () async {
+      now = DateTime(2026, 11, 15, 22);
+      await run((HeavyDayNudge n) async {
+        await n.evaluate(heavy);
+        expect(scheduler.scheduled, hasLength(1));
+        now = DateTime(2026, 11, 16, 7, 30);
+        final TestWidgetsFlutterBinding binding =
+            TestWidgetsFlutterBinding.instance;
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        await n.setTime(const TimeOfDay(hour: 20, minute: 0));
+        expect(scheduler.scheduled, hasLength(1));
+        expect(scheduler.cancels, 0);
+      });
+    });
+
     test('a new time reschedules it; off cancels it', () async {
       await run((HeavyDayNudge n) async {
         await n.evaluate(heavy);
@@ -358,7 +374,7 @@ void main() {
       });
     });
 
-    test('sign-out cancels it and forgets the record', () async {
+    test('sign-out cancels the pending one', () async {
       await run((HeavyDayNudge n) async {
         await n.evaluate(heavy);
         await n.forget();
