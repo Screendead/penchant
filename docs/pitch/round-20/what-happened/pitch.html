@@ -1,0 +1,378 @@
+<title>What Happened Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;800&family=Red+Hat+Mono:wght@500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; the phone mock-up sits beside the opening text when wide, above it when narrow. */
+:root {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface2: #EFECE5; --text: #1D1C1A; --muted: #635E56;
+  --line: #1D1C1A1A; --outline: #1D1C1A8C; --on-accent: #F6F4EF; --scrim: #1D1C1A33;
+  --d1: #FFB347; --d1ink: #8F5600; --clear: #E3EFE4; --clear-ink: #276B43; --warn: #F8E4E2; --warn-ink: #B42A37;
+  --display: "Red Hat Display", system-ui, sans-serif; --body: "Red Hat Text", system-ui, sans-serif;
+  --mono: "Red Hat Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A; --scrim: #0A0908A6;
+  --d1: #FFB347; --d1ink: #FFB347; --clear: #15241B; --clear-ink: #9ED8B0; --warn: #3A1D1E; --warn-ink: #FF8A8F;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A; --scrim: #0A0908A6;
+  --d1: #FFB347; --d1ink: #FFB347; --clear: #15241B; --clear-ink: #9ED8B0; --warn: #3A1D1E; --warn-ink: #FF8A8F;
+  color-scheme: dark }
+
+body { background: var(--bg); color: var(--text); font: 400 16px/1.55 var(--body); font-variant-numeric: tabular-nums; }
+.page { max-width: 1040px; margin: 0 auto; padding-block: 32px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 48px; }
+h1 { font: 800 clamp(28px, 5vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 800 24px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 13px/1.3 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.muted { color: var(--muted); }
+.top { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+.top .stack { flex: 1 1 340px; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 66ch; }
+
+/* phone */
+.phone { flex: 0 0 auto; width: min(340px, 100%); margin: 0 auto; border: 1px solid var(--outline); border-radius: 36px;
+  background: var(--bg); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.day { height: 120px; border-radius: 22px; background: var(--surface2); display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: 13px; text-align: center; padding: 0 16px; }
+.sheet { background: var(--surface); border-radius: 22px; border: 1px solid var(--line); padding: 16px;
+  display: flex; flex-direction: column; gap: 14px; }
+.sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sheet-head b { font: 800 18px/1.2 var(--display); }
+.steps { font: 500 12px var(--mono); color: var(--muted); }
+.window { overflow: hidden; touch-action: pan-y; }
+.track { display: flex; transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+.panel { flex: 0 0 100%; min-width: 0; display: flex; flex-direction: column; gap: 10px; min-height: 250px; }
+.panel label, .panel .q { font-weight: 600; }
+.panel small { color: var(--muted); }
+textarea { font: 400 15px/1.45 var(--body); color: var(--text); background: var(--surface2); border: 1px solid var(--line);
+  border-radius: 14px; padding: 10px 12px; resize: none; height: 132px; width: 100%; box-sizing: border-box; }
+textarea:focus-visible, button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.note-echo { font-size: 14px; line-height: 1.5; color: var(--muted); background: var(--surface2); border-radius: 14px;
+  padding: 10px 12px; min-height: 64px; }
+.note-echo mark { background: none; color: inherit; border-radius: 4px; transition: background .2s, color .2s; }
+.note-echo mark.lit { background: var(--text); color: var(--on-accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 80px; align-content: flex-start; }
+.chip { font: 500 13px/1 var(--body); padding: 9px 12px; border-radius: 999px; border: 1px solid var(--outline);
+  background: var(--surface); color: var(--text); cursor: pointer; opacity: 0; }
+.chip.in { opacity: 1; }
+.chip[aria-pressed="true"] { background: var(--text); color: var(--on-accent); border-color: var(--text); }
+.fly { position: fixed; z-index: 5; pointer-events: none; font: 500 13px/1 var(--body); padding: 9px 12px;
+  border-radius: 999px; background: var(--text); color: var(--on-accent); white-space: nowrap;
+  transition: transform .45s cubic-bezier(.2,.8,.2,1); transform-origin: top left; }
+.status { font: 500 12px var(--mono); color: var(--muted); min-height: 16px; }
+.urge { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.urge button { height: 48px; border-radius: 12px; border: 1px solid var(--outline); background: var(--surface);
+  color: var(--text); font: 500 16px var(--mono); cursor: pointer; }
+.urge button[aria-pressed="true"] { background: var(--text); color: var(--on-accent); }
+.ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.nav { display: flex; gap: 8px; }
+.nav button { flex: 1; height: 46px; border-radius: 999px; font: 600 15px var(--body); cursor: pointer;
+  border: 1px solid var(--outline); background: var(--surface); color: var(--text); }
+.nav button.primary { background: var(--text); color: var(--on-accent); border-color: var(--text); flex: 2; }
+.nav button:disabled { opacity: .35; cursor: default; }
+.caption { font-size: 13px; color: var(--muted); max-width: 340px; margin: 0 auto; text-align: center; }
+
+/* calls */
+.call { display: flex; flex-direction: column; gap: 16px; border-top: 2px solid var(--text); padding-top: 20px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.opt.rec { border: 2px solid var(--text); }
+.opt b.name { font: 800 17px/1.25 var(--display); }
+.opt p, .opt li { font-size: 14.5px; }
+.tag { align-self: flex-start; font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase;
+  background: var(--text); color: var(--on-accent); padding: 4px 8px; border-radius: 999px; }
+.kv { font-size: 14px; color: var(--muted); }
+.kv b { color: var(--text); font-weight: 600; }
+.call { min-width: 0; }
+.scroll { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; font-size: 14px; min-width: 560px; width: 100%; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+td.ok { color: var(--clear-ink); font-weight: 600; } td.bad { color: var(--warn-ink); font-weight: 600; }
+code { font: 500 13px var(--mono); }
+@media (prefers-reduced-motion: reduce) { .track, .fly, .note-echo mark { transition: none; } }
+</style>
+
+<div class="page">
+  <div class="top">
+    <div class="stack">
+      <h3>Penchant · four calls · 15 November 2026</h3>
+      <h1>"What was going on?" as locked panels, with the note read into tags</h1>
+      <p>After a quick log, the app can ask what was going on. Today that is one sheet with three questions at once: tags, how strong the urge was, and a one-line note. You asked for a sequence of panels moved only by a Next button, a prompt for free text on heavy days, and AI that reads the text and finds trends.</p>
+      <p>The mock-up is the proposal. Write a note, press Next, and the note's phrases turn into the tags the app already has. Nothing is saved until you confirm them. Because a note on an entry becomes ordinary tags, Insights' existing comparisons (which tags go with more use) read them with no new statistics, and no model is asked to "see trends", which a language model would invent. Tags on a whole day's text are different: nothing in Insights reads those yet.</p>
+      <p class="muted">The tagging in the mock-up is a keyword stand-in, timed to look like a streamed reply. Try your own words: it knows work, people, mood, sleep, bars, home, ads.</p>
+      <p><b>Your iPhone 13 Pro Max cannot run Apple's on-device model.</b> Apple lists iPhone 15 Pro and later. That is why the first call matters.</p>
+    </div>
+
+    <div class="stack">
+      <div class="phone" aria-label="Mock-up of the panels">
+        <div class="day">Today's dial, behind the sheet<br>Wine logged 21:40</div>
+        <div class="sheet">
+          <div class="sheet-head"><b>What was going on?</b><span class="steps" id="steps">1 of 3</span></div>
+          <div class="window"><div class="track" id="track">
+            <div class="panel">
+              <label for="note">In your own words</label>
+              <textarea id="note">Rough one. Out of the quarterly review at six, boss tore into the roadmap, went straight to the pub with Sam.</textarea>
+              <small>Optional. Next reads it into tags.</small>
+            </div>
+            <div class="panel">
+              <div class="q">Does this look right?</div>
+              <div class="note-echo" id="echo"></div>
+              <div class="chips" id="chips"></div>
+              <div class="status" id="status" aria-live="polite"></div>
+            </div>
+            <div class="panel">
+              <div class="q">How strong was the urge?</div>
+              <div class="urge" id="urge"></div>
+              <div class="ends"><span>Barely</span><span>Couldn't not</span></div>
+            </div>
+          </div></div>
+          <div class="nav">
+            <button id="back" disabled>Back</button>
+            <button id="next" class="primary">Next</button>
+          </div>
+        </div>
+      </div>
+      <p class="caption">Swiping does nothing: only Back and Next move it.</p>
+    </div>
+  </div>
+
+  <!-- CALL 1 -->
+  <section class="call">
+    <h3>Call 1 of 4</h3>
+    <h2>What reads the note: Claude through our server, Apple's model on the device, or nothing</h2>
+    <p>Today nothing reads a note. Notes are end-to-end encrypted: they are sealed on the device with your journal key, and neither our server nor anyone else can read them. Turning a note into tags needs a language model, and the choice of model decides whether your phone gets the feature and whether note text ever leaves the device.</p>
+    <p><b>Measured on this Mac today</b>, Apple's on-device model, 12 made-up notes about drinking, smoking, vaping, cannabis and cocaine: all 12 answered, none refused, median 0.9 s, slowest 3.3 s. About half were tagged well. The rest carried a wrong tag. Treat that as a floor, not a verdict: the trial used one untuned prompt and plain-text answers, because Apple's structured-answer mode would not load in a script, and it is the mode the app would use.</p>
+    <div class="scroll"><table>
+      <tr><th>Note</th><th>Apple's model said</th><th></th></tr>
+      <tr><td>Flight delayed four hours, sat in the airport bar on my own.</td><td>On my own · Bar · Stressed</td><td class="ok">Right</td></tr>
+      <tr><td>Deadline Friday. Vaped at my desk all afternoon without noticing.</td><td>Deadline · Tired</td><td class="ok">Close</td></tr>
+      <tr><td>Scrolling in bed, saw an ad for that gin, ordered a bottle.</td><td>Just wanted it · On my own · Family</td><td class="bad">Missed the ad, invented family</td></tr>
+      <tr><td>Argument with Alex about money, then most of a bottle of wine on the sofa.</td><td>Offered one · On my own · Stressed</td><td class="bad">Nobody offered</td></tr>
+      <tr><td>Couldn't sleep, back was killing me, smoked a joint.</td><td>In pain · Smelled it · On my own · Stressed</td><td class="bad">Nothing was smelled</td></tr>
+    </table></div>
+    <p class="muted">Claude was not measured: this Mac has no API key. Its speed and quality below are expectations, not results. Before building, I would run the same 12 notes through it with a key you provide.</p>
+    <div class="opts">
+      <div class="opt rec">
+        <span class="tag">Recommended</span>
+        <b class="name">Claude, through our server, off until you switch it on</b>
+        <p>The app sends the note's text to a small function on our Firebase server, which holds the API key and calls Claude's smallest model (Haiku 5.5). Tags stream back as they are written, so the animation runs live.</p>
+        <p class="kv"><b>Your phone:</b> works, and on every other device.</p>
+        <p class="kv"><b>Privacy:</b> the first time journal text is readable off the device, by our function in passing and by Anthropic. Anthropic's API terms: never used for training without permission, and prompt content not retained by default (some models carry 30-day retention; I have not checked whether Haiku 5.5 is one). The switch says this in plain words. The stored note stays sealed.</p>
+        <p class="kv"><b>Cost:</b> about $0.00007 a note at list price ($0.10 in, $0.50 out per million tokens). Ten notes a day is about 2 cents a month per person. Capped per account per day, since anyone signed in could call it.</p>
+        <p class="kv"><b>Speed:</b> expected 1 to 2 seconds, unmeasured. Needs a connection; offline, the panel is skipped and you pick tags by hand.</p>
+        <p class="kv"><b>Needs from you:</b> an Anthropic API key set as a server secret. Function deploys on merge are already on.</p>
+        <p class="kv"><b>Build:</b> about 3 days with the panels.</p>
+      </div>
+      <div class="opt">
+        <b class="name">Apple's model where the device has it, Claude elsewhere</b>
+        <p>Phones from iPhone 15 Pro and Macs with Apple silicon tag on the device and send nothing. Others, yours included, use Claude as above if switched on.</p>
+        <p class="kv"><b>Your phone:</b> works, through Claude.</p>
+        <p class="kv"><b>Privacy:</b> best available on each device.</p>
+        <p class="kv"><b>Risk:</b> two models of different quality, so the same note can get different tags on your Mac and your phone. Apple's was wrong on about half of a rough trial.</p>
+        <p class="kv"><b>Build:</b> about 5 days.</p>
+      </div>
+      <div class="opt">
+        <b class="name">Apple's model only</b>
+        <p>Nothing ever leaves the device. No server work, no key, no running cost.</p>
+        <p class="kv"><b>Your phone:</b> no feature. It would work on this Mac, and tags made here would show on the phone after sync.</p>
+        <p class="kv"><b>Risk:</b> quality, as far as the rough trial shows.</p>
+        <p class="kv"><b>Build:</b> about 3 days.</p>
+      </div>
+      <div class="opt">
+        <b class="name">Your own key, on your devices only</b>
+        <p>You paste an Anthropic key into Settings; it is kept in the keychain and the phone calls Claude directly. No server of ours sees the note.</p>
+        <p class="kv"><b>Your phone:</b> works.</p>
+        <p class="kv"><b>Risk:</b> useless to anyone who installs from the App Store without their own key, so it is a personal tool, not a product feature.</p>
+        <p class="kv"><b>Build:</b> about 2 days.</p>
+      </div>
+    </div>
+    <p><b>Why now:</b> the panel design depends on it. With no reader, the note panel is just a text box. <b>Waiting on this:</b> all AI work. <b>If you do nothing:</b> I build the panels with hand-picked tags only.</p>
+  </section>
+
+  <!-- CALL 2 -->
+  <section class="call">
+    <h3>Call 2 of 4</h3>
+    <h2>Whether the app speaks up on a heavy day, and how</h2>
+    <p>Today the app never comments on how much you logged. You have ruled three times in that direction: the daily reminder says only "Anything to add to today?", the experiment notification never names the habit, and a habit's line is a mark with no alert past it. You now want a prompt on heavy days asking what was unusual. That is arithmetic, not AI: when a log lands, the app compares the day's total with your own past days.</p>
+    <p>I would define heavy as a day in the top tenth of your last 90 days for that habit, once it has 30 days of history, instead of a number of standard deviations: daily counts are lopsided, and a few big days stretch the standard deviation until nothing counts as heavy.</p>
+    <div class="opts">
+      <div class="opt rec">
+        <span class="tag">Recommended</span>
+        <b class="name">A quiet notification that evening, off by default</b>
+        <p>At 21:00 on a heavy day: "Anything different about today?" It names no habit and no amount, so it is safe on a lock screen. Tapping opens the note panel for the day. One a day at most.</p>
+        <p class="kv"><b>Risk:</b> on a late-night heavy day it arrives before the heaviest part. A second check the next morning covers that.</p>
+        <p class="kv"><b>Build:</b> about 1 day.</p>
+      </div>
+      <div class="opt">
+        <b class="name">No notification: a card on Today</b>
+        <p>The next time you open the app after a heavy day, a card above the dial asks the same question. Nothing leaves the app.</p>
+        <p class="kv"><b>Risk:</b> you see it only if you open the app, often a day late, when memory is worse.</p>
+        <p class="kv"><b>Build:</b> about half a day.</p>
+      </div>
+      <div class="opt">
+        <b class="name">Say "heavy" outright</b>
+        <p>"Heavier day than usual. What happened?" Clearer, and closest to what you described.</p>
+        <p class="kv"><b>Risk:</b> reads as a judgement, on a lock screen others can see, and reverses the neutral wording you chose for every other notification.</p>
+        <p class="kv"><b>Build:</b> about 1 day.</p>
+      </div>
+    </div>
+    <p><b>Why now:</b> a heavy-day prompt needs somewhere to keep a whole day's text, which the app lacks. <b>Waiting on this:</b> that storage work. <b>If you do nothing:</b> no heavy-day prompt is built.</p>
+  </section>
+
+  <!-- CALL 3 -->
+  <section class="call">
+    <h3>Call 3 of 4</h3>
+    <h2>Where a whole day's text is kept</h2>
+    <p>This matters only if the app is to ask for free text about a heavy day, by notification or by a card. Today a note belongs to one entry and holds one line of up to 500 characters. A heavy day is many entries, and "what was unusual about today" belongs to none of them.</p>
+    <div class="opts">
+      <div class="opt rec">
+        <span class="tag">Recommended</span>
+        <b class="name">A new sealed day note, one per day</b>
+        <p>A new kind of encrypted document: the date, the text, its confirmed tags. It appears on that day's dial, in the export, and in Insights as a property of the day.</p>
+        <p class="kv"><b>Cost:</b> a change to the database rules, which deploy to production automatically when merged, and about 2 days. Older app versions ignore day notes.</p>
+        <p class="kv"><b>Not included:</b> Insights reading day tags. That is new comparison work, about 2 more days, and text is asked for only on heavy days, so there are no ordinary days to compare with. At first it can only show which tags recur on heavy days.</p>
+        <p class="kv"><b>Risk:</b> low. Nothing existing changes shape.</p>
+      </div>
+      <div class="opt">
+        <b class="name">Put it on the day's last entry</b>
+        <p>The text becomes that entry's note. No new data, no rules change, about half a day.</p>
+        <p class="kv"><b>Upside:</b> Insights' existing tag comparisons read it at once. <b>Risk:</b> deleting or moving that entry takes the day's text with it, it overwrites any note already there, and Insights credits the tags to one drink, not the day.</p>
+      </div>
+    </div>
+    <p><b>Why now:</b> it sets whether a rules change ships with the heavy-day prompt. <b>Waiting on this:</b> the heavy-day prompt. <b>If you do nothing:</b> I use the day note if a heavy-day prompt is built.</p>
+  </section>
+
+  <!-- CALL 4 -->
+  <section class="call">
+    <h3>Call 4 of 4</h3>
+    <h2>What the panels ask</h2>
+    <p>You said "various data points". Today an entry can hold tags, urge (1 to 5) and a note. Each new question is a new encrypted field on the entry: cheap to add, but every one lengthens a flow people meet after each quick log, and Insights reads none of them until comparisons are written for it. Every panel keeps Done beside Next, so two taps still finish.</p>
+    <div class="opts">
+      <div class="opt rec">
+        <span class="tag">Recommended</span>
+        <b class="name">The same three, reordered</b>
+        <p>Note, then tags read from it for you to confirm, then urge, as in the mock-up. With no note, the tags panel is the picker you have now.</p>
+        <p class="kv"><b>Build:</b> about 2 days. No new data.</p>
+      </div>
+      <div class="opt">
+        <b class="name">Add how it felt afterwards</b>
+        <p>A fourth panel: "Glad you did?" on a five-step scale. The one question that separates a habit you enjoy from one you regret, which nothing in the journal captures now.</p>
+        <p class="kv"><b>Risk:</b> asked seconds after logging it is too early to answer honestly; it wants asking an hour later, which is another notification.</p>
+        <p class="kv"><b>Build:</b> 1 more day.</p>
+      </div>
+      <div class="opt">
+        <b class="name">You name the questions</b>
+        <p>Tell me the data points you had in mind and I will mock them up as panels before building.</p>
+      </div>
+    </div>
+    <p>The panels would replace the sheet behind "What was going on?" after a quick log, from the widget and from the menu bar. The full record sheet and the entry editor stay as they are. <b>Why now:</b> the panels are the first thing to build. <b>Waiting on this:</b> nothing else. <b>If you do nothing:</b> I build the three reordered.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const rules = [
+    [/review|meeting|stand-?up|call with/i, 'Work · Meeting'],
+    [/boss|tore into|argu\w+|row with|fight/i, 'Work · Hard conversation'],
+    [/deadline|due (fri|mon|tom)/i, 'Work · Deadline'],
+    [/long day|late at work|overtime/i, 'Work · Long day'],
+    [/pub|bar\b|restaurant/i, 'Place · Bar or restaurant'],
+    [/with \p{Lu}\p{L}+|friends?|mates?/u, 'Social · With friends'],
+    [/wedding|party|birthday/i, 'Social · Party or event'],
+    [/mum|dad|family|sister|brother/i, 'Social · Family'],
+    [/on my own|alone|by myself/i, 'Social · On my own'],
+    [/stress\w*|rough|tense/i, 'Feeling · Stressed'],
+    [/bored|nothing to do/i, 'Feeling · Bored'],
+    [/anxious|worr\w+|nervous/i, 'Feeling · Anxious'],
+    [/sad|low\b|down\b|lonely/i, 'Feeling · Low'],
+    [/couldn'?t sleep|tired|exhausted|up all night/i, 'Body · Tired'],
+    [/pain|ache|killing me/i, 'Body · In pain'],
+    [/\bran\b|gym|workout/i, 'Body · After exercise'],
+    [/home|sofa|balcony|in bed/i, 'Place · Home'],
+    [/airport|flight|train|hotel/i, 'Place · Travelling'],
+    [/\bad\b|advert|scrolling|instagram/i, 'Craving · Ad or feed'],
+    [/dinner|lunch|roast|meal/i, 'Routine · With a meal'],
+  ];
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const track = $('track'), next = $('next'), back = $('back');
+  let at = 0, run = 0;
+
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function read(text) {
+    const hits = [];
+    for (const [re, label] of rules) {
+      const m = re.exec(text);
+      if (m && !hits.some(h => h.label === label || (m.index < h.end && h.start < m.index + m[0].length)))
+        hits.push({ start: m.index, end: m.index + m[0].length, label });
+    }
+    return hits.sort((a, b) => a.start - b.start).slice(0, 4);
+  }
+  const wait = ms => new Promise(r => setTimeout(r, still ? 0 : ms));
+
+  async function tag() {
+    const mine = ++run, text = $('note').value.trim(), echo = $('echo'), chips = $('chips'), status = $('status');
+    chips.textContent = '';
+    if (!text) { echo.textContent = 'No note. Pick tags by hand here, as now.'; status.textContent = ''; return; }
+    const hits = read(text);
+    let html = '', i = 0;
+    hits.forEach((h, n) => { html += esc(text.slice(i, h.start)) + `<mark data-n="${n}">${esc(text.slice(h.start, h.end))}</mark>`; i = h.end; });
+    echo.innerHTML = html + esc(text.slice(i));
+    status.textContent = 'Reading…';
+    await wait(500);
+    for (let n = 0; n < hits.length; n++) {
+      if (mine !== run) return;
+      const mark = echo.querySelector(`mark[data-n="${n}"]`);
+      const chip = document.createElement('button');
+      chip.className = 'chip'; chip.textContent = hits[n].label; chip.setAttribute('aria-pressed', 'true');
+      chip.onclick = () => chip.setAttribute('aria-pressed', chip.getAttribute('aria-pressed') !== 'true');
+      chips.append(chip);
+      mark.classList.add('lit');
+      await wait(260);
+      if (!still) {
+        const a = mark.getBoundingClientRect(), b = chip.getBoundingClientRect();
+        const fly = document.createElement('span');
+        fly.className = 'fly'; fly.textContent = hits[n].label;
+        fly.style.left = b.left + 'px'; fly.style.top = b.top + 'px';
+        fly.style.transform = `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${Math.min(1, a.width / b.width)}, ${a.height / b.height})`;
+        document.body.append(fly);
+        fly.getBoundingClientRect();
+        fly.style.transform = 'none';
+        await wait(460);
+        fly.remove();
+      }
+      chip.classList.add('in');
+      mark.classList.remove('lit');
+      await wait(140);
+    }
+    if (mine === run) status.textContent = hits.length ? 'Tap a tag to drop it. Nothing is saved until Done.' : 'Nothing recognised. Pick tags by hand.';
+  }
+
+  function go(to) {
+    at = Math.max(0, Math.min(2, to));
+    track.style.transform = `translateX(${-100 * at}%)`;
+    [...track.children].forEach((p, i) => { p.inert = i !== at; });
+    $('steps').textContent = `${at + 1} of 3`;
+    back.disabled = at === 0;
+    next.textContent = at === 2 ? 'Done' : 'Next';
+  }
+  next.onclick = () => { if (at === 2) { go(0); return; } go(at + 1); if (at === 1) setTimeout(tag, still ? 0 : 340); };
+  back.onclick = () => { run++; go(at - 1); };
+
+  for (let n = 1; n <= 5; n++) {
+    const b = document.createElement('button');
+    b.textContent = n; b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', `Urge ${n} of 5`);
+    b.onclick = () => [...$('urge').children].forEach(x => x.setAttribute('aria-pressed', x === b));
+    $('urge').append(b);
+  }
+  go(0);
+})();
+</script>
