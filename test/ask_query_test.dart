@@ -105,7 +105,10 @@ void main() {
       names(AskPeriodType.values),
     );
     // Every key the device reads is a key the schema requires, and no more.
-    expect((schema['required']! as List<Object?>).toSet(), query().keys.toSet());
+    expect(
+      (schema['required']! as List<Object?>).toSet(),
+      query().keys.toSet(),
+    );
     expect(
       ((defs['filter']! as Map<String, Object?>)['required']! as List<Object?>)
           .toSet(),
@@ -123,7 +126,12 @@ void main() {
     test('a total with every filter', () {
       final AskQuery q = run(
         query(
-          f: filter(weekdays: <Object?>[5, 6.0], fromHour: 20, toHour: 24, tag: 'work/meeting'),
+          f: filter(
+            weekdays: <Object?>[5, 6.0],
+            fromHour: 20,
+            toHour: 24,
+            tag: 'work/meeting',
+          ),
         ),
       );
       expect(q.shape, AskShape.total);
@@ -153,7 +161,10 @@ void main() {
     });
 
     test('a series, a last time, a longest run and a comparison', () {
-      expect(run(query(shape: 'series', bucket: 'week')).bucket, AskBucket.week);
+      expect(
+        run(query(shape: 'series', bucket: 'week')).bucket,
+        AskBucket.week,
+      );
       final AskQuery last = run(
         query(
           shape: 'last_time',
@@ -168,7 +179,10 @@ void main() {
         query(shape: 'longest', longest: 'run_without', bucket: null),
       );
       expect(longest.bucket, AskBucket.day);
-      expect(run(query(shape: 'longest', longest: 'gap')).longest, AskLongest.gap);
+      expect(
+        run(query(shape: 'longest', longest: 'gap')).longest,
+        AskLongest.gap,
+      );
       final AskQuery compare = run(
         query(
           shape: 'compare',
@@ -185,14 +199,19 @@ void main() {
 
     test('a between period, its end cut to today', () {
       final AskQuery q = run(
-        query(p: period('between', from: '2026-10-01', to: '2026-12-31')),
+        query(
+          p: period('between', from: '2026-10-01', to: '2026-12-31'),
+        ),
       );
       expect(q.side.period.from, DateTime(2026, 10));
       expect(q.side.period.to, today);
     });
 
     test('the escapes', () {
-      expect(parse(<String, Object?>{'kind': 'needs_insights'}), isA<AskNeedsInsights>());
+      expect(
+        parse(<String, Object?>{'kind': 'needs_insights'}),
+        isA<AskNeedsInsights>(),
+      );
       final AskParsed cannot = parse(<String, Object?>{
         'kind': 'cannot_answer',
         'reason': 'unknown_habit',
@@ -224,10 +243,26 @@ void main() {
       expectInvalid(query(p: period('last_days', count: maxLastDays + 1)));
       expectInvalid(query(p: period('last_weeks')));
       expectInvalid(query(p: period('last_months', count: 121)));
-      expectInvalid(query(p: period('between', from: '2026-02-30', to: '2026-03-01')));
-      expectInvalid(query(p: period('between', from: '2026-11-10', to: '2026-11-01')));
-      expectInvalid(query(p: period('between', from: '1999-12-31', to: '2026-11-01')));
-      expectInvalid(query(p: period('between', from: '2026-12-01', to: '2026-12-31')));
+      expectInvalid(
+        query(
+          p: period('between', from: '2026-02-30', to: '2026-03-01'),
+        ),
+      );
+      expectInvalid(
+        query(
+          p: period('between', from: '2026-11-10', to: '2026-11-01'),
+        ),
+      );
+      expectInvalid(
+        query(
+          p: period('between', from: '1999-12-31', to: '2026-11-01'),
+        ),
+      );
+      expectInvalid(
+        query(
+          p: period('between', from: '2026-12-01', to: '2026-12-31'),
+        ),
+      );
       expectInvalid(query(p: period('next_week')));
     });
 
@@ -244,20 +279,38 @@ void main() {
     test('a shape missing what it needs', () {
       expectInvalid(query(shape: 'series'));
       expectInvalid(query(shape: 'last_time', bucket: 'week'));
-      expectInvalid(query(shape: 'last_time', bucket: 'day', condition: 'above'));
       expectInvalid(
-        query(shape: 'last_time', bucket: 'day', condition: 'above', threshold: -1),
+        query(shape: 'last_time', bucket: 'day', condition: 'above'),
       );
       expectInvalid(
-        query(shape: 'last_time', bucket: 'day', condition: 'below', threshold: 0),
+        query(
+          shape: 'last_time',
+          bucket: 'day',
+          condition: 'above',
+          threshold: -1,
+        ),
+      );
+      expectInvalid(
+        query(
+          shape: 'last_time',
+          bucket: 'day',
+          condition: 'below',
+          threshold: 0,
+        ),
       );
       expectInvalid(query(shape: 'longest'));
-      expectInvalid(query(shape: 'longest', longest: 'run_with', bucket: 'month'));
+      expectInvalid(
+        query(shape: 'longest', longest: 'run_with', bucket: 'month'),
+      );
       expectInvalid(query(shape: 'compare'));
       expectInvalid(
         query(
           shape: 'compare',
-          versus: <String, Object?>{'habit': 9, 'period': period('all_time'), 'filter': filter()},
+          versus: <String, Object?>{
+            'habit': 9,
+            'period': period('all_time'),
+            'filter': filter(),
+          },
         ),
       );
     });

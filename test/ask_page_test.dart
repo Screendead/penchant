@@ -80,8 +80,18 @@ void main() {
       'reason': 'none',
       'habit': 1,
       'measure': 'entries',
-      'period': <String, Object?>{'type': 'all_time', 'count': null, 'from': null, 'to': null},
-      'filter': <String, Object?>{'weekdays': <Object?>[], 'from_hour': null, 'to_hour': null, 'tag': null},
+      'period': <String, Object?>{
+        'type': 'all_time',
+        'count': null,
+        'from': null,
+        'to': null,
+      },
+      'filter': <String, Object?>{
+        'weekdays': <Object?>[],
+        'from_hour': null,
+        'to_hour': null,
+        'tag': null,
+      },
       'shape': 'total',
       'bucket': null,
       'condition': null,
@@ -107,8 +117,16 @@ void main() {
           'today': '2026-11-15',
           'weekday': 'Sunday',
           'habits': <Object?>[
-            <String, Object?>{'name': 'Wine', 'unit': 'drinks', 'archived': false},
-            <String, Object?>{'name': 'Vape', 'unit': 'pulls', 'archived': true},
+            <String, Object?>{
+              'name': 'Wine',
+              'unit': 'drinks',
+              'archived': false,
+            },
+            <String, Object?>{
+              'name': 'Vape',
+              'unit': 'pulls',
+              'archived': true,
+            },
           ],
         },
       ]);
@@ -117,9 +135,16 @@ void main() {
 
     test('a query that fails a check is cannot_answer', () async {
       final CallableAskJournal service = CallableAskJournal(
-        (_) async => <String, Object?>{'reason': 'ok', 'query': rawQuery()..['habit'] = 2},
+        (_) async => <String, Object?>{
+          'reason': 'ok',
+          'query': rawQuery()..['habit'] = 2,
+        },
       );
-      final AskParsed parsed = await service.ask('x', habits: habits, today: today);
+      final AskParsed parsed = await service.ask(
+        'x',
+        habits: habits,
+        today: today,
+      );
       expect(parsed, isA<AskCannotAnswer>());
     });
 
@@ -129,8 +154,14 @@ void main() {
         calls++;
         return null;
       });
-      expect(await service.ask(' ', habits: habits, today: today), isA<AskCannotAnswer>());
-      expect(await service.ask('x' * 301, habits: habits, today: today), isA<AskCannotAnswer>());
+      expect(
+        await service.ask(' ', habits: habits, today: today),
+        isA<AskCannotAnswer>(),
+      );
+      expect(
+        await service.ask('x' * 301, habits: habits, today: today),
+        isA<AskCannotAnswer>(),
+      );
       expect(calls, 0);
     });
 
@@ -140,7 +171,13 @@ void main() {
       );
       await expectLater(
         service.ask('x', habits: habits, today: today),
-        throwsA(isA<AskFailed>().having((AskFailed e) => e.reason, 'reason', 'refusal')),
+        throwsA(
+          isA<AskFailed>().having(
+            (AskFailed e) => e.reason,
+            'reason',
+            'refusal',
+          ),
+        ),
       );
     });
 
@@ -172,9 +209,12 @@ void main() {
   });
 
   group('askJournalProvider', () {
-    Future<AskJournal?> serviceWith({required bool? enabled, required User? user}) async {
+    Future<AskJournal?> serviceWith({
+      required bool? enabled,
+      required User? user,
+    }) async {
       SharedPreferences.setMockInitialValues(<String, Object>{
-        if (enabled != null) AskJournalEnabled.key: enabled,
+        AskJournalEnabled.key: ?enabled,
       });
       final ProviderContainer container = ProviderContainer(
         overrides: [userProvider.overrideWith((ref) => Stream.value(user))],
@@ -185,12 +225,18 @@ void main() {
       return container.read(askJournalProvider);
     }
 
-    test('is a service only while switched on with someone signed in', () async {
-      expect(await serviceWith(enabled: true, user: FakeUser('a')), isA<CallableAskJournal>());
-      expect(await serviceWith(enabled: false, user: FakeUser('a')), isNull);
-      expect(await serviceWith(enabled: true, user: null), isNull);
-      expect(await serviceWith(enabled: null, user: FakeUser('a')), isNull);
-    });
+    test(
+      'is a service only while switched on with someone signed in',
+      () async {
+        expect(
+          await serviceWith(enabled: true, user: FakeUser('a')),
+          isA<CallableAskJournal>(),
+        );
+        expect(await serviceWith(enabled: false, user: FakeUser('a')), isNull);
+        expect(await serviceWith(enabled: true, user: null), isNull);
+        expect(await serviceWith(enabled: null, user: FakeUser('a')), isNull);
+      },
+    );
   });
 
   group('AskPage', () {
@@ -209,7 +255,8 @@ void main() {
         askJournalProvider.overrideWithValue(service),
         viceListProvider.overrideWithValue(AsyncData<List<Vice>>(<Vice>[wine])),
         viceActivityRangeProvider.overrideWith(
-          (Ref ref, ActivityRange range) => AsyncData<List<ViceActivity>>(entries),
+          (Ref ref, ActivityRange range) =>
+              AsyncData<List<ViceActivity>>(entries),
         ),
       ],
       child: MaterialApp(
@@ -227,7 +274,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('answers on the device and says the query in words', (WidgetTester tester) async {
+    testWidgets('answers on the device and says the query in words', (
+      WidgetTester tester,
+    ) async {
       final FakeAsk service = FakeAsk((_) async => const AskRun(wineThisWeek));
       await tester.pumpWidget(app(service));
       await tester.pumpAndSettle();
@@ -235,13 +284,18 @@ void main() {
       expect(service.asked, <String>['How much wine this week?']);
       expect(find.text('How much wine this week?'), findsOneWidget);
       expect(find.text('5 drinks'), findsOneWidget);
-      expect(find.text(describeQuery(wineThisWeek, <Vice>[wine])), findsOneWidget);
+      expect(
+        find.text(describeQuery(wineThisWeek, <Vice>[wine])),
+        findsOneWidget,
+      );
       expect(find.text(AskPage.onDevice.toUpperCase()), findsOneWidget);
       expect(find.byType(AskBars), findsOneWidget);
     });
 
     testWidgets('hands a why to Insights', (WidgetTester tester) async {
-      await tester.pumpWidget(app(FakeAsk((_) async => const AskNeedsInsights())));
+      await tester.pumpWidget(
+        app(FakeAsk((_) async => const AskNeedsInsights())),
+      );
       await tester.pumpAndSettle();
       await ask(tester, 'Why do I drink more on Fridays?');
       expect(find.text(AskPage.insights), findsOneWidget);
@@ -250,17 +304,26 @@ void main() {
       expect(find.text('route /insights'), findsOneWidget);
     });
 
-    testWidgets('says plainly what it cannot answer', (WidgetTester tester) async {
+    testWidgets('says plainly what it cannot answer', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        app(FakeAsk((_) async => const AskCannotAnswer(AskReason.unknownHabit))),
+        app(
+          FakeAsk((_) async => const AskCannotAnswer(AskReason.unknownHabit)),
+        ),
       );
       await tester.pumpAndSettle();
       await ask(tester, 'How many beers?');
       expect(find.text(AskPage.cannot), findsOneWidget);
-      expect(find.text(AskPage.cannotDetail(AskReason.unknownHabit)), findsOneWidget);
+      expect(
+        find.text(AskPage.cannotDetail(AskReason.unknownHabit)),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('a failed call counts nothing, and keeps recent questions', (WidgetTester tester) async {
+    testWidgets('a failed call counts nothing, and keeps recent questions', (
+      WidgetTester tester,
+    ) async {
       int n = 0;
       await tester.pumpWidget(
         app(
@@ -279,7 +342,9 @@ void main() {
       expect(find.text('5 drinks'), findsOneWidget);
     });
 
-    testWidgets('switched off, it says where to turn it on', (WidgetTester tester) async {
+    testWidgets('switched off, it says where to turn it on', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(app(null));
       await tester.pumpAndSettle();
       expect(find.text(AskPage.off), findsOneWidget);
@@ -298,7 +363,9 @@ void main() {
     Future<bool?> saved() async =>
         (await SharedPreferences.getInstance()).getBool(AskJournalEnabled.key);
 
-    testWidgets('turning on says what is sent and asks first', (WidgetTester tester) async {
+    testWidgets('turning on says what is sent and asks first', (
+      WidgetTester tester,
+    ) async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
@@ -307,7 +374,13 @@ void main() {
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
       expect(find.text(AskJournalSetting.disclosure), findsOneWidget);
-      for (final String word in <String>['habits’ names', 'Anthropic', 'never sent', 'this device', 'training']) {
+      for (final String word in <String>[
+        'habits’ names',
+        'Anthropic',
+        'never sent',
+        'this device',
+        'training',
+      ]) {
         expect(AskJournalSetting.disclosure, contains(word));
       }
       await tester.tap(find.text(AskJournalSetting.notNow));
@@ -324,7 +397,9 @@ void main() {
     });
 
     testWidgets('turning off needs no asking', (WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues(<String, Object>{AskJournalEnabled.key: true});
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AskJournalEnabled.key: true,
+      });
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
       await tester.tap(find.byType(Switch));

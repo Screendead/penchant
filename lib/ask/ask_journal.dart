@@ -130,7 +130,9 @@ class CallableAskJournal implements AskJournal {
       request(q, habits: habits, today: today),
     ).timeout(timeout);
     final Object? reason = answer is Map ? answer['reason'] : null;
-    if (reason != 'ok') throw AskFailed(reason is String ? reason : 'unparsable');
+    if (reason != 'ok') {
+      throw AskFailed(reason is String ? reason : 'unparsable');
+    }
     return parseAskQuery(
       (answer as Map)['query'],
       habitCount: habits.length,

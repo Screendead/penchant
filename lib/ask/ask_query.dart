@@ -278,12 +278,17 @@ int? _habit(Object? json, int habitCount) {
   return index;
 }
 
-AskSide _side(Object? habit, Object? period, Object? filter, int n, DateTime t) =>
-    AskSide(
-      habit: _habit(habit, n),
-      period: _period(period, t),
-      filter: _filter(filter),
-    );
+AskSide _side(
+  Object? habit,
+  Object? period,
+  Object? filter,
+  int n,
+  DateTime t,
+) => AskSide(
+  habit: _habit(habit, n),
+  period: _period(period, t),
+  filter: _filter(filter),
+);
 
 /// The server's `query` checked against [habitCount] habits (the list sent
 /// with the question) and [today]. Never throws: anything malformed, out of

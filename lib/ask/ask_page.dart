@@ -55,9 +55,7 @@ class AskHistory extends Notifier<List<AskedQuestion>> {
 
   @override
   List<AskedQuestion> build() {
-    ref.watch(
-      userProvider.select((AsyncValue<User?> user) => user.value?.uid),
-    );
+    ref.watch(userProvider.select((AsyncValue<User?> user) => user.value?.uid));
     return const <AskedQuestion>[];
   }
 
@@ -154,9 +152,7 @@ class _AskPageState extends ConsumerState<AskPage> {
     final bool on = ref.watch(askJournalProvider) != null;
     final bool habitsLoaded = ref.watch(viceListProvider).value != null;
     final List<AskedQuestion> asked = ref.watch(askHistoryProvider);
-    final bool running = asked.any(
-      (AskedQuestion q) => q.parsed is AskRun,
-    );
+    final bool running = asked.any((AskedQuestion q) => q.parsed is AskRun);
     final DateTime today = ref.watch(todayProvider);
     // Read only once a query needs entries; the same one-time read as
     // Insights, so the same query shape and index.
@@ -278,7 +274,10 @@ class _QuestionPill extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Text(question, style: DialTypeScale.body.copyWith(fontSize: 14)),
+          child: Text(
+            question,
+            style: DialTypeScale.body.copyWith(fontSize: 14),
+          ),
         ),
       ),
     );
@@ -460,7 +459,10 @@ class AskBars extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: colour(bars[i]),
                               border: bars[i].marked
-                                  ? Border.all(color: scheme.onSurface, width: 1.5)
+                                  ? Border.all(
+                                      color: scheme.onSurface,
+                                      width: 1.5,
+                                    )
                                   : null,
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(3),

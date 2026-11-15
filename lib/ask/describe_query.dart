@@ -65,7 +65,8 @@ String _list(List<String> items) => items.length < 2
     ? items.join()
     : '${items.sublist(0, items.length - 1).join(', ')} and ${items.last}';
 
-String _hour(int h) => h == 24 || h == 0 ? 'midnight' : '${'$h'.padLeft(2, '0')}:00';
+String _hour(int h) =>
+    h == 24 || h == 0 ? 'midnight' : '${'$h'.padLeft(2, '0')}:00';
 
 /// The filters as phrases: "on Fridays", "from 20:00 to midnight",
 /// "tagged Work › Meeting". Empty when nothing filters.
@@ -76,7 +77,8 @@ List<String> describeFilter(AskFilter f) {
       switch (days.join()) {
         '67' => 'on weekends',
         '12345' => 'on weekdays',
-        _ => 'on ${_list(<String>[for (final int d in days) _dayNames[d - 1]])}',
+        _ =>
+          'on ${_list(<String>[for (final int d in days) _dayNames[d - 1]])}',
       },
     if (f.hasHours) 'from ${_hour(f.fromHour!)} to ${_hour(f.toHour!)}',
     if (f.tag != null)
@@ -90,8 +92,10 @@ String _bucketWord(AskBucket b) => switch (b) {
   AskBucket.month => 'month',
 };
 
-String _scope(AskSide side) =>
-    <String>[describePeriod(side.period), ...describeFilter(side.filter)].join(', ');
+String _scope(AskSide side) => <String>[
+  describePeriod(side.period),
+  ...describeFilter(side.filter),
+].join(', ');
 
 bool _endsToday(AskPeriod p) => switch (p.type) {
   AskPeriodType.lastWeek ||

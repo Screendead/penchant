@@ -68,7 +68,10 @@ DayRange? periodDays(AskPeriod period, DateTime today, DateTime? firstDay) {
     ),
     AskPeriodType.thisWeek => (start: monday, end: tomorrow),
     AskPeriodType.lastWeek => (start: addDays(monday, -7), end: monday),
-    AskPeriodType.thisMonth => (start: DateTime(t.year, t.month), end: tomorrow),
+    AskPeriodType.thisMonth => (
+      start: DateTime(t.year, t.month),
+      end: tomorrow,
+    ),
     AskPeriodType.lastMonth => (
       start: DateTime(t.year, t.month - 1),
       end: DateTime(t.year, t.month),
@@ -107,10 +110,7 @@ class _Side {
       matching.add(a);
       final ({double amount, int entries}) old =
           byDay[day] ?? (amount: 0, entries: 0);
-      byDay[day] = (
-        amount: old.amount + a.measure,
-        entries: old.entries + 1,
-      );
+      byDay[day] = (amount: old.amount + a.measure, entries: old.entries + 1);
     }
   }
 
@@ -137,9 +137,8 @@ class _Runner {
   final _Side a;
   final _Side? b;
 
-  String get _none => a.habit == null
-      ? 'No entries yet'
-      : 'No ${a.habit!.name} entries yet';
+  String get _none =>
+      a.habit == null ? 'No entries yet' : 'No ${a.habit!.name} entries yet';
 
   DayRange? _range(_Side s) {
     final DayRange? days = periodDays(s.side.period, today, s.firstDay);
@@ -396,7 +395,8 @@ class _Runner {
             AskCondition.any =>
               '${formatCount(since)} ${_unitWord(bucket, since)} without '
                   '$name since then.',
-            _ => '${formatCount(since)} ${_unitWord(bucket, since)} since then.',
+            _ =>
+              '${formatCount(since)} ${_unitWord(bucket, since)} since then.',
           };
     // The newest 8 when they hold the found bucket, else it and the 7 after.
     final int from = since < 8 ? max(0, buckets.length - 8) : found;
@@ -462,7 +462,9 @@ class _Runner {
             .where((DateTime d) => !d.isBefore(r.start) && d.isBefore(r.end))
             .toList()
           ..sort();
-    if (days.isEmpty) return const AskAnswer(headline: 'No entries in this period');
+    if (days.isEmpty) {
+      return const AskAnswer(headline: 'No entries in this period');
+    }
     int best = 0;
     DayRange? span;
     bool ongoing = false;
@@ -498,7 +500,8 @@ class _Runner {
     final (String la, String lb) = compareLabels(q, habits);
     return AskAnswer(
       headline: '${_figure(va, a)} against ${_figure(vb, second)}',
-      detail: '${_upper(la)}: ${_figure(va, a)}. '
+      detail:
+          '${_upper(la)}: ${_figure(va, a)}. '
           '${_upper(lb)}: ${_figure(vb, second)}.',
       bars: <AskBar>[
         AskBar(va, la, viceID: a.habit?.id),
