@@ -1048,10 +1048,24 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
+Nothing is waiting. Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
+https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15; being built, each
+behind its own off-by-default switch:
+
+- `weekly-words`: **Sonnet writes it** (not the recommended Haiku): a paragraph at the top of the weekly review from
+  figures the device computed, habits sent as placeholders, every number in the reply checked against what was sent,
+  else the lists alone. Needs Jack to raise Sonnet's rate limit in the Penchant workspace from zero.
+- `ask-journal`: **Claude writes the query** (as recommended): the question and habit names are sent, the device runs
+  the query and shows the answer with the query in words; "why" questions go to Insights. Haiku against Sonnet to be
+  tried on 40 written questions before choosing.
+- `follow-up`: **Claude writes the question** (not the recommended pick from a written set): one optional question
+  after a note, about circumstances only, never amounts or advice; its answer saved sealed with the note. Before
+  release Jack reviews what it asks for a set of made-up notes.
+
 Round 21 (`docs/pitch/round-21/trigger-tree/pitch.html`, https://claude.ai/artifact/3xNRWLCyXA9nzSvWsVCDgw):
 `tag-list`, picked by Jack on 2026-11-15, "Adopt it all": 174 tags in 11 areas with search in the picker. Built.
 
-Nothing is waiting. Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
+Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
 https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), all four picked by Jack on 2026-11-15: "Take all 4
 recommendations; but the time of that notification should be user-configurable." Built (CLAUDE.md: What was going
 on?, Note reader, Day notes, Heavy-day prompt). Jack's trial of Claude on the 12 notes: all answered, median 1.2 s,
