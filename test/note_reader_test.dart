@@ -65,7 +65,7 @@ void main() {
         return null;
       });
       expect(await reader.read('  ').toList(), isEmpty);
-      expect(await reader.read('x' * 501).toList(), isEmpty);
+      expect(await reader.read('x' * 2001).toList(), isEmpty);
       expect(calls, 0);
     });
 

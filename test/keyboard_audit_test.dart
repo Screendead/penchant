@@ -503,10 +503,10 @@ void main() {
         fields: <_Field>[
           _Field('text', _plain(find.byKey(DayNoteSheet.fieldKey))),
           _Field(
-            'level-one free text',
+            'tag search in an area',
             onTags(
-              find.text('Your own words'),
-              find.widgetWithText(TextField, 'In your own words'),
+              find.text(triggerTree.first.label),
+              find.widgetWithText(TextField, TriggerChoices.searchHint),
             ),
           ),
         ],

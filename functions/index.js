@@ -282,7 +282,7 @@ exports.readNote = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to read a note.');
     const note = validNote(request.data);
-    if (note == null) throw new HttpsError('invalid-argument', 'A note is 1 to 500 characters.');
+    if (note == null) throw new HttpsError('invalid-argument', 'A note is 1 to 2000 characters.');
     const client = anthropicClient();
     if (client == null) {
       logger.warn('readNote', { reason: 'not_configured' });

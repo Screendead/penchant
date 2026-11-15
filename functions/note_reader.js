@@ -3,7 +3,7 @@
 const { NOTE_TAGS } = require('./note_tags.js');
 
 const MODEL = 'claude-haiku-5-5';
-const MAX_NOTE = 500;
+const MAX_NOTE = 2000;
 const MAX_TAGS = 4;
 const DAILY_CAP = 60;
 
@@ -54,7 +54,7 @@ function messageRequest(note) {
   };
 }
 
-// The note as sent, or null when it is not a string of 1 to 500 UTF-16 units
+// The note as sent, or null when it is not a string of 1 to 2000 UTF-16 units
 // with something besides white space.
 function validNote(data) {
   const note = data == null ? undefined : data.note;

@@ -34,16 +34,16 @@ function dartTree() {
 
 test('the tag list is the Dart starter tree', () => {
   const dart = dartTree();
-  assert.equal(dart.length, 47);
+  assert.equal(dart.length, 185);
   assert.deepEqual(NOTE_TAGS, dart);
 });
 
-test('a note is a string of 1 to 500 UTF-16 units, not all white space', () => {
+test('a note is a string of 1 to 2000 UTF-16 units, not all white space', () => {
   assert.equal(validNote({ note: 'pub with Sam' }), 'pub with Sam');
-  assert.equal(validNote({ note: 'x'.repeat(500) }), 'x'.repeat(500));
-  assert.equal(validNote({ note: 'x'.repeat(501) }), null);
+  assert.equal(validNote({ note: 'x'.repeat(2000) }), 'x'.repeat(2000));
+  assert.equal(validNote({ note: 'x'.repeat(2001) }), null);
   // Each emoji is two UTF-16 units.
-  assert.equal(validNote({ note: '🍺'.repeat(251) }), null);
+  assert.equal(validNote({ note: '🍺'.repeat(1001) }), null);
   assert.equal(validNote({ note: '' }), null);
   assert.equal(validNote({ note: '  \n' }), null);
   assert.equal(validNote({ note: 3 }), null);
@@ -89,7 +89,7 @@ test('the request is Haiku 5.5 at its fastest, with a schema of listed paths', (
   assert.equal(request.output_config.format.type, 'json_schema');
   const item = request.output_config.format.schema.properties.tags.items;
   assert.deepEqual(new Set(item.properties.path.enum), LEAF_PATHS);
-  assert.equal(LEAF_PATHS.size, 40);
+  assert.equal(LEAF_PATHS.size, 174);
   assert.deepEqual(request.messages, [{ role: 'user', content: 'a note' }]);
   assert.ok(!('temperature' in request));
   // Nothing but the note and the tag list reaches the model.

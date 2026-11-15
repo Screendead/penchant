@@ -62,7 +62,7 @@ class CallableNoteReader implements NoteReader {
 
   static const Duration timeout = Duration(seconds: 10);
   static const int maxTags = 4;
-  static const int maxNote = 500;
+  static const int maxNote = 2000;
 
   static final Set<String> _paths = triggerPaths().toSet();
 

@@ -1125,12 +1125,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(WhatWasGoingOnSheet.nextKey));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Your own words'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Your own words'));
-      await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'In your own words'),
+        find.widgetWithText(TextField, TriggerChoices.searchHint),
         'Pitch review',
       );
       await tester.ensureVisible(find.byTooltip('Add'));
@@ -1294,12 +1290,8 @@ void main() {
 
         await tester.tap(find.byKey(WhatWasGoingOnSheet.nextKey));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Your own words'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Your own words'));
-        await tester.pumpAndSettle();
         await tester.enterText(
-          find.widgetWithText(TextField, 'In your own words'),
+          find.widgetWithText(TextField, TriggerChoices.searchHint),
           'Pitch review',
         );
         await tester.ensureVisible(find.byTooltip('Add'));

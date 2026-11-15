@@ -47,6 +47,14 @@ Widget _root(String route) => Scaffold(
 );
 
 Future<void> _tapText(WidgetTester tester, String text) async {
+  // Settings builds its rows lazily, so one below the fold does not exist yet.
+  if (find.text(text).evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      find.text(text),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+  }
   await tester.ensureVisible(find.text(text).last);
   await tester.pumpAndSettle();
   await tester.tap(find.text(text).last);
