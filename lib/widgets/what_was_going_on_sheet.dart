@@ -532,6 +532,9 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
             ],
             const SizedBox(height: DialSpace.m),
             TriggerChoices(
+              // Keeps the open area and free text as the rows above come and
+              // go.
+              key: const ValueKey<String>('hand-picker'),
               viceName: widget.viceName,
               usual: widget.offers.usual,
               promoted: widget.offers.promoted,
