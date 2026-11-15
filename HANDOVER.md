@@ -1048,16 +1048,22 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 20 (`docs/pitch/round-20/what-happened/pitch.html`, https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), four
-calls from Jack's 2026-11-15 ask for "What was going on?" as locked Next-only panels, a heavy-day prompt for free
-text, and AI over the notes. Nothing is built. Recommendations (Claude's): `note-reader` Claude Haiku through a Cloud
-Function, opt-in (Jack's iPhone 13 Pro Max cannot run Apple's on-device model; `tools/note-tagging-trial.swift` on the
-Mac: 12/12 answered, median 0.9 s, about half tagged well, a floor: one untuned prompt, plain-text answers; Claude
-unmeasured, no key here); `heavy-day` a neutral
-21:00 notification, off by default, heavy being the top tenth of the habit's last 90 days; `day-text` a new sealed
-day-note document; `panel-questions` the existing three reordered (note, tags read from it, urge). An entry's note
-becomes ordinary triggers the person confirms, which Insights already compares; a day note's tags would need new
-Insights work.
+Nothing is waiting. Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
+https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), all four picked by Jack on 2026-11-15: "Take all 4
+recommendations; but the time of that notification should be user-configurable." Being built:
+
+- `note-reader`: Claude Haiku through a Cloud Function, off until switched on; the function holds the key, caps calls
+  per account per day, and returns starter-tree triggers the person confirms before anything saves. Needs from Jack:
+  an Anthropic API key set as the function's secret (the function cannot deploy without it). Claude's speed and
+  quality are unmeasured (no key on the Mac). Apple's on-device model (`tools/note-tagging-trial.swift`: 12/12
+  answered, median 0.9 s, about half tagged well, a floor: one untuned prompt, plain-text answers) is not used;
+  Jack's iPhone 13 Pro Max cannot run it.
+- `heavy-day`: a neutral notification naming no habit or amount, off by default, at a time the person sets (default
+  21:00), on a day in the top tenth of a habit's last 90 days once it has 30 days of history.
+- `day-text`: a new sealed day-note document, one per day. Insights does not read its tags yet (new comparison work,
+  not in this build).
+- `panel-questions`: "What was going on?" as locked panels moved only by Back and Next: note, tags read from it,
+  urge. The record sheet and entry editor are unchanged.
 
 Round 19 (`docs/pitch/round-19/tally-rows/index.html`,
 https://claude.ai/artifact/9NyyLbvt7fc5k66AAp9UUd): `tally-rows` C, picked by Jack on 2026-11-13, "C, but greyed out
