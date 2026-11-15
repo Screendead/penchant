@@ -47,6 +47,7 @@ import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/data/queued_log.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
+import 'package:tracker/widgets/what_was_going_on_sheet.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/what_was_going_on.dart';
@@ -1122,6 +1123,8 @@ void main() {
 
       await tester.tap(ask);
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(WhatWasGoingOnSheet.nextKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Your own words'));
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -1144,7 +1147,7 @@ void main() {
       });
     });
 
-    testWidgets('the picker after a log also asks for the urge and a note, '
+    testWidgets('the panels after a log also ask for the urge and a note, '
         'and seals them with where and how the entry was logged', (
       WidgetTester tester,
     ) async {
@@ -1164,16 +1167,16 @@ void main() {
 
       await tester.tap(find.widgetWithText(TextButton, whatWasGoingOnLabel));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(UrgeField.keyFor(4)));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(UrgeField.keyFor(4)));
-      await tester.pump();
       await tester.enterText(
         find.byKey(NoteField.fieldKey),
         '  After the call ',
       );
-      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.tap(find.byKey(WhatWasGoingOnSheet.nextKey));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(WhatWasGoingOnSheet.nextKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(UrgeField.keyFor(4)));
+      await tester.pump();
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
@@ -1208,7 +1211,7 @@ void main() {
     );
 
     testWidgets(
-      "the picker's Undo log removes the entry and writes no triggers",
+      "the panels' Undo log removes the entry and writes no triggers",
       (WidgetTester tester) async {
         await _pumpApp(tester, <Override>[
           ...overrides(),
@@ -1278,13 +1281,15 @@ void main() {
 
         ask(tester, 'w1');
         await tester.pumpAndSettle();
-        expect(find.byType(TriggerPickerSheet), findsOneWidget);
+        expect(find.byType(WhatWasGoingOnSheet), findsOneWidget);
         expect(
           <String>[for (final Write w in writes.writes) '${w.op}:${w.id}'],
           <String>['recordActivity:w1'],
         );
         expect(bridge.queue, isEmpty);
 
+        await tester.tap(find.byKey(WhatWasGoingOnSheet.nextKey));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Your own words'));
         await tester.pumpAndSettle();
         await tester.enterText(
@@ -1332,13 +1337,13 @@ void main() {
 
         ask(tester, 'w1');
         await tester.pumpAndSettle();
-        expect(find.byType(TriggerPickerSheet), findsNothing);
+        expect(find.byType(WhatWasGoingOnSheet), findsNothing);
 
         ProviderScope.containerOf(
           tester.element(find.byType(ViceTracker)),
         ).read(_vicesSlot.notifier).load(<Vice>[coffee, tea]);
         await tester.pumpAndSettle();
-        expect(find.byType(TriggerPickerSheet), findsOneWidget);
+        expect(find.byType(WhatWasGoingOnSheet), findsOneWidget);
         expect(writes.writes, isEmpty, reason: 'already written');
       }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
@@ -1371,7 +1376,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(find.text(entryUndoneNotice), findsOneWidget);
-        expect(find.byType(TriggerPickerSheet), findsNothing);
+        expect(find.byType(WhatWasGoingOnSheet), findsNothing);
         expect(writes.writes, isEmpty);
         await tester.pumpAndSettle(const Duration(seconds: 5));
       }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));

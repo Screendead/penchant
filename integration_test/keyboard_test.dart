@@ -10,6 +10,7 @@ import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
+import 'package:tracker/widgets/what_was_going_on_sheet.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
 import 'package:tracker/writes/what_was_going_on.dart';
 
@@ -160,13 +161,15 @@ void main() {
 
     await logOne(tester, 'Coffee');
     await tap(tester, find.text(whatWasGoingOnLabel));
-    await pumpUntilRouteSettled(tester, picker);
-    await _focus(tester, find.descendant(of: picker, matching: note));
-    await _expectAbove(tester, note, 'the picker\'s note');
-    await _expectAbove(tester, done, 'the picker\'s Done');
+    final Finder panels = find.byType(WhatWasGoingOnSheet);
+    final Finder panelsDone = find.byKey(WhatWasGoingOnSheet.doneKey);
+    await pumpUntilRouteSettled(tester, panels);
+    await _focus(tester, find.descendant(of: panels, matching: note));
+    await _expectAbove(tester, note, 'the panels\' note');
+    await _expectAbove(tester, panelsDone, 'the panels\' Done');
     await screenshot(tester, 'picker-note');
-    await tap(tester, done);
-    await pumpUntil(tester, picker, present: false);
+    await tap(tester, panelsDone);
+    await pumpUntil(tester, panels, present: false);
 
     await openFromMenu(tester, Homepage.habitsItem);
     await tap(tester, find.byTooltip('Add habit'));

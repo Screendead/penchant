@@ -26,7 +26,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/time_dial.dart';
-import 'package:tracker/widgets/trigger_picker.dart';
+import 'package:tracker/widgets/what_was_going_on_sheet.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
 
 import 'fake_writes.dart';
@@ -153,19 +153,21 @@ void main() {
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
-              builder: (_) => TriggerPickerSheet(
+              builder: (_) => WhatWasGoingOnSheet(
                 viceName: 'Wine',
-                usual: const <String>[
-                  'routine/wind-down',
-                  'routine/meal',
-                  'place/home',
-                  'social/friends',
-                  'feeling/stressed',
-                ],
+                offers: (
+                  usual: const <String>[
+                    'routine/wind-down',
+                    'routine/meal',
+                    'place/home',
+                    'social/friends',
+                    'feeling/stressed',
+                  ],
+                  promoted: const <String>[],
+                  suggested: const <String>[],
+                ),
                 initial: const <String>['routine/wind-down', 'place/home'],
-                answers: (urge: null, note: null),
                 onDone: (_) {},
-                onAnswered: (_, _) {},
                 onUndoLog: () {},
               ),
             );

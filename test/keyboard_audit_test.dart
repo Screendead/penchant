@@ -43,6 +43,7 @@ import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/place_sheet.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
+import 'package:tracker/widgets/what_was_going_on_sheet.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
 
 import 'fake_account.dart';
@@ -416,7 +417,6 @@ void main() {
             viceID: _coffee.id,
             viceName: _coffee.name,
             initial: const <String>[],
-            answers: (urge: null, note: null),
           ),
         ),
         fields: <_Field>[
@@ -427,7 +427,6 @@ void main() {
               find.widgetWithText(TextField, 'In your own words'),
             ),
           ),
-          _Field('note', _plain(find.byKey(NoteField.fieldKey))),
           _Field(
             'level-two free text',
             _after(
@@ -440,6 +439,51 @@ void main() {
           ),
         ],
         action: find.text('Done'),
+      ),
+    );
+  });
+
+  testWidgets('what was going on panels', (WidgetTester tester) async {
+    Future<Finder> Function(WidgetTester) onTags(Finder tap, Finder field) =>
+        (WidgetTester t) async {
+          await (_after(find.byKey(WhatWasGoingOnSheet.nextKey), field))(t);
+          return (_after(tap, field))(t);
+        };
+    _report(
+      await _audit(
+        tester,
+        surface: 'what was going on panels',
+        open: (WidgetTester t) => _openRoute(
+          t,
+          _entryOverrides(),
+          (BuildContext c) => showWhatWasGoingOn(
+            c,
+            viceID: _coffee.id,
+            viceName: _coffee.name,
+            onUndoLog: () {},
+          ),
+        ),
+        fields: <_Field>[
+          _Field('note', _plain(find.byKey(NoteField.fieldKey))),
+          _Field(
+            'level-one free text',
+            onTags(
+              find.text('Your own words'),
+              find.widgetWithText(TextField, 'In your own words'),
+            ),
+          ),
+          _Field(
+            'level-two free text',
+            onTags(
+              find.text(triggerTree.first.label),
+              find.widgetWithText(
+                TextField,
+                'Something else, in your own words',
+              ),
+            ),
+          ),
+        ],
+        action: find.byKey(WhatWasGoingOnSheet.nextKey),
       ),
     );
   });
