@@ -7,6 +7,7 @@ const {
   LOOKUP_BATCH,
   MAX_CANDIDATES,
   MIN_RUN_GAP_MS,
+  OWNED_COLLECTIONS,
   chunk,
   distinctOwners,
   missingUids,
@@ -229,5 +230,11 @@ describe('runCleanup', () => {
         );
       }
     }
+  });
+});
+
+describe('OWNED_COLLECTIONS', () => {
+  it('names every collection of owned documents, day notes included', () => {
+    assert.deepEqual([...OWNED_COLLECTIONS].sort(), ['activities', 'dayNotes', 'vices']);
   });
 });

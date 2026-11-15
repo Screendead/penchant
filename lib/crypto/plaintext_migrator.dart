@@ -153,10 +153,12 @@ class PlaintextMigrator {
     // read; sealing the older value and deleting the field would then discard
     // the edit once it lands first.
     await source.settlePendingWrites();
-    // A collection with no content fields has nothing to seal, so it is not
-    // read at all.
+    // A collection with no content fields, or born sealed, has nothing to
+    // seal, so it is not read at all.
     for (final String collection in contentFields.keys.where(
-      (String collection) => contentFields[collection]!.isNotEmpty,
+      (String collection) =>
+          contentFields[collection]!.isNotEmpty &&
+          !bornSealedCollections.contains(collection),
     )) {
       String? after;
       while (true) {

@@ -10,6 +10,10 @@ const MIN_RUN_GAP_MS = 20 * 60 * 60 * 1000;
 // Keeps the state document far below Firestore's 1 MiB; a missing uid past it
 // is picked up once the ones before it are gone.
 const MAX_CANDIDATES = 5000;
+// Every collection whose documents carry an ownerID: scanned for owners,
+// counted and swept per orphaned uid. Must match Account.ownedCollections in
+// lib/account/account.dart.
+const OWNED_COLLECTIONS = ['activities', 'vices', 'dayNotes'];
 
 function validUid(uid) {
   return typeof uid === 'string' && uid.length > 0 && uid.length <= MAX_UID_LENGTH;
@@ -116,6 +120,7 @@ module.exports = {
   LOOKUP_BATCH,
   MAX_CANDIDATES,
   MIN_RUN_GAP_MS,
+  OWNED_COLLECTIONS,
   chunk,
   distinctOwners,
   missingUids,

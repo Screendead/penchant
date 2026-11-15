@@ -11,10 +11,15 @@ typedef StoredDocument = ({String id, Map<String, dynamic> data});
 
 @immutable
 class AccountData {
-  const AccountData({required this.vices, required this.activities});
+  const AccountData({
+    required this.vices,
+    required this.activities,
+    this.dayNotes = const <StoredDocument>[],
+  });
 
   final List<StoredDocument> vices;
   final List<StoredDocument> activities;
+  final List<StoredDocument> dayNotes;
 }
 
 // Thrown by signOut and deleteAccount when entries recorded on this device
@@ -57,7 +62,14 @@ class Account {
 
   static const Duration _syncWait = Duration(seconds: 5);
 
-  static const List<String> _ownedCollections = <String>['activities', 'vices'];
+  // Every collection of documents carrying the user's ownerID, swept on
+  // deletion and a guest's sign-out.
+  @visibleForTesting
+  static const List<String> ownedCollections = <String>[
+    'activities',
+    'vices',
+    'dayNotes',
+  ];
 
   User _signedInUser() {
     final User? user = _auth.currentUser;
@@ -174,6 +186,7 @@ class Account {
     return AccountData(
       vices: await _readOwned('vices', uid),
       activities: await _readOwned('activities', uid),
+      dayNotes: await _readOwned('dayNotes', uid),
     );
   }
 
@@ -196,7 +209,7 @@ class Account {
     }
     bool removing = false;
     try {
-      for (final String collection in _ownedCollections) {
+      for (final String collection in ownedCollections) {
         await _deleteOwned(
           collection,
           user.uid,
