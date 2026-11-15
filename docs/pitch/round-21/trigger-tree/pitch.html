@@ -1,0 +1,175 @@
+<title>Penchant Tag List</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;800&family=Red+Hat+Mono:wght@500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; each area is a block of tag chips that wraps. */
+:root {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface2: #EFECE5; --text: #1D1C1A; --muted: #635E56;
+  --line: #1D1C1A1A; --outline: #1D1C1A8C; --on-accent: #F6F4EF; --new: #E3EFE4; --new-ink: #276B43;
+  --display: "Red Hat Display", system-ui, sans-serif; --body: "Red Hat Text", system-ui, sans-serif;
+  --mono: "Red Hat Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A; --new: #15241B; --new-ink: #9ED8B0;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A; --new: #15241B; --new-ink: #9ED8B0;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--text); font: 400 16px/1.55 var(--body); font-variant-numeric: tabular-nums; }
+.page { max-width: 900px; margin: 0 auto; padding-block: 32px 96px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 32px; }
+h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 800 20px/1.2 var(--display); margin: 0; }
+h3 { font: 600 13px/1.3 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 66ch; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 66ch; }
+.stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.muted { color: var(--muted); }
+.area { border-top: 2px solid var(--text); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.area-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.area-head small { color: var(--muted); font-size: 13px; }
+.badge { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px;
+  border-radius: 999px; background: var(--new); color: var(--new-ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 14px/1 var(--body); padding: 9px 12px; border-radius: 999px; border: 1px solid var(--outline);
+  background: var(--surface); color: var(--text); cursor: pointer; }
+.chip.old { background: var(--surface2); border-color: var(--line); cursor: default; }
+.chip[aria-pressed="false"] { text-decoration: line-through; color: var(--muted); border-style: dashed; background: none; }
+.chip:focus-visible, .btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: var(--muted); align-items: center; }
+.legend .chip { cursor: default; font-size: 12px; padding: 6px 10px; }
+.bar { position: sticky; bottom: env(safe-area-inset-bottom, 0px); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 16px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  justify-content: space-between; }
+.bar span { font: 500 13px var(--mono); }
+.btn { height: 42px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--text); background: var(--text);
+  color: var(--on-accent); font: 600 14px var(--body); cursor: pointer; }
+textarea { width: 100%; box-sizing: border-box; height: 90px; font: 500 12px var(--mono); color: var(--text);
+  background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: 14.5px; }
+.opt.rec { border: 2px solid var(--text); }
+.opt b.name { font: 800 17px/1.25 var(--display); }
+.tag { align-self: flex-start; font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase;
+  background: var(--text); color: var(--on-accent); padding: 4px 8px; border-radius: 999px; }
+</style>
+
+<div class="page">
+  <div class="stack">
+    <h3>Penchant · one call · 15 November 2026</h3>
+    <h1>A fuller list of tags for "what set it off"</h1>
+    <p>Today the app offers 40 tags in 7 areas. Reading 12 trial notes into tags showed the gap: an argument about money could only be filed under Work, because "Hard conversation" exists nowhere else. Most of the list is like that: a tag sits in one area and means less than its words.</p>
+    <p>Below is a proposed list of <b id="total"></b> tags in <b>11 areas</b>. It keeps every existing tag, because entries already saved point at them, and adds the rest. Four areas are new: what happened between people, something that happened, what you were doing, and what it was for. That last one records the purpose (to relax, to cope, to sleep), which is a different question from the cause and the one most worth comparing across habits.</p>
+    <p><b>Tap any new tag to strike it out</b>, then copy your version at the bottom and paste it to me. Existing tags can't be removed, only renamed.</p>
+    <div class="legend">
+      <span class="chip old">Existing tag</span><span class="chip">New tag</span>
+      <span class="chip" aria-pressed="false">Struck out by you</span>
+    </div>
+  </div>
+
+  <div id="areas" class="stack" style="gap:26px"></div>
+
+  <section class="stack">
+    <h3>The call</h3>
+    <h2>Adopt the fuller list, and how much of it</h2>
+    <p>What changes for you: the tag picker goes from 7 tiles of about 6 tags to 11 tiles of about 15. That is too many to scan, so the picker gains a search box, and the note reader matters more, since it finds the tag for you. Trends and Insights group by area, so the four new areas appear there as their own groups. A tag's identity is permanent once shipped: later it can be renamed or hidden, never deleted or moved to another area.</p>
+    <div class="opts">
+      <div class="opt rec"><span class="tag">Recommended</span><b class="name">The whole list, minus what you strike out</b>
+        <p>All 11 areas, with a search box in the picker. Claude reads notes against the full list; a longer list costs about three times as much per note (still under a tenth of a cent) and should stay under 3 seconds, unmeasured.</p>
+        <p class="muted">About 1.5 days. Ships with the note reader.</p></div>
+      <div class="opt"><b class="name">Only fill out the 7 existing areas</b>
+        <p>Add the new tags inside the areas you already have, plus an "Argument" tag under Social. No new areas, so Trends and Insights look the same.</p>
+        <p class="muted">About half a day. Loses "what it was for", the most useful addition.</p></div>
+      <div class="opt"><b class="name">Leave the list as it is</b>
+        <p>Rely on free-text tags for anything missing. The note reader keeps filing things under the nearest tag that exists.</p>
+        <p class="muted">No work.</p></div>
+    </div>
+    <p><b>Why now:</b> the note reader is about to go live, and it can only suggest tags that exist. <b>Waiting on this:</b> nothing else; the reader works with today's 40. <b>If you do nothing:</b> the list stays at 40.</p>
+  </section>
+
+  <div class="bar">
+    <span id="count"></span>
+    <button class="btn" id="copy">Copy my version</button>
+  </div>
+  <textarea id="out" readonly hidden aria-label="Your version of the list"></textarea>
+</div>
+
+<script>
+(() => {
+  // [area id, label today, proposed label, what it answers, existing tags, new tags]
+  const TREE = [
+    ['social', 'Social', 'Who was there', 'the company you were in',
+      ['With friends', 'Party or event', 'Date', 'Family', 'Offered one', 'On my own'],
+      ['Partner', 'Colleagues', 'Housemates', 'Kids around', 'New people', 'Everyone else was', 'Hosting', 'Felt pressured', 'Felt left out', 'Online with others']],
+    ['people', null, 'Between people', 'what passed between you and someone',
+      [],
+      ['Argument', 'Hard conversation', 'Tension at home', 'Felt criticised', 'Let someone down', 'Break-up or rejection', 'Missing someone', 'Looking after someone', 'Made up after a row', 'Good time together']],
+    ['feeling', 'Feeling', 'Feeling', 'your mood just before',
+      ['Stressed', 'Bored', 'Low', 'Anxious', 'Lonely', 'Happy', 'Restless'],
+      ['Angry', 'Frustrated', 'Overwhelmed', 'Sad', 'Grieving', 'Guilty or ashamed', 'Embarrassed', 'Jealous', 'Numb', 'Irritable', 'Hopeless', 'Excited', 'Relieved', 'Proud', 'Content', 'Nostalgic']],
+    ['for', null, 'What it was for', 'the job it was doing',
+      [],
+      ['To relax', 'To reward myself', 'To celebrate', 'To cope', 'To sleep', 'To wake up', 'To focus', 'To fit in', 'To feel something', 'To stop thinking', 'To put something off', 'To pass the time', 'To stop the craving', 'For the taste']],
+    ['event', null, 'Something happened', 'news or an occasion that day',
+      [],
+      ['Bad news', 'Good news', 'Money worry', 'Payday', 'Health worry', 'Loss or funeral', 'Birthday', 'Anniversary', 'Holiday or festival', 'Match or game on', 'Big change', 'Plans fell through', 'Dreading tomorrow']],
+    ['work', 'Work', 'Work or study', 'the working day',
+      ['Meeting', 'Deadline', 'On a break', 'Finished for the day', 'Hard conversation', 'Long day'],
+      ['Bad day', 'Good result', 'Too much to do', 'Nothing to do', 'Working late', 'Presentation or interview', 'Job worry', 'Exams or studying', 'Day off', 'Work drinks']],
+    ['body', 'Body', 'Body', 'how you felt physically',
+      ['Tired', 'Hungry', 'In pain', "Couldn't sleep", 'After exercise', 'Unwell'],
+      ['Hungover', 'Thirsty', 'Just eaten', 'Headache', 'Period or cycle', 'Withdrawal', 'Too much caffeine', 'Jet-lagged', 'Injured', 'On medication', 'Felt good']],
+    ['doing', null, 'What I was doing', 'the activity it came with',
+      [],
+      ['Watching TV', 'Scrolling', 'Gaming', 'Working', 'Driving', 'Cooking', 'Eating out', 'On a call', 'Housework', 'Reading', 'Listening to music', 'Watching sport', 'Waiting around', 'Out walking', 'Nothing much']],
+    ['routine', 'Routine', 'Time and routine', 'when in the day or week',
+      ['Morning', 'With a meal', 'Winding down', 'Weekend', 'Out of habit'],
+      ['First thing', 'After lunch', 'Afternoon slump', 'After work', 'Evening', 'Late night', 'Before bed', 'Middle of the night', 'With coffee', 'With a drink', 'Friday', 'Sunday', 'Routine broken']],
+    ['place', 'Place', 'Place', 'where you were',
+      ['Home', 'Bar or restaurant', 'Commute', 'Travelling', 'Outdoors'],
+      ['At work', "Someone else's home", 'In the car', 'Shop', 'Café', 'Gig, club or festival', 'Gym or sports ground', 'Hotel', 'Airport or station', 'On holiday', 'In bed', 'Garden or balcony']],
+    ['craving', 'Craving', 'Cue', 'what put it in front of you',
+      ['Saw it', 'Smelled it', 'Someone else had one', 'Ad or feed', 'Just wanted it'],
+      ['It was in the house', 'Walked past the place', 'On offer or free', 'In a film or show', 'A song or memory', 'After the first one', 'Another habit set it off', 'Thought about it all day', 'Out of nowhere', 'Had been holding off']],
+  ];
+  const $ = id => document.getElementById(id);
+  const areas = $('areas');
+  for (const [id, was, label, answers, old, fresh] of TREE) {
+    const el = document.createElement('section');
+    el.className = 'area';
+    const renamed = was && was !== label ? `<small>renamed from "${was}"</small>` : '';
+    el.innerHTML = `<div class="area-head"><h2>${label}</h2>${was ? '' : '<span class="badge">New area</span>'}${renamed}<small>${answers}</small></div>`;
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    for (const t of old) { const c = document.createElement('span'); c.className = 'chip old'; c.textContent = t; chips.append(c); }
+    for (const t of fresh) {
+      const c = document.createElement('button');
+      c.className = 'chip'; c.textContent = t; c.dataset.area = label; c.setAttribute('aria-pressed', 'true');
+      c.onclick = () => { c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') !== 'true'); tally(); };
+      chips.append(c);
+    }
+    el.append(chips); areas.append(el);
+  }
+  const oldCount = TREE.reduce((n, a) => n + a[4].length, 0);
+  $('total').textContent = oldCount + TREE.reduce((n, a) => n + a[5].length, 0);
+  function tally() {
+    const kept = document.querySelectorAll('.chip[aria-pressed="true"]').length;
+    const cut = document.querySelectorAll('.chip[aria-pressed="false"]:not(.legend *)').length;
+    $('count').textContent = `${oldCount} existing + ${kept - 0} new kept` + (cut ? `, ${cut} struck out` : '');
+  }
+  tally();
+  $('copy').onclick = () => {
+    const cut = {};
+    document.querySelectorAll('#areas .chip[aria-pressed="false"]').forEach(c => (cut[c.dataset.area] ||= []).push(c.textContent));
+    const lines = Object.entries(cut).map(([a, t]) => `${a}: ${t.join(', ')}`);
+    const text = lines.length ? 'Tag list: adopt it, without these.\n' + lines.join('\n') : 'Tag list: adopt it all.';
+    const out = $('out'); out.value = text; out.hidden = false;
+    const done = () => { $('copy').textContent = 'Copied. Paste it to Claude'; };
+    try { navigator.clipboard.writeText(text).then(done, () => out.select()); } catch { out.select(); }
+  };
+})();
+</script>
