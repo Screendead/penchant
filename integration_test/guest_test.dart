@@ -39,7 +39,7 @@ void main() {
     // Sign out pops Settings; popping while its push is still animating trips
     // a framework Hero assertion.
     await pumpFor(tester, const Duration(seconds: 1));
-    await tap(tester, find.text('Sign out'));
+    await tapInSettings(tester, 'Sign out');
     await pumpUntil(tester, find.text(AccountCopy.guestSignOutTitle));
     await tap(tester, find.text(AccountCopy.guestSignOutAction));
     await expectSignInWithNothingAbove(tester);
@@ -86,10 +86,10 @@ void main() {
     expect(FirebaseAuth.instance.currentUser!.isAnonymous, isFalse);
 
     await tap(tester, find.byTooltip('Back'));
-    await pumpUntil(tester, find.text('Sign out').hitTestable());
+    await pumpUntil(tester, find.text('Account').hitTestable());
     await pumpFor(tester, const Duration(seconds: 1));
     // A linked account signs out like any other, without the guest warning.
-    await tap(tester, find.text('Sign out'));
+    await tapInSettings(tester, 'Sign out');
     await expectSignInWithNothingAbove(tester);
     expect(find.text(AccountCopy.guestSignOutTitle), findsNothing);
 

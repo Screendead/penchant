@@ -1106,13 +1106,13 @@ void main() {
       SemanticsData data() => bars.evaluate().single.getSemanticsData();
       expect(
         data().label,
-        contains('3 tagged entries. Work 67%, Feeling 33%.'),
+        contains('3 tagged entries. Work or study 67%, Feeling 33%.'),
       );
-      expect(data().value, 'Today, 2 tagged: Work 50%, Feeling 50%');
+      expect(data().value, 'Today, 2 tagged: Work or study 50%, Feeling 50%');
 
       tester.semantics.decrease(bars);
       await tester.pumpAndSettle();
-      expect(data().value, endsWith(', 1 tagged: Work 100%'));
+      expect(data().value, endsWith(', 1 tagged: Work or study 100%'));
       final SemanticsData chart = find.semantics
           .byLabel(RegExp('^Daily totals of Coffee'))
           .evaluate()

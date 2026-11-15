@@ -155,7 +155,11 @@ void main() {
     expect(find.text(WhatWasGoingOnSheet.readLine), findsOneWidget);
     expect(chipSelected(tester, 'work/meeting'), isTrue);
     expect(chipSelected(tester, 'place/bar'), isTrue);
-    expect(find.text('Work'), findsOneWidget, reason: 'hand-picking stays');
+    expect(
+      find.text('Work or study'),
+      findsOneWidget,
+      reason: 'hand-picking stays',
+    );
 
     await tester.tap(chip('work/meeting'));
     await tester.pumpAndSettle();
@@ -267,7 +271,9 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Areas of life'), findsOneWidget);
 
-    await tester.tap(find.text('Work'));
+    await tester.ensureVisible(find.text('Work or study'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Work or study'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(WhatWasGoingOnSheet.doneKey));
     await tester.pumpAndSettle();

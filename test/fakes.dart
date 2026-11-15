@@ -3,9 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
+import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
@@ -71,6 +73,9 @@ List<Override> habitOverrides(
   Map<String, double> storedTypicals = const <String, double>{},
 }) => <Override>[
   storedTypicalsProvider.overrideWithValue(storedTypicals),
+  dayNoteProvider.overrideWith(
+    (Ref ref, DateTime day) => const AsyncData<DayNote?>(null),
+  ),
   viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
   unarchivedViceListProvider.overrideWithValue(
     AsyncData<List<Vice>>(<Vice>[

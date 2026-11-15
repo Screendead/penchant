@@ -12,6 +12,7 @@ import 'package:tracker/providers/mac_calendar_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
+import 'package:tracker/widgets/tally_row.dart';
 
 // The accent ring the theme gives focused buttons, for chips and tiles, which
 // the chip theme leaves without one.
@@ -342,9 +343,10 @@ class SelectedTriggers extends StatelessWidget {
   }
 }
 
-/// The calendar's suggestions and the habit's usual triggers as one-tap
-/// chips, the starter tree two levels deep, and free text, which becomes a
-/// choice once used [freeTextPromotionUses] times. [selected] is the parent's;
+/// One field searching the starter tree across areas, which adds what it
+/// does not name as free text (a choice once used [freeTextPromotionUses]
+/// times); while it is empty, the calendar's suggestions and the habit's
+/// usual triggers as one-tap chips and the tree two levels deep. [selected] is the parent's;
 /// each change comes back through [onChanged].
 class TriggerChoices extends StatefulWidget {
   const TriggerChoices({
@@ -357,6 +359,8 @@ class TriggerChoices extends StatefulWidget {
     this.suggested = const <String>[],
     this.roots = triggerTree,
   });
+
+  static const String searchHint = 'Search tags, or add your own';
 
   final String viceName;
   final List<String> selected;
@@ -374,12 +378,27 @@ class _TriggerChoicesState extends State<TriggerChoices> {
   String? root;
   final TextEditingController freeText = TextEditingController();
   final FocusNode freeTextFocus = FocusNode();
-  bool showFreeText = false;
   String? freeTextError;
 
   List<String> get selected => widget.selected;
 
   bool get full => selected.length >= maxTriggers;
+
+  String get query => freeText.text.trim();
+
+  @override
+  void initState() {
+    super.initState();
+    freeText.addListener(_typed);
+  }
+
+  String _lastText = '';
+
+  void _typed() {
+    if (freeText.text == _lastText) return;
+    _lastText = freeText.text;
+    setState(() => freeTextError = null);
+  }
 
   bool _under(String path, String id) =>
       path == id || path.startsWith('$id$triggerPathSeparator');
@@ -411,15 +430,33 @@ class _TriggerChoicesState extends State<TriggerChoices> {
     }
   });
 
-  void openFreeText() {
-    setState(() => showFreeText = true);
-    freeTextFocus.requestFocus();
+  void pick(String path) {
+    final List<String> ids = path.split(triggerPathSeparator);
+    if (ids.length == 1) return toggle(path);
+    toggleChild(ids.first, path);
+  }
+
+  List<String> exactMatches(List<String> found) => <String>[
+    for (final String path in found)
+      if (triggerLabelIs(triggerShortDisplay(path), query)) path,
+  ];
+
+  // A label naming one tag picks it; one naming several (Hard conversation
+  // is under two areas) leaves the choice to a tap.
+  void submit() {
+    final List<String> exact = exactMatches(
+      searchTriggers(query, roots: widget.roots),
+    );
+    if (exact.isEmpty) return addFreeText();
+    if (exact.length > 1) return;
+    if (!selected.contains(exact.single)) pick(exact.single);
+    freeText.clear();
   }
 
   // The field's maxLength counts characters, the rules UTF-16 code units, so
   // an emoji-heavy label can fit the field and still be too long to store.
   void addFreeText() {
-    final String label = freeText.text.trim();
+    final String label = query;
     if (label.isEmpty) return;
     final String? error = triggersError(<String>[label]);
     setState(() => freeTextError = error);
@@ -445,7 +482,25 @@ class _TriggerChoicesState extends State<TriggerChoices> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
-      children: open == null ? _levelOne(context) : _levelTwo(open),
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
+          child: _FreeTextField(
+            controller: freeText,
+            focusNode: freeTextFocus,
+            hint: TriggerChoices.searchHint,
+            onSubmit: submit,
+            error: freeTextError,
+          ),
+        ),
+        const SizedBox(height: DialSpace.m),
+        if (query.isNotEmpty)
+          ..._results()
+        else if (open == null)
+          ..._levelOne(context)
+        else
+          ..._levelTwo(open),
+      ],
     );
   }
 
@@ -455,6 +510,46 @@ class _TriggerChoicesState extends State<TriggerChoices> {
     side: _focusSide(context),
     onSelected: (_) => toggle(value),
   );
+
+  List<Widget> _results() {
+    final List<String> found = searchTriggers(query, roots: widget.roots);
+    final bool exact = exactMatches(found).isNotEmpty;
+    final int n = found.length;
+
+    return <Widget>[
+      Semantics(
+        liveRegion: true,
+        child: _SectionLabel(
+          n == 0 ? 'No tag matches' : '$n matching ${n == 1 ? 'tag' : 'tags'}',
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
+        child: Wrap(
+          spacing: DialSpace.xs,
+          runSpacing: DialSpace.xs,
+          children: <Widget>[
+            for (final String path in found)
+              FilterChip(
+                label: Text(
+                  triggerLabels(path, roots: widget.roots)!.join(' · '),
+                ),
+                selected: selected.contains(path),
+                side: _focusSide(context),
+                onSelected: (_) => pick(path),
+              ),
+            if (!exact)
+              ActionChip(
+                avatar: const Icon(Icons.edit_outlined, size: 18),
+                label: Text('Add "$query" in your own words'),
+                side: _focusSide(context),
+                onPressed: addFreeText,
+              ),
+          ],
+        ),
+      ),
+    ];
+  }
 
   List<Widget> _levelOne(BuildContext context) {
     final List<String> suggested = widget.suggested;
@@ -511,15 +606,8 @@ class _TriggerChoicesState extends State<TriggerChoices> {
       _SectionLabel(
         usual.isEmpty && promoted.isEmpty ? 'Areas of life' : 'Or browse',
       ),
-      GridView.count(
-        crossAxisCount: 2,
-        padding: EdgeInsets.zero,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: DialSpace.xs,
-        crossAxisSpacing: DialSpace.xs,
-        childAspectRatio: 3.2,
-        children: <Widget>[
+      _AreaTiles(
+        tiles: <Widget>[
           for (final TriggerNode node in widget.roots)
             _RootTile(
               icon: node.icon ?? Icons.label_outline,
@@ -527,25 +615,8 @@ class _TriggerChoicesState extends State<TriggerChoices> {
               picked: pickedUnder(node.id),
               onTap: () => openRoot(node.id),
             ),
-          _RootTile(
-            icon: Icons.edit_outlined,
-            label: 'Your own words',
-            picked: 0,
-            drills: false,
-            onTap: openFreeText,
-          ),
         ],
       ),
-      if (showFreeText) ...<Widget>[
-        const SizedBox(height: DialSpace.m),
-        _FreeTextField(
-          controller: freeText,
-          focusNode: freeTextFocus,
-          hint: 'In your own words',
-          onSubmit: addFreeText,
-          error: freeTextError,
-        ),
-      ],
     ];
   }
 
@@ -563,7 +634,7 @@ class _TriggerChoicesState extends State<TriggerChoices> {
           const SizedBox(width: DialSpace.xxs),
           Icon(node.icon, color: theme.colorScheme.onSurface),
           const SizedBox(width: DialSpace.xs),
-          Text(node.label, style: theme.textTheme.titleLarge),
+          Expanded(child: Text(node.label, style: theme.textTheme.titleLarge)),
         ],
       ),
       Padding(
@@ -601,18 +672,56 @@ class _TriggerChoicesState extends State<TriggerChoices> {
           ],
         ),
       ),
-      const SizedBox(height: DialSpace.l),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
-        child: _FreeTextField(
-          controller: freeText,
-          focusNode: freeTextFocus,
-          hint: 'Something else, in your own words',
-          onSubmit: addFreeText,
-          error: freeTextError,
-        ),
-      ),
     ];
+  }
+}
+
+// Two across while a tile's half of the width holds a two-line label, else
+// one; each row as tall as its taller label.
+class _AreaTiles extends StatelessWidget {
+  const _AreaTiles({required this.tiles});
+
+  final List<Widget> tiles;
+
+  static const double minTileWidth = 150;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool large =
+        MediaQuery.textScalerOf(context).scale(100) >
+        100 * TallyGrid.oneColumnAbove;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) {
+        final int across =
+            !large && box.maxWidth >= 2 * minTileWidth + DialSpace.xs ? 2 : 1;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (int i = 0; i < tiles.length; i += across)
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: i + across < tiles.length ? DialSpace.xs : 0,
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      for (int j = i; j < i + across; j++) ...<Widget>[
+                        if (j > i) const SizedBox(width: DialSpace.xs),
+                        Expanded(
+                          child: j < tiles.length
+                              ? tiles[j]
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -646,14 +755,12 @@ class _RootTile extends StatelessWidget {
     required this.label,
     required this.picked,
     required this.onTap,
-    this.drills = true,
   });
 
   final IconData icon;
   final String label;
   final int picked;
   final VoidCallback onTap;
-  final bool drills;
 
   @override
   Widget build(BuildContext context) {
@@ -679,31 +786,33 @@ class _RootTile extends StatelessWidget {
           focusColor: Colors.transparent,
           child: _FocusRing(
             radius: radius,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DialSpace.s),
-              child: Row(
-                children: <Widget>[
-                  Icon(icon, size: 22, color: ink),
-                  const SizedBox(width: DialSpace.xs),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(color: ink),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DialSpace.s,
+                  vertical: DialSpace.xs,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(icon, size: 22, color: ink),
+                    const SizedBox(width: DialSpace.xs),
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(color: ink),
+                      ),
                     ),
-                  ),
-                  if (active)
-                    Text(
-                      '$picked',
-                      style: DialTypeScale.monoS.copyWith(color: ink),
-                    ),
-                  Icon(
-                    drills ? Icons.chevron_right : Icons.add,
-                    size: 20,
-                    color: ink,
-                  ),
-                ],
+                    if (active)
+                      Text(
+                        '$picked',
+                        style: DialTypeScale.monoS.copyWith(color: ink),
+                      ),
+                    Icon(Icons.chevron_right, size: 20, color: ink),
+                  ],
+                ),
               ),
             ),
           ),
@@ -767,11 +876,25 @@ class _FreeTextField extends StatelessWidget {
         hintText: hint,
         errorText: error,
         counterText: '',
-        prefixIcon: const Icon(Icons.edit_outlined),
-        suffixIcon: IconButton(
-          tooltip: 'Add',
-          onPressed: onSubmit,
-          icon: const Icon(Icons.add_circle_outline),
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: ListenableBuilder(
+          listenable: controller,
+          builder: (BuildContext context, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (controller.text.isNotEmpty)
+                IconButton(
+                  tooltip: 'Clear',
+                  onPressed: controller.clear,
+                  icon: const Icon(Icons.close),
+                ),
+              IconButton(
+                tooltip: 'Add',
+                onPressed: onSubmit,
+                icon: const Icon(Icons.add_circle_outline),
+              ),
+            ],
+          ),
         ),
       ),
     );

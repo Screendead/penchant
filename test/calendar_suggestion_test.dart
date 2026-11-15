@@ -54,7 +54,7 @@ void main() {
   }
 
   group('calendarSuggestions', () {
-    test('offers Work › Meeting in the hour after an event ends', () {
+    test('offers Work or study › Meeting in the hour after an event ends', () {
       expect(calendarSuggestions(at, <CalendarEvent>[ending(0)]), <String>[
         meetingTrigger,
       ]);
@@ -137,7 +137,10 @@ void main() {
     );
 
     expect(find.text(TriggerPickerSheet.calendarLabel), findsOneWidget);
-    final Finder chip = find.widgetWithText(FilterChip, 'Work › Meeting');
+    final Finder chip = find.widgetWithText(
+      FilterChip,
+      'Work or study › Meeting',
+    );
     expect(chip, findsOneWidget);
     expect(tester.widget<FilterChip>(chip).selected, isFalse);
     expect(
@@ -215,6 +218,9 @@ void main() {
     expect(find.text(TriggerPickerSheet.calendarLabel), findsOneWidget);
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(InputChip, 'Work › Meeting'), findsNothing);
+    expect(
+      find.widgetWithText(InputChip, 'Work or study › Meeting'),
+      findsNothing,
+    );
   });
 }

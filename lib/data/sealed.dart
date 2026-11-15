@@ -35,10 +35,20 @@ const List<String> activityContentFields = <String>[
   'loggedVia',
 ];
 
+// A day note's text and triggers (lib/data/day_note.dart). Born sealed: the
+// rules refuse them in plaintext on create and update, so no legacy note
+// holds any.
+const List<String> dayNoteContentFields = <String>['text', 'triggers'];
+
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,
   'activities': activityContentFields,
+  'dayNotes': dayNoteContentFields,
 };
+
+/// Collections whose documents were sealed from their first write, so the
+/// first-launch migrator has nothing to seal there and never reads them.
+const Set<String> bornSealedCollections = <String>{'dayNotes'};
 
 /// Shown for a vice whose sealed fields this device cannot open.
 const String lockedViceName = 'Locked habit';

@@ -4,10 +4,15 @@ const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { FieldPath, Timestamp, getFirestore } = require('firebase-admin/firestore');
 const { logger } = require('firebase-functions');
+const { defineString } = require('firebase-functions/params');
+const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const Anthropic = require('@anthropic-ai/sdk');
+const { oidcFederationProvider } = require('@anthropic-ai/sdk/lib/credentials/oidc-federation');
 
-const { runCleanup } = require('./cleanup.js');
+const { OWNED_COLLECTIONS, runCleanup } = require('./cleanup.js');
 const { summarise } = require('./summary.js');
+const { DailyCap, readNote, validNote } = require('./note_reader.js');
 
 initializeApp();
 
@@ -159,8 +164,7 @@ function cleanupIO(db, auth) {
   const owned = (name, uid) => db.collection(name).where('ownerID', '==', uid);
   return {
     sources: [
-      ['vices', ownerScan(db, 'vices'), MAX_OWNERS_PER_COLLECTION],
-      ['activities', ownerScan(db, 'activities'), MAX_OWNERS_PER_COLLECTION],
+      ...OWNED_COLLECTIONS.map((name) => [name, ownerScan(db, name), MAX_OWNERS_PER_COLLECTION]),
       ['keys', idScan(db, 'keys'), MAX_ID_PAGES],
       ['summaries', idScan(db, 'summaries'), MAX_ID_PAGES],
     ],
@@ -176,21 +180,19 @@ function cleanupIO(db, auth) {
       await state.set({ candidates, scannedAt: Timestamp.fromDate(scannedAt) });
     },
     async countOwned(uid) {
-      const [vices, activities, key, summary] = await Promise.all([
-        owned('vices', uid).count().get(),
-        owned('activities', uid).count().get(),
+      const [counts, key, summary] = await Promise.all([
+        Promise.all(OWNED_COLLECTIONS.map((name) => owned(name, uid).count().get())),
         db.collection('keys').doc(uid).get(),
         db.collection('summaries').doc(uid).get(),
       ]);
       return {
-        vices: vices.data().count,
-        activities: activities.data().count,
+        ...Object.fromEntries(OWNED_COLLECTIONS.map((name, i) => [name, counts[i].data().count])),
         keys: key.exists ? 1 : 0,
         summaries: summary.exists ? 1 : 0,
       };
     },
     async deleteOwned(uid) {
-      for (const name of ['activities', 'vices']) {
+      for (const name of OWNED_COLLECTIONS) {
         for (let pages = 0; pages < MAX_DELETE_PAGES; pages++) {
           const page = await owned(name, uid).select().limit(BATCH).get();
           if (page.empty) break;
@@ -224,5 +226,74 @@ exports.dailyOrphanCleanup = onSchedule(
       now: new Date(),
       maxDeletes: MAX_DELETES_PER_RUN,
     });
+  },
+);
+
+// Workload identity federation with Anthropic: identifiers from the Claude
+// Console, empty until set so that a deploy never prompts for them.
+const federation = {
+  federationRuleId: defineString('ANTHROPIC_FEDERATION_RULE_ID', { default: '' }),
+  organizationId: defineString('ANTHROPIC_ORGANIZATION_ID', { default: '' }),
+  serviceAccountId: defineString('ANTHROPIC_SERVICE_ACCOUNT_ID', { default: '' }),
+  workspaceId: defineString('ANTHROPIC_WORKSPACE_ID', { default: '' }),
+};
+
+const IDENTITY_URL =
+  'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity' +
+  '?audience=https://api.anthropic.com&format=full';
+
+// A fresh Google-signed token per exchange: Anthropic refuses a reused one.
+async function googleIdentityToken() {
+  const response = await fetch(IDENTITY_URL, { headers: { 'Metadata-Flavor': 'Google' } });
+  if (!response.ok) throw new Error(`metadata server answered ${response.status}`);
+  return response.text();
+}
+
+let anthropic = null;
+function anthropicClient() {
+  if (anthropic) return anthropic;
+  const ids = Object.fromEntries(Object.entries(federation).map(([key, param]) => [key, param.value()]));
+  if (Object.values(ids).some((value) => value === '')) return null;
+  anthropic = new Anthropic({
+    credentials: oidcFederationProvider({
+      identityTokenProvider: googleIdentityToken,
+      ...ids,
+      baseURL: 'https://api.anthropic.com',
+      fetch,
+    }),
+    // Inside the app's 10 s wait, with no retry.
+    timeout: 8000,
+    maxRetries: 0,
+  });
+  return anthropic;
+}
+
+const noteCap = new DailyCap();
+
+// Suggests starter-tree tags for one journal note. Logs counts and reason
+// codes only: never the uid, the note, a quote or the model's output.
+exports.readNote = onCall(
+  {
+    serviceAccount: 'note-reader@screendead-vice-tracker.iam.gserviceaccount.com',
+    maxInstances: 2,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to read a note.');
+    const note = validNote(request.data);
+    if (note == null) throw new HttpsError('invalid-argument', 'A note is 1 to 2000 characters.');
+    const client = anthropicClient();
+    if (client == null) {
+      logger.warn('readNote', { reason: 'not_configured' });
+      throw new HttpsError('failed-precondition', 'Reading notes is not set up yet.');
+    }
+    if (!noteCap.take(request.auth.uid)) {
+      logger.warn('readNote', { reason: 'daily_cap' });
+      throw new HttpsError('resource-exhausted', 'Enough notes read today.');
+    }
+    const { tags, dropped, reason } = await readNote(client, note);
+    logger.info('readNote', { reason, tags: tags.length, dropped });
+    return { tags, reason };
   },
 );

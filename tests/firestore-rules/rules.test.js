@@ -1356,6 +1356,174 @@ describe('sealed documents', () => {
   });
 });
 
+// lib/data/day_note.dart: one sealed note per user per local day, under
+// `{uid}_{day}`. Text and triggers live only inside the envelope.
+describe('dayNotes', () => {
+  const DAY = '2026-11-15';
+  const aliceNote = `dayNotes/${ALICE}_${DAY}`;
+  const newDayNote = (overrides = {}) => ({
+    sealed: envelope,
+    ownerID: ALICE,
+    day: DAY,
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, `dayNotes/${ALICE}_2026-11-14`), newDayNote({ day: '2026-11-14', createdAt }));
+      await setDoc(doc(db, `dayNotes/${BOB}_${DAY}`), newDayNote({ ownerID: BOB, createdAt }));
+    });
+  });
+
+  describe('create', () => {
+    it('allows the owner a sealed note under its day\'s id', async () => {
+      await assertSucceeds(setDoc(doc(asAlice(), aliceNote), newDayNote()));
+    });
+
+    it('denies a note under another id, another day\'s or another user\'s', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, 'dayNotes/random'), newDayNote()));
+      await assertFails(setDoc(doc(db, `dayNotes/${ALICE}_2026-11-16`), newDayNote()));
+      await assertFails(setDoc(doc(db, `dayNotes/${BOB}_2026-11-16`), newDayNote({ day: '2026-11-16' })));
+      await assertFails(addDoc(collection(db, 'dayNotes'), newDayNote()));
+    });
+
+    it('denies a note owned by someone else, or written signed out', async () => {
+      await assertFails(
+        setDoc(doc(asAlice(), `dayNotes/${BOB}_2026-11-16`), newDayNote({ ownerID: BOB, day: '2026-11-16' })),
+      );
+      await assertFails(setDoc(doc(asGuest(), aliceNote), newDayNote()));
+    });
+
+    it('denies a note without its envelope, or with content beside it', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, aliceNote), without(newDayNote(), 'sealed')));
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ text: 'a long day' })));
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ triggers: ['work/meeting'] })));
+      await assertFails(
+        setDoc(doc(db, aliceNote), { ...without(newDayNote(), 'sealed'), text: 'a long day', triggers: [] }),
+      );
+    });
+
+    it('denies a missing or extra field', async () => {
+      const db = asAlice();
+      for (const key of ['ownerID', 'day', 'createdAt']) {
+        await assertFails(setDoc(doc(db, aliceNote), without(newDayNote(), key)));
+      }
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ mood: 3 })));
+    });
+
+    it('denies a mistyped or malformed field', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ createdAt: '2026-11-15' })));
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ sealed: 'not bytes' })));
+      for (const day of ['2026-11-5', '15/11/2026', '2026-11-15T00:00', '']) {
+        await assertFails(setDoc(doc(db, `dayNotes/${ALICE}_${day}`), newDayNote({ day })));
+      }
+    });
+
+    it('bounds the envelope as the other collections do', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ sealed: bytesOf(29) })));
+      await assertFails(setDoc(doc(db, aliceNote), newDayNote({ sealed: bytesOf(4126) })));
+      await assertSucceeds(setDoc(doc(db, aliceNote), newDayNote({ sealed: bytesOf(4125) })));
+    });
+  });
+
+  describe('read', () => {
+    it('lets the owner read their note by the query the app makes, and not by others\'', async () => {
+      const id = `${ALICE}_2026-11-14`;
+      const snapshot = await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'dayNotes'),
+            where('ownerID', '==', ALICE),
+            orderBy(documentId()),
+            startAt(id),
+            endAt(id),
+          ),
+        ),
+      );
+      assert.deepEqual(snapshot.docs.map((d) => d.id), [id]);
+      const missing = `${ALICE}_2026-11-01`;
+      const none = await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'dayNotes'),
+            where('ownerID', '==', ALICE),
+            orderBy(documentId()),
+            startAt(missing),
+            endAt(missing),
+          ),
+        ),
+      );
+      assert.equal(none.size, 0);
+    });
+
+    it('denies reading another user\'s note, a missing one, or listing them all', async () => {
+      await assertFails(getDoc(doc(asAlice(), `dayNotes/${BOB}_${DAY}`)));
+      await assertFails(getDoc(doc(asGuest(), `dayNotes/${ALICE}_2026-11-14`)));
+      await assertFails(getDoc(doc(asAlice(), aliceNote)));
+      await assertFails(getDocs(collection(asAlice(), 'dayNotes')));
+      await assertFails(getDocs(query(collection(asAlice(), 'dayNotes'), where('ownerID', '==', BOB))));
+    });
+  });
+
+  describe('update', () => {
+    const existing = `dayNotes/${ALICE}_2026-11-14`;
+
+    it('lets the owner replace the envelope', async () => {
+      await assertSucceeds(updateDoc(doc(asAlice(), existing), { sealed: bytesOf(29 + 256, 2) }));
+    });
+
+    it('denies changing the owner, day or creation time', async () => {
+      const db = asAlice();
+      await assertFails(updateDoc(doc(db, existing), { ownerID: BOB }));
+      await assertFails(updateDoc(doc(db, existing), { day: DAY }));
+      await assertFails(updateDoc(doc(db, existing), { createdAt: serverTimestamp() }));
+      // A whole new note over the old one is an update that moves createdAt.
+      await assertFails(setDoc(doc(db, existing), newDayNote({ day: '2026-11-14' })));
+    });
+
+    it('denies plaintext content, removing the envelope, or an envelope out of bounds', async () => {
+      const db = asAlice();
+      await assertFails(updateDoc(doc(db, existing), { text: 'in plaintext' }));
+      await assertFails(updateDoc(doc(db, existing), { triggers: ['work/meeting'] }));
+      await assertFails(updateDoc(doc(db, existing), { sealed: deleteField() }));
+      await assertFails(updateDoc(doc(db, existing), { sealed: bytesOf(29) }));
+      await assertFails(updateDoc(doc(db, existing), { sealed: bytesOf(4126) }));
+      await assertFails(updateDoc(doc(db, existing), { sealed: 'not bytes' }));
+    });
+
+    it('denies changing another user\'s note', async () => {
+      await assertFails(updateDoc(doc(asAlice(), `dayNotes/${BOB}_${DAY}`), { sealed: envelope }));
+      await assertFails(updateDoc(doc(asGuest(), existing), { sealed: envelope }));
+    });
+  });
+
+  describe('delete', () => {
+    it('lets the owner delete their note, and nobody else', async () => {
+      await assertFails(deleteDoc(doc(asBob(), `dayNotes/${ALICE}_2026-11-14`)));
+      await assertFails(deleteDoc(doc(asGuest(), `dayNotes/${ALICE}_2026-11-14`)));
+      await assertFails(deleteDoc(doc(asAlice(), `dayNotes/${BOB}_${DAY}`)));
+      await assertSucceeds(deleteDoc(doc(asAlice(), `dayNotes/${ALICE}_2026-11-14`)));
+    });
+
+    it('allows the account deletion sweep over the owner\'s notes', async () => {
+      const db = asAlice();
+      const snapshot = await assertSucceeds(
+        getDocs(query(collection(db, 'dayNotes'), where('ownerID', '==', ALICE), limit(500))),
+      );
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await assertSucceeds(batch.commit());
+      assert.equal((await getDocs(query(collection(db, 'dayNotes'), where('ownerID', '==', ALICE)))).size, 0);
+    });
+  });
+});
+
 describe('summaries', () => {
   const summary = {
     computedAt: createdAt,

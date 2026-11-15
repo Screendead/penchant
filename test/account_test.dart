@@ -63,6 +63,14 @@ Future<void> _enter(WidgetTester tester, String label, String text) async {
 }
 
 Future<void> _tapText(WidgetTester tester, String text) async {
+  // Settings builds its rows lazily, so one below the fold does not exist yet.
+  if (find.text(text).evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      find.text(text),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+  }
   await tester.ensureVisible(find.text(text).last);
   // Scrolling ignores taps until it settles, and focusing a field scrolls.
   await tester.pumpAndSettle();
@@ -275,7 +283,11 @@ void main() {
       final FakeAccount account = FakeAccount()
         ..respond = (_) => signedOut.future;
       await openSettings(tester, account);
-      await tester.ensureVisible(find.text('Sign out'));
+      await tester.scrollUntilVisible(
+        find.text('Sign out'),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
       await tester.pump();
       await tester.tap(find.text('Sign out'));
       await tester.pump();
@@ -301,6 +313,11 @@ void main() {
       final FakeAccount account = FakeAccount()
         ..respond = (_) => signedOut.future;
       await openSettings(tester, account);
+      await tester.scrollUntilVisible(
+        find.text('Sign out'),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
       await tester.tap(find.text('Sign out'));
       await tester.pump();
 

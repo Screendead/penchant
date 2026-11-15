@@ -154,6 +154,16 @@ String? lineAmountError(String? value) {
 // escaped or multi-byte characters can still overflow it.
 const int maxSealedJsonBytes = 4094;
 
-String? sealedLengthError(int jsonBytes) => jsonBytes > maxSealedJsonBytes
-    ? 'The note and triggers are too long to save together. Shorten the note.'
-    : null;
+String? sealedLengthError(
+  int jsonBytes, {
+  String tooLong =
+      'The note and triggers are too long to save together. Shorten the note.',
+}) => jsonBytes > maxSealedJsonBytes ? tooLong : null;
+
+// A day note's text, trimmed: sealed, so only lib/data/day_note.dart's
+// dayNoteError guards it. 2000 units of non-ASCII or escaped text can pass
+// [maxSealedJsonBytes], which that check also refuses.
+const int maxDayNoteLength = 2000;
+
+const String dayNoteTooLong =
+    'The note and its tags are too long to save together. Shorten the note.';

@@ -244,6 +244,30 @@ the trigger picker for that entry, its pick saved by `updateActivity`, nothing a
 so the picker offers Undo log while open, which the record sheet's and editor's pickers do not), and shows at once, since the entry is on the device when written, and says queued after 10 s
 unanswered. Both Undo through `undoLog`.
 
+**What was going on?** (round 20, Jack, 2026-11-15). `askWhatWasGoingOn` opens `WhatWasGoingOnSheet`
+(`lib/widgets/what_was_going_on_sheet.dart`), three panels over `NotePanels` (`lib/widgets/note_panels.dart`): the
+note, tags, the urge. Only Back and Next move between them (no swipe; an off-stage panel takes no focus, semantics or
+taps), with Done, the step count and Undo log on each; what it saves, and how, is as before. With a `NoteReader`
+(below) and a note, the tags panel shows the note and turns each phrase the reader quotes into a selected chip the
+person can drop; with no reader, no note, an error or 10 s without an answer it is the hand picker, which is always
+there. Nothing is saved until Done. The record sheet and the entry editor keep `showTriggerPicker`, which returns
+the triggers alone.
+
+**Note reader** (`lib/notes/`, off by default; Settings' "Suggest tags from notes", per device, `NoteReaderSetting`,
+which says first what is sent). `noteReaderProvider` is null unless that switch is on, a user is signed in and the
+build is not an emulator build. It calls the callable function `readNote` (cloud_functions) with the note's text
+alone, the one time journal text leaves the device unsealed, and emits each `ReadTag` (`path`, `quote`) whose path
+is in the tree and whose quote is in the note. `functions/note_reader.js` asks Claude Haiku 5.5 (thinking off, effort
+low, structured output over the leaf paths of `functions/note_tags.js`, a copy of the Dart tree that a test compares)
+for at most 4 tags of a note of at most 2000 UTF-16 units, drops any it cannot verify, and logs counts and reason
+codes only: never the uid, note, quotes or output. It signs in to Anthropic by workload identity federation, no API
+key: it runs as `note-reader@screendead-vice-tracker.iam.gserviceaccount.com`, whose Google identity token the SDK
+exchanges; the rule, organization, service account and workspace ids are repository variables that `functions.yml`
+writes to `functions/.env.screendead-vice-tracker` at deploy (unset, it answers `failed-precondition`). Abuse is
+bounded by `maxInstances: 2`, 60 reads a day per uid per instance in memory, and the workspace's spend and rate
+limits in the Claude Console. `functions/tools/note-reader-trial.js` runs 12 made-up notes through the same prompt
+with an API key from the environment.
+
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
 then verification email), password reset, re-authentication, profile and email changes, sign-out, and account-wide
@@ -322,6 +346,20 @@ envelope from its triggers alone and drops the rest (accepted, Jack, 2026-11-13)
 `lib/data/activity_triggers.dart` touches it, so sealing it (`r2-e2ee`) is one file: a missing or mistyped list parses
 as empty, writes omit an empty one, the export joins with `; `. Rules cannot loop, so `validTriggers` in
 `firestore.rules` checks each of the 10 indexes.
+
+The starter tree is 174 tags in 11 areas (round 21, Jack, 2026-11-15: "Adopt it all"); `test/triggers_test.dart` pins
+the 40 paths shipped first. The picker (`TriggerChoices`) has one field that searches every tag (`searchTriggers`)
+and adds the typed text as own words when no label matches it exactly.
+
+**Day notes** (round 20). `dayNotes/{uid}_{yyyy-MM-dd}`: plaintext `ownerID`, `day` (the local day asked about),
+`createdAt`, and `sealed` holding `text` (1 to 2000 UTF-16 units) and `triggers`; born sealed, so the rules refuse any
+other field, require the id to be the writer's uid and the day, and let an update change `sealed` alone.
+`DayNote` (`lib/data/day_note.dart`), `TrackerWrites.setDayNote` (a create unless passed the note it replaces) and
+`deleteDayNote`, the provider chain in `lib/providers/day_note_provider.dart`. Account deletion, the guest sweep and
+the server's orphan sweep take their collections from `Account.ownedCollections` and `OWNED_COLLECTIONS`
+(`functions/cleanup.js`), which must match; the export adds a day-notes CSV. `DayNoteSheet`
+(`lib/widgets/day_note_sheet.dart`, route `/day-notes/yyyy-MM-dd`, `dayNoteRoute`) is two `NotePanels`, text then
+tags; Today shows the note's first line under the tallies. Insights reads none of it yet.
 
 The rules check `ownerID` against the stored document on read, update and delete and the incoming one on create, fix
 each collection's field set and types on create, allow updates only to `name`/`unit`/`archived`/`category` (vices) and
@@ -546,7 +584,7 @@ today; a slider to a screen reader, arrow and page keys) over an `EntryTimeContr
 so an untouched new entry is logged at the moment of saving, to the second. The day under the dial opens the
 `CalendarSheet` to move the entry to another day.
 
-**Server side.** Two scheduled functions in `functions/index.js`. `monthlySummaries` (03:00 UTC on the 1st;
+**Server side.** Two scheduled functions in `functions/index.js`, and the callable `readNote` (Note reader). `monthlySummaries` (03:00 UTC on the 1st;
 `r8-bead-size`) writes `summaries/{uid}` for every user owning a vice: `{computedAt, windowDays: 90, vices: {viceID:
 {typical, count}}}`, the median positive quantity of their last 90 days of activities and the entries it covers
 (`functions/summary.js`, same median as `typicalQuantity` in `lib/data/dial_layout.dart`). It reads only `viceID` and
@@ -686,6 +724,14 @@ terms and the habit's column's beside them are both within `maxVarianceInflation
 a refusal by itself. Over months it is nearly all month levels and trend and seldom joins; a finding that held it says
 "compared at the same length of day". No "after sunset" comparison: at a fixed clock hour, a habit logged in the
 evening would look tied to darkness through winter alone.
+
+**Heavy-day prompt** (`lib/reminder/heavy_day.dart`, `heavy_day_nudge.dart`; off by default, in Reminder settings
+with its time, default 21:00). A habit's day is heavy when its total is strictly above the nearest-rank 90th
+percentile of its days with use among the 90 before it, given 10 such days and a first entry 30 days old; one
+bounded `get()` of those days per launch, only while the switch is on. Then one notification at the set time,
+"Anything different about today?", naming no habit or amount (first seen after that time: 09:00 the next morning,
+about yesterday), cancelled when the day stops being heavy and on sign-out; a tap opens that day's note. Logs made
+while the app is closed count from the next launch or resume.
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and

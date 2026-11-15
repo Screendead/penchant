@@ -61,7 +61,7 @@ void main() {
     expect(find.text('8:00\u202fPM to 9:00\u202fPM'), findsOneWidget);
     expect(find.text('7 entries'), findsNWidgets(2));
     expect(find.text('with friends'), findsOneWidget);
-    expect(find.text('Work › Meeting'), findsOneWidget);
+    expect(find.text('Work or study › Meeting'), findsOneWidget);
   });
 
   testWidgets('names findings that started and stopped, and what collects', (

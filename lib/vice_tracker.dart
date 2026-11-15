@@ -25,12 +25,14 @@ import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
+import 'package:tracker/notes/day_note_route.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/day_note_line.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/guest_expiry_banner.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -109,6 +111,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<bool>(
       pendingExperimentProvider,
       (bool? _, bool pending) => _showExperiment(pending),
+      fireImmediately: true,
+    );
+    ref.listenManual<DateTime?>(
+      pendingDayNoteProvider,
+      (DateTime? _, DateTime? day) => _openDayNote(day),
       fireImmediately: true,
     );
     ref.listenManual<EntryPrompt?>(
@@ -228,6 +235,23 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       ref.read(pendingExperimentProvider.notifier).clear();
       Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
       _selectDay(ref.read(todayProvider));
+    });
+  }
+
+  // A heavy-day notification's tap: back to Today, then that day's note.
+  void _openDayNote(DateTime? day) {
+    if (day == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final DateTime? pending = ref.read(pendingDayNoteProvider);
+      if (!mounted || pending == null) {
+        return;
+      }
+      ref.read(pendingDayNoteProvider.notifier).clear();
+      Navigator.of(context)
+        ..popUntil((Route<dynamic> r) => r.isFirst)
+        ..pushNamed(dayNoteRoute(pending));
     });
   }
 
@@ -529,6 +553,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                                 ),
                             ],
                           ),
+                        DayNoteLine(day: day),
                       ],
                     ),
                   ),

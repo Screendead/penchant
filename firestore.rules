@@ -177,6 +177,28 @@ service cloud.firestore {
         && sealedAlone(request.resource.data, ['triggers']);
     }
 
+    // One note per user per local day, born sealed: its text and triggers
+    // exist only inside the envelope, so lib/data/day_note.dart's dayNoteError
+    // is their only guard. The id is `{uid}_{day}`, so a second note for the
+    // same day is the same document. `day` is the calendar day asked about,
+    // `yyyy-MM-dd`, not an instant. Only the envelope ever changes.
+    match /dayNotes/{noteID} {
+      allow read, delete: if ownsExisting();
+
+      allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['sealed', 'ownerID', 'day', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'day', 'createdAt'])
+        && request.resource.data.day is string
+        && request.resource.data.day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && noteID == request.auth.uid + '_' + request.resource.data.day
+        && request.resource.data.createdAt is timestamp
+        && validSealed(request.resource.data.sealed);
+
+      allow update: if ownsExisting()
+        && changedKeys().hasOnly(['sealed'])
+        && validSealed(request.resource.data.get('sealed', null));
+    }
+
     // The journal key's id and its copy wrapped under the recovery key; never
     // the key itself. The wrap is Sealer's envelope around 32 bytes: 61.
     match /keys/{uid} {

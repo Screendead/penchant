@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -233,6 +234,35 @@ class FakeTrackerWrites implements TrackerWrites {
     collection: 'activities',
     op: WriteOp.delete,
   );
+
+  @override
+  SentWrite setDayNote({
+    required String ownerID,
+    required String day,
+    required String text,
+    List<String> triggers = const <String>[],
+    DayNote? replacing,
+  }) {
+    _requireKey();
+    return _write(
+      Write('setDayNote', dayNoteID(ownerID, day), {
+        'day': day,
+        'text': text.trim(),
+        'triggers': triggers,
+        'replacing': replacing != null,
+      }),
+      collection: dayNotesCollection,
+      op: replacing == null ? WriteOp.create : WriteOp.update,
+    );
+  }
+
+  @override
+  SentWrite deleteDayNote({required String ownerID, required String day}) =>
+      _write(
+        Write('deleteDayNote', dayNoteID(ownerID, day)),
+        collection: dayNotesCollection,
+        op: WriteOp.delete,
+      );
 
   @override
   Future<void> waitForPendingWrites() => pendingWrites ?? Future<void>.value();

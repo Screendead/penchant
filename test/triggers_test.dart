@@ -20,38 +20,82 @@ class _MockDocument extends Mock
 
 void main() {
   group('the trigger tree', () {
-    // Shipped ids are stored in documents and never change; labels may.
-    test('keeps every shipped root and child id', () {
+    // Shipped paths are stored in documents and never change or go; labels
+    // may. A bare area is a stored path too.
+    test('keeps every shipped path', () {
+      const List<String> shipped = <String>[
+        'social',
+        'social/friends',
+        'social/party',
+        'social/date',
+        'social/family',
+        'social/offered',
+        'social/alone',
+        'feeling',
+        'feeling/stressed',
+        'feeling/bored',
+        'feeling/low',
+        'feeling/anxious',
+        'feeling/lonely',
+        'feeling/happy',
+        'feeling/restless',
+        'work',
+        'work/meeting',
+        'work/deadline',
+        'work/break',
+        'work/done',
+        'work/hard-talk',
+        'work/long-day',
+        'body',
+        'body/tired',
+        'body/hungry',
+        'body/pain',
+        'body/no-sleep',
+        'body/exercise',
+        'body/unwell',
+        'routine',
+        'routine/morning',
+        'routine/meal',
+        'routine/wind-down',
+        'routine/weekend',
+        'routine/habit',
+        'place',
+        'place/home',
+        'place/bar',
+        'place/commute',
+        'place/travelling',
+        'place/outdoors',
+        'craving',
+        'craving/saw',
+        'craving/smelled',
+        'craving/others',
+        'craving/feed',
+        'craving/wanted',
+      ];
+      expect(triggerPaths(), containsAll(shipped));
+    });
+
+    test('holds 174 tags in 11 areas, ids in kebab case', () {
+      expect(triggerTree, hasLength(11));
       expect(
-        <String, List<String>>{
-          for (final TriggerNode n in triggerTree)
-            n.id: <String>[for (final TriggerNode c in n.children) c.id],
-        },
-        <String, List<String>>{
-          'social': ['friends', 'party', 'date', 'family', 'offered', 'alone'],
-          'feeling': [
-            'stressed',
-            'bored',
-            'low',
-            'anxious',
-            'lonely',
-            'happy',
-            'restless',
-          ],
-          'work': [
-            'meeting',
-            'deadline',
-            'break',
-            'done',
-            'hard-talk',
-            'long-day',
-          ],
-          'body': ['tired', 'hungry', 'pain', 'no-sleep', 'exercise', 'unwell'],
-          'routine': ['morning', 'meal', 'wind-down', 'weekend', 'habit'],
-          'place': ['home', 'bar', 'commute', 'travelling', 'outdoors'],
-          'craving': ['saw', 'smelled', 'others', 'feed', 'wanted'],
-        },
+        triggerTree.fold<int>(
+          0,
+          (int n, TriggerNode a) => n + a.children.length,
+        ),
+        174,
       );
+      for (final String path in triggerPaths()) {
+        expect(
+          path,
+          matches(RegExp(r'^[a-z]+(-[a-z]+)*(/[a-z]+(-[a-z]+)*)?$')),
+        );
+      }
+      for (final TriggerNode area in triggerTree) {
+        expect(area.icon, isNotNull, reason: area.id);
+        for (final TriggerNode n in <TriggerNode>[area, ...area.children]) {
+          expect(n.label.length, inInclusiveRange(1, 60), reason: n.id);
+        }
+      }
     });
 
     test('every path is unique, holds no separator inside an id, and fits '
@@ -66,7 +110,7 @@ void main() {
     });
 
     test('a path reads back as its labels, root first', () {
-      expect(triggerLabels('work/meeting'), ['Work', 'Meeting']);
+      expect(triggerLabels('work/meeting'), ['Work or study', 'Meeting']);
       expect(triggerLabels('feeling'), ['Feeling']);
     });
 
@@ -74,6 +118,33 @@ void main() {
       expect(triggerLabels('Late train'), isNull);
       expect(triggerLabels('work/nope'), isNull);
       expect(triggerLabels(''), isNull);
+    });
+
+    test('search matches the start of any word of a tag or its area', () {
+      expect(searchTriggers('TIRED'), <String>['body/tired']);
+      expect(searchTriggers('cafe'), <String>['place/cafe']);
+      expect(searchTriggers('couldnt'), <String>['body/no-sleep']);
+      // A tag's own label first, then by its area's.
+      final List<String> work = searchTriggers('work');
+      expect(work.first, 'work');
+      expect(work, containsAll(<String>['work/work-drinks', 'doing/working']));
+      expect(work, contains('place/at-work'));
+      expect(work, contains('work/meeting'));
+      expect(
+        work.indexOf('place/at-work'),
+        lessThan(work.indexOf('work/meeting')),
+      );
+      expect(searchTriggers('hard conv'), <String>[
+        'people/hard-talk',
+        'work/hard-talk',
+      ]);
+      expect(searchTriggers('zzz'), isEmpty);
+      expect(searchTriggers('  '), isEmpty);
+      expect(
+        triggerLabelIs('Hard conversation', ' hard  CONVERSATION '),
+        isTrue,
+      );
+      expect(triggerLabelIs('Hard conversation', 'hard'), isFalse);
     });
   });
 

@@ -15,9 +15,10 @@ const String noteLabel = 'Note';
 const String noteHint = 'Anything to remember';
 
 class _OptionalLabel extends StatelessWidget {
-  const _OptionalLabel(this.text);
+  const _OptionalLabel(this.text, {this.optional = true});
 
   final String text;
+  final bool optional;
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +30,18 @@ class _OptionalLabel extends StatelessWidget {
         TextSpan(
           children: <InlineSpan>[
             TextSpan(text: text),
-            const TextSpan(text: '  '),
-            TextSpan(
-              text: 'OPTIONAL',
-              semanticsLabel: ', optional',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: muted,
-                fontSize: 10,
-                letterSpacing: 0.6,
+            if (optional) ...<InlineSpan>[
+              const TextSpan(text: '  '),
+              TextSpan(
+                text: 'OPTIONAL',
+                semanticsLabel: ', optional',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: muted,
+                  fontSize: 10,
+                  letterSpacing: 0.6,
+                ),
               ),
-            ),
+            ],
           ],
         ),
         style: theme.textTheme.titleSmall?.copyWith(color: muted),
@@ -182,13 +185,18 @@ class _UrgeBox extends StatelessWidget {
   }
 }
 
-/// A one-line note of up to [maxNoteLength] UTF-16 code units.
+/// A one-line note of up to [maxNoteLength] UTF-16 code units, or with
+/// [multiline] a required one of several lines checked by [validator].
 class NoteField extends StatelessWidget {
   const NoteField({
     super.key,
     required this.controller,
     this.enabled = true,
     this.label = noteLabel,
+    this.hint = noteHint,
+    this.inputKey = fieldKey,
+    this.multiline = false,
+    this.validator,
   });
 
   static const Key fieldKey = ValueKey<String>('entry-note');
@@ -196,6 +204,10 @@ class NoteField extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
   final String label;
+  final String hint;
+  final Key inputKey;
+  final bool multiline;
+  final FormFieldValidator<String>? validator;
 
   @override
   Widget build(BuildContext context) {
@@ -209,24 +221,28 @@ class NoteField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _OptionalLabel(label),
+        _OptionalLabel(label, optional: !multiline),
         TextFormField(
-          key: fieldKey,
+          key: inputKey,
           controller: controller,
           enabled: enabled,
-          maxLines: 1,
-          textInputAction: TextInputAction.done,
+          minLines: multiline ? 4 : 1,
+          maxLines: multiline ? 8 : 1,
+          keyboardType: multiline ? TextInputType.multiline : null,
+          textInputAction: multiline
+              ? TextInputAction.newline
+              : TextInputAction.done,
           textCapitalization: TextCapitalization.sentences,
           // A pasted line break would make two lines; the rest is the
           // validator's, which counts UTF-16 code units as the cap does.
           inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.deny(RegExp('[\r\n]')),
+            if (!multiline) FilteringTextInputFormatter.deny(RegExp('[\r\n]')),
           ],
           style: DialTypeScale.body.copyWith(
             color: theme.colorScheme.onSurface,
           ),
           decoration: InputDecoration(
-            hintText: noteHint,
+            hintText: hint,
             semanticCounterText: '',
             filled: true,
             fillColor: colors.surface2,
@@ -245,7 +261,9 @@ class NoteField extends StatelessWidget {
               ),
             ),
           ),
-          validator: (String? value) => noteError(storedNote(value ?? '')),
+          validator:
+              validator ??
+              (String? value) => noteError(storedNote(value ?? '')),
         ),
       ],
     );

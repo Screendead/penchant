@@ -820,8 +820,23 @@ Future<void> signOutThroughSettings(WidgetTester tester) async {
   // Sign out pops Settings; popping while its push is still animating trips
   // a framework Hero assertion (heroes.dart, manifest.fromHero == toHero).
   await pumpFor(tester, const Duration(seconds: 1));
-  await tap(tester, find.text('Sign out'));
+  await tapInSettings(tester, 'Sign out');
   await expectSignInWithNothingAbove(tester);
+}
+
+// Settings builds its rows lazily, so on a short screen one below the fold
+// does not exist until scrolled to, and tap only scrolls to built targets.
+Future<void> tapInSettings(WidgetTester tester, String label) async {
+  final Finder row = find.text(label);
+  final Finder list = find.descendant(
+    of: find.byType(Settings),
+    matching: find.byType(Scrollable),
+  );
+  await pumpUntil(tester, list);
+  if (row.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(row, 200, scrollable: list.first);
+  }
+  await tap(tester, row);
 }
 
 // Settings hides Homepage offstage, so Homepage vanishing does not mean the
