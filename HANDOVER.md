@@ -1048,7 +1048,12 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Nothing is waiting. Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
+Round 21 (`docs/pitch/round-21/trigger-tree/pitch.html`, https://claude.ai/artifact/3xNRWLCyXA9nzSvWsVCDgw), one
+call, from Jack's 2026-11-15 ask for "a much more comprehensive list" of triggers: `tag-list`, 174 tags in 11 areas
+(the 40 shipped ones kept, four new areas: between people, what it was for, something happened, what I was doing),
+with a search box in the picker. Recommendation (Claude's): the whole list minus what Jack strikes out on the page.
+
+Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
 https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), all four picked by Jack on 2026-11-15: "Take all 4
 recommendations; but the time of that notification should be user-configurable." Being built:
 
