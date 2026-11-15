@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/data/activity_content.dart';
+import 'package:tracker/data/activity_triggers.dart';
 
 @immutable
 class ExportFile {
@@ -34,6 +35,13 @@ List<ExportFile> exportFiles(AccountData data, DateTime exportedAt) {
       mimeType: 'application/json',
       contents: exportJson(data, exportedAt),
     ),
+    // Only for someone who has written one, so nobody else gets an empty file.
+    if (data.dayNotes.isNotEmpty)
+      ExportFile(
+        name: 'penchant-day-notes-$stamp.csv',
+        mimeType: 'text/csv',
+        contents: exportDayNotesCsv(data),
+      ),
   ];
 }
 
@@ -92,6 +100,27 @@ String exportCsv(AccountData data) {
   return csv.toString();
 }
 
+const List<String> dayNotesCsvHeader = <String>['day', 'text', 'triggers'];
+
+// One row per day note, by day. A note that would not open keeps its day and
+// leaves the rest blank; the JSON keeps its envelope.
+String exportDayNotesCsv(AccountData data) {
+  final List<StoredDocument> notes = List<StoredDocument>.of(data.dayNotes)
+    ..sort((a, b) => '${a.data['day']}'.compareTo('${b.data['day']}'));
+  final StringBuffer csv = StringBuffer()..write(_csvRow(dayNotesCsvHeader));
+  for (final StoredDocument note in notes) {
+    final Object? text = note.data['text'];
+    csv.write(
+      _csvRow(<Object?>[
+        note.data['day'],
+        text is String ? text : null,
+        readTriggers(note.data[triggersField]).join('; '),
+      ]),
+    );
+  }
+  return csv.toString();
+}
+
 // Every stored field, unknown ones included, so nothing logged is lost.
 String exportJson(AccountData data, DateTime exportedAt) {
   List<Map<String, Object?>> documents(List<StoredDocument> docs) =>
@@ -108,6 +137,7 @@ String exportJson(AccountData data, DateTime exportedAt) {
     'exportedAt': exportedAt.toUtc().toIso8601String(),
     'vices': documents(data.vices),
     'activities': documents(data.activities),
+    'dayNotes': documents(data.dayNotes),
   });
 }
 

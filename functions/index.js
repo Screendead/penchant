@@ -10,7 +10,7 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const Anthropic = require('@anthropic-ai/sdk');
 const { oidcFederationProvider } = require('@anthropic-ai/sdk/lib/credentials/oidc-federation');
 
-const { runCleanup } = require('./cleanup.js');
+const { OWNED_COLLECTIONS, runCleanup } = require('./cleanup.js');
 const { summarise } = require('./summary.js');
 const { DailyCap, readNote, validNote } = require('./note_reader.js');
 
@@ -164,8 +164,7 @@ function cleanupIO(db, auth) {
   const owned = (name, uid) => db.collection(name).where('ownerID', '==', uid);
   return {
     sources: [
-      ['vices', ownerScan(db, 'vices'), MAX_OWNERS_PER_COLLECTION],
-      ['activities', ownerScan(db, 'activities'), MAX_OWNERS_PER_COLLECTION],
+      ...OWNED_COLLECTIONS.map((name) => [name, ownerScan(db, name), MAX_OWNERS_PER_COLLECTION]),
       ['keys', idScan(db, 'keys'), MAX_ID_PAGES],
       ['summaries', idScan(db, 'summaries'), MAX_ID_PAGES],
     ],
@@ -181,21 +180,19 @@ function cleanupIO(db, auth) {
       await state.set({ candidates, scannedAt: Timestamp.fromDate(scannedAt) });
     },
     async countOwned(uid) {
-      const [vices, activities, key, summary] = await Promise.all([
-        owned('vices', uid).count().get(),
-        owned('activities', uid).count().get(),
+      const [counts, key, summary] = await Promise.all([
+        Promise.all(OWNED_COLLECTIONS.map((name) => owned(name, uid).count().get())),
         db.collection('keys').doc(uid).get(),
         db.collection('summaries').doc(uid).get(),
       ]);
       return {
-        vices: vices.data().count,
-        activities: activities.data().count,
+        ...Object.fromEntries(OWNED_COLLECTIONS.map((name, i) => [name, counts[i].data().count])),
         keys: key.exists ? 1 : 0,
         summaries: summary.exists ? 1 : 0,
       };
     },
     async deleteOwned(uid) {
-      for (const name of ['activities', 'vices']) {
+      for (const name of OWNED_COLLECTIONS) {
         for (let pages = 0; pages < MAX_DELETE_PAGES; pages++) {
           const page = await owned(name, uid).select().limit(BATCH).get();
           if (page.empty) break;

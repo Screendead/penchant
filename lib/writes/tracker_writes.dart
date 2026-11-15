@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -127,7 +128,7 @@ class TrackerWrites {
     return write(Blob(envelope));
   }
 
-  /// Whether [addVice] and [recordActivity] can write: the journal key has
+  /// Whether [addVice], [recordActivity] and [setDayNote] can write: the journal key has
   /// loaded. Callers check first and tell the user rather than lose input.
   bool get canCreate => _sealer != null;
 
@@ -415,6 +416,62 @@ class TrackerWrites {
         _activities.doc(activityID).delete(),
         collection: _activities.id,
         id: activityID,
+        op: WriteOp.delete,
+      ),
+    );
+  }
+
+  CollectionReference<Map<String, dynamic>> get _dayNotes =>
+      _firestore.collection(dayNotesCollection);
+
+  // The note about [day] (a [dayKey]), under its one id. With no [replacing]
+  // note this is a create; with one, an update of the envelope alone, since
+  // the rules fix `ownerID`, `day` and `createdAt`. A create where another
+  // device already made that day's note is refused, and settles as such.
+  // Callers check [dayNoteError] first: past the envelope the seal fails.
+  SentWrite setDayNote({
+    required String ownerID,
+    required String day,
+    required String text,
+    List<String> triggers = const <String>[],
+    DayNote? replacing,
+  }) {
+    final FieldSealer sealer = _createSealer();
+    if (replacing != null && replacing.locked) {
+      throw StateError('a locked day note cannot be replaced unseen');
+    }
+    final DocumentReference<Map<String, dynamic>> note = _dayNotes.doc(
+      dayNoteID(ownerID, day),
+    );
+    return _issued(
+      SentWrite(
+        _sealing(
+          sealer,
+          note,
+          dayNoteContent(text: text, triggers: triggers),
+          (Blob envelope) => replacing == null
+              ? note.set({
+                  sealedField: envelope,
+                  'ownerID': ownerID,
+                  'day': day,
+                  'createdAt': FieldValue.serverTimestamp(),
+                })
+              : note.update({sealedField: envelope}),
+        ),
+        collection: _dayNotes.id,
+        id: note.id,
+        op: replacing == null ? WriteOp.create : WriteOp.update,
+      ),
+    );
+  }
+
+  SentWrite deleteDayNote({required String ownerID, required String day}) {
+    final String id = dayNoteID(ownerID, day);
+    return _issued(
+      SentWrite(
+        _dayNotes.doc(id).delete(),
+        collection: _dayNotes.id,
+        id: id,
         op: WriteOp.delete,
       ),
     );
