@@ -64,10 +64,11 @@ class WeeklyWordsSetting extends ConsumerWidget {
       'When you open Last week, the figures it lists are sent to Penchant’s '
       'server and on to Anthropic’s Claude, which writes them as a short '
       'paragraph: each habit’s total, usual week, entries and days, the '
-      'busiest hours and the tags from Penchant’s list. Habits go as Habit A, '
+      'busiest hours, the tags from Penchant’s list, and the summary lines of '
+      'findings that are new or no longer hold. Habits go as Habit A, '
       'Habit B, with their units, including any you named. Your habits’ '
       'names, entries, notes, tags in your own words (only how many) and Health '
-      'data are not sent; the names are put back on this device. Anthropic does not use it '
+      'values are not sent (a mood finding is said in words); the names are put back on this device. Anthropic does not use it '
       'for training. Switch this off to stop sending.';
   static const String turnOn = 'Turn on';
   static const String notNow = 'Not now';

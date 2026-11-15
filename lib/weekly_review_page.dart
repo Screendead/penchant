@@ -173,8 +173,8 @@ class WeeklyReviewPage extends ConsumerWidget {
   }
 }
 
-// The week's figures in sentences, only with the switch on; while it is
-// written a quiet line, and on any failure nothing, so the lists stand alone.
+// The week's figures and changed findings in sentences, only with the switch
+// on; while it is written a quiet line, and on any failure nothing, so the lists stand alone.
 class _WeekInWords extends ConsumerWidget {
   const _WeekInWords({required this.review});
 
@@ -183,7 +183,11 @@ class _WeekInWords extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(weeklyWordsProvider) == null) return const SizedBox.shrink();
-    final WeeklyFigures? figures = WeeklyFigures.of(review);
+    // The findings' changes are part of what is worded, so wait for them;
+    // without Health they are simply absent.
+    final WeeklyInsights? insights = ref.watch(weeklyInsightsProvider).value;
+    if (insights == null) return const CardFoot(WeeklyReviewPage.writing);
+    final WeeklyFigures? figures = WeeklyFigures.of(review, insights: insights);
     if (figures == null) return const SizedBox.shrink();
     final DialColors colors = DialColors.of(context);
     return switch (ref.watch(weeklyParagraphProvider(figures))) {

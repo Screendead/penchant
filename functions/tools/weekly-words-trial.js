@@ -7,8 +7,15 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { checkParagraph, messageRequest, parseMessage, validFigures } = require('../weekly_words.js');
 
+// The change as the device works it out: total less usual, to 2 places.
 function habit(i, unitOne, unitOther, total, entries, days, usual) {
-  return { habit: `Habit ${String.fromCharCode(65 + i)}`, unitOne, unitOther, total, entries, days, usual };
+  const out = { habit: `Habit ${String.fromCharCode(65 + i)}`, unitOne, unitOther, total, entries, days, usual };
+  if (usual !== null) {
+    const change = Math.round((Number(total) - Number(usual)) * 100) / 100;
+    out.change = String(Math.abs(change));
+    out.direction = out.change === '0' ? 'same' : change > 0 ? 'more' : 'fewer';
+  }
+  return out;
 }
 
 const weeks = [
@@ -18,6 +25,9 @@ const weeks = [
     hours: [{ from: '20:00', to: '21:00', entries: '6' }, { from: '08:00', to: '09:00', entries: '5' }],
     tags: [{ path: 'work/long-day', entries: '4' }, { path: 'social/friends', entries: '2' }],
     ownWords: '1',
+    newFindings: ['On days with 3 glasses or more logged for Habit A, your mood that night averages slightly less pleasant than on days with fewer.'],
+    stoppedFindings: ['Habit B · heart'],
+    otherFindings: '1',
   },
   {
     entries: '3',
@@ -40,6 +50,9 @@ const weeks = [
     ],
     tags: [{ path: 'social/offered', entries: '5' }, { path: 'social', entries: '3' }],
     ownWords: '6',
+    newFindings: [],
+    stoppedFindings: ['Habit A · sleep', 'Habit C · activity'],
+    otherFindings: '2',
   },
   {
     entries: '0',
@@ -61,6 +74,9 @@ const weeks = [
     hours: [{ from: '00:00', to: '01:00', entries: '6' }],
     tags: [{ path: 'social/alone', entries: '6' }],
     ownWords: '0',
+    newFindings: ['On days after Habit B, your mood averages noticeably less pleasant the next day.'],
+    stoppedFindings: [],
+    otherFindings: '0',
   },
 ];
 

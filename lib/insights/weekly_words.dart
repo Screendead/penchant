@@ -5,10 +5,14 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/trigger_usage.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/formats.dart';
+import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/weekly_review.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/providers/weekly_review_provider.dart';
 
 /// The most habits sent, one placeholder letter each.
 const int maxWordedHabits = 26;
@@ -16,6 +20,9 @@ const int maxWordedHabits = 26;
 /// The most busiest hours and tags sent, as the review page lists them.
 const int maxWordedHours = 3;
 const int maxWordedTags = 5;
+
+/// The most new and stopped findings sent, each.
+const int maxWordedFindings = 3;
 
 /// The words a number may not be written as (functions/weekly_words.js has
 /// the same list): the model is told to write numerals only, and a reply
@@ -100,9 +107,13 @@ class WeeklyFigures {
   /// [data] encoded, which is what equality compares.
   final String key;
 
-  /// The figures of [review], or null for a week with nothing logged, which
-  /// is never sent. Free-text triggers go as a count only.
-  static WeeklyFigures? of(WeeklyReview review) {
+  /// The figures of [review] and [insights]' changed findings, or null for a
+  /// week with nothing logged, which is never sent. Free-text triggers go as a
+  /// count only. A new finding goes as the page's sentence only when its
+  /// measure is shown in words, since the others carry a Health-derived
+  /// amount; those, findings of habits not sent, and any past
+  /// [maxWordedFindings] go as a count.
+  static WeeklyFigures? of(WeeklyReview review, {WeeklyInsights? insights}) {
     if (review.entries == 0 || review.habits.isEmpty) return null;
     final Map<String, String> names = <String, String>{};
     final List<Map<String, Object?>> habits = <Map<String, Object?>>[];
@@ -110,7 +121,12 @@ class WeeklyFigures {
         in review.habits.take(maxWordedHabits).indexed) {
       final String placeholder = placeholderFor(i);
       names[placeholder] = h.vice.name;
-      final double? usual = h.usual;
+      final double? usual = h.usual == null
+          ? null
+          : (h.usual! * 10).round() / 10;
+      final num? change = usual == null
+          ? null
+          : (h.total * 100).round() / 100 - usual;
       habits.add(<String, Object?>{
         'habit': placeholder,
         'unitOne': h.vice.units.singular,
@@ -118,8 +134,54 @@ class WeeklyFigures {
         'total': numeral(h.total),
         'entries': numeral(h.entries),
         'days': numeral(review.days[h.vice.id] ?? 0),
-        'usual': usual == null ? null : numeral((usual * 10).round() / 10),
+        'usual': usual == null ? null : numeral(usual),
+        if (change != null) ...<String, Object?>{
+          'change': numeral(change.abs()),
+          'direction': numeral(change.abs()) == '0'
+              ? 'same'
+              : change > 0
+              ? 'more'
+              : 'fewer',
+        },
       });
+    }
+    final Map<String, String> placeholders = <String, String>{
+      for (final (int i, HabitWeek h)
+          in review.habits.take(maxWordedHabits).indexed)
+        h.vice.id: placeholderFor(i),
+    };
+    final Map<String, Unit> units = <String, Unit>{
+      for (final HabitWeek h in review.habits) h.vice.id: h.vice.unit,
+    };
+    final List<String> started = <String>[];
+    final List<String> stopped = <String>[];
+    int other = 0;
+    if (insights case WeeklyInsightsComputed(:final InsightChanges changes)) {
+      for (final InsightCard c in changes.started) {
+        final String? p = placeholders[c.habitId];
+        if (p == null ||
+            started.length == maxWordedFindings ||
+            !(metricCopy(c.headline.metricId)?.inWords ?? false)) {
+          other++;
+          continue;
+        }
+        started.add(
+          findingSentence(
+            c.headline,
+            p,
+            formatLocale,
+            unit: units[c.habitId] ?? Unit.fallback,
+          ),
+        );
+      }
+      for (final InsightCard c in changes.stopped) {
+        final String? p = placeholders[c.habitId];
+        if (p == null || stopped.length == maxWordedFindings) {
+          other++;
+          continue;
+        }
+        stopped.add('$p · ${c.family.label}');
+      }
     }
     return WeeklyFigures(<String, Object?>{
       'entries': numeral(review.entries),
@@ -141,6 +203,9 @@ class WeeklyFigures {
           },
       ],
       'ownWords': numeral(review.ownWords),
+      'newFindings': started,
+      'stoppedFindings': stopped,
+      'otherFindings': numeral(other),
     }, names);
   }
 
@@ -153,6 +218,12 @@ class WeeklyFigures {
   @override
   int get hashCode => Object.hash(key, Object.hashAllUnordered(names.values));
 }
+
+List<String> _strings(Object? value) => <String>[
+  if (value is List)
+    for (final Object? item in value)
+      if (item is String) item,
+];
 
 List<Map<String, Object?>> _list(Object? value) => <Map<String, Object?>>[
   if (value is List)
@@ -168,8 +239,8 @@ List<Map<String, Object?>> _list(Object? value) => <Map<String, Object?>>[
 ///    equals one found the same way in a sent string.
 /// 4. Each "Habit X", "Habits X", "habit X" or "habits X" (X one capital
 ///    letter) is exactly a sent placeholder.
-/// 5. With every sent unit word, tag label and part of a label between ' › '
-///    taken out where no letter touches it on either side (ignoring case,
+/// 5. With every sent unit word, tag label, part of a label between ' › ' and
+///    finding line taken out where no letter touches it on either side (ignoring case,
 ///    longest first), no word of [numberWords] is left.
 /// Run it on the reply as sent, before names go back in.
 String checkParagraph(String text, Map<String, Object?> data) {
@@ -183,6 +254,9 @@ String checkParagraph(String text, Map<String, Object?> data) {
     for (final Object? v in <Object?>[
       data['entries'],
       data['ownWords'],
+      data['otherFindings'],
+      ..._strings(data['newFindings']),
+      ..._strings(data['stoppedFindings']),
       for (final Map<String, Object?> h in habits) ...<Object?>[
         h['habit'],
         h['unitOne'],
@@ -191,6 +265,7 @@ String checkParagraph(String text, Map<String, Object?> data) {
         h['entries'],
         h['days'],
         h['usual'],
+        h['change'],
       ],
       for (final Map<String, Object?> h in _list(data['hours'])) ...<Object?>[
         h['from'],
@@ -227,6 +302,8 @@ String checkParagraph(String text, Map<String, Object?> data) {
         label,
         ...label.split(' › '),
       ],
+    ..._strings(data['newFindings']),
+    ..._strings(data['stoppedFindings']),
   ]..sort((String a, String b) => b.length.compareTo(a.length));
   String rest = trimmed;
   for (final String phrase in phrases) {

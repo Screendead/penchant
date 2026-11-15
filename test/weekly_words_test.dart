@@ -5,7 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/data/unit.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/formats.dart';
+import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/insights/what_follows.dart';
+import 'package:tracker/providers/weekly_review_provider.dart';
 import 'package:tracker/insights/weekly_review.dart';
 import 'package:tracker/insights/weekly_words.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
@@ -33,6 +38,8 @@ final Map<String, Object?> _sent = <String, Object?>{
       'entries': '6',
       'days': '5',
       'usual': '7',
+      'change': '2',
+      'direction': 'more',
     },
     <String, Object?>{
       'habit': 'Habit B',
@@ -42,6 +49,8 @@ final Map<String, Object?> _sent = <String, Object?>{
       'entries': '14',
       'days': '7',
       'usual': '10.5',
+      'change': '3.5',
+      'direction': 'more',
     },
     <String, Object?>{
       'habit': 'Habit C',
@@ -69,6 +78,12 @@ final Map<String, Object?> _sent = <String, Object?>{
     },
   ],
   'ownWords': '3',
+  'newFindings': <String>[
+    'On days with 12 glasses or more logged for Habit A, your mood that night '
+        'averages slightly less pleasant than on days with fewer.',
+  ],
+  'stoppedFindings': <String>['Habit B · heart'],
+  'otherFindings': '1',
 };
 
 // The cases functions/weekly_words.test.js checks too.
@@ -89,6 +104,16 @@ const List<(String, String)> _cases = <(String, String)>[
   ('Habit D came to 9 glasses.', 'placeholder'),
   ('Habit A came to 9 glasses after 8pm.', 'number'),
   ('Habit A came to 9½ glasses.', 'number'),
+  ('Habit A came to 9 glasses, 2 more than your usual week.', 'ok'),
+  (
+    'On days with 12 glasses or more, your mood after Habit A was slightly '
+        'less pleasant.',
+    'ok',
+  ),
+  (
+    'Habit B no longer stands out for heart, and 1 other finding changed.',
+    'ok',
+  ),
   ('Habit C came to twelve l.', 'number_word'),
   ('Habits A and B came to 9 and 14.', 'placeholder'),
   ('  ', 'empty'),
@@ -151,6 +176,8 @@ void main() {
         'entries': '11',
         'days': '7',
         'usual': '10.5',
+        'change': '0.5',
+        'direction': 'more',
       });
       expect((habits[1]! as Map<String, Object?>)['days'], '5');
       expect((habits[2]! as Map<String, Object?>)['total'], '230');
@@ -168,6 +195,52 @@ void main() {
       ]);
       expect(figures.data['ownWords'], '5');
       expect(figures.data['entries'], '23');
+    });
+
+    test('each habit carries its change from the usual week', () {
+      final List<Object?> habits =
+          WeeklyFigures.of(_review())!.data['habits']! as List<Object?>;
+      final Map<String, Object?> coffee = habits[0]! as Map<String, Object?>;
+      final Map<String, Object?> alcohol = habits[1]! as Map<String, Object?>;
+      expect((coffee['change'], coffee['direction']), ('0.5', 'more'));
+      expect((alcohol['change'], alcohol['direction']), ('5', 'more'));
+    });
+
+    test('findings go as the page words them, Health amounts as a count', () {
+      final WeeklyFigures figures = WeeklyFigures.of(
+        _review(),
+        insights: reviewInsights,
+      )!;
+      // The new sleep finding carries minutes from Health; the stopped one is
+      // its heading.
+      expect(figures.data['newFindings'], isEmpty);
+      expect(figures.data['stoppedFindings'], <String>['Habit A · heart']);
+      expect(figures.data['otherFindings'], '1');
+
+      final HabitFinding mood = reviewFinding('alcohol', 'moodValence', -0.3);
+      final WeeklyFigures worded = WeeklyFigures.of(
+        _review(),
+        insights: WeeklyInsightsComputed(
+          changes: (
+            started: <InsightCard>[
+              InsightCard(family: MetricFamily.mood, headline: mood),
+            ],
+            stopped: const <InsightCard>[],
+            holding: const <InsightCard>[],
+          ),
+          collecting: const <HabitRefusal>[],
+          floors: const <String, double>{},
+        ),
+      )!;
+      final String line = findingSentence(
+        mood,
+        'Habit B',
+        formatLocale,
+        unit: Unit.drink,
+      );
+      expect(worded.data['newFindings'], <String>[line]);
+      expect(line, isNot(contains('Alcohol')));
+      expect(worded.data['otherFindings'], '0');
     });
 
     test('a week with nothing logged sends nothing', () {

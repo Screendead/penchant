@@ -17,8 +17,8 @@ function request() {
   return {
     entries: '20',
     habits: [
-      { habit: 'Habit A', unitOne: 'glass', unitOther: 'glasses', total: '9', entries: '6', days: '5', usual: '7' },
-      { habit: 'Habit B', unitOne: 'cup', unitOther: 'cups', total: '14', entries: '14', days: '7', usual: '10.5' },
+      { habit: 'Habit A', unitOne: 'glass', unitOther: 'glasses', total: '9', entries: '6', days: '5', usual: '7', change: '2', direction: 'more' },
+      { habit: 'Habit B', unitOne: 'cup', unitOther: 'cups', total: '14', entries: '14', days: '7', usual: '10.5', change: '3.5', direction: 'more' },
       { habit: 'Habit C', unitOne: 'l', unitOther: 'l', total: '0', entries: '0', days: '0', usual: null },
     ],
     hours: [{ from: '20:00', to: '21:00', entries: '6' }],
@@ -27,6 +27,9 @@ function request() {
       { path: 'social', entries: '2' },
     ],
     ownWords: '3',
+    newFindings: ['On days with 12 glasses or more logged for Habit A, your mood that night averages slightly less pleasant than on days with fewer.'],
+    stoppedFindings: ['Habit B · heart'],
+    otherFindings: '1',
   };
 }
 
@@ -40,6 +43,9 @@ const CASES = [
   ['Habit D came to 9 glasses.', 'placeholder'],
   ['Habit A came to 9 glasses after 8pm.', 'number'],
   ['Habit A came to 9½ glasses.', 'number'],
+  ['Habit A came to 9 glasses, 2 more than your usual week.', 'ok'],
+  ['On days with 12 glasses or more, your mood after Habit A was slightly less pleasant.', 'ok'],
+  ['Habit B no longer stands out for heart, and 1 other finding changed.', 'ok'],
   ['Habit C came to twelve l.', 'number_word'],
   ['Habits A and B came to 9 and 14.', 'placeholder'],
   ['  ', 'empty'],
@@ -91,6 +97,13 @@ test('validFigures refuses what is out of bounds', () => {
     (d) => { d.tags[1].path = 'social/offered'; },
     (d) => { d.ownWords = 'three'; },
     (d) => { delete d.entries; },
+    (d) => { d.habits[2].change = '1'; },
+    (d) => { d.habits[0].direction = 'up'; },
+    (d) => { delete d.habits[1].change; },
+    (d) => { d.newFindings = ['a', 'b', 'c', 'd']; },
+    (d) => { d.stoppedFindings = ['x'.repeat(301)]; },
+    (d) => { d.newFindings = [7]; },
+    (d) => { d.otherFindings = 'one'; },
   ];
   for (const change of bad) {
     const d = request();
