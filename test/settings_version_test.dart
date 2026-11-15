@@ -29,6 +29,8 @@ void main() {
 
     expect(find.text('0.1.0 (212)'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('About'));
+    await tester.pump();
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
     expect(find.byType(AboutDialog), findsOneWidget);

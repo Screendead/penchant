@@ -25,6 +25,8 @@ import 'package:tracker/insights/photos_source.dart';
 import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/places_source.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
+import 'package:tracker/main.dart' show generateRoute;
+import 'package:tracker/notes/day_note_route.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -40,6 +42,8 @@ import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/amount_fields.dart';
 import 'package:tracker/widgets/auth_parts.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/day_note_sheet.dart';
+import 'package:tracker/widgets/note_panels.dart';
 import 'package:tracker/widgets/place_sheet.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
@@ -328,6 +332,7 @@ Widget _host(List<Override> overrides, {Widget? home}) => ProviderScope(
   child: MaterialApp(
     navigatorKey: _navigator,
     theme: appTheme(Brightness.light),
+    onGenerateRoute: generateRoute,
     home:
         home ??
         Consumer(
@@ -484,6 +489,37 @@ void main() {
           ),
         ],
         action: find.byKey(WhatWasGoingOnSheet.nextKey),
+      ),
+    );
+  });
+
+  testWidgets('day note sheet', (WidgetTester tester) async {
+    Future<Finder> Function(WidgetTester) onTags(Finder tap, Finder field) =>
+        (WidgetTester t) async {
+          await t.enterText(find.byKey(DayNoteSheet.fieldKey), 'A long day');
+          await (_after(find.byKey(NotePanels.nextKey), field))(t);
+          return (_after(tap, field))(t);
+        };
+    _report(
+      await _audit(
+        tester,
+        surface: 'day note sheet',
+        open: (WidgetTester t) => _openRoute(
+          t,
+          _entryOverrides(),
+          (BuildContext c) => Navigator.of(c).pushNamed(dayNoteRoute(_now)),
+        ),
+        fields: <_Field>[
+          _Field('text', _plain(find.byKey(DayNoteSheet.fieldKey))),
+          _Field(
+            'level-one free text',
+            onTags(
+              find.text('Your own words'),
+              find.widgetWithText(TextField, 'In your own words'),
+            ),
+          ),
+        ],
+        action: find.byKey(NotePanels.doneKey),
       ),
     );
   });
@@ -805,7 +841,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: <Override>[
-              ..._entryOverrides().skip(3).take(4),
+              ..._entryOverrides()
+                  .skip(habitOverrides(const <Vice>[]).length)
+                  .take(4),
               viceActivityHistoryProvider.overrideWith(
                 (ref, query) => const AsyncData(<ViceActivity>[]),
               ),
