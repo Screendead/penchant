@@ -37,12 +37,18 @@ typedef HourCount = ({int hour, int entries});
 
 typedef TriggerCount = ({String label, int entries});
 
+/// A starter-tree trigger [path] and how many of the week's entries name it.
+typedef TagCount = ({String path, int entries});
+
 class WeeklyReview {
   const WeeklyReview({
     required this.week,
     required this.habits,
     required this.hours,
     required this.triggers,
+    this.days = const <String, int>{},
+    this.tags = const <TagCount>[],
+    this.ownWords = 0,
   });
 
   final ReviewWeek week;
@@ -56,6 +62,15 @@ class WeeklyReview {
 
   /// Most entries first; ties by label.
   final List<TriggerCount> triggers;
+
+  /// Per habit id, the days of the week with an entry.
+  final Map<String, int> days;
+
+  /// The tree triggers of [triggers] by path, in the same order.
+  final List<TagCount> tags;
+
+  /// How many times the week's entries name a free-text trigger.
+  final int ownWords;
 
   int get entries => hours.fold(0, (int a, int b) => a + b);
 
@@ -87,6 +102,9 @@ WeeklyReview buildWeeklyReview({
   final Map<String, int> entries = <String, int>{};
   final List<int> hours = List<int>.filled(24, 0);
   final Map<String, int> triggers = <String, int>{};
+  final Map<String, int> paths = <String, int>{};
+  final Map<String, Set<DateTime>> days = <String, Set<DateTime>>{};
+  int ownWords = 0;
   for (final ViceActivity a in activities) {
     final DateTime at = a.createdAt.toDate();
     if (at.isBefore(starts.first) || !at.isBefore(week.end)) continue;
@@ -99,10 +117,16 @@ WeeklyReview buildWeeklyReview({
     if (index != starts.length - 1) continue;
     entries[a.viceID] = (entries[a.viceID] ?? 0) + 1;
     hours[at.hour]++;
+    (days[a.viceID] ??= <DateTime>{}).add(startOfDay(at));
     for (final String path in a.triggers) {
       final String label = triggerDisplay(path).trim();
       if (label.isEmpty) continue;
       triggers[label] = (triggers[label] ?? 0) + 1;
+      if (isFreeTextTrigger(path)) {
+        ownWords++;
+      } else {
+        paths[path] = (paths[path] ?? 0) + 1;
+      }
     }
   }
   final List<HabitWeek> habits = <HabitWeek>[
@@ -114,6 +138,21 @@ WeeklyReview buildWeeklyReview({
     week: week,
     habits: habits,
     hours: hours,
+    days: <String, int>{
+      for (final MapEntry<String, Set<DateTime>> e in days.entries)
+        e.key: e.value.length,
+    },
+    tags:
+        <TagCount>[
+          for (final MapEntry<String, int> e in paths.entries)
+            (path: e.key, entries: e.value),
+        ]..sort((a, b) {
+          final int byCount = b.entries.compareTo(a.entries);
+          return byCount != 0
+              ? byCount
+              : triggerDisplay(a.path).compareTo(triggerDisplay(b.path));
+        }),
+    ownWords: ownWords,
     triggers:
         <TriggerCount>[
           for (final MapEntry<String, int> e in triggers.entries)

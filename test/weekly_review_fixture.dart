@@ -8,6 +8,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/stats.dart';
 import 'package:tracker/insights/weekly_review.dart';
+import 'package:tracker/insights/weekly_words.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/weekly_review_provider.dart';
@@ -122,7 +123,9 @@ final WeeklyInsights reviewInsights = WeeklyInsightsComputed(
 List<Override> reviewOverrides({
   List<ViceActivity>? journal,
   WeeklyInsights? insights,
+  WeeklyWords? words,
 }) => <Override>[
+  weeklyWordsProvider.overrideWithValue(words),
   viceListProvider.overrideWithValue(AsyncData<List<Vice>>(reviewVices)),
   weeklyReviewProvider.overrideWithValue(
     AsyncData<WeeklyReview>(

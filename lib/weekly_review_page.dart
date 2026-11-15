@@ -13,6 +13,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/weekly_review.dart';
+import 'package:tracker/insights/weekly_words.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
@@ -38,6 +39,8 @@ class WeeklyReviewPage extends ConsumerWidget {
   static const String newHeading = 'New this week';
   static const String stoppedHeading = 'No longer clear';
   static const String loading = 'Working it out…';
+  static const String writing = 'Writing…';
+  static const String writtenBy = 'Written by Claude from the figures below';
   static const String nothingLogged = 'Nothing logged last week';
   static const String noTriggers = 'No triggers noted last week';
   static const String noChange = 'No change from the week before';
@@ -93,6 +96,7 @@ class WeeklyReviewPage extends ConsumerWidget {
         ...switch (review) {
           AsyncData(:final WeeklyReview value) when vices != null => <Widget>[
             CardFoot(span(value.week)),
+            _WeekInWords(review: value),
             ..._journal(context, value, habitMarks(vices)),
             const CardSectionLabel(foundHeading),
             _Findings(vices: vices),
@@ -166,6 +170,53 @@ class WeeklyReviewPage extends ConsumerWidget {
         ],
       ),
     ];
+  }
+}
+
+// The week's figures and changed findings in sentences, only with the switch
+// on; while it is written a quiet line, and on any failure nothing, so the lists stand alone.
+class _WeekInWords extends ConsumerWidget {
+  const _WeekInWords({required this.review});
+
+  final WeeklyReview review;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(weeklyWordsProvider) == null) return const SizedBox.shrink();
+    // The findings' changes are part of what is worded, so wait for them;
+    // without Health they are simply absent.
+    final WeeklyInsights? insights = ref.watch(weeklyInsightsProvider).value;
+    if (insights == null) return const CardFoot(WeeklyReviewPage.writing);
+    final WeeklyFigures? figures = WeeklyFigures.of(review, insights: insights);
+    if (figures == null) return const SizedBox.shrink();
+    final DialColors colors = DialColors.of(context);
+    return switch (ref.watch(weeklyParagraphProvider(figures))) {
+      AsyncData(value: final String text) => DialCard(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  text,
+                  style: DialTypeScale.bodyL.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  WeeklyReviewPage.writtenBy,
+                  style: DialTypeScale.label.copyWith(color: colors.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      AsyncLoading() => const CardFoot(WeeklyReviewPage.writing),
+      _ => const SizedBox.shrink(),
+    };
   }
 }
 
