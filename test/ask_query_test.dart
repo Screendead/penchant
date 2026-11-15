@@ -197,6 +197,33 @@ void main() {
       expect(compare.versus!.period, const AskPeriod(AskPeriodType.lastMonth));
     });
 
+    test(
+      'a last time with none or any counts entries, whatever the measure',
+      () {
+        final AskQuery q = run(
+          query(
+            measure: 'days_without',
+            shape: 'last_time',
+            bucket: 'week',
+            condition: 'none',
+          ),
+        );
+        expect(q.measure, AskMeasure.entries);
+        expect(
+          run(
+            query(
+              measure: 'spend',
+              habit: null,
+              shape: 'last_time',
+              bucket: 'day',
+              condition: 'any',
+            ),
+          ).measure,
+          AskMeasure.entries,
+        );
+      },
+    );
+
     test('a between period, its end cut to today', () {
       final AskQuery q = run(
         query(

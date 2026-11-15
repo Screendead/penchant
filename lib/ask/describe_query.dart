@@ -144,7 +144,9 @@ String describeQuery(AskQuery q, List<Vice> habits) {
       return '$measured, $scope, against $right';
     }(),
   };
-  return '${_upper(sentence)}.';
+  final bool clipped =
+      countsAbsence(q) && q.side.period.type != AskPeriodType.allTime;
+  return '${_upper(sentence)}${clipped ? ', from your first entry at the earliest' : ''}.';
 }
 
 String _condition(AskQuery q, int? h, List<Vice> habits) {

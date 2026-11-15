@@ -10,12 +10,13 @@ import 'package:tracker/firebase_init.dart';
 import 'package:tracker/providers/user_provider.dart';
 
 /// The habits a question may name, as sent and indexed: oldest first, those
-/// whose name will not open left out, since theirs is a placeholder.
+/// whose name will not open (a placeholder) or is blank left out.
 List<Vice> askHabits(Iterable<Vice> vices) =>
-    vices.where((Vice v) => !v.locked).toList()..sort((Vice a, Vice b) {
-      final int byTime = a.createdAt.compareTo(b.createdAt);
-      return byTime != 0 ? byTime : a.id.compareTo(b.id);
-    });
+    vices.where((Vice v) => !v.locked && v.name.trim().isNotEmpty).toList()
+      ..sort((Vice a, Vice b) {
+        final int byTime = a.createdAt.compareTo(b.createdAt);
+        return byTime != 0 ? byTime : a.id.compareTo(b.id);
+      });
 
 /// Turns a typed question into a query for this device to run.
 abstract class AskJournal {

@@ -85,15 +85,6 @@ DayRange? periodDays(AskPeriod period, DateTime today, DateTime? firstDay) {
   };
 }
 
-/// Whether the query counts the absence of something, so that days before
-/// the habit's first entry would count trivially and are left out.
-bool countsAbsence(AskQuery q) =>
-    q.measure == AskMeasure.daysWithout ||
-    q.condition == AskCondition.none ||
-    q.condition == AskCondition.below ||
-    q.longest == AskLongest.runWithout ||
-    q.longest == AskLongest.gap;
-
 class _Side {
   _Side(this.side, this.habits, List<ViceActivity> all) {
     final Set<String> ids = habit == null
@@ -346,9 +337,8 @@ class _Runner {
     for (int i = 1; i < values.length; i++) {
       if (values[i] >= values[most]) most = i;
     }
-    final double total = values.fold(0, (double x, double y) => x + y);
     return AskAnswer(
-      headline: _figure(total, a),
+      headline: _figure(_value(a, r), a),
       detail: values[most] == 0
           ? null
           : 'Most: ${_bucketName(buckets[most], bucket, capital: false)}, '

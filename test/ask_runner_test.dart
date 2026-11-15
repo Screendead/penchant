@@ -224,6 +224,34 @@ void main() {
     expect(a.detail, 'Most: the last 7 days, 6 drinks.');
   });
 
+  test('a series headline covers the whole period, part weeks included', () {
+    final AskAnswer a = answer(
+      q(
+        shape: AskShape.series,
+        bucket: AskBucket.week,
+        period: const AskPeriod(AskPeriodType.thisMonth),
+      ),
+      november,
+    );
+    expect(a.bars!.map((AskBar b) => b.value), <double>[0, 6]);
+    expect(a.headline, '10 drinks');
+  });
+
+  test('a last time with none ignores a days measure', () {
+    final AskAnswer a = answer(
+      q(
+        measure: AskMeasure.entries,
+        shape: AskShape.lastTime,
+        bucket: AskBucket.week,
+        condition: AskCondition.none,
+        period: const AskPeriod(AskPeriodType.thisMonth),
+      ),
+      november,
+    );
+    // 1 to 15 November: the week of 2 November had no wine.
+    expect(a.headline, 'The week of ${monthDay(DateTime(2026, 11, 2))}');
+  });
+
   test('series by calendar month, the last one cut at today', () {
     final AskAnswer a = answer(
       q(
@@ -498,6 +526,11 @@ void main() {
           habits,
         ),
         'Number of entries, in the last 7 days, on weekends.',
+      );
+      expect(
+        describeQuery(q(measure: AskMeasure.daysWithout), habits),
+        'Number of days with no Wine, in the last 7 days, from your first '
+        'entry at the earliest.',
       );
     });
 

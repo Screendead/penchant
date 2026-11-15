@@ -162,6 +162,15 @@ class AskQuery {
   final AskSide? versus;
 }
 
+/// Whether the query counts the absence of something, so that days before
+/// the habit's first entry would count trivially and are left out.
+bool countsAbsence(AskQuery q) =>
+    q.measure == AskMeasure.daysWithout ||
+    q.condition == AskCondition.none ||
+    q.condition == AskCondition.below ||
+    q.longest == AskLongest.runWithout ||
+    q.longest == AskLongest.gap;
+
 /// What the server's answer asks the page to show.
 sealed class AskParsed {
   const AskParsed();
@@ -324,9 +333,16 @@ AskParsed _parse(Object? json, int habitCount, DateTime today) {
     habitCount,
     today,
   );
-  final AskMeasure measure =
+  AskMeasure measure =
       _enumOf(AskMeasure.values, json['measure']) ?? _invalid();
   final AskShape shape = _enumOf(AskShape.values, json['shape']) ?? _invalid();
+  // "Nothing logged" and "something logged" are about entries whatever
+  // measure came with them: days_without with none would find a week with
+  // the habit every day.
+  if (shape == AskShape.lastTime &&
+      (json['condition'] == 'none' || json['condition'] == 'any')) {
+    measure = AskMeasure.entries;
+  }
   // An amount or spend over several habits would add unlike units or
   // currencies.
   bool oneHabit(AskSide s) => s.habit != null;
