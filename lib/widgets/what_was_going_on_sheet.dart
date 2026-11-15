@@ -78,6 +78,7 @@ class WhatWasGoingOnSheet extends ConsumerStatefulWidget {
   static const Key nextKey = ValueKey<String>('panels-next');
   static const Key backKey = ValueKey<String>('panels-back');
   static const Key doneKey = ValueKey<String>('panels-done');
+  static const Key flyingKey = ValueKey<String>('panels-flying-tag');
   static const String noteTitle = 'In your own words';
   static const String readsHint = 'Next reads it into tags.';
   static const String tagsTitle = 'Does this look right?';
@@ -116,6 +117,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
 
   // The note as last read, and what reading it found, in order.
   String? readNote;
+  bool readAgain = false;
   final List<ReadTag> read = <ReadTag>[];
   final Set<String> shown = <String>{};
   final Queue<ReadTag> arriving = Queue<ReadTag>();
@@ -190,7 +192,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
 
   void startReading() {
     final String? text = storedNote(note.text);
-    if (text == readNote) return;
+    if (text == readNote && !readAgain) return;
     stopReading();
     setState(() {
       selected.removeWhere(
@@ -200,6 +202,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
       read.clear();
       shown.clear();
       readFailed = false;
+      readAgain = false;
       readNote = text;
     });
     final NoteReader? reader = ref.read(noteReaderProvider);
@@ -214,8 +217,6 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
         .read(text)
         .listen(
           (ReadTag tag) {
-            waited?.cancel();
-            waited = Timer(WhatWasGoingOnSheet.readTimeout, failed);
             arrive(text, tag);
           },
           onError: (Object _) => failed(),
@@ -229,16 +230,18 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
     setState(() {});
   }
 
-  // Ends a read; one cut short is read [again] on the next visit.
+  // Ends a read; one cut short is read [again] on the next visit. Tags not yet
+  // shown are dropped, so nothing unseen is saved.
   void stopReading({bool again = true}) {
-    if (again && reading != null) readNote = null;
+    if (again && reading != null) readAgain = true;
     waited?.cancel();
     reading?.cancel();
     reading = null;
     arrival.stop();
     if (lit case final ReadTag t) shown.add(t.path);
     for (final ReadTag t in arriving) {
-      shown.add(t.path);
+      read.remove(t);
+      if (!widget.initial.contains(t.path)) selected.remove(t.path);
     }
     arriving.clear();
     lit = null;
@@ -273,7 +276,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
     setState(() => lit = tag);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || lit != tag) return;
-      flight = flightOf(tag);
+      setState(() => flight = flightOf(tag));
       arrival.forward(from: 0).whenCompleteOrCancel(() {
         if (!mounted || lit != tag) return;
         setState(() {
@@ -568,7 +571,10 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
                   ],
                 );
               },
-              child: _FlyingTag(triggerDisplay(lit!.path)),
+              child: _FlyingTag(
+                key: WhatWasGoingOnSheet.flyingKey,
+                triggerDisplay(lit!.path),
+              ),
             ),
           ),
       ],
@@ -677,7 +683,7 @@ class _WhatWasGoingOnSheetState extends ConsumerState<WhatWasGoingOnSheet>
 }
 
 class _FlyingTag extends StatelessWidget {
-  const _FlyingTag(this.label);
+  const _FlyingTag(this.label, {super.key});
 
   final String label;
 

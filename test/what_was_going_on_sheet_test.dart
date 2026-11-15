@@ -172,6 +172,40 @@ void main() {
     expect(done?.triggers, <String>['place/bar']);
   });
 
+  testWidgets('a read tag flies from the note to its chip', (tester) async {
+    final _FakeReader reader = _FakeReader();
+    await pump(tester, reader: reader);
+    await tester.enterText(find.byKey(NoteField.fieldKey), _note);
+    await next(tester);
+    reader.tags.add((path: 'place/bar', quote: 'the pub'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(WhatWasGoingOnSheet.flyingKey), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(WhatWasGoingOnSheet.flyingKey), findsNothing);
+    expect(chipSelected(tester, 'place/bar'), isTrue);
+    await reader.tags.close();
+  });
+
+  testWidgets('Done mid-read saves only the tags already shown', (
+    tester,
+  ) async {
+    final _FakeReader reader = _FakeReader();
+    await pump(tester, reader: reader);
+    await tester.enterText(find.byKey(NoteField.fieldKey), _note);
+    await next(tester);
+    reader.tags
+      ..add((path: 'work/meeting', quote: 'review'))
+      ..add((path: 'place/bar', quote: 'the pub'));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.byKey(WhatWasGoingOnSheet.doneKey));
+    await tester.pumpAndSettle();
+    expect(done?.triggers, <String>['work/meeting']);
+  });
+
   testWidgets('with reduced motion the tags just appear', (tester) async {
     final _FakeReader reader = _FakeReader();
     await pump(tester, reader: reader, still: true);
@@ -181,6 +215,7 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(tester.hasRunningAnimations, isFalse);
+    expect(find.byKey(WhatWasGoingOnSheet.flyingKey), findsNothing);
     expect(chipSelected(tester, 'place/bar'), isTrue);
     expect(
       tester
