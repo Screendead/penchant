@@ -45,8 +45,8 @@ final Map<String, Object?> _sent = <String, Object?>{
     },
     <String, Object?>{
       'habit': 'Habit C',
-      'unitOne': 'minute',
-      'unitOther': 'minutes',
+      'unitOne': 'l',
+      'unitOther': 'l',
       'total': '0',
       'entries': '0',
       'days': '0',
@@ -89,6 +89,8 @@ const List<(String, String)> _cases = <(String, String)>[
   ('Habit D came to 9 glasses.', 'placeholder'),
   ('Habit A came to 9 glasses after 8pm.', 'number'),
   ('Habit A came to 9½ glasses.', 'number'),
+  ('Habit C came to twelve l.', 'number_word'),
+  ('Habits A and B came to 9 and 14.', 'placeholder'),
   ('  ', 'empty'),
 ];
 
@@ -227,6 +229,25 @@ void main() {
         'Alcohol came to 10 drinks over 5 days.',
       );
       expect(calls, hasLength(1), reason: 'the week is kept in memory');
+      expect(
+        await words.write(
+          WeeklyFigures(figures.data, <String, String>{'Habit B': 'Wine'}),
+        ),
+        'Wine came to 10 drinks over 5 days.',
+      );
+      expect(calls, hasLength(1));
+    });
+
+    test('a call that throws is tried again on the next open', () async {
+      int calls = 0;
+      final CallableWeeklyWords words = CallableWeeklyWords((_) async {
+        if (++calls == 1) throw Exception('offline');
+        return <String, Object?>{'reason': 'ok', 'text': 'Habit A: 11.'};
+      });
+      final WeeklyFigures figures = WeeklyFigures.of(_review())!;
+      expect(await words.write(figures), isNull);
+      expect(await words.write(figures), 'Coffee: 11.');
+      expect(calls, 2);
     });
 
     test('drops a reply that fails the check, a refusal or an error', () async {

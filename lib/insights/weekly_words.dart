@@ -69,6 +69,7 @@ const List<String> numberWords = <String>[
 final RegExp _numeral = RegExp(r'\d+(?:[.:]\d+)*');
 final RegExp _nonAsciiNumeral = RegExp(r'[^\P{N}0-9]', unicode: true);
 final RegExp _placeholder = RegExp(r'\bHabit [A-Z]\b');
+final RegExp _placeholderLike = RegExp(r'\b[Hh]abits? [A-Z]\b');
 final RegExp _numberWord = RegExp(
   '\\b(?:${numberWords.join('|')})\\b',
   caseSensitive: false,
@@ -165,10 +166,11 @@ List<Map<String, Object?>> _list(Object? value) => <Map<String, Object?>>[
 /// 2. No numeral other than ASCII digits (no ½, ², full-width digits).
 /// 3. Each run of digits, with any '.' or ':' between digits (9, 10.5, 20:00),
 ///    equals one found the same way in a sent string.
-/// 4. Each "Habit X" (X one capital letter) is a sent placeholder.
+/// 4. Each "Habit X", "Habits X", "habit X" or "habits X" (X one capital
+///    letter) is exactly a sent placeholder.
 /// 5. With every sent unit word, tag label and part of a label between ' › '
-///    taken out (ignoring case, longest first), no word of [numberWords] is
-///    left.
+///    taken out where no letter touches it on either side (ignoring case,
+///    longest first), no word of [numberWords] is left.
 /// Run it on the reply as sent, before names go back in.
 String checkParagraph(String text, Map<String, Object?> data) {
   final String trimmed = text.trim();
@@ -213,7 +215,7 @@ String checkParagraph(String text, Map<String, Object?> data) {
     for (final Map<String, Object?> h in habits)
       if (h['habit'] case final String p) p,
   };
-  for (final Match m in _placeholder.allMatches(trimmed)) {
+  for (final Match m in _placeholderLike.allMatches(trimmed)) {
     if (!placeholders.contains(m[0])) return 'placeholder';
   }
   final List<String> phrases = <String>[
@@ -230,7 +232,10 @@ String checkParagraph(String text, Map<String, Object?> data) {
   for (final String phrase in phrases) {
     if (phrase.isEmpty) continue;
     rest = rest.replaceAll(
-      RegExp(RegExp.escape(phrase), caseSensitive: false),
+      RegExp(
+        '(?<![A-Za-z])${RegExp.escape(phrase)}(?![A-Za-z])',
+        caseSensitive: false,
+      ),
       ' ',
     );
   }
@@ -280,9 +285,10 @@ Future<Object?> _callWriteWeekly(Map<String, Object?> data) async {
 }
 
 /// The `writeWeekly` Cloud Function, through [call], which sends the figures
-/// and answers `{text, reason}`. Each week's answer, a failure included, is
-/// kept for as long as this object lives, so reopening the page never calls
-/// again; a user change or the switch makes a new one.
+/// and answers `{text, reason}`. Each week's checked reply, or its refusal,
+/// is kept for as long as this object lives, so reopening the page never
+/// calls again; a call that throws or times out is tried again on the next
+/// open. A user change or the switch makes a new one.
 class CallableWeeklyWords implements WeeklyWords {
   CallableWeeklyWords(this.call);
 
@@ -290,24 +296,29 @@ class CallableWeeklyWords implements WeeklyWords {
 
   static const Duration timeout = Duration(seconds: 15);
 
+  // Placeholder text, so a habit renamed since still shows its new name.
   final Map<String, Future<String?>> _written = <String, Future<String?>>{};
 
   @override
-  Future<String?> write(WeeklyFigures figures) =>
-      _written[figures.key] ??= _write(figures);
+  Future<String?> write(WeeklyFigures figures) async {
+    final String? text = await (_written[figures.key] ??= _write(figures));
+    return text == null ? null : restoreNames(text, figures.names);
+  }
 
   // Nothing about the figures or the reply is reported: a failure is a
   // missing paragraph and nothing more.
   Future<String?> _write(WeeklyFigures figures) async {
+    final Object? answer;
     try {
-      final Object? answer = await call(figures.data).timeout(timeout);
-      if (answer is! Map || answer['reason'] != 'ok') return null;
-      final Object? text = answer['text'];
-      if (text is! String) return null;
-      if (checkParagraph(text, figures.data) != 'ok') return null;
-      return restoreNames(text.trim(), figures.names);
+      answer = await call(figures.data).timeout(timeout);
     } catch (_) {
+      _written.remove(figures.key);
       return null;
     }
+    if (answer is! Map || answer['reason'] != 'ok') return null;
+    final Object? text = answer['text'];
+    if (text is! String) return null;
+    if (checkParagraph(text, figures.data) != 'ok') return null;
+    return text.trim();
   }
 }

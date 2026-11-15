@@ -37,7 +37,7 @@ const NUMBER_WORDS = [
 
 const NUMERAL = /\d+(?:[.:]\d+)*/g;
 const NON_ASCII_NUMERAL = /[^\P{N}0-9]/u;
-const PLACEHOLDER = /\bHabit [A-Z]\b/g;
+const PLACEHOLDER = /\b[Hh]abits? [A-Z]\b/g;
 const WORD = new RegExp(`\\b(?:${NUMBER_WORDS.join('|')})\\b`, 'i');
 
 const COUNT = /^\d{1,6}$/;
@@ -127,10 +127,11 @@ function escapeRegExp(s) {
 // 2. No numeral other than ASCII digits (no ½, ², full-width digits).
 // 3. Each run of digits, with any '.' or ':' between digits (9, 10.5, 20:00),
 //    equals one found the same way in a sent string.
-// 4. Each "Habit X" (X one capital letter) is a sent placeholder.
+// 4. Each "Habit X", "Habits X", "habit X" or "habits X" (X one capital
+//    letter) is exactly a sent placeholder.
 // 5. With every sent unit word, tag label and part of a label between ' › '
-//    taken out (ignoring case, longest first), no word of NUMBER_WORDS is
-//    left.
+//    taken out where no letter touches it on either side (ignoring case,
+//    longest first), no word of NUMBER_WORDS is left.
 function checkParagraph(text, figures) {
   if (typeof text !== 'string') return 'empty';
   const trimmed = text.trim();
@@ -152,7 +153,7 @@ function checkParagraph(text, figures) {
     .concat(figures.tags.flatMap((t) => [t.label, ...t.label.split(' › ')]))
     .sort((a, b) => b.length - a.length);
   for (const phrase of phrases) {
-    rest = rest.replace(new RegExp(escapeRegExp(phrase), 'gi'), ' ');
+    rest = rest.replace(new RegExp(`(?<![A-Za-z])${escapeRegExp(phrase)}(?![A-Za-z])`, 'gi'), ' ');
   }
   if (WORD.test(rest)) return 'number_word';
   return 'ok';

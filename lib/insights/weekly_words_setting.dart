@@ -66,8 +66,8 @@ class WeeklyWordsSetting extends ConsumerWidget {
       'paragraph: each habit’s total, usual week, entries and days, the '
       'busiest hours and the tags from Penchant’s list. Habits go as Habit A, '
       'Habit B, with their units, including any you named. Your habits’ '
-      'names, entries, notes, tags in your own words and Health data are not '
-      'sent; the names are put back on this device. Anthropic does not use it '
+      'names, entries, notes, tags in your own words (only how many) and Health '
+      'data are not sent; the names are put back on this device. Anthropic does not use it '
       'for training. Switch this off to stop sending.';
   static const String turnOn = 'Turn on';
   static const String notNow = 'Not now';

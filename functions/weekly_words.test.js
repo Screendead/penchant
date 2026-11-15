@@ -19,7 +19,7 @@ function request() {
     habits: [
       { habit: 'Habit A', unitOne: 'glass', unitOther: 'glasses', total: '9', entries: '6', days: '5', usual: '7' },
       { habit: 'Habit B', unitOne: 'cup', unitOther: 'cups', total: '14', entries: '14', days: '7', usual: '10.5' },
-      { habit: 'Habit C', unitOne: 'minute', unitOther: 'minutes', total: '0', entries: '0', days: '0', usual: null },
+      { habit: 'Habit C', unitOne: 'l', unitOther: 'l', total: '0', entries: '0', days: '0', usual: null },
     ],
     hours: [{ from: '20:00', to: '21:00', entries: '6' }],
     tags: [
@@ -40,6 +40,8 @@ const CASES = [
   ['Habit D came to 9 glasses.', 'placeholder'],
   ['Habit A came to 9 glasses after 8pm.', 'number'],
   ['Habit A came to 9½ glasses.', 'number'],
+  ['Habit C came to twelve l.', 'number_word'],
+  ['Habits A and B came to 9 and 14.', 'placeholder'],
   ['  ', 'empty'],
 ];
 
