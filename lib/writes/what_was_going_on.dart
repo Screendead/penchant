@@ -9,8 +9,8 @@ import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/undo_bar.dart';
+import 'package:tracker/widgets/what_was_going_on_sheet.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/log_one.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -18,14 +18,13 @@ import 'package:tracker/writes/tracker_writes.dart';
 
 const String whatWasGoingOnLabel = 'What was going on?';
 
-/// Opens the trigger picker, with the urge and note, for the saved entry
-/// [activityID] of [vice] and writes what is picked to it; dismissing the
-/// picker writes nothing. The rest of the entry's sealed content (its zone,
+/// Opens the panels (note, triggers, urge) for the saved entry [activityID]
+/// of [vice] and writes what is picked to it; dismissing them writes nothing. The rest of the entry's sealed content (its zone,
 /// write time and source) is read from the device and sealed again with the
 /// answers; if the entry is not on the device, the answers are written alone.
-/// [cancelled], asked once the picker closes, stops the write (an entry undone
+/// [cancelled], asked once the panels close, stops the write (an entry undone
 /// meanwhile). [entry] names the entry if the server refuses the change. The
-/// picker's Undo log deletes the entry through [undoLog], then calls
+/// panels' Undo log deletes the entry through [undoLog], then calls
 /// [onUndone]. [at], the entry's time, lets the calendar suggest a trigger.
 Future<void> askWhatWasGoingOn(
   BuildContext context,
@@ -42,18 +41,17 @@ Future<void> askWhatWasGoingOn(
   if (uid == null) {
     return;
   }
-  // Read before the picker opens: the caller may be gone when it closes.
+  // Read before the panels open: the caller may be gone when they close.
   final TrackerWrites writes = ref.read(trackerWritesProvider);
   final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
   final FreeTextTriggers freeText = ref.read(freeTextTriggersProvider);
   final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
 
-  final TriggerPick? picked = await showTriggerPicker(
+  final WhatWasGoingOnPick? picked = await showWhatWasGoingOn(
     context,
     viceID: vice.id,
     viceName: vice.name,
     initial: initial,
-    answers: (urge: null, note: null),
     at: at,
     onUndoLog: messenger == null
         ? null
@@ -71,8 +69,8 @@ Future<void> askWhatWasGoingOn(
   final ActivityContent asked = ActivityContent(triggers: initial);
   final ActivityContent answered = asked.withAnswers(
     triggers: picked?.triggers ?? initial,
-    urge: picked?.answers?.urge,
-    note: picked?.answers?.note,
+    urge: picked?.urge,
+    note: picked?.note,
   );
   if (picked == null ||
       !answered.answersDiffer(asked) ||

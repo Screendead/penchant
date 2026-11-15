@@ -12,8 +12,6 @@ import 'package:tracker/providers/mac_calendar_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/data/activity_content.dart';
-import 'package:tracker/widgets/urge_note_fields.dart';
 
 // The accent ring the theme gives focused buttons, for chips and tiles, which
 // the chip theme leaves without one.
@@ -28,67 +26,68 @@ WidgetStateBorderSide _focusSide(BuildContext context) {
 
 const String undoLogLabel = 'Undo log';
 
-/// The urge and note the picker asks for when it is not opened from the
-/// amount sheet, which asks for them itself.
-typedef PickerAnswers = ({int? urge, String? note});
-
-/// What the picker closes with: the triggers, and with [showTriggerPicker]'s
-/// `answers` the urge and note (else null).
-typedef TriggerPick = ({List<String> triggers, PickerAnswers? answers});
-
 /// Opens the picker for an entry of [viceID] and returns the chosen
-/// triggers, or null when it is dismissed without Done. With [answers] it
-/// also asks for the urge and note, starting from those. With [onUndoLog] the
+/// triggers, or null when it is dismissed without Done. With [onUndoLog] the
 /// sheet also offers Undo log, which closes it with null and calls that.
 /// With [at], the entry's time, it offers what the calendar suggests.
-Future<TriggerPick?> showTriggerPicker(
+Future<List<String>?> showTriggerPicker(
   BuildContext context, {
   required String viceID,
   required String viceName,
   required List<String> initial,
-  PickerAnswers? answers,
   DateTime? at,
   VoidCallback? onUndoLog,
-}) => showModalBottomSheet<TriggerPick>(
+}) => showModalBottomSheet<List<String>>(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
-  builder: (BuildContext context) => _TriggerPickerLoader(
+  builder: (BuildContext context) => TriggerSources(
     viceID: viceID,
-    viceName: viceName,
-    initial: initial,
-    answers: answers,
     at: at,
-    onUndoLog: onUndoLog,
+    builder: (BuildContext context, TriggerOffers offers) => TriggerPickerSheet(
+      viceName: viceName,
+      usual: offers.usual,
+      promoted: offers.promoted,
+      suggested: offers.suggested,
+      initial: initial,
+      onDone: (List<String> picked) => Navigator.of(context).pop(picked),
+      onUndoLog: onUndoLog == null
+          ? null
+          : () {
+              Navigator.of(context).pop();
+              onUndoLog();
+            },
+    ),
   ),
 );
 
-// Supplies the habit's usual triggers, the promoted free text and the
-// calendar's suggestion, so the sheet itself needs neither Firestore, the
-// device store nor the calendar.
-class _TriggerPickerLoader extends ConsumerStatefulWidget {
-  const _TriggerPickerLoader({
+/// The chips offered beside the tree: the habit's usual triggers, promoted
+/// free text and the calendar's suggestions.
+typedef TriggerOffers = ({
+  List<String> usual,
+  List<String> promoted,
+  List<String> suggested,
+});
+
+/// Supplies [TriggerOffers] for an entry of [viceID] at [at], so the sheets
+/// themselves need neither Firestore, the device store nor the calendar.
+class TriggerSources extends ConsumerStatefulWidget {
+  const TriggerSources({
+    super.key,
     required this.viceID,
-    required this.viceName,
-    required this.initial,
-    this.answers,
+    required this.builder,
     this.at,
-    this.onUndoLog,
   });
 
   final String viceID;
-  final String viceName;
-  final List<String> initial;
-  final PickerAnswers? answers;
   final DateTime? at;
-  final VoidCallback? onUndoLog;
+  final Widget Function(BuildContext context, TriggerOffers offers) builder;
 
   @override
-  ConsumerState<_TriggerPickerLoader> createState() =>
-      _TriggerPickerLoaderState();
+  ConsumerState<TriggerSources> createState() => _TriggerSourcesState();
 }
 
-class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
+class _TriggerSourcesState extends ConsumerState<TriggerSources> {
   List<String> promoted = const <String>[];
   List<String> suggested = const <String>[];
 
@@ -123,31 +122,16 @@ class _TriggerPickerLoaderState extends ConsumerState<_TriggerPickerLoader> {
             .value ??
         const <ViceActivity>[];
 
-    return TriggerPickerSheet(
-      viceName: widget.viceName,
+    return widget.builder(context, (
       usual: usualTriggers(recent),
       promoted: promoted,
       suggested: suggested,
-      initial: widget.initial,
-      answers: widget.answers,
-      onDone: (List<String> picked) =>
-          Navigator.of(context).pop((triggers: picked, answers: null)),
-      onAnswered: (List<String> picked, PickerAnswers answers) =>
-          Navigator.of(context).pop((triggers: picked, answers: answers)),
-      onUndoLog: widget.onUndoLog == null
-          ? null
-          : () {
-              Navigator.of(context).pop();
-              widget.onUndoLog!();
-            },
-    );
+    ));
   }
 }
 
-/// Optional triggers for one entry: the calendar's suggestions and the
-/// habit's usual ones as one-tap chips, the starter tree two levels deep, and
-/// free text, which becomes a choice once used [freeTextPromotionUses] times.
-/// Nothing starts picked but [initial].
+/// Optional triggers for one entry, in a sheet: [TriggerChoices] over the
+/// picked ones and Done. Nothing starts picked but [initial].
 class TriggerPickerSheet extends StatefulWidget {
   const TriggerPickerSheet({
     super.key,
@@ -158,8 +142,6 @@ class TriggerPickerSheet extends StatefulWidget {
     this.suggested = const <String>[],
     this.initial = const <String>[],
     this.roots = triggerTree,
-    this.answers,
-    this.onAnswered,
     this.onUndoLog,
   });
 
@@ -170,10 +152,6 @@ class TriggerPickerSheet extends StatefulWidget {
   final List<String> initial;
   final List<TriggerNode> roots;
   final ValueChanged<List<String>> onDone;
-  // With [answers], the sheet also asks for the urge and note, and Done
-  // calls [onAnswered] rather than [onDone].
-  final PickerAnswers? answers;
-  final void Function(List<String> triggers, PickerAnswers answers)? onAnswered;
   final VoidCallback? onUndoLog;
 
   static const String calendarLabel = 'Suggested from your calendar';
@@ -185,110 +163,15 @@ class TriggerPickerSheet extends StatefulWidget {
 }
 
 class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
-  String? root;
-  late final List<String> selected = <String>[...widget.initial];
-  final TextEditingController freeText = TextEditingController();
-  final FocusNode freeTextFocus = FocusNode();
-  bool showFreeText = false;
-  String? freeTextError;
-  final GlobalKey<FormState> answersForm = GlobalKey<FormState>();
-  late int? urge = widget.answers?.urge;
-  late final TextEditingController note = TextEditingController(
-    text: widget.answers?.note ?? '',
-  );
-  String? answersError;
+  late List<String> selected = <String>[...widget.initial];
 
-  bool get full => selected.length >= maxTriggers;
-
-  bool _under(String path, String id) =>
-      path == id || path.startsWith('$id$triggerPathSeparator');
-
-  int pickedUnder(String id) =>
-      selected.where((String p) => _under(p, id)).length;
-
-  void toggle(String path) {
-    setState(() {
-      if (!selected.remove(path) && !full) selected.add(path);
-    });
-  }
-
-  // Opening an area records it; a child picked inside replaces it.
-  void openRoot(String id) {
-    setState(() {
-      root = id;
-      if (pickedUnder(id) == 0 && !full) selected.add(id);
-    });
-  }
-
-  void toggleChild(String parent, String path) {
-    setState(() {
-      if (!selected.remove(path) && (!full || selected.contains(parent))) {
-        selected
-          ..remove(parent)
-          ..add(path);
-      }
-    });
-  }
-
-  void openFreeText() {
-    setState(() => showFreeText = true);
-    freeTextFocus.requestFocus();
-  }
-
-  // The field's maxLength counts characters, the rules UTF-16 code units, so
-  // an emoji-heavy label can fit the field and still be too long to store.
-  void addFreeText() {
-    final String label = freeText.text.trim();
-    if (label.isEmpty) return;
-    final String? error = triggersError(<String>[label]);
-    setState(() => freeTextError = error);
-    if (error != null) return;
-    setState(() {
-      if (!selected.contains(label) && !full) selected.add(label);
-      freeText.clear();
-    });
-  }
-
-  void done() {
-    final List<String> picked = List<String>.of(selected);
-    final void Function(List<String>, PickerAnswers)? onAnswered =
-        widget.onAnswered;
-    if (widget.answers == null || onAnswered == null) {
-      widget.onDone(picked);
-      return;
-    }
-    if (!(answersForm.currentState?.validate() ?? true)) return;
-    final String? note = storedNote(this.note.text);
-    final String? tooLong = answersTooLong(
-      triggers: picked,
-      urge: urge,
-      note: note,
-    );
-    setState(() => answersError = tooLong);
-    if (tooLong != null) return;
-    onAnswered(picked, (urge: urge, note: note));
-  }
-
-  @override
-  void dispose() {
-    freeText.dispose();
-    freeTextFocus.dispose();
-    note.dispose();
-    super.dispose();
-  }
+  void changed(List<String> next) => setState(() => selected = next);
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final TriggerNode? open = root == null
-        ? null
-        : widget.roots.where((TriggerNode n) => n.id == root).firstOrNull;
-
     final double height = MediaQuery.sizeOf(context).height;
     final double keyboard = MediaQuery.viewInsetsOf(context).bottom;
-    // Above a landscape phone's keyboard the title would leave the list no
-    // room for the field being typed in.
-    final bool cramped = keyboard > 0 && height - keyboard < 320;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
@@ -298,7 +181,7 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (!cramped)
+            if (!crampedByKeyboard(context))
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   DialSpace.xl,
@@ -326,19 +209,243 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
             Flexible(
               child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(
-                  DialSpace.m,
-                  DialSpace.m,
-                  DialSpace.m,
-                  DialSpace.m,
-                ),
-                children: open == null ? _levelOne(context) : _levelTwo(open),
+                padding: const EdgeInsets.all(DialSpace.m),
+                children: <Widget>[
+                  TriggerChoices(
+                    viceName: widget.viceName,
+                    usual: widget.usual,
+                    promoted: widget.promoted,
+                    suggested: widget.suggested,
+                    roots: widget.roots,
+                    selected: selected,
+                    onChanged: changed,
+                  ),
+                ],
               ),
             ),
-            _footer(context),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: DialColors.of(context).line),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DialSpace.m,
+                  vertical: DialSpace.s,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (selected.isNotEmpty) ...<Widget>[
+                      SelectedTriggers(selected: selected, onChanged: changed),
+                      const SizedBox(height: DialSpace.s),
+                    ],
+                    Row(
+                      children: <Widget>[
+                        if (widget.onUndoLog
+                            case final VoidCallback undo) ...<Widget>[
+                          UndoLogButton(onPressed: undo),
+                          const SizedBox(width: DialSpace.s),
+                        ],
+                        Expanded(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(44, 44),
+                            ),
+                            onPressed: () =>
+                                widget.onDone(List<String>.of(selected)),
+                            child: const Text('Done'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Above a landscape phone's keyboard a sheet's title would leave the list no
+/// room for the field being typed in.
+bool crampedByKeyboard(BuildContext context) {
+  final double keyboard = MediaQuery.viewInsetsOf(context).bottom;
+  return keyboard > 0 && MediaQuery.sizeOf(context).height - keyboard < 320;
+}
+
+class UndoLogButton extends StatelessWidget {
+  const UndoLogButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Undo log, removing this entry',
+    excludeSemantics: true,
+    child: OutlinedButton(
+      style: OutlinedButton.styleFrom(minimumSize: const Size(44, 44)),
+      onPressed: onPressed,
+      child: const Text(undoLogLabel),
+    ),
+  );
+}
+
+/// The picked triggers as removable chips, saying when no more fit.
+class SelectedTriggers extends StatelessWidget {
+  const SelectedTriggers({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<String> selected;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Wrap(
+          spacing: DialSpace.xs,
+          runSpacing: DialSpace.xxs,
+          children: <Widget>[
+            for (final String path in selected)
+              InputChip(
+                label: Text(triggerDisplay(path)),
+                side: _focusSide(context),
+                deleteButtonTooltipMessage: 'Remove ${triggerDisplay(path)}',
+                onDeleted: () =>
+                    onChanged(selected.where((String p) => p != path).toList()),
+              ),
+          ],
+        ),
+        if (selected.length >= maxTriggers)
+          Padding(
+            padding: const EdgeInsets.only(top: DialSpace.xxs),
+            child: Text(
+              'Up to $maxTriggers per entry',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: DialColors.of(context).muted,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The calendar's suggestions and the habit's usual triggers as one-tap
+/// chips, the starter tree two levels deep, and free text, which becomes a
+/// choice once used [freeTextPromotionUses] times. [selected] is the parent's;
+/// each change comes back through [onChanged].
+class TriggerChoices extends StatefulWidget {
+  const TriggerChoices({
+    super.key,
+    required this.viceName,
+    required this.selected,
+    required this.onChanged,
+    this.usual = const <String>[],
+    this.promoted = const <String>[],
+    this.suggested = const <String>[],
+    this.roots = triggerTree,
+  });
+
+  final String viceName;
+  final List<String> selected;
+  final ValueChanged<List<String>> onChanged;
+  final List<String> usual;
+  final List<String> promoted;
+  final List<String> suggested;
+  final List<TriggerNode> roots;
+
+  @override
+  State<TriggerChoices> createState() => _TriggerChoicesState();
+}
+
+class _TriggerChoicesState extends State<TriggerChoices> {
+  String? root;
+  final TextEditingController freeText = TextEditingController();
+  final FocusNode freeTextFocus = FocusNode();
+  bool showFreeText = false;
+  String? freeTextError;
+
+  List<String> get selected => widget.selected;
+
+  bool get full => selected.length >= maxTriggers;
+
+  bool _under(String path, String id) =>
+      path == id || path.startsWith('$id$triggerPathSeparator');
+
+  int pickedUnder(String id) =>
+      selected.where((String p) => _under(p, id)).length;
+
+  void _edit(void Function(List<String> next) edit) {
+    final List<String> next = <String>[...selected];
+    edit(next);
+    widget.onChanged(next);
+  }
+
+  void toggle(String path) => _edit((List<String> next) {
+    if (!next.remove(path) && !full) next.add(path);
+  });
+
+  // Opening an area records it; a child picked inside replaces it.
+  void openRoot(String id) {
+    setState(() => root = id);
+    if (pickedUnder(id) == 0 && !full) _edit((List<String> n) => n.add(id));
+  }
+
+  void toggleChild(String parent, String path) => _edit((List<String> next) {
+    if (!next.remove(path) && (!full || next.contains(parent))) {
+      next
+        ..remove(parent)
+        ..add(path);
+    }
+  });
+
+  void openFreeText() {
+    setState(() => showFreeText = true);
+    freeTextFocus.requestFocus();
+  }
+
+  // The field's maxLength counts characters, the rules UTF-16 code units, so
+  // an emoji-heavy label can fit the field and still be too long to store.
+  void addFreeText() {
+    final String label = freeText.text.trim();
+    if (label.isEmpty) return;
+    final String? error = triggersError(<String>[label]);
+    setState(() => freeTextError = error);
+    if (error != null) return;
+    if (!selected.contains(label) && !full) {
+      _edit((List<String> n) => n.add(label));
+    }
+    freeText.clear();
+  }
+
+  @override
+  void dispose() {
+    freeText.dispose();
+    freeTextFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final TriggerNode? open = root == null
+        ? null
+        : widget.roots.where((TriggerNode n) => n.id == root).firstOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: open == null ? _levelOne(context) : _levelTwo(open),
     );
   }
 
@@ -439,35 +546,6 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
           error: freeTextError,
         ),
       ],
-      if (widget.answers != null) ...<Widget>[
-        const SizedBox(height: DialSpace.m),
-        Form(
-          key: answersForm,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                UrgeField(
-                  value: urge,
-                  onChanged: (int? value) => setState(() => urge = value),
-                ),
-                const SizedBox(height: DialSpace.m),
-                NoteField(controller: note),
-                if (answersError case final String error) ...<Widget>[
-                  const SizedBox(height: DialSpace.xs),
-                  Text(
-                    error,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ],
     ];
   }
 
@@ -535,82 +613,6 @@ class _TriggerPickerSheetState extends State<TriggerPickerSheet> {
         ),
       ),
     ];
-  }
-
-  Widget _footer(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: DialColors.of(context).line)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          DialSpace.m,
-          DialSpace.s,
-          DialSpace.m,
-          DialSpace.s,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (selected.isNotEmpty) ...<Widget>[
-              Wrap(
-                spacing: DialSpace.xs,
-                runSpacing: DialSpace.xxs,
-                children: <Widget>[
-                  for (final String path in selected)
-                    InputChip(
-                      label: Text(triggerDisplay(path)),
-                      side: _focusSide(context),
-                      deleteButtonTooltipMessage:
-                          'Remove ${triggerDisplay(path)}',
-                      onDeleted: () => toggle(path),
-                    ),
-                ],
-              ),
-              if (full)
-                Padding(
-                  padding: const EdgeInsets.only(top: DialSpace.xxs),
-                  child: Text(
-                    'Up to $maxTriggers per entry',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: DialColors.of(context).muted,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: DialSpace.s),
-            ],
-            Row(
-              children: <Widget>[
-                if (widget.onUndoLog case final VoidCallback undo) ...<Widget>[
-                  Semantics(
-                    button: true,
-                    label: 'Undo log, removing this entry',
-                    excludeSemantics: true,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(44, 44),
-                      ),
-                      onPressed: undo,
-                      child: const Text(undoLogLabel),
-                    ),
-                  ),
-                  const SizedBox(width: DialSpace.s),
-                ],
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(44, 44),
-                    ),
-                    onPressed: done,
-                    child: const Text('Done'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -799,14 +801,14 @@ class TriggersField extends StatelessWidget {
   final bool enabled;
 
   Future<void> _open(BuildContext context) async {
-    final TriggerPick? picked = await showTriggerPicker(
+    final List<String>? picked = await showTriggerPicker(
       context,
       viceID: viceID!,
       viceName: viceName,
       initial: value,
       at: at?.call(),
     );
-    if (picked != null) onChanged(picked.triggers);
+    if (picked != null) onChanged(picked);
   }
 
   @override
