@@ -10,6 +10,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/ask/ask_journal.dart';
+import 'package:tracker/ask/ask_page.dart';
+import 'package:tracker/ask/ask_query.dart';
 import 'package:tracker/account/password_prompt.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
@@ -585,6 +588,28 @@ void main() {
     );
   });
 
+  testWidgets('ask your journal', (WidgetTester tester) async {
+    _report(
+      await _audit(
+        tester,
+        surface: 'ask your journal',
+        open: (WidgetTester t) async {
+          await t.pumpWidget(
+            _host(<Override>[
+              ...habitOverrides(<Vice>[_coffee]),
+              userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
+              offlineProvider.overrideWith((ref) => Stream.value(false)),
+              askJournalProvider.overrideWithValue(_NeverAsk()),
+            ], home: const AskPage()),
+          );
+          await t.pump();
+        },
+        fields: <_Field>[_Field('question', _plain(find.byType(TextField)))],
+        action: find.widgetWithText(FilledButton, AskPage.ask),
+      ),
+    );
+  });
+
   Future<void> openAuth(WidgetTester t) async {
     await t.pumpWidget(
       _host(<Override>[
@@ -891,4 +916,13 @@ class _NoActions implements RecoveryKeyActions {
 
   @override
   Future<void> startNewJournal() async {}
+}
+
+class _NeverAsk implements AskJournal {
+  @override
+  Future<AskParsed> ask(
+    String question, {
+    required List<Vice> habits,
+    required DateTime today,
+  }) async => const AskCannotAnswer(null);
 }
