@@ -1048,10 +1048,18 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
+Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`, https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three
+calls, from Jack's 2026-11-15 pick of three further uses of Claude; nothing is built. Recommendations (Claude's):
+`weekly-words` Haiku writes the weekly review's paragraph from figures the device computed, habits sent as
+placeholders, every number in the reply checked against what was sent; `ask-journal` Claude turns a typed question
+into a query the device runs (the question and habit names are sent, no entries), "why" questions handed to Insights;
+`follow-up` after a note, Claude picks one of about a dozen questions written in advance and a phrase of the note it
+refers to, never writing the question itself.
+
 Round 21 (`docs/pitch/round-21/trigger-tree/pitch.html`, https://claude.ai/artifact/3xNRWLCyXA9nzSvWsVCDgw):
 `tag-list`, picked by Jack on 2026-11-15, "Adopt it all": 174 tags in 11 areas with search in the picker. Built.
 
-Nothing is waiting. Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
+Round 20 (`docs/pitch/round-20/what-happened/pitch.html`,
 https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), all four picked by Jack on 2026-11-15: "Take all 4
 recommendations; but the time of that notification should be user-configurable." Built (CLAUDE.md: What was going
 on?, Note reader, Day notes, Heavy-day prompt). Jack's trial of Claude on the 12 notes: all answered, median 1.2 s,

@@ -1,0 +1,199 @@
+<title>Claude in Penchant</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;800&family=Red+Hat+Mono:wght@500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; each call pairs a phone-sized mock-up with its text, stacking when narrow. */
+:root {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface2: #EFECE5; --text: #1D1C1A; --muted: #635E56;
+  --line: #1D1C1A1A; --outline: #1D1C1A8C; --on-accent: #F6F4EF;
+  --d1: #FFB347; --d1ink: #8F5600; --sent: #F8E4E2; --sent-ink: #B42A37; --kept: #E3EFE4; --kept-ink: #276B43;
+  --display: "Red Hat Display", system-ui, sans-serif; --body: "Red Hat Text", system-ui, sans-serif;
+  --mono: "Red Hat Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A;
+  --d1: #FFB347; --d1ink: #FFB347; --sent: #3A1D1E; --sent-ink: #FF8A8F; --kept: #15241B; --kept-ink: #9ED8B0;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A;
+  --d1: #FFB347; --d1ink: #FFB347; --sent: #3A1D1E; --sent-ink: #FF8A8F; --kept: #15241B; --kept-ink: #9ED8B0;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--text); font: 400 16px/1.55 var(--body); font-variant-numeric: tabular-nums; }
+.page { max-width: 1040px; margin: 0 auto; padding-block: 32px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 48px; }
+h1 { font: 800 clamp(28px, 5vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 800 24px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 13px/1.3 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.muted { color: var(--muted); }
+.call { display: flex; flex-direction: column; gap: 18px; border-top: 2px solid var(--text); padding-top: 20px; min-width: 0; }
+.pair { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+.pair > .stack { flex: 1 1 340px; }
+.phone { flex: 0 0 auto; width: min(320px, 100%); margin: 0 auto; border: 1px solid var(--outline); border-radius: 32px;
+  background: var(--bg); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px;
+  display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; line-height: 1.5; }
+.card b.t { font: 800 16px/1.2 var(--display); }
+.eyebrow { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.row span:last-child { font-family: var(--mono); }
+.field { background: var(--surface2); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 14px; }
+.weeks { display: flex; gap: 4px; align-items: flex-end; height: 44px; }
+.weeks i { flex: 1; background: var(--d1); border-radius: 3px 3px 0 0; }
+.weeks i.none { background: none; border: 1px dashed var(--outline); height: 6px !important; border-radius: 3px; }
+.axis { display: flex; justify-content: space-between; font: 500 11px var(--mono); color: var(--muted); }
+.quote { background: var(--surface2); border-radius: 12px; padding: 8px 10px; font-size: 13.5px; color: var(--muted); }
+.quote mark { background: var(--text); color: var(--on-accent); border-radius: 4px; padding: 0 2px; }
+.btns { display: flex; gap: 8px; }
+.btns span { flex: 1; text-align: center; border: 1px solid var(--outline); border-radius: 999px; padding: 9px 0; font: 600 13.5px var(--body); }
+.btns span.p { background: var(--text); color: var(--on-accent); border-color: var(--text); flex: 2; }
+.leaves { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.leaves div { border-radius: 14px; padding: 12px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.leaves b { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; }
+.goes { background: var(--sent); } .goes b { color: var(--sent-ink); }
+.stays { background: var(--kept); } .stays b { color: var(--kept-ink); }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.opt.rec { border: 2px solid var(--text); }
+.opt b.name { font: 800 17px/1.25 var(--display); }
+.opt p { font-size: 14.5px; }
+.tag { align-self: flex-start; font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase;
+  background: var(--text); color: var(--on-accent); padding: 4px 8px; border-radius: 999px; }
+.kv { font-size: 14px; color: var(--muted); } .kv b { color: var(--text); font-weight: 600; }
+</style>
+
+<div class="page">
+  <div class="stack">
+    <h3>Penchant · three calls · 15 November 2026</h3>
+    <h1>Three more things Claude could do, and what each sends off the phone</h1>
+    <p>You picked three ideas: the weekly review in plain words, asking your journal questions, and one tailored follow-up question. Each is a separate decision below. All three would use the server function that the note reader already uses, sit behind their own off-by-default switch, and fall back to what the app does today when offline or when the reply fails a check.</p>
+    <p>The examples in the mock-ups are invented. Costs use Anthropic's list prices; your workspace currently allows only the smallest model (Haiku), so any option naming Sonnet needs you to raise its limit from zero.</p>
+  </div>
+
+  <!-- CALL: weekly review -->
+  <section class="call">
+    <h3>Call 1 of 3</h3>
+    <h2>The weekly review as a paragraph, written from numbers the phone worked out</h2>
+    <div class="pair">
+      <div class="phone" aria-label="Mock-up: weekly review">
+        <div class="card"><span class="eyebrow">Last week · 9 to 15 Nov</span>
+          <p>Wine came to 9 glasses over 5 days, 2 more than your usual week. Six of the nine were after 20:00. "Long day" was tagged on 4 of those 5 days.</p>
+          <p>One thing is new: on days after a late meeting, your first glass came about 40 minutes earlier. Coffee was unchanged at 14 cups.</p>
+          <span class="eyebrow">Written by Claude from the figures below</span></div>
+        <div class="card"><b class="t">Wine</b>
+          <div class="row"><span>Last week</span><span>9 glasses</span></div>
+          <div class="row"><span>Usually</span><span>7 a week</span></div>
+          <div class="row"><span>Busiest hours</span><span>20:00–22:00</span></div></div>
+      </div>
+      <div class="stack">
+        <p><b>Today</b> the weekly review is a page of lists: each habit's total against its usual week, the busiest hours, the most common tags, and which findings are new or no longer hold. It is accurate and takes effort to read. It can also notify you on Monday at 09:00.</p>
+        <p><b>The change:</b> a short paragraph at the top that says the same things in sentences. The phone still does all the arithmetic. Claude only turns the finished figures into prose, and the lists stay underneath as the source.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The week's computed figures, with each habit called "Habit A", "Habit B". Tag names from the standard list.</div>
+          <div class="stays"><b>Stays on the phone</b>Habit names, every entry, every note, your own-words tags, Health data. Names are put back after the reply.</div>
+        </div>
+        <p><b>The safeguard:</b> the phone checks that every number in the paragraph is one it sent. If one isn't, the paragraph is dropped and you see today's lists alone.</p>
+      </div>
+    </div>
+    <div class="opts">
+      <div class="opt rec"><span class="tag">Recommended</span><b class="name">Haiku writes it, numbers checked</b>
+        <p>Runs once a week when you open the review. About two hundredths of a cent each time.</p>
+        <p class="kv"><b>Risk:</b> plain or slightly stiff prose. A check on numbers cannot catch a misleading emphasis, so the instruction forbids causes, advice and comparison with other people.</p>
+        <p class="kv"><b>Build:</b> about 2 days.</p></div>
+      <div class="opt"><b class="name">Sonnet writes it</b>
+        <p>Better sentences and judgement about what to lead with. About a third of a cent a week.</p>
+        <p class="kv"><b>Needs:</b> you raise Sonnet's limit in the workspace.</p>
+        <p class="kv"><b>Build:</b> about 2 days.</p></div>
+      <div class="opt"><b class="name">Sentences without a model</b>
+        <p>The phone fills fixed sentence patterns itself. Nothing is sent anywhere.</p>
+        <p class="kv"><b>Risk:</b> reads like a form letter, and every new kind of finding needs its own pattern written.</p>
+        <p class="kv"><b>Build:</b> about 3 days.</p></div>
+    </div>
+    <p><b>Why now:</b> nothing forces it. <b>Waiting on this:</b> nothing. <b>If you do nothing:</b> the weekly review stays as lists.</p>
+  </section>
+
+  <!-- CALL: ask your journal -->
+  <section class="call">
+    <h3>Call 2 of 3</h3>
+    <h2>Ask your journal a question, with the answer worked out on the phone</h2>
+    <div class="pair">
+      <div class="phone" aria-label="Mock-up: ask your journal">
+        <div class="field">When was my last week without wine?</div>
+        <div class="card"><b class="t">The week of 12 October</b>
+          <p>Five weeks with wine since then.</p>
+          <div class="weeks" aria-hidden="true"><i style="height:60%"></i><i style="height:45%"></i><i class="none"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:90%"></i><i style="height:65%"></i><i style="height:80%"></i></div>
+          <div class="axis"><span>28 Sep</span><span>this week</span></div>
+          <span class="eyebrow">Counted on this device</span></div>
+        <div class="field">Why do I drink more on Fridays?</div>
+        <div class="card"><p>That is a "why", which Insights answers by comparison. It has one finding about Fridays.</p>
+          <div class="btns"><span class="p">Open it in Insights</span></div></div>
+      </div>
+      <div class="stack">
+        <p><b>Today</b> a question like "when was my last week without wine?" means paging back through days or reading a chart. Trends and Insights answer the questions they were built for and no others.</p>
+        <p><b>The change:</b> a question box. Claude does not see your journal. It reads the question and turns it into a precise query (which habit, what to count, over what period, filtered by which tag, weekday or hour). The phone runs that query on your entries and shows a figure and a small chart.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The question you typed, and your habits' names, which are encrypted everywhere else. Without the names it cannot tell which habit "wine" means.</div>
+          <div class="stays"><b>Stays on the phone</b>Every entry, amount, time, tag and note, and the answer itself.</div>
+        </div>
+        <p><b>The limit, by design:</b> it counts and finds; it does not explain. A "why" or "does X cause Y" question is passed to Insights, which only reports a pattern when the statistics hold, and says when they don't. The model never does ad-hoc statistics.</p>
+      </div>
+    </div>
+    <div class="opts">
+      <div class="opt rec"><span class="tag">Recommended</span><b class="name">Claude writes the query, the phone answers</b>
+        <p>Haiku, about two hundredths of a cent a question, an expected 1 to 2 seconds, unmeasured.</p>
+        <p class="kv"><b>Risk:</b> a misread question gives a confident wrong answer, so each answer states the query in words ("Weeks with no wine entries, counted back from today") for you to check. Questions outside the query language get "can't answer that yet".</p>
+        <p class="kv"><b>Build:</b> about 6 days: the query language and its runner are most of it. I'd test Haiku against Sonnet on 40 written questions before choosing.</p></div>
+      <div class="opt"><b class="name">Claude sees the results and writes the answer</b>
+        <p>A back-and-forth: Claude asks the phone for figures, reads them, may ask for more, then answers in sentences. Handles looser questions.</p>
+        <p class="kv"><b>Risk:</b> your figures leave the phone, answers take 5 to 15 seconds, and the model can word a guess as a fact. Needs Sonnet.</p>
+        <p class="kv"><b>Build:</b> about 9 days.</p></div>
+      <div class="opt"><b class="name">Don't build it</b>
+        <p>Add the two or three most-wanted fixed answers to Trends instead, such as "longest gap" and "last week without".</p>
+        <p class="kv"><b>Build:</b> about 2 days, nothing sent anywhere.</p></div>
+    </div>
+    <p><b>Why now:</b> nothing forces it; it is the largest of the three. <b>Waiting on this:</b> nothing. <b>If you do nothing:</b> it is not built.</p>
+  </section>
+
+  <!-- CALL: follow-up question -->
+  <section class="call">
+    <h3>Call 3 of 3</h3>
+    <h2>One follow-up question after you write a note</h2>
+    <div class="pair">
+      <div class="phone" aria-label="Mock-up: follow-up question">
+        <div class="card"><div class="row"><b class="t">One more, if you like</b><span class="eyebrow">3 of 3</span></div>
+          <div class="quote">Rough one. Boss tore into the roadmap, <mark>went straight to the pub</mark> with Sam.</div>
+          <p><b>You wrote "went straight to the pub". Was that already the plan this morning?</b></p>
+          <div class="field" style="border-radius:14px;min-height:54px;color:var(--muted)">Optional</div>
+          <div class="btns"><span>Skip</span><span class="p">Done</span></div></div>
+      </div>
+      <div class="stack">
+        <p><b>Today</b> the heavy-day prompt asks the same thing every time, "Anything different about today?", and a note is whatever you chose to write. Nothing follows up, so notes tend to describe what happened and stop short of the detail that makes them useful later.</p>
+        <p><b>The change:</b> after you write a note about a day or an entry, one optional question that picks up something you wrote. Your answer is saved, encrypted, with the note. It arrives in the same reply as the tags, so it costs no extra wait and almost nothing extra.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The note's text, which the note reader already sends when it is switched on. Nothing more.</div>
+          <div class="stays"><b>Stays on the phone</b>Your answer to the question, and everything else.</div>
+        </div>
+        <p><b>The danger is tone.</b> This is a journal about drinking, smoking and similar. A model free to write any question will, sooner or later, ask one that sounds like a judgement or a diagnosis.</p>
+      </div>
+    </div>
+    <div class="opts">
+      <div class="opt rec"><span class="tag">Recommended</span><b class="name">Claude picks a written question and a phrase of yours</b>
+        <p>About a dozen questions are written by us in advance ("Was that already the plan this morning?", "What happened just before?", "Who suggested it?"). Claude chooses the one that fits and the phrase from your note it refers to, as in the mock-up. The phone checks the phrase is really in the note.</p>
+        <p class="kv"><b>Risk:</b> less varied; after a few weeks you will recognise the set. Tone cannot go wrong, because no question is written by the model.</p>
+        <p class="kv"><b>Build:</b> about 2 days.</p></div>
+      <div class="opt"><b class="name">Claude writes the question</b>
+        <p>Fully tailored, under rules: one question, about circumstances only, never amounts, never advice.</p>
+        <p class="kv"><b>Risk:</b> rules reduce bad questions and cannot rule them out, and one bad question in a private journal costs trust that is hard to win back.</p>
+        <p class="kv"><b>Build:</b> about 2 days, plus a written test set of notes to review its questions against before release.</p></div>
+      <div class="opt"><b class="name">No follow-up</b>
+        <p>Notes stay as written.</p>
+        <p class="kv"><b>Build:</b> none.</p></div>
+    </div>
+    <p><b>Why now:</b> the note panels have just shipped, and this is one more panel on them. <b>Waiting on this:</b> nothing. <b>If you do nothing:</b> it is not built.</p>
+  </section>
+</div>
