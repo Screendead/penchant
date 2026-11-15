@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/vice.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -195,6 +198,95 @@ void main() {
       ]);
       expect(figures.data['ownWords'], '5');
       expect(figures.data['entries'], '23');
+    });
+
+    test('nothing typed leaves: names, own words and places stay home', () {
+      final List<Vice> vices = <Vice>[
+        Vice(
+          id: 'coffee',
+          name: 'sleep',
+          unit: Unit.drink,
+          ownerID: ownerID,
+          createdAt: Timestamp.fromDate(DateTime(2026, 1, 1)),
+          archived: false,
+        ),
+        Vice(
+          id: 'alcohol',
+          name: 'Heart',
+          unit: Unit.drink,
+          ownerID: ownerID,
+          createdAt: Timestamp.fromDate(DateTime(2026, 1, 2)),
+          archived: false,
+        ),
+        Vice(
+          id: 'scroll',
+          name: 'Grandma Flat',
+          unit: Unit.minute,
+          ownerID: ownerID,
+          createdAt: Timestamp.fromDate(DateTime(2026, 1, 3)),
+          archived: false,
+        ),
+      ];
+      final WeeklyReview review = buildWeeklyReview(
+        week: reviewWeek(reviewToday),
+        vices: vices,
+        activities: <ViceActivity>[
+          ...reviewJournal(),
+          fakeActivity(
+            'coffee',
+            1,
+            DateTime(2026, 11, 4, 12),
+            triggers: const <String>['Zanzibar party', 'Grandma Flat'],
+          ),
+        ],
+      );
+      final HabitFinding mood = reviewFinding('alcohol', 'moodValence', -0.3);
+      // A comparison at a place names it only by id; one on an outcome with
+      // no fixed copy, started or stopped, goes as a count.
+      final HabitFinding place = reviewFinding('scroll', 'place:1', 0.4);
+      final WeeklyFigures figures = WeeklyFigures.of(
+        review,
+        insights: WeeklyInsightsComputed(
+          changes: (
+            started: <InsightCard>[
+              InsightCard(family: MetricFamily.mood, headline: mood),
+              InsightCard(family: MetricFamily.activity, headline: place),
+            ],
+            stopped: <InsightCard>[
+              InsightCard(family: MetricFamily.activity, headline: place),
+              InsightCard(
+                family: MetricFamily.heart,
+                headline: reviewFinding('coffee', 'restingHeartRate', 2),
+              ),
+            ],
+            holding: const <InsightCard>[],
+          ),
+          collecting: const <HabitRefusal>[],
+          floors: const <String, double>{},
+        ),
+      )!;
+      final String sent = jsonEncode(figures.data);
+      for (final String typed in <String>[
+        'Zanzibar',
+        'Grandma',
+        'Flat',
+        'place',
+        'Heart',
+        'with friends',
+      ]) {
+        expect(sent, isNot(contains(typed)));
+      }
+      expect(figures.data['ownWords'], '7');
+      expect(figures.data['newFindings'], <String>[
+        findingSentence(mood, 'Habit B', formatLocale, unit: Unit.drink),
+      ]);
+      expect(figures.data['stoppedFindings'], <String>['Habit A · heart']);
+      expect(figures.data['otherFindings'], '2');
+      expect(figures.names, <String, String>{
+        'Habit A': 'sleep',
+        'Habit B': 'Heart',
+        'Habit C': 'Grandma Flat',
+      });
     });
 
     test('each habit carries its change from the usual week', () {

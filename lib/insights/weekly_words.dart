@@ -111,8 +111,9 @@ class WeeklyFigures {
   /// week with nothing logged, which is never sent. Free-text triggers go as a
   /// count only. A new finding goes as the page's sentence only when its
   /// measure is shown in words, since the others carry a Health-derived
-  /// amount; those, findings of habits not sent, and any past
-  /// [maxWordedFindings] go as a count.
+  /// amount; those, findings of habits not sent, findings on an outcome with
+  /// no fixed copy, and any past [maxWordedFindings] go as a count. Every line
+  /// is fixed copy around a placeholder, never a name, place, label or note.
   static WeeklyFigures? of(WeeklyReview review, {WeeklyInsights? insights}) {
     if (review.entries == 0 || review.habits.isEmpty) return null;
     final Map<String, String> names = <String, String>{};
@@ -176,7 +177,9 @@ class WeeklyFigures {
       }
       for (final InsightCard c in changes.stopped) {
         final String? p = placeholders[c.habitId];
-        if (p == null || stopped.length == maxWordedFindings) {
+        if (p == null ||
+            stopped.length == maxWordedFindings ||
+            metricCopy(c.headline.metricId) == null) {
           other++;
           continue;
         }
