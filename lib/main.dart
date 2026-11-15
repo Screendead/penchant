@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/ask/ask_page.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
@@ -255,6 +256,8 @@ Widget routePage(String? name, {DateTime? now}) {
       return const InsightsPage();
     case ['insights', 'week']:
       return const WeeklyReviewPage();
+    case ['ask']:
+      return const AskPage();
     case ['manage-data']:
       return const ManageData();
     case ['deleted-habit']:

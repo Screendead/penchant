@@ -5,6 +5,8 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/ask/ask_journal_setting.dart';
+import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -23,6 +25,7 @@ class Homepage extends ConsumerStatefulWidget {
   static const Key menuKey = ValueKey<String>('penchant-menu');
   static const String habitsItem = 'Habits';
   static const String insightsItem = 'Insights';
+  static const String askItem = 'Ask your journal';
   static const String settingsItem = 'Settings';
 
   @override
@@ -131,11 +134,12 @@ class TodayHeader extends ConsumerWidget {
   }
 }
 
-class _AppMenu extends StatelessWidget {
+class _AppMenu extends ConsumerWidget {
   const _AppMenu();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool ask = ref.watch(askJournalEnabledProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final DialColors colors = DialColors.of(context);
@@ -196,6 +200,14 @@ class _AppMenu extends StatelessWidget {
                     Navigator.of(context).pushNamed(InsightsPage.route),
                 child: const Text(Homepage.insightsItem),
               ),
+              if (ask)
+                MenuItemButton(
+                  style: itemStyle,
+                  leadingIcon: const StrokeIcon(DialGlyph.pencil, size: 20),
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(AskPage.route),
+                  child: const Text(Homepage.askItem),
+                ),
               MenuItemButton(
                 style: itemStyle,
                 leadingIcon: const StrokeIcon(DialGlyph.gear, size: 20),
