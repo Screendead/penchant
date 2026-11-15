@@ -1048,7 +1048,16 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Nothing is waiting. Round 19 (`docs/pitch/round-19/tally-rows/index.html`,
+Round 20 (`docs/pitch/round-20/what-happened/pitch.html`, https://claude.ai/artifact/XgwhCLdR4JzTQmBpC7dCZA), four
+calls from Jack's 2026-11-15 ask for "What was going on?" as locked Next-only panels, a heavy-day prompt for free
+text, and AI over the notes. Nothing is built. Recommendations (Claude's): `note-reader` Claude Haiku through a Cloud
+Function, opt-in (Jack's iPhone 13 Pro Max cannot run Apple's on-device model; `tools/note-tagging-trial.swift` on the
+Mac: 12/12 answered, median 0.9 s, about half tagged well; Claude unmeasured, no key here); `heavy-day` a neutral
+21:00 notification, off by default, heavy being the top tenth of the habit's last 90 days; `day-text` a new sealed
+day-note document; `panel-questions` the existing three reordered (note, tags read from it, urge). The note becomes
+ordinary triggers the person confirms, so Insights needs no new statistics.
+
+Round 19 (`docs/pitch/round-19/tally-rows/index.html`,
 https://claude.ai/artifact/9NyyLbvt7fc5k66AAp9UUd): `tally-rows` C, picked by Jack on 2026-11-13, "C, but greyed out
 if they're 0": Today's habits as tiles two across, a habit at zero keeping its name grey (#301). Not yet seen on a
 device.
