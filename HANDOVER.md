@@ -1048,13 +1048,19 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`, https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three
-calls, from Jack's 2026-11-15 pick of three further uses of Claude; nothing is built. Recommendations (Claude's):
-`weekly-words` Haiku writes the weekly review's paragraph from figures the device computed, habits sent as
-placeholders, every number in the reply checked against what was sent; `ask-journal` Claude turns a typed question
-into a query the device runs (the question and habit names are sent, no entries), "why" questions handed to Insights;
-`follow-up` after a note, Claude picks one of about a dozen questions written in advance and a phrase of the note it
-refers to, never writing the question itself.
+Nothing is waiting. Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
+https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15; being built, each
+behind its own off-by-default switch:
+
+- `weekly-words`: **Sonnet writes it** (not the recommended Haiku): a paragraph at the top of the weekly review from
+  figures the device computed, habits sent as placeholders, every number in the reply checked against what was sent,
+  else the lists alone. Needs Jack to raise Sonnet's rate limit in the Penchant workspace from zero.
+- `ask-journal`: **Claude writes the query** (as recommended): the question and habit names are sent, the device runs
+  the query and shows the answer with the query in words; "why" questions go to Insights. Haiku against Sonnet to be
+  tried on 40 written questions before choosing.
+- `follow-up`: **Claude writes the question** (not the recommended pick from a written set): one optional question
+  after a note, about circumstances only, never amounts or advice; its answer saved sealed with the note. Before
+  release Jack reviews what it asks for a set of made-up notes.
 
 Round 21 (`docs/pitch/round-21/trigger-tree/pitch.html`, https://claude.ai/artifact/3xNRWLCyXA9nzSvWsVCDgw):
 `tag-list`, picked by Jack on 2026-11-15, "Adopt it all": 174 tags in 11 areas with search in the picker. Built.
