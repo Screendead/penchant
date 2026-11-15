@@ -353,7 +353,13 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
       textBaseline: TextBaseline.alphabetic,
       children: <Widget>[
         Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
+          // The mock-up names the follow-up's panel in the title row.
+          child: Text(
+            question != null && page == NotePanels.followUpPanel
+                ? NotePanels.followUpTitle
+                : title,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
         ),
         if (steps)
           Text(
@@ -609,14 +615,6 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     return ListView(
       padding: const EdgeInsets.all(DialSpace.m),
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
-          child: Text(
-            NotePanels.followUpTitle,
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-        const SizedBox(height: DialSpace.s),
         DecoratedBox(
           decoration: BoxDecoration(
             color: colors.surface2,
