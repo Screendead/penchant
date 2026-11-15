@@ -1049,12 +1049,19 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 ## Calls waiting on Jack (UNDECIDED)
 
 Nothing is waiting. Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
-https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15; being built, each
-behind its own off-by-default switch:
+https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15. Built (CLAUDE.md), each
+behind its own off-by-default switch in Settings' Claude group. None has met the real API: Jack runs
+`functions/tools/weekly-words-trial.js`, `ask-journal-trial.js` (40 questions; Haiku first, Sonnet only if Haiku
+misreads) and `follow-up-review.js` (40 notes, his review of what it asks before he switches it on), each with
+`ANTHROPIC_API_KEY` in his own terminal. Workspace limits he set: Haiku 60 and Sonnet 10 requests a minute, spend
+$200 a month. Open with Jack (Claude's recommendation, not decided): spend limit near $10, and the Claude callables
+refusing guest accounts, since any signed-in guest can call them and App Check is not enforced. Short of the
+mock-ups: the weekly paragraph gets most new findings as a count only (their lines carry Health amounts, which
+never leave the device), and Ask's Insights hand-off is generic.
 
 - `weekly-words`: **Sonnet writes it** (not the recommended Haiku): a paragraph at the top of the weekly review from
   figures the device computed, habits sent as placeholders, every number in the reply checked against what was sent,
-  else the lists alone. Needs Jack to raise Sonnet's rate limit in the Penchant workspace from zero.
+  else the lists alone.
 - `ask-journal`: **Claude writes the query** (as recommended): the question and habit names are sent, the device runs
   the query and shows the answer with the query in words; "why" questions go to Insights. Haiku against Sonnet to be
   tried on 40 written questions before choosing.
