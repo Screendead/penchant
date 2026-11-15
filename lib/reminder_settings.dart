@@ -4,6 +4,7 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
+import 'package:tracker/reminder/heavy_day_nudge.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 /// The time as the device writes it, in 12- or 24-hour form.
@@ -13,7 +14,8 @@ String nudgeTimeLabel(BuildContext context, TimeOfDay time) =>
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
 
-/// Settings › Reminder: one optional notification a day, and one a week.
+/// Settings › Reminder: one optional notification a day, one a week, and the
+/// heavy-day question.
 class ReminderSettings extends ConsumerStatefulWidget {
   const ReminderSettings({super.key});
 
@@ -27,6 +29,12 @@ class ReminderSettings extends ConsumerStatefulWidget {
   static const String reviewFoot =
       'Monday at 9:00, a note that last week’s review is ready. It says '
       'nothing about your journal. Saved on this device only.';
+  static const String heavyLabel = 'Ask about heavy days';
+  static const String heavyTimeLabel = 'Ask at';
+  static const String heavyFoot =
+      'On a day you log more of a habit than on nine in ten of your days '
+      'with it in the last 90, one notification asks what was different. It '
+      'never names the habit. Saved on this device only.';
 
   @override
   ConsumerState<ReminderSettings> createState() => _ReminderSettingsState();
@@ -36,6 +44,7 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
   bool _asking = false;
   bool _refused = false;
   bool _reviewRefused = false;
+  bool _heavyRefused = false;
   // Null until known. Checked on opening and on return from the system
   // Settings, where the user can withdraw it without the app hearing.
   bool? _permitted;
@@ -105,6 +114,34 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
     }
   }
 
+  Future<void> _toggleHeavy(bool on) async {
+    final HeavyDayNudge heavy = ref.read(heavyDayNudgeProvider.notifier);
+    if (!on) {
+      setState(() => _heavyRefused = false);
+      await heavy.turnOff();
+      return;
+    }
+    setState(() => _asking = true);
+    final bool granted = await heavy.turnOn();
+    if (mounted) {
+      setState(() {
+        _asking = false;
+        _heavyRefused = !granted;
+        _permitted = granted;
+      });
+    }
+  }
+
+  Future<void> _pickHeavyTime(TimeOfDay current) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: current,
+    );
+    if (picked != null) {
+      await ref.read(heavyDayNudgeProvider.notifier).setTime(picked);
+    }
+  }
+
   Future<void> _pickTime(TimeOfDay current) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -123,6 +160,9 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
     final bool on = settings.enabled && !withdrawn;
     final bool reviewOn =
         ref.watch(weeklyReviewReminderProvider) && _permitted != false;
+    final NudgeSettings heavy = ref.watch(heavyDayNudgeProvider);
+    final bool heavyWithdrawn = heavy.enabled && _permitted == false;
+    final bool heavyOn = heavy.enabled && !heavyWithdrawn;
     return CardPage(
       title: 'Reminder',
       children: <Widget>[
@@ -181,6 +221,41 @@ class _ReminderSettingsState extends ConsumerState<ReminderSettings> {
           _reviewRefused
               ? NudgeCopy.permissionDenied
               : ReminderSettings.reviewFoot,
+        ),
+        DialCard(
+          children: <Widget>[
+            MergeSemantics(
+              child: CardRow(
+                label: ReminderSettings.heavyLabel,
+                enabled: !_asking,
+                onTap: () => _toggleHeavy(!heavyOn),
+                trailing: Switch.adaptive(
+                  value: heavyOn,
+                  activeTrackColor: Theme.of(context).colorScheme.primary,
+                  onChanged: _asking ? null : _toggleHeavy,
+                ),
+              ),
+            ),
+            CardRow(
+              label: ReminderSettings.heavyTimeLabel,
+              value: Text(
+                nudgeTimeLabel(context, heavy.time),
+                style: const TextStyle(
+                  fontFamily: DialFonts.mono,
+                  fontFeatures: DialFonts.tabular,
+                ),
+              ),
+              glyph: DialGlyph.right,
+              onTap: () => _pickHeavyTime(heavy.time),
+            ),
+          ],
+        ),
+        CardFoot(
+          _heavyRefused
+              ? NudgeCopy.permissionDenied
+              : heavyWithdrawn
+              ? NudgeCopy.permissionWithdrawn
+              : ReminderSettings.heavyFoot,
         ),
       ],
     );

@@ -12,6 +12,8 @@ import 'package:tracker/main.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
+import 'package:tracker/reminder/heavy_day.dart';
+import 'package:tracker/reminder/heavy_day_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/settings.dart';
 
@@ -19,19 +21,19 @@ class _FakeScheduler implements NudgeScheduler {
   _FakeScheduler({this.grant = true, this.launched}) : permitted = grant;
 
   final bool grant;
-  final NudgeAction? launched;
+  final NudgeTap? launched;
   bool permitted;
-  void Function(NudgeAction action)? onAction;
+  void Function(NudgeTap tap)? onAction;
   int permissionRequests = 0;
   final List<TimeOfDay> scheduled = <TimeOfDay>[];
   int cancels = 0;
 
   @override
-  Future<void> start(void Function(NudgeAction action) onAction) async =>
-      this.onAction = onAction;
+  Future<void> start(void Function(NudgeTap tap) onTap) async =>
+      onAction = onTap;
 
   @override
-  Future<NudgeAction?> launchAction() async => launched;
+  Future<NudgeTap?> launchAction() async => launched;
 
   @override
   Future<bool> requestPermission() async {
@@ -62,6 +64,16 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelExperiment() async {}
+
+  final List<HeavyPrompt> heavyScheduled = <HeavyPrompt>[];
+  int heavyCancels = 0;
+
+  @override
+  Future<void> scheduleHeavyDay(HeavyPrompt prompt) async =>
+      heavyScheduled.add(prompt);
+
+  @override
+  Future<void> cancelHeavyDay() async => heavyCancels++;
 }
 
 Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>
@@ -102,7 +114,7 @@ void main() {
     await tester.tap(find.text('Reminder'));
     await tester.pumpAndSettle();
     expect(find.byType(ReminderSettings), findsOneWidget);
-    expect(find.text('9:00 PM'), findsOneWidget);
+    expect(find.text('9:00 PM'), findsWidgets);
     expect(scheduler.permissionRequests, 0);
     expect(scheduler.scheduled, isEmpty);
   });
@@ -250,7 +262,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
       final _FakeScheduler scheduler = _FakeScheduler(
-        launched: NudgeAction.log,
+        launched: const NudgeTap(NudgeAction.log),
       );
       final ProviderContainer container = ProviderContainer(
         overrides: [nudgeSchedulerProvider.overrideWithValue(scheduler)],
@@ -262,11 +274,11 @@ void main() {
       expect(container.read(pendingNudgeLogProvider), isTrue);
 
       container.read(pendingNudgeLogProvider.notifier).clear();
-      scheduler.onAction!(NudgeAction.clean);
+      scheduler.onAction!(const NudgeTap(NudgeAction.clean));
       expect(container.read(pendingNudgeLogProvider), isFalse);
 
       // A press while the app runs.
-      scheduler.onAction!(NudgeAction.log);
+      scheduler.onAction!(const NudgeTap(NudgeAction.log));
       expect(container.read(pendingNudgeLogProvider), isTrue);
       expect(scheduler.permissionRequests, 0);
     },
@@ -278,6 +290,81 @@ void main() {
     expect(nudgeActionFor(null), isNull);
     expect(nudgeActionFor(null, payload: 'weekly-review'), NudgeAction.review);
     expect(nudgeActionFor('log', payload: 'weekly-review'), NudgeAction.log);
+    expect(
+      nudgeTapFor(null, payload: heavyDayPayload(DateTime(2026, 11, 14))),
+      NudgeTap(NudgeAction.dayNote, day: DateTime(2026, 11, 14)),
+    );
+    expect(nudgeTapFor(null, payload: 'heavy-day:nonsense'), isNull);
+  });
+
+  test('a heavy-day tap asks Today for that day\'s note', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final _FakeScheduler scheduler = _FakeScheduler(
+      launched: NudgeTap(NudgeAction.dayNote, day: DateTime(2026, 11, 14)),
+    );
+    final ProviderContainer container = ProviderContainer(
+      overrides: [nudgeSchedulerProvider.overrideWithValue(scheduler)],
+    );
+    addTearDown(container.dispose);
+    await container.read(dailyNudgeStartupProvider.future);
+    expect(container.read(pendingDayNoteProvider), DateTime(2026, 11, 14));
+    expect(container.read(pendingNudgeLogProvider), isFalse);
+  });
+
+  testWidgets('heavy days: off by default, asks permission when on', (
+    WidgetTester tester,
+  ) async {
+    final _FakeScheduler scheduler = _FakeScheduler();
+    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
+    expect(tester.widget<Switch>(find.byType(Switch).last).value, isFalse);
+    expect(find.text(ReminderSettings.heavyTimeLabel), findsOneWidget);
+    expect(scheduler.permissionRequests, 0);
+
+    await tester.tap(find.text(ReminderSettings.heavyLabel));
+    await tester.pumpAndSettle();
+    expect(scheduler.permissionRequests, 1);
+    expect(tester.widget<Switch>(find.byType(Switch).last).value, isTrue);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(HeavyDayNudge.enabledKey), isTrue);
+    expect(prefs.getBool(DailyNudge.enabledKey), isNull);
+
+    await tester.tap(find.text(ReminderSettings.heavyLabel));
+    await tester.pumpAndSettle();
+    expect(prefs.getBool(HeavyDayNudge.enabledKey), isFalse);
+  });
+
+  testWidgets('heavy days: a refusal leaves it off and says where to go', (
+    WidgetTester tester,
+  ) async {
+    final _FakeScheduler scheduler = _FakeScheduler(grant: false);
+    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
+    await tester.tap(find.text(ReminderSettings.heavyLabel));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch).last).value, isFalse);
+    expect(find.text(NudgeCopy.permissionDenied), findsOneWidget);
+  });
+
+  testWidgets('heavy days: the time row opens the picker and saves', (
+    WidgetTester tester,
+  ) async {
+    final _FakeScheduler scheduler = _FakeScheduler();
+    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
+    expect(find.text('9:00 PM'), findsNWidgets(2));
+    await tester.tap(find.text(ReminderSettings.heavyTimeLabel));
+    await tester.pumpAndSettle();
+    expect(find.byType(TimePickerDialog), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(HeavyDayNudge.minutesKey), 21 * 60);
+    expect(prefs.getInt(DailyNudge.minutesKey), isNull);
   });
 
   testWidgets('the weekly review notification is off until turned on', (
@@ -286,7 +373,7 @@ void main() {
     final _FakeScheduler scheduler = _FakeScheduler();
     await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
     await tester.pumpAndSettle();
-    expect(tester.widget<Switch>(find.byType(Switch).last).value, isFalse);
+    expect(tester.widget<Switch>(find.byType(Switch).at(1)).value, isFalse);
     expect(scheduler.reviewSchedules, 0);
 
     await tester.tap(find.text(ReminderSettings.reviewLabel));
@@ -320,7 +407,7 @@ void main() {
     expect(container.read(weeklyReviewReminderProvider), isTrue);
     expect(scheduler.reviewSchedules, 1);
 
-    scheduler.onAction!(NudgeAction.review);
+    scheduler.onAction!(const NudgeTap(NudgeAction.review));
     expect(container.read(pendingWeeklyReviewProvider), isTrue);
     expect(container.read(pendingNudgeLogProvider), isFalse);
   });
