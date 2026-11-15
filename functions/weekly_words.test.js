@@ -34,7 +34,7 @@ function request() {
 const CASES = [
   ['Habit A came to 9 glasses over 5 days. Habit B was 14 cups, usually 10.5. Most were from 20:00 to 21:00.', 'ok'],
   ['You tagged "Who was there › Offered one" 4 times, and 3 tags were in your own words.', 'ok'],
-  ['Habit A came to 9 glasses, 2 more than usual.', 'number'],
+  ['Habit A came to 9 glasses, 8 more than usual.', 'number'],
   ['Habit A came to nine glasses.', 'number_word'],
   ['Habit A came to 9 glasses, twice your usual.', 'number_word'],
   ['Habit D came to 9 glasses.', 'placeholder'],

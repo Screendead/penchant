@@ -22,12 +22,48 @@ const int maxWordedTags = 5;
 /// using one of these outside a sent label or unit is dropped, since its value
 /// cannot be checked against the figures.
 const List<String> numberWords = <String>[
-  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
-  'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-  'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty',
-  'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred',
-  'thousand', 'million', 'dozen', 'half', 'halves', 'quarter', 'third',
-  'once', 'twice', 'thrice', 'double', 'triple', 'couple',
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
+  'twenty',
+  'thirty',
+  'forty',
+  'fifty',
+  'sixty',
+  'seventy',
+  'eighty',
+  'ninety',
+  'hundred',
+  'thousand',
+  'million',
+  'dozen',
+  'half',
+  'halves',
+  'quarter',
+  'third',
+  'once',
+  'twice',
+  'thrice',
+  'double',
+  'triple',
+  'couple',
 ];
 
 final RegExp _numeral = RegExp(r'\d+(?:[.:]\d+)*');
@@ -69,9 +105,8 @@ class WeeklyFigures {
     if (review.entries == 0 || review.habits.isEmpty) return null;
     final Map<String, String> names = <String, String>{};
     final List<Map<String, Object?>> habits = <Map<String, Object?>>[];
-    for (final (int i, HabitWeek h) in review.habits
-        .take(maxWordedHabits)
-        .indexed) {
+    for (final (int i, HabitWeek h)
+        in review.habits.take(maxWordedHabits).indexed) {
       final String placeholder = placeholderFor(i);
       names[placeholder] = h.vice.name;
       final double? usual = h.usual;

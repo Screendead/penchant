@@ -123,8 +123,9 @@ final WeeklyInsights reviewInsights = WeeklyInsightsComputed(
 List<Override> reviewOverrides({
   List<ViceActivity>? journal,
   WeeklyInsights? insights,
+  WeeklyWords? words,
 }) => <Override>[
-  weeklyWordsProvider.overrideWithValue(null),
+  weeklyWordsProvider.overrideWithValue(words),
   viceListProvider.overrideWithValue(AsyncData<List<Vice>>(reviewVices)),
   weeklyReviewProvider.overrideWithValue(
     AsyncData<WeeklyReview>(
