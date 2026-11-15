@@ -398,12 +398,14 @@ void main() {
         final RichText marked = tester
             .widgetList<RichText>(find.byType(RichText))
             .firstWhere((RichText t) => t.text.toPlainText() == _note);
-        expect(
-          (marked.text as TextSpan).children!.whereType<TextSpan>().any(
-            (TextSpan s) => s.text == _quote && s.style?.background != null,
-          ),
-          isTrue,
-        );
+        bool lit = false;
+        marked.text.visitChildren((InlineSpan s) {
+          if (s is TextSpan && s.text == _quote) {
+            lit = s.style?.background != null;
+          }
+          return true;
+        });
+        expect(lit, isTrue);
         await tap(tester, NotePanels.nextKey);
         expect(find.text('4 of 4'), findsOneWidget);
         expect(find.byKey(UrgeField.keyFor(1)), findsOneWidget);
