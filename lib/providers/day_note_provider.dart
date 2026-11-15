@@ -30,7 +30,10 @@ final dayNoteForUserProvider = StreamProvider.autoDispose
             (QuerySnapshot<Map<String, dynamic>> snapshot) =>
                 switch (snapshot.docs) {
                   [] => null,
-                  [final QueryDocumentSnapshot<Map<String, dynamic>> doc, ...] =>
+                  [
+                    final QueryDocumentSnapshot<Map<String, dynamic>> doc,
+                    ...,
+                  ] =>
                     DayNote.open(doc, doc.data(), opener),
                 },
           );
