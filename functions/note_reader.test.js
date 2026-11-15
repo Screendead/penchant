@@ -189,7 +189,7 @@ test('with question the same single request also asks for question and quote', (
   assert.equal(schema.additionalProperties, false);
   assert.deepEqual(schema.properties.tags, plain.output_config.format.schema.properties.tags);
   for (const key of ['question', 'quote']) {
-    assert.deepEqual(schema.properties[key], { anyOf: [{ type: 'string' }, { type: 'null' }] });
+    assert.deepEqual(schema.properties[key], { type: 'string' });
   }
   assert.ok(asked.system.startsWith(plain.system));
   for (const rule of ['at most 140 characters', 'Never about amounts', 'Never advice', 'never ask "why"', 'Never mention being an AI']) {
@@ -215,6 +215,8 @@ test('each rule code can check drops the question', () => {
   const drop = (q, quote = QUOTE, note = NOTE) => checkQuestion(q, quote, note).drop;
   assert.equal(drop(null), 'none_given');
   assert.equal(drop(''), 'none_given');
+  assert.equal(drop('   ', ''), 'none_given');
+  assert.equal(drop('', null), 'none_given');
   assert.equal(drop(42), 'mistyped');
   assert.equal(drop('Who was there?', null), 'mistyped');
   assert.equal(drop(`Who ${'was '.repeat(40)}there?`), 'too_long');
@@ -281,7 +283,8 @@ test('asked for a question, the answer carries it beside the same tags', () => {
 
 test('a missing, null or failing question never loses the tags', () => {
   const tags = [{ path: 'social/friends', quote: 'with Sam' }];
-  for (const extra of [{}, { question: null, quote: null }, { question: 'Why did you go?', quote: QUOTE },
+  for (const extra of [{}, { question: null, quote: null }, { question: '', quote: '' }, { question: ' ', quote: 'x' },
+    { question: 'Who was there?' }, { question: ['Who?'], quote: QUOTE }, { question: 'Why did you go?', quote: QUOTE },
     { question: 'Who was there?', quote: 'not in the note' }, { question: { nested: true }, quote: QUOTE }]) {
     const result = parseMessage(text({ tags, ...extra }), NOTE, { question: true });
     assert.deepEqual(result.tags, tags, JSON.stringify(extra));

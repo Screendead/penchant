@@ -96,7 +96,7 @@ async function main() {
       console.log(`    SHOWN     You wrote "${checked.question.quote}". ${checked.question.question}`);
       console.log(`    QUOTE     ${checked.question.quote}`);
       console.log('    FILTER    passed');
-    } else if (raw == null) {
+    } else if (raw == null || (typeof raw === 'string' && raw.trim() === '')) {
       tally.none++;
       console.log('    SHOWN     none (the model gave no question)');
     } else {
