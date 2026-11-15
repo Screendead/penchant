@@ -34,8 +34,10 @@ class DayNoteSheet extends ConsumerStatefulWidget {
   static const String savedMessage = 'Day note saved';
   static const String deletedMessage = 'Day note deleted';
   static const String lockedMessage =
-      'This note was sealed with another journal key, so it cannot be opened '
-      'here. You can delete it.';
+      'This note cannot be opened on this device. You can delete it.';
+  static const String noKeyMessage =
+      'Your journal key has not loaded yet, so this note cannot be opened. '
+      'Go online, then try again.';
   static const String loadFailed = 'Could not load the note about this day.';
   static const String confirmDelete =
       'Delete this note? This cannot be undone.';
@@ -58,7 +60,7 @@ class DayNoteSheet extends ConsumerStatefulWidget {
 }
 
 class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
-  bool prefilled = false;
+  String? prefilled;
   List<String> stored = const <String>[];
   bool busy = false;
   bool confirming = false;
@@ -108,7 +110,9 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
                 padding: const EdgeInsets.all(DialSpace.m),
                 children: <Widget>[
                   Text(
-                    DayNoteSheet.lockedMessage,
+                    ref.watch(trackerWritesProvider).canCreate
+                        ? DayNoteSheet.lockedMessage
+                        : DayNoteSheet.noKeyMessage,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: DialColors.of(context).muted,
                     ),
@@ -128,13 +132,16 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
         ),
       );
     }
-    if (!prefilled) {
-      prefilled = true;
-      if (existing != null) {
-        stored = existing.triggers;
-        selected = <String>[...existing.triggers];
-        note.text = existing.text;
-      }
+    // A note arriving after the sheet opened empty fills it only if nothing
+    // has been typed or picked, since Done would replace it.
+    if (existing != null &&
+        prefilled == null &&
+        note.text.isEmpty &&
+        selected.isEmpty) {
+      prefilled = existing.id;
+      stored = existing.triggers;
+      selected = <String>[...existing.triggers];
+      note.text = existing.text;
     }
     return buildPanels(context);
   }
