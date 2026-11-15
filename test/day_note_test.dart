@@ -424,9 +424,10 @@ void main() {
     test('day notes are a CSV of their own, by day', () {
       expect(
         exportDayNotesCsv(data(notes: notes)),
-        'day,text,triggers\r\n'
-        '2026-11-01,,\r\n'
-        '2026-11-15,"Late meeting, ""again""",work/meeting; tired\r\n',
+        'day,text,triggers,'
+        'follow_up_question,follow_up_quote,follow_up_answer\r\n'
+        '2026-11-01,,,,,\r\n'
+        '2026-11-15,"Late meeting, ""again""",work/meeting; tired,,,\r\n',
       );
       final List<ExportFile> files = exportFiles(
         data(notes: notes),
@@ -465,7 +466,13 @@ void main() {
   });
 
   test('day notes seal text and triggers, and are born sealed', () async {
-    expect(contentFields['dayNotes'], <String>['text', 'triggers']);
+    expect(contentFields['dayNotes'], <String>[
+      'text',
+      'triggers',
+      'followUpQuestion',
+      'followUpQuote',
+      'followUpAnswer',
+    ]);
     final _Source source = _Source();
     await PlaintextMigrator(source: source, sealer: sealer).run(ownerID);
     expect(source.paged, isNot(contains('dayNotes')));

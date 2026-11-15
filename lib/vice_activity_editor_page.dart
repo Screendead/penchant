@@ -23,8 +23,12 @@ import 'package:tracker/writes/delete_with_undo.dart';
 import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/what_was_going_on.dart';
+import 'package:tracker/notes/follow_up.dart';
+import 'package:tracker/notes/saved_follow_up.dart';
 
 class ViceActivityEditorPage extends ConsumerStatefulWidget {
+  static const Key followUpKey = ValueKey<String>('editor-follow-up');
+
   const ViceActivityEditorPage({
     super.key,
     required this.viceID,
@@ -202,6 +206,7 @@ class _ViceActivityEditorPageState
             triggers: content.triggers,
             urge: content.urge,
             note: content.note,
+            followUp: content.followUp,
           ) ??
           (ref.read(trackerWritesProvider).canWrite(content)
               ? null
@@ -393,6 +398,15 @@ class _ViceActivityEditorPageState
                             quantityError(value, unchanged: activity.measure),
                         error: error,
                       ),
+                      if (activity.content.followUp case final FollowUp saved
+                          when !activity.locked)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: SavedFollowUp(
+                            key: ViceActivityEditorPage.followUpKey,
+                            followUp: saved,
+                          ),
+                        ),
                       const SizedBox(height: 14),
                       Row(
                         children: [

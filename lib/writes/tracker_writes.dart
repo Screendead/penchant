@@ -450,11 +450,7 @@ class TrackerWrites {
         _sealing(
           sealer,
           note,
-          dayNoteContent(
-            text: text,
-            triggers: triggers,
-            followUp: followUp,
-          ),
+          dayNoteContent(text: text, triggers: triggers, followUp: followUp),
           (Blob envelope) => replacing == null
               ? note.set({
                   sealedField: envelope,

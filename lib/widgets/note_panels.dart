@@ -10,6 +10,7 @@ import 'package:tracker/data/trigger_tree.dart';
 import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/notes/follow_up.dart';
 import 'package:tracker/notes/note_reader.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
@@ -20,6 +21,10 @@ abstract final class NotePanels {
   static const Key backKey = ValueKey<String>('panels-back');
   static const Key doneKey = ValueKey<String>('panels-done');
   static const Key flyingKey = ValueKey<String>('panels-flying-tag');
+  static const Key answerKey = ValueKey<String>('panels-follow-up-answer');
+  static const Key skipKey = ValueKey<String>('panels-follow-up-skip');
+  static const String followUpTitle = 'One more, if you like';
+  static const String answerHint = 'Optional';
   static const String noteTitle = 'In your own words';
   static const String readsHint = 'Next reads it into tags.';
   static const String tagsTitle = 'Does this look right?';
@@ -34,6 +39,9 @@ abstract final class NotePanels {
 
   /// The panel whose arrival reads the note into tags.
   static const int tagsPanel = 1;
+
+  /// The follow-up question's panel, there only once a question has come.
+  static const int followUpPanel = tagsPanel + 1;
 }
 
 // One tag's arrival: its quote lit, then the phrase flying to its chip, then
@@ -46,8 +54,10 @@ const Duration _settle = Duration(milliseconds: 140);
 const double _maxHeight = 600;
 
 /// Panels moved only by Back and Next, each with Done: the note first, then
-/// at [NotePanels.tagsPanel] the tags read from it (or picked by hand), then
-/// whatever else a sheet asks.
+/// at [NotePanels.tagsPanel] the tags read from it (or picked by hand), then,
+/// once the reader has asked one, the follow-up question, then whatever else
+/// a sheet asks. The step count counts the question's panel only from its
+/// arrival, so it never promises a panel that does not come.
 abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     extends ConsumerState<T>
     with SingleTickerProviderStateMixin {
@@ -70,6 +80,11 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
   ReadTag? lit;
   ({Rect from, Rect to})? flight;
 
+  // The follow-up question about [readNote], and the answer typed to it.
+  NoteQuestion? question;
+  final TextEditingController answer = TextEditingController();
+  int _asking = 0;
+
   late final AnimationController arrival = AnimationController(
     vsync: this,
     duration: _lit + _flight + _settle,
@@ -79,7 +94,11 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
   final Map<String, GlobalKey> chipKeys = <String, GlobalKey>{};
 
   String get title;
-  int get panelCount;
+
+  /// The sheet's own panels, without the follow-up question's.
+  int get basePanelCount;
+
+  int get panelCount => basePanelCount + (question == null ? 0 : 1);
 
   /// Tags that stay picked when the note is read again.
   List<String> get initial;
@@ -90,7 +109,24 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     suggested: const <String>[],
   );
 
-  Widget panel(BuildContext context, int index);
+  /// The sheet's own panel [index], counted without the follow-up's.
+  Widget sheetPanel(BuildContext context, int index);
+
+  Widget panel(BuildContext context, int index) => switch (question) {
+    null => sheetPanel(context, index),
+    final NoteQuestion q when index == NotePanels.followUpPanel =>
+      followUpPanel(context, q),
+    _ => sheetPanel(
+      context,
+      index > NotePanels.followUpPanel ? index - 1 : index,
+    ),
+  };
+
+  /// The follow-up answered, to save with the note; null when skipped, left
+  /// blank, or asked about other words than the note now holds.
+  FollowUp? get followUp => storedNote(note.text) == readNote
+      ? FollowUp.answered(question, answer.text)
+      : null;
 
   /// Beside Done in the footer's upper row.
   Widget? footerLeading(BuildContext context) => null;
@@ -108,6 +144,7 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     arrival.dispose();
     pages.dispose();
     note.dispose();
+    answer.dispose();
     super.dispose();
   }
 
@@ -151,13 +188,18 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
       readFailed = false;
       readAgain = false;
       readNote = text;
+      question = null;
+      answer.clear();
     });
     final NoteReader? reader = ref.read(noteReaderProvider);
     if (reader == null || text == null) return;
     void failed() {
       if (!mounted) return;
       stopReading(again: false);
-      setState(() => readFailed = true);
+      setState(() {
+        readFailed = true;
+        question = null;
+      });
     }
 
     reading = reader
@@ -174,12 +216,29 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
           cancelOnError: true,
         );
     waited = Timer(NotePanels.readTimeout, failed);
+    if (reader is QuestioningNoteReader) {
+      final int asking = ++_asking;
+      reader.question(text).then((NoteQuestion? q) {
+        if (!mounted ||
+            q == null ||
+            asking != _asking ||
+            readFailed ||
+            readNote != text ||
+            !text.contains(q.quote)) {
+          return;
+        }
+        setState(() => question = q);
+      }, onError: (Object _) {});
+    }
     setState(() {});
   }
 
   // Ends a read; one cut short is read [again] on the next visit. Tags not yet
   // shown are dropped, so nothing unseen is saved.
   void stopReading({bool again = true}) {
+    // A question still on its way when the read is cut short is dropped
+    // with the unseen tags.
+    if (reading != null) _asking++;
     if (again && reading != null) readAgain = true;
     waited?.cancel();
     reading?.cancel();
@@ -534,6 +593,102 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
         TextSpan(text: text.substring(at + on.quote.length)),
       ],
     );
+  }
+
+  /// The follow-up question: the note with the quoted words marked, the
+  /// question, an optional answer and Skip, which clears the answer and moves
+  /// on (or finishes, on the last panel).
+  Widget followUpPanel(BuildContext context, NoteQuestion q) {
+    final ThemeData theme = Theme.of(context);
+    final DialColors colors = DialColors.of(context);
+    final String text = readNote ?? '';
+    final int at = text.indexOf(q.quote);
+    final TextStyle? base = theme.textTheme.bodyMedium?.copyWith(
+      color: colors.muted,
+    );
+    return ListView(
+      padding: const EdgeInsets.all(DialSpace.m),
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
+          child: Text(
+            NotePanels.followUpTitle,
+            style: theme.textTheme.titleMedium,
+          ),
+        ),
+        const SizedBox(height: DialSpace.s),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surface2,
+            borderRadius: BorderRadius.circular(DialRadius.tile),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DialSpace.s,
+              vertical: DialSpace.xs,
+            ),
+            child: Text.rich(
+              at < 0
+                  ? TextSpan(text: text, style: base)
+                  : TextSpan(
+                      style: base,
+                      children: <InlineSpan>[
+                        TextSpan(text: text.substring(0, at)),
+                        TextSpan(
+                          text: q.quote,
+                          style: TextStyle(
+                            color: theme.colorScheme.onPrimary,
+                            background: Paint()
+                              ..color = theme.colorScheme.primary,
+                          ),
+                        ),
+                        TextSpan(text: text.substring(at + q.quote.length)),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+        const SizedBox(height: DialSpace.s),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: DialSpace.xs),
+          child: Text(
+            askedLine(q.question, q.quote),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: DialSpace.s),
+        TextField(
+          key: NotePanels.answerKey,
+          controller: answer,
+          minLines: 2,
+          maxLines: 5,
+          maxLength: maxFollowUpAnswerLength,
+          keyboardType: TextInputType.multiline,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(hintText: NotePanels.answerHint),
+        ),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TextButton(
+            key: NotePanels.skipKey,
+            style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+            onPressed: skip,
+            child: const Text('Skip'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void skip() {
+    answer.clear();
+    if (last) {
+      done();
+    } else {
+      go(page + 1);
+    }
   }
 
   /// [error] above [rows], with the footer's rule and padding.

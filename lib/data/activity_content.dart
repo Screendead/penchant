@@ -151,15 +151,15 @@ String? answersTooLong({
     followUp?.error ??
     sealedLengthError(
       ActivityContent(
-    triggers: triggers,
-    urge: urge,
-    note: note,
-    followUp: followUp,
-    zone: _longestZone,
-    writtenAt: DateTime.utc(9999),
-    loggedVia: LoggedVia.widget,
-  ).sealedLength,
-);
+        triggers: triggers,
+        urge: urge,
+        note: note,
+        followUp: followUp,
+        zone: _longestZone,
+        writtenAt: DateTime.utc(9999),
+        loggedVia: LoggedVia.widget,
+      ).sealedLength,
+    );
 
 // Longer than any IANA zone name (the longest is 32 characters).
 final String _longestZone = 'x' * 64;

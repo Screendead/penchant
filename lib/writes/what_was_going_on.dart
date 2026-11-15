@@ -82,11 +82,13 @@ Future<void> askWhatWasGoingOn(
     return;
   }
   final ActivityContent content =
-      (await writes.cachedContent(activityID))?.withAnswers(
-        triggers: answered.triggers,
-        urge: answered.urge,
-        note: answered.note,
-      ).withFollowUp(answered.followUp) ??
+      (await writes.cachedContent(activityID))
+          ?.withAnswers(
+            triggers: answered.triggers,
+            urge: answered.urge,
+            note: answered.note,
+          )
+          .withFollowUp(answered.followUp) ??
       answered;
 
   try {

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/sealed.dart';
+import 'package:tracker/notes/follow_up.dart';
 
 typedef StoredMeasure = ({int quantity, double? amount});
 
@@ -30,6 +31,7 @@ class ViceActivity {
     this.zone,
     this.writtenAt,
     this.loggedVia,
+    this.followUp,
     this.pending = false,
     this.locked = false,
   });
@@ -52,6 +54,7 @@ class ViceActivity {
   final String? zone;
   final DateTime? writtenAt;
   final LoggedVia? loggedVia;
+  final FollowUp? followUp;
   // A local write the server has not acknowledged yet.
   final bool pending;
   // Sealed fields this device could not open, which must never be written
@@ -76,6 +79,7 @@ class ViceActivity {
     zone: zone,
     writtenAt: writtenAt,
     loggedVia: loggedVia,
+    followUp: followUp,
   );
 
   factory ViceActivity.fromJson({
@@ -101,6 +105,7 @@ class ViceActivity {
       zone: content.zone,
       writtenAt: content.writtenAt,
       loggedVia: content.loggedVia,
+      followUp: content.followUp,
       pending: pending,
       locked: locked,
     );

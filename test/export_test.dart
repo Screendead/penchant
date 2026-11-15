@@ -52,11 +52,12 @@ void main() {
     expect(
       exportCsv(_data()),
       'time,vice,quantity,amount,unit,vice_id,entry_id,triggers,'
-      'urge,note,time_zone,written_at,logged_via\r\n'
+      'urge,note,time_zone,written_at,logged_via,'
+      'follow_up_question,follow_up_quote,follow_up_answer\r\n'
       '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,,drink,v1,a1,'
       '"work/meeting; Late, ""very""",,kept although no field list names it,'
-      ',,\r\n'
-      '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2,,,,,,\r\n',
+      ',,,,,\r\n'
+      '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2,,,,,,,,,\r\n',
     );
   });
 
@@ -82,7 +83,7 @@ void main() {
     );
     expect(
       csv.split('\r\n')[1],
-      endsWith(',4,,Europe/London,2026-11-02T21:00:00.000Z,sheet'),
+      endsWith(',4,,Europe/London,2026-11-02T21:00:00.000Z,sheet,,,'),
     );
   });
 

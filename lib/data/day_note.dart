@@ -53,11 +53,7 @@ Map<String, Object?> dayNoteContent({
 
 /// Why [text], [triggers] and [followUp] cannot be saved as a day note, or
 /// null. Sealed, so this is their only guard.
-String? dayNoteError(
-  String text,
-  List<String> triggers, {
-  FollowUp? followUp,
-}) {
+String? dayNoteError(String text, List<String> triggers, {FollowUp? followUp}) {
   final String trimmed = text.trim();
   if (trimmed.isEmpty) {
     return 'Please write something about the day';
