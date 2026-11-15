@@ -8,6 +8,7 @@ import 'activity_flows_test.dart' as activity_flows_test;
 import 'bounded_queries_test.dart' as bounded_queries_test;
 import 'category_migration_test.dart' as category_migration_test;
 import 'cold_start_test.dart' as cold_start_test;
+import 'day_note_test.dart' as day_note_test;
 import 'error_states_test.dart' as error_states_test;
 import 'guest_test.dart' as guest_test;
 import 'keyboard_test.dart' as keyboard_test;
@@ -25,6 +26,7 @@ void main() {
   group('bounded_queries_test', bounded_queries_test.main);
   group('category_migration_test', category_migration_test.main);
   group('cold_start_test', cold_start_test.main);
+  group('day_note_test', day_note_test.main);
   group('error_states_test', error_states_test.main);
   group('guest_test', guest_test.main);
   group('keyboard_test', keyboard_test.main);
