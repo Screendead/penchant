@@ -32,6 +32,7 @@ import 'package:tracker/weekly_review_page.dart';
 import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widgets/app_menu_bar.dart';
 import 'package:tracker/widgets/day_dial.dart';
+import 'package:tracker/widgets/day_note_line.dart';
 import 'package:tracker/widgets/day_picker.dart';
 import 'package:tracker/widgets/guest_expiry_banner.dart';
 import 'package:tracker/widgets/info_box.dart';
@@ -552,6 +553,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                                 ),
                             ],
                           ),
+                        DayNoteLine(day: day),
                       ],
                     ),
                   ),
