@@ -66,7 +66,17 @@ jobs:
       - name: Deploy
         env:
           SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCREENDEAD_VICE_TRACKER }}
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
         run: |
+          # readNote's Anthropic identifiers (not secrets), kept out of the public repo; unset, it answers
+          # failed-precondition.
+          for name in ANTHROPIC_FEDERATION_RULE_ID ANTHROPIC_ORGANIZATION_ID ANTHROPIC_SERVICE_ACCOUNT_ID \
+            ANTHROPIC_WORKSPACE_ID; do
+            printf '%s=%s\n' "$name" "${!name}"
+          done > functions/.env.screendead-vice-tracker
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
           (umask 077 && printf '%s' "$SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS")
           # Functions only; rules and indexes deploy from deploy-firestore.yml.
