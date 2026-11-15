@@ -106,7 +106,7 @@ code { font: 500 13px var(--mono); }
       <h3>Penchant · four calls · 15 November 2026</h3>
       <h1>"What was going on?" as locked panels, with the note read into tags</h1>
       <p>After a quick log, the app can ask what was going on. Today that is one sheet with three questions at once: tags, how strong the urge was, and a one-line note. You asked for a sequence of panels moved only by a Next button, a prompt for free text on heavy days, and AI that reads the text and finds trends.</p>
-      <p>The mock-up is the proposal. Write a note, press Next, and the note's phrases turn into the tags the app already has. Nothing is saved until you confirm them. Because they are ordinary tags, Insights' existing comparisons (which tags go with more use) work on them with no new statistics and no model asked to "see trends", which a language model would invent.</p>
+      <p>The mock-up is the proposal. Write a note, press Next, and the note's phrases turn into the tags the app already has. Nothing is saved until you confirm them. Because a note on an entry becomes ordinary tags, Insights' existing comparisons (which tags go with more use) read them with no new statistics, and no model is asked to "see trends", which a language model would invent. Tags on a whole day's text are different: nothing in Insights reads those yet.</p>
       <p class="muted">The tagging in the mock-up is a keyword stand-in, timed to look like a streamed reply. Try your own words: it knows work, people, mood, sleep, bars, home, ads.</p>
       <p><b>Your iPhone 13 Pro Max cannot run Apple's on-device model.</b> Apple lists iPhone 15 Pro and later. That is why the first call matters.</p>
     </div>
@@ -149,7 +149,7 @@ code { font: 500 13px var(--mono); }
     <h3>Call 1 of 4</h3>
     <h2>What reads the note: Claude through our server, Apple's model on the device, or nothing</h2>
     <p>Today nothing reads a note. Notes are end-to-end encrypted: they are sealed on the device with your journal key, and neither our server nor anyone else can read them. Turning a note into tags needs a language model, and the choice of model decides whether your phone gets the feature and whether note text ever leaves the device.</p>
-    <p><b>Measured on this Mac today</b>, Apple's on-device model, 12 made-up notes about drinking, smoking, vaping, cannabis and cocaine: all 12 answered, none refused, median 0.9 s, slowest 3.3 s. About half were tagged well. The rest carried a wrong tag.</p>
+    <p><b>Measured on this Mac today</b>, Apple's on-device model, 12 made-up notes about drinking, smoking, vaping, cannabis and cocaine: all 12 answered, none refused, median 0.9 s, slowest 3.3 s. About half were tagged well. The rest carried a wrong tag. Treat that as a floor, not a verdict: the trial used one untuned prompt and plain-text answers, because Apple's structured-answer mode would not load in a script, and it is the mode the app would use.</p>
     <div class="scroll"><table>
       <tr><th>Note</th><th>Apple's model said</th><th></th></tr>
       <tr><td>Flight delayed four hours, sat in the airport bar on my own.</td><td>On my own · Bar · Stressed</td><td class="ok">Right</td></tr>
@@ -168,7 +168,7 @@ code { font: 500 13px var(--mono); }
         <p class="kv"><b>Privacy:</b> the first time journal text is readable off the device, by our function in passing and by Anthropic. Anthropic's API terms: never used for training without permission, and prompt content not retained by default (some models carry 30-day retention; I have not checked whether Haiku 5.5 is one). The switch says this in plain words. The stored note stays sealed.</p>
         <p class="kv"><b>Cost:</b> about $0.00007 a note at list price ($0.10 in, $0.50 out per million tokens). Ten notes a day is about 2 cents a month per person. Capped per account per day, since anyone signed in could call it.</p>
         <p class="kv"><b>Speed:</b> expected 1 to 2 seconds, unmeasured. Needs a connection; offline, the panel is skipped and you pick tags by hand.</p>
-        <p class="kv"><b>Needs from you:</b> an Anthropic API key set as a server secret, and switching on function deploys, which are off today.</p>
+        <p class="kv"><b>Needs from you:</b> an Anthropic API key set as a server secret. Function deploys on merge are already on.</p>
         <p class="kv"><b>Build:</b> about 3 days with the panels.</p>
       </div>
       <div class="opt">
@@ -176,14 +176,14 @@ code { font: 500 13px var(--mono); }
         <p>Phones from iPhone 15 Pro and Macs with Apple silicon tag on the device and send nothing. Others, yours included, use Claude as above if switched on.</p>
         <p class="kv"><b>Your phone:</b> works, through Claude.</p>
         <p class="kv"><b>Privacy:</b> best available on each device.</p>
-        <p class="kv"><b>Risk:</b> two models with different quality, so the same note gets different tags on your Mac and your phone. Apple's was wrong on about half the trial.</p>
+        <p class="kv"><b>Risk:</b> two models of different quality, so the same note can get different tags on your Mac and your phone. Apple's was wrong on about half of a rough trial.</p>
         <p class="kv"><b>Build:</b> about 5 days.</p>
       </div>
       <div class="opt">
         <b class="name">Apple's model only</b>
         <p>Nothing ever leaves the device. No server work, no key, no running cost.</p>
         <p class="kv"><b>Your phone:</b> no feature. It would work on this Mac, and tags made here would show on the phone after sync.</p>
-        <p class="kv"><b>Risk:</b> the quality above.</p>
+        <p class="kv"><b>Risk:</b> quality, as far as the rough trial shows.</p>
         <p class="kv"><b>Build:</b> about 3 days.</p>
       </div>
       <div class="opt">
@@ -224,29 +224,30 @@ code { font: 500 13px var(--mono); }
         <p class="kv"><b>Build:</b> about 1 day.</p>
       </div>
     </div>
-    <p><b>Why now:</b> it decides whether the note panel needs a whole-day form (next call). <b>If you do nothing:</b> no heavy-day prompt is built.</p>
+    <p><b>Why now:</b> a heavy-day prompt needs somewhere to keep a whole day's text, which the app lacks. <b>Waiting on this:</b> that storage work. <b>If you do nothing:</b> no heavy-day prompt is built.</p>
   </section>
 
   <!-- CALL 3 -->
   <section class="call">
     <h3>Call 3 of 4</h3>
     <h2>Where a whole day's text is kept</h2>
-    <p>This matters only if Call 2 is not "nothing". Today a note belongs to one entry and holds one line of up to 500 characters. A heavy day is many entries, and "what was unusual about today" belongs to none of them.</p>
+    <p>This matters only if the app is to ask for free text about a heavy day, by notification or by a card. Today a note belongs to one entry and holds one line of up to 500 characters. A heavy day is many entries, and "what was unusual about today" belongs to none of them.</p>
     <div class="opts">
       <div class="opt rec">
         <span class="tag">Recommended</span>
         <b class="name">A new sealed day note, one per day</b>
         <p>A new kind of encrypted document: the date, the text, its confirmed tags. It appears on that day's dial, in the export, and in Insights as a property of the day.</p>
         <p class="kv"><b>Cost:</b> a change to the database rules, which deploy to production automatically when merged, and about 2 days. Older app versions ignore day notes.</p>
+        <p class="kv"><b>Not included:</b> Insights reading day tags. That is new comparison work, about 2 more days, and text is asked for only on heavy days, so there are no ordinary days to compare with. At first it can only show which tags recur on heavy days.</p>
         <p class="kv"><b>Risk:</b> low. Nothing existing changes shape.</p>
       </div>
       <div class="opt">
         <b class="name">Put it on the day's last entry</b>
         <p>The text becomes that entry's note. No new data, no rules change, about half a day.</p>
-        <p class="kv"><b>Risk:</b> deleting or moving that entry takes the day's text with it, it overwrites any note already there, and Insights would credit the tags to one drink, not the day.</p>
+        <p class="kv"><b>Upside:</b> Insights' existing tag comparisons read it at once. <b>Risk:</b> deleting or moving that entry takes the day's text with it, it overwrites any note already there, and Insights credits the tags to one drink, not the day.</p>
       </div>
     </div>
-    <p><b>If you do nothing:</b> I use the day note if Call 2 goes ahead.</p>
+    <p><b>Why now:</b> it sets whether a rules change ships with the heavy-day prompt. <b>Waiting on this:</b> the heavy-day prompt. <b>If you do nothing:</b> I use the day note if a heavy-day prompt is built.</p>
   </section>
 
   <!-- CALL 4 -->
@@ -272,7 +273,7 @@ code { font: 500 13px var(--mono); }
         <p>Tell me the data points you had in mind and I will mock them up as panels before building.</p>
       </div>
     </div>
-    <p>The panels would replace the sheet behind "What was going on?" after a quick log, from the widget and from the menu bar. The full record sheet and the entry editor stay as they are. <b>If you do nothing:</b> I build the three reordered.</p>
+    <p>The panels would replace the sheet behind "What was going on?" after a quick log, from the widget and from the menu bar. The full record sheet and the entry editor stay as they are. <b>Why now:</b> the panels are the first thing to build. <b>Waiting on this:</b> nothing else. <b>If you do nothing:</b> I build the three reordered.</p>
   </section>
 </div>
 
