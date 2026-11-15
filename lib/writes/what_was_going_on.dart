@@ -67,11 +67,13 @@ Future<void> askWhatWasGoingOn(
           },
   );
   final ActivityContent asked = ActivityContent(triggers: initial);
-  final ActivityContent answered = asked.withAnswers(
-    triggers: picked?.triggers ?? initial,
-    urge: picked?.urge,
-    note: picked?.note,
-  );
+  final ActivityContent answered = asked
+      .withAnswers(
+        triggers: picked?.triggers ?? initial,
+        urge: picked?.urge,
+        note: picked?.note,
+      )
+      .withFollowUp(picked?.followUp);
   if (picked == null ||
       !answered.answersDiffer(asked) ||
       (cancelled?.call() ?? false) ||
@@ -84,7 +86,7 @@ Future<void> askWhatWasGoingOn(
         triggers: answered.triggers,
         urge: answered.urge,
         note: answered.note,
-      ) ??
+      ).withFollowUp(answered.followUp) ??
       answered;
 
   try {

@@ -167,3 +167,18 @@ const int maxDayNoteLength = 2000;
 
 const String dayNoteTooLong =
     'The note and its tags are too long to save together. Shorten the note.';
+
+// A follow-up question and its answer (lib/notes/follow_up.dart): sealed, so
+// these are their only bounds. The question and quote mirror the server's
+// checks in functions/note_reader.js; the answer may run to several lines.
+const int maxFollowUpQuestionLength = 140;
+const int maxFollowUpQuoteLength = 120;
+const int maxFollowUpAnswerLength = 500;
+
+String? followUpAnswerError(String? value) {
+  if (value != null && value.trim().length > maxFollowUpAnswerLength) {
+    return 'Use $maxFollowUpAnswerLength characters or fewer';
+  }
+
+  return null;
+}

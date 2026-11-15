@@ -33,12 +33,21 @@ const List<String> activityContentFields = <String>[
   'zone',
   'writtenAt',
   'loggedVia',
+  'followUpQuestion',
+  'followUpQuote',
+  'followUpAnswer',
 ];
 
 // A day note's text and triggers (lib/data/day_note.dart). Born sealed: the
 // rules refuse them in plaintext on create and update, so no legacy note
 // holds any.
-const List<String> dayNoteContentFields = <String>['text', 'triggers'];
+const List<String> dayNoteContentFields = <String>[
+  'text',
+  'triggers',
+  'followUpQuestion',
+  'followUpQuote',
+  'followUpAnswer',
+];
 
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,

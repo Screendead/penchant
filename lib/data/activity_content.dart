@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/limits.dart';
+import 'package:tracker/notes/follow_up.dart';
 
 // An activity's sealed content: everything inside its envelope. Only
 // TrackerWrites writes it and only ViceActivity.fromJson reads it, through
@@ -26,6 +27,7 @@ class ActivityContent {
     this.zone,
     this.writtenAt,
     this.loggedVia,
+    this.followUp,
   });
 
   /// Reads opened (or legacy plaintext) content; never throws.
@@ -36,6 +38,7 @@ class ActivityContent {
     zone: readZone(content[zoneField]),
     writtenAt: readWrittenAt(content[writtenAtField]),
     loggedVia: readLoggedVia(content[loggedViaField]),
+    followUp: FollowUp.read(content),
   );
 
   final List<String> triggers;
@@ -56,6 +59,9 @@ class ActivityContent {
 
   final LoggedVia? loggedVia;
 
+  /// The follow-up question about the note and the answer typed to it.
+  final FollowUp? followUp;
+
   /// The map sealed in the envelope. The triggers are always present, so the
   /// stored shape does not say whether the entry has any; the rest only when
   /// known.
@@ -66,11 +72,13 @@ class ActivityContent {
     zoneField: ?zone,
     writtenAtField: ?writtenAt?.toUtc().millisecondsSinceEpoch,
     loggedViaField: ?loggedVia?.name,
+    ...?followUp?.toMap(),
   };
 
   /// The bytes of JSON the envelope pads, which Sealer.bucketFor bounds.
   int get sealedLength => utf8.encode(jsonEncode(toMap())).length;
 
+  /// The answers changed; the follow-up stays, as do the silent fields.
   ActivityContent withAnswers({
     required List<String> triggers,
     required int? urge,
@@ -82,6 +90,17 @@ class ActivityContent {
     zone: zone,
     writtenAt: writtenAt,
     loggedVia: loggedVia,
+    followUp: followUp,
+  );
+
+  ActivityContent withFollowUp(FollowUp? followUp) => ActivityContent(
+    triggers: triggers,
+    urge: urge,
+    note: note,
+    zone: zone,
+    writtenAt: writtenAt,
+    loggedVia: loggedVia,
+    followUp: followUp,
   );
 
   /// Whether only triggers are set, as on an entry from before the rest
@@ -91,12 +110,14 @@ class ActivityContent {
       note == null &&
       zone == null &&
       writtenAt == null &&
-      loggedVia == null;
+      loggedVia == null &&
+      followUp == null;
 
   /// Whether the answers the user can change differ from [other]'s.
   bool answersDiffer(ActivityContent other) =>
       urge != other.urge ||
       note != other.note ||
+      followUp != other.followUp ||
       triggers.length != other.triggers.length ||
       Iterable<int>.generate(
         triggers.length,
@@ -119,17 +140,21 @@ DateTime? readWrittenAt(Object? value) => value is int
 LoggedVia? readLoggedVia(Object? value) =>
     LoggedVia.values.where((LoggedVia v) => v.name == value).firstOrNull;
 
-/// Why [triggers], [urge] and [note] would not fit one envelope beside the
+/// Why [triggers], [urge], [note] and [followUp] would not fit one envelope beside the
 /// longest zone, write time and source an entry can carry, or null.
 String? answersTooLong({
   required List<String> triggers,
   required int? urge,
   required String? note,
-}) => sealedLengthError(
-  ActivityContent(
+  FollowUp? followUp,
+}) =>
+    followUp?.error ??
+    sealedLengthError(
+      ActivityContent(
     triggers: triggers,
     urge: urge,
     note: note,
+    followUp: followUp,
     zone: _longestZone,
     writtenAt: DateTime.utc(9999),
     loggedVia: LoggedVia.widget,
