@@ -1048,12 +1048,19 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), two calls from
-Jack's 2026-11-16 "i would like to see (1) the analyst and (2) the letter"; nothing is built, and both wait on the
-Ask rebuild (below). Recommendations (Claude's): `analyst` Opus runs queries on the device and reads their results
-(counts, dates, tags; never note text, which the database refuses in that mode), asked before each investigation;
-`letter` Opus writes a review of a chosen period from notes and entries, on request, after a preview of what is
-sent. Unconfirmed: whether Opus 5.5 carries 30-day retention.
+Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), both
+picked by Jack on 2026-11-16 as recommended ("yes to both recommendations"; after the retention correction below,
+"Yes, build both"):
+
+- `analyst`: Opus runs queries on the device and reads their results (counts, dates, tags; never note text, which
+  the database refuses in that mode), asked before each investigation. Waits on the Ask rebuild.
+- `letter`: Opus writes a review of a chosen period from notes and entries, on request, after a preview of what is
+  sent. Being built.
+
+Retention, checked 2026-11-16 (https://privacy.claude.com/en/articles/7996866 and the API data-retention page): API
+inputs and outputs are deleted within 30 days for every model unless a zero-retention agreement exists; flagged
+content up to 2 years; never used for training without permission; only Fable and Mythos are Covered Models. Rounds
+20, 22 and 23's pages wrongly said "not retained by default". Owed: each in-app disclosure gains the 30-day line.
 
 Ask your journal is being rebuilt (Jack, 2026-11-16: "yeah do it... just has to be maximally secure"): the model
 writes read-only SQL, run on the device against an in-memory database behind a sandbox; results never leave it.
