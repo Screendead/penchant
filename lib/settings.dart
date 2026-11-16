@@ -6,6 +6,7 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/export_action.dart';
+import 'package:tracker/report/report_page.dart';
 import 'package:tracker/app_lock/app_lock.dart';
 import 'package:tracker/app_lock/device_auth.dart';
 import 'package:tracker/appearance_settings.dart';
@@ -309,6 +310,14 @@ class _SettingsState extends ConsumerState<Settings> {
                     )
                   : null,
               onTap: _export,
+            ),
+            CardRow(
+              label: ReportOptionsPage.settingsLabel,
+              value: const Text(ReportOptionsPage.settingsValue),
+              glyph: DialGlyph.right,
+              onTap: () {
+                Navigator.of(context).pushNamed(ReportOptionsPage.route);
+              },
             ),
           ],
         ),
