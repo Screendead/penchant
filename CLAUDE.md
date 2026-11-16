@@ -256,7 +256,7 @@ the triggers alone.
 **Note reader** (`lib/notes/`, off by default; Settings' "Suggest tags from notes", per device, `NoteReaderSetting`,
 which says first what is sent). `noteReaderProvider` is null unless that switch is on, a user is signed in and the
 build is not an emulator build. It calls the callable function `readNote` (cloud_functions) with the note's text
-alone, the one time journal text leaves the device unsealed, and emits each `ReadTag` (`path`, `quote`) whose path
+alone (journal text leaves the device unsealed only here and in the Letter, below), and emits each `ReadTag` (`path`, `quote`) whose path
 is in the tree and whose quote is in the note. `functions/note_reader.js` asks Claude Haiku 5.5 (thinking off, effort
 low, structured output over the leaf paths of `functions/note_tags.js`, a copy of the Dart tree that a test compares)
 for at most 4 tags of a note of at most 2000 UTF-16 units, drops any it cannot verify, and logs counts and reason
@@ -267,7 +267,7 @@ writes to `functions/.env.screendead-vice-tracker` at deploy (unset, it answers 
 bounded by `maxInstances: 2`, 60 reads a day per uid per instance in memory, and the workspace's spend and rate
 limits in the Claude Console. `functions/tools/note-reader-trial.js` runs 12 made-up notes through the same prompt
 with an API key from the environment. Only an account with a verified email may use Claude (Jack, 2026-11-15:
-"Yes, refuse guests"), here and in the three features below: `claudeAllowedProvider`
+"Yes, refuse guests"), here and in the four features below: `claudeAllowedProvider`
 (`lib/account/claude_access.dart`: the profile's `emailVerified` by `select`, and `Account.isGuest`) makes every
 Claude provider null otherwise, and each Settings row is then off with "Add and verify an email address first.",
 opening Account Settings. Each callable refuses a guest or an unverified email with `permission-denied`
@@ -307,6 +307,31 @@ same schema by test) and runs it over the entries it reads itself (`ask_runner.d
 sentence, the query in words (`describe_query.dart`) and a small chart. Questions live in memory for the session,
 cleared on user change; nothing is stored. Cap 60 a day per uid per instance; logs the reason code only.
 `functions/tools/ask-journal-trial.js` runs made-up questions with an API key.
+
+**Letter** (`lib/letter/`, off by default; Settings' "Letter", `LetterSetting`; `LetterPage`, route `/letter`, in the
+Penchant menu while the switch is on; Jack, 2026-11-16, "Yes, build both", knowing Anthropic keeps what is sent for up
+to 30 days). On request only: the person picks the last 1, 3 or 6 months, `LetterJournal` reads the period once (the
+day query's activity shape; day notes by the owner's ids between the first and last day, ordered by id), and
+`buildLetterPayload` (`letter_payload.dart`) builds the one request the preview shows and Send sends: each entry's local
+date and time, amount and unit words, habit name, tag labels, urge in words, note and follow-up question and answer;
+each day note's date, text, tags and follow-up; and figures worked out here as ASCII strings (per habit and per month
+total, entries and days with use; note counts; the 10 commonest tags). Never Health, places, calendar, findings, the
+uid, document ids or anything outside the period; locked entries and notes, and entries of a locked or gone habit, are
+left out and counted. Over 190,000 characters the period starts later until it fits, and the preview says so. The
+callable `writeLetter` (`functions/letter.js`: `validInput` rebuilds the known keys and refuses over 200,000, then one
+streamed Claude Opus 5.5 call, effort medium, thinking adaptive, structured output `{sections, toTest, quotes}`, no
+fallbacks) checks each section and suggestion (`checkPassage`): every double-quoted span is in a sent note, day note or
+answer (or a sent label); outside quotes and sent names, units and tag labels, every numeral is one of the figures',
+the period's or a label's, no count in words (`NUMBER_WORDS`) and no `LETTER_DENIED_TERMS` (the follow-up's list less
+its counting words and four a description needs, plus the letter's own). A failing passage is withheld and counted
+("One passage was left out"); under 3 sections in the reply or under 2 surviving, nothing is shown. The device runs the
+same checks (`letter_checks.dart`; both test suites run `functions/letter_fixture.json`). `letterRunProvider` holds the
+call outside the page, so a letter finished after leaving it is saved while the app stays open. Letters are the sealed
+kept file `letters` (`keptSealedFilesProvider`, like the experiment plan): period, date written, counts of what was
+sent, sections, suggestions and the withheld count; never the payload; not synced; deletable. "Worth testing" links to
+Insights; starting an experiment from it is not built. Cap 3 a day per uid per instance; logs the reason code and the
+withheld reasons up to any colon. `functions/tools/letter-review.js` writes letters for 5 made-up journals with an API
+key, printing each letter, what was withheld and why, and the seconds taken.
 
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
@@ -627,9 +652,11 @@ so an untouched new entry is logged at the moment of saving, to the second. The 
 `CalendarSheet` to move the entry to another day.
 
 **Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
-Follow-up question), `writeWeekly` (Weekly review in words) and `askJournal` (Ask your journal), each requiring
+Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal) and `writeLetter`
+(Letter), each requiring
 sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
-`maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account. `monthlySummaries` (03:00 UTC on the 1st;
+`maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account (`writeLetter`: 220 s and 512 MiB, its client a
+200 s timeout, inside the app's 240 s). `monthlySummaries` (03:00 UTC on the 1st;
 `r8-bead-size`) writes `summaries/{uid}` for every user owning a vice: `{computedAt, windowDays: 90, vices: {viceID:
 {typical, count}}}`, the median positive quantity of their last 90 days of activities and the entries it covers
 (`functions/summary.js`, same median as `typicalQuantity` in `lib/data/dial_layout.dart`). It reads only `viceID` and
