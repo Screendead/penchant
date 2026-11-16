@@ -1,8 +1,10 @@
 import Flutter
 import HealthKit
 
-// The Dart side is lib/insights/health_source.dart. Read-only: nothing here
-// writes to Health, and what it reads goes back to Dart and nowhere else.
+// The Dart side is lib/insights/health_source.dart for reading and
+// lib/health_write/health_write.dart for writing. What it reads goes back to
+// Dart and nowhere else. It writes only the person's own entries of the
+// habits they chose, as alcoholic drinks or caffeine, and reads neither type.
 // Days cross the channel as local "yyyy-MM-dd" strings so that neither side's
 // time zone or a DST change can move a value to another day.
 enum HealthChannel {
@@ -113,6 +115,43 @@ enum HealthChannel {
     return types
   }
 
+  // The only types Penchant writes, never in readTypes: Insights must not
+  // read its own entries back as a Health outcome.
+  private static func writeType(_ kind: String) -> (type: HKQuantityType, unit: HKUnit)? {
+    switch kind {
+    case "alcohol": return (HKQuantityType(.numberOfAlcoholicBeverages), .count())
+    case "caffeine": return (HKQuantityType(.dietaryCaffeine), .gramUnit(with: .milli))
+    default: return nil
+    }
+  }
+
+  private static let habitKey = "PenchantHabit"
+
+  // HealthKit deletes only samples this app saved; the source predicate says
+  // so outright. Types never allowed are skipped, since deleting needs share
+  // access.
+  private static func deleteOwn(_ predicate: NSPredicate, _ result: @escaping FlutterResult) {
+    let own = NSCompoundPredicate(andPredicateWithSubpredicates: [
+      predicate, HKQuery.predicateForObjects(from: HKSource.default()),
+    ])
+    let types = HealthDays.writeKinds.sorted().compactMap { writeType($0)?.type }
+      .filter { store.authorizationStatus(for: $0) == .sharingAuthorized }
+    let group = DispatchGroup()
+    var failure: Error?
+    for type in types {
+      group.enter()
+      store.deleteObjects(of: type, predicate: own) { _, _, error in
+        DispatchQueue.main.async {
+          if let error, failure == nil { failure = error }
+          group.leave()
+        }
+      }
+    }
+    group.notify(queue: .main) {
+      if let failure { result(flutterError(failure)) } else { result(nil) }
+    }
+  }
+
   static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: channelName, binaryMessenger: registrar.messenger())
     channel.setMethodCallHandler { call, result in
@@ -123,6 +162,59 @@ enum HealthChannel {
       switch call.method {
       case "isAvailable":
         result(true)
+      case "requestWrite":
+        guard let kind = (call.arguments as? [String: Any])?["kind"] as? String, let write = writeType(kind) else {
+          result(FlutterError(code: "bad-arguments", message: "requestWrite takes kind", details: nil))
+          return
+        }
+        // Succeeds whether or not the person allowed it; the share status,
+        // which HealthKit does tell an app, says which.
+        store.requestAuthorization(toShare: [write.type], read: []) { _, error in
+          DispatchQueue.main.async {
+            if let error {
+              result(FlutterError(code: "authorization-failed", message: error.localizedDescription, details: nil))
+            } else {
+              result(store.authorizationStatus(for: write.type) == .sharingAuthorized)
+            }
+          }
+        }
+      case "writeEntry":
+        guard let entry = HealthDays.entryWrite(call.arguments), let write = writeType(entry.kind) else {
+          result(FlutterError(code: "bad-arguments", message: "writeEntry takes a well-formed entry", details: nil))
+          return
+        }
+        guard store.authorizationStatus(for: write.type) == .sharingAuthorized else {
+          result(false)
+          return
+        }
+        // A sample with this sync identifier and a lower version is replaced.
+        let sample = HKQuantitySample(
+          type: write.type, quantity: HKQuantity(unit: write.unit, doubleValue: entry.value),
+          start: entry.at, end: entry.at,
+          metadata: [
+            HKMetadataKeySyncIdentifier: entry.syncID,
+            HKMetadataKeySyncVersion: NSNumber(value: entry.version),
+            habitKey: entry.habit,
+          ])
+        store.save(sample) { success, error in
+          DispatchQueue.main.async {
+            if let error { result(flutterError(error)) } else { result(success) }
+          }
+        }
+      case "deleteEntry":
+        let syncID = (call.arguments as? [String: Any])?["syncID"]
+        guard HealthDays.isID(syncID, HealthDays.entryPrefix), let syncID = syncID as? String else {
+          result(FlutterError(code: "bad-arguments", message: "deleteEntry takes syncID", details: nil))
+          return
+        }
+        deleteOwn(HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: [syncID]), result)
+      case "deleteHabit":
+        let habit = (call.arguments as? [String: Any])?["habit"]
+        guard HealthDays.isID(habit, HealthDays.habitPrefix), let habit = habit as? String else {
+          result(FlutterError(code: "bad-arguments", message: "deleteHabit takes habit", details: nil))
+          return
+        }
+        deleteOwn(HKQuery.predicateForObjects(withMetadataKey: habitKey, allowedValues: [habit]), result)
       case "requestAuthorization":
         // Completes the same way whether the person allowed or refused each
         // type: HealthKit does not tell an app that read access was denied.

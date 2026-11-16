@@ -23,6 +23,7 @@ import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/health_write/health_write_sync.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/weekly_review_page.dart';
@@ -158,6 +159,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     // Kept alive here so sealing runs whichever screen is open.
     ref.listen(plaintextMigrationProvider, (_, _) {});
     ref.listen(widgetSyncProvider, (_, _) {});
+    ref.listen(healthWriteSyncProvider, (_, _) {});
     ref.listen(nightOutSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
     ref.listen(entryPromptListenerProvider, (_, _) {});

@@ -98,9 +98,11 @@ class TrackerWrites {
     void Function()? onWrite,
     FieldSealer? sealer,
     String? Function()? zone,
+    void Function(String activityID)? onActivityDeleted,
   }) : _onWrite = onWrite,
        _sealer = sealer,
-       _zone = zone;
+       _zone = zone,
+       _onActivityDeleted = onActivityDeleted;
 
   final FirebaseFirestore _firestore;
   final void Function()? _onWrite;
@@ -108,6 +110,7 @@ class TrackerWrites {
   // The device's time zone as last read, or null while unknown; a log never
   // waits for it.
   final String? Function()? _zone;
+  final void Function(String activityID)? _onActivityDeleted;
 
   // The SDK sees the write only once the envelope exists, so an offline
   // write still queues, a moment later.
@@ -434,6 +437,7 @@ class TrackerWrites {
   }
 
   SentWrite deleteActivity(String activityID) {
+    _onActivityDeleted?.call(activityID);
     return _issued(
       SentWrite(
         _activities.doc(activityID).delete(),
