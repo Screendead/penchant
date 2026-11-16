@@ -12,6 +12,7 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -525,6 +526,47 @@ void main() {
       expect(await sealed(), isNot(contains('lineAmount')));
       expect(await sealed(), isNot(contains('linePeriod')));
     });
+
+    test(
+      'updateVice keeps a strength through a rename, and can clear it',
+      () async {
+        Future<Map<String, Object?>> sealed() => sealer.open(
+          (store.updates['vices/coffee']![sealedField]! as Blob).bytes,
+          context: 'vices/coffee',
+        );
+        final Vice strong = Vice(
+          id: 'coffee',
+          name: 'Beer',
+          unit: Unit.drink,
+          ownerID: 'owner',
+          createdAt: _at,
+          archived: false,
+          strength: const HabitStrength.alcohol(
+            unit: StrengthUnit.standardDrink,
+            servingMl: 568,
+            abv: 4.5,
+            drinkGrams: 14,
+          ),
+        );
+        await writes.updateVice(strong, name: 'Lager').done;
+        final Map<String, Object?> kept = await sealed();
+        expect(kept['strengthUnit'], 'standardDrink');
+        expect(kept['servingMl'], 568.0);
+        expect(kept['abv'], 4.5);
+        expect(kept['drinkGrams'], 14.0);
+        expect(kept, isNot(contains('caffeineMg')));
+
+        await writes.updateVice(strong, strength: (strength: null)).done;
+        for (final String field in <String>[
+          'strengthUnit',
+          'servingMl',
+          'abv',
+          'drinkGrams',
+        ]) {
+          expect(await sealed(), isNot(contains(field)));
+        }
+      },
+    );
 
     test('updateVice refuses to write back a locked vice', () {
       expect(
