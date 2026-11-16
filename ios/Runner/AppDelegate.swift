@@ -1,6 +1,7 @@
 import Flutter
 import LocalAuthentication
 import UIKit
+import UniformTypeIdentifiers
 import UserNotifications
 
 @main
@@ -54,6 +55,9 @@ import UserNotifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DeviceAuth") {
       DeviceAuth.register(with: registrar.messenger())
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "BackupFiles") {
+      BackupFiles.shared.register(with: registrar.messenger())
     }
   }
 }
@@ -156,5 +160,129 @@ enum DeviceAuth {
     default:
       return "failed"
     }
+  }
+}
+
+// The Dart side is lib/backup/backup_service.dart. The export panel needs a
+// file to copy, so saving writes one into a folder of its own in tmp and
+// removes the folder when the panel closes, saved or cancelled. Picking reads
+// the chosen file where it is, through security-scoped access, and copies
+// nothing.
+final class BackupFiles: NSObject, UIDocumentPickerDelegate {
+  static let shared = BackupFiles()
+
+  private var pending: FlutterResult?
+  private var picking = false
+  private var exportFolder: URL?
+
+  func register(with messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "com.screendead.penchant/backup_files", binaryMessenger: messenger)
+    channel.setMethodCallHandler { [weak self] call, result in
+      self?.handle(call, result)
+    }
+  }
+
+  private static func presenter() -> UIViewController? {
+    let windows = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap { $0.windows }
+    var top = (windows.first { $0.isKeyWindow } ?? windows.first)?.rootViewController
+    while let presented = top?.presentedViewController {
+      top = presented
+    }
+    return top
+  }
+
+  private func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    guard call.method == "save" || call.method == "pick" else {
+      result(FlutterMethodNotImplemented)
+      return
+    }
+    guard pending == nil, let presenter = Self.presenter() else {
+      result(FlutterError(code: "busy", message: "No panel can be shown now", details: nil))
+      return
+    }
+    if call.method == "pick" {
+      picking = true
+      pending = result
+      let panel = UIDocumentPickerViewController(forOpeningContentTypes: [.data], asCopy: false)
+      panel.allowsMultipleSelection = false
+      panel.delegate = self
+      presenter.present(panel, animated: true)
+      return
+    }
+    guard let args = call.arguments as? [String: Any],
+      let bytes = args["bytes"] as? FlutterStandardTypedData,
+      let name = args["name"] as? String
+    else {
+      result(FlutterError(code: "arguments", message: "save needs bytes and a name", details: nil))
+      return
+    }
+    let folder = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    do {
+      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+      let file = folder.appendingPathComponent((name as NSString).lastPathComponent)
+      try bytes.data.write(to: file, options: [.completeFileProtection])
+      exportFolder = folder
+      picking = false
+      pending = result
+      let panel = UIDocumentPickerViewController(forExporting: [file], asCopy: true)
+      panel.delegate = self
+      presenter.present(panel, animated: true)
+    } catch {
+      try? FileManager.default.removeItem(at: folder)
+      result(FlutterError(code: "write", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  func documentPicker(
+    _ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]
+  ) {
+    guard picking else {
+      finish(true)
+      return
+    }
+    guard let url = urls.first else {
+      finish(nil)
+      return
+    }
+    let scoped = url.startAccessingSecurityScopedResource()
+    defer {
+      if scoped { url.stopAccessingSecurityScopedResource() }
+    }
+    // The coordinator waits for iCloud Drive to download a file not yet here.
+    var coordinationError: NSError?
+    var read: Result<Data, Error>?
+    NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinationError) {
+      readable in
+      read = Result { try Data(contentsOf: readable) }
+    }
+    switch read {
+    case .success(let data):
+      finish(FlutterStandardTypedData(bytes: data))
+    case .failure(let error):
+      finish(FlutterError(code: "read", message: error.localizedDescription, details: nil))
+    case nil:
+      finish(
+        FlutterError(
+          code: "read", message: coordinationError?.localizedDescription ?? "Not read",
+          details: nil))
+    }
+  }
+
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+    finish(picking ? nil : false)
+  }
+
+  private func finish(_ value: Any?) {
+    if let folder = exportFolder {
+      try? FileManager.default.removeItem(at: folder)
+      exportFolder = nil
+    }
+    let result = pending
+    pending = nil
+    result?(value)
   }
 }
