@@ -19,8 +19,8 @@ abstract final class AnalystLimits {
   static const int resultChars = 8000;
   static const int columns = 20;
   static const int cell = 200;
-  static const int headline = 120;
-  static const int body = 1200;
+  static const int headline = 200;
+  static const int body = 1500;
 }
 
 /// Words that claim one thing produces another. Whether it does is for
