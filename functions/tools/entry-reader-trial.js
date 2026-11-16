@@ -55,7 +55,7 @@ const cases = [
     days('Friday after work drinks with the team, maybe five or six pints. Saturday hungover, three coffees. Sunday a glass of wine.'),
     'Beer 5 Fri (one entry), Coffee 3 Sat, Wine 1 Sun',
   ],
-  [days('weekend was quiet, just a coffee each morning'), 'Coffee 1 Sat and Coffee 1 Sun'],
+  [days('weekend was quiet, just a coffee each morning'), 'Coffee 1 Sat and Coffee 1 Sun; none Friday'],
   [
     days('Tuesday nothing. Wednesday two glasses of red at Mia\'s. Thursday a pint at lunch. Friday too many. Sat and Sun nothing.', week),
     'Wine 2 Wed, Beer 1 Thu; nothing Friday',
