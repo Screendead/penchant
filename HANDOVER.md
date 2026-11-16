@@ -1048,11 +1048,19 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX), asked
-for by Jack on 2026-11-16 ("a bunch more exciting, well-founded ai-based ideas for the app, as well as non-ai-based
-ones"): fifteen ideas, each a card he picks or leaves; none decided, none built. Claude recommends six to build next:
-with Claude, say it to log, catch up on missed days in words, tag older notes; without, log an urge, a night out on
-the Lock Screen, Insights reads day-note tags. The other nine are marked later.
+Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX): Jack
+picked all fifteen on 2026-11-16 ("I chose all of them. I like them all - and it's really important they're done
+*well*."). Each card on the page is that feature's spec; a build that departs from its card says where and why.
+Order (Claude's): the shared Claude-working screen first; then log an urge, strength and units, a night out on the
+Lock Screen, Insights reads day-note tags; then say it to log, catch up in words, tag older notes, tidy own-words
+tags; then random check-ins, the label camera, the one-page report, note search; last the sealed backup (merge and
+install held for Jack: it touches keys), Ask from Siri (after Ask has met the API) and the Watch app (after a signing
+probe). A UI feature merges only after Claude has looked at a render of it.
+
+Claude-working screen (Jack, same message): every Claude call today shows "a single quiet text line. I want something
+animated and exciting", "appear fullscreen while it's thinking, making me feel like someone is taking a close look
+and trying to help me behind the scenes", using Flutter's heroes and animation. One shared component for every call
+site; Jack is shown directions as a recording before the look is settled.
 
 Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), both
 picked by Jack on 2026-11-16 as recommended ("yes to both recommendations"; after the retention correction below,
