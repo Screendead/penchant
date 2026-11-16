@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/ask/ask_from_siri.dart';
 import 'package:tracker/say_it/entry_reader.dart';
 import 'package:tracker/say_it/entry_words_page.dart';
 import 'package:tracker/backup/backup_page.dart';
@@ -138,6 +139,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<DateTime?>(
       pendingShowDayProvider,
       (DateTime? _, DateTime? day) => _showDay(day),
+      fireImmediately: true,
+    );
+    ref.listenManual<SiriQuestion?>(
+      siriQuestionReadyProvider,
+      (SiriQuestion? _, SiriQuestion? question) => _openSiriQuestion(question),
       fireImmediately: true,
     );
     ref.listenManual<EntryPrompt?>(
@@ -441,6 +447,21 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       ref.read(pendingEntryPromptProvider.notifier).clear();
       Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
       unawaited(openEntryPrompt(context, ref, prompt));
+    });
+  }
+
+  // A question from Siri: Ask, or the place that says why it cannot be
+  // asked.
+  void _openSiriQuestion(SiriQuestion? question) {
+    if (question == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ref.read(siriQuestionReadyProvider) != question) return;
+      openSiriQuestion(
+        Navigator.of(context),
+        ScaffoldMessenger.of(context),
+        ref,
+        question,
+      );
     });
   }
 

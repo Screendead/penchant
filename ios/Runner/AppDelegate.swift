@@ -32,6 +32,9 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "EntryPrompt") {
       EntryPrompt.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "AskQuestion") {
+      AskQuestion.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthChannel") {
       HealthChannel.register(with: registrar)
     }

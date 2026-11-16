@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/ask/ask_from_siri.dart';
 import 'package:tracker/notes/note_search_page.dart';
 import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
@@ -180,6 +181,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.listen(nightOutSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
     ref.listen(entryPromptListenerProvider, (_, _) {});
+    ref.listen(askQuestionListenerProvider, (_, _) {});
     ref.listen(dailyNudgeStartupProvider, (_, _) {});
     ref.listen(quitWhenSyncedProvider, (_, _) {});
 
