@@ -236,17 +236,16 @@ DraftEntry? _checked(
   }
   final List<String> triggers = <String>[];
   final Object? tags = e['tags'];
-  if (tags is List) {
-    for (final Object? tag in tags) {
-      if (triggers.length == EntryLimits.maxTags) break;
-      if (tag is! Map) continue;
-      final Object? path = tag['path'];
-      final Object? quote = tag['quote'];
-      if (path is! String || quote is! String) continue;
-      if (!_leafPaths.contains(path) || triggers.contains(path)) continue;
-      if (quote.trim().isEmpty || !text.contains(quote)) continue;
-      triggers.add(path);
-    }
+  if (tags is! List) return null;
+  for (final Object? tag in tags) {
+    if (triggers.length == EntryLimits.maxTags) break;
+    if (tag is! Map) continue;
+    final Object? path = tag['path'];
+    final Object? quote = tag['quote'];
+    if (path is! String || quote is! String) continue;
+    if (!_leafPaths.contains(path) || triggers.contains(path)) continue;
+    if (quote.trim().isEmpty || !text.contains(quote)) continue;
+    triggers.add(path);
   }
   if (answersTooLong(triggers: triggers, urge: null, note: kept) != null) {
     return null;

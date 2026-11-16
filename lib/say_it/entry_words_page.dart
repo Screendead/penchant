@@ -41,6 +41,7 @@ class EntryWordsPage extends ConsumerStatefulWidget {
   final List<DateTime>? initialDays;
 
   static const String sayRoute = '/say-it';
+  static const Key micKey = ValueKey<String>('say-it-mic');
   static const String catchUpRoute = '/catch-up';
 
   static const String sayTitle = 'Say it to log';
@@ -306,6 +307,8 @@ class _EntryWordsPageState extends ConsumerState<EntryWordsPage> {
   @override
   Widget build(BuildContext context) {
     final EntryReader? reader = ref.watch(entryReaderProvider(_mode));
+    // Kept listened, so Save reads the signed-in user at once.
+    ref.watch(userProvider);
     final String title = _mode == EntryMode.now
         ? EntryWordsPage.sayTitle
         : EntryWordsPage.catchUpTitle;
@@ -350,6 +353,7 @@ class _EntryWordsPageState extends ConsumerState<EntryWordsPage> {
         ),
         const SizedBox(height: DialSpace.m),
       ],
+      const SizedBox(height: DialSpace.m),
       TextField(
         key: const ValueKey<String>('entry-words-field'),
         controller: _text,
@@ -541,6 +545,7 @@ class _MicButton extends StatelessWidget {
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
+          key: EntryWordsPage.micKey,
           onTap: onPressed,
           child: SizedBox.square(
             dimension: 56,
@@ -611,7 +616,12 @@ class _DraftRow extends StatelessWidget {
         triggerLabels(path)?.last ?? path,
     ];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: DialSpace.xs),
+      padding: const EdgeInsets.fromLTRB(
+        18,
+        DialSpace.xs,
+        DialSpace.xs,
+        DialSpace.xs,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
