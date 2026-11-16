@@ -357,8 +357,9 @@ class _EntryWordsPageState extends ConsumerState<EntryWordsPage> {
       TextField(
         key: const ValueKey<String>('entry-words-field'),
         controller: _text,
-        minLines: _mode == EntryMode.now ? 3 : 5,
-        maxLines: 8,
+        // Short enough to stay above a landscape phone's keyboard.
+        minLines: 2,
+        maxLines: 5,
         maxLength: EntryLimits.maxText(_mode),
         enabled: !_reading,
         textCapitalization: TextCapitalization.sentences,

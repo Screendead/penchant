@@ -65,7 +65,7 @@ enum SpeechChannel {
     let request = SFSpeechAudioBufferRecognitionRequest()
     request.requiresOnDeviceRecognition = true
     request.shouldReportPartialResults = true
-    request.addsPunctuation = true
+    if #available(iOS 16.0, *) { request.addsPunctuation = true }
     self.request = request
     lastText = ""
 
