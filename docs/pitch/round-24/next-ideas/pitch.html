@@ -1,0 +1,371 @@
+<title>Penchant Next Ideas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;800&family=Red+Hat+Mono:wght@500&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; each call pairs a phone-sized mock-up with its text, stacking when narrow. */
+:root {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface2: #EFECE5; --text: #1D1C1A; --muted: #635E56;
+  --line: #1D1C1A1A; --outline: #1D1C1A8C; --on-accent: #F6F4EF;
+  --d1: #FFB347; --d1ink: #8F5600; --sent: #F8E4E2; --sent-ink: #B42A37; --kept: #E3EFE4; --kept-ink: #276B43;
+  --display: "Red Hat Display", system-ui, sans-serif; --body: "Red Hat Text", system-ui, sans-serif;
+  --mono: "Red Hat Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A;
+  --d1: #FFB347; --d1ink: #FFB347; --sent: #3A1D1E; --sent-ink: #FF8A8F; --kept: #15241B; --kept-ink: #9ED8B0;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1F1D1B; --surface2: #2A2825; --text: #F3F0EA; --muted: #ACA79D;
+  --line: #F3F0EA1F; --outline: #F3F0EA66; --on-accent: #1D1C1A;
+  --d1: #FFB347; --d1ink: #FFB347; --sent: #3A1D1E; --sent-ink: #FF8A8F; --kept: #15241B; --kept-ink: #9ED8B0;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--text); font: 400 16px/1.55 var(--body); font-variant-numeric: tabular-nums; }
+.page { max-width: 1040px; margin: 0 auto; padding-block: 32px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 48px; }
+h1 { font: 800 clamp(28px, 5vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 800 24px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 13px/1.3 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.muted { color: var(--muted); }
+.call { display: flex; flex-direction: column; gap: 18px; border-top: 2px solid var(--text); padding-top: 20px; min-width: 0; }
+.pair { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+.pair > .stack { flex: 1 1 340px; }
+.phone { flex: 0 0 auto; width: min(320px, 100%); margin: 0 auto; border: 1px solid var(--outline); border-radius: 32px;
+  background: var(--bg); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px;
+  display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; line-height: 1.5; }
+.card b.t { font: 800 16px/1.2 var(--display); }
+.eyebrow { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.row span:last-child { font-family: var(--mono); }
+.field { background: var(--surface2); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 14px; }
+.weeks { display: flex; gap: 4px; align-items: flex-end; height: 44px; }
+.weeks i { flex: 1; background: var(--d1); border-radius: 3px 3px 0 0; }
+.weeks i.none { background: none; border: 1px dashed var(--outline); height: 6px !important; border-radius: 3px; }
+.axis { display: flex; justify-content: space-between; font: 500 11px var(--mono); color: var(--muted); }
+.quote { background: var(--surface2); border-radius: 12px; padding: 8px 10px; font-size: 13.5px; color: var(--muted); }
+.quote mark { background: var(--text); color: var(--on-accent); border-radius: 4px; padding: 0 2px; }
+.btns { display: flex; gap: 8px; }
+.btns span { flex: 1; text-align: center; border: 1px solid var(--outline); border-radius: 999px; padding: 9px 0; font: 600 13.5px var(--body); }
+.btns span.p { background: var(--text); color: var(--on-accent); border-color: var(--text); flex: 2; }
+.leaves { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.leaves div { border-radius: 14px; padding: 12px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.leaves b { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; }
+.goes { background: var(--sent); } .goes b { color: var(--sent-ink); }
+.stays { background: var(--kept); } .stays b { color: var(--kept-ink); }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.opt.rec { border: 2px solid var(--text); }
+.opt b.name { font: 800 17px/1.25 var(--display); }
+.opt p { font-size: 14.5px; }
+.tag { align-self: flex-start; font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase;
+  background: var(--text); color: var(--on-accent); padding: 4px 8px; border-radius: 999px; }
+.kv { font-size: 14px; color: var(--muted); } .kv b { color: var(--text); font-weight: 600; }
+/* Added for this page: idea cards, Pick toggles and the sticky picks bar. */
+.ideas { display: flex; flex-direction: column; gap: 18px; }
+.idea { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px;
+  display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.idea.rec { border: 2px solid var(--text); }
+.idea h2 { font-size: 21px; }
+.idea p { font-size: 15px; }
+.head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.pick { height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--outline); background: var(--surface);
+  color: var(--text); font: 600 14px var(--body); cursor: pointer; }
+.pick[aria-pressed="true"] { background: var(--text); color: var(--on-accent); border-color: var(--text); }
+.pick:focus-visible, .btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.bar { position: sticky; bottom: env(safe-area-inset-bottom, 0px); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 16px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  justify-content: space-between; }
+.bar span { font: 500 13px var(--mono); }
+.btn { height: 42px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--text); background: var(--text);
+  color: var(--on-accent); font: 600 14px var(--body); cursor: pointer; }
+textarea { width: 100%; box-sizing: border-box; height: 110px; font: 500 12px var(--mono); color: var(--text);
+  background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+ul.plain { margin: 0; padding-left: 20px; max-width: 66ch; display: flex; flex-direction: column; gap: 6px; }
+</style>
+
+<div class="page">
+  <div class="stack">
+    <h3>Penchant · fifteen ideas · 16 November 2026</h3>
+    <h1>Fifteen new things Penchant could do, seven with Claude and eight without</h1>
+    <p>You asked for more ideas, with and without AI. Each card below stands alone: what you would see, what the app does today instead, why it should work, the main risk, a rough size, and my recommendation. Tap Pick on any you want, then Copy my picks at the bottom. Nothing here is built and nothing is decided.</p>
+    <p>Every cost, size and time on this page is an estimate. Costs use Anthropic's list prices and the token counts shown on each card; no caching or batch discount is assumed. Each AI idea would sit behind its own off-by-default switch, refuse guests and unverified emails like the existing Claude features, and use the model only to parse, tag or word, never to find a pattern. Anthropic deletes API inputs and outputs within 30 days and does not train on them.</p>
+    <p><b>My top three with Claude:</b></p>
+    <ul class="plain">
+      <li><b>Say it to log.</b> Speaking one sentence is the fastest log there is, and the audio never leaves the phone.</li>
+      <li><b>Catch up on missed days in words.</b> Gaps are the biggest hole in any journal; this fills them in a minute.</li>
+      <li><b>Tag your older notes.</b> Every note written before the note reader is a tag Insights never sees; this is a one-off fix for under a dollar.</li>
+    </ul>
+    <p><b>My top three without:</b></p>
+    <ul class="plain">
+      <li><b>Log an urge.</b> Today the journal only knows the urges that became an entry. This records the rest.</li>
+      <li><b>A night out on the Lock Screen.</b> Counting while out is where logging fails; a running count with a +1 button fixes that without unlocking.</li>
+      <li><b>Insights reads day-note tags.</b> Day notes already collect tags that nothing uses yet.</li>
+    </ul>
+  </div>
+
+  <section class="call">
+    <h3>Group 1 of 2</h3>
+    <h2>With Claude</h2>
+    <div class="ideas">
+
+      <article class="idea rec">
+        <div class="head"><span class="tag">Recommended</span><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Say it to log</h2>
+        <p><b>What you would do:</b> hold the Log button and say "two pints at the pub with Sam, about an hour ago, pretty stressed". A filled-in sheet appears: Beer, 2, 19:40, tags With friends and Stressed, the sentence as the note. You check it and tap Save.</p>
+        <p><b>Today:</b> the amount sheet, one-tap log, widgets, Siri and Shortcuts log one entry of a habit now. Time, tags, urge and note are each a separate step, so they are often skipped.</p>
+        <p><b>Why it should work:</b> lower effort at the moment means more complete records, the basic premise of event-based self-recording. The phone transcribes with Apple's Speech framework set to on-device recognition only (SFSpeechRecognizer with requiresOnDeviceRecognition), so audio is never sent. Claude turns the words into the same fields the sheet already has, and the phone checks each one against your habits and the tag list before showing it.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The transcribed sentence, your habit names and units, and the current time. Deleted by Anthropic within 30 days.</div>
+          <div class="stays"><b>Stays on the phone</b>The audio, every past entry and note, Health, places, calendar. Nothing saves until you tap Save.</div>
+        </div>
+        <p class="kv"><b>Model:</b> smallest (Haiku). Estimate: about 2,000 tokens in and 200 out, so about $0.0003 a log.</p>
+        <p class="kv"><b>Main risk:</b> a misheard number ("two" as "ten") saved without a look. The sheet always shows before saving, and an amount far above the habit's usual is highlighted.</p>
+        <p class="kv"><b>Build:</b> about 4 days (speech permission, the Swift side, the function, the sheet prefill).</p>
+        <p class="kv"><b>Recommendation:</b> build next. It is the most-used surface in the app and makes every later analysis better.</p>
+      </article>
+
+      <article class="idea rec">
+        <div class="head"><span class="tag">Recommended</span><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Catch up on missed days in words</h2>
+        <p><b>What you would do:</b> after a weekend away, open Catch up, pick Friday to Sunday and type "Fri about 4 pints from 7. Sat a bottle of wine over dinner, two coffees. Sun nothing." You get a list of draft entries by day to edit or drop, then Save all. Each is marked as caught up, not logged live.</p>
+        <p><b>Today:</b> each missed entry is added one at a time through the amount sheet and the time dial, so gaps tend to stay gaps.</p>
+        <p><b>Why it should work:</b> it is the Timeline Followback method, an established way of recalling use day by day over a calendar, done at small scale. Marking entries as caught up lets Insights treat recalled times as rougher than live ones. It shares its parser with Say it to log.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>What you typed, the dates you picked, your habit names and units. Deleted by Anthropic within 30 days.</div>
+          <div class="stays"><b>Stays on the phone</b>Every existing entry and note. The drafts are made on the phone from the reply.</div>
+        </div>
+        <p class="kv"><b>Model:</b> smallest (Haiku) first; mid (Sonnet) if Haiku misreads dates. Estimate: about 3,000 tokens in and 1,500 out, so about $0.001 with Haiku or $0.02 with Sonnet per catch-up.</p>
+        <p class="kv"><b>Main risk:</b> recalled amounts are less accurate than live ones and could blur Insights. The caught-up mark is an optional new field, so the engine can down-weight or exclude them.</p>
+        <p class="kv"><b>Build:</b> about 3 days after Say it to log, 5 alone.</p>
+        <p class="kv"><b>Recommendation:</b> build next, straight after Say it to log.</p>
+      </article>
+
+      <article class="idea rec">
+        <div class="head"><span class="tag">Recommended</span><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Tag your older notes</h2>
+        <p><b>What you would do:</b> in Settings, "Suggest tags for 312 older notes". The app works through them and shows a review list: each note with its suggested tags as chips you keep or drop, 20 at a time. Nothing changes until you confirm a batch.</p>
+        <p><b>Today:</b> the note reader suggests tags as you write a new note. Notes written before it was switched on, or while it was off, keep whatever tags you picked by hand, often none.</p>
+        <p><b>Why it should work:</b> the trigger analysis in Insights only counts tagged entries, and says how many were tagged. More tagged entries means more comparisons pass the sample-size gates. It reuses the note reader's prompt, its check that each quote is really in the note, and its tag list.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The text of each older note, one at a time, as the note reader already sends for new ones. Deleted by Anthropic within 30 days.</div>
+          <div class="stays"><b>Stays on the phone</b>Amounts, times, habit names, Health and everything else. Tags save only when you confirm.</div>
+        </div>
+        <p class="kv"><b>Model:</b> smallest (Haiku). Estimate: about 3,000 tokens in and 150 out per note, so about $0.0004 a note, roughly $0.20 for 500 notes, once.</p>
+        <p class="kv"><b>Main risk:</b> reviewing hundreds of suggestions is a chore, and accepting them all without reading would add wrong tags in bulk. The review shows the quoted phrase behind each tag.</p>
+        <p class="kv"><b>Build:</b> about 2 days, mostly the review list and pacing under the function's daily cap.</p>
+        <p class="kv"><b>Recommendation:</b> build next. Small, one-off, and it feeds the statistics you already have.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Tidy your own-words tags</h2>
+        <p><b>What you would do:</b> open "Tidy my tags" and see suggestions such as "work stress, stressed about work, boss: fold into Work › Bad day?" and "bday: same as Birthday?". Accept or skip each. Old entries keep working because the change is a mapping, applied to analysis and new entries.</p>
+        <p><b>Today:</b> anything typed that matches no tag is saved as your own words. Insights counts each distinct phrase separately, under Own words, so near-duplicates split the counts.</p>
+        <p><b>Why it should work:</b> merging synonyms is a standard coding step before counting categories; fewer, larger categories give the trigger comparisons enough entries to say something. The model only proposes merges; you decide.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The list of your own-words labels, with no entries, dates, amounts or notes. Deleted by Anthropic within 30 days.</div>
+          <div class="stays"><b>Stays on the phone</b>Which entries carry which label, and everything else.</div>
+        </div>
+        <p class="kv"><b>Model:</b> smallest (Haiku); mid (Sonnet) if its merges are poor. Estimate: about 6,000 tokens in and 2,000 out, so about $0.002 with Haiku or $0.03 with Sonnet, run occasionally.</p>
+        <p class="kv"><b>Main risk:</b> a label can say more than it looks ("Sam's"), and the list as a whole is revealing. The screen shows the list before sending.</p>
+        <p class="kv"><b>Build:</b> about 3 days, including a sealed mapping stored with the account.</p>
+        <p class="kv"><b>Recommendation:</b> later, once you have enough own-words labels for it to matter. Worth checking how many you have first.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Read a drink's label with the camera</h2>
+        <p><b>What you would do:</b> on a habit's form, tap the camera, point it at a can or bottle, and the volume and strength fill in: "440 ml, 5.2%". It pairs with the strength and units idea in the second group.</p>
+        <p><b>Today:</b> nothing records strength or volume; a habit has a unit word and an optional price.</p>
+        <p><b>Why it should work:</b> Apple's Vision text recognition (VNRecognizeTextRequest) reads the label on the phone, and a plain pattern match finds "ml" and "%" in most cases with no model at all. Claude is the fallback for the cases the pattern misses, such as "ABV" printed apart from its number.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>Only when the pattern fails: the recognised text of the label. Never the photo. Deleted by Anthropic within 30 days.</div>
+          <div class="stays"><b>Stays on the phone</b>The photo, which is not kept, and everything in the journal.</div>
+        </div>
+        <p class="kv"><b>Model:</b> smallest (Haiku). Estimate: about 800 tokens in and 60 out, so about $0.0001 a label.</p>
+        <p class="kv"><b>Main risk:</b> it is only useful if you log by strength, and you set a habit's strength rarely. The pattern match alone may be enough.</p>
+        <p class="kv"><b>Build:</b> about 2 days on top of strength and units.</p>
+        <p class="kv"><b>Recommendation:</b> later, and only if you pick strength and units. Build the on-device half first and add Claude only if it misses often.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Find a note by what it meant</h2>
+        <p><b>What you would do:</b> search "the wedding" or "when work was awful" and get the notes that match in meaning, not only in wording, each opening its day.</p>
+        <p><b>Today:</b> notes are read in the entry editor and the day note sheet. Ask your journal counts and finds entries; it never reads note text.</p>
+        <p><b>Why it should work:</b> Apple's Natural Language framework gives sentence embeddings on the device (NLEmbedding), so each note becomes a vector the phone compares with the search. No network call at all.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>Nothing.</div>
+          <div class="stays"><b>Stays on the phone</b>The notes, the search, and the index, which is kept in memory or sealed with your journal key like the other device files.</div>
+        </div>
+        <p class="kv"><b>Model:</b> Apple's built-in embedding, no Anthropic model. Cost: none.</p>
+        <p class="kv"><b>Main risk:</b> Apple's sentence embeddings are modest in quality; it may beat plain word search only a little. Unmeasured on your notes.</p>
+        <p class="kv"><b>Build:</b> about 3 days, plus a short trial on made-up notes before committing.</p>
+        <p class="kv"><b>Recommendation:</b> later. Plain word search over notes is a 1-day job and may be all you need; do that first.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Ask your journal from Siri</h2>
+        <p><b>What you would do:</b> "Hey Siri, ask Penchant how many coffees I've had this week." Siri answers "11 coffees since Monday" without opening the app.</p>
+        <p><b>Today:</b> Siri, Shortcuts and the Action button can log; asking a question means opening Ask in the app.</p>
+        <p><b>Why it should work:</b> App Intents can return a spoken answer. It reuses the rebuilt Ask: Claude writes the query, the phone runs it on its own copy of the journal, and the number goes to Siri on the phone.</p>
+        <div class="leaves">
+          <div class="goes"><b>Leaves the phone</b>The question and your habit names, as Ask sends today. Deleted by Anthropic within 30 days. The spoken question also goes through Siri, under your Siri settings.</div>
+          <div class="stays"><b>Stays on the phone</b>Every entry and the answer.</div>
+        </div>
+        <p class="kv"><b>Model:</b> smallest (Haiku), as Ask. Estimate: about 2,500 tokens in and 300 out, so about $0.0004 a question.</p>
+        <p class="kv"><b>Main risk:</b> the query runs in the app's Flutter code, so the intent has to start the app in the background and wait, which may be slow or fail on a cold start. Spoken answers also show on a locked screen.</p>
+        <p class="kv"><b>Build:</b> about 3 days after the Ask rebuild.</p>
+        <p class="kv"><b>Recommendation:</b> later, once the Ask rebuild has landed and proved itself.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="call">
+    <h3>Group 2 of 2</h3>
+    <h2>Without AI</h2>
+    <div class="ideas">
+
+      <article class="idea rec">
+        <div class="head"><span class="tag">Recommended</span><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Log an urge</h2>
+        <p><b>What you would do:</b> long-press a habit's tile and choose "Urge". Set how strong (1 to 5) and tap Done. Fifteen minutes later, if you allow it, a quiet notification asks "Still there?" with three buttons: Passed, Still there, Had one. Had one opens the usual log. Trends shows urges as hollow marks beside entries.</p>
+        <p><b>Today:</b> every entry can carry an urge from 1 to 5, but only entries exist. An urge that did not become an entry leaves no trace.</p>
+        <p><b>Why it should work:</b> recording an experience at the moment it happens is ecological momentary assessment, and urges are its classic event-based target. Watching an urge rise and pass is the core of urge surfing, from relapse-prevention practice. Here it is measurement: how often urges come, when, how strong, and how long they last.</p>
+        <p class="kv"><b>Main risk:</b> positioning. "Passed" reads as resisting, which leans toward a cutting-down frame the app has set aside. The words stay neutral (no praise, no counts of urges beaten). It is also a new kind of record.</p>
+        <p class="kv"><b>Build:</b> about 5 days: a new sealed collection with its rules and rules tests, the notification actions, Trends marks, export.</p>
+        <p class="kv"><b>Recommendation:</b> build next. It adds the one kind of data the journal cannot get any other way.</p>
+      </article>
+
+      <article class="idea rec">
+        <div class="head"><span class="tag">Recommended</span><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>A night out on the Lock Screen</h2>
+        <p><b>What you would do:</b> before going out, tap "Start a night" on Wine. The Lock Screen shows "Wine 3 · since 19:20" with a +1 button. Tap it without unlocking. It ends itself in the morning or when you end it.</p>
+        <p><b>Today:</b> widgets and Control Centre log one tap at a time, but show no running count for the evening, and the home screen is a few steps away when out.</p>
+        <p><b>Why it should work:</b> Apple's ActivityKit (Live Activities) shows live state on the Lock Screen, and its buttons can run App Intents. The app's log intents are already Live Activity intents, and the widget's queue already carries logs to the app, so the +1 is the existing log path.</p>
+        <p class="kv"><b>Main risk:</b> your 13 Pro Max has no Dynamic Island, so it is Lock Screen only. A count on the Lock Screen is visible to anyone near the phone; it would name the habit only if you choose. The extension's signing on the personal team is not probed.</p>
+        <p class="kv"><b>Build:</b> about 4 days.</p>
+        <p class="kv"><b>Recommendation:</b> build next. It meets logging where it most often fails, and most of the plumbing exists.</p>
+      </article>
+
+      <article class="idea rec">
+        <div class="head"><span class="tag">Recommended</span><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Insights reads day-note tags</h2>
+        <p><b>What you would do:</b> nothing new. Under What sets it off, cards start to include day tags: "On days you tagged Bad day, Wine came to 3.1 glasses against 1.8 on your other tagged days."</p>
+        <p><b>Today:</b> day notes save tags, sealed, and nothing reads them. It was flagged as a follow-up when day notes were built.</p>
+        <p><b>Why it should work:</b> it is the same comparison the entry trigger cards make, at day level: day totals on days with a tag against other tagged days, inside the page's false-discovery control and sample-size gates, so it can refuse.</p>
+        <p class="kv"><b>Main risk:</b> day tags and entry tags often say the same thing, and counting both could show near-duplicate cards. They would be joined where they agree.</p>
+        <p class="kv"><b>Build:</b> about 3 days, including the saved report format step.</p>
+        <p class="kv"><b>Recommendation:</b> build next. The data is already being collected.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Strength and standard units</h2>
+        <p><b>What you would do:</b> on Beer, set "pint, 568 ml, 4.5%". Trends adds a Units view beside Count and Spend: "This week 18.4 units". An entry can override the strength ("the IPA was 6.5%"). The same works for caffeine as mg per cup. Optionally, each entry is also written to Apple Health as alcoholic drinks or caffeine.</p>
+        <p><b>Today:</b> a habit has its own unit word and price, and Trends shows count and spend. A pint of 3.8% and a pint of 6.5% count the same.</p>
+        <p><b>Why it should work:</b> a standard unit is the established measure of alcohol across drinks of different strength. The UK unit is 10 ml of pure alcohol, so units are strength times millilitres divided by 1,000 (NHS, below). Health accepts alcoholic drink and caffeine samples from apps.</p>
+        <p class="kv"><b>Main risk:</b> this was set aside once because definitions differ by country and edge toward medical claims. Answer: you choose the definition, and the app never compares totals with a guideline. An older build editing the habit drops the strength, as it drops the price.</p>
+        <p class="kv"><b>Build:</b> about 4 days, Health writing 1 more.</p>
+        <p class="kv"><b>Recommendation:</b> later. Worth it if you drink drinks of different strengths; less so if you mostly log one drink.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>A few random check-ins a day</h2>
+        <p><b>What you would do:</b> turn on check-ins and set waking hours. Three times a day, at random, a notification asks "Any urge right now?" with buttons 0 to 5, answered from the notification. After a few weeks Insights can say how urges at your entries compare with urges at random moments.</p>
+        <p><b>Today:</b> everything the journal knows is tied to an entry. There is no record of ordinary moments to compare against.</p>
+        <p><b>Why it should work:</b> random prompting is the standard signal-based design in ecological momentary assessment. It gives the baseline that event-based records lack, so a comparison is between "when I used" and "any time", not only between uses. Local notifications with action buttons answer without opening the app.</p>
+        <p class="kv"><b>Main risk:</b> prompt fatigue; people stop answering after a few weeks, and missing answers are not random. Three a day, easy to pause, and off by default.</p>
+        <p class="kv"><b>Build:</b> about 5 days: a new sealed collection with its rules and tests, scheduling, and one Insights comparison.</p>
+        <p class="kv"><b>Recommendation:</b> later, after Log an urge, which tells us whether you answer this kind of prompt at all.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>A one-page report for a doctor or partner</h2>
+        <p><b>What you would do:</b> choose habits and a period, tap Make report, and get a PDF: a month-by-month calendar with each day's total, weekly totals (and units, if set), busiest hours and the most common tags. Notes are left out unless you tick them. You send it with the share sheet to whoever you choose.</p>
+        <p><b>Today:</b> the export gives CSV and JSON files, complete but unreadable for a doctor, and the letter is prose for you.</p>
+        <p><b>Why it should work:</b> a day-by-day calendar of amounts is the layout clinicians use for drinking histories, the Timeline Followback calendar. Made entirely on the phone with no model, so the numbers are exact.</p>
+        <p class="kv"><b>Main risk:</b> once sent, the PDF is outside the app's protection for good. The screen says so before sharing. Health-derived values are never included.</p>
+        <p class="kv"><b>Build:</b> about 3 days.</p>
+        <p class="kv"><b>Recommendation:</b> later, when you have a reason to show someone. It is quick to build when that day comes.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>A sealed backup you hold</h2>
+        <p><b>What you would do:</b> once a month, Penchant offers "Save a backup" to Files or iCloud Drive: one file, encrypted. If the account were ever lost, Restore on a fresh account asks for your recovery key and writes the journal back.</p>
+        <p><b>Today:</b> the journal lives in one Firebase project. The export is plaintext and nothing can import it.</p>
+        <p><b>Why it should work:</b> the file is sealed with the journal key, and the key travels in it wrapped under your recovery key, the same wrapping the server holds. Restore re-seals every document for its new address, since a sealed field is bound to its document path. Import from other journals, on the backlog, would reuse the restore path.</p>
+        <p class="kv"><b>Main risk:</b> a backup that has never been restored is not a backup; it needs a restore test in CI. Losing the recovery key makes the file useless, by design.</p>
+        <p class="kv"><b>Build:</b> about 5 days.</p>
+        <p class="kv"><b>Recommendation:</b> later. Real but unlikely risk for a single-user app; do it before trusting years of history to it.</p>
+      </article>
+
+      <article class="idea">
+        <div class="head"><button class="pick" aria-pressed="false">Pick</button></div>
+        <h2>Log from an Apple Watch</h2>
+        <p><b>What you would do:</b> raise your wrist, tap Coffee on the watch face's complication, feel a tap back. The watch app lists your top habits with today's totals.</p>
+        <p><b>Today:</b> the iPhone and Mac log from widgets, Control Centre, Siri and the menu bar. There is no watch app.</p>
+        <p><b>Why it should work:</b> a native watchOS app in SwiftUI (Flutter does not run there), with WatchConnectivity's queued transfers carrying each log to the iPhone, which seals and writes it as it does widget logs. WidgetKit complications put it on the watch face.</p>
+        <p class="kv"><b>Main risk:</b> worth nothing unless you wear one daily. A new target on the personal team is not probed, and logs wait until the iPhone receives them.</p>
+        <p class="kv"><b>Build:</b> about 7 days.</p>
+        <p class="kv"><b>Recommendation:</b> later, and only if you wear a watch every day.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="call">
+    <h3>What I left out and why</h3>
+    <ul class="plain">
+      <li><b>A chat with Claude about your habits.</b> It becomes a coach whatever the instructions say, which the app has ruled out.</li>
+      <li><b>Claude spots what sets you off.</b> A model reading your journal finds stories in noise. Insights already does this with statistics that can refuse.</li>
+      <li><b>Import spend from bank statements.</b> Financial data would leave the phone, and matching card lines to entries is unreliable.</li>
+      <li><b>Design an experiment in words.</b> A form with three pickers (habit, cut-off hour, measure) does the same without a model; worth doing as a form if experiments widen.</li>
+      <li><b>Tap an NFC sticker to log.</b> Already possible today: a Shortcuts automation on an NFC tag can run the existing log shortcut.</li>
+    </ul>
+    <p class="muted">Source fetched for this page: the UK unit definition and formula, https://www.nhs.uk/live-well/alcohol-advice/calculating-alcohol-units/. Apple API names are named from the platform; their version limits were not confirmed here.</p>
+  </section>
+
+  <div class="bar">
+    <span id="count">0 picked</span>
+    <button class="btn" id="copy">Copy my picks</button>
+  </div>
+  <textarea id="out" readonly hidden aria-label="Your picks as text"></textarea>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const picks = [...document.querySelectorAll('.pick')];
+  const picked = () => picks.filter(b => b.getAttribute('aria-pressed') === 'true')
+    .map(b => b.closest('.idea').querySelector('h2').textContent);
+  const tally = () => { const n = picked().length; $('count').textContent = n === 1 ? '1 picked' : `${n} picked`; };
+  for (const b of picks) {
+    b.onclick = () => {
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(on));
+      b.textContent = on ? 'Picked' : 'Pick';
+      b.closest('.idea').classList.toggle('chosen', on);
+      tally();
+    };
+  }
+  $('copy').onclick = () => {
+    const names = picked();
+    const text = names.length ? 'Penchant next ideas, my picks:\n' + names.map(n => '- ' + n).join('\n') : 'Penchant next ideas: no picks.';
+    const out = $('out'); out.value = text; out.hidden = false;
+    const done = () => { $('copy').textContent = 'Copied. Paste it to Claude'; };
+    try { navigator.clipboard.writeText(text).then(done, () => out.select()); } catch { out.select(); }
+  };
+  tally();
+})();
+</script>
