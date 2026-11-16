@@ -79,7 +79,10 @@ void main() {
       'ownerID',
       'viceID',
       'createdAt',
+      'updatedAt',
     });
+    // The server's time, which the rules accept only as request.time.
+    expect(activities.single.data()['updatedAt'], isA<Timestamp>());
     final Map<String, Object?> entry = await sealer.open(
       (activities.single.data()[sealedField] as Blob).bytes,
       context: sealContext('activities', activities.single.id),
