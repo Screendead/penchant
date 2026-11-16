@@ -585,8 +585,9 @@ class JournalDb {
         final int used = tail.value.address - text.address;
         final String rest = used >= 0 && used <= textBytes
             ? utf8.decode(
-                Pointer<Uint8>.fromAddress(text.address + used)
-                    .asTypedList(textBytes - used),
+                Pointer<Uint8>.fromAddress(
+                  text.address + used,
+                ).asTypedList(textBytes - used),
                 allowMalformed: true,
               )
             : 'x';

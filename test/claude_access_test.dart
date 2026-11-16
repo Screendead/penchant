@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/claude_access.dart';
+import 'package:tracker/analyst/analyst_setting.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/design/app_theme.dart';
@@ -49,6 +50,7 @@ void _switchesOn() => SharedPreferences.setMockInitialValues(<String, Object>{
   WeeklyWordsEnabled.key: true,
   AskJournalEnabled.key: true,
   LetterEnabled.key: true,
+  AnalystEnabled.key: true,
 });
 
 void main() {
@@ -66,6 +68,7 @@ void main() {
       c.listen(weeklyWordsProvider, (_, _) {});
       c.listen(askJournalProvider, (_, _) {});
       c.listen(letterWriterProvider, (_, _) {});
+      c.listen(investigatorProvider, (_, _) {});
       await pumpEventQueue();
       return c;
     }
@@ -78,6 +81,7 @@ void main() {
         expect(c.read(weeklyWordsProvider), isNull);
         expect(c.read(askJournalProvider), isNull);
         expect(c.read(letterWriterProvider), isNull);
+        expect(c.read(investigatorProvider), isNull);
       });
     }
 
@@ -89,6 +93,7 @@ void main() {
       expect(c.read(claudeAllowedProvider), isFalse);
       expect(c.read(noteReaderProvider), isNull);
       expect(c.read(letterWriterProvider), isNull);
+      expect(c.read(investigatorProvider), isNull);
     });
 
     test('serve a verified account with the switches on', () async {
@@ -102,6 +107,14 @@ void main() {
       expect(c.read(weeklyWordsProvider), isA<CallableWeeklyWords>());
       expect(c.read(askJournalProvider), isA<CallableAskJournal>());
       expect(c.read(letterWriterProvider), isA<CallableLetterWriter>());
+      expect(c.read(investigatorProvider), isA<CallableInvestigator>());
+    });
+
+    test('the investigator is null while Ask is off', () async {
+      final ProviderContainer c = await container(_Caller.verified);
+      await c.read(askJournalEnabledProvider.notifier).choose(false);
+      expect(c.read(analystEnabledProvider), isTrue);
+      expect(c.read(investigatorProvider), isNull);
     });
   });
 
@@ -112,6 +125,7 @@ void main() {
       WeeklyWordsSetting.label: WeeklyWordsSetting(),
       AskJournalSetting.label: AskJournalSetting(),
       LetterSetting.label: LetterSetting(),
+      AnalystSetting.label: AnalystSetting(),
     };
 
     for (final _Caller caller in <_Caller>[_Caller.guest, _Caller.unverified]) {
