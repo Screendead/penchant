@@ -397,6 +397,24 @@ silently; a key whose publish failed is used unchecked for the session.
 Each goal is clear or follows from Jack's calls below. Subagents write PR bodies to uniquely named scratchpad
 files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's description on another.
 
+**Next, before the numbered items: what round 24 left unbuilt** (Jack, 2026-11-16: "put the unstarted tasks in the
+handover to do next rather than starting them yourself"; none is started). Each feature's card in
+`docs/pitch/round-24/next-ideas/pitch.html` is its spec; round 24's state is under "Calls waiting on Jack".
+
+- **N1. Re-run the entry reader trial.** Jack's run after #338 reached nothing (every call `401 invalid x-api-key`).
+  He runs `~/development/tracker-tools/run-trials.sh entry-reader-trial` with a fresh key; then read
+  `trials/entry-reader-trial.log` against its `expect:` lines and fix the prompt if a case still misses.
+- **N2. Ask your journal from Siri.** Probe first whether Ask can run in the headless engine a Siri intent gets
+  (key loaded, sealed entries opened, the callable reached) before building the intent.
+- **N3. Log from an Apple Watch.** Signing probe first: whether Jack's team can sign a watchOS target with the
+  entitlements it needs. If it cannot, that goes to Jack as a call and nothing is built.
+- **N4. Insights: urges at entries against urges at random check-ins**, the check-in card's point. Check-ins have
+  been collected since #330; it needs enough answered ones before it can say anything.
+- **N5. A widget test of the restore page's steps**, with its text field added to `test/keyboard_audit_test.dart`.
+- **N6. Insights treating caught-up entries differently** (`loggedVia` `caughtUp`: their times are recalled, not
+  recorded).
+- **Only if needed: the label camera's Claude fallback**, when Jack's use shows the on-device read misses often.
+
 1. **The Day Dial UI overhaul** (`r6-ui-direction`, below), from the mock-up and its Flutter notes (`CLAUDE.md`,
    design). One PR per step, in order; every screen works between steps, and each PR keeps `tools/e2e.sh` green by
    fixing the tests its screens break. Status 2026-11-08: 1a to 1e merged, 1f and 1g partly; left is D1 to D5 in the
