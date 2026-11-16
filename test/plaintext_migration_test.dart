@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/crypto/plaintext_migration.dart';
 import 'package:tracker/crypto/plaintext_migrator.dart';
+import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
@@ -193,7 +194,11 @@ void main() {
           'triggers': <Object?>['social'],
         },
       );
-      expect(update!.keys, unorderedEquals(<String>[sealedField, 'triggers']));
+      expect(
+        update!.keys,
+        unorderedEquals(<String>[sealedField, 'triggers', updatedAtField]),
+      );
+      expect(update[updatedAtField], FieldValue.serverTimestamp());
       expect(
         await sealer.open(
           (update[sealedField]! as Blob).bytes,
@@ -249,6 +254,7 @@ void main() {
         'name': 'Tea',
         'ownerID': ownerID,
       });
+      // A vice is never stamped.
       expect(update!.keys, unorderedEquals(<String>[sealedField, 'name']));
     });
 

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/errors/report_error.dart';
@@ -137,6 +138,7 @@ class PlaintextMigrator {
       sealedField: blob,
       for (final String field in fields)
         if (data.containsKey(field)) field: FieldValue.delete(),
+      if (stampedCollections.contains(collection)) ...updatedNow,
     };
   }
 

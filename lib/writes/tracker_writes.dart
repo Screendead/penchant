@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/category.dart';
@@ -305,6 +306,7 @@ class TrackerWrites {
             'quantity': quantity,
             'viceID': viceID,
             sealedField: envelope,
+            ...updatedNow,
           }),
         ),
         collection: _activities.id,
@@ -354,7 +356,7 @@ class TrackerWrites {
       return _update(_activities, activityID, {
         ...plaintext,
         if (content != null) triggersField: writeTriggers(content.triggers),
-      });
+      }, stamp: true);
     }
     final DocumentReference<Map<String, dynamic>> doc = _activities.doc(
       activityID,
@@ -369,6 +371,7 @@ class TrackerWrites {
             ...plaintext,
             sealedField: envelope,
             triggersField: FieldValue.delete(),
+            ...updatedNow,
           }),
         ),
         collection: _activities.id,
@@ -457,8 +460,9 @@ class TrackerWrites {
                   'ownerID': ownerID,
                   'day': day,
                   'createdAt': FieldValue.serverTimestamp(),
+                  ...updatedNow,
                 })
-              : note.update({sealedField: envelope}),
+              : note.update({sealedField: envelope, ...updatedNow}),
         ),
         collection: _dayNotes.id,
         id: note.id,
@@ -479,14 +483,17 @@ class TrackerWrites {
     );
   }
 
+  // [stamp] adds [updatedNow] to the write but not to [SentWrite.fields]: an
+  // unresolved server timestamp has no value to check the server's copy for.
   SentWrite _update(
     CollectionReference<Map<String, dynamic>> collection,
     String id,
-    Map<String, Object> fields,
-  ) {
+    Map<String, Object> fields, {
+    bool stamp = false,
+  }) {
     return _issued(
       SentWrite(
-        collection.doc(id).update(fields),
+        collection.doc(id).update({...fields, if (stamp) ...updatedNow}),
         collection: collection.id,
         id: id,
         op: WriteOp.update,

@@ -107,7 +107,9 @@ void main() {
         'ownerID',
         'day',
         'createdAt',
+        'updatedAt',
       });
+      expect(doc.data()!['updatedAt'], isA<Timestamp>());
       expect(doc.data()!['day'], dayKey(today));
       return storedContent(doc);
     }
