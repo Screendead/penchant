@@ -13,6 +13,7 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/health_write/health_write.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -53,6 +54,27 @@ class ViceForm extends ConsumerStatefulWidget {
   static const String strengthHelp =
       'Adds a Units view to Trends. It only measures: no guideline, no '
       'warnings.';
+
+  static const Key healthWriteKey = ValueKey<String>('vice-form-health-write');
+  static const String healthWriteLabel = 'Also write to Apple Health';
+  static const String healthWriteAlcohol =
+      'Each entry as alcoholic drinks, one per serving: Health counts a beer, '
+      'a glass of wine or a mixed drink as one, whatever its strength.';
+  static const String healthWriteCaffeine =
+      'Each entry’s caffeine in mg. An entry with no mg writes nothing.';
+  static const String healthWriteFootnote =
+      'New entries and those of the last 30 days, from this iPhone; edits '
+      'and deletes follow. Penchant never reads them back. They are your '
+      'Health data: signing out or deleting your account leaves them there.';
+  static const String healthWriteRefused =
+      'Health did not allow it. To change that, open Settings › Health › '
+      'Data Access & Devices › Penchant.';
+  static const String healthRemoveTitle = 'Remove from Health too?';
+  static const String healthRemoveBody =
+      'Penchant stops writing this habit to Health. What it already wrote '
+      'stays there unless you remove it now.';
+  static const String healthKeep = 'Keep';
+  static const String healthRemove = 'Remove';
 
   static const String lineLabel = 'Your line (optional)';
   static const String lineNone = 'None';
@@ -96,6 +118,11 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     text: openedCostText,
   );
   late final TextEditingController currencyController;
+  // This device's choice while the form is open; null follows what is
+  // stored. Applied on save, the removal with it.
+  bool? healthWrite;
+  bool removeFromHealth = false;
+  bool healthRefused = false;
   late LinePeriod? linePeriod = opened?.line?.period;
   // As the cost: an untouched amount keeps the stored value, not its
   // rounding.
@@ -325,6 +352,11 @@ class _ViceFormState extends ConsumerState<ViceForm> {
           );
     } else {
       write = null;
+    }
+    final String? viceID = vice?.id ?? write?.id;
+    if (viceID != null) {
+      await _applyHealthWrite(user.uid, viceID, strength, messenger);
+      if (!mounted) return;
     }
 
     setState(() {
@@ -571,6 +603,146 @@ class _ViceFormState extends ConsumerState<ViceForm> {
         : strengthError(value, most, optional: optional),
   );
 
+  bool _healthWriteStored(String uid) =>
+      opened != null &&
+      ref.read(healthWriteChoicesProvider(uid)).contains(opened!.id);
+
+  // Asked again on every save that leaves it on, since a changed strength
+  // may need the other type; Health shows nothing for one already answered.
+  Future<void> _applyHealthWrite(
+    String uid,
+    String viceID,
+    HabitStrength? strength,
+    ScaffoldMessengerState messenger,
+  ) async {
+    final bool? chosen = healthWrite;
+    final HealthWriteKind? kind = HealthWriteKind.of(strength);
+    final HealthWriteChoices choices = ref.read(
+      healthWriteChoicesProvider(uid).notifier,
+    );
+    if (chosen == false) {
+      await choices.choose(viceID, on: false);
+      if (removeFromHealth) {
+        await ref.read(healthWriterProvider).deleteHabit(viceID);
+      }
+      return;
+    }
+    final bool on = chosen ?? _healthWriteStored(uid);
+    if (!on || kind == null) {
+      return;
+    }
+    if (await ref.read(healthWriterProvider).requestWrite(kind)) {
+      await choices.choose(viceID, on: true);
+    } else {
+      await choices.choose(viceID, on: false);
+      messenger.showSnackBar(
+        const SnackBar(content: Text(ViceForm.healthWriteRefused)),
+      );
+    }
+  }
+
+  Future<void> _toggleHealthWrite(
+    String uid,
+    HealthWriteKind kind,
+    bool on,
+  ) async {
+    if (on) {
+      final bool allowed = await ref
+          .read(healthWriterProvider)
+          .requestWrite(kind);
+      if (!mounted) return;
+      setState(() {
+        healthWrite = allowed;
+        healthRefused = !allowed;
+        removeFromHealth = false;
+      });
+      return;
+    }
+    bool remove = false;
+    if (_healthWriteStored(uid)) {
+      remove =
+          await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text(ViceForm.healthRemoveTitle),
+              content: const Text(ViceForm.healthRemoveBody),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text(ViceForm.healthKeep),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text(ViceForm.healthRemove),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+      if (!mounted) return;
+    }
+    setState(() {
+      healthWrite = false;
+      healthRefused = false;
+      removeFromHealth = remove;
+    });
+  }
+
+  Widget _healthWriteField(BuildContext context, HealthWriteKind kind) {
+    final DialColors colors = DialColors.of(context);
+    final String? uid = ref.watch(userProvider).value?.uid;
+    if (uid == null) {
+      return const SizedBox.shrink();
+    }
+    final bool stored =
+        opened != null &&
+        ref.watch(healthWriteChoicesProvider(uid)).contains(opened!.id);
+    final bool on = healthWrite ?? stored;
+    final TextStyle muted = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        MergeSemantics(
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  ViceForm.healthWriteLabel,
+                  style: DialTypeScale.body,
+                ),
+              ),
+              Switch.adaptive(
+                key: ViceForm.healthWriteKey,
+                value: on,
+                activeTrackColor: Theme.of(context).colorScheme.primary,
+                onChanged: (bool value) => _toggleHealthWrite(uid, kind, value),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          kind == HealthWriteKind.alcohol
+              ? ViceForm.healthWriteAlcohol
+              : ViceForm.healthWriteCaffeine,
+          style: muted,
+        ),
+        if (healthRefused) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          Text(
+            ViceForm.healthWriteRefused,
+            style: DialTypeScale.bodyS.copyWith(
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
+        if (on) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          Text(ViceForm.healthWriteFootnote, style: muted),
+        ],
+      ],
+    );
+  }
+
   Widget _strengthField(BuildContext context) {
     final DialColors colors = DialColors.of(context);
     final bool? kind = alcohol;
@@ -687,6 +859,11 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                     '${ViceForm.strengthHelp}',
           style: DialTypeScale.bodyS.copyWith(color: colors.muted),
         ),
+        if (ref.watch(healthWriteSupportedProvider) &&
+            HealthWriteKind.of(strength) != null) ...<Widget>[
+          const SizedBox(height: DialSpace.s),
+          _healthWriteField(context, HealthWriteKind.of(strength)!),
+        ],
       ],
     );
   }
