@@ -45,12 +45,13 @@ figcaption{font-size:13px;color:var(--muted)}
 <dt>Today</dt><dd>You log from the iPhone, the Mac, widgets and Siri. There is no watch app.</dd>
 <dt>What is built</dt><dd>A watch app listing your top 8 habits with today's totals. A tap logs one, taps your wrist and offers Undo for 8 seconds. The log travels to the iPhone, which encrypts and saves it as it does a widget log. Complications show one habit's total on the watch face.</dd>
 <dt>Differs from the plan</dt><dd>Logging from the watch face takes two taps: the complication opens the app on that habit, then you tap it. Apple does not allow a button in a watch-face complication.</dd>
-<dt>State</dt><dd>Finished and passing every automated check (pull request 350, the watch app). Your Apple team can sign it. It is not merged.</dd>
+<dt>State</dt><dd>Finished (pull request 350, the watch app). It passed every automated check; the checks are running again after a text-size fix from the renders above. Your Apple team can sign it. It is not merged.</dd>
+<dt>Why asked</dt><dd>I may merge finished work without asking. I am asking here because the next install puts a new app on your watch, and because it carries the account ID in call 2.</dd>
 <dt>Why now</dt><dd>Only your watch can prove the rest: that the iPhone wakes to take a log when Penchant is closed, how long that takes, the wrist tap, and how the screens look on a real face.</dd>
 <dt>Waiting on this</dt><dd>Nothing else. If you do nothing, the app stays unmerged and your devices stay as they are.</dd>
 </dl>
 <div class="opts">
-<div class="opt rec"><span class="k">A · recommended</span><h3>Merge it and install</h3><ul><li>Next install puts Penchant on your paired watch.</li><li>Cost: about 15 minutes of builds on your Mac.</li><li>Risk: the iPhone build gains two new parts. If the install fails I fix it before anything else merges. A fault on the watch cannot damage the journal: a watch log goes through the same queue as a widget log.</li></ul></div>
+<div class="opt rec"><span class="k">A · recommended</span><h3>Merge it and install</h3><ul><li>Next install puts Penchant on your paired watch.</li><li>Cost: about 15 minutes of builds on your Mac.</li><li>Risk: the iPhone build gains two new parts. If the install fails I fix it before anything else merges. I read the iPhone-side code: all a watch message can do is add one entry, or undo one the watch itself added, through the same queue as a widget log.</li></ul></div>
 <div class="opt"><span class="k">B</span><h3>Hold it</h3><ul><li>Nothing changes on your devices.</li><li>The work goes stale as the app moves on, and merging later costs more.</li></ul></div>
 </div>
 </section>
@@ -75,7 +76,7 @@ figcaption{font-size:13px;color:var(--muted)}
 <span class="tag">Call 3</span>
 <h2>Should Siri speak the answer to a journal question?</h2>
 <dl>
-<dt>Today</dt><dd>Build 1870, on your iPhone now: say "Ask Penchant", Siri asks "What would you like to ask your journal?", then Penchant opens on Ask with the question already asked. Untested on a phone until you try it.</dd>
+<dt>Today</dt><dd>Build 1870, on your iPhone now: say "Ask Penchant", Siri asks "What would you like to ask your journal?", then Penchant opens on Ask with the question already asked. It needs Settings' "Ask your journal" switch on; with it off, Siri opens Settings and sends nothing. Untested on a phone until you try it.</dd>
 <dt>One breath is out</dt><dd>"Ask Penchant how many coffees this week" in a single sentence is not possible. Apple's tools refuse free text inside a Siri phrase; I tried and the build fails.</dd>
 <dt>The option</dt><dd>Siri says "11 coffees since Monday" without opening the app. It works only when the answer is a single number; anything with a chart or table still opens the app.</dd>
 <dt>Why asked</dt><dd>You picked "ask without opening the app". It is possible on paper but has two risks only you can accept.</dd>
