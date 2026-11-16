@@ -6,8 +6,8 @@
     "resultChars": 8000,
     "columns": 20,
     "cell": 200,
-    "headline": 120,
-    "body": 1200
+    "headline": 200,
+    "body": 1500
   },
   "causalTerms": [
     "because", "cause", "causes", "caused", "causing", "due to", "leads to", "lead to", "led to",
