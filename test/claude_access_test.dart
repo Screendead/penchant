@@ -9,6 +9,8 @@ import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/weekly_words.dart';
+import 'package:tracker/letter/letter_setting.dart';
+import 'package:tracker/letter/letter_writer.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
 import 'package:tracker/notes/follow_up_setting.dart';
 import 'package:tracker/notes/note_reader.dart';
@@ -46,6 +48,7 @@ void _switchesOn() => SharedPreferences.setMockInitialValues(<String, Object>{
   FollowUpEnabled.key: true,
   WeeklyWordsEnabled.key: true,
   AskJournalEnabled.key: true,
+  LetterEnabled.key: true,
 });
 
 void main() {
@@ -62,6 +65,7 @@ void main() {
       c.listen(noteReaderProvider, (_, _) {});
       c.listen(weeklyWordsProvider, (_, _) {});
       c.listen(askJournalProvider, (_, _) {});
+      c.listen(letterWriterProvider, (_, _) {});
       await pumpEventQueue();
       return c;
     }
@@ -73,6 +77,7 @@ void main() {
         expect(c.read(noteReaderProvider), isNull);
         expect(c.read(weeklyWordsProvider), isNull);
         expect(c.read(askJournalProvider), isNull);
+        expect(c.read(letterWriterProvider), isNull);
       });
     }
 
@@ -83,6 +88,7 @@ void main() {
       );
       expect(c.read(claudeAllowedProvider), isFalse);
       expect(c.read(noteReaderProvider), isNull);
+      expect(c.read(letterWriterProvider), isNull);
     });
 
     test('serve a verified account with the switches on', () async {
@@ -95,6 +101,7 @@ void main() {
       );
       expect(c.read(weeklyWordsProvider), isA<CallableWeeklyWords>());
       expect(c.read(askJournalProvider), isA<CallableAskJournal>());
+      expect(c.read(letterWriterProvider), isA<CallableLetterWriter>());
     });
   });
 
@@ -104,6 +111,7 @@ void main() {
       FollowUpSetting.label: FollowUpSetting(),
       WeeklyWordsSetting.label: WeeklyWordsSetting(),
       AskJournalSetting.label: AskJournalSetting(),
+      LetterSetting.label: LetterSetting(),
     };
 
     for (final _Caller caller in <_Caller>[_Caller.guest, _Caller.unverified]) {
