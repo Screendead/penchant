@@ -19,6 +19,7 @@ const List<String> restorableCollections = <String>[
   'activities',
   'dayNotes',
   'urges',
+  'checkIns',
 ];
 
 // The create rules each collection's plaintext fields must pass, beside
@@ -28,6 +29,7 @@ const Map<String, List<String>> _structuralFields = <String, List<String>>{
   'activities': <String>['viceID', 'quantity', 'createdAt', 'amount'],
   'dayNotes': <String>['day', 'createdAt'],
   'urges': <String>['viceID', 'createdAt'],
+  'checkIns': <String>['createdAt'],
 };
 
 // Rules allow at most 20 document access calls in a batched write
@@ -39,6 +41,7 @@ const Map<String, int> _batchSize = <String, int>{
   'activities': 20,
   'dayNotes': 400,
   'urges': 20,
+  'checkIns': 400,
 };
 
 enum SkipReason {
@@ -291,6 +294,8 @@ Map<String, Object> _structural(
         'viceID': _vice(data, viceIDs),
         'createdAt': createdAt,
       };
+    case 'checkIns':
+      return <String, Object>{'createdAt': createdAt};
   }
   throw UnknownCollection(collection);
 }

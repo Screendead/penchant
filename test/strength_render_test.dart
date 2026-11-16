@@ -1,6 +1,6 @@
 // Renders a habit's strength as PNGs, light and dark, at 390x844: the habit
 // form's Strength section, the amount sheet with an entry's own strength,
-// and Trends in the Units view:
+// with its Apple Health switch off and on, and Trends in the Units view:
 //   flutter test test/strength_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/habit_strength.dart';
@@ -19,6 +20,7 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/app_theme.dart';
+import 'package:tracker/health_write/health_write.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -161,6 +163,31 @@ void main() {
       await tester.pumpAndSettle();
       await _save(tester, frame, 'strength-habit-form-$tone');
     }, skip: _dir.isEmpty);
+
+    for (final bool on in <bool>[false, true]) {
+      final String name = 'strength-health-${on ? 'on' : 'off'}-$tone';
+      testWidgets(name, (WidgetTester tester) async {
+        _phone(tester);
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          HealthWriteChoices.keyOf(ownerID): <String>[if (on) _beer.id],
+        });
+        final GlobalKey frame = GlobalKey();
+        await tester.pumpWidget(
+          _app(frame, brightness, <Override>[
+            healthWriteSupportedProvider.overrideWithValue(true),
+          ], ViceForm(vice: _beer)),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byKey(ViceForm.healthWriteKey),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -160));
+        await tester.pumpAndSettle();
+        await _save(tester, frame, name);
+      }, skip: _dir.isEmpty);
+    }
 
     testWidgets('strength-amount-sheet-$tone', (WidgetTester tester) async {
       _phone(tester);

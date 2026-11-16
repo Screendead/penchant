@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/journal_db.dart';
+import 'package:tracker/claude/claude_working.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -84,6 +87,12 @@ class AskSession extends Notifier<List<AskedQuestion>> {
     ];
   }
 
+  /// Forgets question [id], whose answer is no longer wanted.
+  void drop(int id) => state = <AskedQuestion>[
+    for (final AskedQuestion q in state)
+      if (q.id != id) q,
+  ];
+
   void clear() => state = const <AskedQuestion>[];
 }
 
@@ -116,6 +125,15 @@ class AskPage extends ConsumerStatefulWidget {
   static const String cannot = 'Penchant can’t answer that yet.';
   static const String investigate = 'Investigate with Claude';
   static const String investigateTyped = 'Investigate this question';
+  static const String writingQuery = 'Claude is writing a query';
+  static const String writingQueries = 'Claude is writing queries';
+  static const String readingResults = 'Claude is reading the results';
+  static const String sentQuestion =
+      'Sent your question and your habits’ names';
+
+  static String ranQueries(int n) => n == 1
+      ? 'Ran 1 query on this phone and sent back what it found'
+      : 'Ran $n queries on this phone and sent back what they found';
 
   static String cannotDetail(AskReason reason) => switch (reason) {
     AskReason.notAboutJournal => 'It answers questions about your habits.',
@@ -130,6 +148,7 @@ class AskPage extends ConsumerStatefulWidget {
 
 class _AskPageState extends ConsumerState<AskPage> {
   final TextEditingController _controller = TextEditingController();
+  final GlobalKey _fieldKey = GlobalKey();
 
   JournalDb? _db;
   Object? _builtFrom;
@@ -207,6 +226,27 @@ class _AskPageState extends ConsumerState<AskPage> {
     final List<AskTurn> history = askHistory(ref.read(askSessionProvider));
     final int id = session.start(question);
     _controller.clear();
+    final ClaudeWork work = ClaudeWork(
+      subject: question,
+      status: AskPage.writingQuery,
+      detail: AskPage.sentQuestion,
+    );
+    bool stopped = false;
+    final BuildContext? from = _fieldKey.currentContext;
+    if (from != null) {
+      unawaited(
+        showClaudeWorking(
+          from,
+          work,
+          resultTag: ('ask', id),
+          onStop: () {
+            stopped = true;
+            session.drop(id);
+            if (_controller.text.trim().isEmpty) _controller.text = question;
+          },
+        ),
+      );
+    }
     AskAnswer? answer;
     try {
       answer = await service.ask(
@@ -219,8 +259,12 @@ class _AskPageState extends ConsumerState<AskPage> {
       // Not reported: a report would carry the question.
       answer = null;
     }
-    if (!mounted) return;
+    if (stopped || !mounted) return;
     session.settle(id, answer);
+    work.finish(answer == null ? ClaudeWorkEnd.failed : ClaudeWorkEnd.answered);
+    if (answer == null && _controller.text.trim().isEmpty) {
+      _controller.text = question;
+    }
   }
 
   void _newQuestion() {
@@ -255,6 +299,30 @@ class _AskPageState extends ConsumerState<AskPage> {
     if (_controller.text.trim() == q) _controller.clear();
     final int id = session.start(q);
     _investigating.add(id);
+    final ClaudeWork work = ClaudeWork(
+      subject: q,
+      steps: AnalystLimits.steps,
+      showElapsed: true,
+      status: AskPage.writingQueries,
+      detail: AskPage.sentQuestion,
+    );
+    List<InvestigationRound> ran = const <InvestigationRound>[];
+    bool stopped = false;
+    final BuildContext? from = _fieldKey.currentContext;
+    if (from != null && from.mounted) {
+      unawaited(
+        showClaudeWorking(
+          from,
+          work,
+          resultTag: ('investigate', id),
+          onStop: () {
+            stopped = true;
+            _investigating.remove(id);
+            session.settle(id, InvestigationFailed('stopped', ran));
+          },
+        ),
+      );
+    }
     final JournalDb db;
     try {
       db = JournalDb.build(
@@ -270,6 +338,7 @@ class _AskPageState extends ConsumerState<AskPage> {
         id,
         const InvestigationFailed('read', <InvestigationRound>[]),
       );
+      work.finish(ClaudeWorkEnd.failed);
       return;
     }
     try {
@@ -279,14 +348,27 @@ class _AskPageState extends ConsumerState<AskPage> {
         question: q,
         habits: numberedHabits(vices).take(askHabits(vices).length).toList(),
         today: today,
-        stillWanted: () => mounted && ref.read(userProvider).value?.uid == uid,
+        stillWanted: () =>
+            !stopped && mounted && ref.read(userProvider).value?.uid == uid,
         onRound: (List<InvestigationRound> rounds) {
-          if (mounted) session.progress(id, rounds);
+          ran = rounds;
+          if (stopped || !mounted) return;
+          session.progress(id, rounds);
+          work.say(
+            AskPage.readingResults,
+            detail: AskPage.ranQueries(rounds.last.queries.length),
+            stepsDone: rounds.length,
+          );
         },
       );
-      if (mounted && ref.read(userProvider).value?.uid == uid) {
+      if (!stopped && mounted && ref.read(userProvider).value?.uid == uid) {
         session.settle(id, outcome);
       }
+      work.finish(
+        outcome is InvestigationShown
+            ? ClaudeWorkEnd.answered
+            : ClaudeWorkEnd.failed,
+      );
     } finally {
       db.close();
       _investigating.remove(id);
@@ -338,6 +420,7 @@ class _AskPageState extends ConsumerState<AskPage> {
           const _Note(AskPage.off)
         else ...<Widget>[
           _QuestionField(
+            key: _fieldKey,
             controller: _controller,
             enabled: vices != null,
             hint: asked.isEmpty ? AskPage.hint : AskPage.followUpHint,
@@ -381,7 +464,16 @@ class _AskPageState extends ConsumerState<AskPage> {
           const SizedBox(height: DialSpace.l),
           _QuestionPill(q.question),
           const SizedBox(height: 8),
-          ..._answer(context, q, db, readFailed, marksByName, canInvestigate),
+          if (_answer(context, q, db, readFailed, marksByName, canInvestigate)
+              case [
+                final Widget first,
+                ...final List<Widget> rest,
+              ]) ...<Widget>[
+            q.pending
+                ? first
+                : ClaudeWorkingResult(tag: ('ask', q.id), child: first),
+            ...rest,
+          ],
         ],
       ],
     );
@@ -413,9 +505,7 @@ class _AskPageState extends ConsumerState<AskPage> {
     );
     final AskAnswer? answer = q.answer;
     if (q.pending) {
-      return <Widget>[
-        _Card(children: <Widget>[Text(AskPage.working, style: body)]),
-      ];
+      return const <Widget>[ClaudeWorkingCard(status: AskPage.working)];
     }
     if (answer == null) {
       return <Widget>[
@@ -632,6 +722,7 @@ class _Note extends StatelessWidget {
 
 class _QuestionField extends StatelessWidget {
   const _QuestionField({
+    super.key,
     required this.controller,
     required this.enabled,
     required this.hint,

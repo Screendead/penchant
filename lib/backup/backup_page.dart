@@ -31,7 +31,8 @@ class BackupCopy {
   static const String settingsSubtitle = 'Save or restore an encrypted copy';
   static const String saveTitle = 'Save a backup';
   static const String saveBody =
-      'One encrypted file holding every habit, entry, day note and urge in '
+      'One encrypted file holding every habit, entry, day note, urge and '
+      'check-in in '
       'your account. You choose where it goes: Files, iCloud Drive or any '
       'folder. Nothing is kept anywhere else.';
   static const String keyLine =
@@ -176,6 +177,7 @@ const Map<String, (String, String)> _nouns = <String, (String, String)>{
   'activities': ('entry', 'entries'),
   'dayNotes': ('day note', 'day notes'),
   'urges': ('urge', 'urges'),
+  'checkIns': ('check-in', 'check-ins'),
 };
 
 /// "2 habits, 140 entries", in [restorableCollections] order.

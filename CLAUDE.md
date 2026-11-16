@@ -387,6 +387,28 @@ Insights; starting an experiment from it is not built. Cap 3 a day per uid per i
 withheld reasons up to any colon. `functions/tools/letter-review.js` writes letters for 5 made-up journals with an API
 key, printing each letter, what was withheld and why, and the seconds taken.
 
+**Claude-working screen** (`lib/claude/`). Every Claude call in flight is shown through one component. The call site
+makes a `ClaudeWork` (status, optional detail, the person's own words sent as `subject`, `steps` for the analyst,
+`showElapsed` for long calls), keeps it current with `say` and ends it with `finish(answered|failed|stopped)`. It calls
+`showClaudeWorking(context, work, resultTag:, onStop:)` without awaiting it, from the tapped widget's context: after
+`ClaudeWorking.delay` (600 ms) still running, a `ClaudeWorkingRoute` grows out of that widget's rect; once shown it
+stays `minShown` (1.4 s); answered, it draws together into a plate whose `Hero` flies into the result wrapped in
+`ClaudeWorkingResult` with the same tag (unique per page, e.g. `('ask', id)`), else it shrinks back to the widget. Back
+hides it with the call still running; Stop calls `onStop`, which must really drop the result (`AskSession.drop`, the
+investigation's stopped ids, `LetterRunner.abandon`). Status text names only what is known ("Sent your question",
+"Ran 3 queries on this phone"); no progress figures. `ClaudeWorkingCard` is the same look in place, for a pending
+answer on the page and for weekly review in words (it starts on open, so nothing goes fullscreen); the note reader
+keeps its in-place read (an ink underline sweeping the note, chips arcing out of their quotes). Three looks share
+everything else (`ClaudeWorkingLook`, `claudeWorkingLookProvider`, `lib/claude/claude_working_painters.dart`): `dial`
+(the last 28 days as rings of a 24-hour face, a hand ringing each entry as it passes), `ink` (lines tracing out from
+the person's words across their entries) and `lens` (a loupe over a 28-day field of hours), the default (Jack, 2026-11-16: "lens is coolest, use that"). They draw the device's own
+entries (`claudeWorkingMarksProvider`, a bounded 28-day range query; nothing of it is sent). Painters repaint from a
+`WorkingClock` ticker inside a `RepaintBoundary`, with no widget rebuilds per frame; under reduce motion the clock
+stands still, the route fades in 150 ms and nothing schedules frames, so tests can `pumpAndSettle`. With motion on, a
+pending card loops: pump fixed durations. The gallery (`ClaudeWorkingGallery`, route `/claude-working`, a Settings row)
+exists only in emulator builds and plays each look over fake calls; `integration_test/claude_working_gallery_test.dart`
+(through `tools/e2e-screenshots.sh`, not in `all_test.dart`) takes its stills.
+
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
 then verification email), password reset, re-authentication, profile and email changes, sign-out, and account-wide
@@ -612,7 +634,22 @@ Set in the habit form's Strength section (None / Alcohol % / Caffeine mg); the a
 "Strength this time" (`StrengthField`) only for a habit with one. Trends' Units view and its tiles count each entry
 at its strength (`bucketUnits`); entries with none count nothing and the view says how many. It only measures: no
 guideline, colour or warning. The export appends `own_abv`, `own_caffeine_mg`, `strength_total`, `strength_unit`.
-Insights and Ask read none of it. Nothing writes it to Health yet.
+Insights and Ask read none of it. On iOS a habit with a strength may also write its entries to Apple Health
+(`lib/health_write/`; the habit form's "Also write to Apple Health", off by default, per device and habit in
+shared_preferences `healthWrite.<uid>`, applied on Save; turning it on asks write access to that one type, a refusal
+turns it off and says where to change it). Alcohol writes `numberOfAlcoholicBeverages`, one per serving (the entry's
+`measure`, whatever its ABV: Apple's standard drink is "one beer, glass of wine, or mixed drink"); caffeine writes
+`dietaryCaffeine`, the entry's mg at its own strength else the habit's, and an entry with none writes nothing. Each
+sample sits at the entry's `createdAt` with `HKMetadataKeySyncIdentifier` `penchant.entry.<activity id>`, sync version
+the device clock in ms (a later save replaces it) and `PenchantHabit` `penchant.habit.<vice id>`; nothing else about
+the journal is kept. `healthWriteSyncProvider` (kept by `MyApp`) keeps Health in step with the 30 days the widgets'
+snapshot already listens to (`viceActivityRecentForUserProvider`), so logs from anywhere (this phone, a widget flushed
+in the background, the Mac) are written when the running app sees them, an edit rewrites, and an entry gone from the
+window (a delete, an Undo) is removed; what it last wrote is held in memory only, so each launch rewrites the window
+once, unchanged. `TrackerWrites.deleteActivity` also deletes the sample, for entries older than the window. Turning a
+habit off stops writing and offers once (`deleteHabit`) to remove its samples. Sign-out and account deletion leave
+samples in Health (the switch's footnote says so). The Mac, PenchantSync and the iOS headless flush never touch
+Health (the headless engine has no `HealthChannel`; its calls fail quietly).
 
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
 `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
@@ -834,7 +871,9 @@ that way; `integration_test/` drives the real app on an iOS Simulator against th
 it and the rules suite).
 
 **Health** (iOS only; `ios/Runner/HealthChannel.swift`, `lib/insights/health_source.dart`). Nothing read from
-Health leaves the device: not Firestore, analytics or crash reports. Insights' daily values live in
+Health leaves the device: not Firestore, analytics or crash reports. The only writes are a strength habit's entries, on
+the person's say-so (A habit's strength, above): `numberOfAlcoholicBeverages` and `dietaryCaffeine`, never in
+`readTypes`, so Insights cannot read Penchant's own samples back as an outcome; keep them out of it. Insights' daily values live in
 `health-daily.json` in Caches (not backed up; `lib/insights/health_sync.dart`); each open asks the channel's
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part
 `HealthDays.SyncState`, tested by `tools/health-days.test.sh`) and rereads only the days named, the days since, sleep

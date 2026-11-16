@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/notes/note_search_page.dart';
 import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
+import 'package:tracker/claude/claude_working_gallery.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
@@ -23,6 +24,7 @@ import 'package:tracker/errors/not_found.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/health_write/health_write_sync.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/weekly_review_page.dart';
@@ -170,6 +172,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     // Kept alive here so sealing runs whichever screen is open.
     ref.listen(plaintextMigrationProvider, (_, _) {});
     ref.listen(widgetSyncProvider, (_, _) {});
+    ref.listen(healthWriteSyncProvider, (_, _) {});
     ref.listen(nightOutSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
     ref.listen(entryPromptListenerProvider, (_, _) {});
@@ -281,6 +284,8 @@ Widget routePage(String? name, {DateTime? now}) {
       return const AskPage();
     case ['letter']:
       return const LetterPage();
+    case ['claude-working'] when useFirebaseEmulators:
+      return const ClaudeWorkingGallery();
     case ['manage-data']:
       return const ManageData();
     case ['deleted-habit']:
