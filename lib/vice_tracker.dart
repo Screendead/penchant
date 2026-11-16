@@ -409,8 +409,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             ),
           )
         : null;
-    // A night out: offered from each tile on an iPhone (iOS says whether it
-    // can run), and shown above the dial while it runs.
+    // A night out: offered from each tile on an iPhone, where the status is
+    // known (iOS says whether it can run), and shown above the dial while it
+    // runs.
     final NightOutStatus? nightOut = ref.watch(nightOutProvider);
     final Night? night = nightOut?.night;
     final Vice? nightVice = night == null
@@ -419,7 +420,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
               .where((Vice v) => v.id == night.viceID)
               .firstOrNull;
     List<TileAction> tileActions(Vice vice) => <TileAction>[
-      if (nightOut != null && nightOutPlatform && !vice.locked)
+      if (nightOut != null && !vice.locked)
         TileAction(
           label: startNightLabel,
           unavailable: nightUnavailableReason(nightOut),

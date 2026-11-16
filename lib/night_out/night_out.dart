@@ -209,7 +209,8 @@ bool get nightOutPlatform =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
 /// The night out, read from native for the signed-in user at sign-in and on
-/// every resume; null until known. A user change re-reads, and native ends a
+/// every resume; null until known, and always off an iPhone, where nothing
+/// offers it. A user change re-reads, and native ends a
 /// night that is not the new user's, so signing out or deleting the account
 /// ends it.
 final nightOutProvider = NotifierProvider<NightOutNotifier, NightOutStatus?>(
@@ -222,7 +223,7 @@ class NightOutNotifier extends Notifier<NightOutStatus?> {
   @override
   NightOutStatus? build() {
     if (!nightOutPlatform) {
-      return NightOutStatus.unsupported;
+      return null;
     }
     final AsyncValue<User?> user = ref.watch(userProvider);
     if (!user.hasValue) {
