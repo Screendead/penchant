@@ -73,6 +73,8 @@
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Penchant reads sleep, heart, activity, workout, mindfulness and mood data from Health to compare with your journal, and your period days to compare like with like. It stays on this device.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>For a habit you choose, Penchant writes each entry to Health as alcoholic drinks or caffeine, at the entry’s time, and updates or removes it when you edit or delete the entry. It writes nothing else.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

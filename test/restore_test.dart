@@ -157,6 +157,18 @@ Future<Map<String, List<StoredDocument>>> _journal() async =>
           },
         ),
       ],
+      'checkIns': <StoredDocument>[
+        (
+          id: 'c1',
+          data: <String, dynamic>{
+            'ownerID': _from,
+            'createdAt': _at,
+            'sealed': await _sealed('checkIns', 'c1', <String, Object?>{
+              'strength': 2,
+            }),
+          },
+        ),
+      ],
     };
 
 Future<OpenedBackup> _backup([Map<String, List<StoredDocument>>? j]) async =>
@@ -317,13 +329,17 @@ void main() {
     expect(urge.data['viceID'], wine.id);
     expect(await _opened(urge), <String, Object?>{'strength': 4});
 
+    final RestoreWrite checkIn = plan.writes['checkIns']!.single;
+    expect(checkIn.data.keys, <String>{'createdAt', 'ownerID', 'sealed'});
+    expect(await _opened(checkIn), <String, Object?>{'strength': 2});
+
     expect(plan.skipped, <SkipReason, int>{
       SkipReason.habitMissing: 1,
       SkipReason.badAmount: 1,
       SkipReason.earlierKey: 1,
     });
     expect(plan.trimmed, 1);
-    expect(plan.total, 6);
+    expect(plan.total, 7);
   });
 
   test('ids are new, and the same on every run', () async {
@@ -424,6 +440,7 @@ void main() {
         'activities': 45,
         'dayNotes': 1,
         'urges': 1,
+        'checkIns': 1,
       });
       expect(
         target.batches.first.map((RestoreWrite w) => w.collection),
@@ -467,7 +484,7 @@ void main() {
       );
       expect(second.stoppedBy, isNull);
       expect(second.alreadyThere, 22);
-      expect(second.writtenTotal, 54 - 22);
+      expect(second.writtenTotal, 55 - 22);
       expect(target.stored['activities'], hasLength(50));
       expect(target.stored['vices'], hasLength(2));
     });
