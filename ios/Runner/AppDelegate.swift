@@ -164,8 +164,9 @@ enum DeviceAuth {
 }
 
 // The Dart side is lib/backup/backup_service.dart. The export panel needs a
-// file to copy, so saving writes one into a folder of its own in tmp and
-// removes the folder when the panel closes, saved or cancelled. Picking reads
+// file to copy, so saving writes one into a fixed folder in tmp and removes
+// it when the panel closes, saved or cancelled, and again at launch and before
+// each save, in case the app was killed with the panel open. Picking reads
 // the chosen file where it is, through security-scoped access, and copies
 // nothing.
 final class BackupFiles: NSObject, UIDocumentPickerDelegate {
@@ -173,9 +174,11 @@ final class BackupFiles: NSObject, UIDocumentPickerDelegate {
 
   private var pending: FlutterResult?
   private var picking = false
-  private var exportFolder: URL?
+  private let exportFolder = FileManager.default.temporaryDirectory
+    .appendingPathComponent("penchant-backup-export", isDirectory: true)
 
   func register(with messenger: FlutterBinaryMessenger) {
+    try? FileManager.default.removeItem(at: exportFolder)
     let channel = FlutterMethodChannel(
       name: "com.screendead.penchant/backup_files", binaryMessenger: messenger)
     channel.setMethodCallHandler { [weak self] call, result in
@@ -199,9 +202,14 @@ final class BackupFiles: NSObject, UIDocumentPickerDelegate {
       result(FlutterMethodNotImplemented)
       return
     }
-    guard pending == nil, let presenter = Self.presenter() else {
+    guard let presenter = Self.presenter(), !(presenter is UIDocumentPickerViewController)
+    else {
       result(FlutterError(code: "busy", message: "No panel can be shown now", details: nil))
       return
+    }
+    // A call whose panel closed without a callback must not block later ones.
+    if pending != nil {
+      finish(FlutterError(code: "superseded", message: "Another panel opened", details: nil))
     }
     if call.method == "pick" {
       picking = true
@@ -219,20 +227,18 @@ final class BackupFiles: NSObject, UIDocumentPickerDelegate {
       result(FlutterError(code: "arguments", message: "save needs bytes and a name", details: nil))
       return
     }
-    let folder = FileManager.default.temporaryDirectory
-      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try? FileManager.default.removeItem(at: exportFolder)
     do {
-      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-      let file = folder.appendingPathComponent((name as NSString).lastPathComponent)
+      try FileManager.default.createDirectory(at: exportFolder, withIntermediateDirectories: true)
+      let file = exportFolder.appendingPathComponent((name as NSString).lastPathComponent)
       try bytes.data.write(to: file, options: [.completeFileProtection])
-      exportFolder = folder
       picking = false
       pending = result
       let panel = UIDocumentPickerViewController(forExporting: [file], asCopy: true)
       panel.delegate = self
       presenter.present(panel, animated: true)
     } catch {
-      try? FileManager.default.removeItem(at: folder)
+      try? FileManager.default.removeItem(at: exportFolder)
       result(FlutterError(code: "write", message: error.localizedDescription, details: nil))
     }
   }
@@ -277,10 +283,7 @@ final class BackupFiles: NSObject, UIDocumentPickerDelegate {
   }
 
   private func finish(_ value: Any?) {
-    if let folder = exportFolder {
-      try? FileManager.default.removeItem(at: folder)
-      exportFolder = nil
-    }
+    try? FileManager.default.removeItem(at: exportFolder)
     let result = pending
     pending = nil
     result?(value)

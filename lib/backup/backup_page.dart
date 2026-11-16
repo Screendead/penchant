@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -133,6 +134,10 @@ class BackupCopy {
       'Stopped after ${formatCount(done)} of ${formatCount(total)}: the '
       'connection or the server failed. Run Restore again with the same file '
       'and key: it writes only what is missing, with nothing duplicated.';
+  static const String refused =
+      'The server refused part of the backup, so running Restore again would '
+      'stop at the same place. What was written stays; nothing is '
+      'duplicated.';
   static String trimmed(int n) =>
       '${formatCount(n)} ${pluralWord(n, one: 'document', other: 'documents')} '
       'had fields this version no longer uses; those fields were left out.';
@@ -284,9 +289,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool guest = ref.watch(
-      userProvider.select((v) => v.value?.isAnonymous ?? false),
-    );
+    // Read live: linking a guest leaves userProvider's User anonymous.
+    ref.watch(userProvider.select((v) => v.value?.uid));
+    final bool guest = ref.watch(accountProvider).isGuest;
     return BackupSaveView(
       lastSaved: ref.watch(backupDatesProvider).savedAt,
       busy: _busy,
@@ -605,17 +610,21 @@ class _RestorePageState extends ConsumerState<RestorePage> {
       onRestore: _restore,
       onCancel: () => Navigator.of(context).pop(),
     ),
-    _Step.writing => CardPage(
-      title: BackupCopy.restoreTitle,
-      children: <Widget>[
-        const SizedBox(height: DialSpace.xl),
-        LinearProgressIndicator(value: _total == 0 ? null : _done / _total),
-        const SizedBox(height: DialSpace.s),
-        Semantics(
-          liveRegion: true,
-          child: Text(BackupCopy.writing(_done, _total)),
-        ),
-      ],
+    // No way back while writing: the result is the only report of it.
+    _Step.writing => PopScope(
+      canPop: false,
+      child: CardPage(
+        title: BackupCopy.restoreTitle,
+        children: <Widget>[
+          const SizedBox(height: DialSpace.xl),
+          LinearProgressIndicator(value: _total == 0 ? null : _done / _total),
+          const SizedBox(height: DialSpace.s),
+          Semantics(
+            liveRegion: true,
+            child: Text(BackupCopy.writing(_done, _total)),
+          ),
+        ],
+      ),
     ),
     _Step.done => RestoreResultView(
       result: _result!,
@@ -719,10 +728,11 @@ class RestoreResultView extends StatelessWidget {
       children: <Widget>[
         _section(context, BackupCopy.wrote(result.written), <Widget>[
           if (stopped)
-            _muted(
-              context,
-              BackupCopy.stopped(result.writtenTotal, result.planned),
-            ),
+            _muted(context, switch (result.stoppedBy) {
+              FirebaseException(code: 'permission-denied') =>
+                BackupCopy.refused,
+              _ => BackupCopy.stopped(result.writtenTotal, result.planned),
+            }),
           if (result.alreadyThere > 0)
             _muted(context, BackupCopy.alreadyThere(result.alreadyThere)),
           for (final MapEntry<SkipReason, int>(:key, :value)
