@@ -1048,6 +1048,12 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
+Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX), asked
+for by Jack on 2026-11-16 ("a bunch more exciting, well-founded ai-based ideas for the app, as well as non-ai-based
+ones"): fifteen ideas, each a card he picks or leaves; none decided, none built. Claude recommends six to build next:
+with Claude, say it to log, catch up on missed days in words, tag older notes; without, log an urge, a night out on
+the Lock Screen, Insights reads day-note tags. The other nine are marked later.
+
 Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), both
 picked by Jack on 2026-11-16 as recommended ("yes to both recommendations"; after the retention correction below,
 "Yes, build both"):
@@ -1064,8 +1070,8 @@ content up to 2 years; never used for training without permission; only Fable an
 
 Ask your journal is being rebuilt (Jack, 2026-11-16: "yeah do it... just has to be maximally secure"): the model
 writes read-only SQL, run on the device against an in-memory database behind a sandbox; results never leave it.
-Open with Jack: cutting Firestore reads per open of Insights and Ask (about 4,900 each today) by an `updatedAt`
-field and a delta read; Claude recommends it, not decided.
+Cutting Firestore reads per open of Insights and Ask (about 4,900 each) by an `updatedAt` field and a delta read:
+Jack, 2026-11-16, "Yes, cut reads"; built in #313. Its fast path has not run against a real device's disk cache.
 
 Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
 https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15. Built (CLAUDE.md), each
