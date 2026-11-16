@@ -44,7 +44,8 @@ class LabelSheet extends StatefulWidget {
   static const String nothingTitle = 'Nothing to fill in';
   static const String noCamera =
       'This device has no camera. Choose a photo instead.';
-  static const String failed = 'Penchant couldn’t read that photo. Try another.';
+  static const String failed =
+      'Penchant couldn’t read that photo. Try another.';
 
   final LabelSource source;
   final String one;
@@ -242,52 +243,56 @@ class _LabelSheetState extends State<LabelSheet> {
     );
   }
 
-  List<Widget> _result(BuildContext context, LabelReading reading) =>
-      <Widget>[
-        if (!reading.abv.isEmpty)
-          _section(
-            context,
-            title: 'Usual strength',
-            field: reading.abv,
-            unit: '%',
-            picked: _abv,
-            onPick: (double? v) => setState(() {
-              _abv = v;
-              if (v != null) _caffeine = null;
-            }),
-            single: 'Not marked as alcohol by volume on the label: pick it '
-                'only if it is.',
-          ),
-        if (!reading.volume.isEmpty)
-          _section(
-            context,
-            title: 'Each ${widget.one}',
-            field: reading.volume,
-            unit: ' ml',
-            picked: _serving,
-            onPick: (double? v) => setState(() {
-              _serving = v;
-              if (v != null) _caffeine = null;
-            }),
-            help: 'The whole can or bottle. Tap it again to leave it out if '
-                'your ${widget.one} is less.',
-          ),
-        if (!reading.caffeine.isEmpty)
-          _section(
-            context,
-            title: 'Caffeine, each ${widget.one}',
-            field: reading.caffeine,
-            unit: ' mg',
-            picked: _caffeine,
-            onPick: (double? v) => setState(() {
-              _caffeine = v;
-              if (v != null) {
-                _abv = null;
-                _serving = null;
-              }
-            }),
-          ),
-      ];
+  List<Widget> _result(BuildContext context, LabelReading reading) => <Widget>[
+    if (!reading.abv.isEmpty)
+      _section(
+        context,
+        title: 'Usual strength',
+        field: reading.abv,
+        unit: '%',
+        picked: _abv,
+        onPick: (double? v) => setState(() {
+          _abv = v;
+          if (v != null) _caffeine = null;
+        }),
+        others:
+            'Picked: the one marked as alcohol by volume. The others are '
+            'not, so pick one only if it is.',
+        single:
+            'Not marked as alcohol by volume on the label: pick it '
+            'only if it is.',
+      ),
+    if (!reading.volume.isEmpty)
+      _section(
+        context,
+        title: 'Each ${widget.one}',
+        field: reading.volume,
+        unit: ' ml',
+        picked: _serving,
+        onPick: (double? v) => setState(() {
+          _serving = v;
+          if (v != null) _caffeine = null;
+        }),
+        help:
+            'The whole can or bottle. Tap it again to leave it out if '
+            'your ${widget.one} is less.',
+      ),
+    if (!reading.caffeine.isEmpty)
+      _section(
+        context,
+        title: 'Caffeine, each ${widget.one}',
+        field: reading.caffeine,
+        unit: ' mg',
+        picked: _caffeine,
+        onPick: (double? v) => setState(() {
+          _caffeine = v;
+          if (v != null) {
+            _abv = null;
+            _serving = null;
+          }
+        }),
+      ),
+  ];
 
   Widget _section(
     BuildContext context, {
@@ -298,18 +303,18 @@ class _LabelSheetState extends State<LabelSheet> {
     required ValueChanged<double?> onPick,
     String? single,
     String? help,
+    String? others,
   }) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final DialColors colors = DialColors.of(context);
     final String? hint = field.proposed != null
-        ? help
+        ? (field.choices.length > 1 ? others ?? help : help)
         : field.choices.length > 1
         ? 'The label gives more than one: pick one, or leave it.'
         : single ?? help;
     final List<String> workings = <String>[
       for (final LabelValue v in field.choices)
-        if (v.read.contains('×'))
-          '${formatAmount(v.value)}$unit is ${v.read}.',
+        if (v.read.contains('×')) '${formatAmount(v.value)}$unit is ${v.read}.',
     ];
     return Padding(
       padding: const EdgeInsets.only(top: DialSpace.m),

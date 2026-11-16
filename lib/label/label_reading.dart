@@ -107,8 +107,7 @@ final RegExp _mg = RegExp(
 // ("32 mg/100 ml", "per 100 ml"), not the container.
 final RegExp _perBefore = RegExp(r'(?:per|/)\s*$', caseSensitive: false);
 
-double? _parse(String digits) =>
-    double.tryParse(digits.replaceAll(',', '.'));
+double? _parse(String digits) => double.tryParse(digits.replaceAll(',', '.'));
 
 String _tidy(double value) {
   final double rounded = roundStrength(value);
@@ -136,10 +135,10 @@ List<LabelValue> _distinct(Iterable<LabelValue> values, double tolerance) {
 }
 
 LabelField _field(List<LabelValue> sure, List<LabelValue> loose) {
-  final List<LabelValue> choices = _distinct(
-    <LabelValue>[...sure, ...loose],
-    0.001,
-  );
+  final List<LabelValue> choices = _distinct(<LabelValue>[
+    ...sure,
+    ...loose,
+  ], 0.001);
   final List<LabelValue> sureOnes = _distinct(sure, 0.001);
   return LabelField(
     choices,
@@ -189,10 +188,10 @@ LabelReading readLabel(List<String> lines) {
       if (_perBefore.hasMatch(line.substring(0, m.start))) continue;
       final double? amount = _parse(m.group(1)!);
       if (amount == null || amount <= 0) continue;
-      final String unit = m.group(2)!.toLowerCase().replaceAll(
-        RegExp(r'[.\s]'),
-        '',
-      );
+      final String unit = m
+          .group(2)!
+          .toLowerCase()
+          .replaceAll(RegExp(r'[.\s]'), '');
       final String shown = _tidy(amount);
       void add(List<LabelValue> into, double ml, String read, {String? note}) {
         if (ml >= _labelMinMl && ml <= maxServingMl) {

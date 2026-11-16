@@ -636,6 +636,22 @@ at its strength (`bucketUnits`); entries with none count nothing and the view sa
 guideline, colour or warning. The export appends `own_abv`, `own_caffeine_mg`, `strength_total`, `strength_unit`.
 Insights and Ask read none of it. Nothing writes it to Health yet.
 
+**Read a label** (iOS only; round 24, "Read a drink's label with the camera", on-device half). The habit form's
+Strength header has "Read a label" while `labelSourceProvider` (`lib/label/label_source.dart`) is non-null, which is
+iOS only, so the Mac and tests show none. `LabelSheet` (`lib/label/label_sheet.dart`) asks for a photo through
+`ios/Runner/LabelChannel.swift`: the system camera (`UIImagePickerController`, `NSCameraUsageDescription`) or
+`PHPickerViewController` with no photo library given, so no library access is asked; the image is loaded in memory,
+Vision's `VNRecognizeTextRequest` (accurate, language correction off) reads it off the main thread, and only the
+lines of text cross the channel. Nothing keeps, logs or sends the photo or the lines; the sheet says so. `readLabel`
+(`lib/label/label_reading.dart`, pure, `test/label_reading_test.dart`) never guesses: a strength counts only beside
+alc, alcohol, abv or vol (on its line, or alone beside a line of that word), otherwise it is offered unpicked; volume
+in ml, cl or l is sure, fl oz and pints offered as both US and UK unless a metric size beside them agrees within 2%;
+a volume after "per" or "/" is a reference, not the container; caffeine is an mg figure the word caffeine labels (its
+line, or alone on the next), per-100 ml only times the one volume found; out of bounds (ABV over 80, under 5 ml) is
+left out. One sure value is picked; several, or only unsure ones, are chips with none picked. "Fill in" only sets the
+form's fields (alcohol: serving and ABV; caffeine: mg); the form's Save writes them as typed ones. No Claude
+fallback yet: the card's recommendation was to add it only if the pattern misses often.
+
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
 `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
 field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphertext | tag` around JSON padded to

@@ -140,7 +140,10 @@ void main() {
     });
 
     test('"Caffeine: 95mg" proposes 95', () {
-      expect(readLabel(<String>['Caffeine: 95mg']).caffeine.proposed?.value, 95);
+      expect(
+        readLabel(<String>['Caffeine: 95mg']).caffeine.proposed?.value,
+        95,
+      );
     });
 
     test('per 100 ml times the one volume', () {

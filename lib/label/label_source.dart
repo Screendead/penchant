@@ -21,7 +21,8 @@ abstract interface class LabelSource {
 
 class ChannelLabelSource implements LabelSource {
   ChannelLabelSource({MethodChannel? channel})
-    : _channel = channel ?? const MethodChannel('com.screendead.penchant/label');
+    : _channel =
+          channel ?? const MethodChannel('com.screendead.penchant/label');
 
   final MethodChannel _channel;
 
@@ -48,16 +49,13 @@ class ChannelLabelSource implements LabelSource {
     final Object? lines = answer?['lines'];
     return (
       status: status,
-      lines: <String>[
-        if (lines is List<Object?>) ...lines.whereType<String>(),
-      ],
+      lines: <String>[if (lines is List<Object?>) ...lines.whereType<String>()],
     );
   }
 }
 
 /// The label reader; null everywhere but iOS, so the Mac shows no camera.
 final labelSourceProvider = Provider<LabelSource?>(
-  (ref) => defaultTargetPlatform == TargetPlatform.iOS
-      ? ChannelLabelSource()
-      : null,
+  (ref) =>
+      defaultTargetPlatform == TargetPlatform.iOS ? ChannelLabelSource() : null,
 );

@@ -97,10 +97,7 @@ List<Override> habitOverrides(
 
 // A label reader that "reads" [lines] from whichever photo is asked for.
 class FakeLabelSource implements LabelSource {
-  const FakeLabelSource(
-    this.lines, {
-    this.status = LabelScanStatus.read,
-  });
+  const FakeLabelSource(this.lines, {this.status = LabelScanStatus.read});
 
   final List<String> lines;
   final LabelScanStatus status;
