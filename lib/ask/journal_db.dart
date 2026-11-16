@@ -170,11 +170,18 @@ int _authorize(
     case Sq.actionRecursive:
       return Sq.ok;
     case Sq.actionRead:
-      final List<String>? columns = askTables[text(a1)];
-      final String? column = text(a2);
-      if (text(a3) != 'main' || columns == null) return Sq.authDeny;
-      // An empty column: the table is in FROM with none of its columns read.
-      return column == null || column.isEmpty || columns.contains(column)
+      final String table = text(a1) ?? '';
+      final String column = text(a2) ?? '';
+      // A table or CTE in FROM with none of its columns read comes with no
+      // column and no database: it reveals a row count at most, so it may be
+      // anything but SQLite's own tables.
+      if (column.isEmpty) {
+        return table.toLowerCase().startsWith('sqlite_')
+            ? Sq.authDeny
+            : Sq.ok;
+      }
+      final List<String>? columns = askTables[table];
+      return text(a3) == 'main' && columns != null && columns.contains(column)
           ? Sq.ok
           : Sq.authDeny;
     case Sq.actionFunction:
