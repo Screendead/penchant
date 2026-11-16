@@ -173,4 +173,21 @@ void main() {
     ).firstMatch(source)!.group(1)!;
     expect(runnerSources, contains('CalendarChannel.swift in Sources'));
   });
+
+  // Two files added by hand under one id build only the last: the other's
+  // type goes missing from the target.
+  test('no object id is defined twice in either Xcode project', () {
+    for (final String project in <String>['ios', 'macos']) {
+      final Iterable<String> ids =
+          RegExp(r'^\t\t([0-9A-F]{24}) (?:/\*.*?\*/ )?= \{', multiLine: true)
+              .allMatches(
+                File(
+                  '$project/Runner.xcodeproj/project.pbxproj',
+                ).readAsStringSync(),
+              )
+              .map((RegExpMatch m) => m.group(1)!);
+      final Set<String> seen = <String>{};
+      expect(ids.where((String id) => !seen.add(id)), isEmpty, reason: project);
+    }
+  });
 }
