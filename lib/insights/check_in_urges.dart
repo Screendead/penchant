@@ -10,10 +10,10 @@ import 'package:tracker/insights/what_follows.dart';
 /// habit with an urge before the two are compared.
 const int minCheckInUrgeDays = 14;
 
-/// The smallest difference worth showing: one step of the 1 to 5 scale.
-/// Answers are whole steps, and a person who leaves an entry's urge blank
-/// when there is none pushes the entries' mean up by less than this unless
-/// most check-ins are 0 and the rest strong.
+/// The smallest difference worth showing: one step of the 1 to 5 scale, the
+/// size of an answer. It does not rule out a person who leaves an entry's
+/// urge blank when there is none: that alone puts entries higher by the
+/// share of check-ins at 0 times (the mean of the rest less 1).
 const double checkInUrgeFloor = 1;
 
 /// The urge noted at a habit's entries against the urge at random check-ins:
