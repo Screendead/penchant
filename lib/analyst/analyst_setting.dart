@@ -113,8 +113,9 @@ class CallableInvestigator implements Investigator {
 const String analystSends =
     'This time the results of its queries are sent to Penchant’s server and '
     'on to Anthropic’s Claude Opus with your question and habit names and '
-    'units: counts, totals, dates, times, tag names and habit names. Note '
-    'text, day-note text and tags in your own words are never sent; the '
+    'units: counts, amounts, totals, dates, times, urge ratings, prices, '
+    'how each entry was logged, tag names and habit names. Note text, '
+    'day-note text and tags in your own words are never sent; the '
     'database refuses to read them. Anthropic does not use it for training '
     'and deletes it within 30 days.';
 
