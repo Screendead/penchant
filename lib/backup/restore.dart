@@ -137,12 +137,14 @@ String restoredID(
   if (collection == 'dayNotes') {
     return '${destinationUid}_${doc.data['day']}';
   }
-  final List<int> digest = const DartSha256().hashSync(
-    utf8.encode(
-      'penchant:v1:restore-id:$sourceUid\n$collection\n${doc.id}\n'
-      '$destinationUid',
-    ),
-  ).bytes;
+  final List<int> digest = const DartSha256()
+      .hashSync(
+        utf8.encode(
+          'penchant:v1:restore-id:$sourceUid\n$collection\n${doc.id}\n'
+          '$destinationUid',
+        ),
+      )
+      .bytes;
   const String alphabet =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   return String.fromCharCodes(<int>[

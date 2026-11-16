@@ -92,9 +92,14 @@ Future<Map<String, List<StoredDocument>>> _journal() async =>
             'viceID': 'v-legacy',
             'quantity': 1,
             'createdAt': _at,
-            'sealed': await _sealed('activities', 'a-earlier', <String, Object?>{
-              'triggers': <String>['x'],
-            }, with_: _earlier),
+            'sealed': await _sealed(
+              'activities',
+              'a-earlier',
+              <String, Object?>{
+                'triggers': <String>['x'],
+              },
+              with_: _earlier,
+            ),
           },
         ),
       ],
@@ -206,13 +211,12 @@ class _Target implements RestoreTarget {
   int failOnBatch = -1;
 
   @override
-  Future<Set<String>> ownedIDs(String collection, String uid) async =>
-      <String>{
-        for (final MapEntry<String, Map<String, Object>>(:key, :value)
-            in (stored[collection] ?? const <String, Map<String, Object>>{})
-                .entries)
-          if (value['ownerID'] == uid) key,
-      };
+  Future<Set<String>> ownedIDs(String collection, String uid) async => <String>{
+    for (final MapEntry<String, Map<String, Object>>(:key, :value)
+        in (stored[collection] ?? const <String, Map<String, Object>>{})
+            .entries)
+      if (value['ownerID'] == uid) key,
+  };
 
   @override
   Future<void> commit(List<RestoreWrite> writes) async {
@@ -421,11 +425,15 @@ void main() {
         'dayNotes': 1,
         'urges': 1,
       });
-      expect(target.batches.first.map((RestoreWrite w) => w.collection), <
-        String
-      >['vices', 'vices']);
+      expect(
+        target.batches.first.map((RestoreWrite w) => w.collection),
+        <String>['vices', 'vices'],
+      );
       for (final List<RestoreWrite> batch in target.batches) {
-        expect(batch.map((RestoreWrite w) => w.collection).toSet(), hasLength(1));
+        expect(
+          batch.map((RestoreWrite w) => w.collection).toSet(),
+          hasLength(1),
+        );
         if (batch.first.collection case 'activities' || 'urges') {
           expect(batch.length, lessThanOrEqualTo(20));
         }
@@ -453,9 +461,10 @@ void main() {
       expect(first.stoppedBy, isNotNull);
       expect(first.writtenTotal, 22);
 
-      final RestoreResult second = await runRestore(await _plan(
-        await _backup(journal),
-      ), target);
+      final RestoreResult second = await runRestore(
+        await _plan(await _backup(journal)),
+        target,
+      );
       expect(second.stoppedBy, isNull);
       expect(second.alreadyThere, 22);
       expect(second.writtenTotal, 54 - 22);

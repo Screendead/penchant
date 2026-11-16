@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/providers/show_day_provider.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/experiment_page.dart';
@@ -606,6 +607,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                       children: <Widget>[
                         ?guestBanner,
                         const RecoveryKeyCard(),
+                        const BackupOfferCard(),
                         // The arrows' 40 pt circles sit 20 from the edges, their
                         // 44 pt targets 18.
                         Padding(

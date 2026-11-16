@@ -352,11 +352,7 @@ void main() {
               BackupFailure.damaged,
               BackupFailure.modified,
             ),
-            'tag': (
-              bodyEnd - 1,
-              BackupFailure.damaged,
-              BackupFailure.modified,
-            ),
+            'tag': (bodyEnd - 1, BackupFailure.damaged, BackupFailure.modified),
             'checksum': (
               file.length - 1,
               BackupFailure.damaged,

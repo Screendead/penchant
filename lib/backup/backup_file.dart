@@ -152,10 +152,11 @@ class BackupFile {
     if (body.length != bodyLength) {
       throw StateError('The sealed body is ${body.length}, not $bodyLength');
     }
-    final Uint8List unchecked = (BytesBuilder(copy: false)
-          ..add(prefix)
-          ..add(body))
-        .toBytes();
+    final Uint8List unchecked =
+        (BytesBuilder(copy: false)
+              ..add(prefix)
+              ..add(body))
+            .toBytes();
     return (BytesBuilder(copy: false)
           ..add(unchecked)
           ..add(_checksum(unchecked)))
