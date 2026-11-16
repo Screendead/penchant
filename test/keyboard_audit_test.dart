@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_page.dart';
-import 'package:tracker/ask/ask_query.dart';
+import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/account/password_prompt.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
@@ -976,9 +976,13 @@ class _QuestionReader implements QuestioningNoteReader {
 
 class _NeverAsk implements AskJournal {
   @override
-  Future<AskParsed> ask(
+  Future<AskAnswer> ask(
     String question, {
-    required List<Vice> habits,
+    required List<({int id, Vice vice})> habits,
     required DateTime today,
-  }) async => const AskCannotAnswer(null);
+    List<AskTurn> history = const <AskTurn>[],
+  }) async => const AskAnswer(
+    kind: AskKind.cannotAnswer,
+    reason: AskReason.unclear,
+  );
 }
