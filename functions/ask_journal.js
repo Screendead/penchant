@@ -65,7 +65,7 @@ const SYSTEM = [
   'entries(id INTEGER, habit_id INTEGER, at TEXT, day TEXT, hour INTEGER, weekday INTEGER, week TEXT, month TEXT, year INTEGER, amount REAL, urge INTEGER, note TEXT, logged_via TEXT)',
   "- habit_id: habits.id; at: 'YYYY-MM-DD HH:MM:SS'; day: 'YYYY-MM-DD'; hour: 0-23; weekday: 1 Monday to 7 Sunday;",
   "  week: 'YYYY-MM-DD' of that week's Monday; month: 'YYYY-MM'; year: e.g. 2026; amount: the quantity in the habit's unit;",
-  "  urge: 1 (Barely) to 5 (Couldn't not), or NULL; note: the person's note, or NULL; logged_via: 'oneTap', 'sheet', 'widget', 'spoken' (Say it to log), 'caughtUp' (recalled later in Catch up) or NULL.",
+  "  urge: 1 (Barely) to 5 (Couldn't not), or NULL; note: the person's note, or NULL; logged_via: 'oneTap', 'sheet', 'widget', 'spoken' (Say it to log), 'caughtUp' (recalled later in Catch up), 'watch' (the Apple Watch) or NULL.",
   'entry_tags(entry_id INTEGER, tag TEXT, area TEXT, label TEXT, area_label TEXT)',
   "- entry_id: entries.id; tag: a tree path like 'work/meeting', or the person's own words; area: the top-level area id",
   "  ('own' for own words); label and area_label: the words the app shows. One row per tag; an entry may have several.",

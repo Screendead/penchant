@@ -114,11 +114,15 @@ final class WatchJournal: NSObject, ObservableObject {
   }
 
   // Holds a background wake until the session has delivered what it woke the
-  // app for.
+  // app for, 5 seconds at most: activation is still under way when the wake
+  // starts, and the context arrives after it.
   func settle() async {
-    for _ in 0..<50 where WCSession.default.hasContentPending {
+    for _ in 0..<50 {
+      guard WCSession.default.activationState != .activated || WCSession.default.hasContentPending else { break }
       try? await Task.sleep(nanoseconds: 100_000_000)
     }
+    // The delegate hands each context to the main actor in a task of its own.
+    await Task.yield()
   }
 }
 
