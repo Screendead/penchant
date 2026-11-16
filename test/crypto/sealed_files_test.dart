@@ -182,8 +182,9 @@ void main() {
       final List<File> left = await filesOnDisk();
       expect(left.where((f) => f.path.endsWith('.json')), isEmpty);
       expect(
-        await SealedHealthStoreFile(() => device.forUser('bob', _sealer()))
-            .read(),
+        await SealedHealthStoreFile(
+          () => device.forUser('bob', _sealer()),
+        ).read(),
         isNull,
       );
     });
@@ -210,8 +211,9 @@ void main() {
     ];
 
     test('round trips across launches under opaque names', () async {
-      await HealthSampleCache(device.forUser('alice', _sealer()))
-          .keepOnly(<CachedSpan, List<HealthSample>>{nov3: samples});
+      await HealthSampleCache(
+        device.forUser('alice', _sealer()),
+      ).keepOnly(<CachedSpan, List<HealthSample>>{nov3: samples});
       final Map<CachedSpan, List<HealthSample>> loaded =
           await HealthSampleCache(
             DeviceFiles(caches: () async => caches).forUser('alice', _sealer()),

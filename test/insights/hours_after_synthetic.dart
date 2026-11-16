@@ -130,12 +130,8 @@ Synthetic synthetic(
 /// When a use falls on a day, in minutes after midnight, or null for none:
 /// given the day's waking, whether a weekend, the day's wander (one value
 /// per 5 minutes from midnight) and the day's draws.
-typedef UsePolicy = int? Function(
-  int wake,
-  bool weekend,
-  List<double> wander,
-  Random r,
-);
+typedef UsePolicy =
+    int? Function(int wake, bool weekend, List<double> wander, Random r);
 
 /// Whole days with sleep, for the hours-after comparisons' known traps. Heart
 /// rate every [hrEvery] minutes around the clock, each dropped with chance

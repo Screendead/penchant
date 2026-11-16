@@ -529,9 +529,9 @@ void main() {
         find.bySemanticsLabel(RegExp(r'Shown with a 8-day average\.$')),
         findsOneWidget,
       );
-      final List<double> smoothed = _chart(tester).lineBarsData.last.spots
-          .map((FlSpot s) => s.y)
-          .toList();
+      final List<double> smoothed = _chart(
+        tester,
+      ).lineBarsData.last.spots.map((FlSpot s) => s.y).toList();
       expect(smoothed.last, 2 / 8);
 
       // 7 days hold only 7 buckets; 8 is kept for when there is room.

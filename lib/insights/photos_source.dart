@@ -54,8 +54,10 @@ class ChannelPhotosSource implements PhotosSource {
     : _channel =
           channel ?? const MethodChannel('com.screendead.penchant/photos') {
     _channel.setMethodCallHandler((MethodCall call) async {
-      if (call.arguments case [final int done, final int total]
-          when call.method == 'progress') {
+      if (call.arguments case [
+        final int done,
+        final int total,
+      ] when call.method == 'progress') {
         _progress?.call(done, total);
       }
     });
@@ -127,8 +129,10 @@ class ChannelPhotosSource implements PhotosSource {
 List<PlacePhoto> placePhotosFrom(Object? answer) => <PlacePhoto>[
   if (answer is List<Object?>)
     for (final Object? o in answer)
-      if (o case {'at': final int at, 'jpeg': final Uint8List jpeg}
-          when jpeg.isNotEmpty)
+      if (o case {
+        'at': final int at,
+        'jpeg': final Uint8List jpeg,
+      } when jpeg.isNotEmpty)
         PlacePhoto(DateTime.fromMicrosecondsSinceEpoch(at), jpeg),
 ];
 

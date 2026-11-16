@@ -151,8 +151,9 @@ void main() {
     final FakeKeychain keychain = FakeKeychain(refuseSyncedReads: true);
     keychain.items[(KeyStore.itemName('u1'), true)] = 'unseen';
 
-    final StoredKey saved = await KeyStore(keychain)
-        .save('u1', journalKey: key);
+    final StoredKey saved = await KeyStore(
+      keychain,
+    ).save('u1', journalKey: key);
     expect(saved.location, KeyLocation.thisDevice);
     expect(keychain.items[(KeyStore.itemName('u1'), true)], 'unseen');
   });

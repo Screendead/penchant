@@ -109,9 +109,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     super.initState();
     _logTarget.add(_logNow);
     _logTarget.addUrge(_urge);
-    pinnedDay = PageStorage.maybeOf(
-      context,
-    )?.readState(context, identifier: _storageID) as DateTime?;
+    pinnedDay =
+        PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
+            as DateTime?;
     ref.listenManual<bool>(
       pendingNudgeLogProvider,
       (bool? _, bool pending) => _openNudgeLog(pending),
@@ -197,8 +197,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     setState(() {
       pinnedDay = pinned;
     });
-    PageStorage.maybeOf(context)
-        ?.writeState(context, pinned, identifier: _storageID);
+    PageStorage.maybeOf(
+      context,
+    )?.writeState(context, pinned, identifier: _storageID);
   }
 
   // From the day shown now, not the one last built, so keys pressed within a
@@ -441,8 +442,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   }
 
   void _openEntry(DialEntry entry) {
-    Navigator.of(context)
-        .pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
+    Navigator.of(
+      context,
+    ).pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
   }
 
   @override
@@ -531,10 +533,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     final ExperimentPlan? plan = ref.watch(experimentProvider).value?.active;
     final String? planHabit = plan == null
         ? null
-        : <Vice>[...?allVices]
-              .where((Vice v) => v.id == plan.habitId)
-              .firstOrNull
-              ?.name;
+        : <Vice>[
+            ...?allVices,
+          ].where((Vice v) => v.id == plan.habitId).firstOrNull?.name;
     final bool planShown =
         plan != null &&
         planHabit != null &&
@@ -560,9 +561,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     final Night? night = nightOut?.night;
     final Vice? nightVice = night == null
         ? null
-        : <Vice>[...?allVices]
-              .where((Vice v) => v.id == night.viceID)
-              .firstOrNull;
+        : <Vice>[
+            ...?allVices,
+          ].where((Vice v) => v.id == night.viceID).firstOrNull;
     List<TileAction> tileActions(Vice vice) => <TileAction>[
       TileAction(label: TallyRow.amountAction, onSelected: () => _record(vice)),
       TileAction(label: TallyRow.urgeAction, onSelected: () => _urge(vice)),

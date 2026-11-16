@@ -114,8 +114,9 @@ void main() {
 
     test('a day measure reads the same way, with the heavy day itself held '
         'apart', () {
-      final Recovery r = run(recoveryDays(3, days: 240, costs: <double>[1.5]))
-          .singleWhere((Recovery r) => r.metricId == 'restingHeartRate');
+      final Recovery r = run(
+        recoveryDays(3, days: 240, costs: <double>[1.5]),
+      ).singleWhere((Recovery r) => r.metricId == 'restingHeartRate');
 
       expect(r.refusal, isNull);
       expect(r.nights.first.effect, closeTo(3, 1));

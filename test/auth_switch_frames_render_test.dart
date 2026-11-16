@@ -55,8 +55,9 @@ void main() {
       final ByteData? png = await image.toByteData(
         format: ui.ImageByteFormat.png,
       );
-      await File('$_dir/frame-${(n++).toString().padLeft(3, '0')}.png')
-          .writeAsBytes(png!.buffer.asUint8List());
+      await File(
+        '$_dir/frame-${(n++).toString().padLeft(3, '0')}.png',
+      ).writeAsBytes(png!.buffer.asUint8List());
     });
     for (final Key tab in <Key>[
       Authenticate.registerTab,

@@ -68,15 +68,16 @@ InsightsInput dailyCoffee(
   );
 }
 
-typedef Judge = List<HabitInsight> Function({
-  required DailyHabitSeries habits,
-  required OutcomeSeries outcomes,
-  required String metricId,
-  int lagDays,
-  DateTime? from,
-  DateTime? through,
-  InsightGates gates,
-});
+typedef Judge =
+    List<HabitInsight> Function({
+      required DailyHabitSeries habits,
+      required OutcomeSeries outcomes,
+      required String metricId,
+      int lagDays,
+      DateTime? from,
+      DateTime? through,
+      InsightGates gates,
+    });
 
 HabitInsight judged(
   Judge judge,
@@ -169,11 +170,9 @@ void main() {
         (d) => 80.0 - (d.amount >= 3 ? 20 : 0),
       );
       // One cut on the grid: the middle of 2, 3 and 4.
-      final HabitFinding once = judged(
-        doseLineFollows,
-        input,
-        gates: const InsightGates(maxCuts: 1),
-      ) as HabitFinding;
+      final HabitFinding once =
+          judged(doseLineFollows, input, gates: const InsightGates(maxCuts: 1))
+              as HabitFinding;
       final HabitFinding searched =
           judged(doseLineFollows, input) as HabitFinding;
       expect(once.cut, 3);

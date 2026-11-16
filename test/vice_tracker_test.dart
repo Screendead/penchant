@@ -1339,9 +1339,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(WhatWasGoingOnSheet), findsNothing);
 
-        ProviderScope.containerOf(tester.element(find.byType(ViceTracker)))
-            .read(_vicesSlot.notifier)
-            .load(<Vice>[coffee, tea]);
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).read(_vicesSlot.notifier).load(<Vice>[coffee, tea]);
         await tester.pumpAndSettle();
         expect(find.byType(WhatWasGoingOnSheet), findsOneWidget);
         expect(writes.writes, isEmpty, reason: 'already written');
@@ -1356,8 +1356,9 @@ void main() {
         bridge = FakeWidgetBridge();
         await _pumpApp(tester, widgetOverrides(), const ViceTracker());
         // Running already, as MyApp keeps it, so its first flush has passed.
-        ProviderScope.containerOf(tester.element(find.byType(ViceTracker)))
-            .listen(widgetLogFlushProvider, (_, _) {});
+        ProviderScope.containerOf(
+          tester.element(find.byType(ViceTracker)),
+        ).listen(widgetLogFlushProvider, (_, _) {});
         await tester.pump();
         bridge.queue = <QueuedLog>[
           queuedLog('w1', tapped, uid: ownerID, viceID: tea.id),

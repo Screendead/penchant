@@ -110,8 +110,9 @@ Future<void> _pumpOpened(
                   if (dialog) {
                     showDialog<void>(context: context, builder: (_) => page);
                   } else {
-                    Navigator.of(context)
-                        .push(MaterialPageRoute<void>(builder: (_) => page));
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute<void>(builder: (_) => page));
                   }
                 },
                 child: const Text(_open),

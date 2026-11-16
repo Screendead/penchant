@@ -194,8 +194,9 @@ void main() {
           final ByteData? png = await image.toByteData(
             format: ui.ImageByteFormat.png,
           );
-          await File('$_dir/urges-$scene-${brightness.name}.png')
-              .writeAsBytes(png!.buffer.asUint8List());
+          await File(
+            '$_dir/urges-$scene-${brightness.name}.png',
+          ).writeAsBytes(png!.buffer.asUint8List());
         });
       }, skip: _dir.isEmpty);
     }

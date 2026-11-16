@@ -101,8 +101,9 @@ void main() {
         container: container,
         child: MaterialApp(
           builder: (BuildContext context, Widget? child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(padding: const EdgeInsets.only(top: _inset)),
+            data: MediaQuery.of(
+              context,
+            ).copyWith(padding: const EdgeInsets.only(top: _inset)),
             child: Builder(
               builder: (BuildContext context) =>
                   rejectedWritesBuilder(context, child),

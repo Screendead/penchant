@@ -131,8 +131,9 @@ void main() {
                   darkTheme: appTheme(Brightness.dark),
                   // The mock-up's clock is 24-hour.
                   builder: (BuildContext context, Widget? child) => MediaQuery(
-                    data: MediaQuery.of(context)
-                        .copyWith(alwaysUse24HourFormat: true),
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(alwaysUse24HourFormat: true),
                     child: child!,
                   ),
                   home: const Scaffold(),
@@ -173,8 +174,9 @@ void main() {
             final ByteData? png = await image.toByteData(
               format: ui.ImageByteFormat.png,
             );
-            await File('$_dir/app-amount-sheet-$name-${brightness.name}.png')
-                .writeAsBytes(png!.buffer.asUint8List());
+            await File(
+              '$_dir/app-amount-sheet-$name-${brightness.name}.png',
+            ).writeAsBytes(png!.buffer.asUint8List());
           });
           debugDisableShadows = true;
         });

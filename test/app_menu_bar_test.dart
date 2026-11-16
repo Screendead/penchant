@@ -60,11 +60,9 @@ Future<FakeTrackerWrites> _pump(
 List<PlatformMenuItem> _menus(WidgetTester tester) =>
     tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus;
 
-PlatformMenu? _logMenu(WidgetTester tester) =>
-    _menus(tester)
-        .whereType<PlatformMenu>()
-        .where((m) => m.label == 'Log')
-        .firstOrNull;
+PlatformMenu? _logMenu(WidgetTester tester) => _menus(
+  tester,
+).whereType<PlatformMenu>().where((m) => m.label == 'Log').firstOrNull;
 
 // The Log menu's habits, without its Urge submenu.
 List<PlatformMenuItem> _logItems(WidgetTester tester) => <PlatformMenuItem>[
@@ -72,10 +70,9 @@ List<PlatformMenuItem> _logItems(WidgetTester tester) => <PlatformMenuItem>[
     if (i is! PlatformMenu) i,
 ];
 
-PlatformMenu _urgeMenu(WidgetTester tester) =>
-    _logMenu(tester)!.menus
-        .whereType<PlatformMenu>()
-        .singleWhere((m) => m.label == 'Urge');
+PlatformMenu _urgeMenu(WidgetTester tester) => _logMenu(
+  tester,
+)!.menus.whereType<PlatformMenu>().singleWhere((m) => m.label == 'Urge');
 
 void main() {
   testWidgets(

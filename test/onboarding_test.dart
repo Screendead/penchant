@@ -218,9 +218,9 @@ void main() {
     expect(waiting, findsOneWidget);
     expect(tester.widget<FilledButton>(waiting).onPressed, isNull);
 
-    ProviderScope.containerOf(tester.element(find.byType(Homepage)))
-        .read(_keyLoaded.notifier)
-        .load();
+    ProviderScope.containerOf(
+      tester.element(find.byType(Homepage)),
+    ).read(_keyLoaded.notifier).load();
     await tester.pump();
     await tester.tap(find.text(OnboardingCopy.continueWith(1)));
     await tester.pumpAndSettle();

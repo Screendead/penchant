@@ -30,8 +30,9 @@ class FakeUser extends Mock implements User {
     when(() => this.photoURL).thenReturn(photoURL);
     when(() => this.emailVerified).thenReturn(emailVerified);
     when(() => this.isAnonymous).thenReturn(isAnonymous);
-    when(() => metadata)
-        .thenReturn(UserMetadata(created?.millisecondsSinceEpoch, null));
+    when(
+      () => metadata,
+    ).thenReturn(UserMetadata(created?.millisecondsSinceEpoch, null));
   }
 }
 

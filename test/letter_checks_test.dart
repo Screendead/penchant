@@ -6,9 +6,9 @@ import 'package:tracker/letter/letter_checks.dart';
 
 // functions/letter_fixture.json: functions/letter.test.js runs the same cases
 // through the server's checks.
-final Map<String, Object?> fixture = jsonDecode(
-  File('functions/letter_fixture.json').readAsStringSync(),
-) as Map<String, Object?>;
+final Map<String, Object?> fixture =
+    jsonDecode(File('functions/letter_fixture.json').readAsStringSync())
+        as Map<String, Object?>;
 
 Map<String, Object?> get payload => fixture['payload']! as Map<String, Object?>;
 

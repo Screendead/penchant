@@ -343,8 +343,9 @@ class _ViceActivityHistoryPageState
         color: theme.cardTheme.color,
         child: InkWell(
           onTap: () {
-            Navigator.of(context)
-                .pushNamed('/vices/$viceID/activities/${activity.id}');
+            Navigator.of(
+              context,
+            ).pushNamed('/vices/$viceID/activities/${activity.id}');
           },
           child: Semantics(
             label: <String>[

@@ -148,37 +148,40 @@ void main() {
       );
     });
 
-    test('a mood difference of a whole SD is found; one of 0.2 SD seldom is, and never under the floor', () {
-      int found = 0;
-      for (int seed = 0; seed < 20; seed++) {
-        final InsightsReport report = computeInsights(
-          moodInput(seed, shift: 1),
-        );
-        final HabitFinding? use = report.findings
-            .where((f) => f.metricId == mood && f.kind == InsightKind.use)
-            .firstOrNull;
-        if (use != null && use.effect < 0) found++;
-      }
-      expect(found, greaterThanOrEqualTo(16));
-      int small = 0;
-      for (int seed = 0; seed < 20; seed++) {
-        final InsightsReport report = computeInsights(
-          moodInput(seed, shift: 0.2),
-        );
-        final Iterable<HabitFinding> got = report.findings.where(
-          (f) => f.metricId == mood,
-        );
-        for (final HabitFinding f in got) {
-          expect(
-            typicalEffect(f).abs(),
-            greaterThanOrEqualTo(report.floors[mood]!),
-            reason: 'seed $seed',
+    test(
+      'a mood difference of a whole SD is found; one of 0.2 SD seldom is, and never under the floor',
+      () {
+        int found = 0;
+        for (int seed = 0; seed < 20; seed++) {
+          final InsightsReport report = computeInsights(
+            moodInput(seed, shift: 1),
           );
+          final HabitFinding? use = report.findings
+              .where((f) => f.metricId == mood && f.kind == InsightKind.use)
+              .firstOrNull;
+          if (use != null && use.effect < 0) found++;
         }
-        if (got.isNotEmpty) small++;
-      }
-      expect(small, lessThanOrEqualTo(2));
-    });
+        expect(found, greaterThanOrEqualTo(16));
+        int small = 0;
+        for (int seed = 0; seed < 20; seed++) {
+          final InsightsReport report = computeInsights(
+            moodInput(seed, shift: 0.2),
+          );
+          final Iterable<HabitFinding> got = report.findings.where(
+            (f) => f.metricId == mood,
+          );
+          for (final HabitFinding f in got) {
+            expect(
+              typicalEffect(f).abs(),
+              greaterThanOrEqualTo(report.floors[mood]!),
+              reason: 'seed $seed',
+            );
+          }
+          if (got.isNotEmpty) small++;
+        }
+        expect(small, lessThanOrEqualTo(2));
+      },
+    );
 
     test('on noise, mood rarely yields a finding', () {
       int found = 0;

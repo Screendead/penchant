@@ -30,8 +30,9 @@ void push(NavigatorState navigator) => navigator.push(
 
 void main() {
   test('every platform pushes pages with the fade-through', () {
-    final PageTransitionsTheme theme = appTheme(Brightness.light)
-        .pageTransitionsTheme;
+    final PageTransitionsTheme theme = appTheme(
+      Brightness.light,
+    ).pageTransitionsTheme;
     for (final TargetPlatform platform in TargetPlatform.values) {
       expect(
         theme.builders[platform],

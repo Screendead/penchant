@@ -203,9 +203,9 @@ void main() {
         contains(RefusalReason.withinNoise),
       );
       expect(
-        computeInsights(input).refused
-            .singleWhere((r) => r.habitId == chance.habitId)
-            .reason,
+        computeInsights(
+          input,
+        ).refused.singleWhere((r) => r.habitId == chance.habitId).reason,
         RefusalReason.chance,
       );
       return;

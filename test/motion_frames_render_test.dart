@@ -122,8 +122,9 @@ Future<void> Function() _recorder(
     final ByteData? png = await image.toByteData(
       format: ui.ImageByteFormat.png,
     );
-    await File('${out.path}/frame-${(n++).toString().padLeft(3, '0')}.png')
-        .writeAsBytes(png!.buffer.asUint8List());
+    await File(
+      '${out.path}/frame-${(n++).toString().padLeft(3, '0')}.png',
+    ).writeAsBytes(png!.buffer.asUint8List());
   });
 }
 
@@ -308,11 +309,13 @@ void main() {
         'rejected-${brightness.name}',
       );
       await capture();
-      (ProviderScope.containerOf(tester.element(find.byType(ViceTracker))).read(
-        rejectedWritesProvider.notifier,
-      ) as _Rejected).show(const <RejectedWrite>[
-        RejectedWrite('Not saved: Coffee, 1 cup, today 09:10', null),
-      ]);
+      (ProviderScope.containerOf(
+                tester.element(find.byType(ViceTracker)),
+              ).read(rejectedWritesProvider.notifier)
+              as _Rejected)
+          .show(const <RejectedWrite>[
+            RejectedWrite('Not saved: Coffee, 1 cup, today 09:10', null),
+          ]);
       await tester.pump();
       await _run(tester, capture, 30);
       debugDisableShadows = false;

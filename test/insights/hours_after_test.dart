@@ -347,9 +347,9 @@ void main() {
 
   // 20 seeds x 4 windows; at a 5% false rate per check, 10 or more is
   // under 1 in 100 (binomial).
-  int falseFindings(Synthetic Function(int seed) make) =>
-      <int>[for (int seed = 0; seed < 20; seed++) findings(judge(make(seed)))]
-          .reduce((a, b) => a + b);
+  int falseFindings(Synthetic Function(int seed) make) => <int>[
+    for (int seed = 0; seed < 20; seed++) findings(judge(make(seed))),
+  ].reduce((a, b) => a + b);
 
   test('a morning rise with no habit effect is not a finding', () {
     expect(

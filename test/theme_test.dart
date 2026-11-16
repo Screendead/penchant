@@ -412,31 +412,37 @@ void main() {
         expect(roles.intersection(p.data.toSet()), isEmpty);
       });
 
-      test('pairs the ThemeData-only text roles with their ground at 4.5:1 or better', () {
-        final Map<String, (Color, Color)> pairs = <String, (Color, Color)>{
-          'onError on error': (scheme.onError, scheme.error),
-          'onErrorContainer': (scheme.onErrorContainer, scheme.errorContainer),
-          'onTertiaryContainer': (
-            scheme.onTertiaryContainer,
-            scheme.tertiaryContainer,
-          ),
-          'onSecondaryContainer': (
-            scheme.onSecondaryContainer,
-            scheme.secondaryContainer,
-          ),
-          'snack text': (
-            theme.snackBarTheme.contentTextStyle!.color!,
-            theme.snackBarTheme.backgroundColor!,
-          ),
-        };
-        pairs.forEach((String name, (Color, Color) pair) {
-          expect(
-            _contrast(pair.$1, pair.$2),
-            greaterThanOrEqualTo(4.5),
-            reason: name,
-          );
-        });
-      });
+      test(
+        'pairs the ThemeData-only text roles with their ground at 4.5:1 or better',
+        () {
+          final Map<String, (Color, Color)> pairs = <String, (Color, Color)>{
+            'onError on error': (scheme.onError, scheme.error),
+            'onErrorContainer': (
+              scheme.onErrorContainer,
+              scheme.errorContainer,
+            ),
+            'onTertiaryContainer': (
+              scheme.onTertiaryContainer,
+              scheme.tertiaryContainer,
+            ),
+            'onSecondaryContainer': (
+              scheme.onSecondaryContainer,
+              scheme.secondaryContainer,
+            ),
+            'snack text': (
+              theme.snackBarTheme.contentTextStyle!.color!,
+              theme.snackBarTheme.backgroundColor!,
+            ),
+          };
+          pairs.forEach((String name, (Color, Color) pair) {
+            expect(
+              _contrast(pair.$1, pair.$2),
+              greaterThanOrEqualTo(4.5),
+              reason: name,
+            );
+          });
+        },
+      );
 
       testWidgets('the clear day says so in the sage ink', (
         WidgetTester tester,
@@ -468,8 +474,9 @@ void main() {
           expect(tester.takeException(), isNull);
           expect(find.textContaining(shows), findsWidgets);
           expect(
-            Theme.of(tester.element(find.textContaining(shows).first))
-                .brightness,
+            Theme.of(
+              tester.element(find.textContaining(shows).first),
+            ).brightness,
             brightness,
           );
         });

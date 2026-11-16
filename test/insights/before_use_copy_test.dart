@@ -124,8 +124,10 @@ void main() {
   });
 
   test('Copy as text carries the section under its heading', () {
-    final BeforeUseCard card = beforeUseCards(<BeforeUse>[whether, hour])
-        .single;
+    final BeforeUseCard card = beforeUseCards(<BeforeUse>[
+      whether,
+      hour,
+    ]).single;
     final String text = insightsText(
       cards: const [],
       refused: const [],

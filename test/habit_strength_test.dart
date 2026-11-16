@@ -191,9 +191,9 @@ void main() {
       expect(own.triggersAlone, isFalse);
       expect(own.answersDiffer(const ActivityContent()), isTrue);
       expect(
-        const ActivityContent(caffeineMg: 120)
-            .withStrength(abv: null, caffeineMg: null)
-            .caffeineMg,
+        const ActivityContent(
+          caffeineMg: 120,
+        ).withStrength(abv: null, caffeineMg: null).caffeineMg,
         isNull,
       );
       expect(ActivityContent.read(<String, Object?>{'abv': 101}).abv, isNull);
