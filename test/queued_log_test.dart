@@ -112,6 +112,34 @@ void main() {
       expect(logs.single.toJson()['createdAt'], 1794142800000.0);
       expect(decodeQueuedLogs('not json'), isEmpty);
     });
+
+    // LogQueue.remove matches whole entries, and Swift writes no key for an
+    // absent `via`.
+    test('hands back a log exactly as it was queued, `via` or none', () {
+      final List<Map<String, Object?>> queued = <Map<String, Object?>>[
+        <String, Object?>{
+          'op': 'log',
+          'id': 'a',
+          'uid': 'u1',
+          'viceID': 'coffee',
+          'createdAt': 1794142800000.0,
+        },
+        <String, Object?>{
+          'op': 'log',
+          'id': 'b',
+          'uid': 'u1',
+          'viceID': 'coffee',
+          'createdAt': 1794142800000.0,
+          'via': 'watch',
+        },
+      ];
+      expect(
+        decodeQueuedLogs(
+          jsonEncode(queued),
+        ).map((QueuedLog l) => l.toJson()).toList(),
+        queued,
+      );
+    });
   });
 
   group('readyLogs', () {
@@ -212,6 +240,33 @@ void main() {
       });
       expect(bridge.queue.map((QueuedLog l) => l.id), <String>['young']);
       expect(next, isNotNull);
+    });
+
+    test('a log from the Apple Watch is stored as one', () async {
+      final ProviderContainer container = await signedIn();
+      final FakeTrackerWrites writes = FakeTrackerWrites();
+      final DateTime tapped = now.subtract(const Duration(hours: 3));
+      final _QueueBridge bridge = _QueueBridge(<QueuedLog>[
+        QueuedLog(
+          op: QueuedLogOp.log,
+          id: 'w',
+          uid: 'u1',
+          viceID: 'coffee',
+          createdAtMs: tapped.millisecondsSinceEpoch.toDouble(),
+          via: QueuedLog.viaWatch,
+        ),
+      ]);
+
+      await flushQueuedLogs(
+        bridge: bridge,
+        writes: writes,
+        rejected: container.read(rejectedWritesProvider.notifier),
+        uid: 'u1',
+        now: now,
+      );
+
+      expect(writes.writes.single.fields['loggedVia'], LoggedVia.watch);
+      expect(bridge.queue, isEmpty);
     });
 
     test('without the journal key writes deletes only, and keeps the logs '
