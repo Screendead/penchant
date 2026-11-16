@@ -570,9 +570,8 @@ class _AskChartState extends State<AskChart> {
           ),
           Text(
             _plan.numberLabel,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: DialColors.of(context).muted,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: DialColors.of(context).muted),
           ),
         ],
       ),

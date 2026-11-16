@@ -61,9 +61,8 @@ List<PayoffCard> payoffCards(
       return a.findings.isEmpty ? 1 : -1;
     }
     if (a.findings.isNotEmpty) {
-      final int bySize = size(
-        b.findings.first,
-      ).compareTo(size(a.findings.first));
+      final int bySize = size(b.findings.first)
+          .compareTo(size(a.findings.first));
       if (bySize != 0) return bySize;
     }
     return a.habitId.compareTo(b.habitId);

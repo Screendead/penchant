@@ -74,6 +74,7 @@ class TallyRow extends StatefulWidget {
     required this.onLog,
     this.trailing,
     this.lineTotal,
+    this.actions = const <TileAction>[],
   });
 
   final Vice vice;
@@ -88,6 +89,8 @@ class TallyRow extends StatefulWidget {
   // What the habit's line is read against: the day's total for a day line,
   // the last 7 days' for a week line. Null shows no line, as while it loads.
   final num? lineTotal;
+  // The tile's long-press menu; none, no menu.
+  final List<TileAction> actions;
 
   static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.units.label(total)}';
@@ -209,6 +212,7 @@ class _TallyRowState extends State<TallyRow>
     );
 
     return _TileSemantics(
+      onLongPress: widget.actions.isEmpty ? null : _openMenu,
       child: AnimatedBuilder(
         animation: _flash,
         builder: (BuildContext context, Widget? child) => DecoratedBox(
@@ -292,6 +296,8 @@ class _TallyRowState extends State<TallyRow>
     );
   }
 
+  void _openMenu() => showTileMenu(context, widget.vice, widget.actions);
+
   // Along the tile's foot, the line alone: the total it is read against in
   // words, over a track with a tick at the line. The line sits three
   // quarters along until the total passes the track's end; past the line the
@@ -365,6 +371,74 @@ class _TallyRowState extends State<TallyRow>
   }
 }
 
+// One item of a habit tile's long-press menu.
+class TileAction {
+  const TileAction({
+    required this.label,
+    required this.onSelected,
+    this.unavailable,
+  });
+
+  final String label;
+  final VoidCallback onSelected;
+  // Why it cannot run now, in one line under it, which disables it.
+  final String? unavailable;
+}
+
+Future<void> showTileMenu(
+  BuildContext context,
+  Vice vice,
+  List<TileAction> actions,
+) => showModalBottomSheet<void>(
+  context: context,
+  useSafeArea: true,
+  builder: (BuildContext sheet) {
+    final DialColors colors = DialColors.of(sheet);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: DialSpace.s),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DialSpace.l,
+                DialSpace.xs,
+                DialSpace.l,
+                DialSpace.xs,
+              ),
+              child: Text(
+                vice.name,
+                style: Theme.of(sheet).textTheme.titleMedium,
+              ),
+            ),
+            for (final TileAction action in actions)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: DialSpace.l,
+                ),
+                enabled: action.unavailable == null,
+                title: Text(action.label),
+                subtitle: switch (action.unavailable) {
+                  null => null,
+                  final String why => Text(
+                    why,
+                    style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+                  ),
+                },
+                onTap: () {
+                  Navigator.of(sheet).pop();
+                  action.onSelected();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+
 class LineBarPainter extends CustomPainter {
   LineBarPainter({
     required this.fraction,
@@ -419,8 +493,26 @@ class LineBarPainter extends CustomPainter {
 
 // The tile is one screen-reader stop, its name and total with the + as its
 // tap.
-class _TileSemantics extends SingleChildRenderObjectWidget {
-  const _TileSemantics({required Widget super.child});
+class _TileSemantics extends StatelessWidget {
+  const _TileSemantics({required this.child, this.onLongPress});
+
+  final Widget child;
+  // Opens the tile's menu, by touch or a screen reader's long press.
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) => _TileBoundary(
+    child: onLongPress == null
+        ? child
+        : Semantics(
+            onLongPress: onLongPress,
+            child: GestureDetector(onLongPress: onLongPress, child: child),
+          ),
+  );
+}
+
+class _TileBoundary extends SingleChildRenderObjectWidget {
+  const _TileBoundary({required Widget super.child});
 
   @override
   RenderObject createRenderObject(BuildContext context) =>

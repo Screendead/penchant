@@ -199,9 +199,9 @@ class _AskPageState extends ConsumerState<AskPage> {
     final List<Vice>? vices = ref.read(viceListProvider).value;
     final String question = _controller.text.trim();
     if (service == null || vices == null || question.isEmpty) return;
-    final List<({int id, Vice vice})> sent = numberedHabits(
-      vices,
-    ).take(askHabits(vices).length).toList();
+    final List<({int id, Vice vice})> sent = numberedHabits(vices)
+        .take(askHabits(vices).length)
+        .toList();
     final DateTime today = ref.read(todayProvider);
     final AskSession session = ref.read(askSessionProvider.notifier);
     final List<AskTurn> history = askHistory(ref.read(askSessionProvider));

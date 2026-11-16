@@ -256,15 +256,14 @@ final class Sqlite {
   final int Function(Pointer<Void>, int, int, Pointer<Int>) dbConfig;
 }
 
-typedef AuthorizerNative =
-    Int Function(
-      Pointer<Void>,
-      Int,
-      Pointer<Utf8>,
-      Pointer<Utf8>,
-      Pointer<Utf8>,
-      Pointer<Utf8>,
-    );
+typedef AuthorizerNative = Int Function(
+  Pointer<Void>,
+  Int,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+);
 typedef ProgressNative = Int Function(Pointer<Void>);
 
 /// Result and option codes from sqlite3.h.

@@ -75,14 +75,13 @@ void _setCrashlyticsCollection(bool enabled) {
   );
 }
 
-typedef RecordError =
-    Future<void> Function(
-      dynamic exception,
-      StackTrace? stack, {
-      dynamic reason,
-      bool? printDetails,
-      bool fatal,
-    });
+typedef RecordError = Future<void> Function(
+  dynamic exception,
+  StackTrace? stack, {
+  dynamic reason,
+  bool? printDetails,
+  bool fatal,
+});
 
 // Sends the exception, stack and literal context only. FlutterErrorDetails'
 // informationCollector is left out: its diagnostics can describe widgets,
@@ -109,13 +108,11 @@ Future<void>? _started;
 /// [diskCache] false keeps Firestore's cache in memory, for a process whose
 /// container sign-out cannot reach (the Mac's PenchantSync).
 Future<void> initializeFirebase({bool diskCache = true}) =>
-    _started ??= _initializeFirebase(diskCache: diskCache).catchError((
-      Object e,
-      StackTrace s,
-    ) {
-      _started = null;
-      Error.throwWithStackTrace(e, s);
-    });
+    _started ??= _initializeFirebase(diskCache: diskCache)
+        .catchError((Object e, StackTrace s) {
+          _started = null;
+          Error.throwWithStackTrace(e, s);
+        });
 
 Future<void> _initializeFirebase({required bool diskCache}) async {
   if (!useFirebaseEmulators) {

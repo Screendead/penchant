@@ -119,9 +119,8 @@ class ActivityContent {
       note != other.note ||
       followUp != other.followUp ||
       triggers.length != other.triggers.length ||
-      Iterable<int>.generate(
-        triggers.length,
-      ).any((int i) => triggers[i] != other.triggers[i]);
+      Iterable<int>.generate(triggers.length)
+          .any((int i) => triggers[i] != other.triggers[i]);
 }
 
 int? readUrge(Object? value) =>

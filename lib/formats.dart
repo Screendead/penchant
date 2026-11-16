@@ -167,13 +167,12 @@ String formatAmount(num value, {String? locale}) =>
 // point, and an optional leading minus for the validator to refuse. Whole
 // input, "2.0" included, comes back as an int.
 num? parseAmount(String text, {String? locale}) {
-  final String decimal = _amountFormat(
-    locale ?? formatLocale,
-  ).symbols.DECIMAL_SEP;
+  final String decimal = _amountFormat(locale ?? formatLocale)
+      .symbols
+      .DECIMAL_SEP;
   final String typed = text.trim().replaceAll(decimal, '.');
-  final RegExpMatch? match = RegExp(
-    r'^(-?)(\d*)(?:\.(\d*))?$',
-  ).firstMatch(typed);
+  final RegExpMatch? match = RegExp(r'^(-?)(\d*)(?:\.(\d*))?$')
+      .firstMatch(typed);
   if (match == null) return null;
   final String whole = match[2]!;
   final String fraction = match[3] ?? '';

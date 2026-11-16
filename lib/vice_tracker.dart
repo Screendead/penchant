@@ -42,6 +42,8 @@ import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/widgets/tally_row.dart';
+import 'package:tracker/night_out/night_out.dart';
+import 'package:tracker/night_out/night_out_sheet.dart';
 import 'package:tracker/writes/log_one.dart';
 
 // Today: the day as a 24-hour dial, a tally for each habit with a + that logs
@@ -96,9 +98,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void initState() {
     super.initState();
     _logTarget.add(_logNow);
-    pinnedDay =
-        PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
-            as DateTime?;
+    pinnedDay = PageStorage.maybeOf(
+      context,
+    )?.readState(context, identifier: _storageID) as DateTime?;
     ref.listenManual<bool>(
       pendingNudgeLogProvider,
       (bool? _, bool pending) => _openNudgeLog(pending),
@@ -168,9 +170,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     setState(() {
       pinnedDay = pinned;
     });
-    PageStorage.maybeOf(
-      context,
-    )?.writeState(context, pinned, identifier: _storageID);
+    PageStorage.maybeOf(context)
+        ?.writeState(context, pinned, identifier: _storageID);
   }
 
   // From the day shown now, not the one last built, so keys pressed within a
@@ -296,9 +297,8 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   }
 
   void _openEntry(DialEntry entry) {
-    Navigator.of(
-      context,
-    ).pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
+    Navigator.of(context)
+        .pushNamed('/vices/${entry.vice.id}/activities/${entry.id}');
   }
 
   @override
@@ -387,9 +387,10 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     final ExperimentPlan? plan = ref.watch(experimentProvider).value?.active;
     final String? planHabit = plan == null
         ? null
-        : <Vice>[
-            ...?allVices,
-          ].where((Vice v) => v.id == plan.habitId).firstOrNull?.name;
+        : <Vice>[...?allVices]
+              .where((Vice v) => v.id == plan.habitId)
+              .firstOrNull
+              ?.name;
     final bool planShown =
         plan != null &&
         planHabit != null &&
@@ -408,6 +409,24 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             ),
           )
         : null;
+    // A night out: offered from each tile on an iPhone (iOS says whether it
+    // can run), and shown above the dial while it runs.
+    final NightOutStatus? nightOut = ref.watch(nightOutProvider);
+    final Night? night = nightOut?.night;
+    final Vice? nightVice = night == null
+        ? null
+        : <Vice>[...?allVices]
+              .where((Vice v) => v.id == night.viceID)
+              .firstOrNull;
+    List<TileAction> tileActions(Vice vice) => <TileAction>[
+      if (nightOut != null && nightOutPlatform && !vice.locked)
+        TileAction(
+          label: startNightLabel,
+          unavailable: nightUnavailableReason(nightOut),
+          onSelected: () =>
+              showStartNightSheet(context, vice: vice, mark: markOf(vice)),
+        ),
+    ];
     final int? shadeFrom = planShown && plan.noneOn(day) == true
         ? plan.fromHour * 60
         : null;
@@ -510,6 +529,12 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                         ),
                         const SizedBox(height: 6),
                         ?experimentStrip,
+                        if (night != null && nightVice != null && day == today)
+                          NightStrip(
+                            night: night,
+                            vice: nightVice,
+                            mark: markOf(nightVice),
+                          ),
                         // The dial's geometry is drawn for its 320 pt size, so
                         // a larger dial is that one scaled.
                         Center(
@@ -565,6 +590,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                                       : totals[vice.id],
                                   day: day,
                                   onLog: (Offset from) => _log(vice, from),
+                                  actions: tileActions(vice),
                                   lineTotal: switch (vice.line?.period) {
                                     null => null,
                                     LinePeriod.day =>
