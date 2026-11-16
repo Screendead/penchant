@@ -47,6 +47,9 @@ class ViceForm extends ConsumerStatefulWidget {
   static const Key caffeineKey = ValueKey<String>('vice-form-caffeine');
 
   static const String strengthLabel = 'Strength (optional)';
+  static const String strengthNone = 'None';
+  static const String alcoholLabel = 'Alcohol %';
+  static const String caffeineLabel = 'Caffeine mg';
   static const String strengthHelp =
       'Adds a Units view to Trends. It only measures: no guideline, no '
       'warnings.';
@@ -587,9 +590,17 @@ class _ViceFormState extends ConsumerState<ViceForm> {
         const SizedBox(height: DialSpace.xs),
         PillSegments<bool?>(
           segments: const <({bool? value, String label, String spoken})>[
-            (value: null, label: 'None', spoken: 'No strength'),
-            (value: true, label: 'Alcohol', spoken: 'Alcohol strength'),
-            (value: false, label: 'Caffeine', spoken: 'Caffeine amount'),
+            (value: null, label: ViceForm.strengthNone, spoken: 'No strength'),
+            (
+              value: true,
+              label: ViceForm.alcoholLabel,
+              spoken: 'Alcohol strength',
+            ),
+            (
+              value: false,
+              label: ViceForm.caffeineLabel,
+              spoken: 'Caffeine amount',
+            ),
           ],
           selected: kind,
           onChanged: (bool? value) => setState(() => alcohol = value),
