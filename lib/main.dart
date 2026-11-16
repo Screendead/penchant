@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/ask/ask_page.dart';
+import 'package:tracker/claude/claude_working_gallery.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
@@ -261,6 +262,8 @@ Widget routePage(String? name, {DateTime? now}) {
       return const AskPage();
     case ['letter']:
       return const LetterPage();
+    case ['claude-working'] when useFirebaseEmulators:
+      return const ClaudeWorkingGallery();
     case ['manage-data']:
       return const ManageData();
     case ['deleted-habit']:

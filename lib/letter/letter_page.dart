@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/claude/claude_working.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -53,6 +56,11 @@ class LetterPage extends ConsumerStatefulWidget {
   static const String notesHeading = 'Every note sent';
   static const String noNotes = 'No notes in this period.';
   static const String writing = 'Writing your letter…';
+
+  /// Where a letter just written appears; one is written at a time.
+  static const Object resultTag = ('letter', 'written');
+  static const String writingNow = 'Claude is writing your letter';
+  static String sent(LetterCounts c) => 'Sent ${counts(c)}';
   static const String writingBody =
       'This can take one to two minutes. You can leave this page: the letter '
       'is saved here when it arrives, as long as Penchant stays open. If '
@@ -115,6 +123,7 @@ enum _Step { list, choose, preview }
 
 class _LetterPageState extends ConsumerState<LetterPage> {
   _Step step = _Step.list;
+  final GlobalKey _sendKey = GlobalKey();
   int months = defaultLetterMonths;
   SavedLetter? viewing;
 
@@ -173,12 +182,34 @@ class _LetterPageState extends ConsumerState<LetterPage> {
     viewing = null;
   });
 
-  Future<void> _send(LetterPayload p) async {
+  Future<void> _send(BuildContext from, LetterPayload p) async {
+    final LetterRunner runner = ref.read(letterRunProvider.notifier);
+    final ClaudeWork work = ClaudeWork(
+      status: LetterPage.writingNow,
+      detail: LetterPage.sent(p.counts),
+      showElapsed: true,
+    );
+    unawaited(
+      showClaudeWorking(
+        from,
+        work,
+        resultTag: LetterPage.resultTag,
+        onStop: runner.abandon,
+      ),
+    );
     setState(() {
       step = _Step.list;
       payload = null;
     });
-    await ref.read(letterRunProvider.notifier).send(p);
+    await runner.send(p);
+    if (!mounted) {
+      work.finish(ClaudeWorkEnd.failed);
+      return;
+    }
+    final LetterRun run = ref.read(letterRunProvider);
+    work.finish(
+      run is LetterWritten ? ClaudeWorkEnd.answered : ClaudeWorkEnd.failed,
+    );
   }
 
   Future<void> _delete(SavedLetter letter) async {
@@ -215,7 +246,13 @@ class _LetterPageState extends ConsumerState<LetterPage> {
       return CardPage(
         title: LetterPage.title,
         children: <Widget>[
-          _LetterView(letter: shown),
+          if (viewing == null)
+            ClaudeWorkingResult(
+              tag: LetterPage.resultTag,
+              child: _LetterView(letter: shown),
+            )
+          else
+            _LetterView(letter: shown),
           DialCard(
             children: <Widget>[
               CardRow(
@@ -257,38 +294,15 @@ class _LetterPageState extends ConsumerState<LetterPage> {
   List<Widget> _list(BuildContext context, LetterRun run) {
     final List<SavedLetter> letters =
         ref.watch(lettersProvider).value ?? const <SavedLetter>[];
-    final DialColors colors = DialColors.of(context);
     return <Widget>[
       const CardFoot(LetterPage.intro),
       switch (run) {
-        LetterSending() => DialCard(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      if (!MediaQuery.disableAnimationsOf(context)) ...<Widget>[
-                        const SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        const SizedBox(width: DialSpace.s),
-                      ],
-                      Text(LetterPage.writing, style: DialTypeScale.bodyL),
-                    ],
-                  ),
-                  const SizedBox(height: DialSpace.xs),
-                  Text(
-                    LetterPage.writingBody,
-                    style: DialTypeScale.label.copyWith(color: colors.muted),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        LetterSending() => const Padding(
+          padding: EdgeInsets.only(top: DialSpace.l),
+          child: ClaudeWorkingCard(
+            status: LetterPage.writing,
+            detail: LetterPage.writingBody,
+          ),
         ),
         LetterNotWritten(:final String reason) => Padding(
           padding: const EdgeInsets.only(top: DialSpace.l),
@@ -389,8 +403,11 @@ class _LetterPageState extends ConsumerState<LetterPage> {
       const CardFoot(LetterPage.disclosure),
       const SizedBox(height: DialSpace.l),
       _Buttons(
+        key: _sendKey,
         primary: LetterPage.send,
-        onPrimary: busy ? null : () => _send(p),
+        onPrimary: busy
+            ? null
+            : () => _send(_sendKey.currentContext ?? context, p),
         onCancel: _toList,
       ),
       const CardSectionLabel(LetterPage.notesHeading),
@@ -405,7 +422,12 @@ class _LetterPageState extends ConsumerState<LetterPage> {
 }
 
 class _Buttons extends StatelessWidget {
-  const _Buttons({this.primary, this.onPrimary, required this.onCancel});
+  const _Buttons({
+    super.key,
+    this.primary,
+    this.onPrimary,
+    required this.onCancel,
+  });
 
   final String? primary;
   final VoidCallback? onPrimary;

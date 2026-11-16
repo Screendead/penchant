@@ -242,7 +242,12 @@ void main() {
       await tester.pumpAndSettle();
       await ask(tester, 'First?');
       expect(find.text(AskPage.failed), findsOneWidget);
-      expect(find.text('First?'), findsOneWidget);
+      // Once in the asked list, and back in the field to ask again.
+      expect(find.text('First?'), findsNWidgets(2));
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'First?',
+      );
     });
 
     testWidgets('a follow-up sends the earlier turn and its answer', (

@@ -30,6 +30,8 @@ import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
+import 'package:tracker/claude/claude_working_gallery.dart';
+import 'package:tracker/firebase_init.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 // Nothing signs a guest back in, so signing out erases their journal rather
@@ -381,6 +383,17 @@ class _SettingsState extends ConsumerState<Settings> {
             LetterSetting(),
           ],
         ),
+        if (useFirebaseEmulators)
+          DialCard(
+            children: <Widget>[
+              CardRow(
+                label: ClaudeWorkingGallery.title,
+                glyph: DialGlyph.right,
+                onTap: () =>
+                    Navigator.of(context).pushNamed(ClaudeWorkingGallery.route),
+              ),
+            ],
+          ),
         DialCard(
           top: DialSpace.xl,
           children: <Widget>[
