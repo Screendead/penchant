@@ -93,10 +93,16 @@ void main() {
     // The read-out starts on the last bar; a tap on the first moves it.
     final String logged = humaniseColumn('logged');
     expect(find.text('$logged 1'), findsOneWidget);
+    // The question field still holds focus; with the keyboard gone the page
+    // holds still under the touch.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await pumpFor(tester, const Duration(seconds: 1));
     await scrollIntoView(tester, find.byType(BarChart));
     final Rect chart = tester.getRect(find.byType(BarChart));
-    await tester.tapAt(
-      Offset(chart.left + chart.width * 0.25, chart.center.dy),
+    await tester.timedDragFrom(
+      Offset(chart.left + chart.width * 0.5, chart.center.dy),
+      Offset(-chart.width * 0.4, 0),
+      const Duration(milliseconds: 400),
     );
     await pumpUntil(tester, find.text('$logged 2'));
     expect(find.text('Coffee'), findsWidgets);
