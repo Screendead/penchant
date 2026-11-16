@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/widgets/settings_card.dart';
@@ -101,6 +102,9 @@ class AskJournalSetting extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(claudeAllowedProvider)) {
+      return const ClaudeNeedsEmailRow(label: label);
+    }
     final bool on = ref.watch(askJournalEnabledProvider);
     return MergeSemantics(
       child: CardRow(

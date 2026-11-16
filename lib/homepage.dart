@@ -5,6 +5,7 @@ import 'package:tracker/design/dial_icons.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/insights_page.dart';
@@ -139,7 +140,9 @@ class _AppMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool ask = ref.watch(askJournalEnabledProvider);
+    final bool ask =
+        ref.watch(askJournalEnabledProvider) &&
+        ref.watch(claudeAllowedProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final DialColors colors = DialColors.of(context);

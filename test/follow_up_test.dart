@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/data/activity_content.dart';
@@ -165,6 +166,7 @@ void main() {
         final ProviderContainer container = ProviderContainer(
           overrides: [
             userProvider.overrideWith((ref) => Stream.value(FakeUser('a'))),
+            claudeAllowedProvider.overrideWithValue(true),
           ],
         );
         addTearDown(container.dispose);
@@ -575,7 +577,9 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{
         NoteReaderEnabled.key: reader,
       });
-      final ProviderContainer container = ProviderContainer();
+      final ProviderContainer container = ProviderContainer(
+        overrides: [claudeAllowedProvider.overrideWithValue(true)],
+      );
       addTearDown(container.dispose);
       await tester.pumpWidget(
         UncontrolledProviderScope(

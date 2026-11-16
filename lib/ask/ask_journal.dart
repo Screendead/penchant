@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/ask/ask_query.dart';
 import 'package:tracker/data/day.dart';
@@ -40,16 +40,12 @@ final Provider<AskJournal?> askJournalProvider = Provider<AskJournal?>((
   if (useFirebaseEmulators) return null;
   if (!ref.watch(askJournalEnabledProvider)) return null;
   if (ref.watch(userProvider).value == null) return null;
+  if (!ref.watch(claudeAllowedProvider)) return null;
   return CallableAskJournal(_callAskJournal);
 });
 
-Future<Object?> _callAskJournal(Map<String, Object?> data) async {
-  final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
-    'askJournal',
-    options: HttpsCallableOptions(timeout: CallableAskJournal.timeout),
-  );
-  return (await callable.call<Object?>(data)).data;
-}
+Future<Object?> _callAskJournal(Map<String, Object?> data) =>
+    callClaude('askJournal', CallableAskJournal.timeout, data);
 
 /// The server answered without a query, for [reason] (`refusal`,
 /// `max_tokens`, `unparsable`, `api_error`).

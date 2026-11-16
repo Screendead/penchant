@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/ask/ask_page.dart';
@@ -217,7 +218,10 @@ void main() {
         AskJournalEnabled.key: ?enabled,
       });
       final ProviderContainer container = ProviderContainer(
-        overrides: [userProvider.overrideWith((ref) => Stream.value(user))],
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(user)),
+          claudeAllowedProvider.overrideWithValue(true),
+        ],
       );
       addTearDown(container.dispose);
       container.listen(askJournalProvider, (_, _) {});
@@ -354,6 +358,7 @@ void main() {
 
   group('AskJournalSetting', () {
     Widget app() => ProviderScope(
+      overrides: [claudeAllowedProvider.overrideWithValue(true)],
       child: MaterialApp(
         theme: appTheme(Brightness.light),
         home: const Scaffold(body: AskJournalSetting()),

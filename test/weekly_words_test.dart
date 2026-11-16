@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -484,6 +485,7 @@ void main() {
 
   group('WeeklyWordsSetting', () {
     Widget app() => ProviderScope(
+      overrides: [claudeAllowedProvider.overrideWithValue(true)],
       child: MaterialApp(
         theme: appTheme(Brightness.light),
         home: const Scaffold(body: WeeklyWordsSetting()),

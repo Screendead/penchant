@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/trigger_tree.dart';
 import 'package:tracker/firebase_init.dart';
@@ -43,19 +43,15 @@ final Provider<NoteReader?> noteReaderProvider = Provider<NoteReader?>((
   if (useFirebaseEmulators) return null;
   if (!ref.watch(noteReaderEnabledProvider)) return null;
   if (ref.watch(userProvider).value == null) return null;
+  if (!ref.watch(claudeAllowedProvider)) return null;
   return CallableNoteReader(
     _callReadNote,
     askQuestions: ref.watch(followUpEnabledProvider),
   );
 });
 
-Future<Object?> _callReadNote(Map<String, Object?> data) async {
-  final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
-    'readNote',
-    options: HttpsCallableOptions(timeout: CallableNoteReader.timeout),
-  );
-  return (await callable.call<Object?>(data)).data;
-}
+Future<Object?> _callReadNote(Map<String, Object?> data) =>
+    callClaude('readNote', CallableNoteReader.timeout, data);
 
 /// The server read the note but found nothing it could stand behind, for
 /// [reason] (`refusal`, `max_tokens`, `unparsable`, `api_error`).

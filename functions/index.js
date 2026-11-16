@@ -15,6 +15,7 @@ const { summarise } = require('./summary.js');
 const { DailyCap, readNote, validNote, wantsQuestion } = require('./note_reader.js');
 const { validFigures, writeWeekly } = require('./weekly_words.js');
 const { askJournal, validInput } = require('./ask_journal.js');
+const { verifiedCaller } = require('./caller.js');
 
 initializeApp();
 
@@ -291,6 +292,15 @@ function configuredClient(name) {
   return client;
 }
 
+// Guests and unverified emails may not use Claude; checked before the cap and
+// any model call.
+function requireVerified(name, auth) {
+  if (!verifiedCaller(auth)) {
+    logger.warn(name, { reason: 'unverified' });
+    throw new HttpsError('permission-denied', 'Verify an email address to use this.');
+  }
+}
+
 function takeCap(name, cap, uid) {
   if (!cap.take(uid)) {
     logger.warn(name, { reason: 'daily_cap' });
@@ -304,6 +314,7 @@ function takeCap(name, cap, uid) {
 // matched term after a colon, so only the part before it is logged.
 exports.readNote = onCall(CALLABLE, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to read a note.');
+  requireVerified('readNote', request.auth);
   const note = validNote(request.data);
   if (note == null) throw new HttpsError('invalid-argument', 'A note is 1 to 2000 characters.');
   const client = configuredClient('readNote');
@@ -323,6 +334,7 @@ exports.readNote = onCall(CALLABLE, async (request) => {
 // never the uid, the figures or the paragraph.
 exports.writeWeekly = onCall(CALLABLE, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to write a weekly review.');
+  requireVerified('writeWeekly', request.auth);
   const figures = validFigures(request.data);
   if (figures == null) throw new HttpsError('invalid-argument', 'The figures are not in the expected form.');
   const client = configuredClient('writeWeekly');
@@ -336,6 +348,7 @@ exports.writeWeekly = onCall(CALLABLE, async (request) => {
 // reason code only: never the uid, the question, the habits or the query.
 exports.askJournal = onCall(CALLABLE, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to ask your journal.');
+  requireVerified('askJournal', request.auth);
   const input = validInput(request.data);
   if (input == null) throw new HttpsError('invalid-argument', 'The question is not in the expected form.');
   const client = configuredClient('askJournal');

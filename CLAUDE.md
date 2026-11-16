@@ -266,7 +266,13 @@ exchanges; the rule, organization, service account and workspace ids are reposit
 writes to `functions/.env.screendead-vice-tracker` at deploy (unset, it answers `failed-precondition`). Abuse is
 bounded by `maxInstances: 2`, 60 reads a day per uid per instance in memory, and the workspace's spend and rate
 limits in the Claude Console. `functions/tools/note-reader-trial.js` runs 12 made-up notes through the same prompt
-with an API key from the environment.
+with an API key from the environment. Only an account with a verified email may use Claude (Jack, 2026-11-15:
+"Yes, refuse guests"), here and in the three features below: `claudeAllowedProvider`
+(`lib/account/claude_access.dart`: the profile's `emailVerified` by `select`, and `Account.isGuest`) makes every
+Claude provider null otherwise, and each Settings row is then off with "Add and verify an email address first.",
+opening Account Settings. Each callable refuses a guest or an unverified email with `permission-denied`
+(`verifiedCaller`, `functions/caller.js`) before its cap and any model call; since a token minted before verification
+still says unverified, `callClaude` refreshes the ID token once on that answer and calls again.
 
 **Follow-up question** (`lib/notes/follow_up*.dart`, off by default; Settings' "Ask one question about a note",
 `FollowUpSetting`, under the note reader's switch and without effect while it is off). With it on, the note reader's
@@ -622,7 +628,7 @@ so an untouched new entry is logged at the moment of saving, to the second. The 
 
 **Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
 Follow-up question), `writeWeekly` (Weekly review in words) and `askJournal` (Ask your journal), each requiring
-sign-in, answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
+sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
 `maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account. `monthlySummaries` (03:00 UTC on the 1st;
 `r8-bead-size`) writes `summaries/{uid}` for every user owning a vice: `{computedAt, windowDays: 90, vices: {viceID:
 {typical, count}}}`, the median positive quantity of their last 90 days of activities and the entries it covers

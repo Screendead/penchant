@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/notes/note_reader_setting.dart';
@@ -102,6 +103,9 @@ class FollowUpSetting extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(claudeAllowedProvider)) {
+      return const ClaudeNeedsEmailRow(label: label);
+    }
     final bool reader = ref.watch(noteReaderEnabledProvider);
     final bool on = reader && ref.watch(followUpEnabledProvider);
     return MergeSemantics(

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/data/trigger_usage.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/firebase_init.dart';
@@ -345,6 +345,7 @@ final Provider<WeeklyWords?> weeklyWordsProvider = Provider<WeeklyWords?>((
   if (useFirebaseEmulators) return null;
   if (!ref.watch(weeklyWordsEnabledProvider)) return null;
   if (ref.watch(userProvider).value == null) return null;
+  if (!ref.watch(claudeAllowedProvider)) return null;
   return CallableWeeklyWords(_callWriteWeekly);
 });
 
@@ -356,13 +357,8 @@ final weeklyParagraphProvider = FutureProvider.autoDispose
       return words.write(figures);
     });
 
-Future<Object?> _callWriteWeekly(Map<String, Object?> data) async {
-  final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
-    'writeWeekly',
-    options: HttpsCallableOptions(timeout: CallableWeeklyWords.timeout),
-  );
-  return (await callable.call<Object?>(data)).data;
-}
+Future<Object?> _callWriteWeekly(Map<String, Object?> data) =>
+    callClaude('writeWeekly', CallableWeeklyWords.timeout, data);
 
 /// The `writeWeekly` Cloud Function, through [call], which sends the figures
 /// and answers `{text, reason}`. Each week's checked reply, or its refusal,
