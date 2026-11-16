@@ -229,11 +229,8 @@ List<pw.Widget> _habit(ReportData data, HabitReport habit, _Styles s) {
           height: 14,
           child: pw.CustomPaint(
             size: const PdfPoint(14, 14),
-            painter: (PdfGraphics g, PdfPoint size) => _paintMark(
-              g,
-              habit.mark,
-              size,
-            ),
+            painter: (PdfGraphics g, PdfPoint size) =>
+                _paintMark(g, habit.mark, size),
           ),
         ),
         pw.SizedBox(width: 8),
@@ -637,10 +634,7 @@ pw.Widget _hours(ReportData data, HabitReport habit, _Styles s) {
       pw.Row(
         children: <pw.Widget>[
           for (int h = 0; h < 24; h += 6)
-            pw.Expanded(
-              flex: 6,
-              child: pw.Text(_hour(h), style: s.tinyMuted),
-            ),
+            pw.Expanded(flex: 6, child: pw.Text(_hour(h), style: s.tinyMuted)),
         ],
       ),
     ],
@@ -694,7 +688,8 @@ pw.Widget _tags(HabitReport habit, _Styles s) {
   );
 }
 
-pw.Widget _sectionTitle(String text, _Styles s) => pw.Text(text, style: s.section);
+pw.Widget _sectionTitle(String text, _Styles s) =>
+    pw.Text(text, style: s.section);
 
 List<pw.Widget> _noteRows(
   List<ReportNote> notes,

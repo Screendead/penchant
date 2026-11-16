@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/data/day.dart';
-import 'package:tracker/report/report_pdf.dart';
 
 // "Today" in the report tests: a Monday, so three months run from 1 September.
 final DateTime reportNow = DateTime(2026, 11, 16, 9, 30);
@@ -138,18 +137,5 @@ AccountData sampleJournal({int days = 380}) {
         },
       ),
     ],
-  );
-}
-
-Future<ReportFonts> loadReportFonts() async {
-  final List<ByteData> bytes = <ByteData>[
-    for (final String asset in ReportFonts.assets) await rootBundle.load(asset),
-  ];
-  return ReportFonts(
-    display: bytes[0],
-    text: bytes[1],
-    textBold: bytes[2],
-    mono: bytes[3],
-    monoBold: bytes[4],
   );
 }

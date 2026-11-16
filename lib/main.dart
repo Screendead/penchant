@@ -32,6 +32,7 @@ import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
+import 'package:tracker/report/report_page.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/font_licence.dart';
@@ -283,6 +284,8 @@ Widget routePage(String? name, {DateTime? now}) {
       return const ReduceMotionSettings();
     case ['settings', 'reminder']:
       return const ReminderSettings();
+    case ['settings', 'report']:
+      return const ReportOptionsPage();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
     default:

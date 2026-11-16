@@ -189,9 +189,8 @@ ReportData buildReport(
 
   final List<Vice> ordered = chosen.values.toList()
     ..sort(
-      (Vice a, Vice b) => marks[a.id]!.creationIndex.compareTo(
-        marks[b.id]!.creationIndex,
-      ),
+      (Vice a, Vice b) =>
+          marks[a.id]!.creationIndex.compareTo(marks[b.id]!.creationIndex),
     );
 
   return ReportData(
@@ -268,13 +267,12 @@ HabitReport _habitReport(
   }
   final List<ReportTag> tags =
       <ReportTag>[
-          for (final MapEntry<String, int>(:key, :value) in tagCounts.entries)
-            (label: key, entries: value),
-        ]
-        ..sort((ReportTag a, ReportTag b) {
-          final int byCount = b.entries.compareTo(a.entries);
-          return byCount != 0 ? byCount : a.label.compareTo(b.label);
-        });
+        for (final MapEntry<String, int>(:key, :value) in tagCounts.entries)
+          (label: key, entries: value),
+      ]..sort((ReportTag a, ReportTag b) {
+        final int byCount = b.entries.compareTo(a.entries);
+        return byCount != 0 ? byCount : a.label.compareTo(b.label);
+      });
   notes.sort((ReportNote a, ReportNote b) => a.at.compareTo(b.at));
 
   return HabitReport(
@@ -306,12 +304,7 @@ ReportWeek _week(
   final DateTime from = start.isBefore(window.start) ? window.start : start;
   final DateTime end = addDays(start, 7);
   final DateTime to = end.isAfter(window.end) ? window.end : end;
-  return (
-    start: from,
-    days: daysBetween(from, to),
-    total: total,
-    units: units,
-  );
+  return (start: from, days: daysBetween(from, to), total: total, units: units);
 }
 
 List<ReportNote> _dayNotes(AccountData data, ReportWindow window) {

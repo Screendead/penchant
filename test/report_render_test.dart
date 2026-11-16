@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
 import 'package:tracker/report/report_data.dart';
+import 'package:tracker/report/report_output.dart';
 import 'package:tracker/report/report_pdf.dart';
 
 import 'report_fakes.dart';
