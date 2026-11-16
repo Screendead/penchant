@@ -113,15 +113,18 @@ function statements(input) {
 // What a finding may use besides its own words: the numerals of every cell
 // sent, and as phrases the habit names, unit words and the cells that are tag
 // labels, longest first; hours, each cell that is wholly an integer 0 to 23,
-// which a clock time H:00 may name; and counts, each untruncated result's
-// number of rows and of distinct values in each column, which a count word
-// two to twelve may name. The same as findingContext in
+// which a clock time H:00 may name; counts, each cell that is wholly an
+// integer 2 to 12 and each untruncated result's number of rows and of
+// distinct values in each column, which a count word two to twelve may name;
+// and cells, every text cell, which a passage may quote whole (its words
+// still checked). The same as findingContext in
 // lib/analyst/investigation.dart.
 function contextOf(input) {
   const numerals = new Set();
   const phrases = new Set();
   const hours = new Set();
   const counts = new Set();
+  const cells = new Set();
   for (const h of input.habits) [h.name, h.unit, h.unit_one].forEach((p) => phrases.add(p));
   for (const { result } of statements(input)) {
     if (!result.rows) continue;
@@ -130,7 +133,9 @@ function contextOf(input) {
         if (cell == null) continue;
         for (const n of cell.match(NUMERAL) || []) numerals.add(n);
         if (KNOWN_LABELS.has(cell) || OWN_WORDS.test(cell)) phrases.add(cell);
+        cells.add(cell);
         if (/^\d{1,2}$/.test(cell) && Number(cell) <= 23) hours.add(Number(cell));
+        if (/^\d{1,2}$/.test(cell) && Number(cell) >= 2 && Number(cell) <= 12) counts.add(Number(cell));
       }
     }
     if (result.truncated) continue;
@@ -145,6 +150,7 @@ function contextOf(input) {
     phrases: [...phrases].filter((p) => p.trim() !== '').sort((a, b) => b.length - a.length),
     hours,
     counts,
+    cells,
   };
 }
 
@@ -262,10 +268,10 @@ const SYSTEM = [
   'Start broad (totals by month or week), then follow what stands out (hours, weekdays, tags, other habits).',
   '',
   `The finding: a headline (one sentence, at most ${LIMITS.headline} characters) and a body (2 to 5 plain sentences, at most ${LIMITS.body} characters in all) saying what the figures show, and rests_on, the n of each query whose result it uses; the phone shows those queries under it.`,
-  'Every number you write must appear exactly, as digits, in a cell of a result you were sent: write each figure as digits exactly as a cell shows it. So compute every figure you will state in SQL (differences, shares, percentages, averages), rounded there with round(x, 0) or round(x, 1). A clock time is either a cell\'s text exactly (make it with printf) or HH:00 for an hour a cell holds as a whole number; select any hour you use as a threshold (such as hour >= 18) as a column if you will name it. Never count, add or compare numbers yourself, and never state a count no result has shown you; never write numbers as words ("twice", "a couple") except two to twelve for the number of rows of a result or of different values in one of its columns. Refer to months by name.',
+  'Every number you write must appear exactly, as digits, in a cell of a result you were sent: write each figure as digits exactly as a cell shows it. So compute every figure you will state in SQL (differences, shares, percentages, averages), rounded there with round(x, 0) or round(x, 1). A clock time is either a cell\'s text exactly (make it with printf) or HH:00 for an hour a cell holds as a whole number; select any hour you use as a threshold (such as hour >= 18) as a column if you will name it. Never count, add or compare numbers yourself, and never state a count no result has shown you; never write numbers as words ("twice", "a couple") except two to twelve for a whole-number cell, the number of rows of a result or of different values in one of its columns. Refer to months by name.',
   'Describe only what the figures show. Never say or suggest that one thing causes, leads to, drives, triggers or explains another; whether it does is for the app\'s Insights, which the phone offers below your finding. Use no words such as because, due to, caused, effect or as a result.',
   'Never give advice, encouragement, praise, judgement or a diagnosis, and use no labels. Do not use words such as problem, addiction, should, need to, must, cut down, too much, healthy, risk, concerning, progress or success. Say nothing about the future.',
-  'Use double quotes only around a tag label exactly as a result gives it. Plain text, no markdown.',
+  'Use double quotes only around the whole text of a cell exactly as a result gives it (a tag label, say), matching case. Plain text, no markdown.',
 ].join('\n');
 
 // Opus 5.5 thinks always, so thinking is left at its adaptive default and
