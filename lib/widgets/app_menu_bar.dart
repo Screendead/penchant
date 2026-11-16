@@ -71,18 +71,25 @@ final todayLogTargetProvider = Provider<TodayLogTarget>(
 /// carries the app, Edit, View and Window menus too; elsewhere it adds
 /// nothing.
 class AppMenuBar extends ConsumerWidget {
-  const AppMenuBar({super.key, required this.child});
+  const AppMenuBar({super.key, required this.child, this.onFind});
 
   final Widget child;
+
+  /// Opens note search from Edit > Find (Cmd-F); null while nobody is
+  /// signed in.
+  final VoidCallback? onFind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
       return child;
     }
-    // The Log menu names habits, so it goes while the app is locked.
-    final List<Vice>? listed =
-        ref.watch(appLockProvider.select((AppLockState s) => s.covered))
+    // The Log menu names habits, so it goes while the app is locked, as
+    // does Find, which opens notes.
+    final bool covered = ref.watch(
+      appLockProvider.select((AppLockState s) => s.covered),
+    );
+    final List<Vice>? listed = covered
         ? null
         : ref.watch(unarchivedViceListProvider).value;
     final List<Vice>? all = ref.watch(viceListProvider).value;
@@ -91,7 +98,7 @@ class AppMenuBar extends ConsumerWidget {
         : tallyOrder(listed, habitMarks(all ?? listed));
 
     return PlatformMenuBar(
-      menus: appMenus(ref, habits),
+      menus: appMenus(ref, habits, onFind: covered ? null : onFind),
       child: Focus(
         canRequestFocus: false,
         skipTraversal: true,
@@ -103,7 +110,11 @@ class AppMenuBar extends ConsumerWidget {
 }
 
 @visibleForTesting
-List<PlatformMenuItem> appMenus(WidgetRef ref, List<Vice> habits) {
+List<PlatformMenuItem> appMenus(
+  WidgetRef ref,
+  List<Vice> habits, {
+  VoidCallback? onFind,
+}) {
   PlatformMenuItem provided(PlatformProvidedMenuItemType type) =>
       PlatformProvidedMenuItem(type: type);
 
@@ -189,6 +200,19 @@ List<PlatformMenuItem> appMenus(WidgetRef ref, List<Vice> habits) {
           const SingleActivator(LogicalKeyboardKey.keyA, meta: true),
           const SelectAllTextIntent(keyboard),
         ),
+        if (onFind != null)
+          PlatformMenuItemGroup(
+            members: <PlatformMenuItem>[
+              PlatformMenuItem(
+                label: 'Find…',
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.keyF,
+                  meta: true,
+                ),
+                onSelected: onFind,
+              ),
+            ],
+          ),
       ],
     ),
     if (habits.isNotEmpty)
