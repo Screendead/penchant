@@ -40,6 +40,7 @@
 		A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */; };
 		A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */; };
+		A1E57C0D9B3F4E6A8C2D2A01 /* SentenceEmbeddingChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1E01 /* PlacesChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1F01 /* PhotosChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */; };
@@ -107,6 +108,7 @@
 		A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthDays.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentenceEmbeddingChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RemindersChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlacesChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotosChannel.swift; sourceTree = "<group>"; };
@@ -256,6 +258,7 @@
 				A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */,
 				A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */,
+				A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */,
@@ -492,6 +495,7 @@
 				A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */,
+				A1E57C0D9B3F4E6A8C2D2A01 /* SentenceEmbeddingChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1E01 /* PlacesChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1F01 /* PhotosChannel.swift in Sources */,
