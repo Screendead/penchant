@@ -119,6 +119,16 @@ AskRefusal refusalOf(AskRun run) {
   return (run as AskRefused).refusal;
 }
 
+// 20 characters, ten-fold five times: 2 MB by replace alone, since some
+// SQLite builds cap printf's precision.
+final String twoMegabytes = () {
+  String sql = "'${'x' * 20}'";
+  for (int i = 0; i < 5; i++) {
+    sql = "replace($sql, 'x', '${'x' * 10}')";
+  }
+  return sql;
+}();
+
 void main() {
   late JournalDb db;
   setUp(() => db = journal());
@@ -408,8 +418,7 @@ void main() {
 
     test('a 2 MB string', () {
       for (final String sql in <String>[
-        "SELECT printf('%.*c', 2000000, 'x')",
-        "SELECT replace(printf('%.*c', 900000, 'x'), 'x', 'xx')",
+        'SELECT $twoMegabytes',
         "SELECT zeroblob(2000000)",
         "SELECT randomblob(2000000)",
         "SELECT hex(zeroblob(1000000))",
@@ -485,7 +494,7 @@ void main() {
 
     test('the length limit refuses a 2 MB value', () {
       expect(
-        refusalOf(bare.runUnchecked("SELECT printf('%.*c', 2000000, 'x')")),
+        refusalOf(bare.runUnchecked('SELECT $twoMegabytes')),
         AskRefusal.tooBig,
       );
     });
