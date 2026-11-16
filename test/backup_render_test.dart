@@ -2,6 +2,7 @@
 // 390x844, light and dark, to PNGs. Skipped unless a directory is given:
 //   flutter test test/backup_render_test.dart --dart-define=RENDER_DIR=<dir>
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -83,11 +84,16 @@ void main() {
   for (final Brightness brightness in Brightness.values) {
     for (final MapEntry<String, Widget>(key: String name, value: Widget screen)
         in _screens.entries) {
-      testWidgets('backup $name ${brightness.name}', (WidgetTester tester) async {
+      testWidgets('backup $name ${brightness.name}', (
+        WidgetTester tester,
+      ) async {
         debugDisableShadows = false;
         tester.view.devicePixelRatio = 3;
         tester.view.physicalSize = const Size(390 * 3, 844 * 3);
-        tester.view.padding = const FakeViewPadding(top: 47 * 3, bottom: 34 * 3);
+        tester.view.padding = const FakeViewPadding(
+          top: 47 * 3,
+          bottom: 34 * 3,
+        );
         addTearDown(tester.view.reset);
         final GlobalKey frame = GlobalKey();
         await tester.pumpWidget(
