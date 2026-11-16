@@ -1150,6 +1150,33 @@ describe('sealed documents', () => {
       }
     });
 
+    // lib/data/habit_strength.dart: born sealed, so no plaintext write of
+    // it is allowed at all, on a sealed vice or a legacy plaintext one.
+    const strengthFields = [
+      { strengthUnit: 'ukUnit' },
+      { servingMl: 568 },
+      { abv: 4.5 },
+      { drinkGrams: 14 },
+      { caffeineMg: 95 },
+    ];
+
+    it('refuses a sealed vice that carries a plaintext strength', async () => {
+      for (const extra of strengthFields) {
+        await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice(extra)));
+      }
+    });
+
+    it('refuses a strength written in plaintext to a vice, sealed or not', async () => {
+      for (const extra of strengthFields) {
+        await assertFails(updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), extra));
+        await assertFails(
+          updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), { sealed: resealed, ...extra }),
+        );
+        await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), extra));
+      }
+      await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), { sealed: resealed }));
+    });
+
     it('refuses a sealed vice without its structural fields', async () => {
       for (const field of ['ownerID', 'createdAt', 'archived']) {
         await assertFails(setDoc(doc(asAlice(), 'vices/new'), without(sealedVice(), field)));
@@ -1303,6 +1330,18 @@ describe('sealed documents', () => {
       await assertFails(
         updateDoc(doc(db, 'activities/aliceSealedActivity'), { quantity: deleteField() }),
       );
+    });
+
+    it('keeps an entry\'s own strength inside the envelope', async () => {
+      const db = asAlice();
+      for (const extra of [{ abv: 6.5 }, { caffeineMg: 120 }]) {
+        await assertFails(setDoc(doc(db, 'activities/new'), sealedActivity(extra)));
+        await assertFails(updateDoc(doc(db, 'activities/aliceSealedActivity'), extra));
+        await assertFails(
+          updateDoc(doc(db, 'activities/aliceSealedActivity'), { sealed: resealed, ...extra }),
+        );
+        await assertFails(updateDoc(doc(db, 'activities/aliceActivity'), extra));
+      }
     });
 
     it('keeps triggers inside the envelope', async () => {
