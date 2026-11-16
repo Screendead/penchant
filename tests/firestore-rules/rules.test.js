@@ -1524,6 +1524,157 @@ describe('dayNotes', () => {
   });
 });
 
+// The delta read's cursor: an optional server time on every create and update
+// of an entry or a day note, never a client-chosen one.
+describe('updatedAt', () => {
+  const DAY = '2026-11-15';
+  const aliceNote = `dayNotes/${ALICE}_${DAY}`;
+  const stampedNote = (overrides = {}) => ({
+    sealed: envelope,
+    ownerID: ALICE,
+    day: DAY,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  });
+  const forged = [
+    Timestamp.fromDate(new Date('2030-01-01T00:00:00Z')),
+    Timestamp.fromDate(new Date('2020-01-01T00:00:00Z')),
+    new Date(),
+    'now',
+    0,
+    null,
+  ];
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'activities/aliceStamped'), newActivity({ createdAt, updatedAt: createdAt }));
+      await setDoc(doc(db, aliceNote), stampedNote({ createdAt, updatedAt: createdAt }));
+      await setDoc(
+        doc(db, `dayNotes/${ALICE}_2026-11-14`),
+        without(stampedNote({ day: '2026-11-14', createdAt }), 'updatedAt'),
+      );
+    });
+  });
+
+  describe('activities', () => {
+    it('allows a create stamped with the server time', async () => {
+      await assertSucceeds(
+        setDoc(doc(asAlice(), 'activities/new'), newActivity({ updatedAt: serverTimestamp() })),
+      );
+    });
+
+    it('still allows a create without it', async () => {
+      await assertSucceeds(setDoc(doc(asAlice(), 'activities/new'), newActivity()));
+    });
+
+    it('denies a create stamped with any other value or type', async () => {
+      for (const value of forged) {
+        await assertFails(setDoc(doc(asAlice(), 'activities/new'), newActivity({ updatedAt: value })));
+      }
+    });
+
+    it("denies a stamped create of someone else's entry", async () => {
+      await assertFails(
+        setDoc(doc(asBob(), 'activities/new'), newActivity({ updatedAt: serverTimestamp() })),
+      );
+    });
+
+    it('allows an update stamped with the server time, on a legacy entry too', async () => {
+      for (const id of ['aliceStamped', 'aliceActivity', 'aliceLegacyActivity', 'aliceZeroActivity']) {
+        await assertSucceeds(
+          updateDoc(doc(asAlice(), `activities/${id}`), { quantity: 3, updatedAt: serverTimestamp() }),
+        );
+      }
+    });
+
+    it('allows an update that leaves an existing stamp alone, as an older build makes', async () => {
+      await assertSucceeds(updateDoc(doc(asAlice(), 'activities/aliceStamped'), { quantity: 3 }));
+    });
+
+    it('denies an update stamped with any other value, or removing the stamp', async () => {
+      for (const value of [...forged, deleteField()]) {
+        await assertFails(
+          updateDoc(doc(asAlice(), 'activities/aliceStamped'), { quantity: 3, updatedAt: value }),
+        );
+      }
+      for (const value of forged) {
+        await assertFails(updateDoc(doc(asAlice(), 'activities/aliceActivity'), { updatedAt: value }));
+      }
+    });
+
+    it("denies a stamped update of someone else's entry", async () => {
+      await assertFails(
+        updateDoc(doc(asBob(), 'activities/aliceStamped'), { quantity: 3, updatedAt: serverTimestamp() }),
+      );
+      await assertFails(
+        updateDoc(doc(asAlice(), 'activities/bobActivity'), { quantity: 3, updatedAt: serverTimestamp() }),
+      );
+    });
+
+    it('allows the delta query and its count on the caller\'s own entries only', async () => {
+      const since = Timestamp.fromDate(new Date('2000-01-01T00:00:00Z'));
+      await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'activities'),
+            where('ownerID', '==', ALICE),
+            where('updatedAt', '>=', since),
+          ),
+        ),
+      );
+      await assertFails(
+        getDocs(query(collection(asAlice(), 'activities'), where('updatedAt', '>=', since))),
+      );
+      await assertFails(
+        getDocs(
+          query(collection(asAlice(), 'activities'), where('ownerID', '==', BOB), where('updatedAt', '>=', since)),
+        ),
+      );
+    });
+  });
+
+  describe('dayNotes', () => {
+    it('allows a create stamped with the server time, and one without it', async () => {
+      await assertSucceeds(setDoc(doc(asAlice(), `dayNotes/${ALICE}_2026-11-16`), stampedNote({ day: '2026-11-16' })));
+      await assertSucceeds(
+        setDoc(doc(asAlice(), `dayNotes/${ALICE}_2026-11-17`), without(stampedNote({ day: '2026-11-17' }), 'updatedAt')),
+      );
+    });
+
+    it('denies a create stamped with any other value or type', async () => {
+      for (const value of forged) {
+        await assertFails(
+          setDoc(doc(asAlice(), `dayNotes/${ALICE}_2026-11-16`), stampedNote({ day: '2026-11-16', updatedAt: value })),
+        );
+      }
+    });
+
+    it('allows an envelope update stamped with the server time, on an unstamped note too', async () => {
+      await assertSucceeds(updateDoc(doc(asAlice(), aliceNote), { sealed: envelope, updatedAt: serverTimestamp() }));
+      await assertSucceeds(
+        updateDoc(doc(asAlice(), `dayNotes/${ALICE}_2026-11-14`), { sealed: envelope, updatedAt: serverTimestamp() }),
+      );
+      await assertSucceeds(updateDoc(doc(asAlice(), aliceNote), { sealed: envelope }));
+    });
+
+    it('denies an update stamped with any other value, removing it, or by another user', async () => {
+      for (const value of [...forged, deleteField()]) {
+        await assertFails(updateDoc(doc(asAlice(), aliceNote), { sealed: envelope, updatedAt: value }));
+      }
+      await assertFails(updateDoc(doc(asBob(), aliceNote), { sealed: envelope, updatedAt: serverTimestamp() }));
+    });
+  });
+
+  it('vices still refuse the field', async () => {
+    await assertFails(setDoc(doc(asAlice(), 'vices/new'), newVice({ updatedAt: serverTimestamp() })));
+    await assertFails(
+      updateDoc(doc(asAlice(), 'vices/aliceVice'), { archived: true, updatedAt: serverTimestamp() }),
+    );
+  });
+});
+
 describe('summaries', () => {
   const summary = {
     computedAt: createdAt,

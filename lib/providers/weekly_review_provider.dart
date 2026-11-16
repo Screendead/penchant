@@ -118,9 +118,8 @@ final weeklyInsightsProvider = Provider.autoDispose<AsyncValue<WeeklyInsights>>(
   (ref) {
     final HealthState? state = ref.watch(healthStateProvider).value;
     if (state == null) return const AsyncLoading<WeeklyInsights>();
-    if (state case HealthReady(
-      :final List<DailyOutcome> values,
-    ) when values.isNotEmpty) {
+    if (state case HealthReady(:final List<DailyOutcome> values)
+        when values.isNotEmpty) {
       final DateTime today = ref.watch(todayProvider);
       final AsyncValue<List<ViceActivity>> activities = ref.watch(
         viceActivityRangeProvider(insightsRange(today)),
