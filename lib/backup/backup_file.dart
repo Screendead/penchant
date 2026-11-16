@@ -186,13 +186,13 @@ class BackupFile {
   /// Checks everything that needs no key: the magic, the version, the length
   /// and the checksum. Throws [BackupException].
   static BackupHeader readHeader(Uint8List file) {
-    if (file.length < _fixed + checksumLength) {
-      throw const BackupException(BackupFailure.notABackup);
-    }
     for (int i = 0; i < magic.length; i++) {
-      if (file[i] != magic[i]) {
+      if (i >= file.length || file[i] != magic[i]) {
         throw const BackupException(BackupFailure.notABackup);
       }
+    }
+    if (file.length < _fixed) {
+      throw const BackupException(BackupFailure.incomplete);
     }
     final int fileVersion = file[magic.length];
     if (fileVersion > version) {
