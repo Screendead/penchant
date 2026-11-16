@@ -869,10 +869,12 @@ HabitInsight _amongDaysOfUse(
     if (day.isBefore(start) || day.isAfter(end)) continue;
     final double? value = outcomes.value(metricId, addDays(day, lagDays));
     if (value == null) continue;
+    final int? last = habits.lastUseMinutes(id, day);
+    if (timing && last == null) continue;
     days.add(day);
     y.add(value);
     amount.add(habits.lateDayTotal(id, day));
-    x.add(timing ? habits.lastUseMinutes(id, day)!.toDouble() : amount.last);
+    x.add(timing ? last!.toDouble() : amount.last);
     if (bedtime) {
       onset.add(outcomes.value(sleepOnsetId, addDays(day, lagDays)));
     }

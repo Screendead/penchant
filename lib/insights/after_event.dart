@@ -167,7 +167,7 @@ List<AfterEvent> afterEvent({
   final List<CalendarEvent> blocks = eventBlocks(events);
   if (blocks.isEmpty) return const <AfterEvent>[];
   final Map<String, List<DateTime>> usesOf = <String, List<DateTime>>{};
-  for (final HabitUse u in uses) {
+  for (final HabitUse u in timedUses(uses)) {
     if (u.amount > 0) usesOf.putIfAbsent(u.habitId, () => []).add(u.at);
   }
   final DateTime last = startOfDay(through);
