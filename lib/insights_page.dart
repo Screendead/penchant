@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -23,7 +24,8 @@ import 'package:tracker/insights/calendar_days_copy.dart';
 import 'package:tracker/insights/calendar_source.dart';
 import 'package:tracker/insights/experiment.dart';
 import 'package:tracker/insights/experiment_copy.dart';
-import 'package:tracker/insights/daily_series.dart' show lateUseCutoffHour;
+import 'package:tracker/insights/daily_series.dart'
+    show lateUseCutoffHour, timedUses;
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/hours_after.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -245,6 +247,12 @@ class InsightsPage extends ConsumerStatefulWidget {
       'the same time after waking on nearby days. Uses you time by how you '
       'feel, such as coffee when tired, can show a change that would have '
       'come anyway.';
+
+  static String caughtUpNote(int entries) => entries == 1
+      ? 'One entry you caught up on counts in day totals but not where times '
+            'of day are compared, since its time was a guess.'
+      : '$entries entries you caught up on count in day totals but not where '
+            'times of day are compared, since their times were guesses.';
 
   static const String hoursAfterPending =
       'Still reading heart rate around your uses from Apple Health.';
@@ -978,6 +986,7 @@ class InsightsCostsPage extends ConsumerWidget {
         if (view?.health case final HealthState health
             when _healthSettled(health, askAgain))
           _HealthCard(state: health, askAgain: false),
+        const _CaughtUpFoot(),
         const CardFoot(InsightsPage.foot),
       ],
     );
@@ -1062,6 +1071,7 @@ class InsightsSetsOffPage extends ConsumerWidget {
             ],
           ),
         ],
+        const _CaughtUpFoot(),
         const CardFoot(InsightsPage.foot),
       ],
     );
@@ -2057,6 +2067,28 @@ class _RangePainter extends CustomPainter {
       old.surface != surface ||
       old.zero != zero ||
       old.track != track;
+}
+
+/// How many of the journal's entries were caught up, whose times of day the
+/// comparisons leave out ([timedUses]); nothing when none.
+class _CaughtUpFoot extends ConsumerWidget {
+  const _CaughtUpFoot();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final DateTime today = ref.watch(todayProvider);
+    // The page's own journal read, so this costs no query of its own.
+    final List<ViceActivity>? journal = ref
+        .watch(viceActivityRangeProvider(insightsRange(today)))
+        .value;
+    final int caughtUp =
+        journal
+            ?.where((ViceActivity a) => a.loggedVia == LoggedVia.caughtUp)
+            .length ??
+        0;
+    if (caughtUp == 0) return const SizedBox.shrink();
+    return CardFoot(InsightsPage.caughtUpNote(caughtUp));
+  }
 }
 
 /// The full last-night check, at the top of Insights: sleeping heart rate,

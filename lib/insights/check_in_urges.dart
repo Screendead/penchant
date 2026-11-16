@@ -101,7 +101,7 @@ List<CheckInUrge> checkInUrges({
   for (final HabitUse use in uses) {
     final int? urge = use.urge;
     if (urge == null || skip.contains(use.habitId)) continue;
-    final DateTime day = lateDayOf(use.at);
+    final DateTime day = use.day;
     if (day.isAfter(last)) continue;
     byHabit
         .putIfAbsent(use.habitId, () => <DateTime, List<int>>{})

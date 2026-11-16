@@ -131,7 +131,7 @@ List<HabitTriggers> triggerAmounts({
   final Map<String, List<HabitUse>> byHabit = <String, List<HabitUse>>{};
   for (final HabitUse use in uses) {
     if (use.amount <= 0 || skip.contains(use.habitId)) continue;
-    if (lateDayOf(use.at).isAfter(last)) continue;
+    if (use.day.isAfter(last)) continue;
     byHabit.putIfAbsent(use.habitId, () => <HabitUse>[]).add(use);
   }
   final List<String> ids = byHabit.keys.toList()..sort();
@@ -147,7 +147,7 @@ HabitTriggers? _habit(String id, List<HabitUse> all, InsightGates gates) {
         for (final HabitUse u in all)
           if (<String>{for (final String t in u.triggers) ...triggerKeys(t)}
               case final Set<String> keys when keys.isNotEmpty)
-            (day: lateDayOf(u.at), amount: u.amount.toDouble(), keys: keys),
+            (day: u.day, amount: u.amount.toDouble(), keys: keys),
       ];
   if (tagged.isEmpty) return null;
   final Map<String, Set<int>> holders = <String, Set<int>>{};

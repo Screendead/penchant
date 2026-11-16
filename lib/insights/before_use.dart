@@ -139,7 +139,7 @@ class BeforeUse {
 /// the day's earliest).
 Map<String, Map<DateTime, int>> firstUseMinutes(Iterable<HabitUse> uses) {
   final Map<String, Map<DateTime, int>> first = <String, Map<DateTime, int>>{};
-  for (final HabitUse u in uses) {
+  for (final HabitUse u in timedUses(uses)) {
     if (u.amount <= 0) continue;
     final DateTime day = lateDayOf(u.at);
     final int minutes =
@@ -244,7 +244,7 @@ BeforeUse _daily(
       final double? column = switch (kind) {
         BeforeUseKind.whether => total > 0 ? 1 : 0,
         BeforeUseKind.amount => total > 0 ? total : null,
-        _ => total > 0 ? -(first[day] ?? 0).toDouble() : null,
+        _ => total > 0 && first[day] != null ? -first[day]!.toDouble() : null,
       };
       if (column == null) continue;
       if (holdWaking) {
@@ -495,7 +495,7 @@ List<BeforeUse> hourBefore({
     longestStep = max(longestStep, s.end.difference(s.start).inMinutes + 1);
   }
   final Map<String, List<DateTime>> usesOf = <String, List<DateTime>>{};
-  for (final HabitUse u in uses) {
+  for (final HabitUse u in timedUses(uses)) {
     if (u.amount > 0) usesOf.putIfAbsent(u.habitId, () => []).add(u.at);
   }
   for (final List<DateTime> t in usesOf.values) {

@@ -401,15 +401,13 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
 handover to do next rather than starting them yourself"; none is started). Each feature's card in
 `docs/pitch/round-24/next-ideas/pitch.html` is its spec; round 24's state is under "Calls waiting on Jack".
 
-- **N1. Run the entry reader trial and finish its prompt.** State on 2026-11-16: three rounds of prompt fixes are
-  merged and deployed (#338, #342, #343). The run after #342 (21 cases) passed its targets (a bare habit name is 1;
-  "some wine" is nothing; tags stay on their own entry) and showed two new misses, which #343 addresses and nothing
-  has yet tested: "Sat a bottle of wine over dinner" became one glass (the bare-name exception read as covering a
-  container), and "weekend was quiet, just a coffee each morning" gave Friday an entry too. Minor and left alone: a
-  "kids in bed" tag on the dinner wine as well, "a pint at lunch" tagged after-lunch (every entry is reviewed before
-  it is saved). Run the trial, read each case against its `expect:` line, and fix in `functions/entry_reader.js`
-  until a run is clean or the misses left are of that minor kind; Haiku varies between runs, so a rule that fixes
-  one case can loosen another: re-read the whole log each time.
+- ~~**N1. The entry reader's last misses.**~~ Done 2026-11-16 (Claude ran the trial, 21 cases, six runs). After
+  #342 and #343 "some wine with dinner" and "a bottle of wine over dinner" each came back as 1 glass: the bare-name
+  exception beat "no number, no entry". The amount rules are now one ordered test (a container, a number, a vague
+  word, then the bare name), and the tag rule asks for a quote that nearly restates the tag. Entries and amounts
+  matched every expect line on the last four runs. Still there: about one guessed tag a run, a different one each
+  time (`place/home` from "after the kids were in bed", `routine/coffee` on a coffee entry); Haiku with thinking off
+  does not hold a tag rule that tightly, and the person reviews each draft.
 - **Claude runs the real-API trials itself** (Jack, 2026-11-16: asking him to run them "just keeps stalling
   development"). Each trial is a script in the repo: `npm --prefix functions ci`, then
   `node functions/tools/entry-reader-trial.js` with the API key in `ANTHROPIC_API_KEY` (the others beside it:

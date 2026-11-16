@@ -439,8 +439,12 @@ writes each through `TrackerWrites.recordActivity` with its own id and `loggedVi
 build reads an unknown name as absent, and its edit drops it); one Undo bar undoes them all. Stop drops the answer
 unseen. The prompt asks for one entry per amount said, a range or rough amount at its lower number (the person can
 raise it), and none for words with no number or for a container not in the habit's unit with no size given; the
-review card says such words are not suggested. `functions/tools/entry-reader-trial.js` runs 19 made-up cases with an
-API key, printing each one's expected reading.
+review card says such words are not suggested. `functions/tools/entry-reader-trial.js` runs 21 made-up cases with an
+API key, printing each one's expected reading. In Insights a `caughtUp` entry (`HabitUse.caughtUp`, false when locked)
+counts on its calendar day in day totals, never moved to the evening before, and `timedUses` drops every use of that
+habit on that day from the comparisons of time of day (last and first use, hours after, the hour before, one habit
+after another, after an event, at a place); "What it costs" and "What sets it off" say how many were left out.
+`spoken` entries keep their times.
 
 **Claude-working screen** (`lib/claude/`). Every Claude call in flight is shown through one component. The call site
 makes a `ClaudeWork` (status, optional detail, the person's own words sent as `subject`, `steps` for the analyst,
@@ -545,8 +549,9 @@ offline log with its sync time); `loggedVia` `oneTap`, `sheet` or `widget` (onbo
 never edited. The amount sheet and editor (`AmountFields`) and the picker after a log (`askWhatWasGoingOn`) ask for
 urge and note (`lib/widgets/urge_note_fields.dart`); the sheet's own picker asks triggers only. `answersTooLong`
 refuses answers whose JSON beside the longest silent fields would pass the envelope's 4094 bytes. It also holds the
-optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question), sealed only. Insights does not
-yet read any of them (it still places an entry abroad on the viewer's hour); the export appends `urge`, `note`,
+optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question), sealed only. Insights reads
+`urge` (Random check-ins) and `loggedVia` (Say it to log and Catch up) alone, and still places an entry abroad on the
+viewer's hour; the export appends `urge`, `note`,
 `time_zone`, `written_at`, `logged_via` after `triggers`. An older build that edits an entry's triggers rebuilds the
 envelope from its triggers alone and drops the rest (accepted, Jack, 2026-11-13).
 

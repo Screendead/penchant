@@ -18,8 +18,11 @@ import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/account/password_prompt.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
+import 'package:tracker/backup/backup_page.dart';
+import 'package:tracker/backup/backup_service.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/recovery_key.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/trigger_tree.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -59,7 +62,9 @@ import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/what_was_going_on_sheet.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
 
+import 'backup_fakes.dart';
 import 'fake_account.dart';
+import 'fake_sealer.dart';
 import 'fake_places.dart';
 import 'fake_writes.dart';
 import 'fakes.dart';
@@ -682,6 +687,35 @@ void main() {
     );
   });
 
+  testWidgets('restore a backup (recovery key)', (WidgetTester tester) async {
+    _report(
+      await _audit(
+        tester,
+        surface: 'restore a backup (recovery key)',
+        open: (WidgetTester t) async {
+          final Uint8List bytes = (await t.runAsync(sampleBackup))!;
+          await t.pumpWidget(
+            _host(<Override>[
+              accountProvider.overrideWithValue(FakeAccount()),
+              userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
+              e2eeEnabledProvider.overrideWithValue(true),
+              sealerProvider.overrideWithValue(FakeSealer()),
+              backupFilesProvider.overrideWithValue(_OneBackup(bytes)),
+            ], home: const RestorePage()),
+          );
+          await t.pump();
+          await t.tap(find.widgetWithText(FilledButton, BackupCopy.choose));
+          await t.pump();
+          await t.pump();
+        },
+        fields: <_Field>[
+          _Field('recovery key', _plain(find.byKey(RestorePage.keyField))),
+        ],
+        action: find.widgetWithText(FilledButton, BackupCopy.openBackup),
+      ),
+    );
+  });
+
   for (final EntryMode mode in EntryMode.values) {
     testWidgets('read entries from words (${mode.name})', (
       WidgetTester tester,
@@ -1054,4 +1088,16 @@ class _NeverAsk implements AskJournal {
     List<AskTurn> history = const <AskTurn>[],
   }) async =>
       const AskAnswer(kind: AskKind.cannotAnswer, reason: AskReason.unclear);
+}
+
+class _OneBackup implements BackupFiles {
+  _OneBackup(this.bytes);
+
+  final Uint8List bytes;
+
+  @override
+  Future<Uint8List?> pick() async => bytes;
+
+  @override
+  Future<bool> save(Uint8List bytes, String name) async => true;
 }

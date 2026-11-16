@@ -1,3 +1,4 @@
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/daily_series.dart';
@@ -13,6 +14,7 @@ Iterable<HabitUse> habitUsesFrom(Iterable<ViceActivity> activities) =>
         amount: a.measure,
         triggers: a.triggers,
         urge: a.urge,
+        caughtUp: a.loggedVia == LoggedVia.caughtUp,
       ),
     );
 

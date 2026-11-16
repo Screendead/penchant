@@ -272,7 +272,7 @@ int _longestMinutes(List<HealthSample> samples) {
 
 Map<String, List<DateTime>> _usesByHabit(List<HabitUse> uses) {
   final Map<String, List<DateTime>> byHabit = <String, List<DateTime>>{};
-  for (final HabitUse u in uses) {
+  for (final HabitUse u in timedUses(uses)) {
     if (u.amount > 0) byHabit.putIfAbsent(u.habitId, () => []).add(u.at);
   }
   for (final List<DateTime> t in byHabit.values) {
@@ -605,7 +605,7 @@ List<HabitInsight> hoursAfter({
   HoursAfterGates gates = const HoursAfterGates(),
 }) {
   final Map<String, List<DateTime>> usesOf = <String, List<DateTime>>{};
-  for (final HabitUse u in uses) {
+  for (final HabitUse u in timedUses(uses)) {
     if (u.amount <= 0) continue;
     usesOf.putIfAbsent(u.habitId, () => []).add(u.at);
   }
