@@ -60,6 +60,10 @@ class CheckInContent {
   };
 }
 
+/// One answered check-in as Insights reads it: the local time it was
+/// answered and its strength.
+typedef CheckInAnswer = ({DateTime at, int strength});
+
 /// A check-in's strength as read aloud and in the bar: the ends named, as
 /// the sheet's scale names them.
 String checkInLabel(int strength) => switch (strength) {

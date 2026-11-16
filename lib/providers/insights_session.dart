@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/day_tags.dart';
@@ -99,6 +100,7 @@ class EngineInputs {
     this.stays = const <PlaceStay>[],
     this.location,
     this.dayTags = const <DayTags>[],
+    this.checkIns = const <CheckInAnswer>[],
   });
 
   final List<ViceActivity> activities;
@@ -120,6 +122,9 @@ class EngineInputs {
   /// [dayTagsFrom] the day notes.
   final List<DayTags> dayTags;
 
+  /// Every answered check-in that opened.
+  final List<CheckInAnswer> checkIns;
+
   @override
   bool operator ==(Object other) =>
       other is EngineInputs &&
@@ -132,7 +137,8 @@ class EngineInputs {
       listEquals(other.reminders, reminders) &&
       listEquals(other.stays, stays) &&
       other.location == location &&
-      _sameDayTags(other.dayTags, dayTags);
+      _sameDayTags(other.dayTags, dayTags) &&
+      listEquals(other.checkIns, checkIns);
 
   @override
   int get hashCode => Object.hash(
@@ -146,6 +152,7 @@ class EngineInputs {
     stays.length,
     location,
     dayTags.length,
+    checkIns.length,
   );
 }
 
@@ -166,7 +173,8 @@ bool _sameUses(List<ViceActivity> a, List<ViceActivity> b) {
   for (int i = 0; i < a.length; i++) {
     if (a[i].viceID != b[i].viceID ||
         a[i].createdAt != b[i].createdAt ||
-        a[i].measure != b[i].measure) {
+        a[i].measure != b[i].measure ||
+        a[i].urge != b[i].urge) {
       return false;
     }
   }

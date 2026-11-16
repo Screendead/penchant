@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/check_in_urges.dart';
 import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -24,7 +25,7 @@ import 'package:tracker/providers/insights_provider.dart';
 
 /// Raise with any change to what is written below or to the report's types,
 /// so a file an older build wrote reads as absent.
-const int insightsViewFormat = 6;
+const int insightsViewFormat = 7;
 
 /// [view] as bytes to seal; null for a view with no computed report, which is
 /// never kept. Throws only on a value JSON cannot hold.
@@ -209,6 +210,9 @@ Map<String, Object?> _report(InsightsReport r) => <String, Object?>{
   'recovery': <Object?>[for (final Recovery x in r.recovery) _recovery(x)],
   'triggers': <Object?>[for (final HabitTriggers h in r.triggers) _triggers(h)],
   'dayTags': <Object?>[for (final HabitDayTags h in r.dayTags) _dayTags(h)],
+  'checkInUrges': <Object?>[
+    for (final CheckInUrge u in r.checkInUrges) _checkInUrge(u),
+  ],
 };
 
 InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
@@ -236,6 +240,31 @@ InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
   recovery: _list(m, 'recovery', _each(_readRecovery)),
   triggers: _list(m, 'triggers', _each(_readTriggers)),
   dayTags: _list(m, 'dayTags', _each(_readDayTags)),
+  checkInUrges: _list(m, 'checkInUrges', _each(_readCheckInUrge)),
+);
+
+Map<String, Object?> _checkInUrge(CheckInUrge u) => <String, Object?>{
+  'habitId': u.habitId,
+  'days': u.days,
+  'entries': u.entries,
+  'checkIns': u.checkIns,
+  'noUrge': u.noUrge,
+  'entryMean': _d(u.entryMean),
+  'checkInMean': _d(u.checkInMean),
+  'pValue': _od(u.pValue),
+  'refusal': u.refusal?.name,
+};
+
+CheckInUrge _readCheckInUrge(Map<String, Object?> m) => CheckInUrge(
+  habitId: _str(m, 'habitId'),
+  days: _int(m, 'days'),
+  entries: _int(m, 'entries'),
+  checkIns: _int(m, 'checkIns'),
+  noUrge: _int(m, 'noUrge'),
+  entryMean: _dbl(m, 'entryMean'),
+  checkInMean: _dbl(m, 'checkInMean'),
+  pValue: _odbl(m, 'pValue'),
+  refusal: _oenum(RefusalReason.values, m, 'refusal'),
 );
 
 Map<String, Object?> _dayTags(HabitDayTags h) => <String, Object?>{

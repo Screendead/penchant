@@ -10,6 +10,7 @@ class HabitUse {
     required this.at,
     required this.amount,
     this.triggers = const <String>[],
+    this.urge,
   });
 
   final String habitId;
@@ -19,6 +20,9 @@ class HabitUse {
   /// As stored on the entry (lib/data/activity_triggers.dart); empty when
   /// untagged or locked.
   final List<String> triggers;
+
+  /// The urge noted on the entry, 1 to 5; null when unanswered or locked.
+  final int? urge;
 }
 
 /// One value of an outcome (a night's sleep, a day's resting heart rate) for

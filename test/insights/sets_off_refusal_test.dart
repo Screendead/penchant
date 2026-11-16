@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/check_in_urges.dart';
 import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -74,9 +75,11 @@ InsightsReport _report({
   List<HabitTriggers> triggers = const <HabitTriggers>[],
   List<AtPlace> atPlace = const <AtPlace>[],
   List<HabitDayTags> dayTags = const <HabitDayTags>[],
+  List<CheckInUrge> checkInUrges = const <CheckInUrge>[],
 }) => InsightsReport(
   triggers: triggers,
   dayTags: dayTags,
+  checkInUrges: checkInUrges,
   calendarDays: calendarDays,
   atPlace: atPlace,
   findings: const <HabitFinding>[],
@@ -428,6 +431,59 @@ void main() {
 
     expect(got.first.calendar, isNotNull);
     expect(got.last.place, isNotNull);
+  });
+
+  test('a refused comparison with check-ins reaches the habit\'s reason, '
+      'after a day tag on a tie', () {
+    CheckInUrge urge(RefusalReason reason, {int days = 20}) => CheckInUrge(
+      habitId: 'wine',
+      days: days,
+      entries: 30,
+      checkIns: 40,
+      noUrge: 12,
+      entryMean: 2,
+      checkInMean: 1.8,
+      refusal: reason,
+    );
+    expect(
+      _why(
+        _pick(
+          _report(
+            checkInUrges: <CheckInUrge>[
+              urge(RefusalReason.tooFewDays, days: 6),
+            ],
+          ),
+          habits: const <String>['wine'],
+        ).single,
+      ),
+      'Urge at entries against check-ins: too few days with both yet: 6 of '
+      '14',
+    );
+    final SetsOffRefusal tie = _pick(
+      _report(
+        checkInUrges: <CheckInUrge>[urge(RefusalReason.withinNoise)],
+        dayTags: const <HabitDayTags>[
+          HabitDayTags(
+            habitId: 'wine',
+            days: 130,
+            tagged: 48,
+            tags: <DayTagAmount>[
+              DayTagAmount(
+                tag: 'Bad day',
+                withDays: 15,
+                withoutDays: 33,
+                withMean: 3.1,
+                withoutMean: 1.8,
+                refusal: RefusalReason.withinNoise,
+              ),
+            ],
+          ),
+        ],
+      ),
+      habits: const <String>['wine'],
+    ).single;
+    expect(tie.dayTag, isNotNull);
+    expect(tie.checkIn, isNull);
   });
 
   test('a day tag refused reaches the habit\'s reason, with the tagged days '

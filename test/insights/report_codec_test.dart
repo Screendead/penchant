@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/check_in_urges.dart';
 import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -417,6 +418,28 @@ InsightsReport everySection() => InsightsReport(
       ],
     ),
   ],
+  checkInUrges: const <CheckInUrge>[
+    CheckInUrge(
+      habitId: 'wine',
+      days: 18,
+      entries: 41,
+      checkIns: 37,
+      noUrge: 15,
+      entryMean: 3.6,
+      checkInMean: 1.4,
+      pValue: 0.0002,
+    ),
+    CheckInUrge(
+      habitId: 'coffee',
+      days: 6,
+      entries: 9,
+      checkIns: 11,
+      noUrge: 4,
+      entryMean: 2,
+      checkInMean: 1.5,
+      refusal: RefusalReason.tooFewDays,
+    ),
+  ],
 );
 
 InsightsView _view(InsightsReport report, {bool hoursPending = false}) => (
@@ -469,6 +492,32 @@ void main() {
     expect(report.dayTags.single.tags.first.effect, 1.2);
     expect(report.dayTags.single.tags.last.effect, isNull);
     expect(report.dayTags.single.tags.last.refusal, RefusalReason.tooFewDays);
+    expect(report.checkInUrges.first.found, isTrue);
+    expect(report.checkInUrges.first.noUrge, 15);
+    expect(report.checkInUrges.first.difference, closeTo(2.2, 1e-9));
+    expect(report.checkInUrges.last.pValue, isNull);
+    expect(report.checkInUrges.last.refusal, RefusalReason.tooFewDays);
+  });
+
+  test('a file of the format before check-in urges reads as absent', () {
+    final Map<String, Object?> good = _json(
+      encodeInsightsView(_view(everySection()))!,
+    );
+    final Map<String, Object?> report = <String, Object?>{
+      ...good['report']! as Map<String, Object?>,
+    }..remove('checkInUrges');
+    expect(
+      decodeInsightsView(
+        utf8.encode(
+          jsonEncode(<String, Object?>{
+            ...good,
+            'version': 6,
+            'report': report,
+          }),
+        ),
+      ),
+      isNull,
+    );
   });
 
   test('a file of the format before day tags reads as absent', () {
