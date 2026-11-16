@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account/account.dart';
+import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/limits.dart';
@@ -577,6 +578,7 @@ void main() {
         'ownerID',
         'quantity',
         'viceID',
+        updatedAtField,
       });
       expect(stored['quantity'], 2);
       expect(stored['amount'], 1.5);
@@ -630,6 +632,7 @@ void main() {
       expect(store.updates['activities/a'], <Object, Object?>{
         'createdAt': moved,
         'quantity': 4,
+        updatedAtField: FieldValue.serverTimestamp(),
       });
 
       final SentWrite write = writes.updateActivity(
@@ -665,6 +668,72 @@ void main() {
           'loggedVia': 'oneTap',
         },
       );
+    });
+
+    test(
+      'every create and update of an entry stamps updatedAt with the '
+      'server time, outside SentWrite.fields, and no vice write does',
+      () async {
+        final SentWrite created = writes.recordActivity(
+          'a',
+          ownerID: 'owner',
+          viceID: 'coffee',
+          quantity: 2,
+          createdAt: _at.toDate(),
+        );
+        await created.done;
+        expect(
+          store.sets['activities/a']![updatedAtField],
+          FieldValue.serverTimestamp(),
+        );
+        expect(created.fields, isNot(contains(updatedAtField)));
+
+        final SentWrite plain = writes.updateActivity('a', quantity: 5);
+        await plain.done;
+        expect(
+          store.updates['activities/a']![updatedAtField],
+          FieldValue.serverTimestamp(),
+        );
+        expect(plain.fields, <String, Object>{'quantity': 5});
+
+        await writes
+            .updateActivity(
+              'b',
+              content: const ActivityContent(triggers: <String>['x']),
+            )
+            .done;
+        expect(
+          store.updates['activities/b']![updatedAtField],
+          FieldValue.serverTimestamp(),
+        );
+
+        await writes.setViceArchived('coffee', archived: true).done;
+        await writes.updateVice(_vice(), name: 'Tea').done;
+        expect(store.updates['vices/coffee'], isNot(contains(updatedAtField)));
+        await writes
+            .addVice(ownerID: 'owner', name: 'Tea', unit: Unit.drink)
+            .done;
+        expect(store.sets['vices/vices-new'], isNot(contains(updatedAtField)));
+      },
+    );
+
+    test('parsing ignores updatedAt, resolved or pending', () {
+      final Map<String, dynamic> json = <String, dynamic>{
+        'viceID': 'coffee',
+        'quantity': 2,
+        'ownerID': 'owner',
+        'createdAt': _at,
+      };
+      final ViceActivity plain = ViceActivity.fromJson(id: 'a', json: json);
+      for (final Object? stamp in <Object?>[_at, null]) {
+        final ViceActivity stamped = ViceActivity.fromJson(
+          id: 'a',
+          json: <String, dynamic>{...json, updatedAtField: stamp},
+          pending: stamp == null,
+        );
+        expect(stamped.quantity, plain.quantity);
+        expect(stamped.createdAt, plain.createdAt);
+      }
     });
 
     test(

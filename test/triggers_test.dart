@@ -5,6 +5,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/trigger_tree.dart';
@@ -226,6 +227,7 @@ void main() {
       );
       expect(captured(() => document.update(captureAny())), {
         'triggers': <String>[],
+        updatedAtField: FieldValue.serverTimestamp(),
       });
       expect(cleared.fields['triggers'], comparableValue(<String>[]));
     });

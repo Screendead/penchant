@@ -378,8 +378,20 @@ guest leaves `userProvider`'s `User` anonymous, so guest checks ask `Account.isG
 (`ViceActivityHistoryPage.pageSize`, plus one to learn whether older entries exist); the calendar sheet reads one
 month for its dots (the day query's shape and index); the editor listens to its one document; Manage Data counts each
 vice's activities with a server-side `count()`, which is not live, ignores writes queued on the device, and fails
-offline. Insights reads every activity from 2000 (the date picker's floor) to today, an unbounded activity query: a
-one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. Ask your journal reads the same range, and every day note once per open (`allDayNotesProvider`: `ownerID` equality alone, the automatic index). Habits learns whether
+offline. Insights, Ask and the weekly review read every activity from 2000 (the date picker's floor) to today, an
+unbounded activity query, through `readJournal` (`lib/providers/journal_read.dart`, behind
+`viceActivityRangeForUserProvider`): once per open, not a listener, so a log written meanwhile shows on the next open.
+A device's first read for a uid, one 7 days after its last full read, and every read where Firestore has no disk cache
+(emulator builds) is the full `get()`; it keeps a cursor per uid in shared_preferences (the newest server `updatedAt`
+seen less 5 minutes, or the epoch, and the full read's date; timestamps only, cleared with the cache on sign-out and
+deletion). Any other open asks the server for entries with `updatedAt` at or after the cursor, one `count()` of the
+range, and reads the range from the cache with the delta laid over it; a count that differs (a delete elsewhere, an
+evicted entry, an unstamped create by an older build) or any failure (offline, an index building) falls back to the
+full `get()`, which offline answers from the cache. An older build's edit elsewhere changes neither cursor nor count,
+so this device may miss it for up to 7 days. Ordinary open (an estimate): a read per entry the delta returns (at least
+the newest, which the 5-minute overlap returns again) plus 1 per 1,000 entries counted; a full read costs one per
+entry. A shorter range (the heavy-day window, a review week) is a plain `get()`. Ask also reads every day note once
+per open (`allDayNotesProvider`: `ownerID` equality alone, the automatic index). Habits learns whether
 entries of a deleted (or foreign) habit exist by one more `count()`, every owned activity, less each habit's count
 (`deletedHabitCountProvider`, shown only when every count is the server's); only then is its "Deleted habit" row there,
 and `DeletedHabitPage` reads every owned activity once per open (the export's shape, paged by document id, from the
@@ -391,8 +403,8 @@ Days).
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
 collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
 `unitLabel`, `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) and
-`activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount`, and sealed content: `triggers` and
-the optional `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); a third, `summaries`, is server-written (Server side,
+`activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `updatedAt`, and sealed content:
+`triggers` and the optional `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); a third, `summaries`, is server-written (Server side,
 below).
 
 An activity's sealed content is `ActivityContent` (`lib/data/activity_content.dart`, capture detail C, Jack,
@@ -421,9 +433,10 @@ the 40 paths shipped first. The picker (`TriggerChoices`) has one field that sea
 and adds the typed text as own words when no label matches it exactly.
 
 **Day notes** (round 20). `dayNotes/{uid}_{yyyy-MM-dd}`: plaintext `ownerID`, `day` (the local day asked about),
-`createdAt`, and `sealed` holding `text` (1 to 2000 UTF-16 units), `triggers` and the optional `followUpQuestion`,
+`createdAt`, optional `updatedAt`, and `sealed` holding `text` (1 to 2000 UTF-16 units), `triggers` and the optional `followUpQuestion`,
 `followUpQuote`, `followUpAnswer` (Follow-up question); born sealed, so the rules refuse any
-other field, require the id to be the writer's uid and the day, and let an update change `sealed` alone.
+other field, require the id to be the writer's uid and the day, and let an update change `sealed` (and `updatedAt`)
+alone.
 `DayNote` (`lib/data/day_note.dart`), `TrackerWrites.setDayNote` (a create unless passed the note it replaces) and
 `deleteDayNote`, the provider chain in `lib/providers/day_note_provider.dart`. Account deletion, the guest sweep and
 the server's orphan sweep take their collections from `Account.ownedCollections` and `OWNED_COLLECTIONS`
@@ -435,6 +448,11 @@ The rules check `ownerID` against the stored document on read, update and delete
 each collection's field set and types on create, allow updates only to `name`/`unit`/`archived`/`category` (vices) and
 `quantity`/`createdAt`/`amount`/`triggers` (activities), and validate only changed fields, so legacy documents (vices
 without `archived`, names over 60, zero quantities, activities whose vice is gone) stay readable and editable.
+`updatedAt` (activities and day notes, `lib/data/updated_at.dart`): plaintext, never sealed, set by `TrackerWrites` and
+the first-launch migrator to `FieldValue.serverTimestamp()` on every create and update of those two collections and
+never on a vice; the rules accept it only equal to `request.time` and refuse removing it, and older builds' writes
+without it still pass. It is never parsed into a model, so a pending write's unresolved value reaches no widget, and it
+stays out of `SentWrite.fields`.
 Enforced, and mirrored by `lib/data/limits.dart`'s validators: a vice name of 1 to 60 UTF-16 code units (rules
 `size()`, Dart `String.length`); a new quantity an int of at least 1, so a free day is not a zero entry; an amount, if
 present, above 0; a new activity's `viceID` naming a vice the writer owns, via one `get()` (billed even if denied).
@@ -567,7 +585,8 @@ user and vice lists stay uncapped for 1.0 (`r4-vice-cap`, Jack, 2026-11-06).
 `failed-precondition` at runtime, and the emulators never enforce indexes. `test/firestore_indexes_test.dart` (#90)
 parses every query chained from `.collection(...)` in `lib/` and fails when one needs a composite index the file
 lacks, when a `where` with a Firestore filter argument or an `orderBy` sits outside such a chain, or when a chain uses
-`limitToLast` (whose reversed sorts it does not model).
+`limitToLast` (whose reversed sorts it does not model). The delta read's `ownerID` + `updatedAt` range has its own
+(`activities`: `ownerID` asc, `updatedAt` asc); nothing reads every day note, so they have none.
 
 **Navigation.** `main.dart` gates on `userProvider`: a user → `Homepage`, an error → `AuthStateFailure`, no event yet
 → `AuthStateLoading` (so a restored session never shows sign-in first), a null user → `Authenticate`. `generateRoute`
@@ -814,7 +833,8 @@ listener has answered from cache for three seconds; it drives the offline banner
 `syncStatusProvider` (`lib/providers/sync_status_provider.dart`) drives the header's Synced/Syncing pill and the menu
 footer: `TrackerWrites` reports each write as issued, and the tracker calls `waitForPendingWrites()` again after each
 (a wait covers only writes issued before it, earlier sessions' included), so Synced means every write is acknowledged.
-The day's "not yet synced" note shows only offline.
+The day's "not yet synced" note shows only offline. The whole-journal read (Query bounds) waits up to 2 s for queued
+writes before its `count()`, which skips the cache and queued writes, and offline answers from the cache as before.
 
 **Client API key.** One Firebase client key serves iOS and macOS and appears twice by design: in each
 `GoogleService-Info.plist` (read by the native SDK before Dart runs) and in `lib/firebase_options.dart` (FlutterFire's
