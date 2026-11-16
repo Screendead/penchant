@@ -65,8 +65,7 @@ class Account {
   static const Duration _syncWait = Duration(seconds: 5);
 
   // Every collection of documents carrying the user's ownerID, swept on
-  // deletion and a guest's sign-out.
-  @visibleForTesting
+  // deletion and a guest's sign-out, and saved whole by a backup.
   static const List<String> ownedCollections = <String>[
     'activities',
     'vices',
@@ -194,6 +193,23 @@ class Account {
     );
   }
 
+  /// Every owned document of every collection as the server holds it,
+  /// envelopes unopened, for a backup. Waits for this device's queued writes
+  /// first, so the backup holds them, and throws [UnsyncedEntriesException]
+  /// rather than leave them out.
+  Future<Map<String, List<StoredDocument>>> fetchStored() async {
+    final String uid = _signedInUser().uid;
+    try {
+      await _firestore.waitForPendingWrites().timeout(_syncWait);
+    } on TimeoutException {
+      throw const UnsyncedEntriesException();
+    }
+    return <String, List<StoredDocument>>{
+      for (final String collection in ownedCollections)
+        collection: await _readOwned(collection, uid, open: false),
+    };
+  }
+
   // Data goes before the Auth user: Firebase never reissues a uid, so
   // documents left behind a deleted user could never be reached again.
   // A guest has no password to confirm with, so [password] is null for one.
@@ -253,7 +269,11 @@ class Account {
   // an offline export would be partial with nothing to say so.
   // Sealed fields are opened, since the export is the one copy that needs no
   // key; a document that will not open keeps its envelope.
-  Future<List<StoredDocument>> _readOwned(String collection, String uid) async {
+  Future<List<StoredDocument>> _readOwned(
+    String collection,
+    String uid, {
+    bool open = true,
+  }) async {
     final SealedOpener opener = SealedOpener(_sealer);
     final List<StoredDocument> documents = <StoredDocument>[];
     Query<Map<String, dynamic>> page = _firestore
@@ -270,7 +290,9 @@ class Account {
         final Map<String, dynamic> json = doc.data();
         documents.add((
           id: doc.id,
-          data: unsealed(json, await opener.open(collection, doc.id, json)),
+          data: open
+              ? unsealed(json, await opener.open(collection, doc.id, json))
+              : json,
         ));
       }
       if (snapshot.docs.length < pageSize) {
