@@ -9,6 +9,8 @@ import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/insights_page.dart';
+import 'package:tracker/say_it/entry_reader.dart';
+import 'package:tracker/say_it/entry_words_page.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:tracker/letter/letter_setting.dart';
 import 'package:tracker/notes/note_search_page.dart';
@@ -32,6 +34,7 @@ class Homepage extends ConsumerStatefulWidget {
   static const String searchItem = 'Search';
   static const String askItem = 'Ask your journal';
   static const String letterItem = 'Letter';
+  static const String catchUpItem = 'Catch up';
   static const String settingsItem = 'Settings';
 
   @override
@@ -150,6 +153,7 @@ class _AppMenu extends ConsumerWidget {
         ref.watch(claudeAllowedProvider);
     final bool letter =
         ref.watch(letterEnabledProvider) && ref.watch(claudeAllowedProvider);
+    final bool catchUp = ref.watch(entryReaderProvider(EntryMode.days)) != null;
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final DialColors colors = DialColors.of(context);
@@ -232,6 +236,15 @@ class _AppMenu extends ConsumerWidget {
                   onPressed: () =>
                       Navigator.of(context).pushNamed(LetterPage.route),
                   child: const Text(Homepage.letterItem),
+                ),
+              if (catchUp)
+                MenuItemButton(
+                  style: itemStyle,
+                  leadingIcon: const StrokeIcon(DialGlyph.pencil, size: 20),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushNamed(EntryWordsPage.catchUpRoute),
+                  child: const Text(Homepage.catchUpItem),
                 ),
               MenuItemButton(
                 style: itemStyle,

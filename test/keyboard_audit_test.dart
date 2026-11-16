@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_page.dart';
+import 'package:tracker/say_it/entry_reader.dart';
+import 'package:tracker/say_it/entry_words_page.dart';
 import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/account/password_prompt.dart';
 import 'package:tracker/account_settings.dart';
@@ -680,6 +682,38 @@ void main() {
     );
   });
 
+  for (final EntryMode mode in EntryMode.values) {
+    testWidgets('read entries from words (${mode.name})', (
+      WidgetTester tester,
+    ) async {
+      _report(
+        await _audit(
+          tester,
+          surface: 'read entries from words (${mode.name})',
+          open: (WidgetTester t) async {
+            await t.pumpWidget(
+              _host(<Override>[
+                ...habitOverrides(<Vice>[_coffee]),
+                userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
+                entryReaderProvider.overrideWith(
+                  (Ref ref, EntryMode m) => _NeverRead(),
+                ),
+              ], home: EntryWordsPage(mode: mode)),
+            );
+            await t.pump();
+          },
+          fields: <_Field>[
+            _Field(
+              'words',
+              _plain(find.byKey(const ValueKey<String>('entry-words-field'))),
+            ),
+          ],
+          action: find.widgetWithText(FilledButton, EntryWordsPage.read),
+        ),
+      );
+    });
+  }
+
   Future<void> openAuth(WidgetTester t) async {
     await t.pumpWidget(
       _host(<Override>[
@@ -998,6 +1032,17 @@ class _QuestionReader implements QuestioningNoteReader {
 
   @override
   Future<NoteQuestion?> question(String note) async => asked;
+}
+
+class _NeverRead implements EntryReader {
+  @override
+  Future<ReadEntries> read(
+    EntryMode mode,
+    String text, {
+    required DateTime now,
+    required List<DateTime> days,
+    required List<({int id, Vice vice})> habits,
+  }) async => (entries: const <DraftEntry>[], dropped: 0);
 }
 
 class _NeverAsk implements AskJournal {

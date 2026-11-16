@@ -57,6 +57,10 @@
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Penchant listens only while you have the microphone on in Say it to log, to turn what you say into words on this device. The recording is never kept or sent anywhere.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Penchant turns what you say in Say it to log into words on this device only. The recording never leaves it; you see the words before you choose to send them to be read into entries.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Penchant reads the strength and volume printed on a drink's label, on this device, to fill in a habit's strength. The photo is not kept and is sent nowhere.</string>
 	<key>NSFaceIDUsageDescription</key>

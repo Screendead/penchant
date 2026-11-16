@@ -42,6 +42,7 @@
 		A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D2A01 /* SentenceEmbeddingChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */; };
+		A1E57C0D9B3F4E6A8C2D5E01 /* SpeechChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1E01 /* PlacesChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1F01 /* PhotosChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D2A01 /* LabelChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D2A02 /* LabelChannel.swift */; };
@@ -111,6 +112,7 @@
 		A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentenceEmbeddingChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RemindersChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpeechChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlacesChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotosChannel.swift; sourceTree = "<group>"; };
 		A1E57C0D9B3F4E6A8C2D2A02 /* LabelChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LabelChannel.swift; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 				A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */,
+				A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */,
 				A1E57C0D9B3F4E6A8C2D2A02 /* LabelChannel.swift */,
@@ -500,6 +503,7 @@
 				A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D2A01 /* SentenceEmbeddingChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */,
+				A1E57C0D9B3F4E6A8C2D5E01 /* SpeechChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1E01 /* PlacesChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D1F01 /* PhotosChannel.swift in Sources */,
 				A1E57C0D9B3F4E6A8C2D2A01 /* LabelChannel.swift in Sources */,

@@ -19,8 +19,16 @@ const String abvField = 'abv';
 const String caffeineMgField = 'caffeineMg';
 
 /// How an entry was logged: a one-tap log (a tally's `+`, a Log-fan wedge),
-/// the amount sheet, or the home-screen widget. Stored by name.
-enum LoggedVia { oneTap, sheet, widget }
+/// the amount sheet, the home-screen widget, Say it to log ([spoken], typed
+/// or said), or Catch up ([caughtUp], recalled later, so its time is rougher
+/// than a live one's). Stored by name; a build that predates a name reads it
+/// as absent.
+enum LoggedVia { oneTap, sheet, widget, spoken, caughtUp }
+
+/// The longest stored name, for the envelope's bound.
+final LoggedVia longestLoggedVia = LoggedVia.values.reduce(
+  (LoggedVia a, LoggedVia b) => b.name.length > a.name.length ? b : a,
+);
 
 class ActivityContent {
   const ActivityContent({
@@ -196,7 +204,7 @@ String? answersTooLong({
         followUp: followUp,
         zone: _longestZone,
         writtenAt: DateTime.utc(9999),
-        loggedVia: LoggedVia.widget,
+        loggedVia: longestLoggedVia,
         abv: _longestStrength,
         caffeineMg: _longestStrength,
       ).sealedLength,

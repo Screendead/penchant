@@ -28,9 +28,12 @@ class LogButton extends StatefulWidget {
     required this.habits,
     required this.onLog,
     required this.onRecord,
+    this.onSay,
   });
 
   final List<FanHabit> habits;
+  // Opens Say it to log from the fan's hub; null hides it.
+  final VoidCallback? onSay;
   // [from] is where the bead leaves from, in global coordinates.
   final void Function(Vice vice, Offset from) onLog;
   // Opens the record dialog, with [vice] chosen when there is one.
@@ -38,6 +41,8 @@ class LogButton extends StatefulWidget {
 
   static const String label = 'Log an entry';
   static const String hint = 'Tap to log now · hold for amount and time';
+  static const String sayIt = 'Say it';
+  static const String sayItLabel = 'Say it to log';
 
   @override
   State<LogButton> createState() => _LogButtonState();
@@ -64,6 +69,7 @@ class _LogButtonState extends State<LogButton> {
       habits: widget.habits,
       onLog: widget.onLog,
       onRecord: widget.onRecord,
+      onSay: widget.onSay,
     );
     _fan = fan;
     Navigator.of(context).push(fan).whenComplete(() {
@@ -169,6 +175,7 @@ class _FanRoute extends PopupRoute<void> {
     required this.habits,
     required this.onLog,
     required this.onRecord,
+    this.onSay,
   }) : slots = fanSlots(habits);
 
   final Rect anchor;
@@ -176,6 +183,7 @@ class _FanRoute extends PopupRoute<void> {
   final ({List<FanHabit> shown, bool more}) slots;
   final void Function(Vice vice, Offset from) onLog;
   final void Function(Vice? vice) onRecord;
+  final VoidCallback? onSay;
   final ValueNotifier<int?> hot = ValueNotifier<int?>(null);
 
   int get count => slots.shown.length + (slots.more ? 1 : 0);
@@ -396,9 +404,21 @@ class _FanPageState extends State<_FanPage>
                   center: centre,
                   radius: (FanGeometry.inner - 6) * scale,
                 ),
-                child: IgnorePointer(
-                  child: _FanHub(scheme: scheme, colors: colors),
-                ),
+                child: route.onSay == null
+                    ? IgnorePointer(
+                        child: _FanHub(scheme: scheme, colors: colors),
+                      )
+                    : FocusTraversalOrder(
+                        order: NumericFocusOrder(n - 0.5),
+                        child: _SayHub(
+                          scheme: scheme,
+                          colors: colors,
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            route.onSay!();
+                          },
+                        ),
+                      ),
               ),
               Positioned.fromRect(
                 rect: route.anchor,
@@ -894,6 +914,56 @@ class _FanHub extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    ),
+  );
+}
+
+// The hub as a button: Say it to log, in place of the clock.
+class _SayHub extends StatelessWidget {
+  const _SayHub({
+    required this.scheme,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final ColorScheme scheme;
+  final DialColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: LogButton.sayItLabel,
+    excludeSemantics: true,
+    onTap: onTap,
+    child: Material(
+      color: scheme.surfaceContainerLow,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: const ValueKey<String>('fan-say-it'),
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                StrokeIcon(DialGlyph.mic, size: 22, color: scheme.onSurface),
+                Text(
+                  LogButton.sayIt,
+                  style: DialTypeScale.bodyS.copyWith(
+                    fontSize: 10,
+                    color: colors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     ),

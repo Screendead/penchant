@@ -417,6 +417,28 @@ Insights; starting an experiment from it is not built. Cap 3 a day per uid per i
 withheld reasons up to any colon. `functions/tools/letter-review.js` writes letters for 5 made-up journals with an API
 key, printing each letter, what was withheld and why, and the seconds taken.
 
+**Say it to log and Catch up** (`lib/say_it/`, each off by default; Settings' "Say it to log" and "Catch up in words",
+`EntryReadingSetting`, per device, whose disclosure says what is sent; round 24). One page, `EntryWordsPage` (routes
+`/say-it`, opened from the Log fan's hub, which becomes a "Say it" button only while that switch is on, and
+`/catch-up`, in the Penchant menu), in two modes: `now` (a sentence about now; yesterday and today allowed) and `days`
+(1 to 7 picked days of the last 14). The person types, or on iOS taps the microphone: `ios/Runner/SpeechChannel.swift`
+(`lib/say_it/speech.dart`) runs `SFSpeechRecognizer` with `requiresOnDeviceRecognition`, so the recording never leaves
+the device; where the locale has no on-device model the microphone is not offered (macOS has no channel). The words fill
+the field and nothing is sent until Read it. `entryRequest` is the only payload: mode, text (500 or 2000), local now,
+the allowed dates with weekdays, and each unarchived, opened habit as a per-request number (`entryHabits`, never a
+document id) with name and unit words. The callable `readEntries` (`functions/entry_reader.js`: `validInput`, then
+Claude Haiku 5.5, thinking off, effort low, structured output whose habit and date are enums of what was sent; SDK 12 s
+or 40 s inside a 50 s function and the app's 55 s) proposes `{habit, amount, date, time, note, tags}`; `checkEntries`
+there and in Dart drops any entry whose habit was not sent, whose amount is not above 0 and at most 1000, whose date was
+not sent, whose time is malformed or after now, whose note is not one line of the text copied exactly, or past 10 (now)
+or 40 (days) entries, and drops tags not a tree leaf quoted from the text (both suites run
+`functions/entry_reader_fixture.json`). Caps 60 (now) and 10 (days) a day per uid per instance; logs mode, reason and
+counts only. The drafts show on the same page inside `ClaudeWorkingResult`, by day; each can change habit, amount (a
+red "far above your usual" past 3× the stored typical), time (never past now) or be removed; "dropped" is said. Save
+writes each through `TrackerWrites.recordActivity` with its own id and `loggedVia` `spoken` or `caughtUp` (an older
+build reads an unknown name as absent, and its edit drops it); one Undo bar undoes them all. Stop drops the answer
+unseen. `functions/tools/entry-reader-trial.js` runs 15 made-up cases with an API key.
+
 **Claude-working screen** (`lib/claude/`). Every Claude call in flight is shown through one component. The call site
 makes a `ClaudeWork` (status, optional detail, the person's own words sent as `subject`, `steps` for the analyst,
 `showElapsed` for long calls), keeps it current with `say` and ends it with `finish(answered|failed|stopped)`. It calls
@@ -892,7 +914,7 @@ so an untouched new entry is logged at the moment of saving, to the second. The 
 
 **Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
 Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal), `investigate` (Analyst),
-`writeLetter` (Letter) and `tidyTags` (Tidy my tags), each requiring
+`writeLetter` (Letter), `tidyTags` (Tidy my tags) and `readEntries` (Say it to log, Catch up), each requiring
 sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
 `maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account (`writeLetter`: 220 s and 512 MiB, its client a
 200 s timeout, inside the app's 240 s). `monthlySummaries` (03:00 UTC on the 1st;

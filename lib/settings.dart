@@ -35,6 +35,8 @@ import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
 import 'package:tracker/claude/claude_working_gallery.dart';
 import 'package:tracker/firebase_init.dart';
+import 'package:tracker/say_it/entry_reader.dart';
+import 'package:tracker/say_it/say_it_setting.dart';
 import 'package:tracker/widgets/settings_card.dart';
 
 // Nothing signs a guest back in, so signing out erases their journal rather
@@ -394,6 +396,8 @@ class _SettingsState extends ConsumerState<Settings> {
             AskJournalSetting(),
             AnalystSetting(),
             LetterSetting(),
+            EntryReadingSetting(EntryMode.now),
+            EntryReadingSetting(EntryMode.days),
           ],
         ),
         if (useFirebaseEmulators)

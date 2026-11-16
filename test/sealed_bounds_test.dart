@@ -109,7 +109,7 @@ void main() {
               followUp: followUp,
               zone: 'America/Argentina/ComodRivadavia',
               writtenAt: DateTime.utc(9999),
-              loggedVia: LoggedVia.widget,
+              loggedVia: longestLoggedVia,
             ).toMap(),
           );
           expect(bytes, lessThanOrEqualTo(_rulesMaxSealed));
