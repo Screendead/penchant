@@ -425,16 +425,14 @@ handover to do next rather than starting them yourself"; none is started). Each 
   unmeasured, and a spoken answer skips the app lock unless the intent asks for Face ID). The probe (no code): an
   intent runs in Penchant's process, in the same kind of headless engine as the background flush, and the journal
   key and Auth user are after-first-unlock keychain items.
-- **N3. Log from an Apple Watch.** Built, PR #350 (`feat/watch-app`), green, **held for Jack**: nothing has run on
-  a watch or a watch simulator (no watchOS simulator runtime on this Mac; the views are rendered on macOS instead,
-  `docs/pitch/round-24/watch/`), installing `master` with it puts a watch app on his paired watch, and one call is
-  his: the watch holds the account's uid and sends it with each log (as built), or a random per-sign-in token
-  (about half a day). Signing: the watch app and its complication extension
-  (`com.screendead.penchant.watchkitapp`, `.watchkitapp.widgets`) sign on team `8N575942RT` with the App Group. The
-  team's profiles ran a year already when Focus and Journaling Suggestions were refused (2026-11-12), so that says
-  nothing new about the team. Logging from the watch face is two taps (Apple allows buttons in accessory widgets on
-  iPhone and iPad only). On a `project.pbxproj` conflict take `master`'s file and re-run
-  `tools/add-watch-target.rb`; `flutter build ios --simulator` needs `-d <udid>` once it is merged.
+- ~~**N3. Log from an Apple Watch.**~~ Merged 2026-11-16 (#350) on Jack's "Merge and install"; how it works is in
+  `CLAUDE.md`. Never run on a watch or a watch simulator before the install (no watchOS simulator runtime on this
+  Mac; `tools/watch-render.sh` renders the views on macOS, stills in `docs/pitch/round-24/watch/`). Logging from the
+  watch face is two taps (Apple allows buttons in accessory widgets on iPhone and iPad only). On a
+  `project.pbxproj` conflict take `master`'s file and re-run `tools/add-watch-target.rb`; `flutter build ios
+  --simulator` needs `-d <udid>`. A workspace build of the `PenchantWatch` scheme alone fails (it tries to build
+  Flutter plugins for watchOS); build the target, or the whole iOS app. Unproven: `flutter build ipa` with the two
+  new targets.
 - ~~**N4. Insights: urges at entries against urges at random check-ins.**~~ Done (#348): per habit, by day, over
   days holding both an answered check-in and an entry with an urge (14 at least); a check-in's 0 is read as 1; floor
   one point; in the page's family; check-ins read once per open by `ownerID` alone (no index); saved report format
@@ -1101,11 +1099,14 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Round 25 (`docs/pitch/round-25/index.html`, https://claude.ai/artifact/Pn7BJkeUUjNA3W8urddqi7), sent 2026-11-16, three
-calls, none answered: (1) merge the Watch app (#350) and install it, or hold it (Claude: merge and install); (2) the
-watch keeps the account's uid, or a per-sign-in token, about half a day (Claude: keep the uid); (3) Siri stops at
-opening Ask with the question, or also speaks a single-number answer, about 4 days with a device timing test first
-(Claude: stop for now). Build 1870 (`master` at #352) is on the iPhone and Mac, without the Watch app.
+Round 25 (`docs/pitch/round-25/index.html`, https://claude.ai/artifact/Pn7BJkeUUjNA3W8urddqi7), sent 2026-11-16.
+Call 1 answered (Jack, 2026-11-16: "Merge and install"): the Watch app is merged (#350) and build 1883 (`master` at
+#350) is on the iPhone and Mac, the watch app and its complications embedded in the iPhone app; nothing of it is
+proven on a watch yet (the look, the iPhone waking for a log with Penchant closed, the haptic, Undo, sign-out).
+Still open: (2) the watch keeps the account's uid, as built, or a per-sign-in token, about half a day (Claude: keep
+the uid); (3) Siri stops at opening Ask with the question, or also speaks a single-number answer, about 4 days with
+a device timing test first (Claude: stop for now). The Ask trial after #350 (its schema note gained `watch`):
+29 passed, 1 failed, 10 unchecked of 40, as before (the steps question is declined as `unknown_habit`).
 
 Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX): Jack
 picked all fifteen on 2026-11-16 ("I chose all of them. I like them all - and it's really important they're done
