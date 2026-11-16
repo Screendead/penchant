@@ -439,7 +439,7 @@ writes each through `TrackerWrites.recordActivity` with its own id and `loggedVi
 build reads an unknown name as absent, and its edit drops it); one Undo bar undoes them all. Stop drops the answer
 unseen. The prompt asks for one entry per amount said, a range or rough amount at its lower number (the person can
 raise it), and none for words with no number or for a container not in the habit's unit with no size given; the
-review card says such words are not suggested. `functions/tools/entry-reader-trial.js` runs 19 made-up cases with an
+review card says such words are not suggested. `functions/tools/entry-reader-trial.js` runs 21 made-up cases with an
 API key, printing each one's expected reading. In Insights a `caughtUp` entry (`HabitUse.caughtUp`, false when locked)
 counts on its calendar day in day totals, never moved to the evening before, and `timedUses` drops every use of that
 habit on that day from the comparisons of time of day (last and first use, hours after, the hour before, one habit
