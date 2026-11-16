@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:intl/intl.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -8,6 +9,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/check_in_urges.dart';
 import 'package:tracker/insights/cycle_phase.dart';
 import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/daily_series.dart';
@@ -98,6 +100,7 @@ class InsightsInput {
     this.stays = const <PlaceStay>[],
     this.conditions = const <DayCondition>[],
     this.dayTags = const <DayTags>[],
+    this.checkIns = const <CheckInAnswer>[],
   });
 
   factory InsightsInput.from({
@@ -112,6 +115,7 @@ class InsightsInput {
     List<PlaceStay> stays = const <PlaceStay>[],
     RoughLocation? location,
     List<DayTags> dayTags = const <DayTags>[],
+    List<CheckInAnswer> checkIns = const <CheckInAnswer>[],
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -145,6 +149,7 @@ class InsightsInput {
       events: events,
       stays: stays,
       dayTags: dayTags,
+      checkIns: checkIns,
       conditions: <DayCondition>[
         cyclePhases(<DateTime>[
           for (final hs.DailyOutcome o in health)
@@ -184,6 +189,9 @@ class InsightsInput {
 
   /// Each day note's day and tags; a locked note has none.
   final List<DayTags> dayTags;
+
+  /// Every answered random check-in that opened.
+  final List<CheckInAnswer> checkIns;
 }
 
 /// The fewest days with a session a [hs.sessionMetricIds] outcome needs to be
@@ -325,7 +333,13 @@ class InsightsReport {
     this.recovery = const <Recovery>[],
     this.triggers = const <HabitTriggers>[],
     this.dayTags = const <HabitDayTags>[],
+    this.checkInUrges = const <CheckInUrge>[],
   });
+
+  /// Each habit's urge at its entries against the urge at random check-ins,
+  /// findings and refusals, judged in the same family as [findings]; empty
+  /// while no check-in is answered.
+  final List<CheckInUrge> checkInUrges;
 
   /// Whether each habit is used on more of the days with more of each
   /// calendar feature, findings and refusals, judged in the same family as
@@ -543,6 +557,13 @@ InsightsReport computeInsights(InsightsInput input) {
     skip: input.archived,
   );
   final List<double> dayTagPs = dayTagPValues(dayTagged);
+  final List<CheckInUrge> urged = checkInUrges(
+    uses: input.uses,
+    checkIns: input.checkIns,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<double> checkInPs = checkInUrgePValues(urged);
   final List<double> beforePs = <double>[
     for (final BeforeUse b in before) ?b.pValue,
   ];
@@ -582,6 +603,7 @@ InsightsReport computeInsights(InsightsInput input) {
       ...beforePs,
       ...triggerPs,
       ...dayTagPs,
+      ...checkInPs,
       ...followsPs,
       ...calendarPs,
       ...calendarDayPs,
@@ -619,6 +641,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...calendarPs,
         ...calendarDayPs,
         ...placePs,
@@ -634,6 +657,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -652,6 +676,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -668,6 +693,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -685,6 +711,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -703,6 +730,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...followsPs,
         ...shiftPs,
         ...payoffPs,
@@ -717,6 +745,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...placePs,
         ...followsPs,
         ...calendarPs,
@@ -733,6 +762,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...beforePs,
         ...triggerPs,
         ...dayTagPs,
+        ...checkInPs,
         ...calendarDayPs,
         ...followsPs,
         ...calendarPs,
@@ -751,6 +781,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...beforePs,
               ...triggerPs,
               ...dayTagPs,
+              ...checkInPs,
               ...followsPs,
               ...calendarPs,
               ...calendarDayPs,
@@ -767,6 +798,24 @@ InsightsReport computeInsights(InsightsInput input) {
       triggered,
       alongside: <double>[
         ...dayTagPs,
+        ...checkInPs,
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    checkInUrges: judgeCheckInUrges(
+      urged,
+      alongside: <double>[
+        ...dayTagPs,
+        ...triggerPs,
         ...afterPs,
         ...beforePs,
         ...followsPs,
@@ -782,6 +831,7 @@ InsightsReport computeInsights(InsightsInput input) {
     dayTags: judgeDayTags(
       dayTagged,
       alongside: <double>[
+        ...checkInPs,
         ...triggerPs,
         ...afterPs,
         ...beforePs,

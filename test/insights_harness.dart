@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice.dart';
@@ -12,6 +13,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/providers/check_in_provider.dart';
 import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/daylight_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
@@ -235,7 +237,11 @@ List<Override> insightsOverrides({
   LastNight? lastNight,
   String? Function(Ref ref)? uid,
   List<DayNote> dayNotes = const <DayNote>[],
+  List<CheckInAnswer> checkIns = const <CheckInAnswer>[],
 }) => <Override>[
+  allCheckInsProvider.overrideWithValue(
+    AsyncData<List<CheckInAnswer>>(checkIns),
+  ),
   allDayNotesProvider.overrideWithValue(AsyncData<List<DayNote>>(dayNotes)),
   // No uid keeps nothing between opens; insights_session_test.dart signs in.
   insightsUidProvider.overrideWith(uid ?? (Ref ref) => null),

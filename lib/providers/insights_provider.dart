@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice.dart';
@@ -22,6 +23,7 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/check_in_provider.dart';
 import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/daylight_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
@@ -387,6 +389,7 @@ final _engineProvider = FutureProvider.autoDispose
           stays: key.stays,
           location: key.location,
           dayTags: key.dayTags,
+          checkIns: key.checkIns,
           archived: <String>{
             if (key.archived.isNotEmpty)
               ...key.archived.split(_archivedSeparator),
@@ -528,11 +531,16 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     // Every note, read once like the journal; a failed read leaves the day
     // tags out rather than the page.
     final AsyncValue<List<DayNote>> notes = ref.watch(allDayNotesProvider);
+    // Likewise every answered check-in.
+    final AsyncValue<List<CheckInAnswer>> checkIns = ref.watch(
+      allCheckInsProvider,
+    );
     if (events == null ||
         reminders == null ||
         !places.ready ||
         location.isLoading ||
-        (notes.isLoading && !notes.hasValue)) {
+        (notes.isLoading && !notes.hasValue) ||
+        (checkIns.isLoading && !checkIns.hasValue)) {
       return waiting();
     }
     final List<DayTags> dayTags = dayTagsFrom(notes.value ?? const <DayNote>[]);
@@ -548,6 +556,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         stays: places.store.stays,
         location: location.value,
         dayTags: dayTags,
+        checkIns: checkIns.value ?? const <CheckInAnswer>[],
       );
       if (session?.resultFor(inputs) case final InsightsResult kept) {
         insightsTimingLog('Insights engine: reused');

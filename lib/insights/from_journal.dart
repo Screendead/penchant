@@ -13,6 +13,7 @@ Iterable<HabitUse> habitUsesFrom(Iterable<ViceActivity> activities) =>
         at: a.createdAt.toDate(),
         amount: a.measure,
         triggers: a.triggers,
+        urge: a.urge,
         caughtUp: a.loggedVia == LoggedVia.caughtUp,
       ),
     );

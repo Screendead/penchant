@@ -10,6 +10,7 @@ class HabitUse {
     required this.at,
     required this.amount,
     this.triggers = const <String>[],
+    this.urge,
     this.caughtUp = false,
   });
 
@@ -20,6 +21,9 @@ class HabitUse {
   /// As stored on the entry (lib/data/activity_triggers.dart); empty when
   /// untagged or locked.
   final List<String> triggers;
+
+  /// The urge noted on the entry, 1 to 5; null when unanswered or locked.
+  final int? urge;
 
   /// Logged through Catch up: the day is what the person recalled, the time
   /// of day a guess. False when locked.
