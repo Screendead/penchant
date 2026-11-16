@@ -59,17 +59,49 @@ test('validStep reads queries and findings, and nothing between', () => {
   const f = analyst.validStep({ kind: 'finding', queries: [], finding: { headline: ' H ', body: 'B', rests_on: [1] } });
   assert.deepEqual(f.finding, { headline: 'H', body: 'B', rests_on: [1] });
   for (const bad of [
-    { kind: 'queries', queries: [card, card, card, card], finding: noFinding },
     { kind: 'queries', queries: [], finding: noFinding },
-    { kind: 'queries', queries: [card], finding: { headline: 'H', body: '', rests_on: [] } },
-    { kind: 'finding', queries: [card], finding: { headline: 'H', body: 'B', rests_on: [1] } },
     { kind: 'finding', queries: [], finding: { headline: 'H', body: 'B', rests_on: [] } },
-    { kind: 'finding', queries: [], finding: { headline: 'H'.repeat(121), body: 'B', rests_on: [1] } },
+    { kind: 'finding', queries: [], finding: { headline: 'H'.repeat(analyst.LIMITS.headline + 1), body: 'B', rests_on: [1] } },
     { kind: 'finding', queries: [], finding: { headline: 'H', body: 'B', rests_on: ['1'] } },
     { kind: 'other', queries: [], finding: noFinding },
   ]) {
     assert.equal(analyst.validStep(bad), null, JSON.stringify(bad).slice(0, 120));
   }
+});
+
+test('validStep drops what is harmlessly outside the shape', () => {
+  const four = analyst.validStep({ kind: 'queries', queries: [card, card, card, card], finding: noFinding });
+  assert.equal(four.queries.length, analyst.LIMITS.queries);
+  const withFinding = analyst.validStep({ kind: 'queries', queries: [card], finding: { headline: 'H', body: 'B', rests_on: [1] } });
+  assert.deepEqual(withFinding.finding, { headline: '', body: '', rests_on: [] });
+  const withCards = analyst.validStep({ kind: 'finding', queries: [card], finding: { headline: 'H', body: 'B', rests_on: [1] } });
+  assert.deepEqual(withCards.queries, []);
+  assert.equal(withCards.finding.headline, 'H');
+});
+
+test('parseMessage says which rule a rejected reply broke, with nothing of the reply', () => {
+  const finding = (f) => ({ kind: 'finding', queries: [], finding: { headline: 'H', body: 'B', rests_on: [1], ...f } });
+  const cases = [
+    ['not json', 'json'],
+    [{ kind: 'queries' }, 'shape'],
+    [{ kind: 'other', queries: [], finding: noFinding }, 'shape'],
+    [{ kind: 'queries', queries: [], finding: noFinding }, 'cards'],
+    [{ kind: 'queries', queries: [{ ...card, sql: 'x'.repeat(4001) }], finding: noFinding }, 'cards'],
+    [finding({ headline: 'H'.repeat(analyst.LIMITS.headline + 1) }), 'headline_length'],
+    [finding({ headline: ' ' }), 'headline_length'],
+    [finding({ body: 'B'.repeat(analyst.LIMITS.body + 1) }), 'body_length'],
+    [finding({ rests_on: [] }), 'rests_on'],
+  ];
+  for (const [reply, why] of cases) {
+    const parsed = analyst.parseMessage(text(typeof reply === 'string' ? reply : JSON.stringify(reply)));
+    assert.deepEqual(parsed, { step: null, reason: 'unparsable', why }, why);
+  }
+  assert.ok(analyst.validStep(finding({ headline: 'H'.repeat(analyst.LIMITS.headline), body: 'B'.repeat(analyst.LIMITS.body) })));
+});
+
+test('the system prompt states the finding limits', () => {
+  assert.ok(analyst.SYSTEM.includes(`at most ${analyst.LIMITS.headline} characters`));
+  assert.ok(analyst.SYSTEM.includes(`at most ${analyst.LIMITS.body} characters`));
 });
 
 test('judge withholds a finding the transcript does not bear out', () => {

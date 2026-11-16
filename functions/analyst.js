@@ -168,30 +168,40 @@ function checkFinding(finding, input) {
 
 const trimmed = (value, max) => typeof value === 'string' && value.trim() !== '' && value.length <= max;
 
-// The model's step, or null unless it fits SCHEMA and the bounds structured
-// outputs cannot carry: 'queries' with 1 to 3 cards and an empty finding,
-// 'finding' with no cards, a headline, a body and 1 or more numbers.
-function validStep(step) {
-  if (!hasExactly(step, ['kind', 'queries', 'finding'])) return null;
+const EMPTY_FINDING = { headline: '', body: '', rests_on: [] };
+
+// The model's step and 'ok', or null and a fixed code saying which rule
+// failed. It must fit SCHEMA and the bounds structured outputs cannot carry:
+// 'queries' with 1 or more cards (past LIMITS.queries dropped; any finding
+// dropped), 'finding' with a headline, a body and 1 or more numbers (any
+// cards dropped).
+function checkStep(step) {
+  if (!hasExactly(step, ['kind', 'queries', 'finding'])) return { step: null, why: 'shape' };
   const { kind, queries, finding } = step;
-  if (!hasExactly(finding, ['headline', 'body', 'rests_on']) || !Array.isArray(finding.rests_on)) return null;
-  if (!finding.rests_on.every(Number.isInteger)) return null;
+  if (!Array.isArray(queries)) return { step: null, why: 'shape' };
+  if (!hasExactly(finding, ['headline', 'body', 'rests_on']) || !Array.isArray(finding.rests_on)) {
+    return { step: null, why: 'shape' };
+  }
+  if (!finding.rests_on.every(Number.isInteger)) return { step: null, why: 'shape' };
   if (kind === 'queries') {
-    const empty = finding.headline === '' && finding.body === '' && finding.rests_on.length === 0;
-    return empty && askJournal.validAnswer({ kind: 'answer', reason: 'none', cards: queries }) ? step : null;
+    const kept = queries.slice(0, LIMITS.queries);
+    if (!askJournal.validAnswer({ kind: 'answer', reason: 'none', cards: kept })) return { step: null, why: 'cards' };
+    return { step: { kind, queries: kept, finding: { ...EMPTY_FINDING, rests_on: [] } }, why: 'ok' };
   }
   if (kind === 'finding') {
-    const ok =
-      Array.isArray(queries) &&
-      queries.length === 0 &&
-      trimmed(finding.headline, LIMITS.headline) &&
-      trimmed(finding.body, LIMITS.body) &&
-      finding.rests_on.length > 0;
-    return ok
-      ? { kind, queries: [], finding: { headline: finding.headline.trim(), body: finding.body.trim(), rests_on: finding.rests_on } }
-      : null;
+    if (!trimmed(finding.headline, LIMITS.headline)) return { step: null, why: 'headline_length' };
+    if (!trimmed(finding.body, LIMITS.body)) return { step: null, why: 'body_length' };
+    if (finding.rests_on.length === 0) return { step: null, why: 'rests_on' };
+    return {
+      step: { kind, queries: [], finding: { headline: finding.headline.trim(), body: finding.body.trim(), rests_on: [...finding.rests_on] } },
+      why: 'ok',
+    };
   }
-  return null;
+  return { step: null, why: 'shape' };
+}
+
+function validStep(step) {
+  return checkStep(step).step;
 }
 
 const SCHEMA = {
@@ -236,7 +246,7 @@ const SYSTEM = [
   'Each query is a card: title (short, no numbers), explain (one plain sentence on what it counts, no numbers), sql, and chart as in the schema (type number, bar, line or table; x and series result columns or ""; y numeric columns; x_kind what x holds).',
   'Start broad (totals by month or week), then follow what stands out (hours, weekdays, tags, other habits).',
   '',
-  'The finding: a headline (one sentence) and a body (2 to 5 plain sentences) saying what the figures show, and rests_on, the n of each query whose result it uses; the phone shows those queries under it.',
+  `The finding: a headline (one sentence, at most ${LIMITS.headline} characters) and a body (2 to 5 plain sentences, at most ${LIMITS.body} characters in all) saying what the figures show, and rests_on, the n of each query whose result it uses; the phone shows those queries under it.`,
   'Every number you write must appear exactly, as digits, in a cell of a result you were sent. So compute every figure you will state in SQL (differences, shares, percentages, averages), rounded there with round(x, 0) or round(x, 1), and clock times as text with printf. Never count, add or compare numbers yourself, and never write numbers as words ("two", "twice", "a couple"). Refer to months by name.',
   'Describe only what the figures show. Never say or suggest that one thing causes, leads to, drives, triggers or explains another; whether it does is for the app\'s Insights, which the phone offers below your finding. Use no words such as because, due to, caused, effect or as a result.',
   'Never give advice, encouragement, praise, judgement or a diagnosis, and use no labels. Do not use words such as problem, addiction, should, need to, must, cut down, too much, healthy, risk, concerning, progress or success. Say nothing about the future.',
@@ -274,7 +284,8 @@ function messageRequest(input) {
 }
 
 // The model's step, unchecked against the transcript; reason 'ok' or why
-// there is none. Never throws.
+// there is none, and for 'unparsable' a fixed code [why] with nothing of the
+// reply in it. Never throws.
 function parseMessage(message) {
   if (!message || message.stop_reason === 'refusal') return { step: null, reason: 'refusal' };
   if (message.stop_reason === 'max_tokens') return { step: null, reason: 'max_tokens' };
@@ -286,10 +297,10 @@ function parseMessage(message) {
   try {
     step = JSON.parse(body);
   } catch {
-    return { step: null, reason: 'unparsable' };
+    return { step: null, reason: 'unparsable', why: 'json' };
   }
-  const valid = validStep(step);
-  return valid ? { step: valid, reason: 'ok' } : { step: null, reason: 'unparsable' };
+  const checked = checkStep(step);
+  return checked.step ? { step: checked.step, reason: 'ok' } : { step: null, reason: 'unparsable', why: checked.why };
 }
 
 // The reply judged against [input]: queries on the last step are no finding,

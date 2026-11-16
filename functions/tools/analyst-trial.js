@@ -66,7 +66,11 @@ async function investigateOne(client, db, question) {
     }
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     const parsed = analyst.parseMessage(message);
-    if (parsed.reason !== 'ok') return { reason: parsed.reason };
+    if (parsed.reason !== 'ok') {
+      const reply = (message.content || []).filter((b) => b && b.type === 'text').map((b) => b.text).join('');
+      console.log(`  step ${step} rejected (${parsed.why || parsed.reason}); reply:\n${reply}`);
+      return { reason: parsed.reason, why: parsed.why };
+    }
     const judged = analyst.judge(parsed.step, valid);
     console.log(`  step ${step} (${seconds} s, ${message.usage.input_tokens} in, ${message.usage.output_tokens} out)`);
     if (judged.reason !== 'ok') return { reason: judged.reason, why: judged.why, step: parsed.step };
