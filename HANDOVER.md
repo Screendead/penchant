@@ -401,11 +401,14 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
 handover to do next rather than starting them yourself"; none is started). Each feature's card in
 `docs/pitch/round-24/next-ideas/pitch.html` is its spec; round 24's state is under "Calls waiting on Jack".
 
-- **N1. The entry reader's last misses.** Jack re-ran its trial after #338 (2026-11-16, 19 cases): the three
-  earlier mistakes are gone (a range is one entry at the lower number, "too many" and "a lot" give nothing, a
-  bottle or pitcher gives nothing). Left: a bare habit name ("Coffee") gives no entry where one now is expected;
-  two tags were wrong ("after lunch" on the ten o'clock coffee, "tonight" as `place/home`). Fix in the prompt
-  (`functions/entry_reader.js`), then Jack runs `~/development/tracker-tools/run-trials.sh entry-reader-trial`.
+- ~~**N1. The entry reader's last misses.**~~ Done 2026-11-16 (Claude ran the trial, 21 cases, six runs). After
+  #342 and #343 "some wine with dinner" and "a bottle of wine over dinner" each came back as 1 glass: the bare-name
+  exception beat "no number, no entry". The amount rules are now one ordered test (a container, a number, a vague
+  word, then the bare name), and the tag rule asks for a quote that nearly restates the tag. Entries and amounts
+  matched every expect line on the last four runs. Still there: about one guessed tag a run, a different one each
+  time (`place/home` from "after the kids were in bed", `routine/coffee` on a coffee entry); Haiku with thinking off
+  does not hold a tag rule that tightly, and the person reviews each draft. Claude runs trials itself now
+  (`CLAUDE_API_KEY` in the environment), only the one whose prompt changed.
 - **N2. Ask your journal from Siri.** Probe first whether Ask can run in the headless engine a Siri intent gets
   (key loaded, sealed entries opened, the callable reached) before building the intent.
 - **N3. Log from an Apple Watch.** Signing probe first: whether Jack's team can sign a watchOS target with the
