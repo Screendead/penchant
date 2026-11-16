@@ -50,6 +50,18 @@ final Provider<NoteReader?> noteReaderProvider = Provider<NoteReader?>((
   );
 });
 
+/// The same reader for notes written before, sending each note alone: no
+/// follow-up question, whatever that switch says.
+final Provider<NoteReader?> olderNoteReaderProvider = Provider<NoteReader?>((
+  Ref ref,
+) {
+  if (useFirebaseEmulators) return null;
+  if (!ref.watch(noteReaderEnabledProvider)) return null;
+  if (ref.watch(userProvider).value == null) return null;
+  if (!ref.watch(claudeAllowedProvider)) return null;
+  return CallableNoteReader(_callReadNote);
+});
+
 Future<Object?> _callReadNote(Map<String, Object?> data) =>
     callClaude('readNote', CallableNoteReader.timeout, data);
 
@@ -108,10 +120,8 @@ class CallableNoteReader implements QuestioningNoteReader {
   // The one call for [note]; a failed one is forgotten, so the next read
   // asks again.
   Future<Object?> _answer(String note) {
-    if (_last case (
-      note: final String n,
-      answer: final Future<Object?> a,
-    ) when n == note) {
+    if (_last case (note: final String n, answer: final Future<Object?> a)
+        when n == note) {
       return a;
     }
     final Future<Object?> answer = call(<String, Object?>{

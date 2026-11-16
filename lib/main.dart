@@ -8,6 +8,8 @@ import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/claude/claude_working_gallery.dart';
 import 'package:tracker/letter/letter_page.dart';
+import 'package:tracker/notes/older_notes_page.dart';
+import 'package:tracker/notes/tag_tidy_page.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
@@ -294,6 +296,10 @@ Widget routePage(String? name, {DateTime? now}) {
       return const RecoveryKeyPage();
     case ['settings', 'backup']:
       return const BackupPage();
+    case ['settings', 'older-notes']:
+      return const OlderNotesPage();
+    case ['settings', 'tidy-tags']:
+      return const TagTidyPage();
     default:
       return const NotFound();
   }

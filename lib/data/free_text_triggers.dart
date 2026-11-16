@@ -41,6 +41,26 @@ class FreeTextTriggers {
     await prefs.setString(key(uid), jsonEncode(counts));
   }
 
+  /// Moves each label of [map]'s uses to what it became, dropping those that
+  /// became a starter-tree path, which the picker offers anyway.
+  Future<void> rename(
+    String uid,
+    Map<String, String> map, {
+    bool Function(String label)? isOwnWords,
+  }) async {
+    if (map.isEmpty) return;
+    final Map<String, int> counts = await uses(uid);
+    for (final MapEntry<String, String> m in map.entries) {
+      final int? n = counts.remove(m.key);
+      if (n == null) continue;
+      if (isOwnWords == null || isOwnWords(m.value)) {
+        counts[m.value] = (counts[m.value] ?? 0) + n;
+      }
+    }
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key(uid), jsonEncode(counts));
+  }
+
   /// Removes [uid]'s counts, whose keys are the user's own words, from this
   /// device.
   Future<void> forget(String uid) async {
