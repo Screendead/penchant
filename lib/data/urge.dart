@@ -152,8 +152,9 @@ List<double> urgeChartPositions(UsageRange range, Iterable<Urge> urges) {
     final int? bucket = range.bucketOf(at);
     if (bucket == null) continue;
     final DateTime start = range.bucketStart(bucket);
-    final double into =
-        (at.difference(start).inMilliseconds / ms).clamp(0, 1).toDouble();
+    final double into = (at.difference(start).inMilliseconds / ms)
+        .clamp(0, 1)
+        .toDouble();
     xs.add(bucket - 0.5 + into);
   }
   return xs..sort();

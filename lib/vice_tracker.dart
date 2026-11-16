@@ -43,6 +43,11 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/writes/log_one.dart';
+import 'package:tracker/data/urge.dart';
+import 'package:tracker/providers/tracker_writes_provider.dart';
+import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/urge_sheet.dart';
+import 'package:tracker/writes/note_urge.dart';
 
 // Today: the day as a 24-hour dial, a tally for each habit with a + that logs
 // one now, the Trends sheet peeking below them, and the Log button and its fan
@@ -96,6 +101,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   void initState() {
     super.initState();
     _logTarget.add(_logNow);
+    _logTarget.addUrge(_urge);
     pinnedDay =
         PageStorage.maybeOf(context)?.readState(context, identifier: _storageID)
             as DateTime?;
@@ -129,6 +135,13 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       (EntryPrompt? _, EntryPrompt? prompt) => _openEntryPrompt(prompt),
       fireImmediately: true,
     );
+    ref.listenManual<({NudgeAction action, String urgeID})?>(
+      pendingUrgeAnswerProvider,
+      (_, _) => _answerPendingUrge(),
+      fireImmediately: true,
+    );
+    // The answer waits for the journal key, which may load after the tap.
+    ref.listenManual(trackerWritesProvider, (_, _) => _answerPendingUrge());
     ref.listenManual<int?>(
       guestDaysLeftProvider,
       (int? _, int? days) => _warnGuest(days),
@@ -157,6 +170,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
   @override
   void dispose() {
     _logTarget.remove(_logNow);
+    _logTarget.removeUrge(_urge);
     _position.dispose();
     _sheet.dispose();
     super.dispose();
@@ -191,6 +205,78 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
 
   // From a key or the menu bar, which have no bead to fly in.
   void _logNow(Vice vice) => _log(vice, null);
+
+  // An urge is noted now, so a past day gives way to today, as a log does.
+  void _urge(Vice vice) {
+    if (pinnedDay != null) {
+      _selectDay(ref.read(todayProvider));
+    }
+    unawaited(UrgeSheet.show(context, vice));
+  }
+
+  // A check-in's answer, or a tap on it. Waits, still pending, until the
+  // journal key has loaded, since the answer reseals the urge. After the
+  // frame, as it may fire from initState.
+  void _answerPendingUrge() {
+    if (ref.read(pendingUrgeAnswerProvider) == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final ({NudgeAction action, String urgeID})? pending = ref.read(
+        pendingUrgeAnswerProvider,
+      );
+      final String? uid = ref.read(userProvider).value?.uid;
+      if (!mounted || pending == null || uid == null) {
+        return;
+      }
+      final writes = ref.read(trackerWritesProvider);
+      if (!writes.canCreate) {
+        return;
+      }
+      ref.read(pendingUrgeAnswerProvider.notifier).clear();
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      final bool h24 = MediaQuery.alwaysUse24HourFormatOf(context);
+      final Urge? urge = await writes.readUrge(pending.urgeID, ownerID: uid);
+      final Vice? vice = urge == null
+          ? null
+          : (ref.read(viceListProvider).value ?? const <Vice>[])
+                .where((Vice v) => v.id == urge.viceID)
+                .firstOrNull;
+      if (!mounted) {
+        return;
+      }
+      if (urge == null || vice == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('That urge is no longer here')),
+        );
+        return;
+      }
+      Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+      final UrgeOutcome? outcome = switch (pending.action) {
+        NudgeAction.urgePassed => UrgeOutcome.passed,
+        NudgeAction.urgeStillThere => UrgeOutcome.stillThere,
+        NudgeAction.urgeHadOne => UrgeOutcome.hadOne,
+        _ => null,
+      };
+      if (outcome == null) {
+        unawaited(UrgeSheet.show(context, vice, urge: urge));
+        return;
+      }
+      unawaited(
+        answerUrge(
+          ref,
+          messenger,
+          urge,
+          outcome,
+          viceName: vice.name,
+          alwaysUse24HourFormat: h24,
+        ),
+      );
+      if (outcome == UrgeOutcome.hadOne) {
+        _record(vice);
+      }
+    });
+  }
 
   void _record(Vice? vice) {
     RecordNewActivityDialog.show(context, initialViceID: vice?.id);
@@ -565,6 +651,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                                       : totals[vice.id],
                                   day: day,
                                   onLog: (Offset from) => _log(vice, from),
+                                  actions: <TileAction>[
+                                    (
+                                      label: TallyRow.amountAction,
+                                      onSelected: () => _record(vice),
+                                    ),
+                                    (
+                                      label: TallyRow.urgeAction,
+                                      onSelected: () => _urge(vice),
+                                    ),
+                                  ],
                                   lineTotal: switch (vice.line?.period) {
                                     null => null,
                                     LinePeriod.day =>
@@ -601,6 +697,9 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
             for (final (int i, Vice vice)
                 in (vices ?? const <Vice>[]).indexed.take(habitKeyCount))
               habitKey(i): () => _logNow(vice),
+            for (final (int i, Vice vice)
+                in (vices ?? const <Vice>[]).indexed.take(habitKeyCount))
+              urgeKey(i): () => _urge(vice),
           },
           child: Focus(
             autofocus: true,

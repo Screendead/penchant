@@ -61,6 +61,10 @@ class TallyGrid extends StatelessWidget {
   }
 }
 
+/// One choice in a tile's long-press menu, also a screen reader's custom
+/// action on the tile.
+typedef TileAction = ({String label, VoidCallback onSelected});
+
 // One habit's total for the shown day as a tile, with a + that logs one now.
 // Nothing in it may be a LayoutBuilder: TallyGrid asks for its intrinsic
 // height.
@@ -74,6 +78,7 @@ class TallyRow extends StatefulWidget {
     required this.onLog,
     this.trailing,
     this.lineTotal,
+    this.actions = const <TileAction>[],
   });
 
   final Vice vice;
@@ -88,6 +93,11 @@ class TallyRow extends StatefulWidget {
   // What the habit's line is read against: the day's total for a day line,
   // the last 7 days' for a week line. Null shows no line, as while it loads.
   final num? lineTotal;
+  // Offered by a long press or a secondary click, and to a screen reader.
+  final List<TileAction> actions;
+
+  static const String urgeAction = 'Urge';
+  static const String amountAction = 'Log an amount';
 
   static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.units.label(total)}';
@@ -209,87 +219,127 @@ class _TallyRowState extends State<TallyRow>
     );
 
     return _TileSemantics(
-      child: AnimatedBuilder(
-        animation: _flash,
-        builder: (BuildContext context, Widget? child) => DecoratedBox(
-          decoration: BoxDecoration(
-            color: Color.alphaBlend(
-              hue.withValues(
-                alpha:
-                    0.16 *
-                    (1 - Curves.easeIn.transform(_flash.value)) *
-                    (_flash.isAnimating ? 1 : 0),
+      child: _withActions(
+        AnimatedBuilder(
+          animation: _flash,
+          builder: (BuildContext context, Widget? child) => DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(
+                hue.withValues(
+                  alpha:
+                      0.16 *
+                      (1 - Curves.easeIn.transform(_flash.value)) *
+                      (_flash.isAnimating ? 1 : 0),
+                ),
+                theme.colorScheme.surfaceContainerLow,
               ),
-              theme.colorScheme.surfaceContainerLow,
+              border: Border.all(color: colors.line),
+              borderRadius: BorderRadius.circular(DialRadius.tile),
             ),
-            border: Border.all(color: colors.line),
-            borderRadius: BorderRadius.circular(DialRadius.tile),
+            child: child,
           ),
-          child: child,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Semantics(
-                      label: total == null
-                          ? widget.vice.name
-                          : lineTotal == null
-                          ? TallyRow.label(widget.vice, total)
-                          : '${TallyRow.label(widget.vice, total)}, '
-                                '${TallyRow.lineSpoken(widget.vice, line!, lineTotal)}',
-                      excludeSemantics: true,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Padding(
-                                padding: const EdgeInsets.only(top: 5),
-                                child: HabitPip(mark: widget.mark, dim: zero),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  widget.vice.name,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontSize: 14.5,
-                                    height: 20 / 14.5,
-                                    color: zero ? colors.muted : null,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Semantics(
+                        label: total == null
+                            ? widget.vice.name
+                            : lineTotal == null
+                            ? TallyRow.label(widget.vice, total)
+                            : '${TallyRow.label(widget.vice, total)}, '
+                                  '${TallyRow.lineSpoken(widget.vice, line!, lineTotal)}',
+                        excludeSemantics: true,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 5),
+                                  child: HabitPip(mark: widget.mark, dim: zero),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    widget.vice.name,
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      fontSize: 14.5,
+                                      height: 20 / 14.5,
+                                      color: zero ? colors.muted : null,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          totals,
-                        ],
+                              ],
+                            ),
+                            totals,
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  if (widget.trailing case final Widget trailing)
-                    trailing
-                  else if (widget.onLog case final void Function(Offset) onLog)
-                    _PlusButton(
-                      label: logOneLabel(widget.vice),
-                      onPressed: onLog,
-                    )
-                  else
-                    const SizedBox(width: 8),
-                ],
-              ),
-              if (line != null) _lineBar(line, lineTotal, hue, reduced),
-            ],
+                    if (widget.trailing case final Widget trailing)
+                      trailing
+                    else if (widget.onLog
+                        case final void Function(Offset) onLog)
+                      _PlusButton(
+                        label: logOneLabel(widget.vice),
+                        onPressed: onLog,
+                      )
+                    else
+                      const SizedBox(width: 8),
+                  ],
+                ),
+                if (line != null) _lineBar(line, lineTotal, hue, reduced),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _withActions(Widget tile) {
+    final List<TileAction> actions = widget.actions;
+    if (actions.isEmpty) return tile;
+    return Semantics(
+      customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
+        for (final TileAction a in actions)
+          CustomSemanticsAction(label: a.label): a.onSelected,
+      },
+      child: GestureDetector(
+        onLongPressStart: (LongPressStartDetails d) =>
+            _openMenu(d.globalPosition),
+        onSecondaryTapUp: (TapUpDetails d) => _openMenu(d.globalPosition),
+        child: tile,
+      ),
+    );
+  }
+
+  Future<void> _openMenu(Offset at) async {
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final Offset local = overlay.globalToLocal(at);
+    final int? picked = await showMenu<int>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(local.dx, local.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      items: <PopupMenuEntry<int>>[
+        for (final (int i, TileAction a) in widget.actions.indexed)
+          PopupMenuItem<int>(value: i, child: Text(a.label)),
+      ],
+    );
+    if (picked != null && mounted) {
+      widget.actions[picked].onSelected();
+    }
   }
 
   // Along the tile's foot, the line alone: the total it is read against in

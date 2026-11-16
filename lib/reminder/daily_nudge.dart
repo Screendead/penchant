@@ -434,8 +434,7 @@ class LocalNudgeScheduler implements NudgeScheduler {
       for (final PendingNotificationRequest p
           in await _plugin.pendingNotificationRequests())
         p.id,
-      for (final ActiveNotification a in await _activeNotifications())
-        ?a.id,
+      for (final ActiveNotification a in await _activeNotifications()) ?a.id,
     ]);
     if (id == null) return;
     const DarwinNotificationDetails darwin = DarwinNotificationDetails(
