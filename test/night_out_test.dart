@@ -58,25 +58,27 @@ final Night _night = Night(
   count: 3,
 );
 
-class _FakeNightOut extends NightOutNotifier {
-  _FakeNightOut(this.status);
+// How many times Today's End reached the notifier.
+int _ends = 0;
 
-  final NightOutStatus status;
-  bool ended = false;
+class _FakeNightOut extends NightOutNotifier {
+  _FakeNightOut(this._status);
+
+  final NightOutStatus _status;
 
   @override
-  NightOutStatus? build() => status;
+  NightOutStatus? build() => _status;
 
   @override
   Future<void> end() async {
-    ended = true;
-    state = status.withNight(null);
+    _ends++;
+    state = _status.withNight(null);
   }
 }
 
 const NightOutStatus _ready = NightOutStatus(supported: true, enabled: true);
 
-Future<_FakeNightOut> _pumpToday(
+Future<void> _pumpToday(
   WidgetTester tester,
   NightOutStatus status, {
   GlobalKey? frame,
@@ -116,7 +118,6 @@ Future<_FakeNightOut> _pumpToday(
     ),
   );
   await tester.pumpAndSettle();
-  return fake;
 }
 
 Future<void> _openMenu(WidgetTester tester, String habit) async {
@@ -244,14 +245,12 @@ void main() {
   testWidgets('Today shows the night running and ends it', (
     WidgetTester tester,
   ) async {
-    final _FakeNightOut fake = await _pumpToday(
-      tester,
-      _ready.withNight(_night),
-    );
+    _ends = 0;
+    await _pumpToday(tester, _ready.withNight(_night));
     expect(find.text('Night out: Wine'), findsOneWidget);
     await tester.tap(find.text('End'));
     await tester.pumpAndSettle();
-    expect(fake.ended, isTrue);
+    expect(_ends, 1);
     expect(find.text('Night out: Wine'), findsNothing);
   });
 

@@ -434,14 +434,12 @@ class PlaceStore {
                     ? null
                     : DateTime.fromMicrosecondsSinceEpoch(departure),
               )
-            else if (o
-                case [
-                  final int id,
-                  final int arrival,
-                  final int departure,
-                  final int source,
-                ]
-                when source == PlaceSource.photos.index)
+            else if (o case [
+              final int id,
+              final int arrival,
+              final int departure,
+              final int source,
+            ] when source == PlaceSource.photos.index)
               PlaceStay(
                 id,
                 DateTime.fromMicrosecondsSinceEpoch(arrival),
@@ -582,9 +580,9 @@ List<int> judgedPlaces(List<PlaceStay> stays, {required DateTime through}) {
   final DateTime first = startOfDay(closed.first.arrival);
   final DateTime last = startOfDay(through);
   if (last.isBefore(first)) return const <int>[];
-  return _byWakingTime(_wakingMinutes(closed, first, last))
-      .take(placeMaxPlaces)
-      .toList();
+  return _byWakingTime(
+    _wakingMinutes(closed, first, last),
+  ).take(placeMaxPlaces).toList();
 }
 
 /// For each habit not in [skip] and each of the [placeMaxPlaces] places with

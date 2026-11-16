@@ -284,8 +284,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         if (ref.read(placesAccessProvider).value != PlacesAccess.always) {
           ref.invalidate(placesAccessProvider);
         }
-        if (ref.read(healthStateProvider).value case HealthReady(:final values)
-            when values.isEmpty) {
+        if (ref.read(healthStateProvider).value case HealthReady(
+          :final values,
+        ) when values.isEmpty) {
           _retryHealth();
         }
       },

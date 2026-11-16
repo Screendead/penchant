@@ -108,8 +108,10 @@ class CallableNoteReader implements QuestioningNoteReader {
   // The one call for [note]; a failed one is forgotten, so the next read
   // asks again.
   Future<Object?> _answer(String note) {
-    if (_last case (note: final String n, answer: final Future<Object?> a)
-        when n == note) {
+    if (_last case (
+      note: final String n,
+      answer: final Future<Object?> a,
+    ) when n == note) {
       return a;
     }
     final Future<Object?> answer = call(<String, Object?>{
