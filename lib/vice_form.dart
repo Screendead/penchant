@@ -14,6 +14,8 @@ import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/health_write/health_write.dart';
+import 'package:tracker/label/label_sheet.dart';
+import 'package:tracker/label/label_source.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -51,6 +53,8 @@ class ViceForm extends ConsumerStatefulWidget {
   static const String strengthNone = 'None';
   static const String alcoholLabel = 'Alcohol %';
   static const String caffeineLabel = 'Caffeine mg';
+  static const String readLabel = 'Read a label';
+  static const Key readLabelKey = ValueKey<String>('vice-form-read-label');
   static const String strengthHelp =
       'Adds a Units view to Trends. It only measures: no guideline, no '
       'warnings.';
@@ -602,6 +606,31 @@ class _ViceFormState extends ConsumerState<ViceForm> {
         : strengthError(value, most, optional: optional),
   );
 
+  // A label's values go into the fields only, for the person to check; the
+  // form's Save writes them like typed ones.
+  Future<void> _readLabel(LabelSource source, String one) async {
+    final LabelPick? pick = await showLabelSheet(
+      context,
+      source: source,
+      one: one,
+    );
+    if (pick == null || !mounted) return;
+    void fill(TextEditingController controller, double? value) {
+      if (value != null) controller.text = formatAmount(value);
+    }
+
+    setState(() {
+      if (pick.caffeineMg != null) {
+        alcohol = false;
+        fill(caffeine.controller, pick.caffeineMg);
+      } else {
+        alcohol = true;
+        fill(serving.controller, pick.servingMl);
+        fill(abv.controller, pick.abv);
+      }
+    });
+  }
+
   bool _healthWriteStored(String uid) =>
       opened != null &&
       ref.read(healthWriteChoicesProvider(uid)).contains(opened!.id);
@@ -754,9 +783,28 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          ViceForm.strengthLabel,
-          style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                ViceForm.strengthLabel,
+                style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+              ),
+            ),
+            if (ref.watch(labelSourceProvider) case final LabelSource source)
+              TextButton.icon(
+                key: ViceForm.readLabelKey,
+                onPressed: () => _readLabel(source, one),
+                icon: const Icon(Icons.photo_camera_outlined, size: 20),
+                label: const Text(ViceForm.readLabel),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(
+                    DialSize.minTapTarget,
+                    DialSize.minTapTarget,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: DialSpace.xs),
         PillSegments<bool?>(

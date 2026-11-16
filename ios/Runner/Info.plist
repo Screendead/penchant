@@ -57,6 +57,8 @@
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Penchant reads when your reminders are due and when you complete them, to compare the reminders you complete and miss with your habits. It never reads or keeps their titles, never changes your reminders, and nothing leaves this device.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Penchant reads the strength and volume printed on a drink's label, on this device, to fill in a habit's strength. The photo is not kept and is sent nowhere.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Penchant uses Face ID to open your journal when App lock is on.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
