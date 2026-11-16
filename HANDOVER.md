@@ -1048,7 +1048,19 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Nothing is waiting. Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
+Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), two calls from
+Jack's 2026-11-16 "i would like to see (1) the analyst and (2) the letter"; nothing is built, and both wait on the
+Ask rebuild (below). Recommendations (Claude's): `analyst` Opus runs queries on the device and reads their results
+(counts, dates, tags; never note text, which the database refuses in that mode), asked before each investigation;
+`letter` Opus writes a review of a chosen period from notes and entries, on request, after a preview of what is
+sent. Unconfirmed: whether Opus 5.5 carries 30-day retention.
+
+Ask your journal is being rebuilt (Jack, 2026-11-16: "yeah do it... just has to be maximally secure"): the model
+writes read-only SQL, run on the device against an in-memory database behind a sandbox; results never leave it.
+Open with Jack: cutting Firestore reads per open of Insights and Ask (about 4,900 each today) by an `updatedAt`
+field and a delta read; Claude recommends it, not decided.
+
+Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
 https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15. Built (CLAUDE.md), each
 behind its own off-by-default switch in Settings' Claude group. None has met the real API: Jack runs
 `functions/tools/weekly-words-trial.js`, `ask-journal-trial.js` (40 questions; Haiku first, Sonnet only if Haiku
