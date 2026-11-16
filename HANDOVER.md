@@ -1101,6 +1101,12 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
+Round 25 (`docs/pitch/round-25/index.html`, https://claude.ai/artifact/Pn7BJkeUUjNA3W8urddqi7), sent 2026-11-16, three
+calls, none answered: (1) merge the Watch app (#350) and install it, or hold it (Claude: merge and install); (2) the
+watch keeps the account's uid, or a per-sign-in token, about half a day (Claude: keep the uid); (3) Siri stops at
+opening Ask with the question, or also speaks a single-number answer, about 4 days with a device timing test first
+(Claude: stop for now). Build 1870 (`master` at #352) is on the iPhone and Mac, without the Watch app.
+
 Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX): Jack
 picked all fifteen on 2026-11-16 ("I chose all of them. I like them all - and it's really important they're done
 *well*."). Each card on the page is that feature's spec; a build that departs from its card says where and why.
