@@ -1,0 +1,2225 @@
+{
+  "cases": [
+    {
+      "name": "a clean now sentence",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": [
+              {
+                "path": "place/bar",
+                "quote": "the pub"
+              },
+              {
+                "path": "social/friends",
+                "quote": "with Sam"
+              },
+              {
+                "path": "feeling/stressed",
+                "quote": "pretty stressed"
+              }
+            ]
+          },
+          {
+            "habit": 3,
+            "amount": 1,
+            "date": "2026-11-16",
+            "time": "21:30",
+            "note": "Then a coffee.",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        0,
+        1
+      ],
+      "keptTags": [
+        [
+          "place/bar",
+          "social/friends",
+          "feeling/stressed"
+        ],
+        []
+      ],
+      "dropped": 0
+    },
+    {
+      "name": "days Friday to Sunday with Sunday nothing",
+      "input": {
+        "mode": "days",
+        "text": "Fri about 4 pints from 7. Sat a bottle of wine over dinner, two coffees. Sun nothing.",
+        "now": "2026-11-16T09:00",
+        "dates": [
+          {
+            "date": "2026-11-13",
+            "weekday": "Friday"
+          },
+          {
+            "date": "2026-11-14",
+            "weekday": "Saturday"
+          },
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 4,
+            "date": "2026-11-13",
+            "time": "19:00",
+            "note": "Fri about 4 pints from 7.",
+            "tags": []
+          },
+          {
+            "habit": 2,
+            "amount": 1,
+            "date": "2026-11-14",
+            "time": "19:30",
+            "note": "a bottle of wine over dinner",
+            "tags": [
+              {
+                "path": "place/bar",
+                "quote": "over dinner"
+              }
+            ]
+          },
+          {
+            "habit": 3,
+            "amount": 2,
+            "date": "2026-11-14",
+            "time": "10:00",
+            "note": "two coffees",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        0,
+        1,
+        2
+      ],
+      "keptTags": [
+        [],
+        [
+          "place/bar"
+        ],
+        []
+      ],
+      "dropped": 0
+    },
+    {
+      "name": "unknown or mistyped habit ids",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 9,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": "1",
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1.5,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        3
+      ],
+      "keptTags": [
+        []
+      ],
+      "dropped": 3
+    },
+    {
+      "name": "amounts out of bounds or mistyped, decimals kept",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 0,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": -1,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 1001,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": "2",
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": null,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2.5,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 1000,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        5,
+        6
+      ],
+      "keptTags": [
+        [],
+        []
+      ],
+      "dropped": 5
+    },
+    {
+      "name": "a date that was not sent",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-14",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-17",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-15",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        2
+      ],
+      "keptTags": [
+        []
+      ],
+      "dropped": 2
+    },
+    {
+      "name": "malformed times and times after now",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "24:00",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "7pm",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "9:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "21:31",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "21:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-15",
+            "time": "23:00",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        4,
+        5
+      ],
+      "keptTags": [
+        [],
+        []
+      ],
+      "dropped": 4
+    },
+    {
+      "name": "notes not copied exactly",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub.\nThen a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "two pints at the pub",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub.\nThen",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "   ",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": null,
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub.",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        4,
+        5
+      ],
+      "keptTags": [
+        [],
+        []
+      ],
+      "dropped": 4
+    },
+    {
+      "name": "a note over 500 units is dropped though it is in the text",
+      "input": {
+        "mode": "days",
+        "text": "Fri a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, and 3 pints.",
+        "now": "2026-11-16T09:00",
+        "dates": [
+          {
+            "date": "2026-11-13",
+            "weekday": "Friday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 3,
+            "date": "2026-11-13",
+            "time": "20:00",
+            "note": "Fri a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, a long evening of it, and 3 pints.",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 3,
+            "date": "2026-11-13",
+            "time": "20:00",
+            "note": "and 3 pints.",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        1
+      ],
+      "keptTags": [
+        []
+      ],
+      "dropped": 1
+    },
+    {
+      "name": "bad tags are dropped alone, at most four kept",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": [
+              {
+                "path": "social",
+                "quote": "with Sam"
+              },
+              {
+                "path": "social/nope",
+                "quote": "with Sam"
+              },
+              {
+                "path": "social/friends",
+                "quote": "with Tom"
+              },
+              {
+                "path": "social/friends",
+                "quote": ""
+              },
+              {
+                "path": "social/friends",
+                "quote": "with Sam"
+              },
+              {
+                "path": "social/friends",
+                "quote": "Sam"
+              },
+              {
+                "path": "place/bar",
+                "quote": "the pub"
+              },
+              {
+                "path": "feeling/stressed",
+                "quote": "pretty stressed"
+              },
+              {
+                "path": "social/alone",
+                "quote": "Two pints"
+              },
+              {
+                "path": "social/partner",
+                "quote": "Sam"
+              }
+            ]
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": "place/bar"
+          }
+        ]
+      },
+      "kept": [
+        0
+      ],
+      "keptTags": [
+        [
+          "social/friends",
+          "place/bar",
+          "feeling/stressed",
+          "social/alone"
+        ]
+      ],
+      "dropped": 1
+    },
+    {
+      "name": "entries past the cap of ten are dropped",
+      "input": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      },
+      "reply": {
+        "entries": [
+          {
+            "habit": 7,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          "beer",
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          },
+          {
+            "habit": 1,
+            "amount": 2,
+            "date": "2026-11-16",
+            "time": "20:30",
+            "note": "Two pints at the pub with Sam",
+            "tags": []
+          }
+        ]
+      },
+      "kept": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "keptTags": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "dropped": 4
+    }
+  ],
+  "invalidInputs": [
+    {
+      "name": "wrong mode",
+      "data": {
+        "mode": "later",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no mode",
+      "data": {
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty text",
+      "data": {
+        "mode": "now",
+        "text": "",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "white space text",
+      "data": {
+        "mode": "now",
+        "text": "  \n ",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "text over 500 in now",
+      "data": {
+        "mode": "now",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "text over 2000 in days",
+      "data": {
+        "mode": "days",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "now without a time",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "now not a calendar date",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-02-30T10:00",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "now at 24:00",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T24:00",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "now with seconds",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30:00",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no dates",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "dates not increasing",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          },
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a date repeated",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a date after now",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          },
+          {
+            "date": "2026-11-17",
+            "weekday": "Tuesday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a weekday that is not the date's",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-16",
+            "weekday": "Sunday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a weekday not in English",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-16",
+            "weekday": "Montag"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "three dates in now",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-14",
+            "weekday": "Saturday"
+          },
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "eight dates in days",
+      "data": {
+        "mode": "days",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-09",
+            "weekday": "Monday"
+          },
+          {
+            "date": "2026-11-10",
+            "weekday": "Tuesday"
+          },
+          {
+            "date": "2026-11-11",
+            "weekday": "Wednesday"
+          },
+          {
+            "date": "2026-11-12",
+            "weekday": "Thursday"
+          },
+          {
+            "date": "2026-11-13",
+            "weekday": "Friday"
+          },
+          {
+            "date": "2026-11-14",
+            "weekday": "Saturday"
+          },
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no habits",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": []
+      }
+    },
+    {
+      "name": "51 habits",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 2,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 3,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 4,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 5,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 6,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 7,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 8,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 9,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 10,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 11,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 12,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 13,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 14,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 15,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 16,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 17,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 18,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 19,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 20,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 21,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 22,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 23,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 24,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 25,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 26,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 27,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 28,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 29,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 30,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 31,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 32,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 33,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 34,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 35,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 36,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 37,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 38,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 39,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 40,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 41,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 42,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 43,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 44,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 45,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 46,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 47,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 48,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 49,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 50,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          },
+          {
+            "id": 51,
+            "name": "h",
+            "unit": "u",
+            "unit_one": "u"
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate habit ids",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          },
+          {
+            "id": 1,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          }
+        ]
+      }
+    },
+    {
+      "name": "habit id 0",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 0,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "habit id 51",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 51,
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "habit id as a string",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": "1",
+            "name": "Beer",
+            "unit": "pints",
+            "unit_one": "pint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "name of 61 units",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "unit": "pints",
+            "unit_one": "pint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unit of 41 units",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "unit_one": "pint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no unit_one",
+      "data": {
+        "mode": "now",
+        "text": "Two pints at the pub with Sam, about an hour ago, pretty stressed. Then a coffee.",
+        "now": "2026-11-16T21:30",
+        "dates": [
+          {
+            "date": "2026-11-15",
+            "weekday": "Sunday"
+          },
+          {
+            "date": "2026-11-16",
+            "weekday": "Monday"
+          }
+        ],
+        "habits": [
+          {
+            "id": 1,
+            "name": "Beer",
+            "unit": "pints"
+          },
+          {
+            "id": 2,
+            "name": "Wine",
+            "unit": "bottles",
+            "unit_one": "bottle"
+          },
+          {
+            "id": 3,
+            "name": "Coffee",
+            "unit": "cups",
+            "unit_one": "cup"
+          }
+        ]
+      }
+    },
+    {
+      "name": "not an object",
+      "data": [
+        "now"
+      ]
+    }
+  ]
+}

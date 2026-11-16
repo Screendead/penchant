@@ -15,6 +15,7 @@ const { summarise } = require('./summary.js');
 const { DailyCap, readNote, validNote, wantsQuestion } = require('./note_reader.js');
 const { validFigures, writeWeekly } = require('./weekly_words.js');
 const { askJournal, validInput } = require('./ask_journal.js');
+const entryReader = require('./entry_reader.js');
 const { verifiedCaller } = require('./caller.js');
 const letter = require('./letter.js');
 const analyst = require('./analyst.js');
@@ -290,6 +291,12 @@ const letterCap = new DailyCap(3);
 // transcript from the device, which proves nothing, so steps are capped too.
 const investigationCap = new DailyCap(5);
 const investigationStepCap = new DailyCap(40);
+const entryCaps = {
+  now: new DailyCap(entryReader.DAILY_CAP.now),
+  days: new DailyCap(entryReader.DAILY_CAP.days),
+};
+// Inside the callable's 50 s timeout.
+const ENTRY_SDK_TIMEOUT_MS = { now: 12000, days: 40000 };
 
 // The letter's reply takes one to two minutes: the SDK gives up inside the
 // function's timeout, which ends inside the app's 240 s wait.
@@ -409,4 +416,19 @@ exports.investigate = onCall(STEP_CALLABLE, async (request) => {
   if (typeof why === 'string') fields.why = why.split(':')[0];
   logger.info('investigate', fields);
   return { step, reason };
+});
+
+// Proposed journal entries from what the person said, for them to review on
+// the device; nothing is written here. Logs the mode, reason code and counts
+// only: never the uid, the text, the habits or the entries.
+exports.readEntries = onCall({ ...CALLABLE, timeoutSeconds: 50 }, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to log by saying it.');
+  requireVerified('readEntries', request.auth);
+  const input = entryReader.validInput(request.data);
+  if (input == null) throw new HttpsError('invalid-argument', 'The request is not in the expected form.');
+  const client = configuredClient('readEntries', ENTRY_SDK_TIMEOUT_MS[input.mode]);
+  takeCap('readEntries', entryCaps[input.mode], request.auth.uid);
+  const { entries, dropped, reason } = await entryReader.readEntries(client, input);
+  logger.info('readEntries', { mode: input.mode, reason, entries: entries.length, dropped });
+  return { entries, dropped, reason };
 });
