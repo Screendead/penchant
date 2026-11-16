@@ -1048,7 +1048,26 @@ Later that day, in chat, on the widgets (#158) and the nudge (#156):
 
 ## Calls waiting on Jack (UNDECIDED)
 
-Nothing is waiting. Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
+Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), both
+picked by Jack on 2026-11-16 as recommended ("yes to both recommendations"; after the retention correction below,
+"Yes, build both"):
+
+- `analyst`: Opus runs queries on the device and reads their results (counts, dates, tags; never note text, which
+  the database refuses in that mode), asked before each investigation. Waits on the Ask rebuild.
+- `letter`: Opus writes a review of a chosen period from notes and entries, on request, after a preview of what is
+  sent. Being built.
+
+Retention, checked 2026-11-16 (https://privacy.claude.com/en/articles/7996866 and the API data-retention page): API
+inputs and outputs are deleted within 30 days for every model unless a zero-retention agreement exists; flagged
+content up to 2 years; never used for training without permission; only Fable and Mythos are Covered Models. Rounds
+20, 22 and 23's pages wrongly said "not retained by default". Owed: each in-app disclosure gains the 30-day line.
+
+Ask your journal is being rebuilt (Jack, 2026-11-16: "yeah do it... just has to be maximally secure"): the model
+writes read-only SQL, run on the device against an in-memory database behind a sandbox; results never leave it.
+Open with Jack: cutting Firestore reads per open of Insights and Ask (about 4,900 each today) by an `updatedAt`
+field and a delta read; Claude recommends it, not decided.
+
+Round 22 (`docs/pitch/round-22/claude-ideas/pitch.html`,
 https://claude.ai/artifact/5YcMe2TUMsGQCNHbr4SNQu), three calls answered by Jack on 2026-11-15. Built (CLAUDE.md), each
 behind its own off-by-default switch in Settings' Claude group. None has met the real API: Jack runs
 `functions/tools/weekly-words-trial.js`, `ask-journal-trial.js` (40 questions; Haiku first, Sonnet only if Haiku
