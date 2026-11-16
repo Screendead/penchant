@@ -4,10 +4,13 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tracker/data/habit_strength.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/notes/follow_up.dart';
 
 @immutable
@@ -43,6 +46,12 @@ List<ExportFile> exportFiles(AccountData data, DateTime exportedAt) {
         mimeType: 'text/csv',
         contents: exportDayNotesCsv(data),
       ),
+    if (data.urges.isNotEmpty)
+      ExportFile(
+        name: 'penchant-urges-$stamp.csv',
+        mimeType: 'text/csv',
+        contents: exportUrgesCsv(data),
+      ),
   ];
 }
 
@@ -64,6 +73,10 @@ const List<String> csvHeader = <String>[
   'follow_up_question',
   'follow_up_quote',
   'follow_up_answer',
+  'own_abv',
+  'own_caffeine_mg',
+  'strength_total',
+  'strength_unit',
 ];
 
 // One row per activity, oldest first. An activity whose vice is gone keeps
@@ -83,6 +96,17 @@ String exportCsv(AccountData data) {
     final Object? viceID = activity.data['viceID'];
     final Map<String, dynamic>? vice = vices[viceID];
     final ActivityContent content = ActivityContent.read(activity.data);
+    final HabitStrength? strength = vice == null
+        ? null
+        : HabitStrength.read(vice);
+    // What the entry comes to in its habit's chosen unit, as Trends counts it.
+    final double? total = strength?.of(
+      ViceActivity.fromJson(
+        id: activity.id,
+        json: activity.data,
+        opened: activity.data,
+      ),
+    );
     csv.write(
       _csvRow(<Object?>[
         _plain(activity.data['createdAt']),
@@ -101,6 +125,10 @@ String exportCsv(AccountData data) {
         content.followUp?.question,
         content.followUp?.quote,
         content.followUp?.answer,
+        content.abv,
+        content.caffeineMg,
+        total,
+        total == null ? null : strength?.unit.name,
       ]),
     );
   }
@@ -140,6 +168,46 @@ String exportDayNotesCsv(AccountData data) {
   return csv.toString();
 }
 
+const List<String> urgesCsvHeader = <String>[
+  'time',
+  'vice',
+  'vice_id',
+  'urge_id',
+  'strength',
+  'outcome',
+  'outcome_at',
+  'time_zone',
+];
+
+// One row per urge, oldest first. An urge that would not open keeps its time
+// and habit and leaves the rest blank; the JSON keeps its envelope.
+String exportUrgesCsv(AccountData data) {
+  final Map<String, Map<String, dynamic>> vices =
+      <String, Map<String, dynamic>>{
+        for (final StoredDocument vice in data.vices) vice.id: vice.data,
+      };
+  final List<StoredDocument> urges = List<StoredDocument>.of(data.urges)
+    ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
+  final StringBuffer csv = StringBuffer()..write(_csvRow(urgesCsvHeader));
+  for (final StoredDocument urge in urges) {
+    final Object? viceID = urge.data['viceID'];
+    final UrgeContent content = UrgeContent.read(urge.data);
+    csv.write(
+      _csvRow(<Object?>[
+        _plain(urge.data['createdAt']),
+        vices[viceID]?['name'],
+        viceID,
+        urge.id,
+        content.strength,
+        content.outcome?.name,
+        _plain(content.outcomeAt),
+        content.zone,
+      ]),
+    );
+  }
+  return csv.toString();
+}
+
 // Every stored field, unknown ones included, so nothing logged is lost.
 String exportJson(AccountData data, DateTime exportedAt) {
   List<Map<String, Object?>> documents(List<StoredDocument> docs) =>
@@ -157,6 +225,7 @@ String exportJson(AccountData data, DateTime exportedAt) {
     'vices': documents(data.vices),
     'activities': documents(data.activities),
     'dayNotes': documents(data.dayNotes),
+    'urges': documents(data.urges),
   });
 }
 

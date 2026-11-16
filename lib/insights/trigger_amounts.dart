@@ -102,7 +102,7 @@ class HabitTriggers {
 
 /// What a stored trigger counts under: a tree path under its top-level node
 /// and itself, a free-text label as itself.
-Set<String> _keys(String stored) {
+Set<String> triggerKeys(String stored) {
   final String trimmed = stored.trim();
   if (trimmed.isEmpty) return const <String>{};
   if (triggerLabels(trimmed) == null) return <String>{trimmed};
@@ -145,7 +145,7 @@ HabitTriggers? _habit(String id, List<HabitUse> all, InsightGates gates) {
   final List<({DateTime day, double amount, Set<String> keys})> tagged =
       <({DateTime day, double amount, Set<String> keys})>[
         for (final HabitUse u in all)
-          if (<String>{for (final String t in u.triggers) ..._keys(t)}
+          if (<String>{for (final String t in u.triggers) ...triggerKeys(t)}
               case final Set<String> keys when keys.isNotEmpty)
             (day: lateDayOf(u.at), amount: u.amount.toDouble(), keys: keys),
       ];
@@ -157,18 +157,11 @@ HabitTriggers? _habit(String id, List<HabitUse> all, InsightGates gates) {
       holders.putIfAbsent(k, () => <int>{}).add(i);
     }
   }
-  bool sameAsChild(String key) =>
-      triggerLabels(key)?.length == 1 &&
-      holders.entries.any(
-        (MapEntry<String, Set<int>> other) =>
-            other.key.startsWith('$key$triggerPathSeparator') &&
-            other.value.length == holders[key]!.length &&
-            other.value.containsAll(holders[key]!),
-      );
   final bool steady = tagged.every((e) => e.amount == tagged.first.amount);
   final List<TriggerAmount> triggers = <TriggerAmount>[
     for (final MapEntry<String, Set<int>> h in holders.entries)
-      if (!sameAsChild(h.key)) _trigger(h.key, h.value, tagged, steady, gates),
+      if (!sameAsChildTrigger(h.key, holders))
+        _trigger(h.key, h.value, tagged, steady, gates),
   ];
   triggers.sort((a, b) {
     final int byEntries = b.entries.compareTo(a.entries);
@@ -181,6 +174,17 @@ HabitTriggers? _habit(String id, List<HabitUse> all, InsightGates gates) {
     triggers: triggers,
   );
 }
+
+/// Whether [key] is a top-level area whose holders in [holders] are exactly
+/// those of one path under it: the same comparison twice.
+bool sameAsChildTrigger(String key, Map<String, Set<int>> holders) =>
+    triggerLabels(key)?.length == 1 &&
+    holders.entries.any(
+      (MapEntry<String, Set<int>> other) =>
+          other.key.startsWith('$key$triggerPathSeparator') &&
+          other.value.length == holders[key]!.length &&
+          other.value.containsAll(holders[key]!),
+    );
 
 TriggerAmount _trigger(
   String key,

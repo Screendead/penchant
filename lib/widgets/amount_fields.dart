@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -7,6 +8,7 @@ import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
+import 'package:tracker/widgets/strength_field.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
@@ -33,6 +35,8 @@ class AmountFields extends ConsumerWidget {
     this.enabled = true,
     this.quantityValidator = quantityError,
     this.error,
+    this.strength,
+    this.strengthController,
   });
 
   static const String quantityLabel = 'Quantity';
@@ -61,6 +65,10 @@ class AmountFields extends ConsumerWidget {
   final bool enabled;
   final FormFieldValidator<String> quantityValidator;
   final String? error;
+  // The habit's strength; with [strengthController], the entry may override
+  // it.
+  final HabitStrength? strength;
+  final TextEditingController? strengthController;
 
   num get _typed => parseAmount(quantityController.text) ?? 0;
 
@@ -150,6 +158,18 @@ class AmountFields extends ConsumerWidget {
           editing: editing,
           enabled: enabled,
         ),
+        if ((strength, strengthController) case (
+          final HabitStrength s,
+          final TextEditingController c,
+        )) ...[
+          const SizedBox(height: DialSpace.s),
+          StrengthField(
+            strength: s,
+            controller: c,
+            quantityController: quantityController,
+            enabled: enabled && answersEnabled,
+          ),
+        ],
         const SizedBox(height: 8),
         Align(
           alignment: AlignmentDirectional.centerStart,

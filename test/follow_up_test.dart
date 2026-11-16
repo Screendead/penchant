@@ -334,14 +334,17 @@ void main() {
           ),
         ],
       );
-      expect(csvHeader.skip(csvHeader.length - 3), <String>[
+      final int asked = csvHeader.indexOf('follow_up_question');
+      expect(asked, csvHeader.indexOf('logged_via') + 1);
+      expect(csvHeader.sublist(asked, asked + 3), <String>[
         'follow_up_question',
         'follow_up_quote',
         'follow_up_answer',
       ]);
       expect(dayNotesCsvHeader.take(3), <String>['day', 'text', 'triggers']);
       const String tail = ',$_asked,$_quote,"No, Sam texted at five"';
-      expect(exportCsv(data).split('\r\n')[1], endsWith(tail));
+      // The strength columns follow, blank here.
+      expect(exportCsv(data).split('\r\n')[1], endsWith('$tail,,,,'));
       expect(exportDayNotesCsv(data).split('\r\n')[1], endsWith(tail));
     });
   });

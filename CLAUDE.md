@@ -474,7 +474,7 @@ Days).
 
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
-collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
+collections joined by `viceID` (and `dayNotes` and `urges`, Urges below): `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
 `unitLabel`, `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) and
 `activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `updatedAt`, and sealed content:
 `triggers` and the optional `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); a third, `summaries`, is server-written (Server side,
@@ -515,7 +515,8 @@ alone.
 the server's orphan sweep take their collections from `Account.ownedCollections` and `OWNED_COLLECTIONS`
 (`functions/cleanup.js`), which must match; the export adds a day-notes CSV. `DayNoteSheet`
 (`lib/widgets/day_note_sheet.dart`, route `/day-notes/yyyy-MM-dd`, `dayNoteRoute`) is two `NotePanels`, text then
-tags; Today shows the note's first line under the tallies. Insights reads none of it yet.
+tags; Today shows the note's first line under the tallies. Insights reads the tags alone (What sets it off,
+below), never the text or follow-up.
 
 The rules check `ownerID` against the stored document on read, update and delete and the incoming one on create, fix
 each collection's field set and types on create, allow updates only to `name`/`unit`/`archived`/`category` (vices) and
@@ -575,6 +576,46 @@ the tile: name, total, +, a zero's name and number greyed). A tile with a line r
 line) over a bar with a tick at the line, three quarters along until the total passes the bar's end
 (`TallyRow.lineScale`). Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
 period and not in Spend (else a caption says which view shows it), and "Over your line" replaces Peak.
+
+**Urges** (round 24 "Log an urge", Jack, 2026-11-16). An urge that need not have become an entry: long-press (or
+secondary-click) a tile on Today, or its screen reader's custom action "Urge", or Option-Cmd-1 to 9 and the Mac's
+Log > Urge menu, opens `UrgeSheet` (`lib/widgets/urge_sheet.dart`): strength 1 to 5 on the entries' scale and words
+(`UrgeField`), and Done; `noteUrge` (`lib/writes/note_urge.dart`) writes it now with Undo, returning a past day to
+today. Collection `urges`, born sealed (`bornSealedCollections`): plaintext `ownerID`, `viceID`, `createdAt` (the
+device clock, as an entry's, so an offline urge still matches the range query; not stamped with `updatedAt`), and
+`sealed` holding `UrgeContent` (`lib/data/urge.dart`): `strength`, `zone`, and `outcome` (`passed`, `stillThere`,
+`hadOne`) with `outcomeAt`, present together. Rules: owner only, that field set on create, `viceID` a vice the writer
+owns (`ownsVice` last), updates change `sealed` alone. One query shape, `ownerID` and a `createdAt` window newest first
+(`urgesProvider`, `lib/providers/urge_provider.dart`, index `urges` (`ownerID`, `createdAt` desc)), over every habit,
+filtered on the device. If the person turns on "Ask “Still there?” in 15 minutes" in the sheet (per device,
+`urgeCheckInProvider`; the first turn-on asks notification permission), a quiet notification 15 minutes later
+(`scheduleUrgeCheck`, ids 3000 to 3999, the lowest free one; payload `urge:<id>`, never the habit or strength) offers
+Passed, Still there and Had one under category `urge-check`. All three are foreground actions: iOS hands a background
+action to a separate engine with no sign-in or journal key to seal with. The answer waits in
+`pendingUrgeAnswerProvider` until Today has a key, reads the urge (`TrackerWrites.readUrge`), reseals it with the
+outcome (`answerUrge`), and for Had one opens the amount sheet on that habit; a tap on the notification opens the
+urge's sheet. Answering in the app, Undo and Delete cancel that urge's check-in; sign-out and deletion cancel them all.
+Trends draws the chosen habit's urges as hollow rings along the chart's foot at their times (`urgeChartPositions`), a
+bar after every other so touch indices hold, and names their count in the summary and the readout; Trends' day view
+lists the day's urges (`UrgeRow`), each opening its sheet (strength, "What happened?", Delete). Never in totals,
+averages, Insights, Ask or the letter. Neutral words: no praise, streaks or counts of urges passed. The export adds
+`penchant-urges-<date>.csv` and an `urges` array.
+
+**A habit's strength** (round 24, "Strength and standard units"). Optional `strengthUnit` (`ukUnit`, `grams`,
+`standardDrink` or `mg`), `servingMl` (above 0, at most 5,000), `abv` (above 0, at most 100), `drinkGrams` (above 0, at
+most 100) and `caffeineMg` (above 0, at most 2,000), read together as `Vice.strength` (`HabitStrength`,
+`lib/data/habit_strength.dart`): an alcohol definition needs its serving size (a standard drink also its grams), the
+usual ABV or mg is optional, and a missing or out-of-range value reads as absent. Unlike the price and the line they
+were sealed from the start: the vices update key list leaves them out, so the rules refuse them in plaintext on any
+vice. An entry may carry its own `abv` or `caffeineMg` (`ActivityContent`, rounded to two places by `roundStrength`,
+which `answersTooLong` allows for), which wins over the habit's; an older build's edit drops the habit's, as it drops
+the price. Units follow the NHS (nhs.uk/live-well/alcohol-advice/calculating-alcohol-units): ABV × ml ÷ 1,000 UK
+units, 8 g a unit; a standard drink is grams of alcohol the person sets, so no country's definition is built in.
+Set in the habit form's Strength section (None / Alcohol % / Caffeine mg); the amount sheet and editor offer
+"Strength this time" (`StrengthField`) only for a habit with one. Trends' Units view and its tiles count each entry
+at its strength (`bucketUnits`); entries with none count nothing and the view says how many. It only measures: no
+guideline, colour or warning. The export appends `own_abv`, `own_caffeine_mg`, `strength_total`, `strength_unit`.
+Insights and Ask read none of it. Nothing writes it to Health yet.
 
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
 `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
@@ -703,7 +744,9 @@ habits in use oldest first, then archived ones marked "· archived", so the defa
 them, adds a row of chips to draw up to `TrendsSheet.maxCompared` (3) other habits over the chosen one: thin lines of
 their totals under the same average, on one count axis whatever their units, named in the chart's summary, readout and
 legend, kept in page storage with the habit. A priced habit adds a Count/Spend switch that charts its totals times
-its price, axis and readouts in its currency, with no compared lines (their units and prices differ). On iOS a Health
+its price, axis and readouts in its currency, with no compared lines (their units and prices differ); a habit with a
+strength adds Units (`TrendsView`; the chart takes a `TrendsScale`, money or strength), likewise without compared lines
+or the line. On iOS a Health
 chip, once on, watches `healthStateProvider` (never before, as it reads Health) and offers each Health measure with
 values in the range and a numeric `metricCopy` (not mood); the one picked is a dashed line under the habit's, each
 bucket the mean of its days (`bucketHealth`, `lib/data/trend_breakdowns.dart`; a gap where Health has none; sleep on
@@ -827,7 +870,18 @@ What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, ca
 tagged entries (untagged ones say nothing, so they are left out, and the card says how many were tagged), each day's
 mean per entry as the unit, in the page's false-discovery family. A trigger counts under its tree path, its top-level
 area, or as its free-text label; `HabitUse.triggers` carries them from the opened entries, so a locked entry reads as
-untagged. Each unarchived habit on no before-a-use, pair (either side), calendar, place or trigger card gets one reason, on a
+untagged. Day-note tags are compared the same way at day level (`lib/insights/day_tags.dart`, cards in
+`lib/widgets/day_tags_card.dart`): `insightsProvider` reads every note once per open through `allDayNotesProvider`
+(a failed read leaves them out; a locked note reads as untagged) and `dayTagsFrom` passes each tagged day as
+`InsightsInput.dayTags`. Per habit, the rows are the tagged days of its span (untagged days say nothing and are left
+out, a day with no entry counts as 0) and the response its `lateDayTotal`, fitted on the tag with the habit's usual
+total on that weekday (over its whole span), a trend, period levels and the day before's total held fixed, widened by
+`judgeDays` and its block bootstrap like `calendarDays`; at least `minExposedDays` days each side and 10 residual days,
+in the page's family, floor 20% (`dayTagFloor`, the entry triggers', read on both the held-fixed and the shown
+difference). `test/insights/day_tags_test.dart` holds its null simulations (independent tags, and tags kept for the
+heavy weekdays, which without the weekday column gave 42% false cards) and its power. Where a habit's day-tag finding
+and its entry-trigger finding name the same tag or area and point the same way, `dayTagCards` says both on one card
+("By day and by entry") and takes it off the trigger card. Each unarchived habit on no before-a-use, pair (either side), calendar, place trigger or day-tag card gets one reason, on a
 drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
 (`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
 has no entries or nothing to compare against.
@@ -849,6 +903,24 @@ types and `insightsViewFormat` are unchanged) is the sealed file `experiment` un
 and deletion), so the Mac never sees it. Its optional notification (`experimentNotices`, ids from 1000, a week ahead,
 topped up on each launch, cancelled on stop, finish and sign-out) says "Experiment, day 9 of 42" and never names the
 habit; permission is asked only when it is turned on. Stopping removes the plan with no result.
+
+**Night out** (iPhone, iOS 17+; round 24). A habit tile's long-press menu (`TileAction`, `lib/widgets/tally_row.dart`)
+offers "Start a night" (`lib/night_out/`), which starts a Live Activity (`NightOut`, `ios/PenchantWidgets/NightOut.swift`,
+compiled into the app and the widget extension; drawn by `NightWidget.swift`) counting that habit from now, with a +1
+button (`NightLogIntent`, a `LiveActivityIntent`, so it runs in the app's process) that queues a log like a widget's
+(`loggedVia` `widget`). Only `NSSupportsLiveActivities` in the app's Info.plist: no entitlement, no push token, local
+updates only. By default the Lock Screen says "Tonight" in ink; the habit's name and colour only if chosen at the
+start. The night (`NightRecord`, `NightPlan.swift`, pure, `tools/night-plan.test.sh`) lives in the App Group: `base`, the
+habit's total since the start in the entries the app last saw, plus the ids of logs made outside the app since (the +1,
+widgets, controls, Siri: `LogOneIntent` and `UndoLogIntent` tell it). While the app runs, `nightOutSyncProvider` (kept
+alive by `MyApp`) listens to the habit's entries since the start (`viceActivitySinceForUserProvider`) and reconciles
+over `com.screendead.penchant/night_out` (`ios/Runner/NightChannel.swift`): new `base`, and an outside log is dropped once
+seen or once off the queue unseen (refused or undone), so an Undo, edit or delete in the app shows on the Lock Screen at
+once. It ends at the first 06:00 at least an hour away, or 8 hours after the start if sooner (ActivityKit ends a Live
+Activity at 8 hours); no code runs then, so the stale date hides the +1 and the next launch, resume or tap ends it. One
+night at a time. Native ends it at launch (`AppDelegate`) and Dart on resume and on a user change (sign-out, account
+deletion) when it is over, not the signed-in user's, or removed from the Lock Screen. Today shows `NightStrip` with End
+while it runs. Not offered on the Mac (`nightOutProvider` is null there).
 
 **Places** (iOS only; Core Location visits, opt-in from a card on Insights: When In Use first, then the upgrade to
 Always, which Apple shows at most once; `NSLocation...UsageDescription` strings, no background mode or paid

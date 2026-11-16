@@ -1150,6 +1150,33 @@ describe('sealed documents', () => {
       }
     });
 
+    // lib/data/habit_strength.dart: born sealed, so no plaintext write of
+    // it is allowed at all, on a sealed vice or a legacy plaintext one.
+    const strengthFields = [
+      { strengthUnit: 'ukUnit' },
+      { servingMl: 568 },
+      { abv: 4.5 },
+      { drinkGrams: 14 },
+      { caffeineMg: 95 },
+    ];
+
+    it('refuses a sealed vice that carries a plaintext strength', async () => {
+      for (const extra of strengthFields) {
+        await assertFails(setDoc(doc(asAlice(), 'vices/new'), sealedVice(extra)));
+      }
+    });
+
+    it('refuses a strength written in plaintext to a vice, sealed or not', async () => {
+      for (const extra of strengthFields) {
+        await assertFails(updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), extra));
+        await assertFails(
+          updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), { sealed: resealed, ...extra }),
+        );
+        await assertFails(updateDoc(doc(asAlice(), 'vices/aliceVice'), extra));
+      }
+      await assertSucceeds(updateDoc(doc(asAlice(), 'vices/aliceSealedVice'), { sealed: resealed }));
+    });
+
     it('refuses a sealed vice without its structural fields', async () => {
       for (const field of ['ownerID', 'createdAt', 'archived']) {
         await assertFails(setDoc(doc(asAlice(), 'vices/new'), without(sealedVice(), field)));
@@ -1303,6 +1330,18 @@ describe('sealed documents', () => {
       await assertFails(
         updateDoc(doc(db, 'activities/aliceSealedActivity'), { quantity: deleteField() }),
       );
+    });
+
+    it('keeps an entry\'s own strength inside the envelope', async () => {
+      const db = asAlice();
+      for (const extra of [{ abv: 6.5 }, { caffeineMg: 120 }]) {
+        await assertFails(setDoc(doc(db, 'activities/new'), sealedActivity(extra)));
+        await assertFails(updateDoc(doc(db, 'activities/aliceSealedActivity'), extra));
+        await assertFails(
+          updateDoc(doc(db, 'activities/aliceSealedActivity'), { sealed: resealed, ...extra }),
+        );
+        await assertFails(updateDoc(doc(db, 'activities/aliceActivity'), extra));
+      }
     });
 
     it('keeps triggers inside the envelope', async () => {
@@ -1520,6 +1559,144 @@ describe('dayNotes', () => {
       snapshot.docs.forEach((d) => batch.delete(d.ref));
       await assertSucceeds(batch.commit());
       assert.equal((await getDocs(query(collection(db, 'dayNotes'), where('ownerID', '==', ALICE)))).size, 0);
+    });
+  });
+});
+
+// lib/data/urge.dart: an urge noted for a habit, born sealed. Strength and
+// outcome live only inside the envelope; only the envelope ever changes.
+describe('urges', () => {
+  const at = new Date('2026-11-15T14:05:00Z');
+  const newUrge = (overrides = {}) => ({
+    sealed: envelope,
+    ownerID: ALICE,
+    viceID: 'aliceVice',
+    createdAt: at,
+    ...overrides,
+  });
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'urges/aliceUrge'), newUrge());
+      await setDoc(doc(db, 'urges/aliceEarlierUrge'), newUrge({ createdAt: new Date('2026-11-01T09:00:00Z') }));
+      await setDoc(doc(db, 'urges/bobUrge'), newUrge({ ownerID: BOB, viceID: 'bobVice' }));
+    });
+  });
+
+  describe('create', () => {
+    it('allows the owner a sealed urge for their own habit', async () => {
+      await assertSucceeds(setDoc(doc(asAlice(), 'urges/new'), newUrge()));
+      await assertSucceeds(addDoc(collection(asAlice(), 'urges'), newUrge()));
+    });
+
+    it('denies an urge for another user\'s habit or a missing one', async () => {
+      await assertFails(setDoc(doc(asAlice(), 'urges/new'), newUrge({ viceID: 'bobVice' })));
+      await assertFails(setDoc(doc(asAlice(), 'urges/new'), newUrge({ viceID: 'noSuchVice' })));
+    });
+
+    it('denies an urge owned by someone else, or written signed out', async () => {
+      await assertFails(setDoc(doc(asAlice(), 'urges/new'), newUrge({ ownerID: BOB, viceID: 'bobVice' })));
+      await assertFails(setDoc(doc(asGuest(), 'urges/new'), newUrge()));
+    });
+
+    it('denies an urge without its envelope, or with content beside it', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, 'urges/new'), without(newUrge(), 'sealed')));
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ strength: 3 })));
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ outcome: 'passed' })));
+      await assertFails(setDoc(doc(db, 'urges/new'), { ...without(newUrge(), 'sealed'), strength: 3 }));
+    });
+
+    it('denies a missing, extra or mistyped field', async () => {
+      const db = asAlice();
+      for (const key of ['ownerID', 'viceID', 'createdAt']) {
+        await assertFails(setDoc(doc(db, 'urges/new'), without(newUrge(), key)));
+      }
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ updatedAt: serverTimestamp() })));
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ createdAt: '2026-11-15' })));
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ viceID: 7 })));
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ sealed: 'not bytes' })));
+    });
+
+    it('bounds the envelope as the other collections do', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ sealed: bytesOf(29) })));
+      await assertFails(setDoc(doc(db, 'urges/new'), newUrge({ sealed: bytesOf(4126) })));
+      await assertSucceeds(setDoc(doc(db, 'urges/new'), newUrge({ sealed: bytesOf(4125) })));
+    });
+  });
+
+  describe('read', () => {
+    it('lets the owner read a window of their urges by the query the app makes', async () => {
+      const snapshot = await assertSucceeds(
+        getDocs(
+          query(
+            collection(asAlice(), 'urges'),
+            where('ownerID', '==', ALICE),
+            where('createdAt', '>=', Timestamp.fromDate(new Date('2026-11-10T00:00:00Z'))),
+            where('createdAt', '<', Timestamp.fromDate(new Date('2026-11-17T00:00:00Z'))),
+            orderBy('createdAt', 'desc'),
+          ),
+        ),
+      );
+      assert.deepEqual(snapshot.docs.map((d) => d.id), ['aliceUrge']);
+      await assertSucceeds(getDoc(doc(asAlice(), 'urges/aliceUrge')));
+    });
+
+    it('denies reading another user\'s urge, a missing one, or listing them all', async () => {
+      await assertFails(getDoc(doc(asAlice(), 'urges/bobUrge')));
+      await assertFails(getDoc(doc(asGuest(), 'urges/aliceUrge')));
+      await assertFails(getDoc(doc(asAlice(), 'urges/missing')));
+      await assertFails(getDocs(collection(asAlice(), 'urges')));
+      await assertFails(getDocs(query(collection(asAlice(), 'urges'), where('ownerID', '==', BOB))));
+    });
+  });
+
+  describe('update', () => {
+    it('lets the owner replace the envelope', async () => {
+      await assertSucceeds(updateDoc(doc(asAlice(), 'urges/aliceUrge'), { sealed: bytesOf(29 + 256, 2) }));
+    });
+
+    it('denies changing the owner, habit or time', async () => {
+      const db = asAlice();
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { ownerID: BOB }));
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { viceID: 'aliceLegacyVice' }));
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { createdAt: new Date() }));
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { updatedAt: serverTimestamp() }));
+    });
+
+    it('denies plaintext content, removing the envelope, or an envelope out of bounds', async () => {
+      const db = asAlice();
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { outcome: 'passed' }));
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { sealed: deleteField() }));
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { sealed: bytesOf(29) }));
+      await assertFails(updateDoc(doc(db, 'urges/aliceUrge'), { sealed: bytesOf(4126) }));
+    });
+
+    it('denies changing another user\'s urge', async () => {
+      await assertFails(updateDoc(doc(asAlice(), 'urges/bobUrge'), { sealed: envelope }));
+      await assertFails(updateDoc(doc(asGuest(), 'urges/aliceUrge'), { sealed: envelope }));
+    });
+  });
+
+  describe('delete', () => {
+    it('lets the owner delete their urge, and nobody else', async () => {
+      await assertFails(deleteDoc(doc(asBob(), 'urges/aliceUrge')));
+      await assertFails(deleteDoc(doc(asGuest(), 'urges/aliceUrge')));
+      await assertFails(deleteDoc(doc(asAlice(), 'urges/bobUrge')));
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'urges/aliceUrge')));
+    });
+
+    it('allows the account deletion sweep over the owner\'s urges', async () => {
+      const db = asAlice();
+      const snapshot = await assertSucceeds(
+        getDocs(query(collection(db, 'urges'), where('ownerID', '==', ALICE), limit(500))),
+      );
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await assertSucceeds(batch.commit());
+      assert.equal((await getDocs(query(collection(db, 'urges'), where('ownerID', '==', ALICE)))).size, 0);
     });
   });
 });

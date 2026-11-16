@@ -126,9 +126,11 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
 
       // Sealed only (Jack, 2026-11-09, `plaintext-creates` C): a new vice's
-      // content (name, unit, category, unit label, price, line) exists only inside
-      // the envelope. Plaintext
-      // vices written earlier stay readable and editable below.
+      // content (name, unit, category, unit label, price, line, strength)
+      // exists only inside the envelope. Plaintext vices written earlier stay
+      // readable and editable below. The strength fields (strengthUnit,
+      // servingMl, abv, drinkGrams, caffeineMg) were sealed from the start, so
+      // the update key list leaves them out and refuses them in plaintext.
       allow create: if createsOwn()
         && request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt', 'archived'])
         && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt', 'archived'])
@@ -213,6 +215,27 @@ service cloud.firestore {
       allow update: if ownsExisting()
         && changedKeys().hasOnly(['sealed', 'updatedAt'])
         && updateStamp()
+        && validSealed(request.resource.data.get('sealed', null));
+    }
+
+    // An urge noted for a habit, born sealed: its strength, time zone and
+    // outcome exist only inside the envelope, so lib/data/urge.dart is their
+    // only guard. `createdAt` is the device clock, as an entry's is. Only the
+    // envelope ever changes. ownsVice() last, so a request the other checks
+    // deny costs no read.
+    match /urges/{urgeID} {
+      allow read, delete: if ownsExisting();
+
+      allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['sealed', 'ownerID', 'viceID', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'viceID', 'createdAt'])
+        && request.resource.data.viceID is string
+        && request.resource.data.createdAt is timestamp
+        && validSealed(request.resource.data.sealed)
+        && ownsVice(request.resource.data.viceID);
+
+      allow update: if ownsExisting()
+        && changedKeys().hasOnly(['sealed'])
         && validSealed(request.resource.data.get('sealed', null));
     }
 

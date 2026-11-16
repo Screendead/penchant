@@ -149,6 +149,37 @@ String? lineAmountError(String? value) {
   return null;
 }
 
+// A habit's strength (lib/data/habit_strength.dart) and an entry's own
+// strength live only inside their sealed envelopes and the rules refuse them
+// in plaintext, so these are their only bounds.
+const double maxServingMl = 5000;
+const double maxAbv = 100;
+const double maxDrinkGrams = 100;
+const double maxCaffeineMg = 2000;
+
+// Blank is allowed when [optional]: no value.
+String? strengthError(String? value, double most, {bool optional = true}) {
+  if (value == null || value.trim().isEmpty) {
+    return optional ? null : 'Please enter a number';
+  }
+
+  final num? parsed = parseAmount(value);
+
+  if (parsed == null) {
+    return 'Please enter a valid number';
+  }
+
+  if (parsed <= 0) {
+    return 'Please enter more than 0';
+  }
+
+  if (parsed > most) {
+    return 'Please enter ${formatCount(most)} or less';
+  }
+
+  return null;
+}
+
 // Sealer.bucketFor's largest bucket less its two length bytes: the most JSON
 // one envelope holds. Ordinary triggers and a full note fit well inside it;
 // escaped or multi-byte characters can still overflow it.

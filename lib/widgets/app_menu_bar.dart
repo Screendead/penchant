@@ -29,6 +29,14 @@ int get habitKeyCount => _digits.length;
 SingleActivator habitKey(int index) =>
     SingleActivator(_digits[index], meta: true, includeRepeats: false);
 
+// Option as well: the urge sheet for the habit in that place.
+SingleActivator urgeKey(int index) => SingleActivator(
+  _digits[index],
+  meta: true,
+  alt: true,
+  includeRepeats: false,
+);
+
 // A key the framework leaves unhandled goes on to the native menu, which
 // would log on each repeat, so the repeats stop here.
 KeyEventResult _swallowHabitKeyRepeats(FocusNode node, KeyEvent event) =>
@@ -60,6 +68,16 @@ class TodayLogTarget {
   void add(void Function(Vice vice) target) => _targets.add(target);
 
   void remove(void Function(Vice vice) target) => _targets.remove(target);
+
+  final List<void Function(Vice vice)> _urgeTargets = <void Function(Vice)>[];
+
+  void Function(Vice vice)? get urge =>
+      _urgeTargets.isEmpty ? null : _urgeTargets.last;
+
+  void addUrge(void Function(Vice vice) target) => _urgeTargets.add(target);
+
+  void removeUrge(void Function(Vice vice) target) =>
+      _urgeTargets.remove(target);
 }
 
 final todayLogTargetProvider = Provider<TodayLogTarget>(
@@ -202,6 +220,20 @@ List<PlatformMenuItem> appMenus(WidgetRef ref, List<Vice> habits) {
               onSelected: () =>
                   ref.read(todayLogTargetProvider).log?.call(vice),
             ),
+          PlatformMenu(
+            label: 'Urge',
+            menus: <PlatformMenuItem>[
+              for (final (int i, Vice vice) in habits.indexed.take(
+                habitKeyCount,
+              ))
+                PlatformMenuItem(
+                  label: vice.name,
+                  shortcut: urgeKey(i),
+                  onSelected: () =>
+                      ref.read(todayLogTargetProvider).urge?.call(vice),
+                ),
+            ],
+          ),
         ],
       ),
     PlatformMenu(

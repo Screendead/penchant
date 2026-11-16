@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/chart_scale.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/design/dial_theme.dart';
@@ -34,8 +36,29 @@ typedef TrendsHealth = ({
   List<double?> values,
 });
 
-// The chart's values are money in [currency] rather than the habit's units.
-typedef TrendsMoney = ({String? currency});
+// The chart's values in another measure than the habit's own units: money
+// at its price, or its strength's units. [noun] names the series ("spend",
+// "units"), [joiner] ties it to the habit ("on", "from").
+typedef TrendsScale = ({
+  String noun,
+  String joiner,
+  String Function(double value) format,
+  String Function(int value) axis,
+});
+
+TrendsScale moneyScale(String? currency) => (
+  noun: 'spend',
+  joiner: 'on',
+  format: (double value) => formatMoney(value, currency),
+  axis: (int value) => formatMoney(value.toDouble(), currency),
+);
+
+TrendsScale strengthScale(HabitStrength strength) => (
+  noun: strength.noun,
+  joiner: 'from',
+  format: strength.label,
+  axis: strength.axis,
+);
 
 // One habit's totals over a range as a line, its moving average as a curve
 // over a tint, and a cursor with a readout on one bucket. Dragging, the arrow
@@ -57,8 +80,9 @@ class TrendsChart extends StatelessWidget {
     this.fill = false,
     this.overlays = const <TrendsOverlay>[],
     this.health,
-    this.money,
+    this.scale,
     this.line,
+    this.urges = const <Urge>[],
   });
 
   final Vice vice;
@@ -79,9 +103,12 @@ class TrendsChart extends StatelessWidget {
   final List<TrendsOverlay> overlays;
   // Each the length of [totals].
   final TrendsHealth? health;
-  final TrendsMoney? money;
+  final TrendsScale? scale;
   // The habit's line, given only where its period matches the buckets.
   final HabitLine? line;
+  // The chosen habit's urges in the range: hollow marks along the foot at
+  // their times, named in the summary and readout, in no total.
+  final List<Urge> urges;
 
   static const String focusLabel = 'Trends chart';
   static const double plotHeight = 220;
@@ -90,17 +117,14 @@ class TrendsChart extends StatelessWidget {
   // fl_chart tests every spot's distance to the touch; this always picks one.
   static const double _anyDistance = 1e9;
 
-  static String seriesName(int stepDays, {bool money = false}) =>
-      '${stepDays == 1 ? 'Daily' : 'Weekly'} ${money ? 'spend' : 'total'}';
+  static String seriesName(int stepDays, {String noun = 'total'}) =>
+      '${stepDays == 1 ? 'Daily' : 'Weekly'} $noun';
 
-  static String amount(Vice vice, double value, TrendsMoney? money) =>
-      money == null
-      ? vice.units.label(value)
-      : formatMoney(value, money.currency);
+  static String amount(Vice vice, double value, TrendsScale? scale) =>
+      scale == null ? vice.units.label(value) : scale.format(value);
 
-  static String _axisLabel(int value, TrendsMoney? money) => money == null
-      ? formatCount(value)
-      : formatMoney(value.toDouble(), money.currency);
+  static String _axisLabel(int value, TrendsScale? scale) =>
+      scale == null ? formatCount(value) : scale.axis(value);
 
   // The lowest and highest of [values] that are there, or null for none.
   static ({double low, double high})? healthSpan(List<double?> values) {
@@ -136,8 +160,9 @@ class TrendsChart extends StatelessWidget {
     required int smoothingWindow,
     List<TrendsOverlay> overlays = const <TrendsOverlay>[],
     TrendsHealth? health,
-    TrendsMoney? money,
+    TrendsScale? scale,
     HabitLine? line,
+    List<Urge> urges = const <Urge>[],
   }) {
     final int stepDays = range.stepDays;
     final UsageStats stats = usageStats(range, totals);
@@ -160,15 +185,21 @@ class TrendsChart extends StatelessWidget {
               '${formatCount(overLine(totals, line))} '
               '${stepDays == 1 ? 'days' : 'weeks'} over it.';
 
-    final String what = money == null
+    final int noted = urgeCounts(range, urges).fold<int>(0, (a, b) => a + b);
+    final String urged = noted == 0
+        ? ''
+        : ' Hollow marks along the foot show ${formatCount(noted)} '
+              '${urgesWord(noted)} noted, not counted in the totals.';
+
+    final String what = scale == null
         ? '${seriesName(stepDays)}s of'
-        : '${seriesName(stepDays, money: true)} on';
+        : '${seriesName(stepDays, noun: scale.noun)} ${scale.joiner}';
     return '$what ${vice.name} '
         'over the last ${formatCount(range.days)} days: '
-        '${amount(vice, total, money)} in all. The most was '
-        '${amount(vice, totals[stats.peakIndex], money)} '
+        '${amount(vice, total, scale)} in all. The most was '
+        '${amount(vice, totals[stats.peakIndex], scale)} '
         '${stepDays == 1 ? 'on' : 'in the week of'} $peakDate.$average$compared'
-        '$marked$under';
+        '$marked$urged$under';
   }
 
   // The date under bucket [index], and in the readout.
@@ -204,20 +235,23 @@ class TrendsChart extends StatelessWidget {
     required int index,
     List<TrendsOverlay> overlays = const <TrendsOverlay>[],
     TrendsHealth? health,
-    TrendsMoney? money,
+    TrendsScale? scale,
+    List<int>? urgeCounts,
   }) {
     final String date = readoutLabel(range, index, addDays(range.end, -1));
-    String one(Vice v, List<double> totals, List<double> line, TrendsMoney? m) {
+    final int urged = urgeCounts?[index] ?? 0;
+    String one(Vice v, List<double> totals, List<double> line, TrendsScale? m) {
       final String said = amount(v, totals[index], m);
       final String average = m == null
           ? formatAverage(line[index])
-          : formatMoney(line[index], m.currency);
+          : m.format(line[index]);
       return window > 1 ? '$said, average $average' : said;
     }
 
     final double? h = health?.values[index];
     return <String>[
-      '$date, ${one(vice, totals, smoothed, money)}',
+      '$date, ${one(vice, totals, smoothed, scale)}',
+      if (urged > 0) '${formatCount(urged)} ${urgesWord(urged)}',
       for (final TrendsOverlay o in overlays)
         '${o.vice.name} ${one(o.vice, o.totals, o.line, null)}',
       if (health != null)
@@ -249,6 +283,7 @@ class TrendsChart extends StatelessWidget {
     final int n = totals.length;
     final int shown = cursor.clamp(0, max(0, n - 1));
     final DateTime today = addDays(range.end, -1);
+    final List<int> urged = urgeCounts(range, urges);
 
     final ValueChanged<int>? open = onOpenBucket;
     final VoidCallback? earlier = shown > 0 ? () => onCursor(shown - 1) : null;
@@ -265,7 +300,8 @@ class TrendsChart extends StatelessWidget {
       index: index,
       overlays: overlays,
       health: health,
-      money: money,
+      scale: scale,
+      urgeCounts: urged,
     );
 
     KeyEventResult onKey(FocusNode node, KeyEvent event) {
@@ -301,8 +337,9 @@ class TrendsChart extends StatelessWidget {
         smoothingWindow: window,
         overlays: overlays,
         health: health,
-        money: money,
+        scale: scale,
         line: line,
+        urges: urges,
       ),
       value: spoken(shown),
       decreasedValue: earlier == null ? null : spoken(shown - 1),
@@ -330,7 +367,7 @@ class TrendsChart extends StatelessWidget {
                     : BorderSide.none,
               ),
             ),
-            child: _plot(context, n, shown, today, colors, type, scheme),
+            child: _plot(context, n, shown, today, colors, type, scheme, urged),
           ),
         ),
       ),
@@ -349,8 +386,10 @@ class TrendsChart extends StatelessWidget {
     DialColors colors,
     DialType type,
     ColorScheme scheme,
+    List<int> urged,
   ) {
     final TextStyle axisStyle = type.monoS.copyWith(color: colors.muted);
+    final List<double> urgeXs = urgeChartPositions(range, urges);
     final Color ink = colors.habitInk(mark);
     final Color surface = scheme.surfaceContainerLow;
     final double dateWidth = widestDateLabel(context, axisStyle);
@@ -379,7 +418,7 @@ class TrendsChart extends StatelessWidget {
     final double leftTitlesWidth =
         chartLabelSize(
           context,
-          _axisLabel(yScale.top, money),
+          _axisLabel(yScale.top, scale),
           axisStyle,
         ).width +
         labelGap;
@@ -401,7 +440,7 @@ class TrendsChart extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _readout(context, today, shown, colors, type, cursorX),
+            _readout(context, today, shown, colors, type, cursorX, urged),
             const SizedBox(height: DialSpace.xs),
             _plotBox(
               RangeMorph(
@@ -494,7 +533,7 @@ class TrendsChart extends StatelessWidget {
                                       right: labelGap,
                                     ),
                                     child: Text(
-                                      _axisLabel(value.round(), money),
+                                      _axisLabel(value.round(), scale),
                                       style: axisStyle,
                                       textAlign: TextAlign.end,
                                     ),
@@ -615,6 +654,14 @@ class TrendsChart extends StatelessWidget {
                           if (morph == null)
                             for (final TrendsOverlay o in overlays)
                               _overlayBar(o, shown, colors, surface),
+                          // Last, so the touch callback's bar indices hold.
+                          if (morph == null && urgeXs.isNotEmpty)
+                            _urgeBar(
+                              urgeXs,
+                              yScale.top.toDouble(),
+                              ink,
+                              surface,
+                            ),
                         ],
                       ),
                     ),
@@ -652,6 +699,33 @@ class TrendsChart extends StatelessWidget {
       labelResolver: (_) => ' ${lineLabel(line)} ',
     ),
   );
+
+  // Hollow rings resting on the axis, no line between them: a filled dot is
+  // an entry, and these are not. Unlike a ring habit's mark they sit off the
+  // series, at the urge's own time.
+  static LineChartBarData _urgeBar(
+    List<double> xs,
+    double top,
+    Color ink,
+    Color surface,
+  ) => LineChartBarData(
+    spots: <FlSpot>[for (final double x in xs) FlSpot(x, top * urgeLift)],
+    barWidth: 0,
+    color: ink.withValues(alpha: 0),
+    dotData: FlDotData(
+      getDotPainter: (FlSpot _, double _, LineChartBarData _, int _) =>
+          FlDotCirclePainter(
+            radius: 3,
+            color: surface,
+            strokeWidth: 1.5,
+            strokeColor: ink,
+          ),
+    ),
+  );
+
+  /// How high above the axis the urge marks ride, as a share of the scale,
+  /// clear of the bottom clip.
+  static const double urgeLift = 0.04;
 
   // Habits sharing a hue (the 1st and 6th) tell apart by their mark's style.
   static List<int>? _dashes(HabitMark mark) => switch (mark.style) {
@@ -803,8 +877,10 @@ class TrendsChart extends StatelessWidget {
     DialColors colors,
     DialType type,
     double x,
+    List<int> urged,
   ) {
     final TextStyle words = DialTypeScale.bodyS.copyWith(color: colors.muted);
+    final int noted = urged[index];
     final TextStyle strong = DialTypeScale.label.copyWith(
       fontSize: 13,
       color: Theme.of(context).colorScheme.onSurface,
@@ -815,16 +891,18 @@ class TrendsChart extends StatelessWidget {
       children: <InlineSpan>[
         TextSpan(text: readoutLabel(range, index, today)),
         const TextSpan(text: '  '),
-        TextSpan(text: amount(vice, value, money), style: strong),
+        TextSpan(text: amount(vice, value, scale), style: strong),
         if (window > 1) ...<InlineSpan>[
           const TextSpan(text: '  avg '),
           TextSpan(
-            text: money == null
+            text: scale == null
                 ? formatAverage(smoothed[index])
-                : formatMoney(smoothed[index], money!.currency),
+                : scale!.format(smoothed[index]),
             style: type.monoM.copyWith(fontSize: 13),
           ),
         ],
+        if (noted > 0)
+          TextSpan(text: '  · ${formatCount(noted)} ${urgesWord(noted)}'),
       ],
     );
     const double sides = 11;

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/daily_series.dart' show HabitUse;
@@ -11,6 +12,7 @@ import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/health_sync.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/last_night.dart';
+import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/daylight_provider.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/providers/insights_session.dart';
@@ -232,7 +234,9 @@ List<Override> insightsOverrides({
   InsightsRunner? runner,
   LastNight? lastNight,
   String? Function(Ref ref)? uid,
+  List<DayNote> dayNotes = const <DayNote>[],
 }) => <Override>[
+  allDayNotesProvider.overrideWithValue(AsyncData<List<DayNote>>(dayNotes)),
   // No uid keeps nothing between opens; insights_session_test.dart signs in.
   insightsUidProvider.overrideWith(uid ?? (Ref ref) => null),
   // Its own reads are tested in last_night_test.dart; here they would join

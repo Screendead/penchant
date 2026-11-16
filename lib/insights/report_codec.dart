@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -23,7 +24,7 @@ import 'package:tracker/providers/insights_provider.dart';
 
 /// Raise with any change to what is written below or to the report's types,
 /// so a file an older build wrote reads as absent.
-const int insightsViewFormat = 5;
+const int insightsViewFormat = 6;
 
 /// [view] as bytes to seal; null for a view with no computed report, which is
 /// never kept. Throws only on a value JSON cannot hold.
@@ -207,6 +208,7 @@ Map<String, Object?> _report(InsightsReport r) => <String, Object?>{
   'atPlace': <Object?>[for (final AtPlace a in r.atPlace) _atPlace(a)],
   'recovery': <Object?>[for (final Recovery x in r.recovery) _recovery(x)],
   'triggers': <Object?>[for (final HabitTriggers h in r.triggers) _triggers(h)],
+  'dayTags': <Object?>[for (final HabitDayTags h in r.dayTags) _dayTags(h)],
 };
 
 InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
@@ -233,6 +235,48 @@ InsightsReport _readReport(Map<String, Object?> m) => InsightsReport(
   atPlace: _list(m, 'atPlace', _each(_readAtPlace)),
   recovery: _list(m, 'recovery', _each(_readRecovery)),
   triggers: _list(m, 'triggers', _each(_readTriggers)),
+  dayTags: _list(m, 'dayTags', _each(_readDayTags)),
+);
+
+Map<String, Object?> _dayTags(HabitDayTags h) => <String, Object?>{
+  'habitId': h.habitId,
+  'days': h.days,
+  'tagged': h.tagged,
+  'tags': <Object?>[
+    for (final DayTagAmount t in h.tags)
+      <String, Object?>{
+        'tag': t.tag,
+        'withDays': t.withDays,
+        'withoutDays': t.withoutDays,
+        'withMean': _d(t.withMean),
+        'withoutMean': _d(t.withoutMean),
+        'effect': _od(t.effect),
+        'pValue': _od(t.pValue),
+        'refusal': t.refusal?.name,
+      },
+  ],
+};
+
+HabitDayTags _readDayTags(Map<String, Object?> m) => HabitDayTags(
+  habitId: _str(m, 'habitId'),
+  days: _int(m, 'days'),
+  tagged: _int(m, 'tagged'),
+  tags: _list(
+    m,
+    'tags',
+    _each(
+      (Map<String, Object?> t) => DayTagAmount(
+        tag: _str(t, 'tag'),
+        withDays: _int(t, 'withDays'),
+        withoutDays: _int(t, 'withoutDays'),
+        withMean: _dbl(t, 'withMean'),
+        withoutMean: _dbl(t, 'withoutMean'),
+        effect: _odbl(t, 'effect'),
+        pValue: _odbl(t, 'pValue'),
+        refusal: _oenum(RefusalReason.values, t, 'refusal'),
+      ),
+    ),
+  ),
 );
 
 Map<String, Object?> _triggers(HabitTriggers h) => <String, Object?>{

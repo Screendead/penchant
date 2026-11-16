@@ -32,6 +32,8 @@ class ViceActivity {
     this.writtenAt,
     this.loggedVia,
     this.followUp,
+    this.abv,
+    this.caffeineMg,
     this.pending = false,
     this.locked = false,
   });
@@ -55,6 +57,9 @@ class ViceActivity {
   final DateTime? writtenAt;
   final LoggedVia? loggedVia;
   final FollowUp? followUp;
+  // Its own strength, which wins over its habit's.
+  final double? abv;
+  final double? caffeineMg;
   // A local write the server has not acknowledged yet.
   final bool pending;
   // Sealed fields this device could not open, which must never be written
@@ -80,6 +85,8 @@ class ViceActivity {
     writtenAt: writtenAt,
     loggedVia: loggedVia,
     followUp: followUp,
+    abv: abv,
+    caffeineMg: caffeineMg,
   );
 
   factory ViceActivity.fromJson({
@@ -106,6 +113,8 @@ class ViceActivity {
       writtenAt: content.writtenAt,
       loggedVia: content.loggedVia,
       followUp: content.followUp,
+      abv: content.abv,
+      caffeineMg: content.caffeineMg,
       pending: pending,
       locked: locked,
     );

@@ -5,6 +5,8 @@ import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/calendar_days_copy.dart';
+import 'package:tracker/insights/day_tags.dart';
+import 'package:tracker/insights/day_tags_copy.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/places.dart';
@@ -12,8 +14,8 @@ import 'package:tracker/insights/trigger_amounts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
 /// Why a habit has nothing under "What sets it off": the most telling of its
-/// refused before-a-use, pair, calendar, calendar-day, place and trigger
-/// comparisons, or, with none of them, whether it has entries at all.
+/// refused before-a-use, pair, calendar, calendar-day, place, trigger and
+/// day-tag comparisons, or, with none of them, whether it has entries at all.
 class SetsOffRefusal {
   const SetsOffRefusal.before(this.habitId, BeforeUse this.before)
     : pair = null,
@@ -22,6 +24,8 @@ class SetsOffRefusal {
       place = null,
       tagging = null,
       trigger = null,
+      dayTagging = null,
+      dayTag = null,
       logged = true;
   const SetsOffRefusal.pair(this.habitId, HabitFollows this.pair)
     : before = null,
@@ -30,6 +34,8 @@ class SetsOffRefusal {
       place = null,
       tagging = null,
       trigger = null,
+      dayTagging = null,
+      dayTag = null,
       logged = true;
   const SetsOffRefusal.calendar(this.habitId, AfterEvent this.calendar)
     : before = null,
@@ -38,6 +44,8 @@ class SetsOffRefusal {
       place = null,
       tagging = null,
       trigger = null,
+      dayTagging = null,
+      dayTag = null,
       logged = true;
   const SetsOffRefusal.calendarDay(this.habitId, CalendarDay this.calendarDay)
     : before = null,
@@ -46,6 +54,8 @@ class SetsOffRefusal {
       place = null,
       tagging = null,
       trigger = null,
+      dayTagging = null,
+      dayTag = null,
       logged = true;
   const SetsOffRefusal.trigger(
     this.habitId,
@@ -56,12 +66,28 @@ class SetsOffRefusal {
       calendar = null,
       calendarDay = null,
       place = null,
+      dayTagging = null,
+      dayTag = null,
       logged = true;
   const SetsOffRefusal.place(this.habitId, AtPlace this.place)
     : before = null,
       pair = null,
       calendar = null,
       calendarDay = null,
+      tagging = null,
+      trigger = null,
+      dayTagging = null,
+      dayTag = null,
+      logged = true;
+  const SetsOffRefusal.dayTag(
+    this.habitId,
+    HabitDayTags this.dayTagging,
+    DayTagAmount this.dayTag,
+  ) : before = null,
+      pair = null,
+      calendar = null,
+      calendarDay = null,
+      place = null,
       tagging = null,
       trigger = null,
       logged = true;
@@ -72,7 +98,9 @@ class SetsOffRefusal {
       calendarDay = null,
       place = null,
       tagging = null,
-      trigger = null;
+      trigger = null,
+      dayTagging = null,
+      dayTag = null;
 
   final String habitId;
   final BeforeUse? before;
@@ -85,6 +113,10 @@ class SetsOffRefusal {
   final HabitTriggers? tagging;
   final TriggerAmount? trigger;
 
+  /// With [dayTag]: the habit's tagged days as a whole.
+  final HabitDayTags? dayTagging;
+  final DayTagAmount? dayTag;
+
   /// With no comparison: whether the habit has entries in the span read.
   final bool logged;
 
@@ -93,6 +125,7 @@ class SetsOffRefusal {
       calendar?.refusal ??
       calendarDay?.refusal ??
       place?.refusal ??
+      dayTag?.refusal ??
       switch (pair?.verdict) {
         FollowsVerdict.tooFewDays => RefusalReason.tooFewDays,
         FollowsVerdict.chance => RefusalReason.chance,
@@ -114,6 +147,7 @@ class SetsOffRefusal {
       calendarDay?.usableDays ??
       place?.days ??
       trigger?.withDays ??
+      dayTag?.withDays ??
       0;
 
   int get _source => before != null
@@ -126,14 +160,18 @@ class SetsOffRefusal {
       ? 3
       : place != null
       ? 4
-      : 5;
+      : trigger != null
+      ? 5
+      : 6;
 }
 
 /// One [SetsOffRefusal] for each of [habitIds] (the unarchived habits shown,
 /// in order) that no card in [shown] names, from [report]'s before-a-use,
-/// pair, calendar, calendar-day, place and trigger comparisons; [logged] holds
+/// pair, calendar, calendar-day, place, trigger and day-tag comparisons;
+/// [logged] holds
 /// the habits with entries in the span read. Ranked as [refusalRank], then
-/// before-a-use, pair, calendar, calendar-day, place and trigger, then the
+/// before-a-use, pair, calendar, calendar-day, place, trigger and day tag,
+/// then the
 /// comparison from the most days.
 List<SetsOffRefusal> setsOffRefusals({
   required Iterable<String> habitIds,
@@ -171,6 +209,11 @@ List<SetsOffRefusal> setsOffRefusals({
   for (final HabitTriggers h in report.triggers) {
     for (final TriggerAmount t in h.triggers) {
       add(SetsOffRefusal.trigger(h.habitId, h, t));
+    }
+  }
+  for (final HabitDayTags h in report.dayTags) {
+    for (final DayTagAmount t in h.tags) {
+      add(SetsOffRefusal.dayTag(h.habitId, h, t));
     }
   }
   return <SetsOffRefusal>[
@@ -225,10 +268,16 @@ String setsOffReason(
   )) {
     return 'Tagged ${triggerDisplay(t.trigger)}: ${_triggerReason(h, t, gates)}';
   }
+  if ((refusal.dayTagging, refusal.dayTag) case (
+    final HabitDayTags h,
+    final DayTagAmount t,
+  )) {
+    return dayTagRefusal(h, t, gates: gates);
+  }
   return refusal.logged
       ? 'Nothing to compare it with yet: no sleep or heart readings in '
             'Health, no calendar events, no other habit logged and no '
-            'triggers tagged'
+            'triggers tagged on entries or days'
       : 'No entries yet in the time Insights reads';
 }
 

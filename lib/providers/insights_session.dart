@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
+import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
 import 'package:tracker/insights/health_source.dart';
@@ -97,6 +98,7 @@ class EngineInputs {
     this.reminders = const <DailyOutcome>[],
     this.stays = const <PlaceStay>[],
     this.location,
+    this.dayTags = const <DayTags>[],
   });
 
   final List<ViceActivity> activities;
@@ -115,6 +117,9 @@ class EngineInputs {
   /// Where day length is worked out; null when unknown.
   final RoughLocation? location;
 
+  /// [dayTagsFrom] the day notes.
+  final List<DayTags> dayTags;
+
   @override
   bool operator ==(Object other) =>
       other is EngineInputs &&
@@ -126,7 +131,8 @@ class EngineInputs {
       _sameEvents(other.events, events) &&
       listEquals(other.reminders, reminders) &&
       listEquals(other.stays, stays) &&
-      other.location == location;
+      other.location == location &&
+      _sameDayTags(other.dayTags, dayTags);
 
   @override
   int get hashCode => Object.hash(
@@ -139,7 +145,19 @@ class EngineInputs {
     reminders.length,
     stays.length,
     location,
+    dayTags.length,
   );
+}
+
+bool _sameDayTags(List<DayTags> a, List<DayTags> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (int i = 0; i < a.length; i++) {
+    if (a[i].day != b[i].day || !listEquals(a[i].triggers, b[i].triggers)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool _sameUses(List<ViceActivity> a, List<ViceActivity> b) {

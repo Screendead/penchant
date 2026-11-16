@@ -5,15 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/errors/report_error.dart';
 
 /// The field that holds a document's content fields (a vice's name, unit,
-/// category, unit label and its singular, cost per unit and currency, line, an activity's triggers)
+/// category, unit label and its singular, cost per unit and currency, line,
+/// strength, an activity's triggers)
 /// once sealed. The structural fields every query and rule needs (ownerID,
 /// createdAt, viceID, archived) stay beside it in plaintext.
 const String sealedField = 'sealed';
 
 /// The content fields each collection seals. firestore.rules lists a vice's
-/// and an activity's `triggers` (`sealedAlone`, `changedContent`); an
-/// activity's later fields were sealed from the start, and the rules' create
-/// and update key lists refuse them in plaintext. An activity's quantity and decimal amount stay plaintext (Jack,
+/// and an activity's `triggers` (`sealedAlone`, `changedContent`); a vice's
+/// strength fields and an activity's later fields were sealed from the start,
+/// and the rules' create and update key lists refuse them in plaintext. An activity's quantity and decimal amount stay plaintext (Jack,
 /// 2026-11-06), so a server-side job can aggregate them.
 const List<String> viceContentFields = <String>[
   'name',
@@ -25,6 +26,11 @@ const List<String> viceContentFields = <String>[
   'currency',
   'lineAmount',
   'linePeriod',
+  'strengthUnit',
+  'servingMl',
+  'abv',
+  'drinkGrams',
+  'caffeineMg',
 ];
 const List<String> activityContentFields = <String>[
   'triggers',
@@ -36,6 +42,8 @@ const List<String> activityContentFields = <String>[
   'followUpQuestion',
   'followUpQuote',
   'followUpAnswer',
+  'abv',
+  'caffeineMg',
 ];
 
 // A day note's text and triggers (lib/data/day_note.dart). Born sealed: the
@@ -49,15 +57,25 @@ const List<String> dayNoteContentFields = <String>[
   'followUpAnswer',
 ];
 
+// An urge's strength, time zone and outcome (lib/data/urge.dart). Born
+// sealed, like a day note.
+const List<String> urgeContentFields = <String>[
+  'strength',
+  'zone',
+  'outcome',
+  'outcomeAt',
+];
+
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,
   'activities': activityContentFields,
   'dayNotes': dayNoteContentFields,
+  'urges': urgeContentFields,
 };
 
 /// Collections whose documents were sealed from their first write, so the
 /// first-launch migrator has nothing to seal there and never reads them.
-const Set<String> bornSealedCollections = <String>{'dayNotes'};
+const Set<String> bornSealedCollections = <String>{'dayNotes', 'urges'};
 
 /// Shown for a vice whose sealed fields this device cannot open.
 const String lockedViceName = 'Locked habit';

@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/daily_series.dart' show HabitUse;
+import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/health_sample_cache.dart';
@@ -20,6 +22,7 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/insights_timing.dart';
 import 'package:tracker/insights/last_report_file.dart';
 import 'package:tracker/providers/calendar_provider.dart';
+import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/daylight_provider.dart';
 import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/reminders_provider.dart';
@@ -383,6 +386,7 @@ final _engineProvider = FutureProvider.autoDispose
           reminders: key.reminders,
           stays: key.stays,
           location: key.location,
+          dayTags: key.dayTags,
           archived: <String>{
             if (key.archived.isNotEmpty)
               ...key.archived.split(_archivedSeparator),
@@ -521,12 +525,17 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
     final AsyncValue<RoughLocation?> location = ref.watch(
       roughLocationProvider,
     );
+    // Every note, read once like the journal; a failed read leaves the day
+    // tags out rather than the page.
+    final AsyncValue<List<DayNote>> notes = ref.watch(allDayNotesProvider);
     if (events == null ||
         reminders == null ||
         !places.ready ||
-        location.isLoading) {
+        location.isLoading ||
+        (notes.isLoading && !notes.hasValue)) {
       return waiting();
     }
+    final List<DayTags> dayTags = dayTagsFrom(notes.value ?? const <DayNote>[]);
     InsightsResult? report(Map<String, List<HealthSample>> read) {
       final EngineInputs inputs = EngineInputs(
         activities: journal,
@@ -538,6 +547,7 @@ final insightsProvider = Provider.autoDispose<AsyncValue<InsightsView>>((ref) {
         reminders: reminders,
         stays: places.store.stays,
         location: location.value,
+        dayTags: dayTags,
       );
       if (session?.resultFor(inputs) case final InsightsResult kept) {
         insightsTimingLog('Insights engine: reused');

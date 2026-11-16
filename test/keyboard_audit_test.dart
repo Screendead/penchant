@@ -43,6 +43,8 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
+import 'package:tracker/widgets/strength_field.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/widgets/amount_fields.dart';
 import 'package:tracker/widgets/auth_parts.dart';
@@ -307,6 +309,7 @@ final Vice _coffee = Vice(
   ownerID: ownerID,
   createdAt: Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
   archived: false,
+  strength: const HabitStrength.caffeine(caffeineMg: 95),
 );
 
 final ViceActivity _entry = fakeActivity('coffee', 3, _now);
@@ -377,6 +380,7 @@ void main() {
           ),
           fields: <_Field>[
             _Field('quantity', _plain(_quantity)),
+            _Field('strength', _plain(find.byKey(StrengthField.fieldKey))),
             _Field('note', _plain(find.byKey(NoteField.fieldKey))),
           ],
           action: find.byKey(RecordNewActivityDialog.submitKey),
@@ -406,6 +410,7 @@ void main() {
           ),
           fields: <_Field>[
             _Field('quantity', _plain(_quantity)),
+            _Field('strength', _plain(find.byKey(StrengthField.fieldKey))),
             _Field('note', _plain(find.byKey(NoteField.fieldKey))),
           ],
           action: find.byKey(ViceActivityEditorPage.saveKey),
@@ -625,6 +630,27 @@ void main() {
           _Field(
             'line amount',
             _after(find.text('A day'), find.byKey(ViceForm.lineAmountKey)),
+          ),
+          _Field(
+            'serving size',
+            _after(
+              find.text(ViceForm.alcoholLabel),
+              find.byKey(ViceForm.servingKey),
+            ),
+          ),
+          _Field(
+            'strength',
+            _after(
+              find.text(ViceForm.alcoholLabel),
+              find.byKey(ViceForm.abvKey),
+            ),
+          ),
+          _Field(
+            'caffeine',
+            _after(
+              find.text(ViceForm.caffeineLabel),
+              find.byKey(ViceForm.caffeineKey),
+            ),
           ),
         ],
         action: find.widgetWithText(TextButton, 'Save'),
