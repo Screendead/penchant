@@ -632,9 +632,8 @@ class _WedgeState extends State<_Wedge> {
                           top: label.dy - 18 * scale,
                           width: width,
                           child: MediaQuery(
-                            data: MediaQuery.of(
-                              context,
-                            ).copyWith(textScaler: labels),
+                            data: MediaQuery.of(context)
+                                .copyWith(textScaler: labels),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: <Widget>[

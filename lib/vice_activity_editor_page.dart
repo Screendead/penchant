@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/data/habit_strength.dart';
+import 'package:tracker/widgets/strength_field.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/free_text_triggers.dart';
 import 'package:tracker/data/limits.dart';
@@ -65,6 +67,7 @@ class _ViceActivityEditorPageState
   final EntryTimeController timeController = EntryTimeController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
+  final TextEditingController strengthController = TextEditingController();
   bool loading = false;
   String? error;
   // The stored values as the fields last showed them. A field still showing
@@ -73,6 +76,7 @@ class _ViceActivityEditorPageState
   DateTime? storedAt;
   String storedQuantityText = '';
   String storedNoteText = '';
+  String storedStrengthText = '';
   ViceActivity? shown;
   // Like [editedTriggers]: the stored urge until the user picks one, and
   // then theirs (null for cleared), so [urgeEdited] tells the two apart.
@@ -130,9 +134,15 @@ class _ViceActivityEditorPageState
     if (noteController.text == storedNoteText) {
       noteController.text = noteText;
     }
+    final double? own = activity.abv ?? activity.caffeineMg;
+    final String strengthText = own == null ? '' : formatAmount(own);
+    if (strengthController.text == storedStrengthText) {
+      strengthController.text = strengthText;
+    }
     storedAt = at;
     storedQuantityText = quantityText;
     storedNoteText = noteText;
+    storedStrengthText = strengthText;
   }
 
   @override
@@ -140,6 +150,7 @@ class _ViceActivityEditorPageState
     timeController.dispose();
     quantityController.dispose();
     noteController.dispose();
+    strengthController.dispose();
     super.dispose();
   }
 
@@ -179,16 +190,25 @@ class _ViceActivityEditorPageState
             keepAmount: activity.amount != null,
           )
         : null;
+    final ActivityContent answered = activity.content.withAnswers(
+      triggers: editedTriggers ?? activity.triggers,
+      urge: urgeEdited ? editedUrge : activity.urge,
+      note: noteController.text == storedNoteText
+          ? activity.note
+          : storedNote(noteController.text),
+    );
+    final HabitStrength? strength = vice.strength;
+    final double? own = StrengthField.typed(strengthController.text);
     // A locked entry's content is placeholders, never to be saved.
     final ActivityContent? content = activity.locked
         ? null
-        : switch (activity.content.withAnswers(
-            triggers: editedTriggers ?? activity.triggers,
-            urge: urgeEdited ? editedUrge : activity.urge,
-            note: noteController.text == storedNoteText
-                ? activity.note
-                : storedNote(noteController.text),
-          )) {
+        : switch (strength == null ||
+                  strengthController.text == storedStrengthText
+              ? answered
+              : answered.withStrength(
+                  abv: strength.unit.alcohol ? own : null,
+                  caffeineMg: strength.unit.alcohol ? null : own,
+                )) {
             final ActivityContent changed
                 when changed.answersDiffer(activity.content) =>
               changed,
@@ -397,6 +417,8 @@ class _ViceActivityEditorPageState
                         quantityValidator: (String? value) =>
                             quantityError(value, unchanged: activity.measure),
                         error: error,
+                        strength: vice.strength,
+                        strengthController: strengthController,
                       ),
                       if (activity.content.followUp case final FollowUp saved
                           when !activity.locked)
