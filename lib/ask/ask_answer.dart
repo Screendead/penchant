@@ -159,7 +159,8 @@ AskCard? _card(Object? value) {
 /// the kind calls for (1 to 3 for an answer, none otherwise; a reason only
 /// when it cannot answer).
 AskAnswer? parseAskAnswer(Object? value) {
-  if (value is! Map || !_keysExactly(value, <String>{'kind', 'reason', 'cards'})) {
+  if (value is! Map ||
+      !_keysExactly(value, <String>{'kind', 'reason', 'cards'})) {
     return null;
   }
   final AskKind? kind = _kinds[value['kind']];

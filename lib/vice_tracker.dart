@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/providers/show_day_provider.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/experiment_page.dart';
 import 'package:tracker/insights/experiment.dart';
@@ -116,6 +117,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
     ref.listenManual<DateTime?>(
       pendingDayNoteProvider,
       (DateTime? _, DateTime? day) => _openDayNote(day),
+      fireImmediately: true,
+    );
+    ref.listenManual<DateTime?>(
+      pendingShowDayProvider,
+      (DateTime? _, DateTime? day) => _showDay(day),
       fireImmediately: true,
     );
     ref.listenManual<EntryPrompt?>(
@@ -235,6 +241,24 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       ref.read(pendingExperimentProvider.notifier).clear();
       Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
       _selectDay(ref.read(todayProvider));
+    });
+  }
+
+  // Another page's "Open … in Today": back to Today on that day (today for a
+  // day still to come).
+  void _showDay(DateTime? day) {
+    if (day == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final DateTime? pending = ref.read(pendingShowDayProvider);
+      if (!mounted || pending == null) {
+        return;
+      }
+      ref.read(pendingShowDayProvider.notifier).clear();
+      Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+      final DateTime today = ref.read(todayProvider);
+      _selectDay(pending.isAfter(today) ? today : startOfDay(pending));
     });
   }
 

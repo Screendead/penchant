@@ -48,3 +48,25 @@ final dayNoteProvider = Provider.autoDispose
         (String uid) => dayNoteForUserProvider((uid: uid, day: key)),
       );
     });
+
+// Every day note of the user, read once (Ask your journal's tables). Equality
+// on ownerID alone, served by the automatic single-field index; offline the
+// cache answers, as for the entries read beside it.
+final allDayNotesForUserProvider = FutureProvider.autoDispose
+    .family<List<DayNote>, String>((ref, uid) async {
+      final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
+      final QuerySnapshot<Map<String, dynamic>> snapshot =
+          await FirebaseFirestore.instance
+              .collection(dayNotesCollection)
+              .where('ownerID', isEqualTo: uid)
+              .get();
+      return <DayNote>[
+        for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
+            in snapshot.docs)
+          await DayNote.open(doc, doc.data(), opener),
+      ];
+    });
+
+final allDayNotesProvider = Provider.autoDispose<AsyncValue<List<DayNote>>>(
+  (ref) => watchForSignedInUser(ref, allDayNotesForUserProvider.call),
+);
