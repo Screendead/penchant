@@ -159,7 +159,12 @@ void main() {
       addTearDown(c.dispose);
       c.listen(olderNotesProvider, (_, _) {});
       await c.read(userProvider.future);
-      await pumpEventQueue();
+      // Progress is read from a real file, which the event queue alone does
+      // not wait for.
+      for (int i = 0; i < 200; i++) {
+        if (c.read(olderNotesProvider).progress != null) break;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
       expect(c.read(olderNotesProvider).progress, isNotNull);
       return c;
     }
