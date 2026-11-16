@@ -58,6 +58,7 @@ final class WatchJournal: NSObject, ObservableObject {
     let log = WatchLog(uid: uid, viceID: habit.id, at: now)
     WatchStore.outbox.append(log)
     last = log
+    focus = nil
     WKInterfaceDevice.current().play(.success)
     hand()
     changed()

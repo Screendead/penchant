@@ -63,6 +63,11 @@ struct HabitList: View {
         guard let habit else { return }
         withAnimation { proxy.scrollTo(habit, anchor: .center) }
       }
+      // The outline marks the habit the complication opened, for a moment.
+      .task(id: journal.focus) {
+        guard journal.focus != nil, (try? await Task.sleep(nanoseconds: 6_000_000_000)) != nil else { return }
+        journal.focus = nil
+      }
     }
   }
 
