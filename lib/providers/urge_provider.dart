@@ -17,7 +17,7 @@ final urgesForUserProvider = StreamProvider.autoDispose
       (ref, key) {
         final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
         return FirebaseFirestore.instance
-            .collection(urgesCollection)
+            .collection('urges')
             .where('ownerID', isEqualTo: key.uid)
             .where(
               'createdAt',

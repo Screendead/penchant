@@ -11,7 +11,9 @@ import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/trend_breakdowns.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/usage_series.dart';
+import 'package:tracker/providers/urge_provider.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -569,6 +571,16 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
         );
       }
     }
+    // One query over every habit's urges in the range; a failed one (an index
+    // not yet deployed, say) shows no marks rather than no chart.
+    final List<Urge> urges = <Urge>[
+      for (final Urge u
+          in ref
+                  .watch(urgesProvider((start: range.start, end: range.end)))
+                  .value ??
+              const <Urge>[])
+        if (u.viceID == vice.id) u,
+    ];
     final Object? error = value.error;
     final List<ViceActivity>? activities = error == null ? value.value : null;
     TrendsSeries? series = activities == null
@@ -643,6 +655,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             stepDays: stepDays,
             range: shown,
             series: series,
+            urges: urges,
             overlays: overlays,
             comparing: comparing,
             compared: compared,
@@ -1130,6 +1143,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.healthMetrics,
     required this.healthMetric,
     required this.health,
+    this.urges = const <Urge>[],
     required this.error,
     required this.cursor,
     required this.onClose,
@@ -1175,6 +1189,7 @@ class _TrendsPanel extends StatelessWidget {
   final List<String> healthMetrics;
   final String? healthMetric;
   final TrendsHealth? health;
+  final List<Urge> urges;
   final Object? error;
   final int? cursor;
   // Null in the pane, which has no Close.
@@ -1269,6 +1284,7 @@ class _TrendsPanel extends StatelessWidget {
         health: health,
         money: price == null ? null : (currency: vice.currency),
         line: line,
+        urges: urges,
       );
       body = <Widget>[
         const SizedBox(height: DialSpace.s),

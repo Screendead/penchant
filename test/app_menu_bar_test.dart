@@ -64,6 +64,16 @@ PlatformMenu? _logMenu(WidgetTester tester) => _menus(
   tester,
 ).whereType<PlatformMenu>().where((m) => m.label == 'Log').firstOrNull;
 
+// The Log menu's habits, without its Urge submenu.
+List<PlatformMenuItem> _logItems(WidgetTester tester) => <PlatformMenuItem>[
+  for (final PlatformMenuItem i in _logMenu(tester)!.menus)
+    if (i is! PlatformMenu) i,
+];
+
+PlatformMenu _urgeMenu(WidgetTester tester) => _logMenu(
+  tester,
+)!.menus.whereType<PlatformMenu>().singleWhere((m) => m.label == 'Urge');
+
 void main() {
   testWidgets(
     "the Log menu names the first nine habits in Today's order with Cmd-1 "
@@ -77,7 +87,7 @@ void main() {
         ))
           row.vice.name,
       ];
-      final List<PlatformMenuItem> items = _logMenu(tester)!.menus;
+      final List<PlatformMenuItem> items = _logItems(tester);
       expect(<String>[
         for (final PlatformMenuItem i in items) i.label,
       ], tallies.take(9).toList());
@@ -85,7 +95,13 @@ void main() {
         final SingleActivator key = items[i].shortcut! as SingleActivator;
         expect((key.trigger, key.meta), (habitKey(i).trigger, true));
         expect(key.trigger.keyLabel, '${i + 1}');
+        final SingleActivator urge =
+            _urgeMenu(tester).menus[i].shortcut! as SingleActivator;
+        expect((urge.trigger, urge.meta, urge.alt), (key.trigger, true, true));
       }
+      expect(<String>[
+        for (final PlatformMenuItem i in _urgeMenu(tester).menus) i.label,
+      ], tallies.take(9).toList());
       expect(
         _menus(tester).map((PlatformMenuItem m) => m.label),
         containsAllInOrder(<String>['Edit', 'Log', 'View', 'Window']),
@@ -110,7 +126,7 @@ void main() {
     'the Log menu follows the habit list and leaves the bar with none',
     (WidgetTester tester) async {
       await _pump(tester, _habits.take(2).toList());
-      expect(_logMenu(tester)!.menus, hasLength(2));
+      expect(_logItems(tester), hasLength(2));
 
       await _pump(tester, const <Vice>[]);
       expect(_logMenu(tester), isNull);
@@ -127,7 +143,7 @@ void main() {
       _habits.take(1).toList(),
       withToday: false,
     );
-    _logMenu(tester)!.menus.single.onSelected!();
+    _logItems(tester).single.onSelected!();
     await tester.pump();
     expect(writes.writes, isEmpty);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));

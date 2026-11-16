@@ -43,6 +43,7 @@ import 'package:tracker/widgets/record_new_activity_dialog.dart';
 import 'package:tracker/widgets/sync_status.dart';
 import 'package:tracker/widgets/tally_row.dart';
 import 'package:tracker/writes/log_one.dart';
+import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/urge.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -141,7 +142,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       fireImmediately: true,
     );
     // The answer waits for the journal key, which may load after the tap.
-    ref.listenManual(trackerWritesProvider, (_, _) => _answerPendingUrge());
+    ref.listenManual(sealerProvider, (_, _) => _answerPendingUrge());
     ref.listenManual<int?>(
       guestDaysLeftProvider,
       (int? _, int? days) => _warnGuest(days),

@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/providers/urge_provider.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
@@ -71,8 +73,15 @@ ViceActivity fakeActivity(
 List<Override> habitOverrides(
   List<Vice> vices, {
   Map<String, double> storedTypicals = const <String, double>{},
+  List<Urge> urges = const <Urge>[],
 }) => <Override>[
   storedTypicalsProvider.overrideWithValue(storedTypicals),
+  urgesProvider.overrideWith(
+    (Ref ref, UrgeWindow window) => AsyncData<List<Urge>>(<Urge>[
+      for (final Urge u in urges)
+        if (!u.at.isBefore(window.start) && u.at.isBefore(window.end)) u,
+    ]),
+  ),
   dayNoteProvider.overrideWith(
     (Ref ref, DateTime day) => const AsyncData<DayNote?>(null),
   ),

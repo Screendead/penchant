@@ -452,7 +452,7 @@ Days).
 
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
-collections joined by `viceID`: `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
+collections joined by `viceID` (and `dayNotes` and `urges`, Urges below): `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
 `unitLabel`, `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) and
 `activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `updatedAt`, and sealed content:
 `triggers` and the optional `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); a third, `summaries`, is server-written (Server side,
@@ -553,6 +553,30 @@ the tile: name, total, +, a zero's name and number greyed). A tile with a line r
 line) over a bar with a tick at the line, three quarters along until the total passes the bar's end
 (`TallyRow.lineScale`). Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
 period and not in Spend (else a caption says which view shows it), and "Over your line" replaces Peak.
+
+**Urges** (round 24 "Log an urge", Jack, 2026-11-16). An urge that need not have become an entry: long-press (or
+secondary-click) a tile on Today, or its screen reader's custom action "Urge", or Option-Cmd-1 to 9 and the Mac's
+Log > Urge menu, opens `UrgeSheet` (`lib/widgets/urge_sheet.dart`): strength 1 to 5 on the entries' scale and words
+(`UrgeField`), and Done; `noteUrge` (`lib/writes/note_urge.dart`) writes it now with Undo, returning a past day to
+today. Collection `urges`, born sealed (`bornSealedCollections`): plaintext `ownerID`, `viceID`, `createdAt` (the
+device clock, as an entry's, so an offline urge still matches the range query; not stamped with `updatedAt`), and
+`sealed` holding `UrgeContent` (`lib/data/urge.dart`): `strength`, `zone`, and `outcome` (`passed`, `stillThere`,
+`hadOne`) with `outcomeAt`, present together. Rules: owner only, that field set on create, `viceID` a vice the writer
+owns (`ownsVice` last), updates change `sealed` alone. One query shape, `ownerID` and a `createdAt` window newest first
+(`urgesProvider`, `lib/providers/urge_provider.dart`, index `urges` (`ownerID`, `createdAt` desc)), over every habit,
+filtered on the device. If the person turns on "Ask “Still there?” in 15 minutes" in the sheet (per device,
+`urgeCheckInProvider`; the first turn-on asks notification permission), a quiet notification 15 minutes later
+(`scheduleUrgeCheck`, ids 3000 to 3999, the lowest free one; payload `urge:<id>`, never the habit or strength) offers
+Passed, Still there and Had one under category `urge-check`. All three are foreground actions: iOS hands a background
+action to a separate engine with no sign-in or journal key to seal with. The answer waits in
+`pendingUrgeAnswerProvider` until Today has a key, reads the urge (`TrackerWrites.readUrge`), reseals it with the
+outcome (`answerUrge`), and for Had one opens the amount sheet on that habit; a tap on the notification opens the
+urge's sheet. Answering in the app, Undo and Delete cancel that urge's check-in; sign-out and deletion cancel them all.
+Trends draws the chosen habit's urges as hollow rings along the chart's foot at their times (`urgeChartPositions`), a
+bar after every other so touch indices hold, and names their count in the summary and the readout; Trends' day view
+lists the day's urges (`UrgeRow`), each opening its sheet (strength, "What happened?", Delete). Never in totals,
+averages, Insights, Ask or the letter. Neutral words: no praise, streaks or counts of urges passed. The export adds
+`penchant-urges-<date>.csv` and an `urges` array.
 
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
 `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
