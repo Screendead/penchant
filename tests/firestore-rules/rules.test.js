@@ -1613,7 +1613,7 @@ describe('updatedAt', () => {
       );
     });
 
-    it('allows the delta query and its count on the caller\'s own entries only', async () => {
+    it('allows the delta query on the caller\'s own entries only', async () => {
       const since = Timestamp.fromDate(new Date('2000-01-01T00:00:00Z'));
       await assertSucceeds(
         getDocs(

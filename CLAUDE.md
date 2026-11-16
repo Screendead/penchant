@@ -360,8 +360,9 @@ deletion). Any other open asks the server for entries with `updatedAt` at or aft
 range, and reads the range from the cache with the delta laid over it; a count that differs (a delete elsewhere, an
 evicted entry, an unstamped create by an older build) or any failure (offline, an index building) falls back to the
 full `get()`, which offline answers from the cache. An older build's edit elsewhere changes neither cursor nor count,
-so this device may miss it for up to 7 days. Ordinary open: 1 read for an empty delta plus 1 per 1,000 entries counted;
-a full read costs one per entry. A shorter range (the heavy-day window, a review week) is a plain `get()`. Habits learns whether
+so this device may miss it for up to 7 days. Ordinary open (an estimate): a read per entry the delta returns (at least
+the newest, which the 5-minute overlap returns again) plus 1 per 1,000 entries counted; a full read costs one per
+entry. A shorter range (the heavy-day window, a review week) is a plain `get()`. Habits learns whether
 entries of a deleted (or foreign) habit exist by one more `count()`, every owned activity, less each habit's count
 (`deletedHabitCountProvider`, shown only when every count is the server's); only then is its "Deleted habit" row there,
 and `DeletedHabitPage` reads every owned activity once per open (the export's shape, paged by document id, from the
