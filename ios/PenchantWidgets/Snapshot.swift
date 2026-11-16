@@ -42,11 +42,17 @@ struct Snapshot: Decodable {
   // The app's last snapshot plus the logs still waiting in LogQueue for it to
   // write, so a tap shows at once.
   static func load() -> Snapshot? {
+    guard var snapshot = stored() else { return nil }
+    snapshot.add(LogQueue.read())
+    return snapshot
+  }
+
+  // As the app wrote it.
+  static func stored() -> Snapshot? {
     guard let json = UserDefaults(suiteName: appGroup)?.string(forKey: snapshotKey),
-      var snapshot = try? JSONDecoder().decode(Snapshot.self, from: Data(json.utf8)),
+      let snapshot = try? JSONDecoder().decode(Snapshot.self, from: Data(json.utf8)),
       snapshot.version == supportedVersion
     else { return nil }
-    snapshot.add(LogQueue.read())
     return snapshot
   }
 

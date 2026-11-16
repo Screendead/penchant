@@ -12,6 +12,7 @@ class QueuedLog {
     required this.uid,
     required this.viceID,
     required this.createdAtMs,
+    this.via,
   });
 
   final QueuedLogOp op;
@@ -20,18 +21,24 @@ class QueuedLog {
   final String viceID;
   // The tap, not the flush.
   final double createdAtMs;
+  // [viaWatch] for a log from the Apple Watch; absent, a widget's.
+  final String? via;
+
+  static const String viaWatch = 'watch';
 
   DateTime get createdAt =>
       DateTime.fromMillisecondsSinceEpoch(createdAtMs.round());
 
   // Swift's synthesized Codable needs every key back, with the same values,
-  // for LogQueue.remove to match the entry.
+  // for LogQueue.remove to match the entry; it leaves an absent `via` out, so
+  // this does too.
   Map<String, Object?> toJson() => <String, Object?>{
     'op': op.name,
     'id': id,
     'uid': uid,
     'viceID': viceID,
     'createdAt': createdAtMs,
+    'via': ?via,
   };
 
   static QueuedLog? fromJson(Object? json) {
@@ -47,6 +54,7 @@ class QueuedLog {
     final Object? uid = json['uid'];
     final Object? viceID = json['viceID'];
     final Object? createdAt = json['createdAt'];
+    final Object? via = json['via'];
     if (op == null ||
         id is! String ||
         id.isEmpty ||
@@ -62,6 +70,7 @@ class QueuedLog {
       uid: uid,
       viceID: viceID,
       createdAtMs: createdAt.toDouble(),
+      via: via is String ? via : null,
     );
   }
 }

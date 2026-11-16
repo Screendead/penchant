@@ -104,10 +104,13 @@ runner.build_configurations.each do |runner_config|
       'SKIP_INSTALL' => 'YES',
     )
   end
-  app.build_configurations.find { |c| c.name == runner_config.name }.build_settings.merge!(
+  app_settings = app.build_configurations.find { |c| c.name == runner_config.name }.build_settings
+  app_settings.merge!(
     'ASSETCATALOG_COMPILER_APPICON_NAME' => 'AppIcon',
     'LD_RUNPATH_SEARCH_PATHS' => ['$(inherited)', '@executable_path/Frameworks'],
   )
+  # The catalog holds the icon alone; the colours are in WatchTheme.swift.
+  app_settings.delete('ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME')
   ext.build_configurations.find { |c| c.name == runner_config.name }.build_settings.merge!(
     'LD_RUNPATH_SEARCH_PATHS' => ['$(inherited)', '@executable_path/Frameworks', '@executable_path/../../Frameworks'],
   )

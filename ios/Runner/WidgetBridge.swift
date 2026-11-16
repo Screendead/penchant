@@ -38,6 +38,9 @@ enum WidgetBridge {
           return
         }
         defaults.set(snapshot, forKey: snapshotKey)
+        #if os(iOS)
+          WatchLink.shared.snapshotSaved()
+        #endif
         #if !PENCHANT_SYNC
           if #available(iOS 17.0, macOS 14.0, *) {
             PenchantShortcuts.updateAppShortcutParameters()
@@ -46,6 +49,9 @@ enum WidgetBridge {
       case "clear":
         defaults.removeObject(forKey: snapshotKey)
         LastLog.save(nil)
+        #if os(iOS)
+          WatchLink.shared.cleared()
+        #endif
       case "pendingLogs":
         #if os(macOS) && !PENCHANT_SYNC
           // PenchantSync writes from its own Firestore cache, so only one of
@@ -55,7 +61,14 @@ enum WidgetBridge {
             return
           }
         #endif
-        let data = (try? JSONEncoder().encode(LogQueue.read())) ?? Data("[]".utf8)
+        let logs = LogQueue.read()
+        #if os(iOS)
+          // The headless engine saves no snapshot after it writes.
+          if onBackgroundDone == nil {
+            WatchLink.shared.handedOut(logs)
+          }
+        #endif
+        let data = (try? JSONEncoder().encode(logs)) ?? Data("[]".utf8)
         result(String(decoding: data, as: UTF8.self))
         return
       case "backgroundDone":
@@ -77,6 +90,9 @@ enum WidgetBridge {
           result(FlutterError(code: "queue-unwritable", message: "Could not update the log queue", details: nil))
           return
         }
+        #if os(iOS)
+          WatchLink.shared.removed(done)
+        #endif
         // On to the reload: the snapshot may already count these entries,
         // and no later save follows if the acknowledgement changes nothing.
       default:
