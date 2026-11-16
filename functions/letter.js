@@ -78,17 +78,19 @@ const NON_ASCII_NUMERAL = /[^\P{N}0-9]/u;
 // Only double quotes mark a quotation; single ones are apostrophes too.
 const QUOTE_SPAN = /“([^“”]*)”|"([^"]*)"/g;
 const QUOTE_MARK = /[“”"]/;
-const CONTROL = /[\p{Cc}\p{Cf}]/u;
+const CONTROL = /\p{Cc}/u;
+const LINE_CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const COUNT = /^\d{1,7}$/;
 const AMOUNT = /^\d{1,9}(?:\.\d{1,2})?$/;
 const MONTH = /^[A-Z][a-z]{2,8} \d{4}$/;
 
+// Format characters (the joiner inside an emoji) are allowed; control
+// characters are not, but for line breaks where [lines].
 function text(value, max, { lines = false } = {}) {
   if (typeof value !== 'string' || value.trim() === '' || value.length > max) return null;
-  const bad = lines ? /[\p{Cf}\u0000-\u0009\u000b-\u001f\u007f]/u : CONTROL;
-  return bad.test(value) ? null : value;
+  return (lines ? LINE_CONTROL : CONTROL).test(value) ? null : value;
 }
 
 function matches(pattern, value) {
@@ -306,9 +308,7 @@ function checkPassage(passage, context) {
 }
 
 function passageText(value, max) {
-  return typeof value === 'string' && value.trim() !== '' && value.length <= max && !/[\p{Cf}]/u.test(value)
-    ? value.trim()
-    : null;
+  return typeof value === 'string' && value.trim() !== '' && value.length <= max ? value.trim() : null;
 }
 
 // The model's letter checked against [input]: each section and suggestion
