@@ -119,14 +119,19 @@ class HabitStrength {
 
   // "18.4 units", "147 g", "2.1 standard drinks", "380 mg". Grams and mg are
   // whole; units and drinks to a tenth.
-  String label(double value) => switch (unit) {
-    StrengthUnit.ukUnit =>
-      '${formatAverage(value)} ${value == 1 ? 'unit' : 'units'}',
+  String label(double value) => '${number(value)} ${word(value)}';
+
+  String number(double value) => switch (unit) {
+    StrengthUnit.grams || StrengthUnit.mg => formatCount(value.round()),
+    _ => formatAverage(value),
+  };
+
+  String word(double value) => switch (unit) {
+    StrengthUnit.ukUnit => value == 1 ? 'unit' : 'units',
     StrengthUnit.standardDrink =>
-      '${formatAverage(value)} standard '
-          '${value == 1 ? 'drink' : 'drinks'}',
-    StrengthUnit.grams => '${formatCount(value.round())} g',
-    StrengthUnit.mg => '${formatCount(value.round())} mg',
+      value == 1 ? 'standard drink' : 'standard drinks',
+    StrengthUnit.grams => 'g',
+    StrengthUnit.mg => 'mg',
   };
 
   // The axis prints whole values.

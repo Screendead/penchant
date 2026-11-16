@@ -1677,7 +1677,8 @@ class _Units extends StatelessWidget {
                 Expanded(
                   child: _StatTile(
                     label: TrendsSheet.unitsWeek(strength),
-                    value: strength.label(week),
+                    value: strength.number(week),
+                    unit: strength.word(week),
                     detail: strength.describe,
                   ),
                 ),
@@ -1686,7 +1687,8 @@ class _Units extends StatelessWidget {
                 Expanded(
                   child: _StatTile(
                     label: TrendsSheet.unitsRange(strength),
-                    value: strength.label(all),
+                    value: strength.number(all),
+                    unit: strength.word(all),
                     detail: 'last ${formatCount(range.days)} days',
                   ),
                 ),

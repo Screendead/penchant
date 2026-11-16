@@ -554,6 +554,22 @@ line) over a bar with a tick at the line, three quarters along until the total p
 (`TallyRow.lineScale`). Trends draws it as a straight dashed ink line labelled "your line 3", only over buckets of its
 period and not in Spend (else a caption says which view shows it), and "Over your line" replaces Peak.
 
+**A habit's strength** (round 24, "Strength and standard units"). Optional `strengthUnit` (`ukUnit`, `grams`,
+`standardDrink` or `mg`), `servingMl` (above 0, at most 5,000), `abv` (above 0, at most 100), `drinkGrams` (above 0, at
+most 100) and `caffeineMg` (above 0, at most 2,000), read together as `Vice.strength` (`HabitStrength`,
+`lib/data/habit_strength.dart`): an alcohol definition needs its serving size (a standard drink also its grams), the
+usual ABV or mg is optional, and a missing or out-of-range value reads as absent. Unlike the price and the line they
+were sealed from the start: the vices update key list leaves them out, so the rules refuse them in plaintext on any
+vice. An entry may carry its own `abv` or `caffeineMg` (`ActivityContent`, rounded to two places by `roundStrength`,
+which `answersTooLong` allows for), which wins over the habit's; an older build's edit drops the habit's, as it drops
+the price. Units follow the NHS (nhs.uk/live-well/alcohol-advice/calculating-alcohol-units): ABV × ml ÷ 1,000 UK
+units, 8 g a unit; a standard drink is grams of alcohol the person sets, so no country's definition is built in.
+Set in the habit form's Strength section (None / Alcohol % / Caffeine mg); the amount sheet and editor offer
+"Strength this time" (`StrengthField`) only for a habit with one. Trends' Units view and its tiles count each entry
+at its strength (`bucketUnits`); entries with none count nothing and the view says how many. It only measures: no
+guideline, colour or warning. The export appends `own_abv`, `own_caffeine_mg`, `strength_total`, `strength_unit`.
+Insights and Ask read none of it. Nothing writes it to Health yet.
+
 **Sealed fields** (`r2-e2ee`). A vice may hold its content fields (`name`, `unit`, `category`, `unitLabel`,
 `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) in one `sealed` bytes
 field instead: the `lib/crypto/sealer.dart` envelope (`version | nonce | ciphertext | tag` around JSON padded to
@@ -681,7 +697,9 @@ habits in use oldest first, then archived ones marked "· archived", so the defa
 them, adds a row of chips to draw up to `TrendsSheet.maxCompared` (3) other habits over the chosen one: thin lines of
 their totals under the same average, on one count axis whatever their units, named in the chart's summary, readout and
 legend, kept in page storage with the habit. A priced habit adds a Count/Spend switch that charts its totals times
-its price, axis and readouts in its currency, with no compared lines (their units and prices differ). On iOS a Health
+its price, axis and readouts in its currency, with no compared lines (their units and prices differ); a habit with a
+strength adds Units (`TrendsView`; the chart takes a `TrendsScale`, money or strength), likewise without compared lines
+or the line. On iOS a Health
 chip, once on, watches `healthStateProvider` (never before, as it reads Health) and offers each Health measure with
 values in the range and a numeric `metricCopy` (not mood); the one picked is a dashed line under the habit's, each
 bucket the mean of its days (`bucketHealth`, `lib/data/trend_breakdowns.dart`; a gap where Health has none; sleep on
