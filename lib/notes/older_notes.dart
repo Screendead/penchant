@@ -161,12 +161,13 @@ OlderNotes olderNotes(List<ViceActivity> entries, OlderNotesProgress p) {
 
 /// The tags of [proposed] still worth showing on [entry]: quoted in its note
 /// as it is now, and not already among its triggers.
+/// At most as many as the entry has room for, so nothing kept is cut.
 List<ReadTag> shownTags(ViceActivity entry, List<ReadTag> proposed) {
   final String note = entry.note ?? '';
   return <ReadTag>[
     for (final ReadTag t in proposed)
       if (note.contains(t.quote) && !entry.triggers.contains(t.path)) t,
-  ];
+  ].take((maxTriggers - entry.triggers.length).clamp(0, maxTriggers)).toList();
 }
 
 /// [triggers] with each of [add] not already there, while there is room.
@@ -231,6 +232,7 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
   int _generation = 0;
   OlderNotesFile? _file;
   ClaudeWork? _work;
+  Future<void> _saving = Future<void>.value();
 
   /// Tests set the clock.
   DateTime Function() now = DateTime.now;
@@ -240,6 +242,9 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
     ref.watch(userProvider.select((AsyncValue<User?> u) => u.value?.uid));
     final OlderNotesFile? file = _file = ref.watch(olderNotesFileProvider);
     _generation++;
+    // A batch cut off by a user or key change never reaches its own finish.
+    _work?.finish(ClaudeWorkEnd.stopped);
+    _work = null;
     if (file != null) unawaited(_load(file, _generation));
     return const OlderNotesState();
   }
@@ -256,11 +261,16 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
       reading: state.reading,
       problem: state.problem,
     );
-    try {
-      await _file?.save(p);
-    } catch (e, stack) {
-      reportError(e, stack, context: 'while saving older notes progress');
-    }
+    final OlderNotesFile? file = _file;
+    // In order: Keep and Drop can be tapped while a batch is saving.
+    _saving = _saving.then((_) async {
+      try {
+        await file?.save(p);
+      } catch (e, stack) {
+        reportError(e, stack, context: 'while saving older notes progress');
+      }
+    });
+    await _saving;
   }
 
   /// Stops the batch; a note in flight is dropped and stays unread.
@@ -296,11 +306,7 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
       final String note = entry.note ?? '';
       await _save(p.counted(now()));
       sent++;
-      work?.say(
-        OlderNotesCopy.reading,
-        detail: OlderNotesCopy.sentSoFar(sent),
-        stepsDone: sent - 1,
-      );
+      work?.say(OlderNotesCopy.reading, detail: OlderNotesCopy.sentSoFar(sent));
       List<ReadTag> tags;
       try {
         tags = await reader.read(note).toList();
@@ -335,31 +341,40 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
     );
   }
 
-  /// Saves [keep] (entry id to the tag paths kept) to their entries and marks
-  /// every id in it decided, kept or not. Returns how many saves failed at
-  /// once; a later refusal reaches the rejected-writes banner.
+  /// Saves [keep] (entry id to the tag paths kept, none for a drop) to their
+  /// entries, then marks each id decided unless its save failed at once, so
+  /// a failed one stays for review. A later refusal reaches the
+  /// rejected-writes banner.
   Future<TagSaves> decide(
     Map<String, List<String>> keep,
     Map<String, ViceActivity> entries, {
     required String Function(ViceActivity) what,
   }) async {
-    final OlderNotesProgress? p = state.progress;
-    if (p == null) return const (saved: 0, queued: 0, failed: 0, skipped: 0);
-    await _save(p.decided(keep.keys));
+    if (state.progress == null) {
+      return const (saved: 0, queued: 0, failed: 0, skipped: 0);
+    }
     final TrackerWrites writes = ref.read(trackerWritesProvider);
     final RejectedWrites rejected = ref.read(rejectedWritesProvider.notifier);
-    final List<Future<TagSave>> saves = <Future<TagSave>>[
-      for (final MapEntry<String, List<String>> k in keep.entries)
-        if (k.value.isNotEmpty && entries[k.key] != null)
-          addTags(
-            writes,
-            rejected,
-            entries[k.key]!,
-            k.value,
-            what(entries[k.key]!),
-          ),
-    ];
-    return countSaves(await Future.wait(saves));
+    final List<String> ids = keep.keys.toList();
+    final List<TagSave> saves = await Future.wait(<Future<TagSave>>[
+      for (final String id in ids)
+        switch ((keep[id]!, entries[id])) {
+          (final List<String> paths, final ViceActivity entry)
+              when paths.isNotEmpty =>
+            addTags(writes, rejected, entry, paths, what(entry)),
+          _ => Future<TagSave>.value(TagSave.skipped),
+        },
+    ]);
+    final OlderNotesProgress? now = state.progress;
+    if (now != null && ref.mounted) {
+      await _save(
+        now.decided(<String>[
+          for (int i = 0; i < ids.length; i++)
+            if (saves[i] != TagSave.failed) ids[i],
+        ]),
+      );
+    }
+    return countSaves(saves);
   }
 }
 

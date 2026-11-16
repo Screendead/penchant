@@ -241,6 +241,10 @@ class _TagTidyPageState extends ConsumerState<TagTidyPage> {
       }
     }
     if (!mounted) return;
+    // The journal was read once on opening; read it again so the merged
+    // labels are not offered again (the cache holds the writes just made).
+    ref.invalidate(viceActivityRangeForUserProvider);
+    ref.invalidate(allDayNotesForUserProvider);
     setState(() {
       _applying = false;
       _done = TagTidyPage.applied(countSaves(saves));
@@ -316,8 +320,12 @@ class _TagTidyPageState extends ConsumerState<TagTidyPage> {
     final Map<String, OwnWords> byLabel = <String, OwnWords>{
       for (final OwnWords w in words) w.label: w,
     };
+    final List<OwnWords> sendable = <OwnWords>[
+      for (final OwnWords w in words)
+        if (sendableLabel(w.label)) w,
+    ];
     final List<String> labels = <String>[
-      for (final OwnWords w in words.take(tidyMaxLabels)) w.label,
+      for (final OwnWords w in sendable.take(tidyMaxLabels)) w.label,
     ];
     final List<TidySuggestion>? suggestions = _suggestions;
     return CardPage(
@@ -355,7 +363,7 @@ class _TagTidyPageState extends ConsumerState<TagTidyPage> {
           const CardFoot(TagTidyPage.tooFew)
         else ...<Widget>[
           CardFoot(TagTidyPage.found(words.length)),
-          if (words.length > tidyMaxLabels)
+          if (sendable.length > tidyMaxLabels)
             CardFoot(TagTidyPage.onlyMost(tidyMaxLabels)),
           const CardFoot(TagTidyPage.sends),
           DialCard(
@@ -369,7 +377,7 @@ class _TagTidyPageState extends ConsumerState<TagTidyPage> {
               ),
             ],
           ),
-          _LabelList(words: words.take(tidyMaxLabels).toList()),
+          _LabelList(words: sendable.take(tidyMaxLabels).toList()),
         ],
       ],
     );

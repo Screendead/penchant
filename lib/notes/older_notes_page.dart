@@ -131,6 +131,10 @@ class _OlderNotesPageState extends ConsumerState<OlderNotesPage> {
   /// Per entry, the tag paths unticked; every shown tag starts ticked.
   final Map<String, Set<String>> _unticked = <String, Set<String>>{};
 
+  /// Entries whose Keep or Drop is being saved: hidden meanwhile, so a second
+  /// tap cannot write twice.
+  final Set<String> _deciding = <String>{};
+
   List<String> _kept(String id, List<ReadTag> tags) => <String>[
     for (final ReadTag t in tags)
       if (!(_unticked[id]?.contains(t.path) ?? false)) t.path,
@@ -146,11 +150,17 @@ class _OlderNotesPageState extends ConsumerState<OlderNotesPage> {
     Map<String, Vice> vices,
   ) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    setState(() => _deciding.addAll(keep.keys));
     final TagSaves result = await ref
         .read(olderNotesProvider.notifier)
         .decide(keep, entries, what: (ViceActivity e) => _what(e, vices));
-    for (final String id in keep.keys) {
-      _unticked.remove(id);
+    if (mounted) {
+      setState(() {
+        _deciding.removeAll(keep.keys);
+        for (final String id in keep.keys) {
+          _unticked.remove(id);
+        }
+      });
     }
     if (keep.values.any((List<String> k) => k.isNotEmpty) && mounted) {
       messenger.showSnackBar(
@@ -197,10 +207,7 @@ class _OlderNotesPageState extends ConsumerState<OlderNotesPage> {
 
   void _read(BuildContext from, List<ViceActivity> batch) {
     final OlderNotesRunner runner = ref.read(olderNotesProvider.notifier);
-    final ClaudeWork work = ClaudeWork(
-      status: OlderNotesPage.reading,
-      steps: batch.length,
-    );
+    final ClaudeWork work = ClaudeWork(status: OlderNotesPage.reading);
     unawaited(
       showClaudeWorking(
         from,
@@ -264,7 +271,8 @@ class _OlderNotesPageState extends ConsumerState<OlderNotesPage> {
         <(ViceActivity, List<ReadTag>)>[
           for (final MapEntry<String, List<ReadTag>> p
               in progress.proposals.entries)
-            if (byEntry[p.key] case final ViceActivity e)
+            if (byEntry[p.key] case final ViceActivity e
+                when !_deciding.contains(e.id))
               if (!e.locked) (e, shownTags(e, p.value)),
         ].take(olderNotesBatch).toList();
     final OlderNotes notes = olderNotes(entries, progress);

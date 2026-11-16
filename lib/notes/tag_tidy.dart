@@ -21,6 +21,16 @@ final Set<String> _treePaths = triggerPaths().toSet();
 
 bool isOwnWords(String trigger) => !_treePaths.contains(trigger);
 
+/// What the server accepts as a label (functions/tag_tidy.js): 1 to 60
+/// UTF-16 units, not blank, no line break. Sealed triggers pass no rules
+/// check, so an older build's odd label is kept out rather than refused
+/// whole.
+bool sendableLabel(String label) =>
+    label.trim().isNotEmpty &&
+    label.length <= 60 &&
+    !label.contains('\n') &&
+    !label.contains('\r');
+
 List<OwnWords> ownWords(List<ViceActivity> entries, List<DayNote> dayNotes) {
   final Map<String, int> onEntries = <String, int>{};
   final Map<String, int> onNotes = <String, int>{};
@@ -71,8 +81,9 @@ class TidySuggestion {
       other.path == path &&
       other.label == label &&
       other.from.length == from.length &&
-      Iterable<int>.generate(from.length)
-          .every((int i) => other.from[i] == from[i]);
+      Iterable<int>.generate(
+        from.length,
+      ).every((int i) => other.from[i] == from[i]);
 
   @override
   int get hashCode => Object.hash(path, label, Object.hashAll(from));
@@ -150,8 +161,9 @@ class CallableTagTidier implements TagTidier {
 
   @override
   Future<List<TidySuggestion>> tidy(List<String> labels) async {
-    final Object? answer = await call(<String, Object?>{'labels': labels})
-        .timeout(timeout);
+    final Object? answer = await call(<String, Object?>{
+      'labels': labels,
+    }).timeout(timeout);
     final Object? reason = answer is Map ? answer['reason'] : null;
     if (reason is String && reason != 'ok') throw TidyFailed(reason);
     return suggestionsIn(answer, labels);
