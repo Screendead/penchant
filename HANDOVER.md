@@ -1053,14 +1053,35 @@ picked all fifteen on 2026-11-16 ("I chose all of them. I like them all - and it
 *well*."). Each card on the page is that feature's spec; a build that departs from its card says where and why.
 Order (Claude's): the shared Claude-working screen first; then log an urge, strength and units, a night out on the
 Lock Screen, Insights reads day-note tags; then say it to log, catch up in words, tag older notes, tidy own-words
-tags; then random check-ins, the label camera, the one-page report, note search; last the sealed backup (merge and
-install held for Jack: it touches keys), Ask from Siri (after Ask has met the API) and the Watch app (after a signing
+tags; then random check-ins, the label camera, the one-page report, note search; last the sealed backup (it touches keys; held
+for Jack, who then merged it), Ask from Siri (after Ask has met the API) and the Watch app (after a signing
 probe). A UI feature merges only after Claude has looked at a render of it.
 
 Claude-working screen (Jack, same message): every Claude call today shows "a single quiet text line. I want something
 animated and exciting", "appear fullscreen while it's thinking, making me feel like someone is taking a close look
 and trying to help me behind the scenes", using Flutter's heroes and animation. One shared component for every call
 site; Jack is shown directions as a recording before the look is settled.
+Jack picked Lens on 2026-11-16 ("lens is coolest, use that"); built (#325), the default everywhere.
+
+Round 24 state on 2026-11-16 (build 1838 on Jack's iPhone and Mac). Built and merged: Insights reads day-note tags
+(#320), a night out on the Lock Screen (#321), strength and units (#322) with the Apple Health write (#328), log an
+urge (#323), the one-page report (#327), the sealed backup (#329; Jack: "Merge and install"; restore writes check-ins
+too, #332), random check-ins (#330), note search (#326; meaning search off by default: in a 60-note trial it barely
+beat words), the label camera (#333, on-device only), tag older notes and tidy own-words tags (#334; Jack, on tidy
+rewriting stored entries where the card described a reversible mapping: "Rewrite entries"), say it to log and catch
+up in words (#335, prompt tightened in #338). Not built: Ask from Siri; the Watch app (signing probe first); the
+Insights comparison of urges at entries with random check-ins (the card's point; answers are being collected); the
+label camera's Claude fallback (the card: only if the on-device read misses often); Insights treating caught-up
+entries differently; a widget test of the restore page's steps. Two adjacent PRs each added a Swift file to
+`ios/Runner.xcodeproj` under one object id and broke the device build (#337 fixed it and tests for it).
+
+Real-API trials Jack ran on 2026-11-16 (`~/development/tracker-tools/run-trials.sh`, logs beside it in `trials/`):
+note reader, follow-up, weekly words, Ask and the letter passed first time; the analyst passes 5 of 5 after three
+fixes to its checks (#324, #331, #336); tidy tags passed; the entry reader made three kinds of mistake (a range as
+two entries, an invented amount, a bottle as one glass), fixed in the prompt (#338) and not yet re-run. Jack has yet
+to read the letter and follow-up logs before turning those on. Unproven on a device: the night-out Live Activity,
+urge and check-in notification buttons, the Lens screen on a real call, the report's preview and share, backup save
+and restore against the real server, the Health write, on-device speech, the label read on real labels.
 
 Round 23 (`docs/pitch/round-23/analyst-letter/pitch.html`, https://claude.ai/artifact/KUAjJZZsrE7TcPG1BSvuzF), both
 picked by Jack on 2026-11-16 as recommended ("yes to both recommendations"; after the retention correction below,
