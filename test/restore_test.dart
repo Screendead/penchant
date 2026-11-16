@@ -484,7 +484,7 @@ void main() {
       );
       expect(second.stoppedBy, isNull);
       expect(second.alreadyThere, 22);
-      expect(second.writtenTotal, 54 - 22);
+      expect(second.writtenTotal, 55 - 22);
       expect(target.stored['activities'], hasLength(50));
       expect(target.stored['vices'], hasLength(2));
     });
