@@ -64,11 +64,13 @@ class AskJournalSetting extends ConsumerWidget {
   static const String disclosure =
       'When you ask a question, its text, today’s date and your habits’ names '
       'and units are sent to Penchant’s server and on to Anthropic’s Claude, '
-      'which turns the question into a query. Habit names are encrypted '
-      'everywhere else; this is the one place they leave this device. Your '
-      'entries, amounts, times, tags and notes are never sent, and the '
-      'answer is worked out on this device. Anthropic does not use it for '
-      'training. Switch this off to stop sending questions.';
+      'which writes a database query for it; a follow-up also sends this '
+      'session’s earlier questions and the queries written for them. Habit '
+      'names are encrypted everywhere else; this is the one place they leave '
+      'this device. The query runs on this device, over a copy of your '
+      'journal kept in memory while the page is open: your entries, amounts, '
+      'times, tags, notes and every answer stay here. Anthropic does not use '
+      'it for training. Switch this off to stop sending questions.';
   static const String turnOn = 'Turn on';
   static const String notNow = 'Not now';
 

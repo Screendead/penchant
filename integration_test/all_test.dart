@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'account_test.dart' as account_test;
 import 'activity_flows_test.dart' as activity_flows_test;
+import 'ask_test.dart' as ask_test;
 import 'bounded_queries_test.dart' as bounded_queries_test;
 import 'category_migration_test.dart' as category_migration_test;
 import 'cold_start_test.dart' as cold_start_test;
@@ -23,6 +24,7 @@ import 'write_flows_test.dart' as write_flows_test;
 void main() {
   group('account_test', account_test.main);
   group('activity_flows_test', activity_flows_test.main);
+  group('ask_test', ask_test.main);
   group('bounded_queries_test', bounded_queries_test.main);
   group('category_migration_test', category_migration_test.main);
   group('cold_start_test', cold_start_test.main);

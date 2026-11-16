@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/journal_db.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/day_note.dart';

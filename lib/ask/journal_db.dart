@@ -176,9 +176,7 @@ int _authorize(
       // column and no database: it reveals a row count at most, so it may be
       // anything but SQLite's own tables.
       if (column.isEmpty) {
-        return table.toLowerCase().startsWith('sqlite_')
-            ? Sq.authDeny
-            : Sq.ok;
+        return table.toLowerCase().startsWith('sqlite_') ? Sq.authDeny : Sq.ok;
       }
       final List<String>? columns = askTables[table];
       return text(a3) == 'main' && columns != null && columns.contains(column)

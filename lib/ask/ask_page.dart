@@ -43,6 +43,12 @@ final askSessionProvider = NotifierProvider<AskSession, List<AskedQuestion>>(
   AskSession.new,
 );
 
+/// The turns a follow-up sends: the answered ones of [asked], oldest first.
+List<AskTurn> askHistory(List<AskedQuestion> asked) => <AskTurn>[
+  for (final AskedQuestion q in asked)
+    if (q.answer != null) AskTurn(q.question, q.answer!),
+];
+
 class AskSession extends Notifier<List<AskedQuestion>> {
   int _next = 0;
 
@@ -51,12 +57,6 @@ class AskSession extends Notifier<List<AskedQuestion>> {
     ref.watch(userProvider.select((AsyncValue<User?> user) => user.value?.uid));
     return const <AskedQuestion>[];
   }
-
-  /// The turns a follow-up sends: answered ones, oldest first.
-  List<AskTurn> get history => <AskTurn>[
-    for (final AskedQuestion q in state)
-      if (q.answer != null) AskTurn(q.question, q.answer!),
-  ];
 
   int start(String question) {
     final int id = _next++;
@@ -185,7 +185,7 @@ class _AskPageState extends ConsumerState<AskPage> {
     ).take(askHabits(vices).length).toList();
     final DateTime today = ref.read(todayProvider);
     final AskSession session = ref.read(askSessionProvider.notifier);
-    final List<AskTurn> history = session.history;
+    final List<AskTurn> history = askHistory(ref.read(askSessionProvider));
     final int id = session.start(question);
     _controller.clear();
     AskAnswer? answer;

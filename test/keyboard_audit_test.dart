@@ -981,8 +981,6 @@ class _NeverAsk implements AskJournal {
     required List<({int id, Vice vice})> habits,
     required DateTime today,
     List<AskTurn> history = const <AskTurn>[],
-  }) async => const AskAnswer(
-    kind: AskKind.cannotAnswer,
-    reason: AskReason.unclear,
-  );
+  }) async =>
+      const AskAnswer(kind: AskKind.cannotAnswer, reason: AskReason.unclear);
 }
