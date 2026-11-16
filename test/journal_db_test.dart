@@ -94,7 +94,7 @@ JournalDb figures({bool authorize = true}) => journal(
       day: '2026-11-03',
       createdAt: Timestamp.fromDate(DateTime(2026, 11, 3)),
       text: 'Walked home tired',
-      triggers: const <String>['walked home', 'tired'],
+      triggers: const <String>['walked home', 'tired', 'work/my private words'],
     ),
   ],
 );
@@ -106,6 +106,7 @@ const List<String> secrets = <String>[
   'secret',
   'tired',
   'walked home',
+  'private words',
 ];
 
 List<List<Object?>> rowsOf(AskRun run) {
@@ -584,6 +585,7 @@ void main() {
         <List<Object?>>[
           <Object?>['own words 1', 'own words 1'],
           <Object?>['own words 2', 'own words 2'],
+          <Object?>['own words 3', 'own words 3'],
         ],
       );
       expect(

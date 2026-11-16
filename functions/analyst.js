@@ -12,6 +12,7 @@ const ASK_SCHEMA = require('./ask_query_schema.json');
 const askJournal = require('./ask_journal.js');
 const letter = require('./letter.js');
 const FIXTURE = require('./analyst_fixture.json');
+const { NOTE_TAGS } = require('./note_tags.js');
 
 const MODEL = 'claude-opus-5-5';
 const LIMITS = FIXTURE.limits;
@@ -27,7 +28,10 @@ const REFUSALS = ['tooLong', 'notOneStatement', 'notSelect', 'forbidden', 'tooSl
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const CAUSAL = new RegExp(`(^|[^a-z'])(${CAUSAL_TERMS.map(escapeRegExp).join('|')})(?=$|[^a-z'])`, 'i');
 const NUMERAL = /\d+(?:[.:]\d+)*/g;
-const LETTER = /\p{L}/u;
+// The labels a cell may hold that no query can make up; any other text cell
+// could be a query's own literal carrying prose past the checks.
+const KNOWN_LABELS = new Set(['Own words', ...NOTE_TAGS.map(({ label }) => label)]);
+const OWN_WORDS = /^own words \d+$/;
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -107,8 +111,8 @@ function statements(input) {
 }
 
 // What a finding may use besides its own words: the numerals of every cell
-// sent, and as phrases the habit names and unit words and every text cell,
-// longest first; the same as findingContext in lib/analyst/investigation.dart.
+// sent, and as phrases the habit names, unit words and the cells that are tag
+// labels, longest first; the same as findingContext in lib/analyst/investigation.dart.
 function contextOf(input) {
   const numerals = new Set();
   const phrases = new Set();
@@ -119,7 +123,7 @@ function contextOf(input) {
       for (const cell of row) {
         if (cell == null) continue;
         for (const n of cell.match(NUMERAL) || []) numerals.add(n);
-        if (LETTER.test(cell)) phrases.add(cell);
+        if (KNOWN_LABELS.has(cell) || OWN_WORDS.test(cell)) phrases.add(cell);
       }
     }
   }

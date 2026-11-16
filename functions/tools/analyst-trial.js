@@ -34,7 +34,7 @@ function cell(value) {
 
 // The phone's figures-only database refuses these columns; this made-up
 // journal has them, so the trial refuses any statement naming them.
-const FREE_TEXT = /\bnote\b|\btext\b|\*/i;
+const FREE_TEXT = /\bnote\b|(?<!\bas\s+)\btext\b|(?:select|,|\.)\s*\*/i;
 
 // One statement run and cut as the phone cuts it (cutResult).
 function result(db, sql) {

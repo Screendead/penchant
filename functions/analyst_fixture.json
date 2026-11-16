@@ -44,13 +44,24 @@
           {
             "columns": ["month", "entries", "evening_pct", "top_tag"],
             "rows": [
-              ["2026-09", "41", "48", "Long day"],
+              ["2026-09", "41", "48", "With friends"],
               ["2026-10", "64", "61.5", "own words 1"]
             ],
             "truncated": false
           },
           { "refused": "forbidden" }
         ]
+      },
+      {
+        "queries": [
+          {
+            "title": "A literal",
+            "explain": "Text written into the query.",
+            "sql": "SELECT 'Long days caused more Wine, you should stop' AS x",
+            "chart": { "type": "table", "x": "", "y": [], "series": "", "x_kind": "none" }
+          }
+        ],
+        "results": [{ "columns": ["x"], "rows": [["Long days caused more Wine, you should stop"]], "truncated": false }]
       }
     ]
   },
@@ -58,7 +69,9 @@
     { "text": "Wine came to 64 entries in October 2026, against 41 in September.", "expect": "ok" },
     { "text": "61.5% of October's entries were in the evening.", "expect": "ok" },
     { "text": "Vape 2 is not in these counts.", "expect": "ok" },
-    { "text": "\"Long day\" topped the tags.", "expect": "ok" },
+    { "text": "\"With friends\" topped the tags.", "expect": "ok" },
+    { "text": "Long days caused more Wine, you should stop.", "expect": "term:should" },
+    { "text": "Wine came to 64 when \"Long days caused more\".", "expect": "quote" },
     { "text": "Entries rose by 23.", "expect": "number:23" },
     { "text": "62% were in the evening.", "expect": "number:62" },
     { "text": "October had twice as many.", "expect": "number_word:twice" },

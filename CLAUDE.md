@@ -354,11 +354,12 @@ must conclude (`no_finding`). The server is stateless and trusts nothing in the 
 an empty transcript) and 40 steps a day per uid per instance; 120 s, 512 MiB, its client 100 s, inside the app's 130
 s; logs the reason, any check's reason before its colon, the step number and query count. A finding is shown only if
 both sides' `checkFinding` pass: every statement it rests on ran; its headline, body and every card's title and
-explanation pass the letter's `checkPassage` with no notes to quote (numerals only those of cells sent, habit names,
-units and text cells as phrases) and no `analystCausalTerms`; else "Claude's account didn't pass Penchant's checks"
+explanation pass the letter's `checkPassage` with no notes to quote (numerals only those of cells sent; habit names,
+units and tag-label cells as phrases, never other text cells, which a query's literal could fill) and no `analystCausalTerms`; else "Claude's account didn't pass Penchant's checks"
 and nothing of it shows (both suites run `functions/analyst_fixture.json`). Shown, it is labelled a reading of figures
 counted here, not a finding, hands causes to Insights, and lists its queries as Ask's cards from this device's own
-runs. Investigations live in memory (`investigationSessionProvider`), cleared on New question and user change.
+runs. Investigations live in memory (`investigationSessionProvider`), cleared on New question and user change; one
+whose page closed mid-run stops before its next call and shows as stopped.
 `functions/tools/analyst-trial.js` runs five made-up investigations over the Ask trial's journal with an API key.
 
 **Letter** (`lib/letter/`, off by default; Settings' "Letter", `LetterSetting`; `LetterPage`, route `/letter`, in the

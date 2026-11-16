@@ -78,7 +78,7 @@ test('judge withholds a finding the transcript does not bear out', () => {
   assert.equal(analyst.judge(finding('Wine came to 64 entries in October.'), valid).reason, 'ok');
   assert.deepEqual(analyst.judge(finding('Wine rose by 23.'), valid), { step: null, reason: 'checks', why: 'number:23' });
   assert.equal(analyst.judge(finding('Wine.', [2]), valid).why, 'rests_on');
-  assert.equal(analyst.judge(finding('Wine.', [3]), valid).why, 'rests_on');
+  assert.equal(analyst.judge(finding('Wine.', [4]), valid).why, 'rests_on');
   assert.equal(analyst.judge(finding('Wine.', [1, 1]), valid).why, 'rests_on');
   assert.equal(analyst.judge(finding('Work led to more Wine.'), valid).why, 'cause:led to');
 });
@@ -99,7 +99,7 @@ test('the request is Opus with structured output, numbering every statement', ()
   assert.equal(request.output_config.format.schema, analyst.SCHEMA);
   const content = JSON.parse(request.messages[0].content);
   assert.deepEqual(Object.keys(content), ['question', 'today', 'weekday', 'habits', 'statements', 'last_step']);
-  assert.deepEqual(content.statements.map((s) => s.n), [1, 2]);
+  assert.deepEqual(content.statements.map((s) => s.n), [1, 2, 3]);
   assert.deepEqual(content.statements[1].result, { refused: 'forbidden' });
   assert.equal(content.last_step, false);
   assert.match(analyst.SYSTEM, /refused/);

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/journal_db.dart';
+import 'package:tracker/data/trigger_tree.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/letter/letter_checks.dart';
 
@@ -212,8 +213,21 @@ InvestigationStep? parseStep(Object? value) {
   }
 }
 
+/// The labels a cell may hold that no query can make up: every starter-tree
+/// label, "Own words", and own-words stand-ins.
+bool _knownLabel(String cell) =>
+    _treeLabels.contains(cell) || _ownWords.hasMatch(cell);
+
+final Set<String> _treeLabels = <String>{
+  'Own words',
+  for (final String path in triggerPaths()) ...triggerLabels(path)!,
+};
+final RegExp _ownWords = RegExp(r'^own words \d+$');
+
 /// What a finding may use besides its own words: the numerals of every cell
-/// sent, and as phrases the habit names and unit words and every text cell.
+/// sent, and as phrases the habit names, unit words and the cells that are
+/// tag labels. Other text cells are not phrases: a query's own literal could
+/// otherwise carry any prose past the checks.
 LetterContext findingContext(
   List<InvestigationRound> rounds,
   List<({int id, Vice vice})> habits,
@@ -226,7 +240,6 @@ LetterContext findingContext(
       h.vice.units.singular,
     ],
   ];
-  final RegExp letter = RegExp(r'\p{L}', unicode: true);
   for (final InvestigationRound r in rounds) {
     for (final SentResult s in r.sent) {
       if (s is! SentRows) continue;
@@ -234,7 +247,7 @@ LetterContext findingContext(
         for (final String? cell in row) {
           if (cell == null) continue;
           numerals.addAll(numeralsIn(cell));
-          if (letter.hasMatch(cell)) phrases.add(cell);
+          if (_knownLabel(cell)) phrases.add(cell);
         }
       }
     }

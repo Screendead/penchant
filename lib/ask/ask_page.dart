@@ -136,6 +136,10 @@ class _AskPageState extends ConsumerState<AskPage> {
   Object? _failedFrom;
   final Map<(int, int), AskRun> _runs = <(int, int), AskRun>{};
 
+  /// Investigations this page is running; any other still pending was left
+  /// behind by a closed page and has stopped.
+  final Set<int> _investigating = <int>{};
+
   @override
   void initState() {
     super.initState();
@@ -250,6 +254,7 @@ class _AskPageState extends ConsumerState<AskPage> {
     );
     if (_controller.text.trim() == q) _controller.clear();
     final int id = session.start(q);
+    _investigating.add(id);
     final JournalDb db;
     try {
       db = JournalDb.build(
@@ -284,6 +289,7 @@ class _AskPageState extends ConsumerState<AskPage> {
       }
     } finally {
       db.close();
+      _investigating.remove(id);
     }
   }
 
@@ -358,7 +364,15 @@ class _AskPageState extends ConsumerState<AskPage> {
         for (final Investigation inv in investigations.reversed) ...<Widget>[
           const SizedBox(height: DialSpace.l),
           InvestigationView(
-            investigation: inv,
+            investigation:
+                inv.outcome == null && !_investigating.contains(inv.id)
+                ? Investigation(
+                    id: inv.id,
+                    question: inv.question,
+                    rounds: inv.rounds,
+                    outcome: InvestigationFailed('stopped', inv.rounds),
+                  )
+                : inv,
             marksByName: marksByName,
             onOpenDay: _openDay,
           ),
