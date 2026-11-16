@@ -297,16 +297,44 @@ a reply with a numeral not sent, an unknown placeholder or a number word, and th
 calls again; nothing is stored. Cap 10 a day per uid per instance; logs the reason code only.
 `functions/tools/weekly-words-trial.js` runs made-up weeks with an API key.
 
-**Ask your journal** (`lib/ask/`, off by default; Settings' "Ask your journal", `AskJournalSetting`; `AskPage`, route
-`/ask`, in the Penchant menu while the switch is on). The callable `askJournal` gets the typed question (1 to 300),
-today's date and weekday, and each habit's name, unit and archived flag (oldest first, locked or blank names left
-out); never an entry, note or tag. `functions/ask_journal.js` (`validInput`, then Claude Haiku 5.5, structured output
-over `functions/ask_query_schema.json`) answers `{query, reason}`: a `query`, `needs_insights` (a why question) or
-`cannot_answer`. The model never sees the data: the device checks the query (`lib/ask/ask_query.dart`, against the
-same schema by test) and runs it over the entries it reads itself (`ask_runner.dart`, Insights' range), showing a
-sentence, the query in words (`describe_query.dart`) and a small chart. Questions live in memory for the session,
-cleared on user change; nothing is stored. Cap 60 a day per uid per instance; logs the reason code only.
-`functions/tools/ask-journal-trial.js` runs made-up questions with an API key.
+**Ask your journal** (`lib/ask/`, off by default; Settings' "Ask your journal", `AskJournalSetting`, whose disclosure
+says what is sent; `AskPage`, route `/ask`, in the Penchant menu while the switch is on; guests and unverified emails
+refused as above; emulator builds have no service). The model writes read-only SQL; the device runs it over a private
+copy of the journal; no row or result leaves the device (Jack, 2026-11-16: "just has to be maximally secure").
+`CallableAskJournal.request` is the only payload, and has no parameter for anything else: `question` (1 to 300),
+`today`, `weekday`, `habits` (`id`, `name`, `unit`, `unit_one`, `archived`; `askHabits`' order, ids from
+`numberedHabits`, the same the tables use) and `history`, this session's last 5 answered questions with the server's
+own answer for each (its SQL, never what it found). `functions/ask_journal.js` (`validInput`, then Claude Sonnet 5.5
+by default or Haiku 5.5, each at its fastest accepted thinking and effort, structured output over
+`functions/ask_query_schema.json`, prior turns as earlier user and assistant messages; 40 s request, 60 s handler,
+65 s on the device) answers `{kind: answer | needs_insights | cannot_answer, reason, cards}`, 1 to 3 cards of
+`{title, explain, sql, chart: {type, x, y, series, x_kind}}`; `validAnswer` there and `parseAskAnswer`
+(`lib/ask/ask_answer.dart`, the same limits, a test compares) check it whole before anything runs. The database
+(`lib/ask/journal_db.dart`) is SQLite at `:memory:` with temp storage in memory, built when the page has its one read
+of the journal (Insights' all-activities range read, `allDayNotesProvider`'s one read of the day notes on `ownerID`
+alone, the vice list) and closed on leaving the page or a user change: `habits`, `entries` (local text `at`, `day`,
+`hour`, `weekday`, `week`, `month`, `year`; `amount` is `measure`; a locked entry's sealed columns null), `entry_tags`,
+`day_notes`, `day_note_tags` and `days` (every day from the first entry to today), indexed. SQLite is the system
+library (`/usr/lib/libsqlite3.dylib`; Linux CI's `libsqlite3.so.0`) bound by `dart:ffi` in `lib/ask/sqlite_ffi.dart`,
+no package or build hook: the `sqlite3` package's own binaries omit the authorizer and progress handler. `run` keeps
+model SQL in layers, each tested in `test/journal_db_test.dart`: at most 4000 units, starting SELECT or WITH; one
+statement (`sqlite3_prepare_v3` must leave only white space) that SQLite reports read-only and not EXPLAIN, with
+virtual tables refused at prepare (`SQLITE_PREPARE_NO_VTAB`: no `pragma_*`, `json_each`, `dbstat`); an authorizer
+allowing only SELECT, recursive CTEs, reads of the listed columns in `main` (a table or CTE read with no column, as
+`count(*)` does, may be anything but `sqlite_*`) and the functions in `askFunctions`; limits (no attached database,
+1 MB values, short SQL, expression depth 100, 20 compound parts, short LIKE patterns, no bound variables), defensive
+mode, no trusted schema, triggers or views, extension loading off, `query_only`; and a progress handler stopping a
+statement past 250 ms, with 500 rows kept and 256 KB of results at most. It runs on the UI isolate: ordinary queries
+take milliseconds, the worst a 250 ms stop per card. A refused or failed card shows "Penchant couldn't run that"
+beside the others; every card shows its title and sentence as plain text, "Show query" and "Counted on this device".
+`AskChart` (`lib/ask/ask_chart.dart`) treats the chart spec as untrusted: `planAskChart` checks columns, types and
+`x_kind` against the result and falls back to a table; number, bar, multi-series line, table; months "Dec 2025" at
+the ends and each year change, hours 00 to 23, weekday names; a tap, drag, arrow key or screen reader's adjust moves
+a read-out; on a day, week or month "Open … in Today" hands the day to Today through `pendingShowDayProvider`, and a
+habit-named series takes its colour. Nothing about question, SQL or answer is logged or reported, on either side.
+`functions/tools/ask-journal-trial.js` builds the same tables with `node:sqlite` over made-up data, sends 40
+questions (Jack's five among them, follow-ups, why-questions, nonsense, injections) to the chosen model with an API
+key, runs each card's SQL and prints times, rows, charts and pass or fail.
 
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
