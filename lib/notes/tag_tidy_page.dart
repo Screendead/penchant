@@ -84,6 +84,7 @@ class TagTidyPage extends ConsumerStatefulWidget {
   static const String suggestions = 'Suggestions';
   static const String accept = 'Accept';
   static const String skip = 'Skip';
+  static const String accepted = 'Accepted';
   static String uses(OwnWords? w) {
     if (w == null) return '';
     final int n = w.entries + w.dayNotes;
@@ -479,7 +480,7 @@ class _Suggestions extends StatelessWidget {
                       ),
                     const SizedBox(height: DialSpace.xxs),
                     Text(
-                      '→ ${TagTidyPage.targetLabel(suggestions[i])}',
+                      'into ${TagTidyPage.targetLabel(suggestions[i])}',
                       style: theme.textTheme.titleMedium,
                     ),
                   ],
@@ -497,21 +498,14 @@ class _Suggestions extends StatelessWidget {
                   children: <Widget>[
                     TextButton(
                       onPressed: () => onToggle(i, false),
-                      child: Text(
-                        TagTidyPage.skip,
-                        style: TextStyle(
-                          fontWeight: accepted.contains(i)
-                              ? FontWeight.w400
-                              : FontWeight.w700,
-                        ),
-                      ),
+                      child: const Text(TagTidyPage.skip),
                     ),
                     Semantics(
                       selected: accepted.contains(i),
                       child: accepted.contains(i)
                           ? FilledButton(
                               onPressed: () => onToggle(i, false),
-                              child: const Text(TagTidyPage.accept),
+                              child: const Text(TagTidyPage.accepted),
                             )
                           : OutlinedButton(
                               onPressed: () => onToggle(i, true),

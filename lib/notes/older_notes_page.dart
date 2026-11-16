@@ -279,16 +279,6 @@ class _OlderNotesPageState extends ConsumerState<OlderNotesPage> {
     return CardPage(
       title: OlderNotesPage.title,
       children: <Widget>[
-        if (state.reading)
-          _Reading(onStop: ref.read(olderNotesProvider.notifier).stop)
-        else
-          _Start(
-            notes: notes,
-            left: progress.leftToday(DateTime.now()),
-            problem: state.problem,
-            reviewing: shown.isNotEmpty,
-            onRead: _read,
-          ),
         if (shown.isNotEmpty)
           ClaudeWorkingResult(
             tag: OlderNotesPage.resultTag,
@@ -331,6 +321,16 @@ class _OlderNotesPageState extends ConsumerState<OlderNotesPage> {
                   ),
               ],
             ),
+          ),
+        if (state.reading)
+          _Reading(onStop: ref.read(olderNotesProvider.notifier).stop)
+        else
+          _Start(
+            notes: notes,
+            left: progress.leftToday(DateTime.now()),
+            problem: state.problem,
+            reviewing: shown.isNotEmpty,
+            onRead: _read,
           ),
       ],
     );
@@ -514,7 +514,8 @@ class _NoteReview extends StatelessWidget {
                 onPressed: onDrop,
                 child: const Text(OlderNotesPage.drop),
               ),
-              TextButton(
+              const SizedBox(width: DialSpace.xs),
+              FilledButton(
                 onPressed: onKeep,
                 child: const Text(OlderNotesPage.keep),
               ),
