@@ -6,6 +6,7 @@ import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/writes/tracker_writes.dart';
@@ -343,6 +344,37 @@ class FakeTrackerWrites implements TrackerWrites {
   @override
   Future<Urge?> readUrge(String urgeID, {required String ownerID}) async =>
       urges[urgeID];
+
+  @override
+  SentWrite recordCheckIn(
+    String checkInID, {
+    required String ownerID,
+    required DateTime createdAt,
+    required int strength,
+    required DateTime promptedAt,
+    required CheckInVia via,
+  }) {
+    _requireKey();
+    return _write(
+      Write('recordCheckIn', checkInID, {
+        'createdAt': createdAt,
+        ...CheckInContent(
+          strength: strength,
+          promptedAt: promptedAt,
+          via: via,
+        ).toMap(),
+      }),
+      collection: checkInsCollection,
+      op: WriteOp.create,
+    );
+  }
+
+  @override
+  SentWrite deleteCheckIn(String checkInID) => _write(
+    Write('deleteCheckIn', checkInID),
+    collection: checkInsCollection,
+    op: WriteOp.delete,
+  );
 
   @override
   Future<void> waitForPendingWrites() => pendingWrites ?? Future<void>.value();

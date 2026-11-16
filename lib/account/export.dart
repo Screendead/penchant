@@ -10,6 +10,7 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/urge.dart';
 import 'package:tracker/notes/follow_up.dart';
 
@@ -51,6 +52,12 @@ List<ExportFile> exportFiles(AccountData data, DateTime exportedAt) {
         name: 'penchant-urges-$stamp.csv',
         mimeType: 'text/csv',
         contents: exportUrgesCsv(data),
+      ),
+    if (data.checkIns.isNotEmpty)
+      ExportFile(
+        name: 'penchant-check-ins-$stamp.csv',
+        mimeType: 'text/csv',
+        contents: exportCheckInsCsv(data),
       ),
   ];
 }
@@ -208,6 +215,37 @@ String exportUrgesCsv(AccountData data) {
   return csv.toString();
 }
 
+const List<String> checkInsCsvHeader = <String>[
+  'time',
+  'check_in_id',
+  'strength',
+  'prompted_at',
+  'answered_via',
+  'time_zone',
+];
+
+// One row per answered check-in, oldest first. One that would not open keeps
+// its time and leaves the rest blank; the JSON keeps its envelope.
+String exportCheckInsCsv(AccountData data) {
+  final List<StoredDocument> checkIns = List<StoredDocument>.of(data.checkIns)
+    ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
+  final StringBuffer csv = StringBuffer()..write(_csvRow(checkInsCsvHeader));
+  for (final StoredDocument checkIn in checkIns) {
+    final CheckInContent content = CheckInContent.read(checkIn.data);
+    csv.write(
+      _csvRow(<Object?>[
+        _plain(checkIn.data['createdAt']),
+        checkIn.id,
+        content.strength,
+        _plain(content.promptedAt),
+        content.via?.name,
+        content.zone,
+      ]),
+    );
+  }
+  return csv.toString();
+}
+
 // Every stored field, unknown ones included, so nothing logged is lost.
 String exportJson(AccountData data, DateTime exportedAt) {
   List<Map<String, Object?>> documents(List<StoredDocument> docs) =>
@@ -226,6 +264,7 @@ String exportJson(AccountData data, DateTime exportedAt) {
     'activities': documents(data.activities),
     'dayNotes': documents(data.dayNotes),
     'urges': documents(data.urges),
+    'checkIns': documents(data.checkIns),
   });
 }
 

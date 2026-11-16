@@ -278,6 +278,14 @@ class LetterRunner extends Notifier<LetterRun> {
     if (generation == _generation) state = next;
   }
 
+  /// Gives up on the letter being written: when it arrives it is neither
+  /// saved nor shown.
+  void abandon() {
+    if (state is! LetterSending) return;
+    _generation++;
+    state = const LetterIdle();
+  }
+
   /// Back to idle once the page has shown the outcome.
   void clear() {
     if (state is! LetterSending) state = const LetterIdle();

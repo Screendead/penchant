@@ -390,6 +390,28 @@ Insights; starting an experiment from it is not built. Cap 3 a day per uid per i
 withheld reasons up to any colon. `functions/tools/letter-review.js` writes letters for 5 made-up journals with an API
 key, printing each letter, what was withheld and why, and the seconds taken.
 
+**Claude-working screen** (`lib/claude/`). Every Claude call in flight is shown through one component. The call site
+makes a `ClaudeWork` (status, optional detail, the person's own words sent as `subject`, `steps` for the analyst,
+`showElapsed` for long calls), keeps it current with `say` and ends it with `finish(answered|failed|stopped)`. It calls
+`showClaudeWorking(context, work, resultTag:, onStop:)` without awaiting it, from the tapped widget's context: after
+`ClaudeWorking.delay` (600 ms) still running, a `ClaudeWorkingRoute` grows out of that widget's rect; once shown it
+stays `minShown` (1.4 s); answered, it draws together into a plate whose `Hero` flies into the result wrapped in
+`ClaudeWorkingResult` with the same tag (unique per page, e.g. `('ask', id)`), else it shrinks back to the widget. Back
+hides it with the call still running; Stop calls `onStop`, which must really drop the result (`AskSession.drop`, the
+investigation's stopped ids, `LetterRunner.abandon`). Status text names only what is known ("Sent your question",
+"Ran 3 queries on this phone"); no progress figures. `ClaudeWorkingCard` is the same look in place, for a pending
+answer on the page and for weekly review in words (it starts on open, so nothing goes fullscreen); the note reader
+keeps its in-place read (an ink underline sweeping the note, chips arcing out of their quotes). Three looks share
+everything else (`ClaudeWorkingLook`, `claudeWorkingLookProvider`, `lib/claude/claude_working_painters.dart`): `dial`
+(the last 28 days as rings of a 24-hour face, a hand ringing each entry as it passes), `ink` (lines tracing out from
+the person's words across their entries) and `lens` (a loupe over a 28-day field of hours), the default (Jack, 2026-11-16: "lens is coolest, use that"). They draw the device's own
+entries (`claudeWorkingMarksProvider`, a bounded 28-day range query; nothing of it is sent). Painters repaint from a
+`WorkingClock` ticker inside a `RepaintBoundary`, with no widget rebuilds per frame; under reduce motion the clock
+stands still, the route fades in 150 ms and nothing schedules frames, so tests can `pumpAndSettle`. With motion on, a
+pending card loops: pump fixed durations. The gallery (`ClaudeWorkingGallery`, route `/claude-working`, a Settings row)
+exists only in emulator builds and plays each look over fake calls; `integration_test/claude_working_gallery_test.dart`
+(through `tools/e2e-screenshots.sh`, not in `all_test.dart`) takes its stills.
+
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
 then verification email), password reset, re-authentication, profile and email changes, sign-out, and account-wide
@@ -582,6 +604,25 @@ lists the day's urges (`UrgeRow`), each opening its sheet (strength, "What happe
 averages, Insights, Ask or the letter. Neutral words: no praise, streaks or counts of urges passed. The export adds
 `penchant-urges-<date>.csv` and an `urges` array.
 
+**Random check-ins** (round 24 "A few random check-ins a day"). Off by default, per device: Settings > Reminder >
+Random check-ins, with From and Until (default 9:00 to 21:00, at least 3 hours, same day); turning on asks
+notification permission. `CheckIns` (`lib/reminder/check_ins.dart`) draws `checkInsPerDay` (3) moments a day with
+`Random.secure()`, one uniform to the second in each third of the window (`drawCheckInTimes`), for
+`checkInDaysAhead` (5) days, and keeps them in shared_preferences with the last day drawn: launch (via
+`dailyNudgeStartupProvider`) and each answer only add days, never redraw a waiting prompt (redrawing on each open
+would tie prompt times to app use); a new window redraws all. Each prompt is a quiet notification "Any urge right
+now?" (`scheduleCheckIns`, ids 5000 to 5999 rolling, category `check-in`, payload `check-in:<answer id>:<prompt
+ms>`, never a habit) with foreground actions 0 to 5 (as urges', for the journal key); a tap on its body opens
+`CheckInSheet` (`lib/widgets/check_in_sheet.dart`, 0 to 5, one tap answers, Not now, Turn off check-ins). The press
+waits in `pendingCheckInProvider` (a repeated press of one prompt is ignored) until Today has sign-in and a key, then
+`answerCheckIn` (`lib/writes/answer_check_in.dart`) writes it with Undo (delete) and withdraws the notification.
+Collection `checkIns`, born sealed, naming no habit: plaintext `ownerID` and `createdAt` (device clock when the press
+came), `sealed` holding `CheckInContent` (`lib/data/check_in.dart`): `strength` 0 to 5, `promptedAt`, `zone`,
+`answeredVia`. Rules: owner only, that field set on create, no update (Undo deletes). Nothing queries it yet, so no
+index; nothing reads it but the export (`penchant-check-ins-<date>.csv`, a `checkIns` array), account deletion and
+the guest sweep. Turn-off cancels every prompt, shown or waiting; sign-out and deletion `forget()` the setting and
+the drawn prompts. Insights does not compare them with entries' urges yet.
+
 **A habit's strength** (round 24, "Strength and standard units"). Optional `strengthUnit` (`ukUnit`, `grams`,
 `standardDrink` or `mg`), `servingMl` (above 0, at most 5,000), `abv` (above 0, at most 100), `drinkGrams` (above 0, at
 most 100) and `caffeineMg` (above 0, at most 2,000), read together as `Vice.strength` (`HabitStrength`,
@@ -666,6 +707,27 @@ restarts them). The Swift-written
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
 `startApp` (`smoke_test.dart`) seal with the real key. `storedContent` and `storedViceID` open sealed
 documents with either key.
+
+**Backup** (round 24 "A sealed backup you hold", Jack, 2026-11-16). Settings > Account > Backup (`BackupPage`,
+`lib/backup/backup_page.dart`, route `/settings/backup`) saves one file through the system's save panel and restores
+one into an empty account; Today's `BackupOfferCard` offers it monthly (once the recovery key is saved and a month old,
+no backup or dismissal on this device in 30 days, dates per uid in shared_preferences), never a notification. Format:
+`docs/backup-format.md` (`lib/backup/backup_file.dart`): magic, version, a plaintext header (creation time, source
+uid, and `keys/{uid}`'s `keyID` and 61-byte `wrapped`), one `Sealer.sealFile` envelope under the journal key with
+everything before it as associated data, a SHA-256 trailer; the body holds every document of `Account.ownedCollections`
+as the server holds it, envelopes unopened. `makeBackup` (`lib/backup/backup_service.dart`) reads through
+`Account.fetchStored` (pending writes first, server only) and opens the file again with the device's recovery key
+before the save panel sees it. `backupKeyProvider` (from `keyServiceOverrides`) is null until a key is checked against
+its record. Restore (`lib/backup/restore.dart`) never stores or adopts the backup's key: `planRestore` opens each
+envelope with it at the original path and re-seals the fields whole under the signed-in account's key at the new path
+(deterministic ids, `viceID` remapped, `ownerID` rewritten, `createdAt` kept, `updatedAt` the server's), legacy
+plaintext sealed as the migrator would; `runRestore` refuses (`AccountNotEmpty`) unless every owned document is one this
+backup writes, then writes vices first and activities and urges 20 a batch (the rules' 20 access calls per batch),
+skipping what is there, so a cut-short run finishes on the next. A collection restore does not know refuses the file;
+`test/restore_test.dart` fails when `ownedCollections` gains one. Guests are refused. The native panels are
+`BackupFiles` in `ios/Runner/AppDelegate.swift` (export from a tmp folder removed on close; open in place) and
+`macos/Runner/MainFlutterWindow.swift` (`files.user-selected.read-write`). `integration_test/backup_test.dart` saves and
+restores on the emulators.
 
 **Days.** An entry counts on the local day, in the viewer's current zone, of its `createdAt` instant. Day windows and
 graph buckets are local midnights from `lib/data/day.dart` (never `Duration(days:)`, which drifts an hour across DST).

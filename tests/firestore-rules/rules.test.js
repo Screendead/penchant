@@ -1701,6 +1701,106 @@ describe('urges', () => {
   });
 });
 
+// lib/data/check_in.dart: a random check-in's answer, born sealed, naming no
+// habit. Created and deleted, never changed.
+describe('checkIns', () => {
+  const at = new Date('2026-11-15T14:05:00Z');
+  const newCheckIn = (overrides = {}) => ({
+    sealed: envelope,
+    ownerID: ALICE,
+    createdAt: at,
+    ...overrides,
+  });
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'checkIns/aliceCheckIn'), newCheckIn());
+      await setDoc(doc(db, 'checkIns/bobCheckIn'), newCheckIn({ ownerID: BOB }));
+    });
+  });
+
+  describe('create', () => {
+    it('allows the owner a sealed check-in', async () => {
+      await assertSucceeds(setDoc(doc(asAlice(), 'checkIns/new'), newCheckIn()));
+      await assertSucceeds(addDoc(collection(asAlice(), 'checkIns'), newCheckIn()));
+    });
+
+    it('denies a check-in owned by someone else, or written signed out', async () => {
+      await assertFails(setDoc(doc(asAlice(), 'checkIns/new'), newCheckIn({ ownerID: BOB })));
+      await assertFails(setDoc(doc(asGuest(), 'checkIns/new'), newCheckIn()));
+    });
+
+    it('denies a check-in without its envelope, or with content beside it', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, 'checkIns/new'), without(newCheckIn(), 'sealed')));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ strength: 3 })));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ promptedAt: at })));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), { ...without(newCheckIn(), 'sealed'), strength: 0 }));
+    });
+
+    it('denies a habit, a missing, extra or mistyped field', async () => {
+      const db = asAlice();
+      for (const key of ['ownerID', 'createdAt']) {
+        await assertFails(setDoc(doc(db, 'checkIns/new'), without(newCheckIn(), key)));
+      }
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ viceID: 'aliceVice' })));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ updatedAt: serverTimestamp() })));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ createdAt: '2026-11-15' })));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ sealed: 'not bytes' })));
+    });
+
+    it('bounds the envelope as the other collections do', async () => {
+      const db = asAlice();
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ sealed: bytesOf(29) })));
+      await assertFails(setDoc(doc(db, 'checkIns/new'), newCheckIn({ sealed: bytesOf(4126) })));
+      await assertSucceeds(setDoc(doc(db, 'checkIns/new'), newCheckIn({ sealed: bytesOf(4125) })));
+    });
+  });
+
+  describe('read', () => {
+    it('lets the owner read their check-ins and nobody else', async () => {
+      await assertSucceeds(getDoc(doc(asAlice(), 'checkIns/aliceCheckIn')));
+      await assertSucceeds(getDocs(query(collection(asAlice(), 'checkIns'), where('ownerID', '==', ALICE))));
+      await assertFails(getDoc(doc(asAlice(), 'checkIns/bobCheckIn')));
+      await assertFails(getDoc(doc(asGuest(), 'checkIns/aliceCheckIn')));
+      await assertFails(getDoc(doc(asAlice(), 'checkIns/missing')));
+      await assertFails(getDocs(collection(asAlice(), 'checkIns')));
+      await assertFails(getDocs(query(collection(asAlice(), 'checkIns'), where('ownerID', '==', BOB))));
+    });
+  });
+
+  describe('update', () => {
+    it('denies every change, the envelope included', async () => {
+      const db = asAlice();
+      await assertFails(updateDoc(doc(db, 'checkIns/aliceCheckIn'), { sealed: bytesOf(29 + 256, 2) }));
+      await assertFails(updateDoc(doc(db, 'checkIns/aliceCheckIn'), { createdAt: new Date() }));
+      await assertFails(updateDoc(doc(db, 'checkIns/aliceCheckIn'), { ownerID: BOB }));
+      await assertFails(setDoc(doc(db, 'checkIns/aliceCheckIn'), newCheckIn()));
+    });
+  });
+
+  describe('delete', () => {
+    it('lets the owner delete their check-in, and nobody else', async () => {
+      await assertFails(deleteDoc(doc(asBob(), 'checkIns/aliceCheckIn')));
+      await assertFails(deleteDoc(doc(asGuest(), 'checkIns/aliceCheckIn')));
+      await assertFails(deleteDoc(doc(asAlice(), 'checkIns/bobCheckIn')));
+      await assertSucceeds(deleteDoc(doc(asAlice(), 'checkIns/aliceCheckIn')));
+    });
+
+    it('allows the account deletion sweep over the owner\'s check-ins', async () => {
+      const db = asAlice();
+      const snapshot = await assertSucceeds(
+        getDocs(query(collection(db, 'checkIns'), where('ownerID', '==', ALICE), limit(500))),
+      );
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await assertSucceeds(batch.commit());
+      assert.equal((await getDocs(query(collection(db, 'checkIns'), where('ownerID', '==', ALICE)))).size, 0);
+    });
+  });
+});
+
 // The delta read's cursor: an optional server time on every create and update
 // of an entry or a day note, never a client-chosen one.
 describe('updatedAt', () => {

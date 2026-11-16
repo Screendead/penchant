@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:tracker/backup/backup_service.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/crypto/key_service.dart';
 import 'package:tracker/crypto/key_store.dart';
@@ -156,6 +157,22 @@ final List<Override> keyServiceOverrides = <Override>[
     },
   ),
   recoveryKeyActionsProvider.overrideWith(_ServiceKeyActions.new),
+  // Only a key the server's record has confirmed: the file carries that
+  // record's wrapped copy, which must open to this key.
+  backupKeyProvider.overrideWith((ref) {
+    final String? uid = ref.watch(userProvider.select((v) => v.value?.uid));
+    return switch (_enabledState(ref)) {
+      KeyReady(:final StoredKey stored, record: final KeyRecord record)
+          when uid != null =>
+        BackupKey(
+          uid: uid,
+          journalKey: stored.journalKey,
+          record: record,
+          recoveryKey: stored.recoveryKey,
+        ),
+      _ => null,
+    };
+  }),
   journalNeedsRecoveryKeyProvider.overrideWith(
     (ref) => _enabledState(ref) is KeyNeedsRecovery,
   ),
