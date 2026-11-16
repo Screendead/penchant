@@ -24,6 +24,12 @@ final accountProvider = Provider<Account>((ref) {
       } catch (_) {
         // Up to a week of them may still arrive; none names the habit.
       }
+      try {
+        await ref.read(nudgeSchedulerProvider).cancelUrgeChecks();
+      } catch (_) {
+        // A check-in may still arrive; it names nothing, and its answer finds
+        // no urge to write to.
+      }
       await ref.read(heavyDayNudgeProvider.notifier).forget();
       // The delta read's cursors describe the cache just cleared.
       await PrefsJournalCursorStore.clearAll();

@@ -89,8 +89,12 @@ class TallyRow extends StatefulWidget {
   // What the habit's line is read against: the day's total for a day line,
   // the last 7 days' for a week line. Null shows no line, as while it loads.
   final num? lineTotal;
-  // The tile's long-press menu; none, no menu.
+  // The tile's long-press menu (a secondary click on the Mac); none, no
+  // menu. Each available one is also a screen reader's custom action.
   final List<TileAction> actions;
+
+  static const String amountAction = 'Log an amount';
+  static const String urgeAction = 'Urge';
 
   static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.units.label(total)}';
@@ -213,6 +217,7 @@ class _TallyRowState extends State<TallyRow>
 
     return _TileSemantics(
       onLongPress: widget.actions.isEmpty ? null : _openMenu,
+      actions: widget.actions,
       child: AnimatedBuilder(
         animation: _flash,
         builder: (BuildContext context, Widget? child) => DecoratedBox(
@@ -494,11 +499,17 @@ class LineBarPainter extends CustomPainter {
 // The tile is one screen-reader stop, its name and total with the + as its
 // tap.
 class _TileSemantics extends StatelessWidget {
-  const _TileSemantics({required this.child, this.onLongPress});
+  const _TileSemantics({
+    required this.child,
+    this.onLongPress,
+    this.actions = const <TileAction>[],
+  });
 
   final Widget child;
-  // Opens the tile's menu, by touch or a screen reader's long press.
+  // Opens the tile's menu, by touch, a secondary click or a screen reader's
+  // long press.
   final VoidCallback? onLongPress;
+  final List<TileAction> actions;
 
   @override
   Widget build(BuildContext context) => _TileBoundary(
@@ -506,7 +517,16 @@ class _TileSemantics extends StatelessWidget {
         ? child
         : Semantics(
             onLongPress: onLongPress,
-            child: GestureDetector(onLongPress: onLongPress, child: child),
+            customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
+              for (final TileAction a in actions)
+                if (a.unavailable == null)
+                  CustomSemanticsAction(label: a.label): a.onSelected,
+            },
+            child: GestureDetector(
+              onLongPress: onLongPress,
+              onSecondaryTap: onLongPress,
+              child: child,
+            ),
           ),
   );
 }

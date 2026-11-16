@@ -235,6 +235,6 @@ describe('runCleanup', () => {
 
 describe('OWNED_COLLECTIONS', () => {
   it('names every collection of owned documents, day notes included', () => {
-    assert.deepEqual([...OWNED_COLLECTIONS].sort(), ['activities', 'dayNotes', 'vices']);
+    assert.deepEqual([...OWNED_COLLECTIONS].sort(), ['activities', 'dayNotes', 'urges', 'vices']);
   });
 });

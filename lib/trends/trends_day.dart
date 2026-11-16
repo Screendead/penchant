@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_icons.dart';
@@ -14,11 +15,13 @@ import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/providers/habit_summary_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
+import 'package:tracker/providers/urge_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/widgets/circle_button.dart';
 import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/tally_row.dart';
+import 'package:tracker/widgets/urge_sheet.dart';
 
 // One day opened from the Trends chart: its dial and tallies, read only, with
 // a way back to the chart. Archived habits count here, since it is history.
@@ -45,6 +48,8 @@ class TrendsDay extends ConsumerWidget {
   final FocusNode? backFocus;
 
   static const String backLabel = 'Back to Trends';
+
+  static const String urgesHeading = 'Urges';
 
   static String title(DateTime day, DateTime today) =>
       daysBetween(day, today) == 0
@@ -73,6 +78,14 @@ class TrendsDay extends ConsumerWidget {
       for (final Vice v in habits) v.id: v,
     };
     final List<ViceActivity>? activities = value.hasError ? null : value.value;
+    final List<Urge> urges = <Urge>[
+      for (final Urge u
+          in ref
+                  .watch(urgesProvider((start: day, end: addDays(day, 1))))
+                  .value ??
+              const <Urge>[])
+        if (byID.containsKey(u.viceID)) u,
+    ]..sort((Urge a, Urge b) => a.at.compareTo(b.at));
     final List<DialEntry>? entries = activities == null
         ? null
         : <DialEntry>[
@@ -204,9 +217,96 @@ class TrendsDay extends ConsumerWidget {
                   ),
               ],
             ),
+            if (urges.isNotEmpty) ...<Widget>[
+              const SizedBox(height: DialSpace.m),
+              Semantics(
+                header: true,
+                child: Text(
+                  urgesHeading,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colors.muted,
+                  ),
+                ),
+              ),
+              const SizedBox(height: DialSpace.xs),
+              for (final Urge u in urges)
+                UrgeRow(
+                  urge: u,
+                  vice: byID[u.viceID]!,
+                  mark: markOf(byID[u.viceID]!),
+                ),
+            ],
           ],
         );
       },
+    );
+  }
+}
+
+// One urge of the day, opening its sheet: a hollow ring in the habit's
+// colour (an entry is a filled bead), the time, the habit, the strength and
+// what happened.
+class UrgeRow extends StatelessWidget {
+  const UrgeRow({
+    super.key,
+    required this.urge,
+    required this.vice,
+    required this.mark,
+  });
+
+  final Urge urge;
+  final Vice vice;
+  final HabitMark mark;
+
+  static String describe(Urge urge, Vice vice, {required bool h24}) {
+    final UrgeContent c = urge.content;
+    return <String>[
+      formatTime(urge.at, alwaysUse24HourFormat: h24),
+      vice.name,
+      if (urge.locked)
+        'locked'
+      else if (c.strength case final int s)
+        'strength $s of 5',
+      if (c.outcome case final UrgeOutcome o) outcomeWords(o),
+    ].join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ThemeData theme = Theme.of(context);
+    final bool h24 = MediaQuery.alwaysUse24HourFormatOf(context);
+    return Semantics(
+      button: true,
+      label: 'Urge, ${describe(urge, vice, h24: h24)}',
+      excludeSemantics: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(DialRadius.tile),
+        onTap: () => UrgeSheet.show(context, vice, urge: urge),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: DialSize.minTapTarget),
+          child: Row(
+            children: <Widget>[
+              const SizedBox(width: 4),
+              DecoratedBox(
+                decoration: ShapeDecoration(
+                  shape: CircleBorder(
+                    side: BorderSide(color: colors.habitInk(mark), width: 1.5),
+                  ),
+                ),
+                child: const SizedBox.square(dimension: 9),
+              ),
+              const SizedBox(width: DialSpace.s),
+              Expanded(
+                child: Text(
+                  describe(urge, vice, h24: h24),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/notes/follow_up.dart';
 
@@ -137,7 +138,7 @@ class TrackerWrites {
     return write(Blob(envelope));
   }
 
-  /// Whether [addVice], [recordActivity] and [setDayNote] can write: the journal key has
+  /// Whether [addVice], [recordActivity], [setDayNote] and [recordUrge] can write: the journal key has
   /// loaded. Callers check first and tell the user rather than lose input.
   bool get canCreate => _sealer != null;
 
@@ -501,6 +502,102 @@ class TrackerWrites {
         op: WriteOp.delete,
       ),
     );
+  }
+
+  CollectionReference<Map<String, dynamic>> get _urges =>
+      _firestore.collection(urgesCollection);
+
+  // On the device, so Undo and the check-in can name the urge before the
+  // server answers.
+  String newUrgeID() => _urges.doc().id;
+
+  // Born sealed, like a day note. `createdAt` is the device clock, as an
+  // entry's is: a pending server timestamp matches no range query, so an
+  // urge noted offline would vanish from Trends.
+  SentWrite recordUrge(
+    String urgeID, {
+    required String ownerID,
+    required String viceID,
+    required DateTime createdAt,
+    required int strength,
+  }) {
+    final FieldSealer sealer = _createSealer();
+    final DocumentReference<Map<String, dynamic>> urge = _urges.doc(urgeID);
+    return _issued(
+      SentWrite(
+        _sealing(
+          sealer,
+          urge,
+          UrgeContent(strength: strength, zone: _zone?.call()).toMap(),
+          (Blob envelope) => urge.set({
+            sealedField: envelope,
+            'ownerID': ownerID,
+            'viceID': viceID,
+            'createdAt': createdAt,
+          }),
+        ),
+        collection: _urges.id,
+        id: urgeID,
+        op: WriteOp.create,
+      ),
+    );
+  }
+
+  // The whole envelope again: the rules let nothing else change.
+  SentWrite updateUrge(String urgeID, UrgeContent content) {
+    final FieldSealer sealer = _createSealer();
+    final DocumentReference<Map<String, dynamic>> urge = _urges.doc(urgeID);
+    return _issued(
+      SentWrite(
+        _sealing(
+          sealer,
+          urge,
+          content.toMap(),
+          (Blob envelope) => urge.update({sealedField: envelope}),
+        ),
+        collection: _urges.id,
+        id: urgeID,
+        op: WriteOp.update,
+      ),
+    );
+  }
+
+  SentWrite deleteUrge(String urgeID) {
+    return _issued(
+      SentWrite(
+        _urges.doc(urgeID).delete(),
+        collection: _urges.id,
+        id: urgeID,
+        op: WriteOp.delete,
+      ),
+    );
+  }
+
+  // One urge, from the server or else this device's cache: the check-in's
+  // answer reseals the whole content, so it needs the strength. Null when
+  // the urge is gone, will not open, or nothing answers.
+  Future<Urge?> readUrge(String urgeID, {required String ownerID}) async {
+    final FieldSealer? sealer = _sealer;
+    if (sealer == null) {
+      return null;
+    }
+    final DocumentReference<Map<String, dynamic>> doc = _urges.doc(urgeID);
+    DocumentSnapshot<Map<String, dynamic>>? snapshot;
+    try {
+      snapshot = await doc.get();
+    } on FirebaseException {
+      try {
+        snapshot = await doc.get(const GetOptions(source: Source.cache));
+      } on FirebaseException {
+        return null;
+      }
+    }
+    final Map<String, dynamic>? data = snapshot.data();
+    if (data == null || data['ownerID'] != ownerID) {
+      return null;
+    }
+    final Urge urge = await Urge.open(snapshot, data, SealedOpener(sealer));
+    return urge.locked ? null : urge;
   }
 
   // [stamp] adds [updatedNow] to the write but not to [SentWrite.fields]: an

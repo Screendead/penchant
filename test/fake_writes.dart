@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
@@ -5,6 +6,7 @@ import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/unit.dart';
+import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 import 'package:tracker/notes/follow_up.dart';
@@ -275,6 +277,72 @@ class FakeTrackerWrites implements TrackerWrites {
         collection: dayNotesCollection,
         op: WriteOp.delete,
       );
+
+  // Urges written here, by id, for [readUrge].
+  final Map<String, Urge> urges = <String, Urge>{};
+
+  @override
+  String newUrgeID() => 'urge-${++_ids}';
+
+  @override
+  SentWrite recordUrge(
+    String urgeID, {
+    required String ownerID,
+    required String viceID,
+    required DateTime createdAt,
+    required int strength,
+  }) {
+    _requireKey();
+    urges[urgeID] = Urge(
+      id: urgeID,
+      ownerID: ownerID,
+      viceID: viceID,
+      createdAt: Timestamp.fromDate(createdAt),
+      content: UrgeContent(strength: strength),
+    );
+    return _write(
+      Write('recordUrge', urgeID, {
+        'viceID': viceID,
+        'createdAt': createdAt,
+        'strength': strength,
+      }),
+      collection: urgesCollection,
+      op: WriteOp.create,
+    );
+  }
+
+  @override
+  SentWrite updateUrge(String urgeID, UrgeContent content) {
+    _requireKey();
+    if (urges[urgeID] case final Urge u) {
+      urges[urgeID] = Urge(
+        id: u.id,
+        ownerID: u.ownerID,
+        viceID: u.viceID,
+        createdAt: u.createdAt,
+        content: content,
+      );
+    }
+    return _write(
+      Write('updateUrge', urgeID, content.toMap()),
+      collection: urgesCollection,
+      op: WriteOp.update,
+    );
+  }
+
+  @override
+  SentWrite deleteUrge(String urgeID) {
+    urges.remove(urgeID);
+    return _write(
+      Write('deleteUrge', urgeID),
+      collection: urgesCollection,
+      op: WriteOp.delete,
+    );
+  }
+
+  @override
+  Future<Urge?> readUrge(String urgeID, {required String ownerID}) async =>
+      urges[urgeID];
 
   @override
   Future<void> waitForPendingWrites() => pendingWrites ?? Future<void>.value();

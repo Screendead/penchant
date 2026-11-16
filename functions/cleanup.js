@@ -13,7 +13,7 @@ const MAX_CANDIDATES = 5000;
 // Every collection whose documents carry an ownerID: scanned for owners,
 // counted and swept per orphaned uid. Must match Account.ownedCollections in
 // lib/account/account.dart.
-const OWNED_COLLECTIONS = ['activities', 'vices', 'dayNotes'];
+const OWNED_COLLECTIONS = ['activities', 'vices', 'dayNotes', 'urges'];
 
 function validUid(uid) {
   return typeof uid === 'string' && uid.length > 0 && uid.length <= MAX_UID_LENGTH;
