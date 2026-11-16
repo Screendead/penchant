@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tracker/analyst/analyst_setting.dart';
+import 'package:tracker/analyst/investigation.dart';
+import 'package:tracker/analyst/investigation_view.dart';
 import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
@@ -78,6 +81,23 @@ class FakeAsk implements AskJournal {
   }
 }
 
+class FakeInvestigator implements Investigator {
+  FakeInvestigator(this.replies);
+
+  final List<InvestigationStep> replies;
+  final List<Map<String, Object?>> requests = <Map<String, Object?>>[];
+
+  @override
+  Future<InvestigationStep> step(Map<String, Object?> request) async {
+    requests.add(request);
+    return replies[requests.length - 1];
+  }
+}
+
+const String monthSql =
+    'SELECT month, count(*) AS entries, sum(amount) AS total FROM entries '
+    'WHERE habit_id = 1 GROUP BY month ORDER BY month';
+
 void main() {
   final List<Vice> vices = <Vice>[habit('Wine', 0), habit('Beer', 1)];
   final List<ViceActivity> entries = <ViceActivity>[
@@ -87,29 +107,31 @@ void main() {
     fakeActivity('Beer', 1, DateTime(2026, 11, 14, 9)),
   ];
 
-  Widget app(AskJournal? service) => ProviderScope(
-    overrides: [
-      userProvider.overrideWith((ref) => Stream.value(FakeUser('a'))),
-      offlineProvider.overrideWith((ref) => Stream.value(false)),
-      todayProvider.overrideWith(() => FixedToday(today)),
-      askJournalProvider.overrideWithValue(service),
-      viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
-      viceActivityRangeProvider.overrideWith(
-        (Ref ref, ActivityRange range) =>
-            AsyncData<List<ViceActivity>>(entries),
-      ),
-      allDayNotesProvider.overrideWithValue(
-        const AsyncData<List<DayNote>>(<DayNote>[]),
-      ),
-    ],
-    child: MaterialApp(
-      theme: appTheme(Brightness.light),
-      home: const AskPage(),
-      onGenerateRoute: (RouteSettings settings) => MaterialPageRoute<void>(
-        builder: (_) => Text('route ${settings.name}'),
-      ),
-    ),
-  );
+  Widget app(AskJournal? service, {Investigator? investigator}) =>
+      ProviderScope(
+        overrides: [
+          investigatorProvider.overrideWithValue(investigator),
+          userProvider.overrideWith((ref) => Stream.value(FakeUser('a'))),
+          offlineProvider.overrideWith((ref) => Stream.value(false)),
+          todayProvider.overrideWith(() => FixedToday(today)),
+          askJournalProvider.overrideWithValue(service),
+          viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
+          viceActivityRangeProvider.overrideWith(
+            (Ref ref, ActivityRange range) =>
+                AsyncData<List<ViceActivity>>(entries),
+          ),
+          allDayNotesProvider.overrideWithValue(
+            const AsyncData<List<DayNote>>(<DayNote>[]),
+          ),
+        ],
+        child: MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: const AskPage(),
+          onGenerateRoute: (RouteSettings settings) => MaterialPageRoute<void>(
+            builder: (_) => Text('route ${settings.name}'),
+          ),
+        ),
+      );
 
   Future<void> ask(WidgetTester tester, String question) async {
     await tester.enterText(find.byType(TextField), question);
@@ -276,6 +298,112 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(AskPage.off), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
+    });
+  });
+
+  group('Investigate', () {
+    MoreQueries more() => MoreQueries(<AskCard>[
+      card('Wine by month', monthSql, type: 'table', y: const <String>[]),
+    ]);
+    Future<void> askWhy(WidgetTester tester, FakeInvestigator? inv) async {
+      await tester.pumpWidget(
+        app(
+          FakeAsk((_) async => const AskAnswer(kind: AskKind.needsInsights)),
+          investigator: inv,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await ask(tester, 'What changed in November?');
+    }
+
+    testWidgets('is offered only while the investigator is on', (
+      WidgetTester tester,
+    ) async {
+      await askWhy(tester, null);
+      expect(find.text(AskPage.investigate), findsNothing);
+      expect(find.text(AskPage.investigateTyped), findsNothing);
+    });
+
+    testWidgets('asks each time, and Cancel sends nothing', (
+      WidgetTester tester,
+    ) async {
+      final FakeInvestigator inv = FakeInvestigator(<InvestigationStep>[]);
+      await askWhy(tester, inv);
+      await tester.tap(find.text(AskPage.investigate));
+      await tester.pumpAndSettle();
+      expect(find.text(analystSends), findsOneWidget);
+      await tester.tap(find.text(AnalystSetting.cancel));
+      await tester.pumpAndSettle();
+      expect(inv.requests, isEmpty);
+      expect(find.byType(InvestigationView), findsNothing);
+      // Dismissed without an answer, too.
+      await tester.tap(find.text(AskPage.investigate));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(inv.requests, isEmpty);
+    });
+
+    testWidgets('on Yes, runs the steps here and shows the checked finding '
+        'with the query it rests on', (WidgetTester tester) async {
+      final FakeInvestigator inv = FakeInvestigator(<InvestigationStep>[
+        more(),
+        const Finding(
+          'Wine came to 5 drinks in November and 9 in October.',
+          'November had 2 entries and October 1.',
+          <int>[1],
+        ),
+      ]);
+      await askWhy(tester, inv);
+      await tester.tap(find.text(AskPage.investigate));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AnalystSetting.yes));
+      await tester.pumpAndSettle();
+      expect(inv.requests, hasLength(2));
+      final List<Object?> rounds = inv.requests[1]['rounds']! as List<Object?>;
+      expect(
+        ((rounds.single! as Map)['results'] as List).single,
+        <String, Object?>{
+          'columns': <Object?>['month', 'entries', 'total'],
+          'rows': <Object?>[
+            <Object?>['2026-10', '1', '9'],
+            <Object?>['2026-11', '2', '5'],
+          ],
+          'truncated': false,
+        },
+      );
+      expect(
+        find.text('Wine came to 5 drinks in November and 9 in October.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(InvestigationView.reading.toUpperCase()),
+        findsOneWidget,
+      );
+      expect(find.text(InvestigationView.insights), findsOneWidget);
+      expect(find.text('Wine by month'), findsOneWidget);
+      await tester.ensureVisible(find.text(AskPage.showQuery));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AskPage.showQuery));
+      await tester.pumpAndSettle();
+      expect(find.text(monthSql), findsOneWidget);
+    });
+
+    testWidgets('withholds a finding with a number it was never shown', (
+      WidgetTester tester,
+    ) async {
+      final FakeInvestigator inv = FakeInvestigator(<InvestigationStep>[
+        more(),
+        const Finding('Wine rose by 4.', 'October 1.', <int>[1]),
+      ]);
+      await askWhy(tester, inv);
+      await tester.tap(find.text(AskPage.investigate));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AnalystSetting.yes));
+      await tester.pumpAndSettle();
+      expect(find.text('Wine rose by 4.'), findsNothing);
+      expect(find.text(InvestigationView.withheld), findsOneWidget);
+      expect(find.text('Wine by month'), findsNothing);
     });
   });
 }

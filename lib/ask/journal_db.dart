@@ -46,6 +46,19 @@ const Map<String, List<String>> askTables = <String, List<String>>{
   'days': <String>['day', 'weekday', 'week', 'month', 'year'],
 };
 
+/// [askTables] less the person's own text: note and day-note text. A figures
+/// only database also never holds them, nor own-words tags (see
+/// [JournalDb.build]).
+final Map<String, List<String>> figuresTables = <String, List<String>>{
+  for (final MapEntry<String, List<String>> t in askTables.entries)
+    t.key: <String>[
+      for (final String c in t.value)
+        if (!_freeText.contains('${t.key}.$c')) c,
+    ],
+};
+
+const Set<String> _freeText = <String>{'entries.note', 'day_notes.text'};
+
 const Map<String, String> _types = <String, String>{
   'id': 'INTEGER',
   'habit_id': 'INTEGER',
@@ -164,6 +177,23 @@ int _authorize(
   Pointer<Utf8> a2,
   Pointer<Utf8> a3,
   Pointer<Utf8> a4,
+) => _authorizeOver(askTables, action, a1, a2, a3);
+
+int _authorizeFigures(
+  Pointer<Void> _,
+  int action,
+  Pointer<Utf8> a1,
+  Pointer<Utf8> a2,
+  Pointer<Utf8> a3,
+  Pointer<Utf8> a4,
+) => _authorizeOver(figuresTables, action, a1, a2, a3);
+
+int _authorizeOver(
+  Map<String, List<String>> tables,
+  int action,
+  Pointer<Utf8> a1,
+  Pointer<Utf8> a2,
+  Pointer<Utf8> a3,
 ) {
   String? text(Pointer<Utf8> p) => p.address == 0 ? null : p.toDartString();
   switch (action) {
@@ -179,7 +209,7 @@ int _authorize(
       if (column.isEmpty) {
         return table.toLowerCase().startsWith('sqlite_') ? Sq.authDeny : Sq.ok;
       }
-      final List<String>? columns = askTables[table];
+      final List<String>? columns = tables[table];
       return text(a3) == 'main' && columns != null && columns.contains(column)
           ? Sq.ok
           : Sq.authDeny;
@@ -201,6 +231,8 @@ int _progress(Pointer<Void> _) {
 
 final Pointer<NativeFunction<AuthorizerNative>> _authorizer =
     Pointer.fromFunction<AuthorizerNative>(_authorize, Sq.authDeny);
+final Pointer<NativeFunction<AuthorizerNative>> _figuresAuthorizer =
+    Pointer.fromFunction<AuthorizerNative>(_authorizeFigures, Sq.authDeny);
 final Pointer<NativeFunction<ProgressNative>> _progressHandler =
     Pointer.fromFunction<ProgressNative>(_progress, 1);
 
@@ -222,7 +254,9 @@ final RegExp _selectStart = RegExp(r'^(select|with)\b', caseSensitive: false);
 /// 4. a progress handler stopping a query after [budget], [maxRows] rows and
 ///    [maxBytes] of results.
 class JournalDb {
-  JournalDb._(this._db);
+  JournalDb._(this._db, this.figuresOnly);
+
+  final bool figuresOnly;
 
   static const Duration budget = Duration(milliseconds: 250);
   static const int maxRows = 500;
@@ -238,11 +272,18 @@ class JournalDb {
   /// (archived and locked included), [entries] every entry, [notes] every day
   /// note. A locked entry gives its plaintext columns only. Days are local,
   /// in this device's current zone, up to [today].
+  ///
+  /// [figuresOnly] is the analyst's database, whose results leave the device:
+  /// note and day-note text are never written into it and its authorizer
+  /// refuses those columns ([figuresTables]); each own-words tag is stored as
+  /// "own words 1", "own words 2"..., numbered by first use over entries then
+  /// day notes, the same text in tag and label wherever it recurs.
   static JournalDb build({
     required List<Vice> vices,
     required List<ViceActivity> entries,
     required List<DayNote> notes,
     required DateTime today,
+    bool figuresOnly = false,
     // Off only for the tests of the layers under it.
     @visibleForTesting bool authorize = true,
   }) {
@@ -266,7 +307,7 @@ class JournalDb {
       }
       return out.value;
     });
-    final JournalDb db = JournalDb._(handle);
+    final JournalDb db = JournalDb._(handle, figuresOnly);
     try {
       db._fill(vices, entries, notes, today);
       db._lockDown(authorize: authorize);
@@ -387,6 +428,17 @@ class JournalDb {
     final Map<int, String> firstDay = <int, String>{};
     final List<List<Object?>> entryRows = <List<Object?>>[];
     final List<List<Object?>> tagRows = <List<Object?>>[];
+    final Map<String, String> ownWords = <String, String>{};
+    List<String> tagRow(String tag) {
+      final List<String> columns = tagColumns(tag);
+      if (!figuresOnly || columns[1] != 'own') return columns;
+      final String stand = ownWords.putIfAbsent(
+        tag,
+        () => 'own words ${ownWords.length + 1}',
+      );
+      return <String>[stand, 'own', stand, columns[3]];
+    }
+
     DateTime? first;
     for (final (int i, ViceActivity a) in kept.indexed) {
       final int id = i + 1;
@@ -407,13 +459,12 @@ class JournalDb {
         day.year,
         a.measure.toDouble(),
         if (a.locked) null else a.urge,
-        if (a.locked) null else a.note,
+        if (a.locked || figuresOnly) null else a.note,
         if (a.locked) null else a.loggedVia?.name,
       ]);
       if (!a.locked) {
         tagRows.addAll(<List<Object?>>[
-          for (final String tag in a.triggers)
-            <Object?>[id, ...tagColumns(tag)],
+          for (final String tag in a.triggers) <Object?>[id, ...tagRow(tag)],
         ]);
       }
     }
@@ -421,10 +472,11 @@ class JournalDb {
     final List<List<Object?>> noteTagRows = <List<Object?>>[];
     for (final DayNote n in notes) {
       if (n.locked || n.day.isEmpty) continue;
-      if (n.text.trim().isNotEmpty) noteRows.add(<Object?>[n.day, n.text]);
+      if (n.text.trim().isNotEmpty) {
+        noteRows.add(<Object?>[n.day, if (figuresOnly) null else n.text]);
+      }
       noteTagRows.addAll(<List<Object?>>[
-        for (final String tag in n.triggers)
-          <Object?>[n.day, ...tagColumns(tag)],
+        for (final String tag in n.triggers) <Object?>[n.day, ...tagRow(tag)],
       ]);
     }
 
@@ -481,7 +533,13 @@ class JournalDb {
     limit(Sq.limitFunctionArg, 16);
     limit(Sq.limitVariableNumber, 0);
     limit(Sq.limitTriggerDepth, 0);
-    if (authorize && _sq.setAuthorizer(_db, _authorizer, nullptr) != Sq.ok) {
+    if (authorize &&
+        _sq.setAuthorizer(
+              _db,
+              figuresOnly ? _figuresAuthorizer : _authorizer,
+              nullptr,
+            ) !=
+            Sq.ok) {
       throw StateError('sqlite authorizer refused');
     }
     _sq.progressHandler(_db, 1000, _progressHandler, nullptr);

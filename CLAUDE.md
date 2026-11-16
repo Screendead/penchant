@@ -336,6 +336,32 @@ habit-named series takes its colour. Nothing about question, SQL or answer is lo
 questions (Jack's five among them, follow-ups, why-questions, nonsense, injections) to the chosen model with an API
 key, runs each card's SQL and prints times, rows, charts and pass or fail.
 
+**Analyst** (`lib/analyst/`, off by default; Settings' "Investigate", `AnalystSetting`, under Ask's switch and
+without effect while it is off; round 23, Jack, 2026-11-16). On the Ask page, an "Investigate with Claude" button on a
+`needs_insights` or `cannot_answer` answer, and "Investigate this question" under the field, start one investigation
+only after `confirmInvestigation` says, each time, what goes (`analystSends`) and the person says yes. The page builds
+a second database for it, `JournalDb.build(figuresOnly: true)`, closed when it ends: note and day-note text are never
+written into it and its own authorizer allow-list (`figuresTables`: Ask's less `entries.note` and `day_notes.text`)
+refuses them, and own-words tags are stored as "own words 1", "own words 2"..., numbered by first use (entries, then
+day notes); follow-up answers are in neither database. `runInvestigation` (`investigation.dart`) calls `investigate`
+up to 6 times; each call sends Ask's request (question, today, weekday, habit numbers, names, unit words, archived)
+and `rounds`, each step's cards and per card its result cut by `cutResult` (cells as text: integers, reals to 2
+places trimmed; at most 20 columns, 50 rows and 8000 characters of JSON) or its `AskRefusal` code alone. The callable
+(`functions/analyst.js`: `validInput` bounds every key, 5 earlier rounds, 8192 per result and 150,000 in all, then
+one streamed Claude Opus 5.5 call, effort medium, thinking adaptive, no fallbacks, structured output `{kind, queries,
+finding}` with Ask's card schema) answers 1 to 3 more cards or a finding `{headline, body, rests_on}`; the last step
+must conclude (`no_finding`). The server is stateless and trusts nothing in the transcript; caps 5 investigations (on
+an empty transcript) and 40 steps a day per uid per instance; 120 s, 512 MiB, its client 100 s, inside the app's 130
+s; logs the reason, any check's reason before its colon, the step number and query count. A finding is shown only if
+both sides' `checkFinding` pass: every statement it rests on ran; its headline, body and every card's title and
+explanation pass the letter's `checkPassage` with no notes to quote (numerals only those of cells sent; habit names,
+units and tag-label cells as phrases, never other text cells, which a query's literal could fill) and no `analystCausalTerms`; else "Claude's account didn't pass Penchant's checks"
+and nothing of it shows (both suites run `functions/analyst_fixture.json`). Shown, it is labelled a reading of figures
+counted here, not a finding, hands causes to Insights, and lists its queries as Ask's cards from this device's own
+runs. Investigations live in memory (`investigationSessionProvider`), cleared on New question and user change; one
+whose page closed mid-run stops before its next call and shows as stopped.
+`functions/tools/analyst-trial.js` runs five made-up investigations over the Ask trial's journal with an API key.
+
 **Letter** (`lib/letter/`, off by default; Settings' "Letter", `LetterSetting`; `LetterPage`, route `/letter`, in the
 Penchant menu while the switch is on; Jack, 2026-11-16, "Yes, build both", knowing Anthropic keeps what is sent for up
 to 30 days). On request only: the person picks the last 1, 3 or 6 months, `LetterJournal` reads the period once (the
@@ -699,8 +725,8 @@ so an untouched new entry is logged at the moment of saving, to the second. The 
 `CalendarSheet` to move the entry to another day.
 
 **Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
-Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal) and `writeLetter`
-(Letter), each requiring
+Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal), `investigate` (Analyst) and
+`writeLetter` (Letter), each requiring
 sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
 `maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account (`writeLetter`: 220 s and 512 MiB, its client a
 200 s timeout, inside the app's 240 s). `monthlySummaries` (03:00 UTC on the 1st;

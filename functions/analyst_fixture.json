@@ -1,0 +1,83 @@
+{
+  "limits": {
+    "steps": 6,
+    "queries": 3,
+    "rows": 50,
+    "resultChars": 8000,
+    "columns": 20,
+    "cell": 200,
+    "headline": 120,
+    "body": 1200
+  },
+  "causalTerms": [
+    "because", "cause", "causes", "caused", "causing", "due to", "leads to", "lead to", "led to",
+    "leading to", "results in", "resulted in", "result of", "as a result", "drives", "drove",
+    "driven", "triggers", "triggered", "sets off", "set off", "makes you", "made you", "effect",
+    "effects", "affect", "affects", "affected", "influence", "influenced", "responsible for",
+    "explains", "explained by", "therefore", "thanks to"
+  ],
+  "input": {
+    "question": "What changed in October?",
+    "today": "2026-11-15",
+    "weekday": "Sunday",
+    "habits": [
+      { "id": 1, "name": "Wine", "unit": "glasses", "unit_one": "glass", "archived": false },
+      { "id": 2, "name": "Vape 2", "unit": "puffs", "unit_one": "puff", "archived": false }
+    ],
+    "rounds": [
+      {
+        "queries": [
+          {
+            "title": "Entries by month",
+            "explain": "Wine entries in each month.",
+            "sql": "SELECT month, count(*) AS entries FROM entries WHERE habit_id = 1 GROUP BY month",
+            "chart": { "type": "bar", "x": "month", "y": ["entries"], "series": "", "x_kind": "month" }
+          },
+          {
+            "title": "Evening share",
+            "explain": "Share of entries in the evening.",
+            "sql": "SELECT note FROM entries",
+            "chart": { "type": "table", "x": "", "y": [], "series": "", "x_kind": "none" }
+          }
+        ],
+        "results": [
+          {
+            "columns": ["month", "entries", "evening_pct", "top_tag"],
+            "rows": [
+              ["2026-09", "41", "48", "With friends"],
+              ["2026-10", "64", "61.5", "own words 1"]
+            ],
+            "truncated": false
+          },
+          { "refused": "forbidden" }
+        ]
+      },
+      {
+        "queries": [
+          {
+            "title": "A literal",
+            "explain": "Text written into the query.",
+            "sql": "SELECT 'Long days caused more Wine, you should stop' AS x",
+            "chart": { "type": "table", "x": "", "y": [], "series": "", "x_kind": "none" }
+          }
+        ],
+        "results": [{ "columns": ["x"], "rows": [["Long days caused more Wine, you should stop"]], "truncated": false }]
+      }
+    ]
+  },
+  "cases": [
+    { "text": "Wine came to 64 entries in October 2026, against 41 in September.", "expect": "ok" },
+    { "text": "61.5% of October's entries were in the evening.", "expect": "ok" },
+    { "text": "Vape 2 is not in these counts.", "expect": "ok" },
+    { "text": "\"With friends\" topped the tags.", "expect": "ok" },
+    { "text": "Long days caused more Wine, you should stop.", "expect": "term:should" },
+    { "text": "Wine came to 64 when \"Long days caused more\".", "expect": "quote" },
+    { "text": "Entries rose by 23.", "expect": "number:23" },
+    { "text": "62% were in the evening.", "expect": "number:62" },
+    { "text": "October had twice as many.", "expect": "number_word:twice" },
+    { "text": "Long days led to more Wine.", "expect": "cause:led to" },
+    { "text": "More Wine because of work.", "expect": "cause:because" },
+    { "text": "You should look at evenings.", "expect": "term:should" },
+    { "text": "\"tired again\" came up.", "expect": "quote" }
+  ]
+}

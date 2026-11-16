@@ -41,8 +41,13 @@ ViceActivity entry(
   locked: locked,
 );
 
-JournalDb journal({bool authorize = true}) => JournalDb.build(
+JournalDb journal({
+  bool authorize = true,
+  bool figuresOnly = false,
+  List<DayNote> moreNotes = const <DayNote>[],
+}) => JournalDb.build(
   authorize: authorize,
+  figuresOnly: figuresOnly,
   vices: <Vice>[habit('Wine', 0), habit('Coffee', 1, archived: true)],
   entries: <ViceActivity>[
     entry('Wine', DateTime(2026, 11, 1, 20, 15), quantity: 2),
@@ -72,9 +77,37 @@ JournalDb journal({bool authorize = true}) => JournalDb.build(
       text: 'A heavy day',
       triggers: const <String>['work'],
     ),
+    ...moreNotes,
   ],
   today: today,
 );
+
+/// The journal as the analyst's database: a second day note whose own words
+/// repeat an entry's and add one of its own.
+JournalDb figures({bool authorize = true}) => journal(
+  authorize: authorize,
+  figuresOnly: true,
+  moreNotes: <DayNote>[
+    DayNote(
+      id: 'n2',
+      ownerID: ownerID,
+      day: '2026-11-03',
+      createdAt: Timestamp.fromDate(DateTime(2026, 11, 3)),
+      text: 'Walked home tired',
+      triggers: const <String>['walked home', 'tired', 'work/my private words'],
+    ),
+  ],
+);
+
+const List<String> secrets = <String>[
+  'after a long meeting',
+  'A heavy day',
+  'Walked home tired',
+  'secret',
+  'tired',
+  'walked home',
+  'private words',
+];
 
 List<List<Object?>> rowsOf(AskRun run) {
   expect(run, isA<AskRan>(), reason: run is AskRefused ? '${run.refusal}' : '');
@@ -483,6 +516,156 @@ void main() {
         bare.runUnchecked("SELECT load_extension('/usr/lib/libz.dylib')"),
         isA<AskRefused>(),
       );
+    });
+  });
+
+  group('figures only, for the analyst', () {
+    late JournalDb fig;
+    setUp(() => fig = figures());
+    tearDown(() => fig.close());
+
+    const List<String> readsText = <String>[
+      'SELECT note FROM entries',
+      'SELECT e.note FROM entries e',
+      "SELECT count(*) FROM entries WHERE note LIKE 'a%'",
+      'SELECT id FROM entries ORDER BY note',
+      'SELECT length(note) FROM entries',
+      'SELECT count(note) FROM entries',
+      'SELECT * FROM entries',
+      'SELECT text FROM day_notes',
+      'SELECT count(text) FROM day_notes',
+      "SELECT day FROM day_notes WHERE text LIKE '%heavy%'",
+      'SELECT * FROM day_notes',
+      'WITH n AS (SELECT note AS x FROM entries) SELECT x FROM n',
+      'SELECT (SELECT max(text) FROM day_notes) AS t',
+    ];
+
+    test(
+      'the authorizer refuses note and day-note text, checks on and off',
+      () {
+        for (final String sql in readsText) {
+          expect(refusalOf(fig.run(sql)), AskRefusal.forbidden, reason: sql);
+          expect(
+            refusalOf(fig.runUnchecked(sql)),
+            AskRefusal.forbidden,
+            reason: sql,
+          );
+        }
+        // Ask's own database still reads them.
+        expect(
+          rowsOf(db.run('SELECT count(note) FROM entries')),
+          <List<Object?>>[
+            <Object?>[1],
+          ],
+        );
+      },
+    );
+
+    test('everything else still runs, days with a note included', () {
+      expect(rowsOf(fig.run('SELECT count(*) FROM entries')), <List<Object?>>[
+        <Object?>[6],
+      ]);
+      expect(
+        rowsOf(fig.run('SELECT day FROM day_notes ORDER BY day')),
+        <List<Object?>>[
+          <Object?>['2026-11-02'],
+          <Object?>['2026-11-03'],
+        ],
+      );
+    });
+
+    test('own words are numbered, the same in both tag tables', () {
+      expect(
+        rowsOf(
+          fig.run(
+            "SELECT tag, area, label, area_label FROM entry_tags WHERE area = 'own'",
+          ),
+        ),
+        <List<Object?>>[
+          <Object?>['own words 1', 'own', 'own words 1', 'Own words'],
+        ],
+      );
+      expect(
+        rowsOf(
+          fig.run(
+            "SELECT tag, label FROM day_note_tags WHERE area = 'own' ORDER BY tag",
+          ),
+        ),
+        <List<Object?>>[
+          <Object?>['own words 1', 'own words 1'],
+          <Object?>['own words 2', 'own words 2'],
+          <Object?>['own words 3', 'own words 3'],
+        ],
+      );
+      expect(
+        rowsOf(
+          fig.run(
+            "SELECT count(*) FROM entry_tags WHERE label LIKE '%tired%' OR tag LIKE '%tired%'",
+          ),
+        ),
+        <List<Object?>>[
+          <Object?>[0],
+        ],
+      );
+      expect(
+        rowsOf(fig.run("SELECT label FROM entry_tags WHERE area = 'work'")),
+        <List<Object?>>[
+          <Object?>['Meeting'],
+        ],
+      );
+    });
+
+    test('with no authorizer at all, no free text is in it', () {
+      final JournalDb bare = figures(authorize: false);
+      addTearDown(bare.close);
+      expect(
+        rowsOf(bare.runUnchecked('SELECT count(note) FROM entries')),
+        <List<Object?>>[
+          <Object?>[0],
+        ],
+      );
+      expect(
+        rowsOf(bare.runUnchecked('SELECT count(text) FROM day_notes')),
+        <List<Object?>>[
+          <Object?>[0],
+        ],
+      );
+      for (final MapEntry<String, List<String>> t in askTables.entries) {
+        for (final String column in t.value) {
+          final List<List<Object?>> rows = rowsOf(
+            bare.runUnchecked('SELECT $column FROM ${t.key}'),
+          );
+          for (final List<Object?> row in rows) {
+            final Object? cell = row.single;
+            if (cell is! String) continue;
+            for (final String secret in secrets) {
+              expect(
+                cell.toLowerCase().contains(secret.toLowerCase()),
+                isFalse,
+                reason: '${t.key}.$column holds "$cell"',
+              );
+            }
+          }
+        }
+      }
+    });
+
+    test('its allow-list is Ask\'s less the two text columns', () {
+      expect(figuresTables['entries'], isNot(contains('note')));
+      expect(figuresTables['day_notes'], <String>['day']);
+      for (final String table in askTables.keys) {
+        expect(
+          <String>{
+            ...askTables[table]!,
+          }.difference(<String>{...figuresTables[table]!}),
+          switch (table) {
+            'entries' => <String>{'note'},
+            'day_notes' => <String>{'text'},
+            _ => isEmpty,
+          },
+          reason: table,
+        );
+      }
     });
   });
 }
