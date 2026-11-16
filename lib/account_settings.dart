@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/crypto/e2ee_enabled.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account/account.dart';
@@ -396,6 +397,13 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
                 glyph: DialGlyph.right,
                 onTap: () =>
                     Navigator.of(context).pushNamed(RecoveryKeyPage.route),
+              ),
+            if (ref.watch(e2eeEnabledProvider))
+              CardRow(
+                label: BackupCopy.settingsRow,
+                subtitle: BackupCopy.settingsSubtitle,
+                glyph: DialGlyph.right,
+                onTap: () => Navigator.of(context).pushNamed(BackupPage.route),
               ),
             CardRow(
               key: _exportTile,

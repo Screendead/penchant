@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -288,6 +289,8 @@ Widget routePage(String? name, {DateTime? now}) {
       return const ReportOptionsPage();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
+    case ['settings', 'backup']:
+      return const BackupPage();
     default:
       return const NotFound();
   }
