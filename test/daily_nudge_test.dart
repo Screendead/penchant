@@ -74,6 +74,15 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelHeavyDay() async => heavyCancels++;
+
+  @override
+  Future<void> scheduleUrgeCheck(String urgeID, DateTime at) async {}
+
+  @override
+  Future<void> cancelUrgeCheck(String urgeID) async {}
+
+  @override
+  Future<void> cancelUrgeChecks() async {}
 }
 
 Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>

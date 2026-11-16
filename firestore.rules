@@ -218,6 +218,27 @@ service cloud.firestore {
         && validSealed(request.resource.data.get('sealed', null));
     }
 
+    // An urge noted for a habit, born sealed: its strength, time zone and
+    // outcome exist only inside the envelope, so lib/data/urge.dart is their
+    // only guard. `createdAt` is the device clock, as an entry's is. Only the
+    // envelope ever changes. ownsVice() last, so a request the other checks
+    // deny costs no read.
+    match /urges/{urgeID} {
+      allow read, delete: if ownsExisting();
+
+      allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['sealed', 'ownerID', 'viceID', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'viceID', 'createdAt'])
+        && request.resource.data.viceID is string
+        && request.resource.data.createdAt is timestamp
+        && validSealed(request.resource.data.sealed)
+        && ownsVice(request.resource.data.viceID);
+
+      allow update: if ownsExisting()
+        && changedKeys().hasOnly(['sealed'])
+        && validSealed(request.resource.data.get('sealed', null));
+    }
+
     // The journal key's id and its copy wrapped under the recovery key; never
     // the key itself. The wrap is Sealer's envelope around 32 bytes: 61.
     match /keys/{uid} {
